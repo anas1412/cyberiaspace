@@ -32,7 +32,7 @@ const Viewport: React.FC = () => {
 
       if (
         activeSpace?.mode === 'spatial' &&
-        !(e.target as HTMLElement).closest('button, input, textarea, .thought-bulb, #inspector, .ui-layer, .glass') &&
+        !(e.target as HTMLElement).closest('button, input, textarea, .thought-bulb, #inspector, .ui-layer, .glass, #cal-sidebar-content, .cal-grid') &&
         (isMiddleClick || isAltLeftClick)
       ) {
         isPanningRef.current = true;
@@ -68,13 +68,13 @@ const Viewport: React.FC = () => {
 
     const handleClick = (e: MouseEvent) => {
       const target = e.target as HTMLElement;
-      if (!target.closest('.thought-bulb, #inspector, .ui-layer, .glass, .expand-img, button, input, textarea')) {
+      if (!target.closest('.thought-bulb, #inspector, .ui-layer, .glass, .expand-img, button, input, textarea, #cal-sidebar-content, .cal-grid')) {
         setInspectorOpen(false);
       }
     };
 
     const handleWheel = (e: WheelEvent) => {
-      if ((e.target as HTMLElement).closest('#inspector, #text-focus-overlay, #table-focus-overlay')) return;
+      if ((e.target as HTMLElement).closest('#inspector, #text-focus-overlay, #table-focus-overlay, #cal-sidebar-content, .cal-grid')) return;
 
       if (activeSpace?.mode === 'kanban') {
         setTransform((prev) => {
@@ -120,8 +120,8 @@ const Viewport: React.FC = () => {
     <div 
       id="viewport" 
       className={cn(
-        "fixed inset-0 z-10 overflow-hidden pointer-events-auto",
-        isGrabbing && "cursor-grabbing"
+        "fixed inset-0 z-10 overflow-hidden",
+        isGrabbing ? "pointer-events-auto cursor-grabbing" : "pointer-events-none"
       )}
     >
       <World transform={transform} />

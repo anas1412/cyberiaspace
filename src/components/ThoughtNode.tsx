@@ -68,13 +68,19 @@ const ThoughtNode: React.FC<ThoughtNodeProps> = React.memo(({ thought, registerE
     const target = e.target as HTMLElement;
     if (target.closest('.checkbox')) return;
     
-    if (thought.type === 'text' && target.closest('.markdown-body, .group\/text')) {
+    // Check for specific triggers
+    const textTrigger = target.closest('[data-trigger="text"]');
+    const tableTrigger = target.closest('[data-trigger="table"]');
+    const imageTrigger = target.closest('[data-trigger="image"]');
+
+    if (textTrigger) {
         setActiveFocus(thought.id, 'text');
-    } else if (thought.type === 'table' && target.closest('.thought-table, .group\/table')) {
+    } else if (tableTrigger) {
         setActiveFocus(thought.id, 'table');
-    } else if (thought.type === 'image' && target.closest('img, .expand-img')) {
+    } else if (imageTrigger) {
         if (thought.image) openLightbox(thought.image);
     } else {
+        // Fallback: Open thought editor (sidebar)
         setSelectedThoughtId(thought.id);
         setInspectorOpen(true);
     }
@@ -85,7 +91,7 @@ const ThoughtNode: React.FC<ThoughtNodeProps> = React.memo(({ thought, registerE
       case 'text': {
         const hasContent = thought.content && thought.content.trim().length > 0;
         return (
-          <div className="relative group/text overflow-hidden rounded-xl prevent-drag">
+          <div data-trigger="text" className="relative group/text overflow-hidden rounded-xl prevent-drag cursor-pointer">
             <div className={cn("overflow-hidden relative", hasContent && "max-h-[120px]")}>
               {hasContent && (
                 <div 
@@ -140,7 +146,7 @@ const ThoughtNode: React.FC<ThoughtNodeProps> = React.memo(({ thought, registerE
         const visibleRows = thought.table.slice(0, maxRows);
 
         return (
-          <div className="relative group/table overflow-hidden rounded-xl prevent-drag">
+          <div data-trigger="table" className="relative group/table overflow-hidden rounded-xl prevent-drag cursor-pointer">
             <div className="overflow-x-auto custom-scroll pb-1">
               <table className="thought-table mt-1 border-collapse w-full text-[10px]">
                 <tbody>
@@ -178,7 +184,7 @@ const ThoughtNode: React.FC<ThoughtNodeProps> = React.memo(({ thought, registerE
       case 'image': {
         if (!thought.image) return null;
         return (
-          <div className="mt-2 relative group prevent-drag">
+          <div data-trigger="image" className="mt-2 relative group prevent-drag cursor-pointer">
             <img 
               src={thought.image} 
               onClick={(e) => { e.stopPropagation(); if (thought.image) openLightbox(thought.image); }}
@@ -213,7 +219,7 @@ const ThoughtNode: React.FC<ThoughtNodeProps> = React.memo(({ thought, registerE
         {thought.priority !== 'none' && (
           <div 
             className="absolute top-4 left-4 w-1.5 h-1.5 rounded-full"
-            style={{
+            style={{ 
               backgroundColor: PRIO_COLORS[thought.priority],
               boxShadow: `0 0 10px ${PRIO_COLORS[thought.priority]}88`
             }}

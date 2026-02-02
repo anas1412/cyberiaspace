@@ -28,6 +28,7 @@ export const usePhysics = (
 
   const physicsState = useRef<Map<number, { x: number; y: number; vx: number; vy: number; scale: number }>>(new Map());
   const elements = useRef<Map<number, HTMLDivElement>>(new Map());
+  const sbHeight = useRef(0);
   const requestRef = useRef<number>(null);
   
   // Optimization: Map for fast lookups
@@ -49,11 +50,6 @@ export const usePhysics = (
   useEffect(() => {
     thoughtMap.current.clear();
     thoughts.forEach((t) => {
-      // Store a shallow copy to allow optimistic updates without mutating store directly if possible,
-      // though mutating the map entry is the goal here.
-      // Actually, since thoughts are frozen from store, let's just store them.
-      // Mutating them here is strictly for the physics loop's view.
-      // When store updates, this effect runs and overwrites with fresh data.
       thoughtMap.current.set(t.id, { ...t });
       
       if (!physicsState.current.has(t.id)) {
@@ -115,21 +111,18 @@ export const usePhysics = (
              if (lastMouseX > colWidth && lastMouseX < colWidth * 2) status = 'doing';
              if (lastMouseX >= colWidth * 2) status = 'done';
              
-             // 1. Get all thoughts in target status (including current one if it moved there)
              const thoughtsInStatus = Array.from(thoughtMap.current.values()).filter(t => 
                 (t.id === id ? status : t.status) === status
              );
              
-             // 2. Sort by current VISUAL Y position
              const sorted = thoughtsInStatus.sort((a, b) => {
                  const pA = physicsState.current.get(a.id);
                  const pB = physicsState.current.get(b.id);
-                 const yA = a.id === id ? (p?.y || 0) : (pA?.y || 0); // Use dropped Y for current
+                 const yA = a.id === id ? (p?.y || 0) : (pA?.y || 0);
                  const yB = b.id === id ? (p?.y || 0) : (pB?.y || 0);
                  return yA - yB;
              });
              
-             // 3. Update all orders and OPTIMISTICALLY update thoughtMap
              sorted.forEach((t, index) => {
                  const mapEntry = thoughtMap.current.get(t.id);
                  if (mapEntry) {
@@ -148,22 +141,17 @@ export const usePhysics = (
              
           } 
           else if (mode === 'calendar') {
-             // Metrics (Matching CalendarOverlay.tsx)
              const sidebarWidth = 260;
              const gap = 20;
              const padding = 40; 
              const topPadding = 190; 
              const mainLeft = padding + sidebarWidth + gap;
              
-             // Check Sidebar Drop
              if (lastMouseX < mainLeft) {
-                 // Optimistic
                  const mapEntry = thoughtMap.current.get(id);
                  if (mapEntry) mapEntry.date = '';
-
                  updateThought(id, { date: '', x: p?.x, y: p?.y });
              } else {
-                 // Grid Drop
                  const mainWidth = window.innerWidth - mainLeft - padding;
                  const cellWidth = mainWidth / 7;
                  const cellHeight = (window.innerHeight - topPadding - padding) / 5;
@@ -186,17 +174,14 @@ export const usePhysics = (
                          
                          if (newDate.getMonth() === month) {
                              const dateStr = newDate.toLocaleDateString('en-CA');
-                             // Optimistic
                              const mapEntry = thoughtMap.current.get(id);
                              if (mapEntry) mapEntry.date = dateStr;
-
                              updateThought(id, { date: dateStr, x: p?.x, y: p?.y });
                          }
                      }
                  }
              }
           } else {
-             // Spatial save
              if (p) updateThought(id, { x: p.x, y: p.y });
           }
         }
@@ -218,36 +203,30 @@ export const usePhysics = (
     const mode = activeSpace?.mode || 'spatial';
     const physicsEnabled = activeSpace?.physics ?? true;
 
-    // --- Physics / Morphing Logic ---
     if (mode === 'kanban') {
-       // Kanban Logic - Accumulative Layout
        const allThoughts = Array.from(thoughtMap.current.values());
        const todo = allThoughts.filter(t => t.status === 'todo').sort((a, b) => a.order - b.order);
        const doing = allThoughts.filter(t => t.status === 'doing').sort((a, b) => a.order - b.order);
        const done = allThoughts.filter(t => t.status === 'done').sort((a, b) => a.order - b.order);
        
        const processColumn = (list: Thought[], status: string) => {
-          let currentY = 280; // Start below header (matches CSS margin-top: 140px + height)
+          let currentY = 280;
           
           list.forEach((t) => {
              const p = state.get(t.id);
              if (!p) return;
              if (dragRef.current?.id === t.id) return;
 
-             // Calculate X Center
              const colWidth = window.innerWidth / 3;
-             let targetX = colWidth / 2; // todo center
+             let targetX = colWidth / 2;
              if (status === 'doing') targetX += colWidth;
              if (status === 'done') targetX += colWidth * 2;
              
-             // Calculate Y Center based on Element Height
              const el = elements.current.get(t.id);
              const height = el?.offsetHeight || 120;
              const targetY = currentY + height / 2;
+             currentY += height + 24;
              
-             currentY += height + 24; // 24px Gap
-             
-             // Lerp to target
              p.x += (targetX - p.x) * 0.15;
              p.y += (targetY - p.y) * 0.15;
              p.scale += (1 - p.scale) * 0.1;
@@ -265,7 +244,6 @@ export const usePhysics = (
       const month = calendarViewDate.getMonth();
       const firstDay = new Date(year, month, 1).getDay() || 7;
       
-      // Metrics (matching CalendarOverlay CSS)
       const sidebarWidth = 260;
       const gap = 20;
       const padding = 40;
@@ -276,16 +254,9 @@ export const usePhysics = (
       const cellWidth = mainWidth / 7;
       const cellHeight = (window.innerHeight - topPadding - padding) / 5;
       
-      let unscheduledIndex = 0;
-
-      // Use allThoughts to ensure we iterate in stable order (ID or Order) if possible,
-      // but Map iteration is stable for our purpose.
-      // However, if we want Sidebar to be sorted by order, we should sort the array first.
       const allThoughts = Array.from(thoughtMap.current.values());
-      
-      // Separate Scheduled vs Unscheduled for clearer logic
       const scheduled = allThoughts.filter(t => !!t.date);
-      const unscheduled = allThoughts.filter(t => !t.date).sort((a,b) => a.order - b.order); // Sort unscheduled
+      const unscheduled = allThoughts.filter(t => !t.date).sort((a,b) => a.order - b.order);
 
       scheduled.forEach((t) => {
         const p = state.get(t.id);
@@ -308,7 +279,6 @@ export const usePhysics = (
             const fitScale = Math.min((cellWidth - 20) / 280, 0.45);
             target.scale = fitScale;
             
-            // Simple stacking offset
             const offset = (t.id % 5) * 5; 
             target.x += offset;
             target.y += offset;
@@ -325,22 +295,34 @@ export const usePhysics = (
         p.vy = 0;
       });
 
+      let currentSB_Y = 200;
+      const sbContent = document.getElementById('cal-sidebar-content');
+      const scrollTop = sbContent?.scrollTop || 0;
+
       unscheduled.forEach((t) => {
-        const p = state.get(t.id);
-        if (!p) return;
+        const stateP = state.get(t.id);
+        if (!stateP) return;
         if (dragRef.current?.id === t.id) return;
 
-        let target = { x: 0, y: 0, scale: 0.6 };
-        target.x = padding + sidebarWidth / 2;
-        target.y = 200 + unscheduledIndex * 60;
-        unscheduledIndex++;
+        const el = elements.current.get(t.id);
+        const height = (el?.offsetHeight || 120) * 0.6;
+        
+        let target = { 
+            x: padding + sidebarWidth / 2, 
+            y: currentSB_Y - scrollTop + height / 2, 
+            scale: 0.6 
+        };
+        currentSB_Y += height + 20;
 
-        p.x += (target.x - p.x) * 0.15;
-        p.y += (target.y - p.y) * 0.15;
-        p.scale += (target.scale - p.scale) * 0.1;
-        p.vx = 0;
-        p.vy = 0;
+        stateP.x += (target.x - stateP.x) * 0.15;
+        stateP.y += (target.y - stateP.y) * 0.15;
+        stateP.scale += (target.scale - stateP.scale) * 0.1;
+        stateP.vx = 0;
+        stateP.vy = 0;
       });
+      sbHeight.current = currentSB_Y - 200;
+      const spacer = document.getElementById('cal-sidebar-spacer');
+      if (spacer) spacer.style.height = `${sbHeight.current + 40}px`;
 
     } else if (mode === 'spatial' && physicsEnabled) {
       ids.forEach((id) => {
@@ -405,9 +387,6 @@ export const usePhysics = (
       });
     }
 
-    // --- Rendering ---
-    
-    // 1. Draw Lines (Screen Space)
     const ctx = canvasRef?.current?.getContext('2d');
     if (ctx && canvasRef.current) {
       ctx.clearRect(0, 0, canvasRef.current.width, canvasRef.current.height);
@@ -431,7 +410,6 @@ export const usePhysics = (
             
             const shared = tA.tags.some(tag => tB.tags.includes(tag));
             if (shared) {
-                // Transform to screen space
                 const x1 = pA.x * s + tx;
                 const y1 = pA.y * s + ty;
                 const x2 = pB.x * s + tx;
@@ -445,7 +423,6 @@ export const usePhysics = (
       ctx.stroke();
     }
 
-    // 2. Update DOM
     ids.forEach((id) => {
       const p = state.get(id)!;
       const el = elements.current.get(id);
@@ -465,7 +442,7 @@ export const usePhysics = (
     });
 
     requestRef.current = requestAnimationFrame(loop);
-  }, [activeSpace, calendarViewDate, transform]); // Added transform to deps since we use it for line drawing
+  }, [activeSpace, calendarViewDate, transform]);
 
   useEffect(() => {
     requestRef.current = requestAnimationFrame(loop);
@@ -503,6 +480,7 @@ export const usePhysics = (
   return {
     registerElement,
     handleMouseDown,
-    isDragging
+    isDragging,
+    sidebarHeight: sbHeight
   };
 };
