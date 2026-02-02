@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useStore } from '../store/useStore';
 import { useModalStore } from './Modal';
 import { LIMITS } from '../constants';
-import { Plus, Zap, Download, Upload, SlidersHorizontal, ChevronLeft, ChevronRight, Trash2, Edit3, Camera, MoreVertical, Keyboard, MousePointer2, Orbit, Columns3, CalendarDays } from 'lucide-react';
+import { Plus, Zap, Download, Upload, SlidersHorizontal, ChevronLeft, ChevronRight, Trash2, Edit3, Camera, MoreVertical, Keyboard, MousePointer2, Orbit, Columns3, CalendarDays, Shield } from 'lucide-react';
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 import { toPng } from 'html-to-image';
@@ -385,6 +385,22 @@ const Toolbar: React.FC = () => {
         </div>
         
         <div className="flex gap-2 pointer-events-auto">
+          <div className="relative group">
+            <div className="absolute bottom-full right-0 mb-4 opacity-0 group-hover:opacity-100 transition-all duration-300 pointer-events-none w-64 translate-y-2 group-hover:translate-y-0">
+              <div className="glass p-6 rounded-[2rem] border-white/10 shadow-2xl bg-[var(--bg-main)]/95">
+                <div className="flex items-center gap-3 mb-2">
+                  <div className="w-1.5 h-1.5 rounded-full bg-green-500 shadow-[0_0_8px_#22c55e]" />
+                  <p className="text-[10px] font-black uppercase tracking-widest text-white">Local & Secure</p>
+                </div>
+                <p className="text-[10px] leading-relaxed text-slate-400">
+                  Your thoughts are stored 100% locally in your browser. Nothing is ever sent to a server or the cloud. Privacy is built-in by design.
+                </p>
+              </div>
+            </div>
+            <div className="glass w-12 h-12 flex items-center justify-center rounded-2xl border border-white/5 text-slate-500 hover:text-green-400 hover:border-green-500/20 transition-all cursor-help">
+              <Shield className="w-5 h-5" />
+            </div>
+          </div>
           <button 
             onClick={() => setIsShortcutsOpen(!isShortcutsOpen)}
             className={cn(
