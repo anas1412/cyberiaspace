@@ -45,6 +45,8 @@ const STATUS_COLORS = {
 
 const ThoughtNode: React.FC<ThoughtNodeProps> = React.memo(({ thought, registerElement, onMouseDown, isDragging }) => {
   const elRef = useRef<HTMLDivElement>(null);
+  const selectedThoughtId = useStore((state) => state.selectedThoughtId);
+  const isSelected = selectedThoughtId === thought.id;
   const setSelectedThoughtId = useStore((state) => state.setSelectedThoughtId);
   const setInspectorOpen = useStore((state) => state.setInspectorOpen);
   const setActiveFocus = useStore((state) => state.setActiveFocus);
@@ -219,7 +221,12 @@ const ThoughtNode: React.FC<ThoughtNodeProps> = React.memo(({ thought, registerE
       onMouseDown={handleLocalMouseDown}
       onClick={handleClick}
     >
-      <div className="thought-bulb-content bg-[#0f172a]/96 backdrop-blur-[20px] border border-white/10 shadow-[0_10px_40px_rgba(0,0,0,0.5)] p-6 rounded-[32px] flex flex-col gap-3 relative transition-all duration-300">
+      <div className={cn(
+        "thought-bulb-content bg-[#0f172a]/96 backdrop-blur-[20px] border p-6 rounded-[32px] flex flex-col gap-3 relative transition-all duration-300",
+        isSelected 
+          ? "border-indigo-500/50 shadow-[0_0_40px_rgba(99,102,241,0.2)]" 
+          : "border-white/10 shadow-[0_10px_40px_rgba(0,0,0,0.5)]"
+      )}>
         
         {/* Header Area: Title + Priority + Badges */}
         <div className="flex items-start justify-between gap-4 min-h-[24px]">
