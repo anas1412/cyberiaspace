@@ -1,5 +1,6 @@
 import { useEffect } from 'react';
 import { Analytics } from '@vercel/analytics/react';
+import { SpeedInsights } from '@vercel/speed-insights/react';
 import { useStore } from './store/useStore';
 import { useModalStore } from './components/Modal';
 import { LIMITS } from './constants';
@@ -103,6 +104,7 @@ function App() {
       <PaintFocusEditor />
       <TasksFocusEditor />
       <Analytics />
+      <SpeedInsights />
       {/* Modals and Lightbox would go here */}
     </div>
   );
