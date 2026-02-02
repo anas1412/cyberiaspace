@@ -227,7 +227,7 @@ const Viewport: React.FC = () => {
     >
       {/* Moving Background Grid */}
       <div 
-        className="absolute inset-0 dot-grid pointer-events-none opacity-50"
+        className="absolute inset-0 dot-grid pointer-events-none opacity-[0.03]"
         style={{ 
           transform: `translate(${transform.x}px, ${transform.y}px) scale(${transform.scale})`,
           width: '5000px',

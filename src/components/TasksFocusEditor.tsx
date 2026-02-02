@@ -70,7 +70,7 @@ const TasksFocusEditor: React.FC = () => {
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
           transition={{ duration: 0.3 }}
-          className="fixed inset-0 z-[10001] bg-[#020408]/70 backdrop-blur-[40px] flex items-center justify-center p-10"
+          className="fixed inset-0 z-[10001] bg-[var(--bg-main)]/70 backdrop-blur-[40px] flex items-center justify-center p-10"
           onClick={() => setActiveFocus(null, null)}
         >
           <motion.div 
@@ -83,7 +83,7 @@ const TasksFocusEditor: React.FC = () => {
           >
             <div className="flex justify-between items-center p-8 border-b border-white/5 bg-black/20">
               <div className="flex items-center gap-6">
-                <div className="w-12 h-12 bg-indigo-500/10 rounded-2xl flex items-center justify-center text-indigo-400">
+                <div className="w-12 h-12 bg-[var(--accent)]/10 rounded-2xl flex items-center justify-center text-[var(--accent-secondary)]">
                   <CheckSquare className="w-6 h-6" />
                 </div>
                 <div className="flex flex-col">
@@ -99,7 +99,7 @@ const TasksFocusEditor: React.FC = () => {
                       <motion.div 
                         initial={{ width: 0 }}
                         animate={{ width: `${progress}%` }}
-                        className="h-full bg-indigo-500 shadow-[0_0_10px_rgba(99,102,241,0.5)]"
+                        className="h-full bg-[var(--accent)] shadow-[0_0_10px_var(--accent-glow)]"
                       />
                     </div>
                     <span className="text-[10px] font-black uppercase tracking-widest text-slate-500">
@@ -123,7 +123,7 @@ const TasksFocusEditor: React.FC = () => {
                     onClick={() => setIsEditMode(true)}
                     className={cn(
                       "px-6 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all",
-                      isEditMode ? "bg-indigo-500 text-white shadow-lg shadow-indigo-500/20" : "text-slate-500 hover:text-white"
+                      isEditMode ? "bg-[var(--accent)] text-white shadow-lg shadow-[var(--accent-glow)]" : "text-slate-500 hover:text-white"
                     )}
                   >
                     Manage
@@ -159,7 +159,7 @@ const TasksFocusEditor: React.FC = () => {
                         type="checkbox"
                         checked={task.done}
                         onChange={(e) => handleUpdateTask(index, { done: e.target.checked })}
-                        className="w-5 h-5 rounded-lg border-2 border-white/20 bg-transparent checked:bg-indigo-500 checked:border-indigo-500 transition-all cursor-pointer accent-indigo-500"
+                        className="w-5 h-5 rounded-lg border-2 border-white/20 bg-transparent checked:bg-[var(--status-todo)] checked:border-[var(--status-todo)] transition-all cursor-pointer accent-[var(--status-todo)]"
                       />
                       <input 
                         type="text"
@@ -181,7 +181,7 @@ const TasksFocusEditor: React.FC = () => {
                   ))}
                   <button 
                     onClick={handleAddTask}
-                    className="w-full flex items-center justify-center gap-2 p-4 rounded-2xl border-2 border-dashed border-white/5 text-slate-500 hover:border-indigo-500/50 hover:text-indigo-400 transition-all mt-4"
+                    className="w-full flex items-center justify-center gap-2 p-4 rounded-2xl border-2 border-dashed border-white/5 text-slate-500 hover:border-[var(--accent)]/50 hover:text-[var(--accent-secondary)] transition-all mt-4"
                   >
                     <Plus className="w-5 h-5" />
                     <span className="text-xs font-black uppercase tracking-widest">Add New Task</span>
@@ -202,14 +202,14 @@ const TasksFocusEditor: React.FC = () => {
                         className={cn(
                           "flex items-center gap-6 p-6 rounded-[2rem] border transition-all cursor-pointer",
                           task.done 
-                            ? "bg-indigo-500/5 border-indigo-500/20" 
+                            ? "bg-[var(--accent)]/5 border-[var(--accent)]/20" 
                             : "bg-white/[0.02] border-white/5 hover:bg-white/[0.04] hover:border-white/10"
                         )}
                       >
                         <div className={cn(
                           "w-8 h-8 rounded-xl border-2 flex items-center justify-center transition-all",
                           task.done 
-                            ? "bg-indigo-500 border-indigo-500 text-white" 
+                            ? "bg-[var(--status-todo)] border-[var(--status-todo)] text-white" 
                             : "border-white/20 text-transparent"
                         )}>
                           <Plus className={cn("w-5 h-5 transition-transform", task.done ? "rotate-45" : "rotate-0")} />

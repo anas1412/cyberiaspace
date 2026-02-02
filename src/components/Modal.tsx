@@ -67,7 +67,7 @@ const Modal: React.FC = () => {
             type="text"
             value={inputValue}
             onChange={(e) => setInputValue(e.target.value)}
-            className="w-full bg-black/40 border border-white/10 rounded-xl p-4 text-sm outline-none mb-8 focus:border-indigo-500 text-white"
+            className="w-full bg-black/40 border border-white/10 rounded-xl p-4 text-sm outline-none mb-8 focus:border-[var(--accent)] text-white"
             placeholder={type === 'new_space' ? "Space Name" : ""}
             autoFocus
           />
@@ -84,7 +84,7 @@ const Modal: React.FC = () => {
           )}
           <button 
             onClick={handleConfirm}
-            className="flex-1 py-4 text-xs font-bold uppercase tracking-widest bg-indigo-500 rounded-2xl text-white hover:bg-indigo-600 transition-colors shadow-lg shadow-indigo-500/20"
+            className="flex-1 py-4 text-xs font-bold uppercase tracking-widest bg-[var(--accent)] rounded-2xl text-white hover:opacity-90 transition-colors shadow-lg shadow-[var(--accent-glow)]"
           >
             {confirmText || 'Confirm'}
           </button>

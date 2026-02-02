@@ -130,7 +130,7 @@ const PaintFocusEditor: React.FC = () => {
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
-          className="fixed inset-0 z-[10001] bg-[#020408]/70 backdrop-blur-[40px] flex items-center justify-center p-10"
+          className="fixed inset-0 z-[10001] bg-[var(--bg-main)]/70 backdrop-blur-[40px] flex items-center justify-center p-10"
           onClick={() => setActiveFocus(null, null)}
         >
           <motion.div 
@@ -143,7 +143,7 @@ const PaintFocusEditor: React.FC = () => {
             {/* Header */}
             <div className="flex justify-between items-center p-8 border-b border-white/5 bg-black/20">
               <div className="flex items-center gap-6">
-                <div className="w-12 h-12 bg-indigo-500/10 rounded-2xl flex items-center justify-center text-indigo-400">
+                <div className="w-12 h-12 bg-[var(--accent)]/10 rounded-2xl flex items-center justify-center text-[var(--accent-secondary)]">
                   <Palette className="w-6 h-6" />
                 </div>
                 <input 
@@ -170,7 +170,7 @@ const PaintFocusEditor: React.FC = () => {
                     onClick={() => setIsEditMode(true)}
                     className={cn(
                       "px-6 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all",
-                      isEditMode ? "bg-indigo-500 text-white shadow-lg shadow-indigo-500/20" : "text-slate-500 hover:text-white"
+                      isEditMode ? "bg-[var(--accent)] text-white shadow-lg shadow-[var(--accent-glow)]" : "text-slate-500 hover:text-white"
                     )}
                   >
                     Edit
@@ -195,7 +195,7 @@ const PaintFocusEditor: React.FC = () => {
                       onClick={() => setTool('brush')}
                       className={cn(
                         "w-12 h-12 rounded-2xl flex items-center justify-center transition-all",
-                        tool === 'brush' ? "bg-indigo-500 text-white" : "text-white/40 hover:bg-white/5"
+                        tool === 'brush' ? "bg-[var(--accent)] text-white" : "text-white/40 hover:bg-white/5"
                       )}
                     >
                       <MousePointer2 className="w-5 h-5" />
@@ -204,13 +204,13 @@ const PaintFocusEditor: React.FC = () => {
                       onClick={() => setTool('eraser')}
                       className={cn(
                         "w-12 h-12 rounded-2xl flex items-center justify-center transition-all",
-                        tool === 'eraser' ? "bg-indigo-500 text-white" : "text-white/40 hover:bg-white/5"
+                        tool === 'eraser' ? "bg-[var(--accent)] text-white" : "text-white/40 hover:bg-white/5"
                       )}
                     >
                       <Eraser className="w-5 h-5" />
                     </button>
                     <div className="w-8 h-px bg-white/10 my-2" />
-                    <button onClick={() => setIsNeon(!isNeon)} className={cn("text-[8px] font-black uppercase tracking-widest px-2 py-1 rounded-lg border", isNeon ? "bg-indigo-500/20 border-indigo-500 text-indigo-400" : "bg-white/5 border-white/10 text-white/40")}>Neon</button>
+                    <button onClick={() => setIsNeon(!isNeon)} className={cn("text-[8px] font-black uppercase tracking-widest px-2 py-1 rounded-lg border", isNeon ? "bg-[var(--accent)]/20 border-[var(--accent)] text-[var(--accent-secondary)]" : "bg-white/5 border-white/10 text-white/40")}>Neon</button>
                     <div className="w-8 h-px bg-white/10 my-2" />
                     {BRUSH_SIZES.map(size => (
                       <button key={size} onClick={() => setBrushSize(size)} className={cn("w-10 h-10 flex items-center justify-center rounded-xl transition-all", brushSize === size ? "bg-white/10 text-white" : "text-white/20")}>

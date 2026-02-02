@@ -42,7 +42,7 @@ const TextFocusEditor: React.FC = () => {
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
           transition={{ duration: 0.3 }}
-          className="fixed inset-0 z-[10001] bg-[#020408]/70 backdrop-blur-[40px] flex items-center justify-center p-10"
+          className="fixed inset-0 z-[10001] bg-[var(--bg-main)]/70 backdrop-blur-[40px] flex items-center justify-center p-10"
           onClick={() => setActiveFocus(null, null)}
         >
           <motion.div 
@@ -55,7 +55,7 @@ const TextFocusEditor: React.FC = () => {
           >
             <div className="flex justify-between items-center p-8 border-b border-white/5 bg-black/20">
               <div className="flex items-center gap-6">
-                <div className="w-12 h-12 bg-indigo-500/10 rounded-2xl flex items-center justify-center text-indigo-400">
+                <div className="w-12 h-12 bg-[var(--accent)]/10 rounded-2xl flex items-center justify-center text-[var(--accent-secondary)]">
                   <FileText className="w-6 h-6" />
                 </div>
                 <input 
@@ -81,7 +81,7 @@ const TextFocusEditor: React.FC = () => {
                     onClick={() => setIsEditMode(true)}
                     className={cn(
                       "px-6 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all",
-                      isEditMode ? "bg-indigo-500 text-white shadow-lg shadow-indigo-500/20" : "text-slate-500 hover:text-white"
+                      isEditMode ? "bg-[var(--accent)] text-white shadow-lg shadow-[var(--accent-glow)]" : "text-slate-500 hover:text-white"
                     )}
                   >
                     Edit

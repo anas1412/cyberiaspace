@@ -89,7 +89,7 @@ const TableFocusEditor: React.FC = () => {
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
           transition={{ duration: 0.3 }}
-          className="fixed inset-0 z-[10001] bg-[#020408]/70 backdrop-blur-[40px] flex items-center justify-center p-10"
+          className="fixed inset-0 z-[10001] bg-[var(--bg-main)]/70 backdrop-blur-[40px] flex items-center justify-center p-10"
           onClick={() => setActiveFocus(null, null)}
         >
           <motion.div 
@@ -102,7 +102,7 @@ const TableFocusEditor: React.FC = () => {
           >
             <div className="flex justify-between items-center p-8 border-b border-white/5 bg-black/20">
               <div className="flex items-center gap-6">
-                <div className="w-12 h-12 bg-indigo-500/10 rounded-2xl flex items-center justify-center text-indigo-400">
+                <div className="w-12 h-12 bg-[var(--accent)]/10 rounded-2xl flex items-center justify-center text-[var(--accent-secondary)]">
                   <TableIcon className="w-6 h-6" />
                 </div>
                 <input 
@@ -127,7 +127,7 @@ const TableFocusEditor: React.FC = () => {
                     onClick={() => setIsEditMode(true)}
                     className={cn(
                       "px-6 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all",
-                      isEditMode ? "bg-indigo-500 text-white shadow-lg shadow-indigo-500/20" : "text-slate-500 hover:text-white"
+                      isEditMode ? "bg-[var(--accent)] text-white shadow-lg shadow-[var(--accent-glow)]" : "text-slate-500 hover:text-white"
                     )}
                   >
                     Edit
@@ -155,7 +155,7 @@ const TableFocusEditor: React.FC = () => {
                                             <input
                                                 value={cell}
                                                 onChange={(e) => handleUpdateCell(0, i, e.target.value)}
-                                                className="flex-1 bg-transparent p-4 outline-none text-xs font-black uppercase tracking-widest text-indigo-400 placeholder:text-indigo-400/20"
+                                                className="flex-1 bg-transparent p-4 outline-none text-xs font-black uppercase tracking-widest text-[var(--accent-secondary)] placeholder:text-[var(--accent-secondary)]/20"
                                                 placeholder={`COL ${i + 1}`}
                                             />
                                             <button onClick={() => deleteColumn(i)} className="p-2 opacity-0 group-hover/h:opacity-100 text-red-400 hover:text-red-300 transition-opacity">
@@ -163,7 +163,7 @@ const TableFocusEditor: React.FC = () => {
                                             </button>
                                         </div>
                                     ) : (
-                                        <div className="p-4 text-xs font-black uppercase tracking-widest text-indigo-400">
+                                        <div className="p-4 text-xs font-black uppercase tracking-widest text-[var(--accent-secondary)]">
                                             {cell || `COL ${i + 1}`}
                                         </div>
                                     )}
@@ -172,7 +172,7 @@ const TableFocusEditor: React.FC = () => {
                             {isEditMode && (
                                 <th className="p-2 border border-white/5 w-16 bg-black/40">
                                     <button onClick={addColumn} className="w-full h-full flex items-center justify-center hover:bg-white/5 rounded-lg py-2 transition-colors">
-                                        <Plus className="w-5 h-5 text-indigo-400" />
+                                        <Plus className="w-5 h-5 text-[var(--accent-secondary)]" />
                                     </button>
                                 </th>
                             )}
@@ -197,7 +197,7 @@ const TableFocusEditor: React.FC = () => {
                                                 <input
                                                     value={cell}
                                                     onChange={(e) => handleUpdateCell(actualRow, cIdx, e.target.value)}
-                                                    className="w-full h-full bg-transparent p-4 outline-none text-sm text-white focus:bg-indigo-500/10 transition-colors"
+                                                    className="w-full h-full bg-transparent p-4 outline-none text-sm text-white focus:bg-[var(--accent)]/10 transition-colors"
                                                     placeholder="..."
                                                 />
                                             ) : (
@@ -215,7 +215,7 @@ const TableFocusEditor: React.FC = () => {
                             <tr>
                                 <td className="p-2 border border-white/5 text-center bg-black/20">
                                     <button onClick={addRow} className="w-full h-full flex items-center justify-center hover:bg-white/5 rounded-lg py-2 transition-colors">
-                                        <Plus className="w-5 h-5 text-indigo-400" />
+                                        <Plus className="w-5 h-5 text-[var(--accent-secondary)]" />
                                     </button>
                                 </td>
                                 <td colSpan={thought.table[0].length + (isEditMode ? 1 : 0)} className="border border-white/5 bg-black/10"></td>

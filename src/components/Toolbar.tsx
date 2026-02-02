@@ -25,6 +25,8 @@ const Toolbar: React.FC = () => {
   const setInspectorOpen = useStore((state) => state.setInspectorOpen);
   const exportData = useStore((state) => state.exportData);
   const importData = useStore((state) => state.importData);
+  const theme = useStore((state) => state.theme);
+  const setTheme = useStore((state) => state.setTheme);
   
   const { openModal } = useModalStore();
   
@@ -76,7 +78,7 @@ const Toolbar: React.FC = () => {
       const width = maxX - minX; const height = maxY - minY;
 
       const dataUrl = await toPng(worldEl, {
-        backgroundColor: '#020408',
+        backgroundColor: getComputedStyle(document.body).getPropertyValue('--bg-main').trim() || '#020408',
         style: {
           transform: `translate(${-minX}px, ${-minY}px) scale(1)`,
           position: 'absolute',
@@ -215,13 +217,13 @@ const Toolbar: React.FC = () => {
               <h1 className="text-3xl font-bold tracking-tighter text-white">CYBERIA</h1>
               <div className="flex items-center gap-3 mt-1 group cursor-pointer" onClick={() => setIsSpaceMenuOpen(!isSpaceMenuOpen)}>
                 <div className={cn(
-                  "w-2 h-2 rounded-full transition-all duration-500 shadow-[0_0_10px_rgba(99,102,241,0.5)]",
-                  isSpaceMenuOpen ? "bg-indigo-400 scale-125" : "bg-indigo-500/40"
+                  "w-2 h-2 rounded-full transition-all duration-500 shadow-[0_0_10px_var(--accent-glow)]",
+                  isSpaceMenuOpen ? "bg-[var(--accent-secondary)] scale-125" : "bg-[var(--accent)]/40"
                 )} />
-                <p className="text-[10px] uppercase font-black tracking-[0.2em] text-indigo-400/80 group-hover:text-indigo-300 transition-colors">
+                <p className="text-[10px] uppercase font-black tracking-[0.2em] text-[var(--accent-secondary)]/80 group-hover:text-[var(--accent-secondary)] transition-colors">
                   {activeSpace?.name || 'Space'}
                 </p>
-                <SlidersHorizontal className={cn("w-3 h-3 text-white/20 group-hover:text-white/60 transition-all", isSpaceMenuOpen && "text-indigo-400 rotate-90")} />
+                <SlidersHorizontal className={cn("w-3 h-3 text-white/20 group-hover:text-white/60 transition-all", isSpaceMenuOpen && "text-[var(--accent-secondary)] rotate-90")} />
               </div>
             </div>
           </div>
@@ -244,7 +246,7 @@ const Toolbar: React.FC = () => {
         </div>
 
         {/* CENTER: Space Switcher (Dynamically Centered) */}
-        <div className="absolute left-1/2 -translate-x-1/2 flex items-center h-[48px] px-2 bg-[#020617]/60 backdrop-blur-3xl rounded-full border border-white/10 shadow-2xl transition-all pointer-events-auto">
+        <div className="absolute left-1/2 -translate-x-1/2 flex items-center h-[48px] px-2 glass rounded-full shadow-2xl transition-all pointer-events-auto">
           <div className="flex items-center gap-1 h-full">
             {spaces.map((space) => {
               const isActive = space.id === activeSpaceId;
@@ -259,7 +261,7 @@ const Toolbar: React.FC = () => {
                       : "text-slate-500 hover:text-slate-300 hover:bg-white/[0.03] border border-transparent"
                   )}
                 >
-                  {isActive && <div className="w-1 h-1 rounded-full bg-indigo-400 shadow-[0_0_8px_rgba(99,102,241,1)]" />}
+                  {isActive && <div className="w-1 h-1 rounded-full bg-[var(--accent-secondary)] shadow-[0_0_8px_var(--accent)]" />}
                   {space.name}
                 </button>
               );
@@ -275,9 +277,9 @@ const Toolbar: React.FC = () => {
         </div>
 
         {/* RIGHT SIDE: View Switcher (Segmented Control) */}
-        <div className="flex items-center h-[48px] p-1.5 bg-[#020617]/60 backdrop-blur-3xl rounded-2xl border border-white/10 shadow-2xl transition-all pointer-events-auto">
+        <div className="flex items-center h-[48px] p-1.5 glass rounded-2xl shadow-2xl transition-all pointer-events-auto">
           {[
-            { id: 'spatial', icon: Orbit, color: 'bg-indigo-500' },
+            { id: 'spatial', icon: Orbit, color: 'bg-[var(--accent)]' },
             { id: 'kanban', icon: Columns3, color: 'bg-purple-500' },
             { id: 'calendar', icon: CalendarDays, color: 'bg-amber-500' }
           ].map((mode) => {
@@ -315,11 +317,11 @@ const Toolbar: React.FC = () => {
       <div className="fixed bottom-10 left-1/2 -translate-x-1/2 z-[10000] pointer-events-none flex flex-col items-center gap-4">
         <button 
           onClick={handleAddThought}
-          className="pointer-events-auto group relative flex items-center justify-center w-16 h-16 bg-[#020617]/40 backdrop-blur-2xl text-white rounded-full border border-white/10 shadow-[0_0_50px_rgba(99,102,241,0.1)] transition-all hover:scale-110 active:scale-95 hover:border-indigo-500/40"
+          className="pointer-events-auto group relative flex items-center justify-center w-16 h-16 bg-[var(--bg-gradient-to)]/40 backdrop-blur-2xl text-white rounded-full border border-white/10 shadow-[0_0_50px_var(--accent-glow)] transition-all hover:scale-110 active:scale-95 hover:border-[var(--accent)]/40"
         >
-          <div className="absolute inset-0 rounded-full bg-indigo-500/5 opacity-0 group-hover:opacity-100 transition-opacity blur-xl" />
+          <div className="absolute inset-0 rounded-full bg-[var(--accent)]/5 opacity-0 group-hover:opacity-100 transition-opacity blur-xl" />
           <Plus className="w-8 h-8 text-slate-400 group-hover:text-white transition-all group-hover:rotate-90 relative z-10" />
-          <div className="absolute -top-12 opacity-0 group-hover:opacity-100 transition-opacity bg-[#0f172a]/80 backdrop-blur-xl border border-white/10 text-indigo-400 text-[9px] font-black uppercase tracking-[0.2em] px-4 py-2 rounded-xl pointer-events-none whitespace-nowrap shadow-2xl">
+          <div className="absolute -top-12 opacity-0 group-hover:opacity-100 transition-opacity bg-[var(--bg-main)]/80 backdrop-blur-xl border border-white/10 text-[var(--accent-secondary)] text-[9px] font-black uppercase tracking-[0.2em] px-4 py-2 rounded-xl pointer-events-none whitespace-nowrap shadow-2xl">
             New Thought <span className="text-white/20 ml-2 font-mono">SPACE</span>
           </div>
         </button>
@@ -328,9 +330,38 @@ const Toolbar: React.FC = () => {
       {/* SYSTEM TRAY (Bottom Right) */}
       <div className="ui-layer bottom-8 right-8 flex flex-col items-end gap-3 pointer-events-none">
         <div className={cn(
-          "glass p-2 rounded-2xl flex flex-col gap-1 transition-all pointer-events-auto",
+          "glass p-2 rounded-2xl flex flex-col gap-1 transition-all pointer-events-auto w-64",
           isSystemMenuOpen ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4 pointer-events-none"
         )}>
+          {/* Theme Selector */}
+          <div className="px-4 py-3 border-b border-white/5 mb-1">
+            <p className="text-[8px] font-black uppercase tracking-[0.2em] text-slate-500 mb-3">Workspace Theme</p>
+            <div className="grid grid-cols-3 gap-2">
+              {[
+                { id: 'cyberia', label: 'Cyber', color: '#6366f1' },
+                { id: 'rose', label: 'Rose', color: '#ec4899' },
+                { id: 'neon', label: 'Neon', color: '#10b981' }
+              ].map((t) => (
+                <button
+                  key={t.id}
+                  onClick={() => setTheme(t.id as any)}
+                  className={cn(
+                    "flex flex-col items-center gap-2 p-2 rounded-xl border transition-all",
+                    theme === t.id 
+                      ? "bg-white/10 border-white/20 shadow-lg" 
+                      : "border-transparent hover:bg-white/5"
+                  )}
+                >
+                  <div className="w-4 h-4 rounded-full shadow-lg" style={{ backgroundColor: t.color }} />
+                  <span className={cn(
+                    "text-[8px] font-bold uppercase tracking-widest",
+                    theme === t.id ? "text-white" : "text-slate-500"
+                  )}>{t.label}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+
           <button onClick={handleExport} className="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-white/5 text-[10px] font-bold uppercase tracking-widest text-slate-300 transition-colors">
             <Download className="w-4 h-4" /> Export Data
           </button>
@@ -348,7 +379,7 @@ const Toolbar: React.FC = () => {
             onClick={() => setIsShortcutsOpen(!isShortcutsOpen)}
             className={cn(
               "glass w-12 h-12 flex items-center justify-center rounded-2xl transition-all border border-white/5",
-              isShortcutsOpen ? "bg-indigo-500 text-white" : "text-slate-400 hover:text-white"
+              isShortcutsOpen ? "bg-[var(--accent)] text-white" : "text-slate-400 hover:text-white"
             )}
           >
             <Keyboard className="w-5 h-5" />
@@ -357,7 +388,7 @@ const Toolbar: React.FC = () => {
             onClick={() => setIsSystemMenuOpen(!isSystemMenuOpen)}
             className={cn(
               "glass w-12 h-12 flex items-center justify-center rounded-2xl transition-all border border-white/5",
-              isSystemMenuOpen ? "bg-indigo-500 text-white" : "text-slate-400 hover:text-white"
+              isSystemMenuOpen ? "bg-[var(--accent)] text-white" : "text-slate-400 hover:text-white"
             )}
           >
             <MoreVertical className="w-5 h-5" />
@@ -377,7 +408,7 @@ const Toolbar: React.FC = () => {
             onClick={handleTogglePhysics}
             className={cn(
               "flex items-center gap-2 transition-all text-[10px] font-black uppercase tracking-widest",
-              activeSpace?.physics ? "text-indigo-400" : "text-slate-600"
+              activeSpace?.physics ? "text-[var(--accent-secondary)]" : "text-slate-600"
             )}
           >
             <Zap className="w-3 h-3" /> 
@@ -391,7 +422,7 @@ const Toolbar: React.FC = () => {
         <div className="fixed inset-0 z-[10001] bg-black/60 backdrop-blur-md flex items-center justify-center p-10 pointer-events-auto" onClick={() => setIsShortcutsOpen(false)}>
           <div className="glass max-w-md w-full p-10 rounded-[3rem] border border-white/10" onClick={e => e.stopPropagation()}>
             <div className="flex justify-between items-center mb-8">
-              <h3 className="text-sm font-black uppercase tracking-[0.2em] text-indigo-400">Command Center</h3>
+              <h3 className="text-sm font-black uppercase tracking-[0.2em] text-[var(--accent-secondary)]">Command Center</h3>
               <button onClick={() => setIsShortcutsOpen(false)} className="text-slate-500 hover:text-white"><Plus className="w-6 h-6 rotate-45" /></button>
             </div>
             <div className="space-y-6">
@@ -406,14 +437,14 @@ const Toolbar: React.FC = () => {
                   <span className="text-[10px] font-bold uppercase tracking-widest text-slate-400 group-hover:text-white transition-colors">{s.label}</span>
                   <div className="flex gap-1">
                     {s.keys.map(k => (
-                      <kbd key={k} className="bg-white/5 border border-white/10 px-2 py-1 rounded-lg text-[9px] font-black text-indigo-300 min-w-[30px] text-center">{k}</kbd>
+                      <kbd key={k} className="bg-white/5 border border-white/10 px-2 py-1 rounded-lg text-[9px] font-black text-[var(--accent-secondary)] min-w-[30px] text-center">{k}</kbd>
                     ))}
                   </div>
                 </div>
               ))}
             </div>
             <div className="mt-10 pt-8 border-t border-white/5 flex items-center gap-4">
-              <div className="w-10 h-10 rounded-xl bg-indigo-500/10 flex items-center justify-center text-indigo-400">
+              <div className="w-10 h-10 rounded-xl bg-[var(--accent)]/10 flex items-center justify-center text-[var(--accent-secondary)]">
                 <MousePointer2 className="w-5 h-5" />
               </div>
               <p className="text-[9px] uppercase font-bold tracking-widest text-slate-500 leading-relaxed">

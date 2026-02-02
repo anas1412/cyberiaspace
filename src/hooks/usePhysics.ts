@@ -311,8 +311,16 @@ export const usePhysics = (
       ctx.clearRect(0, 0, canvasRef.current.width, canvasRef.current.height); ctx.lineWidth = 1; 
       const { x: tx, y: ty, scale: s } = transform;
       
+      const computedStyle = getComputedStyle(document.body);
+      const accentColor = computedStyle.getPropertyValue('--accent').trim() || '#6366f1';
+      const accentGlow = computedStyle.getPropertyValue('--accent-glow').trim() || 'rgba(99, 102, 241, 0.5)';
+
       // Draw Connections
-      ctx.strokeStyle = 'rgba(99, 102, 241, 0.12)'; ctx.beginPath();
+      ctx.strokeStyle = accentColor.includes('var') ? '#6366f1' : accentColor + '22'; // fallback to semi-transparent
+      // More reliable: use a fixed alpha or the theme variable if it's already an rgba
+      ctx.strokeStyle = accentColor.startsWith('#') ? accentColor + '1F' : accentColor.replace('rgb', 'rgba').replace(')', ', 0.12)');
+      
+      ctx.beginPath();
       for (let i = 0; i < ids.length; i++) {
         const idA = ids[i]; const tA = thoughtMap.current.get(idA); const pA = state.get(idA); if (!tA || !pA) continue;
         for (let j = i + 1; j < ids.length; j++) {
@@ -329,7 +337,7 @@ export const usePhysics = (
         if (pSource) {
           ctx.beginPath();
           ctx.setLineDash([5, 5]);
-          ctx.strokeStyle = 'rgba(99, 102, 241, 0.5)';
+          ctx.strokeStyle = accentGlow;
           ctx.lineWidth = 2;
           const x1 = pSource.x * s + tx;
           const y1 = pSource.y * s + ty;

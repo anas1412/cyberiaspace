@@ -44,13 +44,13 @@ const CalendarOverlay: React.FC = () => {
         key={d} 
         className={cn(
           "cal-cell border-r border-b border-white/[0.05] relative transition-colors min-h-[100px]",
-          isToday && "bg-indigo-500/[0.05]"
+          isToday && "bg-[var(--accent)]/[0.05]"
         )}
         data-date={dateStr}
       >
         <span className={cn(
           "cal-date-num absolute top-2 right-2 text-[11px] font-600",
-          isToday ? "text-indigo-400" : "text-white/30"
+          isToday ? "text-[var(--accent-secondary)]" : "text-white/30"
         )}>
           {d}
         </span>
@@ -62,7 +62,7 @@ const CalendarOverlay: React.FC = () => {
     <div className="calendar-overlay fixed inset-0 flex pointer-events-none p-10 pt-[100px] gap-5 opacity-100 transition-opacity duration-400 z-0">
       {/* Sidebar - z-[30] to stay above cards (z-20) */}
       <div className="cal-sidebar w-[260px] glass rounded-3xl flex flex-col overflow-hidden pointer-events-auto z-[30] relative border border-white/10 shadow-2xl">
-        <div className="cal-sidebar-header p-5 border-b border-white/[0.05] text-[10px] font-900 tracking-[0.2em] uppercase text-indigo-400 bg-[#020408] z-[40] sticky top-0 shadow-lg">
+        <div className="cal-sidebar-header p-5 border-b border-white/[0.05] text-[10px] font-900 tracking-[0.2em] uppercase text-[var(--accent-secondary)] bg-[var(--bg-main)] z-[40] sticky top-0 shadow-lg">
           Unscheduled
         </div>
         <div id="cal-sidebar-content" className="cal-sidebar-content flex-1 overflow-y-auto overflow-x-hidden relative p-5 custom-scroll">

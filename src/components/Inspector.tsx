@@ -89,7 +89,7 @@ const Inspector: React.FC = () => {
             onClick={() => handleTypeChange(type as any)}
             className={cn(
               "p-2 rounded-xl text-[8px] font-800 uppercase bg-white/[0.03] border border-transparent transition-all",
-              thought.type === type ? "bg-indigo-500/10 border-indigo-500 text-white" : "text-slate-500"
+              thought.type === type ? "bg-[var(--accent)]/10 border-[var(--accent)] text-white" : "text-slate-500"
             )}
           >
             {type}
@@ -103,7 +103,7 @@ const Inspector: React.FC = () => {
           value={thought.text}
           onChange={(e) => updateThought(thought.id, { text: e.target.value })}
           maxLength={30}
-          className="w-full bg-black/40 border border-white/10 rounded-xl p-3 text-sm outline-none focus:border-indigo-500 text-white"
+          className="w-full bg-black/40 border border-white/10 rounded-xl p-3 text-sm outline-none focus:border-[var(--accent)] text-white"
           placeholder="Name"
         />
         <textarea
@@ -111,14 +111,14 @@ const Inspector: React.FC = () => {
           onChange={(e) => updateThought(thought.id, { description: e.target.value })}
           rows={2}
           maxLength={150}
-          className="w-full bg-black/40 border border-white/10 rounded-xl p-3 text-xs outline-none focus:border-indigo-500 text-white"
+          className="w-full bg-black/40 border border-white/10 rounded-xl p-3 text-xs outline-none focus:border-[var(--accent)] text-white"
           placeholder="Description"
         />
         <input
           type="date"
           value={thought.date}
           onChange={(e) => updateThought(thought.id, { date: e.target.value })}
-          className="w-full bg-black/40 border border-white/10 rounded-xl p-3 text-xs outline-none focus:border-indigo-500 text-white font-mono uppercase"
+          className="w-full bg-black/40 border border-white/10 rounded-xl p-3 text-xs outline-none focus:border-[var(--accent)] text-white font-mono uppercase"
         />
 
         <div className="space-y-2">
@@ -133,9 +133,9 @@ const Inspector: React.FC = () => {
                   thought.status === s 
                     ? {
                         'none': 'bg-white/10 border-white/30 text-white',
-                        'todo': 'bg-indigo-500/30 border-indigo-500 text-white',
-                        'doing': 'bg-yellow-500/30 border-yellow-500 text-white',
-                        'done': 'bg-green-500/30 border-green-500 text-white',
+                        'todo': 'bg-[var(--status-todo)]/30 border-[var(--status-todo)] text-white',
+                        'doing': 'bg-[var(--status-doing)]/30 border-[var(--status-doing)] text-white',
+                        'done': 'bg-[var(--status-done)]/30 border-[var(--status-done)] text-white',
                       }[s]
                     : "bg-white/5 border-white/10 text-slate-400 hover:bg-white/10"
                 )}
@@ -158,10 +158,10 @@ const Inspector: React.FC = () => {
                   thought.priority === p 
                     ? {
                         'none': 'bg-white/10 border-white/30 text-white',
-                        'low': 'bg-blue-500/30 border-blue-500 text-white',
-                        'medium': 'bg-yellow-500/30 border-yellow-500 text-white',
-                        'high': 'bg-orange-500/30 border-orange-500 text-white',
-                        'urgent': 'bg-red-500/30 border-red-500 text-white',
+                        'low': 'bg-[var(--prio-low)]/30 border-[var(--prio-low)] text-white',
+                        'medium': 'bg-[var(--prio-medium)]/30 border-[var(--prio-medium)] text-white',
+                        'high': 'bg-[var(--prio-high)]/30 border-[var(--prio-high)] text-white',
+                        'urgent': 'bg-[var(--prio-urgent)]/30 border-[var(--prio-urgent)] text-white',
                       }[p]
                     : "bg-white/5 border-white/10 text-slate-400 hover:bg-white/10"
                 )}
@@ -187,7 +187,7 @@ const Inspector: React.FC = () => {
             <div className="space-y-4">
               <button 
                 onClick={() => setActiveFocus(thought.id, 'tasks')}
-                className="w-full bg-indigo-500/10 hover:bg-indigo-500/20 border border-indigo-500/30 text-indigo-400 py-6 rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] transition-all flex flex-col items-center gap-3"
+                className="w-full bg-[var(--accent)]/10 hover:bg-[var(--accent)]/20 border border-[var(--accent)]/30 text-[var(--accent-secondary)] py-6 rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] transition-all flex flex-col items-center gap-3"
               >
                 <Maximize2 className="w-5 h-5" />
                 Open Task Manager
@@ -198,7 +198,7 @@ const Inspector: React.FC = () => {
                   {thought.tasks.map((task, i) => (
                     <div key={i} className="flex items-center gap-3">
                       <div 
-                        className={cn("checkbox w-[18px] h-[18px] border-2 border-white/10 rounded-[6px] flex-shrink-0 cursor-pointer transition-all", task.done && "bg-indigo-500 border-indigo-500")}
+                        className={cn("checkbox w-[18px] h-[18px] border-2 border-white/10 rounded-[6px] flex-shrink-0 cursor-pointer transition-all", task.done && "bg-[var(--status-todo)] border-[var(--status-todo)]")}
                         onClick={() => {
                           const newTasks = [...thought.tasks];
                           newTasks[i].done = !newTasks[i].done;
@@ -215,7 +215,7 @@ const Inspector: React.FC = () => {
                           newTasks[i].text = e.target.value;
                           updateThought(thought.id, { tasks: newTasks });
                         }}
-                        className="flex-1 bg-black/20 border border-white/5 rounded-xl p-2 text-xs outline-none text-white focus:border-indigo-500"
+                        className="flex-1 bg-black/20 border border-white/5 rounded-xl p-2 text-xs outline-none text-white focus:border-[var(--accent)]"
                       />
                       <button 
                         onClick={() => {
@@ -243,7 +243,7 @@ const Inspector: React.FC = () => {
           {thought.type === 'table' && (
             <button 
               onClick={() => setActiveFocus(thought.id, 'table')}
-              className="w-full bg-indigo-500/10 hover:bg-indigo-500/20 border border-indigo-500/30 text-indigo-400 py-6 rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] transition-all flex flex-col items-center gap-3"
+              className="w-full bg-[var(--accent)]/10 hover:bg-[var(--accent)]/20 border border-[var(--accent)]/30 text-[var(--accent-secondary)] py-6 rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] transition-all flex flex-col items-center gap-3"
             >
               <Maximize2 className="w-5 h-5" />
               Open Full-Screen Editor
@@ -253,7 +253,7 @@ const Inspector: React.FC = () => {
           {thought.type === 'paint' && (
             <button 
               onClick={() => setActiveFocus(thought.id, 'paint')}
-              className="w-full bg-indigo-500/10 hover:bg-indigo-500/20 border border-indigo-500/30 text-indigo-400 py-6 rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] transition-all flex flex-col items-center gap-3"
+              className="w-full bg-[var(--accent)]/10 hover:bg-[var(--accent)]/20 border border-[var(--accent)]/30 text-[var(--accent-secondary)] py-6 rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] transition-all flex flex-col items-center gap-3"
             >
               <Maximize2 className="w-5 h-5" />
               Open Full-Screen Editor
@@ -283,7 +283,7 @@ const Inspector: React.FC = () => {
                 <input 
                   type="text" 
                   placeholder="Or paste image URL..." 
-                  className="flex-1 bg-black/40 border border-white/10 rounded-xl p-2 text-xs outline-none focus:border-indigo-500 text-white"
+                  className="flex-1 bg-black/40 border border-white/10 rounded-xl p-2 text-xs outline-none focus:border-[var(--accent)] text-white"
                   onKeyDown={(e) => {
                     if (e.key === 'Enter') {
                       updateThought(thought.id, { image: e.currentTarget.value });

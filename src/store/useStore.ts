@@ -11,9 +11,13 @@ interface CyberiaState {
   focusType: 'text' | 'table' | 'paint' | 'tasks' | null;
   calendarViewDate: Date;
   linkingSourceId: number | null;
+  theme: 'cyberia' | 'rose' | 'neon';
   
   // Initialization
   init: () => Promise<void>;
+  
+  // Theme Actions
+  setTheme: (theme: 'cyberia' | 'rose' | 'neon') => void;
   
   // Space Actions
   setActiveSpace: (id: string) => void;
@@ -60,11 +64,22 @@ export const useStore = create<CyberiaState>((set, get) => ({
   isLightboxOpen: false,
   lightboxImage: null,
   linkingSourceId: null,
+  theme: (localStorage.getItem('cyberia-theme') as any) || 'cyberia',
 
   openLightbox: (image) => set({ isLightboxOpen: true, lightboxImage: image }),
   closeLightbox: () => set({ isLightboxOpen: false, lightboxImage: null }),
 
+  setTheme: (theme) => {
+    set({ theme });
+    localStorage.setItem('cyberia-theme', theme);
+    document.body.setAttribute('data-theme', theme);
+  },
+
   init: async () => {
+    // Apply theme on init
+    const savedTheme = localStorage.getItem('cyberia-theme') || 'cyberia';
+    document.body.setAttribute('data-theme', savedTheme);
+
     await get().refreshSpaces();
     const { spaces } = get();
     
