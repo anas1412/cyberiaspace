@@ -244,7 +244,9 @@ export const usePhysics = (
         const cardTop = nodeScreenY - nodeHeightOnScreen / 2;
         const cardBottom = nodeScreenY + nodeHeightOnScreen / 2;
 
-        if (mode === 'calendar' && t && !t.date && sbRect) {
+        const isDraggingThis = dragRef.current?.id === id;
+
+        if (mode === 'calendar' && t && !t.date && sbRect && !isDraggingThis) {
             const buffer = 40; 
             const topOverlap = cardBottom - sbRect.top;
             const bottomOverlap = sbRect.bottom - cardTop;
