@@ -6,6 +6,9 @@ interface Space {
   mode: 'spatial' | 'kanban' | 'calendar';
   physics: boolean;
   order: number;
+  transformX?: number;
+  transformY?: number;
+  transformScale?: number;
 }
 
 interface Thought {

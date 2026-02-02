@@ -1,6 +1,6 @@
 import { useEffect, useRef, useCallback } from 'react';
 import { useStore } from '../store/useStore';
-import { type Thought } from '../db';
+import { db, type Thought } from '../db';
 
 const DAMPING = 0.88;
 const REPULSION = 100000;
@@ -31,6 +31,7 @@ export const usePhysics = (
   const sbHeight = useRef(0);
   const kMaxHeight = useRef(0);
   const requestRef = useRef<number>(null);
+  const prevModeRef = useRef<string | null>(null);
   
   const thoughtMap = useRef<Map<number, Thought>>(new Map());
   const dragRef = useRef<{ 
@@ -69,6 +70,40 @@ export const usePhysics = (
   }, [thoughts]);
 
   useEffect(() => {
+    const currentMode = activeSpace?.mode || 'spatial';
+    const currentSpaceId = activeSpaceId;
+
+    if (currentMode === 'spatial' && prevModeRef.current !== 'spatial') {
+      // Sync from DB to ensure we have the absolute latest positions (especially after leaving another mode)
+      db.thoughts.where('spaceId').equals(currentSpaceId!).toArray().then(latestThoughts => {
+        latestThoughts.forEach((t) => {
+          const p = physicsState.current.get(t.id);
+          if (p) {
+            p.x = t.x;
+            p.y = t.y;
+            p.vx = 0;
+            p.vy = 0;
+          }
+        });
+      });
+    }
+    
+    prevModeRef.current = currentMode;
+
+    return () => {
+      // Save all positions when leaving spatial mode
+      if (currentMode === 'spatial' && currentSpaceId) {
+        thoughts.forEach((t) => {
+          const p = physicsState.current.get(t.id);
+          if (p) {
+            db.thoughts.update(t.id, { x: p.x, y: p.y });
+          }
+        });
+      }
+    };
+  }, [activeSpace?.mode, activeSpaceId, thoughts]);
+
+  useEffect(() => {
     const handleMouseMove = (e: MouseEvent) => {
       if (!dragRef.current) return;
       dragRef.current.lastMouseX = e.clientX;
@@ -103,14 +138,14 @@ export const usePhysics = (
              sorted.forEach((t, index) => {
                  const mapEntry = thoughtMap.current.get(t.id);
                  if (mapEntry) { if (t.id === id) mapEntry.status = status; mapEntry.order = index; }
-                 if (t.id === id) updateThought(t.id, { status, order: index, x: p?.x, y: p?.y });
+                 if (t.id === id) updateThought(t.id, { status, order: index });
                  else if (t.order !== index) updateThought(t.id, { order: index });
              });
           } else if (mode === 'calendar') {
              const sidebarWidth = 260; const gap = 20; const padding = 40; const topPadding = 190; const mainLeft = padding + sidebarWidth + gap;
              if (lastMouseX < mainLeft) {
                  const mapEntry = thoughtMap.current.get(id); if (mapEntry) mapEntry.date = '';
-                 updateThought(id, { date: '', x: p?.x, y: p?.y });
+                 updateThought(id, { date: '' });
              } else {
                  const mainWidth = window.innerWidth - mainLeft - padding;
                  const cellWidth = mainWidth / 7; const cellHeight = (window.innerHeight - topPadding - padding) / 5;
@@ -125,12 +160,14 @@ export const usePhysics = (
                          if (newDate.getMonth() === month) {
                              const dateStr = newDate.toLocaleDateString('en-CA');
                              const mapEntry = thoughtMap.current.get(id); if (mapEntry) mapEntry.date = dateStr;
-                             updateThought(id, { date: dateStr, x: p?.x, y: p?.y });
+                             updateThought(id, { date: dateStr });
                          }
                      }
                  }
              }
-          } else if (p) updateThought(id, { x: p.x, y: p.y });
+          } else if (p) {
+              updateThought(id, { x: p.x, y: p.y });
+          }
         }
         dragRef.current = null;
       }

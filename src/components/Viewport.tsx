@@ -15,6 +15,7 @@ const Viewport: React.FC = () => {
   const activeSpace = spaces.find((s) => s.id === activeSpaceId);
   const setInspectorOpen = useStore((state) => state.setInspectorOpen);
   const setSelectedThoughtId = useStore((state) => state.setSelectedThoughtId);
+  const saveSpaceTransform = useStore((state) => state.saveSpaceTransform);
   
   const [transform, setTransform] = useState({ x: 0, y: 0, scale: 1 });
   const [isGrabbing, setIsGrabbing] = useState(false);
@@ -22,13 +23,43 @@ const Viewport: React.FC = () => {
   const lastMousePos = useRef({ x: 0, y: 0 });
   const isPanningRef = useRef(false);
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const saveTimeoutRef = useRef<number | null>(null);
 
   const { registerElement, handleMouseDown, isDragging, kanbanHeight } = usePhysics(canvasRef, transform);
 
+  // Load transform when space changes
   useEffect(() => {
-    // Reset transform when switching views or spaces
-    setTransform({ x: 0, y: 0, scale: 1 });
-  }, [activeSpace?.mode, activeSpaceId]);
+    if (activeSpace) {
+      if (activeSpace.mode === 'spatial') {
+        setTransform({
+          x: activeSpace.transformX ?? 0,
+          y: activeSpace.transformY ?? 0,
+          scale: activeSpace.transformScale ?? 1
+        });
+      } else {
+        // Reset for non-spatial modes to ensure consistency
+        setTransform({ x: 0, y: 0, scale: 1 });
+      }
+    }
+  }, [activeSpaceId, activeSpace?.mode]);
+
+  // Save transform when it changes (Debounced)
+  useEffect(() => {
+    if (activeSpace?.mode === 'spatial' && activeSpaceId) {
+      if (saveTimeoutRef.current) window.clearTimeout(saveTimeoutRef.current);
+      saveTimeoutRef.current = window.setTimeout(() => {
+        saveSpaceTransform(activeSpaceId, transform);
+      }, 1000);
+    }
+    return () => { 
+      if (saveTimeoutRef.current) {
+        window.clearTimeout(saveTimeoutRef.current);
+        if (activeSpace?.mode === 'spatial' && activeSpaceId) {
+          saveSpaceTransform(activeSpaceId, transform);
+        }
+      }
+    };
+  }, [transform, activeSpaceId, activeSpace?.mode, saveSpaceTransform]);
 
   useEffect(() => {
     const handleMouseDownLocal = (e: MouseEvent) => {

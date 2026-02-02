@@ -21,6 +21,7 @@ interface ThoughtistState {
   updateSpace: (id: string, updates: Partial<Space>) => Promise<void>;
   deleteSpace: (id: string) => Promise<void>;
   reorderSpaces: (spaces: Space[]) => Promise<void>;
+  saveSpaceTransform: (id: string, transform: { x: number; y: number; scale: number }) => Promise<void>;
   
   // Thought Actions
   addThought: (thought: Partial<Thought>) => Promise<number>;
@@ -134,6 +135,17 @@ export const useStore = create<ThoughtistState>((set, get) => ({
   reorderSpaces: async (newSpaces) => {
     const updates = newSpaces.map((s, i) => db.spaces.update(s.id, { order: i }));
     await Promise.all(updates);
+    await get().refreshSpaces();
+  },
+
+  saveSpaceTransform: async (id, transform) => {
+    await db.spaces.update(id, {
+      transformX: transform.x,
+      transformY: transform.y,
+      transformScale: transform.scale
+    });
+    // Update local state silently to avoid full refresh if possible, 
+    // but refreshSpaces is safer for consistency.
     await get().refreshSpaces();
   },
 
