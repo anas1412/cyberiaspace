@@ -17,7 +17,14 @@ export const useModalStore = create<ModalState>((set) => ({
   isOpen: false,
   title: '',
   type: 'alert',
-  openModal: (params) => set({ ...params, isOpen: true }),
+  openModal: (params) => set({ 
+    description: undefined, 
+    inputValue: undefined, 
+    confirmText: undefined,
+    onConfirm: undefined,
+    ...params, 
+    isOpen: true 
+  }),
   closeModal: () => set({ isOpen: false }),
 }));
 

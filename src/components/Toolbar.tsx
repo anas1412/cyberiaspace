@@ -159,9 +159,9 @@ const Toolbar: React.FC = () => {
       return;
     }
     openModal({
-      title: 'New Space',
+      title: 'Create New Space',
       type: 'new_space',
-      confirmText: 'Create',
+      confirmText: 'Create Space',
       onConfirm: (name) => {
         addSpace(name && (name as string).trim() ? (name as string).substring(0, 15) : 'New Space');
       }
@@ -180,7 +180,7 @@ const Toolbar: React.FC = () => {
       return;
     }
     openModal({
-      title: 'Delete Space',
+      title: `Delete "${activeSpace.name}"?`,
       description: 'Are you sure? This will delete all thoughts in this space.',
       type: 'delete_space',
       confirmText: 'Delete',
