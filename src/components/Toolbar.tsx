@@ -245,39 +245,47 @@ const Toolbar: React.FC = () => {
         </div>
 
         {/* CENTER: Space Switcher (Dynamically Centered) */}
-        <div className="absolute left-1/2 -translate-x-1/2 flex items-center gap-2 p-2 bg-[#020617]/40 backdrop-blur-2xl rounded-[20px] border border-white/5 overflow-x-auto no-scrollbar max-w-[40%] pointer-events-auto shadow-2xl transition-all">
-          {spaces.map((space) => (
-            <button
-              key={space.id}
-              onClick={() => setActiveSpace(space.id)}
-              className={cn(
-                "px-5 py-2.5 rounded-2xl text-[10px] uppercase font-black tracking-widest flex-shrink-0 transition-all duration-300",
-                space.id === activeSpaceId 
-                  ? "bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 shadow-[0_0_20px_rgba(99,102,241,0.1)]" 
-                  : "text-slate-500 hover:text-slate-300 hover:bg-white/[0.03] border border-transparent"
-              )}
+        <div className="absolute left-1/2 -translate-x-1/2 flex items-center h-[48px] px-2 bg-[#020617]/60 backdrop-blur-3xl rounded-full border border-white/10 shadow-2xl transition-all">
+          <div className="flex items-center gap-1 h-full">
+            {spaces.map((space) => {
+              const isActive = space.id === activeSpaceId;
+              return (
+                <button
+                  key={space.id}
+                  onClick={() => setActiveSpace(space.id)}
+                  className={cn(
+                    "px-5 h-9 rounded-full text-[10px] uppercase font-black tracking-widest flex-shrink-0 transition-all duration-500 flex items-center justify-center gap-2",
+                    isActive 
+                      ? "bg-indigo-500/10 text-white border border-indigo-500/20 shadow-[0_0_20px_rgba(99,102,241,0.15)]" 
+                      : "text-slate-500 hover:text-slate-300 hover:bg-white/[0.03] border border-transparent"
+                  )}
+                >
+                  {isActive && <div className="w-1 h-1 rounded-full bg-indigo-400 shadow-[0_0_8px_rgba(99,102,241,1)]" />}
+                  {space.name}
+                </button>
+              );
+            })}
+            <div className="w-[1px] h-3 bg-white/10 mx-2"></div>
+            <button 
+              onClick={handleCreateSpace}
+              className="w-9 h-9 rounded-full text-slate-600 hover:text-white hover:bg-white/10 transition-all flex-shrink-0 flex items-center justify-center border border-white/10 border-dashed"
             >
-              {space.name}
+              <Plus className="w-3.5 h-3.5" />
             </button>
-          ))}
-          <button 
-            onClick={handleCreateSpace}
-            className="w-10 h-10 rounded-xl text-[10px] uppercase font-black text-slate-600 hover:text-indigo-400 hover:bg-indigo-500/10 transition-all flex-shrink-0 flex items-center justify-center border border-white/5 border-dashed"
-          >
-            <Plus className="w-4 h-4" />
-          </button>
+          </div>
         </div>
 
         {/* RIGHT SIDE: View Mode */}
         <div className="flex gap-2 pointer-events-auto">
           <button 
             onClick={handleToggleView}
-            className="glass py-3 px-5 rounded-2xl flex items-center gap-3 hover:bg-white/5 transition-all text-white border border-white/5"
+            className="px-5 h-[48px] glass rounded-2xl flex items-center gap-4 hover:bg-white/5 transition-all text-white border border-white/5"
           >
-            <Layout className="w-4 h-4 text-purple-400" />
-            <span className="text-xs font-bold uppercase tracking-wider">
+            <div className="w-1.5 h-1.5 rounded-full bg-purple-500 shadow-[0_0_10px_rgba(168,85,247,0.5)]" />
+            <span className="text-[10px] font-black uppercase tracking-widest">
               {activeSpace?.mode === 'spatial' ? 'Kanban' : activeSpace?.mode === 'kanban' ? 'Calendar' : 'Spatial'}
             </span>
+            <Layout className="w-3.5 h-3.5 text-slate-400" />
           </button>
         </div>
       </div>
@@ -286,11 +294,11 @@ const Toolbar: React.FC = () => {
       <div className="fixed bottom-10 left-1/2 -translate-x-1/2 z-[10000] pointer-events-none flex flex-col items-center gap-4">
         <button 
           onClick={handleAddThought}
-          className="pointer-events-auto group relative flex items-center justify-center w-20 h-20 bg-[#020617]/40 backdrop-blur-2xl text-white rounded-full border border-white/10 shadow-[0_0_50px_rgba(99,102,241,0.1)] transition-all hover:scale-110 active:scale-95 hover:border-indigo-500/40"
+          className="pointer-events-auto group relative flex items-center justify-center w-16 h-16 bg-[#020617]/40 backdrop-blur-2xl text-white rounded-full border border-white/10 shadow-[0_0_50px_rgba(99,102,241,0.1)] transition-all hover:scale-110 active:scale-95 hover:border-indigo-500/40"
         >
           {/* Subtle aura effect */}
           <div className="absolute inset-0 rounded-full bg-indigo-500/5 opacity-0 group-hover:opacity-100 transition-opacity blur-xl" />
-          <Plus className="w-10 h-10 text-slate-400 group-hover:text-white transition-all group-hover:rotate-90 relative z-10" />
+          <Plus className="w-8 h-8 text-slate-400 group-hover:text-white transition-all group-hover:rotate-90 relative z-10" />
           
           <div className="absolute -top-12 opacity-0 group-hover:opacity-100 transition-opacity bg-[#0f172a]/80 backdrop-blur-xl border border-white/10 text-indigo-400 text-[9px] font-black uppercase tracking-[0.2em] px-4 py-2 rounded-xl pointer-events-none whitespace-nowrap shadow-2xl">
             New Thought <span className="text-white/20 ml-2 font-mono">SPACE</span>
@@ -320,7 +328,7 @@ const Toolbar: React.FC = () => {
           <button 
             onClick={() => setIsShortcutsOpen(!isShortcutsOpen)}
             className={cn(
-              "glass p-4 rounded-2xl transition-all border border-white/5",
+              "glass w-12 h-12 flex items-center justify-center rounded-2xl transition-all border border-white/5",
               isShortcutsOpen ? "bg-indigo-500 text-white" : "text-slate-400 hover:text-white"
             )}
           >
@@ -329,7 +337,7 @@ const Toolbar: React.FC = () => {
           <button 
             onClick={() => setIsSystemMenuOpen(!isSystemMenuOpen)}
             className={cn(
-              "glass p-4 rounded-2xl transition-all border border-white/5",
+              "glass w-12 h-12 flex items-center justify-center rounded-2xl transition-all border border-white/5",
               isSystemMenuOpen ? "bg-indigo-500 text-white" : "text-slate-400 hover:text-white"
             )}
           >
@@ -340,12 +348,12 @@ const Toolbar: React.FC = () => {
 
       {/* STATUS BAR (Bottom Left) */}
       <div className="ui-layer bottom-8 left-8 flex items-center gap-4 pointer-events-auto">
-        <div className="glass px-6 py-4 rounded-2xl flex items-center gap-6 border border-white/5">
+        <div className="glass px-5 h-[48px] rounded-2xl flex items-center gap-6 border border-white/5">
           <div className="flex items-center gap-3">
-            <span className="w-2 h-2 rounded-full bg-green-500 shadow-[0_0_10px_#22c55e]"></span> 
-            <span className="text-[10px] uppercase font-black tracking-widest text-white"><span>{thoughts.length}</span>/{LIMITS.MAX_THOUGHTS_PER_SPACE} Thoughts</span>
+            <span className="w-1.5 h-1.5 rounded-full bg-green-500 shadow-[0_0_10px_#22c55e]"></span> 
+            <span className="text-[10px] uppercase font-black tracking-widest text-white/80"><span>{thoughts.length}</span>/{LIMITS.MAX_THOUGHTS_PER_SPACE} Thoughts</span>
           </div>
-          <div className="h-4 w-[1px] bg-white/10"></div>
+          <div className="h-3 w-[1px] bg-white/10"></div>
           <button 
             onClick={handleTogglePhysics}
             className={cn(
@@ -353,8 +361,8 @@ const Toolbar: React.FC = () => {
               activeSpace?.physics ? "text-indigo-400" : "text-slate-600"
             )}
           >
-            <Zap className="w-3.5 h-3.5" /> 
-            <span>Physics {activeSpace?.physics ? 'On' : 'Off'}</span>
+            <Zap className="w-3 h-3" /> 
+            <span>Physics</span>
           </button>
         </div>
       </div>
