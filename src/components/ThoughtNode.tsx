@@ -208,6 +208,7 @@ const ThoughtNode: React.FC<ThoughtNodeProps> = React.memo(({ thought, registerE
   return (
     <div
       ref={elRef}
+      data-unscheduled={!thought.date ? "true" : "false"}
       className={cn(
         "thought-bulb absolute select-none touch-none will-change-transform w-[280px] pointer-events-auto",
         isDragging ? "z-[1000] cursor-grabbing" : "z-20 cursor-grab"

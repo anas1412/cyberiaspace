@@ -26,7 +26,7 @@ const CalendarOverlay: React.FC = () => {
   const y = calDate.getFullYear();
   const m = calDate.getMonth();
   const monthTitle = new Date(y, m).toLocaleString('default', { month: 'long', year: 'numeric' });
-  const firstDay = new Date(y, m, 1).getDay() || 7; // 1=Mon, 7=Sun
+  const firstDay = new Date(y, m, 1).getDay() || 7;
   const daysInMonth = new Date(y, m + 1, 0).getDate();
   const todayStr = new Date().toLocaleDateString('en-CA');
 
@@ -43,7 +43,7 @@ const CalendarOverlay: React.FC = () => {
       <div 
         key={d} 
         className={cn(
-          "cal-cell border-r border-b border-white/[0.05] relative transition-colors hover:bg-white/[0.02] min-h-[100px]",
+          "cal-cell border-r border-b border-white/[0.05] relative transition-colors min-h-[100px]",
           isToday && "bg-indigo-500/[0.05]"
         )}
         data-date={dateStr}
@@ -59,9 +59,10 @@ const CalendarOverlay: React.FC = () => {
   }
 
   return (
-    <div className="calendar-overlay fixed inset-0 flex pointer-events-none z-[5] p-10 pt-[100px] gap-5 opacity-100 transition-opacity duration-400">
-      <div className="cal-sidebar w-[260px] glass rounded-3xl flex flex-col overflow-hidden pointer-events-auto">
-        <div className="cal-sidebar-header p-5 border-b border-white/[0.05] text-[10px] font-900 tracking-[0.2em] uppercase text-indigo-400">
+    <div className="calendar-overlay fixed inset-0 flex pointer-events-none p-10 pt-[100px] gap-5 opacity-100 transition-opacity duration-400 z-0">
+      {/* Sidebar - z-[30] to stay above cards (z-20) */}
+      <div className="cal-sidebar w-[260px] glass rounded-3xl flex flex-col overflow-hidden pointer-events-auto z-[30] relative border border-white/10 shadow-2xl">
+        <div className="cal-sidebar-header p-5 border-b border-white/[0.05] text-[10px] font-900 tracking-[0.2em] uppercase text-indigo-400 bg-[#020408] z-[40] sticky top-0 shadow-lg">
           Unscheduled
         </div>
         <div id="cal-sidebar-content" className="cal-sidebar-content flex-1 overflow-y-auto overflow-x-hidden relative p-5 custom-scroll">
@@ -69,13 +70,14 @@ const CalendarOverlay: React.FC = () => {
         </div>
       </div>
       
-      <div className="cal-main flex-1 flex flex-col glass rounded-3xl overflow-hidden pointer-events-auto">
-        <div className="cal-header h-[60px] flex items-center justify-between px-[30px] border-b border-white/[0.05]">
-          <button onClick={() => changeMonth(-1)} className="p-2 hover:bg-white/5 rounded-lg text-slate-400">
+      {/* Main Grid - z-[5] to stay below cards (z-20) */}
+      <div className="cal-main flex-1 flex flex-col glass rounded-3xl overflow-hidden pointer-events-auto z-[5] relative border border-white/10 shadow-xl">
+        <div className="cal-header h-[60px] flex items-center justify-between px-[30px] border-b border-white/[0.05] bg-black/20">
+          <button onClick={() => changeMonth(-1)} className="p-2 hover:bg-white/5 rounded-lg text-slate-400 transition-colors">
             <ChevronLeft className="w-4 h-4" />
           </button>
           <span className="cal-title text-base font-bold text-white">{monthTitle}</span>
-          <button onClick={() => changeMonth(1)} className="p-2 hover:bg-white/5 rounded-lg text-slate-400">
+          <button onClick={() => changeMonth(1)} className="p-2 hover:bg-white/5 rounded-lg text-slate-400 transition-colors">
             <ChevronRight className="w-4 h-4" />
           </button>
         </div>

@@ -74,7 +74,19 @@ const Viewport: React.FC = () => {
     };
 
     const handleWheel = (e: WheelEvent) => {
-      if ((e.target as HTMLElement).closest('#inspector, #text-focus-overlay, #table-focus-overlay, #cal-sidebar-content, .cal-grid')) return;
+      const target = e.target as HTMLElement;
+      if (target.closest('#inspector, #text-focus-overlay, #table-focus-overlay')) return;
+
+      const isUnscheduledNode = target.closest('[data-unscheduled="true"]');
+      const isSidebar = target.closest('#cal-sidebar-content');
+
+      if (activeSpace?.mode === 'calendar' && (isUnscheduledNode || isSidebar)) {
+        const sbContent = document.getElementById('cal-sidebar-content');
+        if (sbContent) {
+          sbContent.scrollTop += e.deltaY;
+          return; // Don't allow transform zoom/pan
+        }
+      }
 
       if (activeSpace?.mode === 'kanban') {
         setTransform((prev) => {
@@ -120,7 +132,7 @@ const Viewport: React.FC = () => {
     <div 
       id="viewport" 
       className={cn(
-        "fixed inset-0 z-10 overflow-hidden",
+        "fixed inset-0 z-[20] overflow-hidden",
         isGrabbing ? "pointer-events-auto cursor-grabbing" : "pointer-events-none"
       )}
     >
