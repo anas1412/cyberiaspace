@@ -13,6 +13,7 @@ import Lightbox from './components/Lightbox';
 import TextFocusEditor from './components/TextFocusEditor';
 import TableFocusEditor from './components/TableFocusEditor';
 import PaintFocusEditor from './components/PaintFocusEditor';
+import { Analytics } from '@vercel/analytics/next';
 
 function App() {
   const init = useStore((state) => state.init);
@@ -99,7 +100,7 @@ function App() {
       <TextFocusEditor />
       <TableFocusEditor />
       <PaintFocusEditor />
-      
+      <Analytics />
       {/* Modals and Lightbox would go here */}
     </div>
   );
