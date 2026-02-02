@@ -72,13 +72,51 @@ export const useStore = create<ThoughtistState>((set, get) => ({
       const defaultSpaceId = 's' + Date.now();
       await db.spaces.add({
         id: defaultSpaceId,
-        name: 'General Space',
+        name: 'My First Space',
         mode: 'spatial',
         physics: true,
         order: 0
       });
       await get().refreshSpaces();
       set({ activeSpaceId: defaultSpaceId });
+      
+      // Seed Onboarding Thoughts
+      const centerX = window.innerWidth / 2;
+      const centerY = window.innerHeight / 2;
+      const stackTag = `stack-${Math.random().toString(36).substr(2, 6)}`;
+
+      await get().addThought({
+        text: 'Welcome to Thoughtist',
+        content: 'This is a **spatial workspace**. Ideas are physical objects here. \n\nPress **[Space]** to create a new thought anywhere.',
+        x: centerX,
+        y: centerY - 150,
+        tags: [stackTag],
+        priority: 'high'
+      });
+
+      await get().addThought({
+        text: 'Kinetic Stacking',
+        type: 'tasks',
+        tasks: [
+          { text: 'Drag thoughts to move them', done: true },
+          { text: 'Connect them with the Link button', done: false },
+          { text: 'Watch them form a cluster', done: false }
+        ],
+        x: centerX + 250,
+        y: centerY,
+        tags: [stackTag],
+        priority: 'medium'
+      });
+
+      await get().addThought({
+        text: 'Morphing Views',
+        content: 'Use the **View Toggle** in the top right to switch between **Spatial**, **Kanban**, and **Calendar** modes. \n\nYour ideas adapt to the structure you need.',
+        x: centerX - 250,
+        y: centerY,
+        tags: [stackTag],
+        priority: 'none'
+      });
+
     } else {
       set({ activeSpaceId: spaces[0].id });
     }

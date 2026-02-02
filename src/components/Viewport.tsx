@@ -221,6 +221,18 @@ const Viewport: React.FC = () => {
         isGrabbing ? "pointer-events-auto cursor-grabbing" : "pointer-events-none"
       )}
     >
+      {/* Moving Background Grid */}
+      <div 
+        className="absolute inset-0 dot-grid pointer-events-none opacity-50"
+        style={{ 
+          transform: `translate(${transform.x}px, ${transform.y}px) scale(${transform.scale})`,
+          width: '5000px',
+          height: '5000px',
+          left: '-2500px',
+          top: '-2500px',
+          transformOrigin: 'center center'
+        }}
+      />
       <World 
         transform={transform} 
         canvasRef={canvasRef}
