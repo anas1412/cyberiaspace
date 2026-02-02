@@ -1,73 +1,21 @@
-# React + TypeScript + Vite
+# Thoughtist
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Thoughtist is a spatial productivity tool designed for kinetic information architecture. It treats thoughts as physical objects in an infinite, cosmic workspace, allowing you to organize your mind through physical interaction and visual clusters.
 
-Currently, two official plugins are available:
+### 🌌 Tech Stack
+- **Core:** React 19 + Vite + TypeScript
+- **State Management:** Zustand
+- **Database:** Dexie.js (Local IndexedDB)
+- **Styling:** Tailwind CSS (Advanced Glassmorphism)
+- **Motion & Physics:** Framer Motion
+- **Icons:** Lucide React
+- **Utilities:** html-to-image, Marked (Markdown parsing)
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
-
-## React Compiler
-
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
-
-## Expanding the ESLint configuration
-
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
-
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
-
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-```
-
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
-
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
-
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-```
+### ✨ Key Features
+- **Kinetic Workspace:** Physics-driven spatial environment where thoughts have weight, repulsion, and attraction.
+- **Dynamic Threads:** Intuitive gesture-based linking that automatically organizes thoughts into stable, physical stacks.
+- **Triple-View Morphing:** Seamlessly transition between **Spatial** (Freeform), **Kanban** (Status-based), and **Calendar** (Date-based) perspectives.
+- **Specialized Focus Editors:** Dedicated full-screen environments for Markdown notes, interactive Task managers, and data Tables.
+- **Onboarding Experience:** Welcome clusters and animated "chalk path" guides for new users.
+- **Power-User Shortcuts:** Global keyboard controls (`Space` to spawn, `Delete` to remove, `Enter` to confirm) for rapid-fire ideation.
+- **Data Sovereignty:** Fully local-first storage with built-in JSON Backup/Restore and high-resolution spatial Screenshots.
