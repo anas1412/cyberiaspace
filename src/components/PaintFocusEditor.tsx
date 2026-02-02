@@ -1,6 +1,6 @@
-import React, { useRef, useState, useEffect, useCallback } from 'react';
+import React, { useRef, useState, useEffect } from 'react';
 import { useStore } from '../store/useStore';
-import { X, Trash2, Palette, MousePointer2, Eraser, Maximize2 } from 'lucide-react';
+import { X, Trash2, Palette, MousePointer2, Eraser } from 'lucide-react';
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 import { motion, AnimatePresence } from 'framer-motion';
