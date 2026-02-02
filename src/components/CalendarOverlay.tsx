@@ -1,0 +1,96 @@
+import React from 'react';
+import { useStore } from '../store/useStore';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { clsx, type ClassValue } from 'clsx';
+import { twMerge } from 'tailwind-merge';
+
+function cn(...inputs: ClassValue[]) {
+  return twMerge(clsx(inputs));
+}
+
+const CalendarOverlay: React.FC = () => {
+  const activeSpaceId = useStore((state) => state.activeSpaceId);
+  const spaces = useStore((state) => state.spaces);
+  const activeSpace = spaces.find((s) => s.id === activeSpaceId);
+  const calDate = useStore((state) => state.calendarViewDate);
+  const setCalDate = useStore((state) => state.setCalendarViewDate);
+
+  if (activeSpace?.mode !== 'calendar') return null;
+
+  const changeMonth = (dir: number) => {
+    const newDate = new Date(calDate);
+    newDate.setMonth(newDate.getMonth() + dir);
+    setCalDate(newDate);
+  };
+
+  const y = calDate.getFullYear();
+  const m = calDate.getMonth();
+  const monthTitle = new Date(y, m).toLocaleString('default', { month: 'long', year: 'numeric' });
+  const firstDay = new Date(y, m, 1).getDay() || 7; // 1=Mon, 7=Sun
+  const daysInMonth = new Date(y, m + 1, 0).getDate();
+  const todayStr = new Date().toLocaleDateString('en-CA');
+
+  const days = [];
+  for (let i = 1; i < firstDay; i++) {
+    days.push(<div key={`pad-${i}`} className="cal-cell-empty" />);
+  }
+
+  for (let d = 1; d <= daysInMonth; d++) {
+    const dateObj = new Date(y, m, d);
+    const dateStr = dateObj.toLocaleDateString('en-CA');
+    const isToday = dateStr === todayStr;
+    days.push(
+      <div 
+        key={d} 
+        className={cn(
+          "cal-cell border-r border-b border-white/[0.05] relative transition-colors hover:bg-white/[0.02] min-h-[100px]",
+          isToday && "bg-indigo-500/[0.05]"
+        )}
+        data-date={dateStr}
+      >
+        <span className={cn(
+          "cal-date-num absolute top-2 right-2 text-[11px] font-600",
+          isToday ? "text-indigo-400" : "text-white/30"
+        )}>
+          {d}
+        </span>
+      </div>
+    );
+  }
+
+  return (
+    <div className="calendar-overlay fixed inset-0 flex pointer-events-none z-[5] p-10 pt-[100px] gap-5 opacity-100 transition-opacity duration-400">
+      <div className="cal-sidebar w-[260px] glass rounded-3xl flex flex-col overflow-hidden pointer-events-auto">
+        <div className="cal-sidebar-header p-5 border-b border-white/[0.05] text-[10px] font-900 tracking-[0.2em] uppercase text-indigo-400">
+          Unscheduled
+        </div>
+        <div id="cal-sidebar-content" className="cal-sidebar-content flex-1 overflow-y-auto overflow-x-hidden relative p-5 custom-scroll">
+          <div id="cal-sidebar-spacer" style={{ height: '0px' }} />
+        </div>
+      </div>
+      
+      <div className="cal-main flex-1 flex flex-col glass rounded-3xl overflow-hidden pointer-events-auto">
+        <div className="cal-header h-[60px] flex items-center justify-between px-[30px] border-b border-white/[0.05]">
+          <button onClick={() => changeMonth(-1)} className="p-2 hover:bg-white/5 rounded-lg text-slate-400">
+            <ChevronLeft className="w-4 h-4" />
+          </button>
+          <span className="cal-title text-base font-bold text-white">{monthTitle}</span>
+          <button onClick={() => changeMonth(1)} className="p-2 hover:bg-white/5 rounded-lg text-slate-400">
+            <ChevronRight className="w-4 h-4" />
+          </button>
+        </div>
+        
+        <div className="cal-grid grid grid-cols-7 grid-rows-[30px_repeat(5,1fr)] h-full overflow-y-auto custom-scroll">
+          {['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map(day => (
+            <div key={day} className="cal-day-label flex items-center justify-center text-[9px] font-800 text-white/40 uppercase border-b border-white/[0.05]">
+              {day}
+            </div>
+          ))}
+          {days}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default CalendarOverlay;

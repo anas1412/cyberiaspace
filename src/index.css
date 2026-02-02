@@ -1,1 +1,99 @@
 @import "tailwindcss";
+
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap');
+
+:root {
+  --accent: #6366f1;
+  --bg: #020408;
+}
+
+body {
+  overflow: hidden;
+  background: var(--bg);
+  color: #e2e8f0;
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  width: 100vw;
+  height: 100vh;
+  background: radial-gradient(circle at 50% 50%, #0f172a 0%, #020408 100%);
+}
+
+#root {
+  width: 100%;
+  height: 100%;
+}
+
+.ui-layer {
+  z-index: 9999;
+  position: fixed;
+  pointer-events: auto;
+}
+
+.glass {
+  background: rgba(10, 10, 15, 0.85);
+  backdrop-filter: blur(24px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.custom-scroll::-webkit-scrollbar {
+  width: 4px;
+  height: 4px;
+}
+
+.custom-scroll::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 10px;
+}
+
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.markdown-body {
+  font-size: 11px;
+  line-height: 1.5;
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.markdown-body strong {
+  color: white;
+}
+
+.focus-markdown-body {
+  font-size: 16px;
+  line-height: 1.8;
+  color: rgba(255, 255, 255, 0.8);
+}
+
+.focus-markdown-body h1 {
+  font-size: 32px;
+  font-weight: 800;
+  color: white;
+  margin-bottom: 24px;
+}
+
+.focus-markdown-body h2 {
+  font-size: 24px;
+  font-weight: 700;
+  color: white;
+  margin-top: 32px;
+  margin-bottom: 16px;
+}
+
+.focus-markdown-body p {
+  margin-bottom: 16px;
+}
+
+.focus-markdown-body ul {
+  list-style: disc;
+  margin-left: 24px;
+  margin-bottom: 16px;
+}
+
+.focus-markdown-body strong {
+  color: white;
+}

@@ -46,3 +46,4 @@
 3. **Logic outside JSX:** Keep the physics and math in hooks or helper files.
 4. **Tailwind First:** Avoid custom `<style>` blocks in components; use Tailwind utility classes.
 5. **Same Design as Original:** ALways use the same design as the original original_project.html file included it should be 100% same design.
+6. **Responsiveness:** ALways design the app keeping in mind responsivness secondary for mobile, primary for web
