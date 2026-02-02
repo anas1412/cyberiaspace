@@ -25,13 +25,13 @@ const World: React.FC<WorldProps> = ({ transform }) => {
       <canvas
         ref={canvasRef}
         id="connection-canvas"
-        className="fixed inset-0 pointer-events-none z-[1]"
+        className="absolute inset-0 pointer-events-none z-0"
         width={size.w}
         height={size.h}
       />
       <div
         id="world"
-        className="absolute origin-top-left will-change-transform pointer-events-none w-full h-full"
+        className="absolute origin-top-left will-change-transform pointer-events-none w-full h-full z-10"
         style={{ transform: `translate(${transform.x}px, ${transform.y}px) scale(${transform.scale})` }}
       >
         {thoughts.map((thought) => (

@@ -30,6 +30,12 @@ interface ThoughtistState {
   setInspectorOpen: (open: boolean) => void;
   setActiveFocus: (id: number | null, type: 'text' | 'table' | null) => void;
   
+  // Lightbox
+  isLightboxOpen: boolean;
+  lightboxImage: string | null;
+  openLightbox: (image: string) => void;
+  closeLightbox: () => void;
+  
   // Refresh data
   refreshThoughts: () => Promise<void>;
   refreshSpaces: () => Promise<void>;
@@ -44,6 +50,11 @@ export const useStore = create<ThoughtistState>((set, get) => ({
   activeFocusId: null,
   focusType: null,
   calendarViewDate: new Date(),
+  isLightboxOpen: false,
+  lightboxImage: null,
+
+  openLightbox: (image) => set({ isLightboxOpen: true, lightboxImage: image }),
+  closeLightbox: () => set({ isLightboxOpen: false, lightboxImage: null }),
 
   init: async () => {
     await get().refreshSpaces();

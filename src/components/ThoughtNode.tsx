@@ -41,6 +41,7 @@ const ThoughtNode: React.FC<ThoughtNodeProps> = React.memo(({ thought, registerE
   const setSelectedThoughtId = useStore((state) => state.setSelectedThoughtId);
   const setInspectorOpen = useStore((state) => state.setInspectorOpen);
   const setActiveFocus = useStore((state) => state.setActiveFocus);
+  const openLightbox = useStore((state) => state.openLightbox);
   
   // Local state to track click vs drag for the selection logic
   const [startPos, setStartPos] = useState({ x: 0, y: 0 });
@@ -64,10 +65,19 @@ const ThoughtNode: React.FC<ThoughtNodeProps> = React.memo(({ thought, registerE
     const dist = Math.sqrt(Math.pow(e.clientX - startPos.x, 2) + Math.pow(e.clientY - startPos.y, 2));
     if (dist > 5) return;
 
-    if ((e.target as HTMLElement).closest('.checkbox, .expand-img')) return;
+    const target = e.target as HTMLElement;
+    if (target.closest('.checkbox')) return;
     
-    setSelectedThoughtId(thought.id);
-    setInspectorOpen(true);
+    if (thought.type === 'text' && target.closest('.markdown-body, .group\/text')) {
+        setActiveFocus(thought.id, 'text');
+    } else if (thought.type === 'table' && target.closest('.thought-table, .group\/table')) {
+        setActiveFocus(thought.id, 'table');
+    } else if (thought.type === 'image' && target.closest('img, .expand-img')) {
+        if (thought.image) openLightbox(thought.image);
+    } else {
+        setSelectedThoughtId(thought.id);
+        setInspectorOpen(true);
+    }
   };
 
   const renderContent = () => {
@@ -169,8 +179,16 @@ const ThoughtNode: React.FC<ThoughtNodeProps> = React.memo(({ thought, registerE
         if (!thought.image) return null;
         return (
           <div className="mt-2 relative group prevent-drag">
-            <img src={thought.image} className="w-full rounded-xl border border-white/10 max-h-[160px] object-cover bg-black/50" alt="Thought" />
-            <button className="expand-img absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-white">
+            <img 
+              src={thought.image} 
+              onClick={(e) => { e.stopPropagation(); if (thought.image) openLightbox(thought.image); }}
+              className="w-full rounded-xl border border-white/10 max-h-[160px] object-cover bg-black/50 cursor-zoom-in" 
+              alt="Thought" 
+            />
+            <button 
+              onClick={(e) => { e.stopPropagation(); if (thought.image) openLightbox(thought.image); }}
+              className="expand-img absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-white"
+            >
               <Maximize2 />
             </button>
           </div>
@@ -195,7 +213,7 @@ const ThoughtNode: React.FC<ThoughtNodeProps> = React.memo(({ thought, registerE
         {thought.priority !== 'none' && (
           <div 
             className="absolute top-4 left-4 w-1.5 h-1.5 rounded-full"
-            style={{ 
+            style={{
               backgroundColor: PRIO_COLORS[thought.priority],
               boxShadow: `0 0 10px ${PRIO_COLORS[thought.priority]}88`
             }}

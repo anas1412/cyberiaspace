@@ -1,6 +1,12 @@
 import React, { useRef, useState, useEffect } from 'react';
 import { useStore } from '../store/useStore';
+import { clsx, type ClassValue } from 'clsx';
+import { twMerge } from 'tailwind-merge';
 import World from './World';
+
+function cn(...inputs: ClassValue[]) {
+  return twMerge(clsx(inputs));
+}
 
 const Viewport: React.FC = () => {
   const activeSpaceId = useStore((state) => state.activeSpaceId);
@@ -9,8 +15,10 @@ const Viewport: React.FC = () => {
   const setInspectorOpen = useStore((state) => state.setInspectorOpen);
   
   const [transform, setTransform] = useState({ x: 0, y: 0, scale: 1 });
-  const isPanning = useRef(false);
+  const [isGrabbing, setIsGrabbing] = useState(false);
+  
   const lastMousePos = useRef({ x: 0, y: 0 });
+  const isPanningRef = useRef(false);
 
   useEffect(() => {
     // Reset transform when switching views or spaces
@@ -19,30 +27,43 @@ const Viewport: React.FC = () => {
 
   useEffect(() => {
     const handleMouseDown = (e: MouseEvent) => {
+      const isMiddleClick = e.button === 1;
+      const isAltLeftClick = e.button === 0 && e.altKey;
+
       if (
         activeSpace?.mode === 'spatial' &&
-        !(e.target as HTMLElement).closest('button, input, textarea, .thought-bulb, #inspector') &&
-        (e.button === 1 || (e.button === 0 && e.altKey))
+        !(e.target as HTMLElement).closest('button, input, textarea, .thought-bulb, #inspector, .ui-layer, .glass') &&
+        (isMiddleClick || isAltLeftClick)
       ) {
-        isPanning.current = true;
+        isPanningRef.current = true;
+        setIsGrabbing(true);
         lastMousePos.current = { x: e.clientX, y: e.clientY };
         e.preventDefault();
       }
     };
 
     const handleMouseMove = (e: MouseEvent) => {
-      if (isPanning.current) {
+      if (isPanningRef.current) {
+        const dx = e.clientX - lastMousePos.current.x;
+        const dy = e.clientY - lastMousePos.current.y;
+        
         setTransform((prev) => ({
           ...prev,
-          x: prev.x + (e.clientX - lastMousePos.current.x),
-          y: prev.y + (e.clientY - lastMousePos.current.y),
+          x: prev.x + dx,
+          y: prev.y + dy,
         }));
+        
         lastMousePos.current = { x: e.clientX, y: e.clientY };
       }
     };
 
     const handleMouseUp = () => {
-      isPanning.current = false;
+      isPanningRef.current = false;
+      setIsGrabbing(false);
+    };
+
+    const handleAuxClick = (e: MouseEvent) => {
+      if (e.button === 1) e.preventDefault(); // Stop auto-scroll
     };
 
     const handleClick = (e: MouseEvent) => {
@@ -62,7 +83,6 @@ const Viewport: React.FC = () => {
           return { ...prev, x: 0, y: newY, scale: 1 };
         });
       } else if (activeSpace?.mode === 'calendar') {
-        // Calendar sidebar scrolling is handled in its own component
         setTransform({ x: 0, y: 0, scale: 1 });
       } else {
         const delta = -e.deltaY;
@@ -82,6 +102,7 @@ const Viewport: React.FC = () => {
     window.addEventListener('mousedown', handleMouseDown);
     window.addEventListener('mousemove', handleMouseMove);
     window.addEventListener('mouseup', handleMouseUp);
+    window.addEventListener('auxclick', handleAuxClick);
     window.addEventListener('click', handleClick);
     window.addEventListener('wheel', handleWheel, { passive: false });
 
@@ -89,13 +110,20 @@ const Viewport: React.FC = () => {
       window.removeEventListener('mousedown', handleMouseDown);
       window.removeEventListener('mousemove', handleMouseMove);
       window.removeEventListener('mouseup', handleMouseUp);
+      window.removeEventListener('auxclick', handleAuxClick);
       window.removeEventListener('click', handleClick);
       window.removeEventListener('wheel', handleWheel);
     };
   }, [activeSpace, setInspectorOpen]);
 
   return (
-    <div id="viewport" className="fixed inset-0 z-10 overflow-hidden pointer-events-none">
+    <div 
+      id="viewport" 
+      className={cn(
+        "fixed inset-0 z-10 overflow-hidden pointer-events-auto",
+        isGrabbing && "cursor-grabbing"
+      )}
+    >
       <World transform={transform} />
     </div>
   );

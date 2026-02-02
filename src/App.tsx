@@ -1,5 +1,7 @@
 import { useEffect } from 'react';
 import { useStore } from './store/useStore';
+import { useModalStore } from './components/Modal';
+import { LIMITS } from './constants';
 import Viewport from './components/Viewport';
 import Toolbar from './components/Toolbar';
 import Inspector from './components/Inspector';
@@ -7,12 +9,17 @@ import EmptyState from './components/EmptyState';
 import KanbanOverlay from './components/KanbanOverlay';
 import CalendarOverlay from './components/CalendarOverlay';
 import Modal from './components/Modal';
+import Lightbox from './components/Lightbox';
+import TextFocusEditor from './components/TextFocusEditor';
+import TableFocusEditor from './components/TableFocusEditor';
 
 function App() {
   const init = useStore((state) => state.init);
+  const thoughts = useStore((state) => state.thoughts);
   const addThought = useStore((state) => state.addThought);
   const setSelectedThoughtId = useStore((state) => state.setSelectedThoughtId);
   const setInspectorOpen = useStore((state) => state.setInspectorOpen);
+  const { openModal } = useModalStore();
 
   useEffect(() => {
     init();
@@ -22,6 +29,16 @@ function App() {
     const handlePaste = async (e: ClipboardEvent) => {
       const target = e.target as HTMLElement;
       if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA') return;
+
+      if (thoughts.length >= LIMITS.MAX_THOUGHTS_PER_SPACE) {
+        openModal({
+          title: 'Limit Reached',
+          description: `You have reached the maximum of ${LIMITS.MAX_THOUGHTS_PER_SPACE} thoughts per space.`,
+          type: 'limit_thought',
+          confirmText: 'Okay'
+        });
+        return;
+      }
 
       const clipboardData = e.clipboardData;
       if (!clipboardData) return;
@@ -38,7 +55,7 @@ function App() {
               const id = await addThought({ 
                 type: 'image', 
                 image: event.target?.result as string, 
-                text: "Pasted Image" 
+                text: "Image" 
               });
               setSelectedThoughtId(id);
               setInspectorOpen(true);
@@ -66,7 +83,7 @@ function App() {
 
     window.addEventListener('paste', handlePaste);
     return () => window.removeEventListener('paste', handlePaste);
-  }, [addThought, setSelectedThoughtId, setInspectorOpen]);
+  }, [addThought, setSelectedThoughtId, setInspectorOpen, thoughts.length, openModal]);
 
   return (
     <div className="w-full h-full relative">
@@ -77,6 +94,9 @@ function App() {
       <Toolbar />
       <Inspector />
       <Modal />
+      <Lightbox />
+      <TextFocusEditor />
+      <TableFocusEditor />
       
       {/* Modals and Lightbox would go here */}
     </div>

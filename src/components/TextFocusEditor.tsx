@@ -36,14 +36,14 @@ const TextFocusEditor: React.FC = () => {
   return (
     <div 
       id="text-focus-overlay" 
-      className="fixed inset-0 z-[10001] bg-black/95 backdrop-blur-[40px] flex items-center justify-center p-10 opacity-100 transition-opacity duration-400"
+      className="fixed inset-0 z-[10001] bg-[#020408]/80 backdrop-blur-[40px] flex items-center justify-center p-10 animate-in fade-in duration-300"
       onClick={() => setActiveFocus(null, null)}
     >
       <div 
         className="focus-box glass rounded-[3rem] overflow-hidden border border-white/10 shadow-2xl w-full max-w-[1000px] h-full max-h-[85vh] flex flex-col transform scale-100 transition-transform duration-400"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="flex justify-between items-center p-8 border-b border-white/5">
+        <div className="flex justify-between items-center p-8 border-b border-white/5 bg-black/20">
           <div className="flex items-center gap-6">
             <div className="w-12 h-12 bg-indigo-500/10 rounded-2xl flex items-center justify-center text-indigo-400">
               <FileText className="w-6 h-6" />
