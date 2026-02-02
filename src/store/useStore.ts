@@ -33,6 +33,10 @@ interface ThoughtistState {
   setActiveFocus: (id: number | null, type: 'text' | 'table' | 'paint' | 'tasks' | null) => void;
   setLinkingSourceId: (id: number | null) => void;
   
+  // Data Lifecycle
+  exportData: () => Promise<void>;
+  importData: (file: File) => Promise<void>;
+  
   // Lightbox
   isLightboxOpen: boolean;
   lightboxImage: string | null;
@@ -210,6 +214,47 @@ export const useStore = create<ThoughtistState>((set, get) => ({
 
   setLinkingSourceId: (id) => {
     set({ linkingSourceId: id });
+  },
+
+  exportData: async () => {
+    const allSpaces = await db.spaces.toArray();
+    const allThoughts = await db.thoughts.toArray();
+    const data = {
+      spaces: allSpaces,
+      thoughts: allThoughts,
+      version: 1,
+      timestamp: Date.now()
+    };
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `thoughtist_backup_${new Date().toLocaleDateString('en-CA')}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+  },
+
+  importData: async (file) => {
+    const reader = new FileReader();
+    reader.onload = async (e) => {
+      try {
+        const data = JSON.parse(e.target?.result as string);
+        if (!data.spaces || !data.thoughts) throw new Error('Invalid backup file');
+        
+        await db.transaction('rw', db.spaces, db.thoughts, async () => {
+          await db.spaces.clear();
+          await db.thoughts.clear();
+          await db.spaces.bulkAdd(data.spaces);
+          await db.thoughts.bulkAdd(data.thoughts);
+        });
+        
+        window.location.reload();
+      } catch (err) {
+        console.error('Import failed:', err);
+        alert('Import failed. Please make sure the file is a valid Thoughtist backup.');
+      }
+    };
+    reader.readAsText(file);
   }
 }));
 

@@ -22,11 +22,24 @@ const Toolbar: React.FC = () => {
   const reorderSpaces = useStore((state) => state.reorderSpaces);
   const setSelectedThoughtId = useStore((state) => state.setSelectedThoughtId);
   const setInspectorOpen = useStore((state) => state.setInspectorOpen);
+  const exportData = useStore((state) => state.exportData);
+  const importData = useStore((state) => state.importData);
   
   const { openModal } = useModalStore();
   
   const activeSpace = spaces.find((s) => s.id === activeSpaceId);
   const [isSpaceMenuOpen, setIsSpaceMenuOpen] = useState(false);
+
+  const handleExport = () => {
+    exportData();
+  };
+
+  const handleImport = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      importData(file);
+    }
+  };
 
   const handleAddThought = async () => {
     if (thoughts.length >= LIMITS.MAX_THOUGHTS_PER_SPACE) {
@@ -218,12 +231,20 @@ const Toolbar: React.FC = () => {
           <Zap className="w-3.5 h-3.5" /> 
           <span>Physics {activeSpace?.physics ? 'On' : 'Off'}</span>
         </button>
-        <button className="hover:text-white flex items-center gap-2 transition-colors">
+        <button 
+          onClick={handleExport}
+          className="hover:text-white flex items-center gap-2 transition-colors"
+        >
           <Download className="w-3.5 h-3.5" /> Export
         </button>
         <label className="flex items-center gap-2 cursor-pointer hover:text-white">
           <Upload className="w-3.5 h-3.5" /> Import 
-          <input type="file" className="hidden" accept=".json" />
+          <input 
+            type="file" 
+            className="hidden" 
+            accept=".json" 
+            onChange={handleImport}
+          />
         </label>
         <div className="h-4 w-[1px] bg-white/10"></div>
         <button 
