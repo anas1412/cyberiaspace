@@ -178,7 +178,9 @@ const Viewport: React.FC = () => {
 
       if (e.key === ' ') {
         e.preventDefault();
-        if (thoughts.length >= 40) { // Using 40 from LIMITS.MAX_THOUGHTS_PER_SPACE
+        if (e.repeat) return; // Stop rapid-fire creation when holding space
+
+        if (thoughts.length >= 40) {
           openModal({
             title: 'Limit Reached',
             description: 'You have reached the maximum of 40 thoughts per space.',
@@ -188,8 +190,10 @@ const Viewport: React.FC = () => {
           return;
         }
         addThought({}).then(id => {
-          setSelectedThoughtId(id);
-          setInspectorOpen(true);
+          if (id !== -1) {
+            setSelectedThoughtId(id);
+            setInspectorOpen(true);
+          }
         });
       }
     };

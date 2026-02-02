@@ -61,8 +61,10 @@ function App() {
                 image: event.target?.result as string, 
                 text: "Image" 
               });
-              setSelectedThoughtId(id);
-              setInspectorOpen(true);
+              if (id !== -1) {
+                setSelectedThoughtId(id);
+                setInspectorOpen(true);
+              }
             };
             reader.readAsDataURL(blob);
             e.preventDefault();
@@ -80,8 +82,10 @@ function App() {
           text: "Note", 
           content: text 
         });
-        setSelectedThoughtId(id);
-        setInspectorOpen(true);
+        if (id !== -1) {
+          setSelectedThoughtId(id);
+          setInspectorOpen(true);
+        }
       }
     };
 

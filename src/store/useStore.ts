@@ -198,31 +198,40 @@ export const useStore = create<ThoughtistState>((set, get) => ({
     const { activeSpaceId } = get();
     if (!activeSpaceId) throw new Error('No active space');
 
-    const thought: Thought = {
-      spaceId: activeSpaceId,
-      x: window.innerWidth / 2,
-      y: window.innerHeight / 2,
-      vx: 0,
-      vy: 0,
-      text: '',
-      description: '',
-      type: 'text',
-      content: '',
-      image: null,
-      drawing: null,
-      tags: [],
-      status: 'none',
-      tasks: [],
-      table: [['', ''], ['', '']],
-      date: '',
-      priority: 'none',
-      order: get().thoughts.length,
-      ...partialThought
-    } as Thought;
+    const result = await db.transaction('rw', db.thoughts, async () => {
+      const currentCount = await db.thoughts.where('spaceId').equals(activeSpaceId).count();
+      if (currentCount >= 40) return -1;
 
-    const id = await db.thoughts.add(thought);
-    await get().refreshThoughts();
-    return id as number;
+      const thought: Thought = {
+        spaceId: activeSpaceId,
+        x: window.innerWidth / 2,
+        y: window.innerHeight / 2,
+        vx: 0,
+        vy: 0,
+        text: '',
+        description: '',
+        type: 'text',
+        content: '',
+        image: null,
+        drawing: null,
+        tags: [],
+        status: 'none',
+        tasks: [],
+        table: [['', ''], ['', '']],
+        date: '',
+        priority: 'none',
+        order: currentCount,
+        ...partialThought
+      } as Thought;
+
+      return await db.thoughts.add(thought);
+    });
+
+    if (result !== -1) {
+      await get().refreshThoughts();
+    }
+    
+    return result as number;
   },
 
   updateThought: async (id, updates) => {
