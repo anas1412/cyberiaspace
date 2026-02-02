@@ -1,4 +1,5 @@
 import { useEffect } from 'react';
+import { Analytics } from '@vercel/analytics/react';
 import { useStore } from './store/useStore';
 import { useModalStore } from './components/Modal';
 import { LIMITS } from './constants';
@@ -101,6 +102,7 @@ function App() {
       <TableFocusEditor />
       <PaintFocusEditor />
       <TasksFocusEditor />
+      <Analytics />
       {/* Modals and Lightbox would go here */}
     </div>
   );
