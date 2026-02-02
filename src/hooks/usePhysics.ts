@@ -29,6 +29,7 @@ export const usePhysics = (
   const physicsState = useRef<Map<number, { x: number; y: number; vx: number; vy: number; scale: number }>>(new Map());
   const elements = useRef<Map<number, HTMLDivElement>>(new Map());
   const sbHeight = useRef(0);
+  const kMaxHeight = useRef(0);
   const requestRef = useRef<number>(null);
   
   const thoughtMap = useRef<Map<number, Thought>>(new Map());
@@ -87,10 +88,12 @@ export const usePhysics = (
           const p = physicsState.current.get(id);
           const mode = activeSpace?.mode || 'spatial';
           if (mode === 'kanban') {
-             const colWidth = window.innerWidth / 3;
-             let status: 'todo' | 'doing' | 'done' = 'todo';
-             if (lastMouseX > colWidth && lastMouseX < colWidth * 2) status = 'doing';
-             if (lastMouseX >= colWidth * 2) status = 'done';
+             const colWidth = window.innerWidth / 4;
+             let status: 'none' | 'todo' | 'doing' | 'done' = 'none';
+             if (lastMouseX > colWidth && lastMouseX < colWidth * 2) status = 'todo';
+             else if (lastMouseX >= colWidth * 2 && lastMouseX < colWidth * 3) status = 'doing';
+             else if (lastMouseX >= colWidth * 3) status = 'done';
+             
              const thoughtsInStatus = Array.from(thoughtMap.current.values()).filter(t => (t.id === id ? status : t.status) === status);
              const sorted = thoughtsInStatus.sort((a, b) => {
                  const pA = physicsState.current.get(a.id); const pB = physicsState.current.get(b.id);
@@ -143,55 +146,56 @@ export const usePhysics = (
     const mode = activeSpace?.mode || 'spatial';
     const physicsEnabled = activeSpace?.physics ?? true;
 
-    // Cache Sidebar Rect for Clipping logic
     const sbContent = document.getElementById('cal-sidebar-content');
     const sbRect = sbContent?.getBoundingClientRect();
 
     if (mode === 'kanban') {
        const allThoughts = Array.from(thoughtMap.current.values());
-       const todo = allThoughts.filter(t => t.status === 'todo').sort((a, b) => a.order - b.order);
-       const doing = allThoughts.filter(t => t.status === 'doing').sort((a, b) => a.order - b.order);
-       const done = allThoughts.filter(t => t.status === 'done').sort((a, b) => a.order - b.order);
-       const processColumn = (list: Thought[], status: string) => {
+       const statuses: ('none' | 'todo' | 'doing' | 'done')[] = ['none', 'todo', 'doing', 'done'];
+       let maxColHeight = 0;
+
+       statuses.forEach((s, colIdx) => {
+          const list = allThoughts.filter(t => t.status === s).sort((a, b) => a.order - b.order);
           let currentY = 280;
           list.forEach((t) => {
              const p = state.get(t.id); if (!p) return; if (dragRef.current?.id === t.id) return;
-             const colWidth = window.innerWidth / 3; let targetX = colWidth / 2; if (status === 'doing') targetX += colWidth; if (status === 'done') targetX += colWidth * 2;
+             const colWidth = window.innerWidth / 4; 
+             const targetX = (colWidth * colIdx) + (colWidth / 2);
              const el = elements.current.get(t.id); const height = el?.offsetHeight || 120; const targetY = currentY + height / 2; currentY += height + 24;
              p.x += (targetX - p.x) * 0.15; p.y += (targetY - p.y) * 0.15; p.scale += (1 - p.scale) * 0.1; p.vx = 0; p.vy = 0;
           });
-       };
-       processColumn(todo, 'todo'); processColumn(doing, 'doing'); processColumn(done, 'done');
+          if (currentY > maxColHeight) maxColHeight = currentY;
+       });
+       kMaxHeight.current = maxColHeight;
+
     } else if (mode === 'calendar') {
       const year = calendarViewDate.getFullYear(); const month = calendarViewDate.getMonth(); const firstDay = new Date(year, month, 1).getDay() || 7;
       const sidebarWidth = 260; const gap = 20; const padding = 40; const topPadding = 190; const mainLeft = padding + sidebarWidth + gap;
       const mainWidth = window.innerWidth - mainLeft - padding; const cellWidth = mainWidth / 7; const cellHeight = (window.innerHeight - topPadding - padding) / 5;
       const allThoughts = Array.from(thoughtMap.current.values());
       const scheduled = allThoughts.filter(t => !!t.date); const unscheduled = allThoughts.filter(t => !t.date).sort((a,b) => a.order - b.order);
-            scheduled.forEach((t) => {
-              const p = state.get(t.id); if (!p) return; if (dragRef.current?.id === t.id) return;
-              let target = { x: 0, y: 0, scale: 0 };
-              const tDate = new Date(t.date + 'T00:00:00');
-              if (tDate.getFullYear() === year && tDate.getMonth() === month) {
-                  const day = tDate.getDate(); const startOffset = firstDay - 1; const cellIndex = startOffset + (day - 1); const col = cellIndex % 7; const row = Math.floor(cellIndex / 7);
-                  target.x = mainLeft + col * cellWidth + cellWidth / 2; target.y = topPadding + row * cellHeight + cellHeight / 2;
-                  target.scale = Math.min((cellWidth - 20) / 280, 0.45); const offset = (t.id % 5) * 5; target.x += offset; target.y += offset;
-              } else { target.x = window.innerWidth / 2; target.y = window.innerHeight + 500; target.scale = 0; }
-              p.x += (target.x - p.x) * 0.15; p.y += (target.y - p.y) * 0.15; p.scale += (target.scale - p.scale) * 0.1; p.vx = 0; p.vy = 0;
-            });
-      
-            let currentSB_Y = sbRect ? sbRect.top + 20 : 200; 
-            const scrollTop = sbContent?.scrollTop || 0;
-            unscheduled.forEach((t) => {
-              const stateP = state.get(t.id); if (!stateP) return; if (dragRef.current?.id === t.id) return;
-              const el = elements.current.get(t.id); const height = (el?.offsetHeight || 120) * 0.6;
-              let target = { x: padding + sidebarWidth / 2, y: currentSB_Y - scrollTop + height / 2, scale: 0.6 };
-              currentSB_Y += height + 20;
-              stateP.x += (target.x - stateP.x) * 0.15; stateP.y += (target.y - stateP.y) * 0.15; stateP.scale += (target.scale - stateP.scale) * 0.1; stateP.vx = 0; stateP.vy = 0;
-            });
-            sbHeight.current = currentSB_Y - (sbRect?.top || 0); 
-            const spacer = document.getElementById('cal-sidebar-spacer'); if (spacer) spacer.style.height = `${sbHeight.current + 40}px`;
-          } else if (mode === 'spatial' && physicsEnabled) {
+      scheduled.forEach((t) => {
+        const p = state.get(t.id); if (!p) return; if (dragRef.current?.id === t.id) return;
+        let target = { x: 0, y: 0, scale: 0 };
+        const tDate = new Date(t.date + 'T00:00:00');
+        if (tDate.getFullYear() === year && tDate.getMonth() === month) {
+            const day = tDate.getDate(); const startOffset = firstDay - 1; const cellIndex = startOffset + (day - 1); const col = cellIndex % 7; const row = Math.floor(cellIndex / 7);
+            target.x = mainLeft + col * cellWidth + cellWidth / 2; target.y = topPadding + row * cellHeight + cellHeight / 2;
+            target.scale = Math.min((cellWidth - 20) / 280, 0.45); const offset = (t.id % 5) * 5; target.x += offset; target.y += offset;
+        } else { target.x = window.innerWidth / 2; target.y = window.innerHeight + 500; target.scale = 0; }
+        p.x += (target.x - p.x) * 0.15; p.y += (target.y - p.y) * 0.15; p.scale += (target.scale - p.scale) * 0.1; p.vx = 0; p.vy = 0;
+      });
+      let currentSB_Y = sbRect ? sbRect.top + 20 : 200; const scrollTop = sbContent?.scrollTop || 0;
+      unscheduled.forEach((t) => {
+        const stateP = state.get(t.id); if (!stateP) return; if (dragRef.current?.id === t.id) return;
+        const el = elements.current.get(t.id); const height = (el?.offsetHeight || 120) * 0.6;
+        let target = { x: padding + sidebarWidth / 2, y: currentSB_Y - scrollTop + height / 2, scale: 0.6 };
+        currentSB_Y += height + 20;
+        stateP.x += (target.x - stateP.x) * 0.15; stateP.y += (target.y - stateP.y) * 0.15; stateP.scale += (target.scale - stateP.scale) * 0.1; stateP.vx = 0; stateP.vy = 0;
+      });
+      sbHeight.current = currentSB_Y - (sbRect?.top || 0); 
+      const spacer = document.getElementById('cal-sidebar-spacer'); if (spacer) spacer.style.height = `${sbHeight.current + 40}px`;
+    } else if (mode === 'spatial' && physicsEnabled) {
       ids.forEach((id) => {
         if (dragRef.current?.id === id) return; 
         const p = state.get(id)!; const t = thoughtMap.current.get(id); if (!t) return;
@@ -240,28 +244,28 @@ export const usePhysics = (
         const cardTop = nodeScreenY - nodeHeightOnScreen / 2;
         const cardBottom = nodeScreenY + nodeHeightOnScreen / 2;
 
-        // Visibility Logic for Calendar Sidebar (Gradual Fading & Boundary Containment)
         if (mode === 'calendar' && t && !t.date && sbRect) {
             const buffer = 40; 
-            
             const topOverlap = cardBottom - sbRect.top;
             const bottomOverlap = sbRect.bottom - cardTop;
-            
             const isInsideHorizontal = (p.x * s + transform.x) > (sbRect.left - 50) && (p.x * s + transform.x) < (sbRect.right + 50);
-
             let opacity = 1;
-            if (!isInsideHorizontal) {
-                opacity = 0;
-            } else {
+            if (!isInsideHorizontal) opacity = 0;
+            else {
                 const topOpacity = Math.max(0, Math.min(1, topOverlap / buffer));
                 const bottomOpacity = Math.max(0, Math.min(1, bottomOverlap / buffer));
                 opacity = Math.min(topOpacity, bottomOpacity);
             }
-
-            el.style.opacity = opacity.toString();
-            el.style.visibility = opacity === 0 ? 'hidden' : 'visible';
+            el.style.opacity = opacity.toString(); el.style.visibility = opacity === 0 ? 'hidden' : 'visible';
+            el.style.pointerEvents = opacity < 0.1 ? 'none' : 'auto'; el.style.zIndex = '35';
+        } else if (mode === 'kanban') {
+            // Kanban Fading at Header (140px)
+            const buffer = 40;
+            const topOverlap = cardBottom - 140;
+            const opacity = Math.max(0, Math.min(1, topOverlap / buffer));
+            el.style.opacity = opacity.toString(); el.style.visibility = opacity === 0 ? 'hidden' : 'visible';
             el.style.pointerEvents = opacity < 0.1 ? 'none' : 'auto';
-            el.style.zIndex = '35'; // Sidebar thoughts stay above sidebar bg (30) but below header (40)
+            el.style.zIndex = (20 + prioLevel).toString();
         } else {
             el.style.opacity = '1'; el.style.visibility = 'visible'; el.style.pointerEvents = 'auto';
             if (dragRef.current?.id === id) el.style.zIndex = '1000'; else el.style.zIndex = (20 + prioLevel).toString();
@@ -283,5 +287,5 @@ export const usePhysics = (
     if (p) { dragRef.current = { id, startX: e.clientX, startY: e.clientY, nodeStartX: p.x, nodeStartY: p.y, moved: false, lastMouseX: e.clientX, lastMouseY: e.clientY }; }
   }, []);
   const isDragging = useCallback((id: number) => dragRef.current?.id === id, []);
-  return { registerElement, handleMouseDown, isDragging, sidebarHeight: sbHeight };
+  return { registerElement, handleMouseDown, isDragging, sidebarHeight: sbHeight, kanbanHeight: kMaxHeight };
 };

@@ -3,6 +3,7 @@ import { useStore } from '../store/useStore';
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 import World from './World';
+import { usePhysics } from '../hooks/usePhysics';
 
 function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -19,6 +20,9 @@ const Viewport: React.FC = () => {
   
   const lastMousePos = useRef({ x: 0, y: 0 });
   const isPanningRef = useRef(false);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+
+  const { registerElement, handleMouseDown, isDragging, kanbanHeight } = usePhysics(canvasRef, transform);
 
   useEffect(() => {
     // Reset transform when switching views or spaces
@@ -26,7 +30,7 @@ const Viewport: React.FC = () => {
   }, [activeSpace?.mode, activeSpaceId]);
 
   useEffect(() => {
-    const handleMouseDown = (e: MouseEvent) => {
+    const handleMouseDownLocal = (e: MouseEvent) => {
       const isMiddleClick = e.button === 1;
       const isAltLeftClick = e.button === 0 && e.altKey;
 
@@ -92,6 +96,13 @@ const Viewport: React.FC = () => {
         setTransform((prev) => {
           let newY = prev.y - e.deltaY;
           if (newY > 0) newY = 0;
+          
+          const viewHeight = window.innerHeight;
+          const contentHeight = kanbanHeight.current + 100;
+          const limit = Math.min(0, viewHeight - contentHeight);
+          
+          if (newY < limit) newY = limit;
+
           return { ...prev, x: 0, y: newY, scale: 1 };
         });
       } else if (activeSpace?.mode === 'calendar') {
@@ -111,7 +122,7 @@ const Viewport: React.FC = () => {
       }
     };
 
-    window.addEventListener('mousedown', handleMouseDown);
+    window.addEventListener('mousedown', handleMouseDownLocal);
     window.addEventListener('mousemove', handleMouseMove);
     window.addEventListener('mouseup', handleMouseUp);
     window.addEventListener('auxclick', handleAuxClick);
@@ -119,14 +130,14 @@ const Viewport: React.FC = () => {
     window.addEventListener('wheel', handleWheel, { passive: false });
 
     return () => {
-      window.removeEventListener('mousedown', handleMouseDown);
+      window.removeEventListener('mousedown', handleMouseDownLocal);
       window.removeEventListener('mousemove', handleMouseMove);
       window.removeEventListener('mouseup', handleMouseUp);
       window.removeEventListener('auxclick', handleAuxClick);
       window.removeEventListener('click', handleClick);
       window.removeEventListener('wheel', handleWheel);
     };
-  }, [activeSpace, setInspectorOpen]);
+  }, [activeSpace, setInspectorOpen, isGrabbing]);
 
   return (
     <div 
@@ -136,7 +147,11 @@ const Viewport: React.FC = () => {
         isGrabbing ? "pointer-events-auto cursor-grabbing" : "pointer-events-none"
       )}
     >
-      <World transform={transform} />
+      <World 
+        transform={transform} 
+        canvasRef={canvasRef}
+        physicsResults={{ registerElement, handleMouseDown, isDragging }}
+      />
     </div>
   );
 };

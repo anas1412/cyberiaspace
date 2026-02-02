@@ -122,6 +122,31 @@ const Inspector: React.FC = () => {
         />
 
         <div className="space-y-2">
+          <label className="text-[9px] uppercase font-bold tracking-widest text-slate-500 ml-1">Status</label>
+          <div className="grid grid-cols-4 gap-1">
+            {(['none', 'todo', 'doing', 'done'] as const).map((s) => (
+              <button
+                key={s}
+                onClick={() => updateThought(thought.id, { status: s })}
+                className={cn(
+                  "border rounded-lg py-2 text-[8px] font-bold uppercase transition-colors",
+                  thought.status === s 
+                    ? {
+                        'none': 'bg-white/10 border-white/30 text-white',
+                        'todo': 'bg-indigo-500/30 border-indigo-500 text-white',
+                        'doing': 'bg-yellow-500/30 border-yellow-500 text-white',
+                        'done': 'bg-green-500/30 border-green-500 text-white',
+                      }[s]
+                    : "bg-white/5 border-white/10 text-slate-400 hover:bg-white/10"
+                )}
+              >
+                {s}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <div className="space-y-2">
           <label className="text-[9px] uppercase font-bold tracking-widest text-slate-500 ml-1">Priority</label>
           <div className="grid grid-cols-5 gap-1">
             {(['none', 'low', 'medium', 'high', 'urgent'] as const).map((p) => (

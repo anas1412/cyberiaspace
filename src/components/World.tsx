@@ -1,16 +1,20 @@
-import React, { useRef, useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useStore } from '../store/useStore';
-import { usePhysics } from '../hooks/usePhysics';
 import ThoughtNode from './ThoughtNode';
 
 interface WorldProps {
   transform: { x: number; y: number; scale: number };
+  canvasRef: React.RefObject<HTMLCanvasElement | null>;
+  physicsResults: {
+    registerElement: (id: number, el: HTMLDivElement | null) => void;
+    handleMouseDown: (id: number, e: React.MouseEvent) => void;
+    isDragging: (id: number) => boolean;
+  };
 }
 
-const World: React.FC<WorldProps> = ({ transform }) => {
+const World: React.FC<WorldProps> = ({ transform, canvasRef, physicsResults }) => {
   const thoughts = useStore((state) => state.thoughts);
-  const canvasRef = useRef<HTMLCanvasElement>(null);
-  const { registerElement, handleMouseDown, isDragging } = usePhysics(canvasRef, transform);
+  const { registerElement, handleMouseDown, isDragging } = physicsResults;
   
   const [size, setSize] = useState({ w: window.innerWidth, h: window.innerHeight });
 

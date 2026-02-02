@@ -36,6 +36,13 @@ const PRIO_COLORS = {
   urgent: '#ef4444',
 };
 
+const STATUS_COLORS = {
+  none: 'transparent',
+  todo: '#6366f1',
+  doing: '#eab308',
+  done: '#22c55e',
+};
+
 const ThoughtNode: React.FC<ThoughtNodeProps> = React.memo(({ thought, registerElement, onMouseDown, isDragging }) => {
   const elRef = useRef<HTMLDivElement>(null);
   const setSelectedThoughtId = useStore((state) => state.setSelectedThoughtId);
@@ -43,7 +50,6 @@ const ThoughtNode: React.FC<ThoughtNodeProps> = React.memo(({ thought, registerE
   const setActiveFocus = useStore((state) => state.setActiveFocus);
   const openLightbox = useStore((state) => state.openLightbox);
   
-  // Local state to track click vs drag for the selection logic
   const [startPos, setStartPos] = useState({ x: 0, y: 0 });
   
   const parsedContent = useMemo(() => {
@@ -61,14 +67,12 @@ const ThoughtNode: React.FC<ThoughtNodeProps> = React.memo(({ thought, registerE
   };
 
   const handleClick = (e: React.MouseEvent) => {
-    // 5px threshold check
     const dist = Math.sqrt(Math.pow(e.clientX - startPos.x, 2) + Math.pow(e.clientY - startPos.y, 2));
     if (dist > 5) return;
 
     const target = e.target as HTMLElement;
     if (target.closest('.checkbox')) return;
     
-    // Check for specific triggers
     const textTrigger = target.closest('[data-trigger="text"]');
     const tableTrigger = target.closest('[data-trigger="table"]');
     const imageTrigger = target.closest('[data-trigger="image"]');
@@ -80,7 +84,6 @@ const ThoughtNode: React.FC<ThoughtNodeProps> = React.memo(({ thought, registerE
     } else if (imageTrigger) {
         if (thought.image) openLightbox(thought.image);
     } else {
-        // Fallback: Open thought editor (sidebar)
         setSelectedThoughtId(thought.id);
         setInspectorOpen(true);
     }
@@ -216,26 +219,46 @@ const ThoughtNode: React.FC<ThoughtNodeProps> = React.memo(({ thought, registerE
       onMouseDown={handleLocalMouseDown}
       onClick={handleClick}
     >
-      <div className="thought-bulb-content bg-[#0f172a]/96 backdrop-blur-[20px] border border-white/10 shadow-[0_10px_40px_rgba(0,0,0,0.5)] p-6 rounded-[32px] flex flex-col gap-3 relative">
-        {thought.priority !== 'none' && (
-          <div 
-            className="absolute top-4 left-4 w-1.5 h-1.5 rounded-full"
-            style={{ 
-              backgroundColor: PRIO_COLORS[thought.priority],
-              boxShadow: `0 0 10px ${PRIO_COLORS[thought.priority]}88`
-            }}
-          />
-        )}
-        {thought.date && (
-          <div className="absolute top-4 right-4 text-[9px] font-mono text-indigo-400 border border-indigo-500/30 px-1.5 py-0.5 rounded bg-indigo-500/10">
-            {thought.date}
-          </div>
-        )}
-        <p className={cn("text-[13px] font-bold pr-10", thought.text ? "text-white" : "text-slate-600 italic")}>
-          {thought.text || "Untitled"}
-        </p>
+      <div className="thought-bulb-content bg-[#0f172a]/96 backdrop-blur-[20px] border border-white/10 shadow-[0_10px_40px_rgba(0,0,0,0.5)] p-6 rounded-[32px] flex flex-col gap-3 relative transition-all duration-300">
+        
+        {/* Absolute Metadata Row (Right aligned) */}
+        <div className="absolute top-6 right-6 flex items-center gap-1.5 pointer-events-none h-4">
+          {thought.status !== 'none' && (
+            <div 
+              className="text-[7px] font-black uppercase tracking-widest px-1.5 py-0.5 rounded-full border border-white/10 shadow-sm"
+              style={{ 
+                color: 'white',
+                backgroundColor: STATUS_COLORS[thought.status],
+              }}
+            >
+              {thought.status}
+            </div>
+          )}
+          {thought.date && (
+            <div className="text-[8px] font-mono text-indigo-400 border border-indigo-500/20 px-1.5 py-0.5 rounded bg-indigo-500/5">
+              {thought.date}
+            </div>
+          )}
+        </div>
+
+        {/* Title Area with Inline Priority */}
+        <div className="flex items-start gap-2.5 min-h-[20px]">
+          {thought.priority !== 'none' && (
+            <div 
+              className="w-1.5 h-1.5 rounded-full mt-[7px] flex-shrink-0"
+              style={{ 
+                backgroundColor: PRIO_COLORS[thought.priority],
+                boxShadow: `0 0 10px ${PRIO_COLORS[thought.priority]}88`
+              }}
+            />
+          )}
+          <p className={cn("text-[13px] font-bold leading-tight flex-1 pr-24", thought.text ? "text-white" : "text-slate-600 italic")}>
+            {thought.text || "Untitled"}
+          </p>
+        </div>
+
         {thought.description && (
-          <p className="text-[10px] text-slate-500 italic">{thought.description}</p>
+          <p className="text-[10px] text-slate-500 italic pr-10">{thought.description}</p>
         )}
         {renderContent()}
         <div className="flex flex-wrap gap-1.5 mt-1">

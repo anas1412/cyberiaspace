@@ -154,7 +154,7 @@ export const useStore = create<ThoughtistState>((set, get) => ({
       image: null,
       drawing: null,
       tags: [],
-      status: 'todo',
+      status: 'none',
       tasks: [],
       table: [['', ''], ['', '']],
       date: '',

@@ -22,7 +22,7 @@ interface Thought {
   image: string | null;
   drawing: string | null;
   tags: string[];
-  status: 'todo' | 'doing' | 'done';
+  status: 'none' | 'todo' | 'doing' | 'done';
   tasks: { text: string; done: boolean }[];
   table: string[][];
   date: string;
