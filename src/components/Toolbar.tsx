@@ -209,17 +209,20 @@ const Toolbar: React.FC = () => {
       <div className="ui-layer top-8 left-8 right-8 flex items-center justify-between pointer-events-none fixed z-[9999]">
         {/* LEFT SIDE: Logo & Settings */}
         <div className="pointer-events-auto flex items-center gap-6 h-[48px]">
-          <div>
-            <h1 className="text-3xl font-bold tracking-tighter text-white">CYBERIA</h1>
-            <div className="flex items-center gap-3 mt-1 group cursor-pointer" onClick={() => setIsSpaceMenuOpen(!isSpaceMenuOpen)}>
-              <div className={cn(
-                "w-2 h-2 rounded-full transition-all duration-500 shadow-[0_0_10px_rgba(99,102,241,0.5)]",
-                isSpaceMenuOpen ? "bg-indigo-400 scale-125" : "bg-indigo-500/40"
-              )} />
-              <p className="text-[10px] uppercase font-black tracking-[0.2em] text-indigo-400/80 group-hover:text-indigo-300 transition-colors">
-                {activeSpace?.name || 'Space'}
-              </p>
-              <SlidersHorizontal className={cn("w-3 h-3 text-white/20 group-hover:text-white/60 transition-all", isSpaceMenuOpen && "text-indigo-400 rotate-90")} />
+          <div className="flex items-center gap-4">
+            <img src="/logo.png" alt="Cyberia Logo" className="w-10 h-10 object-contain drop-shadow-[0_0_10px_rgba(99,102,241,0.5)]" />
+            <div>
+              <h1 className="text-3xl font-bold tracking-tighter text-white">CYBERIA</h1>
+              <div className="flex items-center gap-3 mt-1 group cursor-pointer" onClick={() => setIsSpaceMenuOpen(!isSpaceMenuOpen)}>
+                <div className={cn(
+                  "w-2 h-2 rounded-full transition-all duration-500 shadow-[0_0_10px_rgba(99,102,241,0.5)]",
+                  isSpaceMenuOpen ? "bg-indigo-400 scale-125" : "bg-indigo-500/40"
+                )} />
+                <p className="text-[10px] uppercase font-black tracking-[0.2em] text-indigo-400/80 group-hover:text-indigo-300 transition-colors">
+                  {activeSpace?.name || 'Space'}
+                </p>
+                <SlidersHorizontal className={cn("w-3 h-3 text-white/20 group-hover:text-white/60 transition-all", isSpaceMenuOpen && "text-indigo-400 rotate-90")} />
+              </div>
             </div>
           </div>
           
