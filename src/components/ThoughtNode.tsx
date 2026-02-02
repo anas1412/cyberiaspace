@@ -221,40 +221,45 @@ const ThoughtNode: React.FC<ThoughtNodeProps> = React.memo(({ thought, registerE
     >
       <div className="thought-bulb-content bg-[#0f172a]/96 backdrop-blur-[20px] border border-white/10 shadow-[0_10px_40px_rgba(0,0,0,0.5)] p-6 rounded-[32px] flex flex-col gap-3 relative transition-all duration-300">
         
-        {/* Absolute Metadata Row (Right aligned) */}
-        <div className="absolute top-6 right-6 flex items-center gap-1.5 pointer-events-none h-4">
-          {thought.status !== 'none' && (
-            <div 
-              className="text-[7px] font-black uppercase tracking-widest px-1.5 py-0.5 rounded-full border border-white/10 shadow-sm"
-              style={{ 
-                color: 'white',
-                backgroundColor: STATUS_COLORS[thought.status],
-              }}
-            >
-              {thought.status}
-            </div>
-          )}
-          {thought.date && (
-            <div className="text-[8px] font-mono text-indigo-400 border border-indigo-500/20 px-1.5 py-0.5 rounded bg-indigo-500/5">
-              {thought.date}
-            </div>
-          )}
-        </div>
+        {/* Header Area: Title + Priority + Badges */}
+        <div className="flex items-start justify-between gap-4 min-h-[24px]">
+          <div className="flex items-start gap-2.5 flex-1 min-w-0">
+            {thought.priority !== 'none' && (
+              <div 
+                className="w-1.5 h-1.5 rounded-full mt-[7px] flex-shrink-0"
+                style={{ 
+                  backgroundColor: PRIO_COLORS[thought.priority],
+                  boxShadow: `0 0 10px ${PRIO_COLORS[thought.priority]}88`
+                }}
+              />
+            )}
+            <p className={cn(
+              "text-[13px] font-bold leading-tight break-all", 
+              thought.text ? "text-white" : "text-slate-600 italic"
+            )}>
+              {thought.text || "Untitled"}
+            </p>
+          </div>
 
-        {/* Title Area with Inline Priority */}
-        <div className="flex items-start gap-2.5 min-h-[20px]">
-          {thought.priority !== 'none' && (
-            <div 
-              className="w-1.5 h-1.5 rounded-full mt-[7px] flex-shrink-0"
-              style={{ 
-                backgroundColor: PRIO_COLORS[thought.priority],
-                boxShadow: `0 0 10px ${PRIO_COLORS[thought.priority]}88`
-              }}
-            />
-          )}
-          <p className={cn("text-[13px] font-bold leading-tight flex-1 pr-24", thought.text ? "text-white" : "text-slate-600 italic")}>
-            {thought.text || "Untitled"}
-          </p>
+          {/* Metadata Row (Status & Date) */}
+          <div className="flex items-center gap-1.5 flex-shrink-0 mt-0.5">
+            {thought.status !== 'none' && (
+              <div 
+                className="text-[7px] font-black uppercase tracking-widest px-1.5 py-0.5 rounded-full border border-white/10 shadow-sm"
+                style={{ 
+                  color: 'white',
+                  backgroundColor: STATUS_COLORS[thought.status],
+                }}
+              >
+                {thought.status}
+              </div>
+            )}
+            {thought.date && (
+              <div className="text-[8px] font-mono text-indigo-400 border border-indigo-500/20 px-1.5 py-0.5 rounded bg-indigo-500/5">
+                {thought.date}
+              </div>
+            )}
+          </div>
         </div>
 
         {thought.description && (
