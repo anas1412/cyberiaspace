@@ -14,6 +14,7 @@ const Viewport: React.FC = () => {
   const spaces = useStore((state) => state.spaces);
   const activeSpace = spaces.find((s) => s.id === activeSpaceId);
   const setInspectorOpen = useStore((state) => state.setInspectorOpen);
+  const setSelectedThoughtId = useStore((state) => state.setSelectedThoughtId);
   
   const [transform, setTransform] = useState({ x: 0, y: 0, scale: 1 });
   const [isGrabbing, setIsGrabbing] = useState(false);
@@ -74,6 +75,7 @@ const Viewport: React.FC = () => {
       const target = e.target as HTMLElement;
       if (!target.closest('.thought-bulb, #inspector, .ui-layer, .glass, .expand-img, button, input, textarea, #cal-sidebar-content, .cal-grid')) {
         setInspectorOpen(false);
+        setSelectedThoughtId(null);
       }
     };
 
