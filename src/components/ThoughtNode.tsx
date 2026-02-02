@@ -1,7 +1,7 @@
 import React, { useRef, useEffect, useState, useMemo } from 'react';
 import { type Thought } from '../db';
 import { useStore } from '../store/useStore';
-import { Maximize2, Palette } from 'lucide-react';
+import { Maximize2, Palette, Link as LinkIcon } from 'lucide-react';
 import { marked } from 'marked';
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
@@ -51,6 +51,10 @@ const ThoughtNode: React.FC<ThoughtNodeProps> = React.memo(({ thought, registerE
   const setInspectorOpen = useStore((state) => state.setInspectorOpen);
   const setActiveFocus = useStore((state) => state.setActiveFocus);
   const openLightbox = useStore((state) => state.openLightbox);
+  const linkingSourceId = useStore((state) => state.linkingSourceId);
+  const setLinkingSourceId = useStore((state) => state.setLinkingSourceId);
+  const updateThought = useStore((state) => state.updateThought);
+  const thoughts = useStore((state) => state.thoughts);
   
   const [startPos, setStartPos] = useState({ x: 0, y: 0 });
   
@@ -68,9 +72,39 @@ const ThoughtNode: React.FC<ThoughtNodeProps> = React.memo(({ thought, registerE
     onMouseDown(thought.id, e);
   };
 
+  const handleLinkClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (linkingSourceId === thought.id) {
+      setLinkingSourceId(null);
+    } else {
+      setLinkingSourceId(thought.id);
+    }
+  };
+
   const handleClick = (e: React.MouseEvent) => {
     const dist = Math.sqrt(Math.pow(e.clientX - startPos.x, 2) + Math.pow(e.clientY - startPos.y, 2));
     if (dist > 5) return;
+
+    if (linkingSourceId && linkingSourceId !== thought.id) {
+      // Complete the link
+      const sourceThought = thoughts.find(t => t.id === linkingSourceId);
+      if (sourceThought) {
+        // Check if they already share a stack tag
+        const existingStackTag = sourceThought.tags.find(tag => tag.startsWith('stack-')) || 
+                               thought.tags.find(tag => tag.startsWith('stack-'));
+        
+        const stackTag = existingStackTag || `stack-${Math.random().toString(36).substr(2, 6)}`;
+        
+        if (!sourceThought.tags.includes(stackTag)) {
+          updateThought(sourceThought.id, { tags: [...sourceThought.tags, stackTag] });
+        }
+        if (!thought.tags.includes(stackTag)) {
+          updateThought(thought.id, { tags: [...thought.tags, stackTag] });
+        }
+      }
+      setLinkingSourceId(null);
+      return;
+    }
 
     const target = e.target as HTMLElement;
     if (target.closest('.checkbox')) return;
@@ -282,7 +316,9 @@ const ThoughtNode: React.FC<ThoughtNodeProps> = React.memo(({ thought, registerE
         "thought-bulb-content bg-[#0f172a]/96 backdrop-blur-[20px] border p-6 rounded-[32px] flex flex-col gap-3 relative transition-all duration-300",
         isSelected 
           ? "border-indigo-500/50 shadow-[0_0_40px_rgba(99,102,241,0.2)]" 
-          : "border-white/10 shadow-[0_10px_40px_rgba(0,0,0,0.5)]"
+          : "border-white/10 shadow-[0_10px_40px_rgba(0,0,0,0.5)]",
+        linkingSourceId === thought.id && "ring-2 ring-indigo-500 ring-offset-4 ring-offset-[#020408]",
+        linkingSourceId && linkingSourceId !== thought.id && "hover:scale-105 hover:border-indigo-500/50 cursor-pointer"
       )}>
         
         {/* Header Area: Title + Priority + Badges */}
@@ -305,8 +341,19 @@ const ThoughtNode: React.FC<ThoughtNodeProps> = React.memo(({ thought, registerE
             </p>
           </div>
 
-          {/* Metadata Row (Status & Date) */}
           <div className="flex items-center gap-1.5 flex-shrink-0 mt-0.5">
+            <button 
+              onClick={handleLinkClick}
+              className={cn(
+                "p-1.5 rounded-lg transition-all",
+                linkingSourceId === thought.id 
+                  ? "bg-indigo-500 text-white shadow-[0_0_10px_rgba(99,102,241,0.5)]" 
+                  : "text-slate-500 hover:text-white hover:bg-white/10"
+              )}
+              title="Link to another thought"
+            >
+              <LinkIcon className="w-3.5 h-3.5" />
+            </button>
             {thought.status !== 'none' && (
               <div 
                 className="text-[7px] font-black uppercase tracking-widest px-1.5 py-0.5 rounded-full border border-white/10 shadow-sm"

@@ -2,10 +2,12 @@ import { useEffect, useRef, useCallback } from 'react';
 import { useStore } from '../store/useStore';
 import { db, type Thought } from '../db';
 
-const DAMPING = 0.88;
-const REPULSION = 100000;
-const ATTRACTION = 0.02;
-const GRAVITY = 0.004;
+const DAMPING = 0.8; // Increased friction (was 0.88)
+const REPULSION = 80000; // Slightly lower repulsion
+const ATTRACTION = 0.01; // Lower attraction (was 0.02)
+const GRAVITY = 0.003; // Gentler gravity
+const MAX_VELOCITY = 10; // Slower speed limit (was 15)
+const COMFORT_ZONE = 200; // Increased comfort zone
 
 const PRIORITY_WEIGHT = {
   urgent: 4,
@@ -25,9 +27,11 @@ export const usePhysics = (
   const activeSpace = spaces.find((s) => s.id === activeSpaceId);
   const updateThought = useStore((state) => state.updateThought);
   const calendarViewDate = useStore((state) => state.calendarViewDate);
+  const linkingSourceId = useStore((state) => state.linkingSourceId);
 
   const physicsState = useRef<Map<number, { x: number; y: number; vx: number; vy: number; scale: number }>>(new Map());
   const elements = useRef<Map<number, HTMLDivElement>>(new Map());
+  const mousePosRef = useRef({ x: 0, y: 0 });
   const sbHeight = useRef(0);
   const kMaxHeight = useRef(0);
   const requestRef = useRef<number>(null);
@@ -44,6 +48,14 @@ export const usePhysics = (
     lastMouseX: number;
     lastMouseY: number;
   } | null>(null);
+
+  useEffect(() => {
+    const handleMouseGlobal = (e: MouseEvent) => {
+      mousePosRef.current = { x: e.clientX, y: e.clientY };
+    };
+    window.addEventListener('mousemove', handleMouseGlobal);
+    return () => window.removeEventListener('mousemove', handleMouseGlobal);
+  }, []);
 
   useEffect(() => {
     thoughtMap.current.clear();
@@ -106,8 +118,6 @@ export const usePhysics = (
   useEffect(() => {
     const handleMouseMove = (e: MouseEvent) => {
       if (!dragRef.current) return;
-      dragRef.current.lastMouseX = e.clientX;
-      dragRef.current.lastMouseY = e.clientY;
       const { id, startX, startY, nodeStartX, nodeStartY } = dragRef.current;
       const dx = (e.clientX - startX) / transform.scale;
       const dy = (e.clientY - startY) / transform.scale;
@@ -116,9 +126,11 @@ export const usePhysics = (
       if (p) { p.x = nodeStartX + dx; p.y = nodeStartY + dy; p.vx = 0; p.vy = 0; }
     };
 
-    const handleMouseUp = () => {
+    const handleMouseUp = (e: MouseEvent) => {
       if (dragRef.current) {
-        const { id, moved, lastMouseX, lastMouseY } = dragRef.current;
+        const { id, moved } = dragRef.current;
+        const lastMouseX = e.clientX;
+        const lastMouseY = e.clientY;
         if (moved) {
           const p = physicsState.current.get(id);
           const mode = activeSpace?.mode || 'spatial';
@@ -238,24 +250,69 @@ export const usePhysics = (
         const p = state.get(id)!; const t = thoughtMap.current.get(id); if (!t) return;
         const prioLevel = PRIORITY_WEIGHT[t.priority] || 0; const gravityMultiplier = 1 + prioLevel * 0.5; const targetScale = 1 + prioLevel * 0.05;
         p.vx += (window.innerWidth / 2 - p.x) * (GRAVITY * gravityMultiplier); p.vy += (window.innerHeight / 2 - p.y) * (GRAVITY * gravityMultiplier);
-        const el = elements.current.get(id); const nHeight = el?.offsetHeight || 120; const nRadius = Math.max(100, nHeight / 2);
+        
+        const el = elements.current.get(id); 
+        const nHeight = el?.offsetHeight || 120; 
+        const nRadius = Math.max(120, nHeight / 2);
+
         ids.forEach((otherId) => {
           if (id === otherId) return; const otherP = state.get(otherId)!; const otherT = thoughtMap.current.get(otherId); if (!otherT) return;
-          const dx = p.x - otherP.x; const dy = p.y - otherP.y; const distSq = dx * dx + dy * dy || 0.1; const d = Math.sqrt(distSq);
-          const otherEl = elements.current.get(otherId); const otherHeight = otherEl?.offsetHeight || 120; const otherRadius = Math.max(100, otherHeight / 2);
-          const minDistance = (nRadius + otherRadius) * 1.1; const otherPrio = PRIORITY_WEIGHT[otherT.priority] || 0; const combinedPrio = prioLevel + otherPrio; const repulsionMultiplier = 1 + combinedPrio * 0.1;
-          let repulsionPower = REPULSION; if (d < minDistance) repulsionPower *= minDistance / d;
-          const force = Math.min((repulsionPower * repulsionMultiplier) / distSq, 60); p.vx += (dx / d) * force; p.vy += (dy / d) * force;
-          if (t.tags.some((tag) => otherT.tags.includes(tag)) && t.tags.length > 0) { p.vx -= dx * ATTRACTION; p.vy -= dy * ATTRACTION; }
+          const dx = p.x - otherP.x; const dy = p.y - otherP.y; 
+          const distSq = dx * dx + dy * dy || 1; 
+          const d = Math.sqrt(distSq);
+          
+          const otherEl = elements.current.get(otherId); 
+          const otherHeight = otherEl?.offsetHeight || 120; 
+          const otherRadius = Math.max(120, otherHeight / 2);
+          const minDistance = (nRadius + otherRadius);
+          
+          const otherPrio = PRIORITY_WEIGHT[otherT.priority] || 0; 
+          const combinedPrio = prioLevel + otherPrio; 
+          const repulsionMultiplier = 1 + combinedPrio * 0.1;
+          
+          // Smoother Repulsion
+          if (d < minDistance) {
+            const force = ((minDistance - d) / minDistance) * 12; // Cap repulsion force at 12
+            p.vx += (dx / d) * force;
+            p.vy += (dy / d) * force;
+          } else {
+            const force = Math.min((REPULSION * repulsionMultiplier) / distSq, 8);
+            p.vx += (dx / d) * force;
+            p.vy += (dy / d) * force;
+          }
+
+          // Shared Tags Attraction
+          if (t.tags.some((tag) => otherT.tags.includes(tag)) && t.tags.length > 0) { 
+            if (d > COMFORT_ZONE) {
+              const pull = (d - COMFORT_ZONE) * ATTRACTION;
+              p.vx -= (dx / d) * pull;
+              p.vy -= (dy / d) * pull;
+            }
+          }
         });
-        p.vx *= DAMPING; p.vy *= DAMPING; p.x += p.vx; p.y += p.vy; p.scale += (targetScale - p.scale) * 0.1;
+        
+        // Velocity clamping and damping
+        const speed = Math.sqrt(p.vx * p.vx + p.vy * p.vy);
+        if (speed > MAX_VELOCITY) {
+          p.vx = (p.vx / speed) * MAX_VELOCITY;
+          p.vy = (p.vy / speed) * MAX_VELOCITY;
+        }
+
+        p.vx *= DAMPING; 
+        p.vy *= DAMPING; 
+        p.x += p.vx; 
+        p.y += p.vy; 
+        p.scale += (targetScale - p.scale) * 0.1;
       });
     }
 
     const ctx = canvasRef?.current?.getContext('2d');
     if (ctx && canvasRef.current) {
-      ctx.clearRect(0, 0, canvasRef.current.width, canvasRef.current.height); ctx.strokeStyle = 'rgba(99, 102, 241, 0.15)'; ctx.lineWidth = 1; ctx.beginPath();
+      ctx.clearRect(0, 0, canvasRef.current.width, canvasRef.current.height); ctx.lineWidth = 1; 
       const { x: tx, y: ty, scale: s } = transform;
+      
+      // Draw Connections
+      ctx.strokeStyle = 'rgba(99, 102, 241, 0.12)'; ctx.beginPath();
       for (let i = 0; i < ids.length; i++) {
         const idA = ids[i]; const tA = thoughtMap.current.get(idA); const pA = state.get(idA); if (!tA || !pA) continue;
         for (let j = i + 1; j < ids.length; j++) {
@@ -265,6 +322,23 @@ export const usePhysics = (
         }
       }
       ctx.stroke();
+
+      // Draw Linking Thread Preview
+      if (linkingSourceId) {
+        const pSource = state.get(linkingSourceId);
+        if (pSource) {
+          ctx.beginPath();
+          ctx.setLineDash([5, 5]);
+          ctx.strokeStyle = 'rgba(99, 102, 241, 0.5)';
+          ctx.lineWidth = 2;
+          const x1 = pSource.x * s + tx;
+          const y1 = pSource.y * s + ty;
+          ctx.moveTo(x1, y1);
+          ctx.lineTo(mousePosRef.current.x, mousePosRef.current.y);
+          ctx.stroke();
+          ctx.setLineDash([]);
+        }
+      }
     }
 
     ids.forEach((id) => {
@@ -312,7 +386,7 @@ export const usePhysics = (
       }
     });
     requestRef.current = requestAnimationFrame(loop);
-  }, [activeSpace, calendarViewDate, transform]);
+  }, [activeSpace, calendarViewDate, transform, linkingSourceId]);
 
   useEffect(() => {
     requestRef.current = requestAnimationFrame(loop);

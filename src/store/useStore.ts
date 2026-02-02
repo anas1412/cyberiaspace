@@ -10,6 +10,7 @@ interface ThoughtistState {
   activeFocusId: number | null;
   focusType: 'text' | 'table' | 'paint' | 'tasks' | null;
   calendarViewDate: Date;
+  linkingSourceId: number | null;
   
   // Initialization
   init: () => Promise<void>;
@@ -30,6 +31,7 @@ interface ThoughtistState {
   setSelectedThoughtId: (id: number | null) => void;
   setInspectorOpen: (open: boolean) => void;
   setActiveFocus: (id: number | null, type: 'text' | 'table' | 'paint' | 'tasks' | null) => void;
+  setLinkingSourceId: (id: number | null) => void;
   
   // Lightbox
   isLightboxOpen: boolean;
@@ -53,6 +55,7 @@ export const useStore = create<ThoughtistState>((set, get) => ({
   calendarViewDate: new Date(),
   isLightboxOpen: false,
   lightboxImage: null,
+  linkingSourceId: null,
 
   openLightbox: (image) => set({ isLightboxOpen: true, lightboxImage: image }),
   closeLightbox: () => set({ isLightboxOpen: false, lightboxImage: null }),
@@ -203,5 +206,10 @@ export const useStore = create<ThoughtistState>((set, get) => ({
 
   setActiveFocus: (id, type) => {
     set({ activeFocusId: id, focusType: id ? type : null });
+  },
+
+  setLinkingSourceId: (id) => {
+    set({ linkingSourceId: id });
   }
 }));
+
