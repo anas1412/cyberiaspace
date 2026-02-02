@@ -25,16 +25,26 @@ const Modal: React.FC = () => {
   const { isOpen, title, description, type, inputValue: initialValue, confirmText, onConfirm, closeModal } = useModalStore();
   const [inputValue, setInputValue] = useState('');
 
+  const handleConfirm = React.useCallback(() => {
+    if (onConfirm) onConfirm(inputValue);
+    closeModal();
+  }, [onConfirm, inputValue, closeModal]);
+
   useEffect(() => {
     if (isOpen) setInputValue(initialValue || '');
   }, [isOpen, initialValue]);
 
-  if (!isOpen) return null;
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (isOpen && e.key === 'Enter') {
+        handleConfirm();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen, handleConfirm]);
 
-  const handleConfirm = () => {
-    if (onConfirm) onConfirm(inputValue);
-    closeModal();
-  };
+  if (!isOpen) return null;
 
   const showInput = ['rename', 'new_space'].includes(type);
   const showCancel = type !== 'limit_space' && type !== 'limit_thought' && type !== 'alert';

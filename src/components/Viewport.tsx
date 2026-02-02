@@ -13,11 +13,13 @@ function cn(...inputs: ClassValue[]) {
 const Viewport: React.FC = () => {
   const activeSpaceId = useStore((state) => state.activeSpaceId);
   const spaces = useStore((state) => state.spaces);
+  const thoughts = useStore((state) => state.thoughts);
   const activeSpace = spaces.find((s) => s.id === activeSpaceId);
   const setInspectorOpen = useStore((state) => state.setInspectorOpen);
   const selectedThoughtId = useStore((state) => state.selectedThoughtId);
   const setSelectedThoughtId = useStore((state) => state.setSelectedThoughtId);
   const deleteThought = useStore((state) => state.deleteThought);
+  const addThought = useStore((state) => state.addThought);
   const saveSpaceTransform = useStore((state) => state.saveSpaceTransform);
   
   const { openModal } = useModalStore();
@@ -173,6 +175,23 @@ const Viewport: React.FC = () => {
           onConfirm: () => deleteThought(selectedThoughtId)
         });
       }
+
+      if (e.key === ' ') {
+        e.preventDefault();
+        if (thoughts.length >= 40) { // Using 40 from LIMITS.MAX_THOUGHTS_PER_SPACE
+          openModal({
+            title: 'Limit Reached',
+            description: 'You have reached the maximum of 40 thoughts per space.',
+            type: 'limit_thought',
+            confirmText: 'Okay'
+          });
+          return;
+        }
+        addThought({}).then(id => {
+          setSelectedThoughtId(id);
+          setInspectorOpen(true);
+        });
+      }
     };
 
     window.addEventListener('mousedown', handleMouseDownLocal);
@@ -192,7 +211,7 @@ const Viewport: React.FC = () => {
       window.removeEventListener('wheel', handleWheel);
       window.removeEventListener('keydown', handleKeyDown);
     };
-  }, [activeSpace, setInspectorOpen, isGrabbing, selectedThoughtId, openModal, deleteThought]);
+  }, [activeSpace, setInspectorOpen, isGrabbing, selectedThoughtId, openModal, deleteThought, thoughts, addThought, setSelectedThoughtId]);
 
   return (
     <div 
