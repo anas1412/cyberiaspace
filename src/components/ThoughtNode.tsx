@@ -77,6 +77,7 @@ const ThoughtNode: React.FC<ThoughtNodeProps> = React.memo(({ thought, registerE
     
     const textTrigger = target.closest('[data-trigger="text"]');
     const tableTrigger = target.closest('[data-trigger="table"]');
+    const tasksTrigger = target.closest('[data-trigger="tasks"]');
     const imageTrigger = target.closest('[data-trigger="image"]');
     const paintTrigger = target.closest('[data-trigger="paint"]');
 
@@ -84,6 +85,8 @@ const ThoughtNode: React.FC<ThoughtNodeProps> = React.memo(({ thought, registerE
         setActiveFocus(thought.id, 'text');
     } else if (tableTrigger) {
         setActiveFocus(thought.id, 'table');
+    } else if (tasksTrigger) {
+        setActiveFocus(thought.id, 'tasks');
     } else if (paintTrigger) {
         setActiveFocus(thought.id, 'paint');
     } else if (imageTrigger) {
@@ -126,15 +129,55 @@ const ThoughtNode: React.FC<ThoughtNodeProps> = React.memo(({ thought, registerE
         );
       }
       case 'tasks': {
-        if (!thought.tasks.length) return null;
+        if (!thought.tasks.length) return (
+          <div data-trigger="tasks" className="p-3 bg-black/20 rounded-xl border border-white/5 mt-1 cursor-pointer hover:bg-white/[0.05] transition-colors group/tasks relative">
+            <div className="flex items-center gap-2 text-slate-600">
+              <Maximize2 className="w-3 h-3" />
+              <span className="text-[10px] font-bold uppercase tracking-widest">No tasks yet</span>
+            </div>
+          </div>
+        );
         const done = thought.tasks.filter((t) => t.done).length;
         const progress = (done / thought.tasks.length) * 100;
+        const previewTasks = thought.tasks.slice(0, 3);
+
         return (
-          <div className="h-1.5 w-full bg-white/5 rounded-full overflow-hidden mt-1 prevent-drag">
-            <div 
-              className="h-full bg-indigo-500 transition-all duration-500" 
-              style={{ width: `${progress}%` }} 
-            />
+          <div data-trigger="tasks" className="mt-1 space-y-2 group/tasks relative cursor-pointer prevent-drag">
+            <div className="space-y-1.5">
+              {previewTasks.map((task, i) => (
+                <div key={i} className="flex items-center gap-2 min-w-0">
+                  <div className={cn(
+                    "w-3 h-3 rounded-sm border-[1.5px] flex-shrink-0 transition-colors",
+                    task.done ? "bg-indigo-500 border-indigo-500" : "border-white/20"
+                  )} />
+                  <span className={cn(
+                    "text-[10px] truncate",
+                    task.done ? "text-slate-600 line-through" : "text-slate-300"
+                  )}>
+                    {task.text || "Untitled Task"}
+                  </span>
+                </div>
+              ))}
+              {thought.tasks.length > 3 && (
+                <div className="text-[8px] text-slate-600 pl-5">
+                  + {thought.tasks.length - 3} more...
+                </div>
+              )}
+            </div>
+            <div className="h-1.5 w-full bg-white/5 rounded-full overflow-hidden mt-3">
+              <div 
+                className="h-full bg-indigo-500 transition-all duration-500 shadow-[0_0_10px_rgba(99,102,241,0.5)]" 
+                style={{ width: `${progress}%` }} 
+              />
+            </div>
+            <div className="absolute inset-0 bg-indigo-500/10 opacity-0 group-hover/tasks:opacity-100 transition-opacity rounded-xl flex items-center justify-center pointer-events-none">
+              <button 
+                onClick={(e) => { e.stopPropagation(); setActiveFocus(thought.id, 'tasks'); }}
+                className="pointer-events-auto bg-indigo-500 text-white p-2 rounded-lg shadow-xl transform scale-90 group-hover/tasks:scale-100 transition-all"
+              >
+                <Maximize2 className="w-4 h-4" />
+              </button>
+            </div>
           </div>
         );
       }

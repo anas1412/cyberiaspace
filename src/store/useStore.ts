@@ -8,7 +8,7 @@ interface ThoughtistState {
   selectedThoughtId: number | null;
   isInspectorOpen: boolean;
   activeFocusId: number | null;
-  focusType: 'text' | 'table' | 'paint' | null;
+  focusType: 'text' | 'table' | 'paint' | 'tasks' | null;
   calendarViewDate: Date;
   
   // Initialization
@@ -29,7 +29,7 @@ interface ThoughtistState {
   deleteThought: (id: number) => Promise<void>;
   setSelectedThoughtId: (id: number | null) => void;
   setInspectorOpen: (open: boolean) => void;
-  setActiveFocus: (id: number | null, type: 'text' | 'table' | 'paint' | null) => void;
+  setActiveFocus: (id: number | null, type: 'text' | 'table' | 'paint' | 'tasks' | null) => void;
   
   // Lightbox
   isLightboxOpen: boolean;
