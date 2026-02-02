@@ -342,18 +342,6 @@ const ThoughtNode: React.FC<ThoughtNodeProps> = React.memo(({ thought, registerE
           </div>
 
           <div className="flex items-center gap-1.5 flex-shrink-0 mt-0.5">
-            <button 
-              onClick={handleLinkClick}
-              className={cn(
-                "p-1.5 rounded-lg transition-all",
-                linkingSourceId === thought.id 
-                  ? "bg-indigo-500 text-white shadow-[0_0_10px_rgba(99,102,241,0.5)]" 
-                  : "text-slate-500 hover:text-white hover:bg-white/10"
-              )}
-              title="Link to another thought"
-            >
-              <LinkIcon className="w-3.5 h-3.5" />
-            </button>
             {thought.status !== 'none' && (
               <div 
                 className="text-[7px] font-black uppercase tracking-widest px-1.5 py-0.5 rounded-full border border-white/10 shadow-sm"
@@ -384,6 +372,20 @@ const ThoughtNode: React.FC<ThoughtNodeProps> = React.memo(({ thought, registerE
             </span>
           ))}
         </div>
+
+        {/* Bottom Right Link Button */}
+        <button 
+          onClick={handleLinkClick}
+          className={cn(
+            "absolute bottom-4 right-4 p-2 rounded-xl transition-all z-10",
+            linkingSourceId === thought.id 
+              ? "bg-indigo-500 text-white shadow-[0_0_20px_rgba(99,102,241,0.6)]" 
+              : "bg-white/5 text-slate-500 hover:text-white hover:bg-white/10 border border-white/5"
+          )}
+          title="Link to another thought"
+        >
+          <LinkIcon className="w-4 h-4" />
+        </button>
       </div>
     </div>
   );
