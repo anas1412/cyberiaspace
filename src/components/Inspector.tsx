@@ -76,7 +76,7 @@ const Inspector: React.FC = () => {
       className="ui-layer top-[120px] right-8 w-80 glass rounded-[2.5rem] p-8 shadow-2xl overflow-y-auto max-h-[70vh] custom-scroll pointer-events-auto"
     >
       <div className="flex justify-between items-center mb-6">
-        <h3 className="text-[10px] font-black uppercase tracking-widest text-white">Thought Editor</h3>
+        <h3 className="text-[10px] font-black uppercase tracking-widest text-[var(--text-primary)]">Thought Editor</h3>
         <button onClick={() => setInspectorOpen(false)} className="text-slate-500 hover:text-white">
           <X className="w-5 h-5" />
         </button>
@@ -103,7 +103,7 @@ const Inspector: React.FC = () => {
           value={thought.text}
           onChange={(e) => updateThought(thought.id, { text: e.target.value })}
           maxLength={30}
-          className="w-full bg-black/40 border border-white/10 rounded-xl p-3 text-sm outline-none focus:border-[var(--accent)] text-white"
+          className="w-full bg-[var(--bg-page)]/20 border border-white/10 rounded-xl p-3 text-sm outline-none focus:border-[var(--accent)] text-[var(--text-primary)] placeholder:text-slate-500"
           placeholder="Name"
         />
         <textarea
@@ -111,14 +111,14 @@ const Inspector: React.FC = () => {
           onChange={(e) => updateThought(thought.id, { description: e.target.value })}
           rows={2}
           maxLength={150}
-          className="w-full bg-black/40 border border-white/10 rounded-xl p-3 text-xs outline-none focus:border-[var(--accent)] text-white"
+          className="w-full bg-[var(--bg-page)]/20 border border-white/10 rounded-xl p-3 text-xs outline-none focus:border-[var(--accent)] text-[var(--text-primary)] placeholder:text-slate-500"
           placeholder="Description"
         />
         <input
           type="date"
           value={thought.date}
           onChange={(e) => updateThought(thought.id, { date: e.target.value })}
-          className="w-full bg-black/40 border border-white/10 rounded-xl p-3 text-xs outline-none focus:border-[var(--accent)] text-white font-mono uppercase"
+          className="w-full bg-[var(--bg-page)]/20 border border-white/10 rounded-xl p-3 text-xs outline-none focus:border-[var(--accent)] text-[var(--text-primary)] font-mono uppercase"
         />
 
         <div className="space-y-2">
@@ -303,7 +303,7 @@ const Inspector: React.FC = () => {
           )}
         </div>
 
-        <div className="tag-input-wrap flex flex-wrap gap-2 p-3 bg-black/40 border border-white/10 rounded-xl min-h-[44px]">
+        <div className="tag-input-wrap flex flex-wrap gap-2 p-3 bg-[var(--bg-page)]/20 border border-white/10 rounded-xl min-h-[44px]">
           {thought.tags.map((tag, i) => (
             <span key={i} className="tag-pill text-[9px] font-700 px-2 py-0.5 rounded-lg border flex items-center gap-1" style={getTagStyle(tag)}>
               {tag}
@@ -314,7 +314,7 @@ const Inspector: React.FC = () => {
             type="text"
             onKeyDown={handleTagInput}
             placeholder="Add tag..."
-            className="bg-transparent outline-none text-white text-xs flex-1 min-w-[60px]"
+            className="bg-transparent outline-none text-[var(--text-primary)] text-xs flex-1 min-w-[60px] placeholder:text-slate-500"
           />
         </div>
 
