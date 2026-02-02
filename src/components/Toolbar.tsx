@@ -210,7 +210,7 @@ const Toolbar: React.FC = () => {
         {/* LEFT SIDE: Logo & Settings */}
         <div className="pointer-events-auto flex items-center gap-6 h-[48px]">
           <div>
-            <h1 className="text-3xl font-bold tracking-tighter text-white">Cyberia</h1>
+            <h1 className="text-3xl font-bold tracking-tighter text-white">CYBERIA</h1>
             <div className="flex items-center gap-3 mt-1 group cursor-pointer" onClick={() => setIsSpaceMenuOpen(!isSpaceMenuOpen)}>
               <div className={cn(
                 "w-2 h-2 rounded-full transition-all duration-500 shadow-[0_0_10px_rgba(99,102,241,0.5)]",
