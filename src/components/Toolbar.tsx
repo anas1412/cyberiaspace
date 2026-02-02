@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useStore } from '../store/useStore';
 import { useModalStore } from './Modal';
 import { LIMITS } from '../constants';
-import { Plus, Layout, Zap, Download, Upload, SlidersHorizontal, ChevronLeft, ChevronRight, Trash2, Edit3, Camera, MoreVertical, Keyboard, MousePointer2 } from 'lucide-react';
+import { Plus, Zap, Download, Upload, SlidersHorizontal, ChevronLeft, ChevronRight, Trash2, Edit3, Camera, MoreVertical, Keyboard, MousePointer2, Orbit, Columns3, CalendarDays } from 'lucide-react';
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 import { toPng } from 'html-to-image';
@@ -120,12 +120,9 @@ const Toolbar: React.FC = () => {
     setInspectorOpen(true);
   };
 
-  const handleToggleView = () => {
+  const setViewMode = (mode: 'spatial' | 'kanban' | 'calendar') => {
     if (!activeSpace) return;
-    const modes: ('spatial' | 'kanban' | 'calendar')[] = ['spatial', 'kanban', 'calendar'];
-    const currentIndex = modes.indexOf(activeSpace.mode);
-    const nextMode = modes[(currentIndex + 1) % modes.length];
-    updateSpace(activeSpace.id, { mode: nextMode });
+    updateSpace(activeSpace.id, { mode });
   };
 
   const handleTogglePhysics = () => {
@@ -142,7 +139,7 @@ const Toolbar: React.FC = () => {
       confirmText: 'Rename',
       onConfirm: (newName) => {
         if (newName && newName.trim()) {
-          updateSpace(activeSpace.id, { name: newName.substring(0, 15) });
+          updateSpace(activeSpace.id, { name: (newName as string).substring(0, 15) });
         }
       }
     });
@@ -164,7 +161,7 @@ const Toolbar: React.FC = () => {
       type: 'new_space',
       confirmText: 'Create',
       onConfirm: (name) => {
-        addSpace(name && name.trim() ? name.substring(0, 15) : 'New Space');
+        addSpace(name && (name as string).trim() ? (name as string).substring(0, 15) : 'New Space');
       }
     });
   };
@@ -209,7 +206,7 @@ const Toolbar: React.FC = () => {
       {/* TOP UI */}
       <div className="ui-layer top-8 left-8 right-8 flex items-center justify-between pointer-events-none fixed z-[9999]">
         {/* LEFT SIDE: Logo & Settings */}
-        <div className="pointer-events-auto flex items-center gap-6">
+        <div className="pointer-events-auto flex items-center gap-6 h-[48px]">
           <div>
             <h1 className="text-3xl font-bold tracking-tighter text-white">Thoughtist</h1>
             <div className="flex items-center gap-3 mt-1 group cursor-pointer" onClick={() => setIsSpaceMenuOpen(!isSpaceMenuOpen)}>
@@ -225,19 +222,16 @@ const Toolbar: React.FC = () => {
           </div>
           
           <div className={cn(
-            "glass p-1.5 rounded-2xl flex items-center gap-1 transition-all duration-500 border border-white/5",
+            "glass p-1 h-full rounded-2xl flex items-center gap-1 transition-all duration-500 border border-white/5",
             isSpaceMenuOpen ? "opacity-100 translate-x-0 scale-100" : "opacity-0 -translate-x-8 scale-90 pointer-events-none"
           )}>
-            <div className="flex items-center gap-1 px-1">
-              <button onClick={handleRenameSpace} className="p-2.5 hover:bg-white/5 rounded-xl text-slate-400 hover:text-white transition-all" title="Rename Space"><Edit3 className="w-4 h-4" /></button>
-              <button onClick={() => handleMoveSpace(-1)} className="p-2.5 hover:bg-white/5 rounded-xl text-slate-400 hover:text-white transition-all" title="Move Left"><ChevronLeft className="w-4 h-4" /></button>
-              <button onClick={() => handleMoveSpace(1)} className="p-2.5 hover:bg-white/5 rounded-xl text-slate-400 hover:text-white transition-all" title="Move Right"><ChevronRight className="w-4 h-4" /></button>
-            </div>
-            <div className="w-[1px] h-6 bg-white/5 mx-1"></div>
+            <button onClick={handleRenameSpace} className="p-2 hover:bg-white/5 rounded-xl text-slate-400 hover:text-white transition-all"><Edit3 className="w-4 h-4" /></button>
+            <button onClick={() => handleMoveSpace(-1)} className="p-2 hover:bg-white/5 rounded-xl text-slate-400 hover:text-white transition-all"><ChevronLeft className="w-4 h-4" /></button>
+            <button onClick={() => handleMoveSpace(1)} className="p-2 hover:bg-white/5 rounded-xl text-slate-400 hover:text-white transition-all"><ChevronRight className="w-4 h-4" /></button>
+            <div className="w-[1px] h-4 bg-white/10 mx-1"></div>
             <button 
               onClick={handleDeleteSpace}
-              className="p-2.5 hover:bg-red-500/10 rounded-xl transition-all text-red-500/50 hover:text-red-400"
-              title="Delete Space"
+              className="p-2 hover:bg-red-500/10 rounded-xl transition-all text-red-500/50 hover:text-red-400"
             >
               <Trash2 className="w-4 h-4" />
             </button>
@@ -245,7 +239,7 @@ const Toolbar: React.FC = () => {
         </div>
 
         {/* CENTER: Space Switcher (Dynamically Centered) */}
-        <div className="absolute left-1/2 -translate-x-1/2 flex items-center h-[48px] px-2 bg-[#020617]/60 backdrop-blur-3xl rounded-full border border-white/10 shadow-2xl transition-all">
+        <div className="absolute left-1/2 -translate-x-1/2 flex items-center h-[48px] px-2 bg-[#020617]/60 backdrop-blur-3xl rounded-full border border-white/10 shadow-2xl transition-all pointer-events-auto">
           <div className="flex items-center gap-1 h-full">
             {spaces.map((space) => {
               const isActive = space.id === activeSpaceId;
@@ -256,7 +250,7 @@ const Toolbar: React.FC = () => {
                   className={cn(
                     "px-5 h-9 rounded-full text-[10px] uppercase font-black tracking-widest flex-shrink-0 transition-all duration-500 flex items-center justify-center gap-2",
                     isActive 
-                      ? "bg-indigo-500/10 text-white border border-indigo-500/20 shadow-[0_0_20px_rgba(99,102,241,0.15)]" 
+                      ? "bg-white/10 text-white border border-white/10 shadow-[0_0_20px_rgba(255,255,255,0.05)]" 
                       : "text-slate-500 hover:text-slate-300 hover:bg-white/[0.03] border border-transparent"
                   )}
                 >
@@ -275,18 +269,40 @@ const Toolbar: React.FC = () => {
           </div>
         </div>
 
-        {/* RIGHT SIDE: View Mode */}
-        <div className="flex gap-2 pointer-events-auto">
-          <button 
-            onClick={handleToggleView}
-            className="px-5 h-[48px] glass rounded-2xl flex items-center gap-4 hover:bg-white/5 transition-all text-white border border-white/5"
-          >
-            <div className="w-1.5 h-1.5 rounded-full bg-purple-500 shadow-[0_0_10px_rgba(168,85,247,0.5)]" />
-            <span className="text-[10px] font-black uppercase tracking-widest">
-              {activeSpace?.mode === 'spatial' ? 'Kanban' : activeSpace?.mode === 'kanban' ? 'Calendar' : 'Spatial'}
-            </span>
-            <Layout className="w-3.5 h-3.5 text-slate-400" />
-          </button>
+        {/* RIGHT SIDE: View Switcher (Segmented Control) */}
+        <div className="flex items-center h-[48px] p-1.5 bg-[#020617]/60 backdrop-blur-3xl rounded-2xl border border-white/10 shadow-2xl transition-all pointer-events-auto">
+          {[
+            { id: 'spatial', icon: Orbit, color: 'bg-indigo-500' },
+            { id: 'kanban', icon: Columns3, color: 'bg-purple-500' },
+            { id: 'calendar', icon: CalendarDays, color: 'bg-amber-500' }
+          ].map((mode) => {
+            const isActive = activeSpace?.mode === mode.id;
+            const Icon = mode.icon;
+            return (
+              <button
+                key={mode.id}
+                onClick={() => setViewMode(mode.id as any)}
+                className={cn(
+                  "px-4 h-full rounded-xl transition-all duration-300 flex items-center gap-3 group/mode",
+                  isActive 
+                    ? "bg-white/10 text-white shadow-xl" 
+                    : "text-slate-500 hover:text-slate-300 hover:bg-white/[0.03]"
+                )}
+              >
+                <div className={cn(
+                  "w-1.5 h-1.5 rounded-full transition-all",
+                  isActive ? mode.color : "bg-white/10 group-hover/mode:bg-white/30"
+                )} />
+                <Icon className={cn("w-4 h-4 transition-transform", isActive ? "scale-110" : "scale-90")} />
+                <span className={cn(
+                  "text-[9px] font-black uppercase tracking-widest transition-all overflow-hidden whitespace-nowrap",
+                  isActive ? "w-14 opacity-100" : "w-0 opacity-0"
+                )}>
+                  {mode.id}
+                </span>
+              </button>
+            );
+          })}
         </div>
       </div>
 
@@ -296,10 +312,8 @@ const Toolbar: React.FC = () => {
           onClick={handleAddThought}
           className="pointer-events-auto group relative flex items-center justify-center w-16 h-16 bg-[#020617]/40 backdrop-blur-2xl text-white rounded-full border border-white/10 shadow-[0_0_50px_rgba(99,102,241,0.1)] transition-all hover:scale-110 active:scale-95 hover:border-indigo-500/40"
         >
-          {/* Subtle aura effect */}
           <div className="absolute inset-0 rounded-full bg-indigo-500/5 opacity-0 group-hover:opacity-100 transition-opacity blur-xl" />
           <Plus className="w-8 h-8 text-slate-400 group-hover:text-white transition-all group-hover:rotate-90 relative z-10" />
-          
           <div className="absolute -top-12 opacity-0 group-hover:opacity-100 transition-opacity bg-[#0f172a]/80 backdrop-blur-xl border border-white/10 text-indigo-400 text-[9px] font-black uppercase tracking-[0.2em] px-4 py-2 rounded-xl pointer-events-none whitespace-nowrap shadow-2xl">
             New Thought <span className="text-white/20 ml-2 font-mono">SPACE</span>
           </div>
