@@ -1,0 +1,5 @@
+export const LIMITS = {
+  MAX_SPACES: 8,
+  MIN_SPACES: 1,
+  MAX_THOUGHTS_PER_SPACE: 40,
+};

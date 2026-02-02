@@ -6,6 +6,7 @@ import Inspector from './components/Inspector';
 import EmptyState from './components/EmptyState';
 import KanbanOverlay from './components/KanbanOverlay';
 import CalendarOverlay from './components/CalendarOverlay';
+import Modal from './components/Modal';
 
 function App() {
   const init = useStore((state) => state.init);
@@ -75,6 +76,7 @@ function App() {
       <CalendarOverlay />
       <Toolbar />
       <Inspector />
+      <Modal />
       
       {/* Modals and Lightbox would go here */}
     </div>

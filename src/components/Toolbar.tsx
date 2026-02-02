@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
 import { useStore } from '../store/useStore';
+import { useModalStore } from './Modal';
+import { LIMITS } from '../constants';
 import { Plus, Layout, Zap, Download, Upload, SlidersHorizontal, ChevronLeft, ChevronRight, Trash2, Edit3 } from 'lucide-react';
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
@@ -17,13 +19,25 @@ const Toolbar: React.FC = () => {
   const updateSpace = useStore((state) => state.updateSpace);
   const deleteSpace = useStore((state) => state.deleteSpace);
   const addSpace = useStore((state) => state.addSpace);
+  const reorderSpaces = useStore((state) => state.reorderSpaces);
   const setSelectedThoughtId = useStore((state) => state.setSelectedThoughtId);
   const setInspectorOpen = useStore((state) => state.setInspectorOpen);
+  
+  const { openModal } = useModalStore();
   
   const activeSpace = spaces.find((s) => s.id === activeSpaceId);
   const [isSpaceMenuOpen, setIsSpaceMenuOpen] = useState(false);
 
   const handleAddThought = async () => {
+    if (thoughts.length >= LIMITS.MAX_THOUGHTS_PER_SPACE) {
+      openModal({
+        title: 'Limit Reached',
+        description: `You have reached the maximum of ${LIMITS.MAX_THOUGHTS_PER_SPACE} thoughts per space.`,
+        type: 'limit_thought',
+        confirmText: 'Okay'
+      });
+      return;
+    }
     const id = await addThought({});
     setSelectedThoughtId(id);
     setInspectorOpen(true);
@@ -40,6 +54,77 @@ const Toolbar: React.FC = () => {
   const handleTogglePhysics = () => {
     if (!activeSpace) return;
     updateSpace(activeSpace.id, { physics: !activeSpace.physics });
+  };
+
+  const handleRenameSpace = () => {
+    if (!activeSpace) return;
+    openModal({
+      title: 'Rename Space',
+      type: 'rename',
+      inputValue: activeSpace.name,
+      confirmText: 'Rename',
+      onConfirm: (newName) => {
+        if (newName && newName.trim()) {
+          updateSpace(activeSpace.id, { name: newName.substring(0, 15) });
+        }
+      }
+    });
+    setIsSpaceMenuOpen(false);
+  };
+
+  const handleCreateSpace = () => {
+    if (spaces.length >= LIMITS.MAX_SPACES) {
+      openModal({
+        title: 'Limit Reached',
+        description: `You can only have up to ${LIMITS.MAX_SPACES} spaces.`,
+        type: 'limit_space',
+        confirmText: 'Okay'
+      });
+      return;
+    }
+    openModal({
+      title: 'New Space',
+      type: 'new_space',
+      confirmText: 'Create',
+      onConfirm: (name) => {
+        addSpace(name && name.trim() ? name.substring(0, 15) : 'New Space');
+      }
+    });
+  };
+
+  const handleDeleteSpace = () => {
+    if (!activeSpace) return;
+    if (spaces.length <= LIMITS.MIN_SPACES) {
+      openModal({
+        title: 'Cannot Delete',
+        description: `You must have at least ${LIMITS.MIN_SPACES} active space.`,
+        type: 'alert',
+        confirmText: 'Okay'
+      });
+      return;
+    }
+    openModal({
+      title: 'Delete Space',
+      description: 'Are you sure? This will delete all thoughts in this space.',
+      type: 'delete_space',
+      confirmText: 'Delete',
+      onConfirm: () => {
+        deleteSpace(activeSpace.id);
+      }
+    });
+    setIsSpaceMenuOpen(false);
+  };
+
+  const handleMoveSpace = (dir: number) => {
+    if (!activeSpace) return;
+    const currentIndex = spaces.findIndex(s => s.id === activeSpaceId);
+    const newIndex = currentIndex + dir;
+    
+    if (newIndex >= 0 && newIndex < spaces.length) {
+      const newSpaces = [...spaces];
+      [newSpaces[currentIndex], newSpaces[newIndex]] = [newSpaces[newIndex], newSpaces[currentIndex]];
+      reorderSpaces(newSpaces);
+    }
   };
 
   return (
@@ -66,12 +151,12 @@ const Toolbar: React.FC = () => {
             "glass p-2 rounded-2xl flex items-center gap-1 transition-all",
             isSpaceMenuOpen ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"
           )}>
-            <button className="p-2 hover:bg-white/5 rounded-xl text-slate-300"><Edit3 className="w-3.5 h-3.5" /></button>
-            <button className="p-2 hover:bg-white/5 rounded-xl text-slate-300"><ChevronLeft className="w-3.5 h-3.5" /></button>
-            <button className="p-2 hover:bg-white/5 rounded-xl text-slate-300"><ChevronRight className="w-3.5 h-3.5" /></button>
+            <button onClick={handleRenameSpace} className="p-2 hover:bg-white/5 rounded-xl text-slate-300"><Edit3 className="w-3.5 h-3.5" /></button>
+            <button onClick={() => handleMoveSpace(-1)} className="p-2 hover:bg-white/5 rounded-xl text-slate-300"><ChevronLeft className="w-3.5 h-3.5" /></button>
+            <button onClick={() => handleMoveSpace(1)} className="p-2 hover:bg-white/5 rounded-xl text-slate-300"><ChevronRight className="w-3.5 h-3.5" /></button>
             <div className="w-[1px] h-4 bg-white/10 mx-1"></div>
             <button 
-              onClick={() => activeSpace && deleteSpace(activeSpace.id)}
+              onClick={handleDeleteSpace}
               className="p-2 hover:bg-red-500/10 rounded-xl transition-colors text-red-500"
             >
               <Trash2 className="w-3.5 h-3.5" />
@@ -120,7 +205,7 @@ const Toolbar: React.FC = () => {
       <div className="ui-layer bottom-8 left-1/2 -translate-x-1/2 glass px-8 py-4 rounded-full flex gap-8 items-center text-[10px] uppercase font-bold tracking-widest text-slate-500 fixed z-[9999]">
         <div className="flex items-center gap-3">
           <span className="w-2 h-2 rounded-full bg-green-500 shadow-[0_0_10px_#22c55e]"></span> 
-          <span className="text-white"><span>{thoughts.length}</span>/40 Thoughts</span>
+          <span className="text-white"><span>{thoughts.length}</span>/{LIMITS.MAX_THOUGHTS_PER_SPACE} Thoughts</span>
         </div>
         <div className="h-4 w-[1px] bg-white/10"></div>
         <button 
@@ -142,10 +227,10 @@ const Toolbar: React.FC = () => {
         </label>
         <div className="h-4 w-[1px] bg-white/10"></div>
         <button 
-          onClick={() => addSpace('New Space')}
+          onClick={handleCreateSpace}
           className="text-indigo-400 hover:text-white transition-all"
         >
-          + New Space (<span>{spaces.length}</span>/8)
+          + New Space (<span>{spaces.length}</span>/{LIMITS.MAX_SPACES})
         </button>
       </div>
     </>

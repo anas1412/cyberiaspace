@@ -1,5 +1,6 @@
 import React from 'react';
 import { useStore } from '../store/useStore';
+import { useModalStore } from './Modal';
 import { X, Maximize2, Image as ImageIcon, Link, Trash2 } from 'lucide-react';
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
@@ -16,10 +17,22 @@ const Inspector: React.FC = () => {
   const updateThought = useStore((state) => state.updateThought);
   const deleteThought = useStore((state) => state.deleteThought);
   const setActiveFocus = useStore((state) => state.setActiveFocus);
+  
+  const { openModal } = useModalStore();
 
   const thought = thoughts.find((t) => t.id === selectedThoughtId);
 
   if (!isInspectorOpen || !thought) return null;
+
+  const handleDeleteThought = () => {
+    openModal({
+      title: 'Delete Thought?',
+      description: 'This action cannot be undone.',
+      type: 'delete_thought',
+      confirmText: 'Delete',
+      onConfirm: () => deleteThought(thought.id)
+    });
+  };
 
   const handleTypeChange = (type: typeof thought.type) => {
     updateThought(thought.id, { type });
@@ -261,7 +274,7 @@ const Inspector: React.FC = () => {
         </div>
 
         <button 
-          onClick={() => deleteThought(thought.id)}
+          onClick={handleDeleteThought}
           className="w-full bg-red-500/10 hover:bg-red-500/20 text-red-400 py-4 rounded-2xl text-[10px] font-bold uppercase tracking-widest transition-colors"
         >
           Delete Thought
