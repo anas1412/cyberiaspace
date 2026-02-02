@@ -1,4 +1,4 @@
-# Migration Plan: Thoughtist Pro (React + Vite + TS)
+# Migration Plan: Cyberia Pro (React + Vite + TS)
 
 ## Phase 1: Foundation (The Setup)
 - [ ] Initialize Vite project with React + TypeScript template.

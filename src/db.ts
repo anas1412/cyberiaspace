@@ -33,7 +33,7 @@ interface Thought {
   order: number;
 }
 
-const db = new Dexie('ThoughtistDB') as Dexie & {
+const db = new Dexie('CyberiaDB') as Dexie & {
   spaces: EntityTable<Space, 'id'>;
   thoughts: EntityTable<Thought, 'id'>;
 };

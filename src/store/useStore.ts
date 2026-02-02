@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { db, type Space, type Thought } from '../db';
 
-interface ThoughtistState {
+interface CyberiaState {
   activeSpaceId: string | null;
   spaces: Space[];
   thoughts: Thought[];
@@ -48,7 +48,7 @@ interface ThoughtistState {
   refreshSpaces: () => Promise<void>;
 }
 
-export const useStore = create<ThoughtistState>((set, get) => ({
+export const useStore = create<CyberiaState>((set, get) => ({
   activeSpaceId: null,
   spaces: [],
   thoughts: [],
@@ -86,7 +86,7 @@ export const useStore = create<ThoughtistState>((set, get) => ({
       const stackTag = `stack-${Math.random().toString(36).substr(2, 6)}`;
 
       await get().addThought({
-        text: 'Welcome to Thoughtist',
+        text: 'Welcome to Cyberia',
         content: 'This is a **spatial workspace**. Ideas are physical objects here. \n\nPress **[Space]** to create a new thought anywhere.',
         x: centerX,
         y: centerY - 150,
@@ -276,7 +276,7 @@ export const useStore = create<ThoughtistState>((set, get) => ({
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `thoughtist_backup_${new Date().toLocaleDateString('en-CA')}.json`;
+    a.download = `cyberia_backup_${new Date().toLocaleDateString('en-CA')}.json`;
     a.click();
     URL.revokeObjectURL(url);
   },
@@ -298,7 +298,7 @@ export const useStore = create<ThoughtistState>((set, get) => ({
         window.location.reload();
       } catch (err) {
         console.error('Import failed:', err);
-        alert('Import failed. Please make sure the file is a valid Thoughtist backup.');
+        alert('Import failed. Please make sure the file is a valid Cyberia backup.');
       }
     };
     reader.readAsText(file);

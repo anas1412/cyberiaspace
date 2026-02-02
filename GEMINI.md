@@ -1,7 +1,7 @@
-# Thoughtist V10 Blueprint (Migration Ready)
+# Cyberia V10 Blueprint (Migration Ready)
 
 ## 1. Project Identity
-**Thoughtist** is a spatial productivity tool designed for kinetic information architecture. It treats thoughts as physical objects in an infinite workspace.
+**Cyberia** is a spatial productivity tool designed for kinetic information architecture. It treats thoughts as physical objects in an infinite workspace.
 
 ## 2. Core Physics Engine (The "Vibe")
 The spatial mode is driven by a constant `requestAnimationFrame` loop using the following physics constants:
@@ -102,7 +102,7 @@ interface Thought {
 
 ### 6.5. Space Management
 - **Slots:** Max 8 spaces.
-- **Persistence:** Key `thoughtist_MASTER_ULTIMATE_STABLE_V900`.
+- **Persistence:** Key `cyberia_MASTER_ULTIMATE_STABLE_V1000`.
 - **Import/Export:** Full JSON state backup/restore with `location.reload()` trigger.
 
 ### 6.6. The "Secret Sauce" (Magic Numbers)

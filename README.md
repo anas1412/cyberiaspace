@@ -1,6 +1,6 @@
-# Thoughtist
+# Cyberia
 
-Thoughtist is a spatial productivity tool designed for kinetic information architecture. It treats thoughts as physical objects in an infinite, cosmic workspace, allowing you to organize your mind through physical interaction and visual clusters.
+Cyberia is a spatial productivity tool designed for kinetic information architecture. It treats thoughts as physical objects in an infinite, cosmic workspace, allowing you to organize your mind through physical interaction and visual clusters.
 
 ### 🌌 Tech Stack
 - **Core:** React 19 + Vite + TypeScript
