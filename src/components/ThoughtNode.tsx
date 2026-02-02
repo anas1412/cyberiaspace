@@ -1,7 +1,7 @@
 import React, { useRef, useEffect, useState, useMemo } from 'react';
 import { type Thought } from '../db';
 import { useStore } from '../store/useStore';
-import { Maximize2 } from 'lucide-react';
+import { Maximize2, Palette } from 'lucide-react';
 import { marked } from 'marked';
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
@@ -78,11 +78,14 @@ const ThoughtNode: React.FC<ThoughtNodeProps> = React.memo(({ thought, registerE
     const textTrigger = target.closest('[data-trigger="text"]');
     const tableTrigger = target.closest('[data-trigger="table"]');
     const imageTrigger = target.closest('[data-trigger="image"]');
+    const paintTrigger = target.closest('[data-trigger="paint"]');
 
     if (textTrigger) {
         setActiveFocus(thought.id, 'text');
     } else if (tableTrigger) {
         setActiveFocus(thought.id, 'table');
+    } else if (paintTrigger) {
+        setActiveFocus(thought.id, 'paint');
     } else if (imageTrigger) {
         if (thought.image) openLightbox(thought.image);
     } else {
@@ -136,10 +139,21 @@ const ThoughtNode: React.FC<ThoughtNodeProps> = React.memo(({ thought, registerE
         );
       }
       case 'paint': {
-        if (!thought.drawing) return null;
         return (
-          <div className="paint-container bg-black/40 rounded-xl p-2 mt-1 border border-white/5 prevent-drag">
-            <img src={thought.drawing} className="w-full rounded-lg object-contain max-h-[140px]" alt="Drawing" />
+          <div data-trigger="paint" className="paint-container bg-black/40 rounded-xl p-2 mt-1 border border-white/5 prevent-drag cursor-pointer group/paint relative overflow-hidden min-h-[60px] flex items-center justify-center">
+            {thought.drawing ? (
+              <img src={thought.drawing} className="w-full rounded-lg object-contain max-h-[140px]" alt="Drawing" />
+            ) : (
+              <div className="flex flex-col items-center gap-2 py-4">
+                <Palette className="w-6 h-6 text-white/20" />
+                <span className="text-[10px] text-white/20 font-bold uppercase tracking-widest">Start Painting</span>
+              </div>
+            )}
+            <div className="absolute inset-0 bg-indigo-500/10 opacity-0 group-hover/paint:opacity-100 transition-opacity flex items-center justify-center pointer-events-none">
+              <button className="pointer-events-auto bg-indigo-500 text-white p-2 rounded-lg shadow-xl transform scale-90 group-hover/paint:scale-100 transition-all">
+                <Maximize2 className="w-4 h-4" />
+              </button>
+            </div>
           </div>
         );
       }

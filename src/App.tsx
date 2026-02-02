@@ -12,6 +12,7 @@ import Modal from './components/Modal';
 import Lightbox from './components/Lightbox';
 import TextFocusEditor from './components/TextFocusEditor';
 import TableFocusEditor from './components/TableFocusEditor';
+import PaintFocusEditor from './components/PaintFocusEditor';
 
 function App() {
   const init = useStore((state) => state.init);
@@ -97,6 +98,7 @@ function App() {
       <Lightbox />
       <TextFocusEditor />
       <TableFocusEditor />
+      <PaintFocusEditor />
       
       {/* Modals and Lightbox would go here */}
     </div>

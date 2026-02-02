@@ -240,6 +240,16 @@ const Inspector: React.FC = () => {
             </button>
           )}
 
+          {thought.type === 'paint' && (
+            <button 
+              onClick={() => setActiveFocus(thought.id, 'paint')}
+              className="w-full bg-indigo-500/10 hover:bg-indigo-500/20 border border-indigo-500/30 text-indigo-400 py-6 rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] transition-all flex flex-col items-center gap-3"
+            >
+              <Maximize2 className="w-5 h-5" />
+              Open Full-Screen Editor
+            </button>
+          )}
+
           {thought.type === 'image' && (
             <div className="space-y-3">
               <div className="border border-dashed border-white/10 rounded-xl p-4 text-center hover:bg-white/5 transition-colors cursor-pointer relative">
