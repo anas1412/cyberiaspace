@@ -1,5 +1,6 @@
 import React, { useRef, useState, useEffect } from 'react';
 import { useStore } from '../store/useStore';
+import { useModalStore } from './Modal';
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 import World from './World';
@@ -14,9 +15,12 @@ const Viewport: React.FC = () => {
   const spaces = useStore((state) => state.spaces);
   const activeSpace = spaces.find((s) => s.id === activeSpaceId);
   const setInspectorOpen = useStore((state) => state.setInspectorOpen);
+  const selectedThoughtId = useStore((state) => state.selectedThoughtId);
   const setSelectedThoughtId = useStore((state) => state.setSelectedThoughtId);
+  const deleteThought = useStore((state) => state.deleteThought);
   const saveSpaceTransform = useStore((state) => state.saveSpaceTransform);
   
+  const { openModal } = useModalStore();
   const [transform, setTransform] = useState({ x: 0, y: 0, scale: 1 });
   const [isGrabbing, setIsGrabbing] = useState(false);
   
@@ -155,12 +159,29 @@ const Viewport: React.FC = () => {
       }
     };
 
+    const handleKeyDown = (e: KeyboardEvent) => {
+      const target = e.target as HTMLElement;
+      if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable) return;
+
+      if ((e.key === 'Delete' || e.key === 'Backspace') && selectedThoughtId) {
+        e.preventDefault();
+        openModal({
+          title: 'Delete Thought?',
+          description: 'This action cannot be undone.',
+          type: 'delete_thought',
+          confirmText: 'Delete',
+          onConfirm: () => deleteThought(selectedThoughtId)
+        });
+      }
+    };
+
     window.addEventListener('mousedown', handleMouseDownLocal);
     window.addEventListener('mousemove', handleMouseMove);
     window.addEventListener('mouseup', handleMouseUp);
     window.addEventListener('auxclick', handleAuxClick);
     window.addEventListener('click', handleClick);
     window.addEventListener('wheel', handleWheel, { passive: false });
+    window.addEventListener('keydown', handleKeyDown);
 
     return () => {
       window.removeEventListener('mousedown', handleMouseDownLocal);
@@ -169,8 +190,9 @@ const Viewport: React.FC = () => {
       window.removeEventListener('auxclick', handleAuxClick);
       window.removeEventListener('click', handleClick);
       window.removeEventListener('wheel', handleWheel);
+      window.removeEventListener('keydown', handleKeyDown);
     };
-  }, [activeSpace, setInspectorOpen, isGrabbing]);
+  }, [activeSpace, setInspectorOpen, isGrabbing, selectedThoughtId, openModal, deleteThought]);
 
   return (
     <div 
