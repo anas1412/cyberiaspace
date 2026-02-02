@@ -304,6 +304,7 @@ const ThoughtNode: React.FC<ThoughtNodeProps> = React.memo(({ thought, registerE
   return (
     <div
       ref={elRef}
+      data-id={thought.id}
       data-unscheduled={!thought.date ? "true" : "false"}
       className={cn(
         "thought-bulb absolute select-none touch-none will-change-transform w-[280px] pointer-events-auto",

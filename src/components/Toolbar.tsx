@@ -2,9 +2,10 @@ import React, { useState } from 'react';
 import { useStore } from '../store/useStore';
 import { useModalStore } from './Modal';
 import { LIMITS } from '../constants';
-import { Plus, Layout, Zap, Download, Upload, SlidersHorizontal, ChevronLeft, ChevronRight, Trash2, Edit3 } from 'lucide-react';
+import { Plus, Layout, Zap, Download, Upload, SlidersHorizontal, ChevronLeft, ChevronRight, Trash2, Edit3, Camera } from 'lucide-react';
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
+import { toPng } from 'html-to-image';
 
 function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -29,6 +30,7 @@ const Toolbar: React.FC = () => {
   
   const activeSpace = spaces.find((s) => s.id === activeSpaceId);
   const [isSpaceMenuOpen, setIsSpaceMenuOpen] = useState(false);
+  const [isCapturing, setIsCapturing] = useState(false);
 
   const handleExport = () => {
     exportData();
@@ -38,6 +40,74 @@ const Toolbar: React.FC = () => {
     const file = e.target.files?.[0];
     if (file) {
       importData(file);
+    }
+  };
+
+  const handleScreenshot = async () => {
+    const worldEl = document.getElementById('world');
+    if (!worldEl || thoughts.length === 0) return;
+
+    setIsCapturing(true);
+    
+    try {
+      // Find the bounds of all thoughts in space coordinates
+      let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+      
+      thoughts.forEach(t => {
+        const el = document.querySelector(`.thought-bulb[data-id="${t.id}"]`) as HTMLElement;
+        const width = 280;
+        const height = el?.offsetHeight || 200;
+        
+        // Use the absolute positions from the store
+        const x = t.x - 140; 
+        const y = t.y - height / 2;
+        
+        if (x < minX) minX = x;
+        if (y < minY) minY = y;
+        if (x + width > maxX) maxX = x + width;
+        if (y + height > maxY) maxY = y + height;
+      });
+
+      // Add padding
+      const padding = 100;
+      minX -= padding;
+      minY -= padding;
+      maxX += padding;
+      maxY += padding;
+
+      const width = maxX - minX;
+      const height = maxY - minY;
+
+      const dataUrl = await toPng(worldEl, {
+        backgroundColor: '#020408',
+        style: {
+          transform: `translate(${-minX}px, ${-minY}px) scale(1)`,
+          position: 'absolute',
+          width: `${width}px`,
+          height: `${height}px`,
+          margin: '0',
+          padding: '0',
+          left: '0',
+          top: '0'
+        },
+        width: width,
+        height: height,
+        filter: (node: any) => {
+          const isUI = node.classList?.contains('ui-layer') || 
+                       node.id === 'connection-canvas' ||
+                       node.tagName === 'BUTTON' && !node.closest('.thought-bulb');
+          return !isUI;
+        }
+      });
+
+      const link = document.createElement('a');
+      link.download = `thoughtist_${activeSpace?.name || 'space'}.png`;
+      link.href = dataUrl;
+      link.click();
+    } catch (error) {
+      console.error('Screenshot failed:', error);
+    } finally {
+      setIsCapturing(false);
     }
   };
 
@@ -236,6 +306,16 @@ const Toolbar: React.FC = () => {
           className="hover:text-white flex items-center gap-2 transition-colors"
         >
           <Download className="w-3.5 h-3.5" /> Export
+        </button>
+        <button 
+          onClick={handleScreenshot}
+          disabled={isCapturing}
+          className={cn(
+            "hover:text-white flex items-center gap-2 transition-colors",
+            isCapturing && "opacity-50 cursor-not-allowed"
+          )}
+        >
+          <Camera className="w-3.5 h-3.5" /> {isCapturing ? 'Capturing...' : 'Screenshot'}
         </button>
         <label className="flex items-center gap-2 cursor-pointer hover:text-white">
           <Upload className="w-3.5 h-3.5" /> Import 
