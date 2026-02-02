@@ -44,8 +44,18 @@ const Toolbar: React.FC = () => {
   const handleImport = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      importData(file);
+      openModal({
+        title: 'Overwrite Current Data?',
+        description: 'Importing will delete all your current spaces and thoughts. This cannot be undone.',
+        type: 'import_confirm',
+        confirmText: 'Import & Overwrite',
+        onConfirm: () => {
+          importData(file);
+        }
+      });
     }
+    // Reset the input value so the same file can be selected again
+    e.target.value = '';
     setIsSystemMenuOpen(false);
   };
 

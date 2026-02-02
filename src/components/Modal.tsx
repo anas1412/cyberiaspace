@@ -5,7 +5,7 @@ interface ModalState {
   isOpen: boolean;
   title: string;
   description?: string;
-  type: 'rename' | 'delete_space' | 'delete_thought' | 'limit_space' | 'limit_thought' | 'new_space' | 'alert';
+  type: 'rename' | 'delete_space' | 'delete_thought' | 'limit_space' | 'limit_thought' | 'new_space' | 'alert' | 'import_confirm';
   inputValue?: string;
   confirmText?: string;
   onConfirm?: (value?: string) => void;
