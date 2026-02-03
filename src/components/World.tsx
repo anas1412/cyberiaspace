@@ -7,7 +7,7 @@ interface WorldProps {
   canvasRef: React.RefObject<HTMLCanvasElement | null>;
   physicsResults: {
     registerElement: (id: number, el: HTMLDivElement | null) => void;
-    handleMouseDown: (id: number, e: React.MouseEvent) => void;
+    handleMouseDown: (id: number, e: React.MouseEvent | React.TouchEvent) => void;
     isDragging: (id: number) => boolean;
   };
 }

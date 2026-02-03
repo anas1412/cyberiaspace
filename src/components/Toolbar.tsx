@@ -58,7 +58,7 @@ const Toolbar: React.FC = () => {
     longPressTimer.current = window.setTimeout(() => handleSpaceLongPress(id), 600);
   };
 
-  const handleTouchEnd = (id: string, e: React.PointerEvent) => {
+  const handleTouchEnd = (id: string) => {
     if (longPressTimer.current) {
       clearTimeout(longPressTimer.current);
       longPressTimer.current = null;
@@ -341,7 +341,7 @@ const Toolbar: React.FC = () => {
                       if (!isMobile) setActiveSpace(space.id);
                     }}
                     onPointerDown={() => isMobile && handleTouchStart(space.id)}
-                    onPointerUp={(e) => isMobile && handleTouchEnd(space.id, e)}
+                    onPointerUp={() => isMobile && handleTouchEnd(space.id)}
                     onPointerLeave={() => {
                       if (isMobile && longPressTimer.current) {
                         clearTimeout(longPressTimer.current);
