@@ -29,6 +29,9 @@ const Viewport: React.FC = () => {
   
   const lastMousePos = useRef({ x: 0, y: 0 });
   const isPanningRef = useRef(false);
+  const initialTouchDistance = useRef<number | null>(null);
+  const initialTouchScale = useRef<number>(1);
+  const initialTouchMidpoint = useRef<{ x: number, y: number } | null>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const saveTimeoutRef = useRef<number | null>(null);
 
@@ -115,21 +118,34 @@ const Viewport: React.FC = () => {
     };
 
     const handleTouchStart = (e: TouchEvent) => {
-      if (e.touches.length !== 1) return; // Only single finger pan for now
-      const touch = e.touches[0];
-      
-      if (
-        activeSpace?.mode === 'spatial' &&
-        !(e.target as HTMLElement).closest('button, input, textarea, .thought-bulb, #inspector, .ui-layer, .glass, #cal-sidebar-content, .cal-grid')
-      ) {
-        isPanningRef.current = true;
-        setIsGrabbing(true);
-        lastMousePos.current = { x: touch.clientX, y: touch.clientY };
+      if (e.touches.length === 1) {
+        const touch = e.touches[0];
+        if (
+          activeSpace?.mode === 'spatial' &&
+          !(e.target as HTMLElement).closest('button, input, textarea, .thought-bulb, #inspector, .ui-layer, .glass, #cal-sidebar-content, .cal-grid')
+        ) {
+          isPanningRef.current = true;
+          setIsGrabbing(true);
+          lastMousePos.current = { x: touch.clientX, y: touch.clientY };
+          initialTouchDistance.current = null;
+        }
+      } else if (e.touches.length === 2 && activeSpace?.mode === 'spatial') {
+        // Prepare for pinch zoom
+        isPanningRef.current = false;
+        const t1 = e.touches[0];
+        const t2 = e.touches[1];
+        const dist = Math.hypot(t1.clientX - t2.clientX, t1.clientY - t2.clientY);
+        initialTouchDistance.current = dist;
+        initialTouchScale.current = transform.scale;
+        initialTouchMidpoint.current = {
+          x: (t1.clientX + t2.clientX) / 2,
+          y: (t1.clientY + t2.clientY) / 2
+        };
       }
     };
 
     const handleTouchMove = (e: TouchEvent) => {
-      if (isPanningRef.current && e.touches.length === 1) {
+      if (e.touches.length === 1 && isPanningRef.current) {
         const touch = e.touches[0];
         const dx = touch.clientX - lastMousePos.current.x;
         const dy = touch.clientY - lastMousePos.current.y;
@@ -141,7 +157,36 @@ const Viewport: React.FC = () => {
         }));
         
         lastMousePos.current = { x: touch.clientX, y: touch.clientY };
+      } else if (e.touches.length === 2 && initialTouchDistance.current && initialTouchMidpoint.current && activeSpace?.mode === 'spatial') {
+        const t1 = e.touches[0];
+        const t2 = e.touches[1];
+        const dist = Math.hypot(t1.clientX - t2.clientX, t1.clientY - t2.clientY);
+        
+        const zoomFactor = dist / initialTouchDistance.current;
+        const newScale = Math.min(Math.max(0.1, initialTouchScale.current * zoomFactor), 2);
+        
+        const midX = initialTouchMidpoint.current.x;
+        const midY = initialTouchMidpoint.current.y;
+
+        setTransform((prev) => {
+          // Anchor zoom at the initial midpoint
+          const wx = (midX - prev.x) / prev.scale;
+          const wy = (midY - prev.y) / prev.scale;
+          
+          return {
+            x: midX - wx * newScale,
+            y: midY - wy * newScale,
+            scale: newScale,
+          };
+        });
       }
+    };
+
+    const handleTouchEnd = () => {
+      isPanningRef.current = false;
+      setIsGrabbing(false);
+      initialTouchDistance.current = null;
+      initialTouchMidpoint.current = null;
     };
 
     const handleAuxClick = (e: MouseEvent) => {
@@ -243,7 +288,7 @@ const Viewport: React.FC = () => {
     window.addEventListener('mouseup', handleMouseUp);
     window.addEventListener('touchstart', handleTouchStart, { passive: false });
     window.addEventListener('touchmove', handleTouchMove, { passive: false });
-    window.addEventListener('touchend', handleMouseUp);
+    window.addEventListener('touchend', handleTouchEnd);
     window.addEventListener('auxclick', handleAuxClick);
     window.addEventListener('click', handleClick);
     window.addEventListener('wheel', handleWheel, { passive: false });
@@ -255,7 +300,7 @@ const Viewport: React.FC = () => {
       window.removeEventListener('mouseup', handleMouseUp);
       window.removeEventListener('touchstart', handleTouchStart);
       window.removeEventListener('touchmove', handleTouchMove);
-      window.removeEventListener('touchend', handleMouseUp);
+      window.removeEventListener('touchend', handleTouchEnd);
       window.removeEventListener('auxclick', handleAuxClick);
       window.removeEventListener('click', handleClick);
       window.removeEventListener('wheel', handleWheel);
