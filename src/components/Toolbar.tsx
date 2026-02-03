@@ -5,7 +5,8 @@ import { LIMITS } from '../constants';
 import { Plus, Zap, Download, Upload, SlidersHorizontal, ChevronLeft, ChevronRight, Trash2, Edit3, Camera, MoreVertical, Keyboard, MousePointer2, Orbit, Columns3, CalendarDays, Shield, MonitorSmartphone } from 'lucide-react';
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
-import { toPng, toCanvas } from 'html-to-image';
+/* import { toPng, toCanvas } from 'html-to-image'; */
+import { toCanvas } from 'html-to-image';
 
 function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
