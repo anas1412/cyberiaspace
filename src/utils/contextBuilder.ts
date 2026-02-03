@@ -9,29 +9,36 @@ export const serializeWorkspace = (activeSpaceId: string | null, thoughts: Thoug
   // We remove the full base64 images from the text context since we use Vision for that.
   const simplifiedThoughts = thoughts.map(t => ({
     id: t.id,
+    spaceId: t.spaceId,
     text: t.text,
+    description: t.description,
     type: t.type,
     position: { x: Math.round(t.x), y: Math.round(t.y) },
-    content: t.content?.substring(0, 500), // Truncate long content
+    order: t.order,
+    content: t.content?.substring(0, 1000), // Increased limit for better context
     tags: t.tags,
     status: t.status,
     priority: t.priority,
+    date: t.date,
     tasks: t.tasks,
-    // We intentionally omit 'image' and 'drawing' base64 strings here
+    table: t.table,
+    // Base64 signals
     hasImage: !!t.image,
     hasDrawing: !!t.drawing
   }));
 
   const context = {
     currentTime: {
-      date: new Date().toLocaleDateString('en-CA'), // YYYY-MM-DD
+      date: new Date().toLocaleDateString('en-CA'),
       full: new Date().toLocaleString(),
       day: new Date().toLocaleDateString('en-US', { weekday: 'long' })
     },
     currentSpace: {
+      id: activeSpace.id,
       name: activeSpace.name,
       mode: activeSpace.mode,
-      physics: activeSpace.physics
+      physics: activeSpace.physics,
+      order: activeSpace.order
     },
     thoughts: simplifiedThoughts
   };

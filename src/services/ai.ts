@@ -49,6 +49,7 @@ const TOOLS = [
             content: { type: SchemaType.STRING, description: "Detailed content (Markdown)." },
             description: { type: SchemaType.STRING, description: "Short description." },
             date: { type: SchemaType.STRING, description: "Date in YYYY-MM-DD format." },
+            order: { type: SchemaType.NUMBER, description: "Stacking order for Kanban/Calendar." },
             tags: { type: SchemaType.ARRAY, items: { type: SchemaType.STRING } },
             status: { type: SchemaType.STRING, enum: ["none", "todo", "doing", "done"] },
             tasks: { 
@@ -89,6 +90,7 @@ const TOOLS = [
             x: { type: SchemaType.NUMBER },
             y: { type: SchemaType.NUMBER },
             date: { type: SchemaType.STRING, description: "Date in YYYY-MM-DD format." },
+            order: { type: SchemaType.NUMBER, description: "Stacking order for Kanban/Calendar." },
             tags: { type: SchemaType.ARRAY, items: { type: SchemaType.STRING }, description: "List of tags." },
             tasks: { 
               type: SchemaType.ARRAY, 
@@ -131,7 +133,7 @@ const TOOLS = [
 let genAI: GoogleGenerativeAI | null = null;
 let model: GenerativeModel | null = null;
 let chatSession: ChatSession | null = null;
-export let ACTIVE_MODEL_NAME = 'gemini-1.5-flash';
+export let ACTIVE_MODEL_NAME = DEFAULT_MODEL;
 
 async function executeTool(name: string, args: Record<string, unknown>) {
   const store = useStore.getState();
