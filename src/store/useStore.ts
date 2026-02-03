@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { db, type Space, type Thought } from '../db';
+import { aiService } from '../services/ai';
 
 interface CyberiaState {
   activeSpaceId: string | null;
@@ -14,6 +15,11 @@ interface CyberiaState {
   theme: 'cyberia' | 'rose' | 'neon';
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   deferredPrompt: any;
+
+  // God Mode (AI) State
+  apiKey: string | null;
+  oracleMode: boolean; // True = AI Enabled
+  isChatOpen: boolean;
   
   // Initialization
   init: () => Promise<void>;
@@ -22,6 +28,12 @@ interface CyberiaState {
   setTheme: (theme: 'cyberia' | 'rose' | 'neon') => void;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   setDeferredPrompt: (prompt: any) => void;
+
+  // AI Actions
+  setApiKey: (key: string) => void;
+  removeApiKey: () => void;
+  toggleOracleMode: () => void;
+  setChatOpen: (isOpen: boolean) => void;
   
   // Space Actions
   setActiveSpace: (id: string) => void;
@@ -70,6 +82,10 @@ export const useStore = create<CyberiaState>((set, get) => ({
   linkingSourceId: null,
   theme: (localStorage.getItem('cyberia-theme') as 'cyberia' | 'rose' | 'neon') || 'cyberia',
   deferredPrompt: null,
+  
+  apiKey: localStorage.getItem('cyberia-api-key'),
+  oracleMode: localStorage.getItem('cyberia-oracle-mode') === 'true',
+  isChatOpen: false,
 
   openLightbox: (image) => set({ isLightboxOpen: true, lightboxImage: image }),
   closeLightbox: () => set({ isLightboxOpen: false, lightboxImage: null }),
@@ -82,10 +98,38 @@ export const useStore = create<CyberiaState>((set, get) => ({
 
   setDeferredPrompt: (prompt) => set({ deferredPrompt: prompt }),
 
+  setApiKey: (key) => {
+    set({ apiKey: key });
+    localStorage.setItem('cyberia-api-key', key);
+    if (key) {
+      aiService.initialize(key);
+    }
+  },
+
+  removeApiKey: () => {
+    set({ apiKey: null, oracleMode: false, isChatOpen: false });
+    localStorage.removeItem('cyberia-api-key');
+    localStorage.removeItem('cyberia-oracle-mode');
+  },
+
+  toggleOracleMode: () => {
+    const newMode = !get().oracleMode;
+    set({ oracleMode: newMode });
+    localStorage.setItem('cyberia-oracle-mode', String(newMode));
+  },
+
+  setChatOpen: (isOpen) => set({ isChatOpen: isOpen }),
+
   init: async () => {
     // Apply theme on init
     const savedTheme = localStorage.getItem('cyberia-theme') || 'cyberia';
     document.body.setAttribute('data-theme', savedTheme);
+
+    // Initialize AI if key exists
+    const savedKey = localStorage.getItem('cyberia-api-key');
+    if (savedKey) {
+      aiService.initialize(savedKey);
+    }
 
     await get().refreshSpaces();
     const { spaces } = get();

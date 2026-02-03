@@ -4,19 +4,20 @@ import { SpeedInsights } from '@vercel/speed-insights/react';
 import { useStore } from './store/useStore';
 import { useModalStore } from './store/useModalStore';
 import { LIMITS } from './constants';
-import Viewport from './components/Viewport';
-import Toolbar from './components/Toolbar';
-import Inspector from './components/Inspector';
-import EmptyState from './components/EmptyState';
-import KanbanOverlay from './components/KanbanOverlay';
-import CalendarOverlay from './components/CalendarOverlay';
-import Modal from './components/Modal';
-import Lightbox from './components/Lightbox';
-import TextFocusEditor from './components/TextFocusEditor';
-import TableFocusEditor from './components/TableFocusEditor';
-import PaintFocusEditor from './components/PaintFocusEditor';
-import TasksFocusEditor from './components/TasksFocusEditor';
+import Viewport from './components/Viewport';                                                                                            
+import Toolbar from './components/Toolbar';                                                                                              
+import Inspector from './components/Inspector';                                                                                          
+import EmptyState from './components/EmptyState';                                                                                        
+import KanbanOverlay from './components/KanbanOverlay';                                                                                  
+import CalendarOverlay from './components/CalendarOverlay';                                                                              
+import Modal from './components/Modal';                                                                                                  
+import Lightbox from './components/Lightbox';                                                                                            
+import TextFocusEditor from './components/TextFocusEditor';                                                                              
+import TableFocusEditor from './components/TableFocusEditor';                                                                            
+import PaintFocusEditor from './components/PaintFocusEditor';                                                                            
+import TasksFocusEditor from './components/TasksFocusEditor';                                                                            
 import EmbedFocusEditor from './components/EmbedFocusEditor';
+import ChatOverlay from './components/ChatOverlay';
 
 function App() {
   const init = useStore((state) => state.init);
@@ -153,12 +154,12 @@ function App() {
                 const res = await fetch(`https://api.allorigins.win/get?url=${encodeURIComponent(oEmbedUrl)}`);
                 const data = await res.json();
                 return JSON.parse(data.contents);
-              } catch (e) {
+              } catch (_) {
                 // Strategy 2: CorsProxy.io (Fallback)
                 try {
                   const res = await fetch(`https://corsproxy.io/?${encodeURIComponent(oEmbedUrl)}`);
                   return await res.json();
-                } catch (e2) {
+                } catch (_) {
                   throw new Error("All proxies failed");
                 }
               }
@@ -204,6 +205,7 @@ function App() {
       <CalendarOverlay />
       <Toolbar />
       <Inspector />
+      <ChatOverlay />
       <Modal />
       <Lightbox />
       <TextFocusEditor />

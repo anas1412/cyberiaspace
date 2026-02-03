@@ -2,18 +2,33 @@ import React, { useState } from 'react';
 import { useStore } from '../store/useStore';
 import { useModalStore } from '../store/useModalStore';
 import { LIMITS } from '../constants';
-import { Plus, Zap, Download, Upload, SlidersHorizontal, ChevronLeft, ChevronRight, Trash2, Edit3, Camera, MoreVertical, Keyboard, MousePointer2, Orbit, Columns3, CalendarDays, Shield, MonitorSmartphone } from 'lucide-react';
+import { Plus, Zap, Download, Upload, SlidersHorizontal, ChevronLeft, ChevronRight, Trash2, Edit3, Camera, MoreVertical, Keyboard, MousePointer2, Orbit, Columns3, CalendarDays, Shield, MonitorSmartphone, Sparkles, Key } from 'lucide-react';
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 /* import { toPng, toCanvas } from 'html-to-image'; */
 import { toCanvas } from 'html-to-image';
+import { MODEL_NAME } from '../services/ai';
 
 function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
 
+const formatModelName = (name: string) => {
+  if (name.includes('gemini-3')) return 'Gemini 3';
+  if (name.includes('gemini-1.5')) return 'Gemini 1.5';
+  return name.split('-')[0].charAt(0).toUpperCase() + name.split('-')[0].slice(1);
+};
+
 const Toolbar: React.FC = () => {
   const activeSpaceId = useStore((state) => state.activeSpaceId);
+  const oracleMode = useStore((state) => state.oracleMode);
+  const toggleOracleMode = useStore((state) => state.toggleOracleMode);
+  const setApiKey = useStore((state) => state.setApiKey);
+  const removeApiKey = useStore((state) => state.removeApiKey);
+  const apiKey = useStore((state) => state.apiKey);
+  const setChatOpen = useStore((state) => state.setChatOpen);
+  const isChatOpen = useStore((state) => state.isChatOpen);
+  
   const spaces = useStore((state) => state.spaces);
   const thoughts = useStore((state) => state.thoughts);
   const isInspectorOpen = useStore((state) => state.isInspectorOpen);
@@ -38,8 +53,9 @@ const Toolbar: React.FC = () => {
   const [isSpaceMenuOpen, setIsSpaceMenuOpen] = useState(false);
   const [isSystemMenuOpen, setIsSystemMenuOpen] = useState(false);
   const [isShortcutsOpen, setIsShortcutsOpen] = useState(false);
+  const [isKeyModalOpen, setIsKeyModalOpen] = useState(false);
+  const [tempKey, setTempKey] = useState('');
   const [isCapturing, setIsCapturing] = useState(false);
-  const [isPrivacyTooltipOpen, setIsPrivacyTooltipOpen] = useState(false);
   const [mobileMenuSpaceId, setMobileMenuSpaceId] = useState<string | null>(null);
   
   const longPressTimer = React.useRef<number | null>(null);
@@ -577,30 +593,65 @@ const Toolbar: React.FC = () => {
           <button onClick={handleScreenshot} disabled={isCapturing} className="flex items-center gap-3 px-3 md:px-4 py-2.5 md:py-3 rounded-xl hover:bg-white/5 text-[9px] md:text-[10px] font-bold uppercase tracking-widest text-slate-300 transition-colors">
             <Camera className="w-3.5 h-3.5 md:w-4 md:h-4" /> {isCapturing ? 'Saving...' : 'Screenshot'}
           </button>
+          <div className="h-[1px] bg-white/5 my-1 mx-2"></div>
+          <button 
+            onClick={() => {
+              setIsKeyModalOpen(true);
+              setIsSystemMenuOpen(false);
+            }} 
+            className="flex items-center gap-3 px-3 md:px-4 py-2.5 md:py-3 rounded-xl hover:bg-purple-500/10 text-[9px] md:text-[10px] font-bold uppercase tracking-widest text-purple-400 transition-colors"
+          >
+            <Key className="w-3.5 h-3.5 md:w-4 md:h-4" /> Oracle Settings
+          </button>
         </div>
         
         <div className="flex gap-2 pointer-events-auto">
+          {oracleMode && (
+            <button 
+              onClick={() => setChatOpen(!isChatOpen)}
+              className={cn(
+                "glass w-10 h-10 md:w-12 md:h-12 flex items-center justify-center rounded-2xl border border-white/5 transition-all",
+                isChatOpen ? "bg-[var(--accent)] text-white shadow-[0_0_20px_var(--accent-glow)]" : "text-[var(--accent)] hover:bg-[var(--accent)]/10"
+              )}
+            >
+              <Sparkles className="w-4 h-4 md:w-5 md:h-5" />
+            </button>
+          )}
+
           <div className="relative group">
             <div className={cn(
               "absolute bottom-full right-0 mb-4 transition-all duration-300 pointer-events-none w-52 md:w-64 translate-y-2",
-              "opacity-0 group-hover:opacity-100 group-hover:translate-y-0",
-              isPrivacyTooltipOpen && "opacity-100 translate-y-0"
+              "opacity-0 group-hover:opacity-100 group-hover:translate-y-0"
             )}>
               <div className="glass p-5 md:p-6 rounded-[2rem] border-white/10 shadow-2xl bg-[var(--bg-main)]/95">
                 <div className="flex items-center gap-3 mb-2">
-                  <div className="w-1.5 h-1.5 rounded-full bg-green-500 shadow-[0_0_8px_#22c55e]" />
-                  <p className="text-[9px] md:text-[10px] font-black uppercase tracking-widest text-white">Local & Secure</p>
+                  <div className={cn("w-1.5 h-1.5 rounded-full shadow-[0_0_8px_currentColor]", oracleMode ? "bg-purple-500 text-purple-500" : "bg-green-500 text-green-500")} />
+                  <p className="text-[9px] md:text-[10px] font-black uppercase tracking-widest text-white">
+                    {oracleMode ? 'Oracle Online' : 'Local & Secure'}
+                  </p>
                 </div>
                 <p className="text-[9px] md:text-[10px] leading-relaxed text-slate-400">
-                  Your thoughts are stored 100% locally. Privacy is built-in.
+                  {oracleMode 
+                    ? 'AI assistant is active. Data is sent to Gemini only when you chat.'
+                    : apiKey 
+                      ? 'AI assistant is idle. Click to enable Oracle mode.'
+                      : 'Oracle is disabled. Add an API Key in System Menu to enable.'}
                 </p>
               </div>
             </div>
             <button 
-              onClick={() => setIsPrivacyTooltipOpen(!isPrivacyTooltipOpen)}
+              onClick={() => {
+                if (apiKey) {
+                  toggleOracleMode();
+                } else {
+                  setIsKeyModalOpen(true);
+                }
+              }}
               className={cn(
-                "glass w-10 h-10 md:w-12 md:h-12 flex items-center justify-center rounded-2xl border border-white/5 transition-all cursor-help",
-                isPrivacyTooltipOpen ? "text-green-400 border-green-500/20" : "text-slate-500 hover:text-green-400 hover:border-green-500/20"
+                "glass w-10 h-10 md:w-12 md:h-12 flex items-center justify-center rounded-2xl border border-white/5 transition-all",
+                oracleMode 
+                  ? "text-purple-400 border-purple-500/20 bg-purple-500/10 shadow-[0_0_15px_rgba(168,85,247,0.2)]" 
+                  : "text-slate-500 hover:text-green-400 hover:border-green-500/20"
               )}
             >
               <Shield className="w-4 h-4 md:w-5 md:h-5" />
@@ -649,6 +700,95 @@ const Toolbar: React.FC = () => {
           </button>
         </div>
       </div>
+
+      {/* API KEY MODAL */}
+      {isKeyModalOpen && (
+        <div className="fixed inset-0 z-[10002] bg-black/60 backdrop-blur-md flex items-center justify-center p-10 pointer-events-auto" onClick={() => setIsKeyModalOpen(false)}>
+          <div className="glass max-w-md w-full p-10 rounded-[3rem] border border-white/10 relative overflow-hidden" onClick={e => e.stopPropagation()}>
+            <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-purple-500 via-pink-500 to-purple-500" />
+            
+            <div className="flex justify-between items-center mb-6">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-purple-500/20 flex items-center justify-center text-purple-400">
+                  <Key className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="text-sm font-black uppercase tracking-[0.2em] text-white">Oracle Access</h3>
+                  <p className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Gemini API Configuration</p>
+                </div>
+              </div>
+              <button onClick={() => setIsKeyModalOpen(false)} className="text-slate-500 hover:text-white"><Plus className="w-6 h-6 rotate-45" /></button>
+            </div>
+
+            <p className="text-xs text-slate-400 leading-relaxed mb-6">
+              To enable God Mode, you need a Google Gemini API Key. 
+              The key is stored locally in your browser and sent directly to Google.
+            </p>
+
+            <div className="space-y-4">
+              <div className="relative">
+                <input
+                  type="password"
+                  value={tempKey}
+                  onChange={(e) => setTempKey(e.target.value)}
+                  placeholder={apiKey ? "••••••••••••••••" : "sk-..."}
+                  className="w-full bg-black/40 border border-white/10 rounded-xl p-4 text-xs text-white outline-none focus:border-purple-500 font-mono"
+                />
+                {apiKey && (
+                  <div className="absolute right-4 top-1/2 -translate-y-1/2 flex items-center gap-2">
+                    <span className="text-[8px] font-black text-green-500 uppercase tracking-widest bg-green-500/10 px-2 py-1 rounded-md border border-green-500/20">Active</span>
+                  </div>
+                )}
+              </div>
+              
+              <div className="flex gap-2">
+                {apiKey ? (
+                  <button 
+                    onClick={() => {
+                      removeApiKey();
+                      setTempKey('');
+                      setIsKeyModalOpen(false);
+                    }}
+                    className="flex-1 py-3 rounded-xl border border-red-500/30 hover:bg-red-500/10 text-[10px] font-bold uppercase tracking-widest text-red-400 transition-colors flex items-center justify-center gap-2"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" /> Remove
+                  </button>
+                ) : (
+                  <button 
+                    onClick={() => window.open('https://aistudio.google.com/app/apikey', '_blank')}
+                    className="flex-1 py-3 rounded-xl border border-white/10 hover:bg-white/5 text-[10px] font-bold uppercase tracking-widest text-slate-400 transition-colors"
+                  >
+                    Get Key
+                  </button>
+                )}
+                
+                <button 
+                  onClick={() => {
+                    if (tempKey.trim()) {
+                      setApiKey(tempKey.trim());
+                      setTempKey('');
+                      setIsKeyModalOpen(false);
+                      if (!oracleMode) toggleOracleMode();
+                    } else if (apiKey) {
+                      // Just closing if no new key provided but one exists
+                      setIsKeyModalOpen(false);
+                    }
+                  }}
+                  className="flex-[2] py-3 rounded-xl bg-purple-500 hover:bg-purple-400 text-[10px] font-black uppercase tracking-widest text-white transition-colors"
+                >
+                  {apiKey ? 'Update Key' : 'Activate Oracle'}
+                </button>
+              </div>
+            </div>
+            
+            <div className="mt-6 pt-6 border-t border-white/5 text-center">
+              <p className="text-[9px] text-slate-600 uppercase font-bold tracking-widest">
+                Powered by Google {formatModelName(MODEL_NAME)}
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* SHORTCUTS MODAL */}
       {isShortcutsOpen && (

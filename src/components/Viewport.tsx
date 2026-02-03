@@ -195,7 +195,7 @@ const Viewport: React.FC = () => {
 
     const handleClick = (e: MouseEvent) => {
       const target = e.target as HTMLElement;
-      if (!target.closest('.thought-bulb, #inspector, .ui-layer, .glass, .expand-img, button, input, textarea, #cal-sidebar-content, .cal-grid')) {
+      if (!target.closest('.thought-bulb, #inspector, .ui-layer, .glass, .expand-img, button, input, textarea, #cal-sidebar-content, .cal-grid, #chat-overlay')) {
         setInspectorOpen(false);
         setSelectedThoughtId(null);
       }
@@ -203,7 +203,7 @@ const Viewport: React.FC = () => {
 
     const handleWheel = (e: WheelEvent) => {
       const target = e.target as HTMLElement;
-      if (target.closest('#inspector, #text-focus-overlay, #table-focus-overlay')) return;
+      if (target.closest('#inspector, #text-focus-overlay, #table-focus-overlay, #chat-overlay')) return;
 
       const isUnscheduledNode = target.closest('[data-unscheduled="true"]');
       const isSidebar = target.closest('#cal-sidebar-content');
