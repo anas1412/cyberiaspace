@@ -1,6 +1,6 @@
 import React from 'react';
 import { useStore } from '../store/useStore';
-import { useModalStore } from './Modal';
+import { useModalStore } from '../store/useModalStore';
 import { X, Maximize2, Image as ImageIcon, Link, Trash2 } from 'lucide-react';
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
@@ -83,10 +83,10 @@ const Inspector: React.FC = () => {
       </div>
 
       <div className="grid grid-cols-5 gap-1 mb-6">
-        {['text', 'tasks', 'paint', 'table', 'image'].map((type) => (
+        {(['text', 'tasks', 'paint', 'table', 'image'] as const).map((type) => (
           <button
             key={type}
-            onClick={() => handleTypeChange(type as any)}
+            onClick={() => handleTypeChange(type)}
             className={cn(
               "p-2 rounded-xl text-[8px] font-800 uppercase bg-white/[0.03] border border-transparent transition-all",
               thought.type === type ? "bg-[var(--accent)]/10 border-[var(--accent)] text-white" : "text-slate-500"

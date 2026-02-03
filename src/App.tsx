@@ -2,7 +2,7 @@ import { useEffect } from 'react';
 import { Analytics } from '@vercel/analytics/react';
 import { SpeedInsights } from '@vercel/speed-insights/react';
 import { useStore } from './store/useStore';
-import { useModalStore } from './components/Modal';
+import { useModalStore } from './store/useModalStore';
 import { LIMITS } from './constants';
 import Viewport from './components/Viewport';
 import Toolbar from './components/Toolbar';
@@ -19,15 +19,29 @@ import TasksFocusEditor from './components/TasksFocusEditor';
 
 function App() {
   const init = useStore((state) => state.init);
+  const setDeferredPrompt = useStore((state) => state.setDeferredPrompt);
   const thoughts = useStore((state) => state.thoughts);
   const addThought = useStore((state) => state.addThought);
   const setSelectedThoughtId = useStore((state) => state.setSelectedThoughtId);
   const setInspectorOpen = useStore((state) => state.setInspectorOpen);
+  
   const { openModal } = useModalStore();
 
   useEffect(() => {
     init();
-  }, [init]);
+
+    const handleBeforeInstallPrompt = (e: Event) => {
+      e.preventDefault();
+      setDeferredPrompt(e);
+    };
+
+    window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+
+    return () => {
+      window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+    };
+  }, [init, setDeferredPrompt]);
+
 
   useEffect(() => {
     const handlePaste = async (e: ClipboardEvent) => {

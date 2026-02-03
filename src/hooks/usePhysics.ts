@@ -34,7 +34,7 @@ export const usePhysics = (
   const mousePosRef = useRef({ x: 0, y: 0 });
   const sbHeight = useRef(0);
   const kMaxHeight = useRef(0);
-  const requestRef = useRef<number>(null);
+  const requestRef = useRef<number | null>(null);
   const prevModeRef = useRef<string | null>(null);
   
   const thoughtMap = useRef<Map<number, Thought>>(new Map());
@@ -225,7 +225,7 @@ export const usePhysics = (
       const scheduled = allThoughts.filter(t => !!t.date); const unscheduled = allThoughts.filter(t => !t.date).sort((a,b) => a.order - b.order);
       scheduled.forEach((t) => {
         const p = state.get(t.id); if (!p) return; if (dragRef.current?.id === t.id) return;
-        let target = { x: 0, y: 0, scale: 0 };
+        const target = { x: 0, y: 0, scale: 0 };
         const tDate = new Date(t.date + 'T00:00:00');
         if (tDate.getFullYear() === year && tDate.getMonth() === month) {
             const day = tDate.getDate(); const startOffset = firstDay - 1; const cellIndex = startOffset + (day - 1); const col = cellIndex % 7; const row = Math.floor(cellIndex / 7);
@@ -238,7 +238,7 @@ export const usePhysics = (
       unscheduled.forEach((t) => {
         const stateP = state.get(t.id); if (!stateP) return; if (dragRef.current?.id === t.id) return;
         const el = elements.current.get(t.id); const height = (el?.offsetHeight || 120) * 0.6;
-        let target = { x: padding + sidebarWidth / 2, y: currentSB_Y - scrollTop + height / 2, scale: 0.6 };
+        const target = { x: padding + sidebarWidth / 2, y: currentSB_Y - scrollTop + height / 2, scale: 0.6 };
         currentSB_Y += height + 20;
         stateP.x += (target.x - stateP.x) * 0.15; stateP.y += (target.y - stateP.y) * 0.15; stateP.scale += (target.scale - stateP.scale) * 0.1; stateP.vx = 0; stateP.vy = 0;
       });
@@ -393,11 +393,14 @@ export const usePhysics = (
         }
       }
     });
-    requestRef.current = requestAnimationFrame(loop);
-  }, [activeSpace, calendarViewDate, transform, linkingSourceId]);
+  }, [activeSpace, calendarViewDate, transform, linkingSourceId, canvasRef]);
 
   useEffect(() => {
-    requestRef.current = requestAnimationFrame(loop);
+    const animate = () => {
+      loop();
+      requestRef.current = requestAnimationFrame(animate);
+    };
+    requestRef.current = requestAnimationFrame(animate);
     return () => { if (requestRef.current) cancelAnimationFrame(requestRef.current); };
   }, [loop]);
 

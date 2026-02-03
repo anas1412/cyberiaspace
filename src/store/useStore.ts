@@ -12,12 +12,16 @@ interface CyberiaState {
   calendarViewDate: Date;
   linkingSourceId: number | null;
   theme: 'cyberia' | 'rose' | 'neon';
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  deferredPrompt: any;
   
   // Initialization
   init: () => Promise<void>;
   
-  // Theme Actions
+  // Actions
   setTheme: (theme: 'cyberia' | 'rose' | 'neon') => void;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  setDeferredPrompt: (prompt: any) => void;
   
   // Space Actions
   setActiveSpace: (id: string) => void;
@@ -64,7 +68,8 @@ export const useStore = create<CyberiaState>((set, get) => ({
   isLightboxOpen: false,
   lightboxImage: null,
   linkingSourceId: null,
-  theme: (localStorage.getItem('cyberia-theme') as any) || 'cyberia',
+  theme: (localStorage.getItem('cyberia-theme') as 'cyberia' | 'rose' | 'neon') || 'cyberia',
+  deferredPrompt: null,
 
   openLightbox: (image) => set({ isLightboxOpen: true, lightboxImage: image }),
   closeLightbox: () => set({ isLightboxOpen: false, lightboxImage: null }),
@@ -74,6 +79,8 @@ export const useStore = create<CyberiaState>((set, get) => ({
     localStorage.setItem('cyberia-theme', theme);
     document.body.setAttribute('data-theme', theme);
   },
+
+  setDeferredPrompt: (prompt) => set({ deferredPrompt: prompt }),
 
   init: async () => {
     // Apply theme on init
@@ -291,7 +298,7 @@ export const useStore = create<CyberiaState>((set, get) => ({
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `cyberia_backup_${new Date().toLocaleDateString('en-CA')}.json`;
+    a.download = `cyberia_space_backup_${new Date().toLocaleDateString('en-CA')}.json`;
     a.click();
     URL.revokeObjectURL(url);
   },

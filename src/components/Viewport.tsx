@@ -1,6 +1,6 @@
 import React, { useRef, useState, useEffect } from 'react';
 import { useStore } from '../store/useStore';
-import { useModalStore } from './Modal';
+import { useModalStore } from '../store/useModalStore';
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 import World from './World';
@@ -37,6 +37,7 @@ const Viewport: React.FC = () => {
   useEffect(() => {
     if (activeSpace) {
       if (activeSpace.mode === 'spatial') {
+        // eslint-disable-next-line react-hooks/set-state-in-effect
         setTransform({
           x: activeSpace.transformX ?? 0,
           y: activeSpace.transformY ?? 0,

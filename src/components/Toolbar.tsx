@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
 import { useStore } from '../store/useStore';
-import { useModalStore } from './Modal';
+import { useModalStore } from '../store/useModalStore';
 import { LIMITS } from '../constants';
-import { Plus, Zap, Download, Upload, SlidersHorizontal, ChevronLeft, ChevronRight, Trash2, Edit3, Camera, MoreVertical, Keyboard, MousePointer2, Orbit, Columns3, CalendarDays, Shield } from 'lucide-react';
+import { Plus, Zap, Download, Upload, SlidersHorizontal, ChevronLeft, ChevronRight, Trash2, Edit3, Camera, MoreVertical, Keyboard, MousePointer2, Orbit, Columns3, CalendarDays, Shield, MonitorSmartphone } from 'lucide-react';
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 import { toPng } from 'html-to-image';
@@ -27,6 +27,8 @@ const Toolbar: React.FC = () => {
   const importData = useStore((state) => state.importData);
   const theme = useStore((state) => state.theme);
   const setTheme = useStore((state) => state.setTheme);
+  const deferredPrompt = useStore((state) => state.deferredPrompt);
+  const setDeferredPrompt = useStore((state) => state.setDeferredPrompt);
   
   const { openModal } = useModalStore();
   
@@ -98,10 +100,11 @@ const Toolbar: React.FC = () => {
         },
         width: width,
         height: height,
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         filter: (node: any) => {
           const isUI = node.classList?.contains('ui-layer') || 
                        node.id === 'connection-canvas' ||
-                       node.tagName === 'BUTTON' && !node.closest?.('.thought-bulb');
+                       (node.tagName === 'BUTTON' && !node.closest?.('.thought-bulb'));
           return !isUI;
         }
       });
@@ -115,6 +118,16 @@ const Toolbar: React.FC = () => {
     } finally {
       setIsCapturing(false);
     }
+  };
+
+  const handleInstall = async () => {
+    if (!deferredPrompt) return;
+    deferredPrompt.prompt();
+    const { outcome } = await deferredPrompt.userChoice;
+    if (outcome === 'accepted') {
+      setDeferredPrompt(null);
+    }
+    setIsSystemMenuOpen(false);
   };
 
   const handleAddThought = async () => {
@@ -222,7 +235,6 @@ const Toolbar: React.FC = () => {
         {/* LEFT SIDE: Logo & Settings */}
         <div className="pointer-events-auto flex items-center gap-6 h-[48px]">
           <div className="flex items-center gap-4">
-            {/* <img src="/logo.png" alt="Cyberia Logo" className="w-10 h-10 object-contain drop-shadow-[0_0_10px_rgba(99,102,241,0.5)]" /> */}
             <div>
               <h1 className="text-3xl font-bold tracking-tighter text-[var(--text-primary)]">CYBERIA</h1>
               <div className="flex items-center gap-3 mt-1 group cursor-pointer" onClick={() => setIsSpaceMenuOpen(!isSpaceMenuOpen)}>
@@ -255,7 +267,7 @@ const Toolbar: React.FC = () => {
           </div>
         </div>
 
-        {/* CENTER: Space Switcher (Dynamically Centered) */}
+        {/* CENTER: Space Switcher */}
         <div className="absolute left-1/2 -translate-x-1/2 flex items-center h-[48px] px-2 glass rounded-full shadow-2xl transition-all pointer-events-auto">
           <div className="flex items-center gap-1 h-full">
             {spaces.map((space) => {
@@ -286,7 +298,7 @@ const Toolbar: React.FC = () => {
           </div>
         </div>
 
-        {/* RIGHT SIDE: View Switcher (Segmented Control) */}
+        {/* RIGHT SIDE: View Switcher */}
         <div className="flex items-center h-[48px] p-1.5 glass rounded-2xl shadow-2xl transition-all pointer-events-auto">
           {[
             { id: 'spatial', icon: Orbit, color: 'bg-[var(--accent)]' },
@@ -298,7 +310,7 @@ const Toolbar: React.FC = () => {
             return (
               <button
                 key={mode.id}
-                onClick={() => setViewMode(mode.id as any)}
+                onClick={() => setViewMode(mode.id as 'spatial' | 'kanban' | 'calendar')}
                 className={cn(
                   "px-4 h-full rounded-xl transition-all duration-300 flex items-center gap-3 group/mode",
                   isActive 
@@ -323,7 +335,7 @@ const Toolbar: React.FC = () => {
         </div>
       </div>
 
-      {/* NEW THOUGHT FAB (Center Bottom) */}
+      {/* NEW THOUGHT FAB */}
       <div className="fixed bottom-10 left-1/2 -translate-x-1/2 z-[10000] pointer-events-none flex flex-col items-center gap-4">
         <button 
           onClick={handleAddThought}
@@ -337,7 +349,7 @@ const Toolbar: React.FC = () => {
         </button>
       </div>
 
-      {/* SYSTEM TRAY (Bottom Right) */}
+      {/* SYSTEM TRAY */}
       <div className="ui-layer bottom-8 right-8 flex flex-col items-end gap-3 pointer-events-none">
         <div className={cn(
           "glass p-2 rounded-2xl flex flex-col gap-1 transition-all pointer-events-auto w-64",
@@ -354,7 +366,7 @@ const Toolbar: React.FC = () => {
               ].map((t) => (
                 <button
                   key={t.id}
-                  onClick={() => setTheme(t.id as any)}
+                  onClick={() => setTheme(t.id as 'cyberia' | 'rose' | 'neon')}
                   className={cn(
                     "flex flex-col items-center gap-2 p-2 rounded-xl border transition-all",
                     theme === t.id 
@@ -371,6 +383,12 @@ const Toolbar: React.FC = () => {
               ))}
             </div>
           </div>
+
+          {deferredPrompt && (
+            <button onClick={handleInstall} className="flex items-center gap-3 px-4 py-3 rounded-xl bg-[var(--accent)]/10 hover:bg-[var(--accent)]/20 text-[10px] font-black uppercase tracking-[0.2em] text-[var(--accent-secondary)] transition-all mb-1 border border-[var(--accent)]/20">
+              <MonitorSmartphone className="w-4 h-4" /> Install Application
+            </button>
+          )}
 
           <button onClick={handleExport} className="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-white/5 text-[10px] font-bold uppercase tracking-widest text-slate-300 transition-colors">
             <Download className="w-4 h-4" /> Export Data
@@ -422,7 +440,7 @@ const Toolbar: React.FC = () => {
         </div>
       </div>
 
-      {/* STATUS BAR (Bottom Left) */}
+      {/* STATUS BAR */}
       <div className="ui-layer bottom-8 left-8 flex items-center gap-4 pointer-events-auto">
         <div className="glass px-5 h-[48px] rounded-2xl flex items-center gap-6 border border-white/5">
           <div className="flex items-center gap-3">

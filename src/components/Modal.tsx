@@ -1,32 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { create } from 'zustand';
-
-interface ModalState {
-  isOpen: boolean;
-  title: string;
-  description?: string;
-  type: 'rename' | 'delete_space' | 'delete_thought' | 'limit_space' | 'limit_thought' | 'new_space' | 'alert' | 'import_confirm';
-  inputValue?: string;
-  confirmText?: string;
-  onConfirm?: (value?: string) => void;
-  openModal: (params: Omit<ModalState, 'isOpen' | 'openModal' | 'closeModal'>) => void;
-  closeModal: () => void;
-}
-
-export const useModalStore = create<ModalState>((set) => ({
-  isOpen: false,
-  title: '',
-  type: 'alert',
-  openModal: (params) => set({ 
-    description: undefined, 
-    inputValue: undefined, 
-    confirmText: undefined,
-    onConfirm: undefined,
-    ...params, 
-    isOpen: true 
-  }),
-  closeModal: () => set({ isOpen: false }),
-}));
+import { useModalStore } from '../store/useModalStore';
 
 const Modal: React.FC = () => {
   const { isOpen, title, description, type, inputValue: initialValue, confirmText, onConfirm, closeModal } = useModalStore();
@@ -38,7 +11,10 @@ const Modal: React.FC = () => {
   }, [onConfirm, inputValue, closeModal]);
 
   useEffect(() => {
-    if (isOpen) setInputValue(initialValue || '');
+    if (isOpen) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setInputValue(initialValue || '');
+    }
   }, [isOpen, initialValue]);
 
   useEffect(() => {
