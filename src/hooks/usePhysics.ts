@@ -116,21 +116,27 @@ export const usePhysics = (
   }, [activeSpace?.mode, activeSpaceId, thoughts]);
 
   useEffect(() => {
-    const handleMouseMove = (e: MouseEvent) => {
+    const handleMove = (clientX: number, clientY: number) => {
       if (!dragRef.current) return;
       const { id, startX, startY, nodeStartX, nodeStartY } = dragRef.current;
-      const dx = (e.clientX - startX) / transform.scale;
-      const dy = (e.clientY - startY) / transform.scale;
-      if (Math.abs(e.clientX - startX) > 5 || Math.abs(e.clientY - startY) > 5) dragRef.current.moved = true;
+      const dx = (clientX - startX) / transform.scale;
+      const dy = (clientY - startY) / transform.scale;
+      if (Math.abs(clientX - startX) > 5 || Math.abs(clientY - startY) > 5) dragRef.current.moved = true;
       const p = physicsState.current.get(id);
       if (p) { p.x = nodeStartX + dx; p.y = nodeStartY + dy; p.vx = 0; p.vy = 0; }
     };
 
-    const handleMouseUp = (e: MouseEvent) => {
+    const handleMouseMove = (e: MouseEvent) => handleMove(e.clientX, e.clientY);
+    const handleTouchMove = (e: TouchEvent) => {
+      if (dragRef.current) {
+        handleMove(e.touches[0].clientX, e.touches[0].clientY);
+        if (e.cancelable) e.preventDefault();
+      }
+    };
+
+    const handleUp = (lastMouseX: number, lastMouseY: number) => {
       if (dragRef.current) {
         const { id, moved } = dragRef.current;
-        const lastMouseX = e.clientX;
-        const lastMouseY = e.clientY;
         if (moved) {
           const p = physicsState.current.get(id);
           const mode = activeSpace?.mode || 'spatial';
@@ -184,9 +190,25 @@ export const usePhysics = (
         dragRef.current = null;
       }
     };
+
+    const handleMouseUp = (e: MouseEvent) => handleUp(e.clientX, e.clientY);
+    const handleTouchEnd = (e: TouchEvent) => {
+      if (dragRef.current) {
+        const touch = e.changedTouches[0];
+        handleUp(touch.clientX, touch.clientY);
+      }
+    };
+
     window.addEventListener('mousemove', handleMouseMove);
     window.addEventListener('mouseup', handleMouseUp);
-    return () => { window.removeEventListener('mousemove', handleMouseMove); window.removeEventListener('mouseup', handleMouseUp); };
+    window.addEventListener('touchmove', handleTouchMove, { passive: false });
+    window.addEventListener('touchend', handleTouchEnd);
+    return () => { 
+      window.removeEventListener('mousemove', handleMouseMove); 
+      window.removeEventListener('mouseup', handleMouseUp); 
+      window.removeEventListener('touchmove', handleTouchMove);
+      window.removeEventListener('touchend', handleTouchEnd);
+    };
   }, [transform.scale, updateThought, activeSpace, calendarViewDate]);
 
   const loop = useCallback(() => {
@@ -205,7 +227,8 @@ export const usePhysics = (
 
        statuses.forEach((s, colIdx) => {
           const list = allThoughts.filter(t => t.status === s).sort((a, b) => a.order - b.order);
-          let currentY = 280;
+          const isMobile = window.innerWidth < 768;
+          let currentY = isMobile ? 200 : 280;
           list.forEach((t) => {
              const p = state.get(t.id); if (!p) return; if (dragRef.current?.id === t.id) return;
              const colWidth = window.innerWidth / 4; 
@@ -405,10 +428,27 @@ export const usePhysics = (
   }, [loop]);
 
   const registerElement = useCallback((id: number, el: HTMLDivElement | null) => { if (el) elements.current.set(id, el); else elements.current.delete(id); }, []);
-  const handleMouseDown = useCallback((id: number, e: React.MouseEvent) => {
-    if (e.button !== 0) return; if ((e.target as HTMLElement).closest('.prevent-drag')) return;
+  const handleMouseDown = useCallback((id: number, e: React.MouseEvent | React.TouchEvent) => {
+    const isTouch = 'touches' in e;
+    if (!isTouch && (e as React.MouseEvent).button !== 0) return; 
+    if ((e.target as HTMLElement).closest('.prevent-drag')) return;
+    
+    const clientX = isTouch ? (e as React.TouchEvent).touches[0].clientX : (e as React.MouseEvent).clientX;
+    const clientY = isTouch ? (e as React.TouchEvent).touches[0].clientY : (e as React.MouseEvent).clientY;
+
     const p = physicsState.current.get(id);
-    if (p) { dragRef.current = { id, startX: e.clientX, startY: e.clientY, nodeStartX: p.x, nodeStartY: p.y, moved: false, lastMouseX: e.clientX, lastMouseY: e.clientY }; }
+    if (p) { 
+      dragRef.current = { 
+        id, 
+        startX: clientX, 
+        startY: clientY, 
+        nodeStartX: p.x, 
+        nodeStartY: p.y, 
+        moved: false, 
+        lastMouseX: clientX, 
+        lastMouseY: clientY 
+      }; 
+    }
   }, []);
   const isDragging = useCallback((id: number) => dragRef.current?.id === id, []);
   return { registerElement, handleMouseDown, isDragging, sidebarHeight: sbHeight, kanbanHeight: kMaxHeight };

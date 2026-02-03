@@ -15,6 +15,7 @@ const Toolbar: React.FC = () => {
   const activeSpaceId = useStore((state) => state.activeSpaceId);
   const spaces = useStore((state) => state.spaces);
   const thoughts = useStore((state) => state.thoughts);
+  const isInspectorOpen = useStore((state) => state.isInspectorOpen);
   const setActiveSpace = useStore((state) => state.setActiveSpace);
   const addThought = useStore((state) => state.addThought);
   const updateSpace = useStore((state) => state.updateSpace);
@@ -37,6 +38,52 @@ const Toolbar: React.FC = () => {
   const [isSystemMenuOpen, setIsSystemMenuOpen] = useState(false);
   const [isShortcutsOpen, setIsShortcutsOpen] = useState(false);
   const [isCapturing, setIsCapturing] = useState(false);
+  const [isPrivacyTooltipOpen, setIsPrivacyTooltipOpen] = useState(false);
+  const [mobileMenuSpaceId, setMobileMenuSpaceId] = useState<string | null>(null);
+  
+  const longPressTimer = React.useRef<number | null>(null);
+  const touchStartTime = React.useRef<number>(0);
+
+  const isMobile = typeof window !== 'undefined' ? window.innerWidth < 768 : false;
+
+  const handleSpaceLongPress = (id: string) => {
+    if (!isMobile) return;
+    setMobileMenuSpaceId(id);
+    if (window.navigator.vibrate) window.navigator.vibrate(50);
+  };
+
+  const handleTouchStart = (id: string) => {
+    if (!isMobile) return;
+    touchStartTime.current = Date.now();
+    longPressTimer.current = window.setTimeout(() => handleSpaceLongPress(id), 600);
+  };
+
+  const handleTouchEnd = (id: string, e: React.PointerEvent) => {
+    if (longPressTimer.current) {
+      clearTimeout(longPressTimer.current);
+      longPressTimer.current = null;
+    }
+    
+    // If it was a quick tap (less than 600ms) and not a long press
+    if (Date.now() - touchStartTime.current < 600 && !mobileMenuSpaceId) {
+      setActiveSpace(id);
+    }
+  };
+
+  // Close menus on click elsewhere
+  React.useEffect(() => {
+    const handleGlobalClick = (e: MouseEvent) => {
+      const target = e.target as HTMLElement;
+      if (mobileMenuSpaceId && !target.closest('.mobile-space-menu')) {
+        setMobileMenuSpaceId(null);
+      }
+      if (isSystemMenuOpen && !target.closest('.system-tray-container')) {
+        setIsSystemMenuOpen(false);
+      }
+    };
+    window.addEventListener('mousedown', handleGlobalClick);
+    return () => window.removeEventListener('mousedown', handleGlobalClick);
+  }, [mobileMenuSpaceId, isSystemMenuOpen]);
 
   const handleExport = () => {
     exportData();
@@ -62,7 +109,6 @@ const Toolbar: React.FC = () => {
   };
 
   const handleScreenshot = async () => {
-    setIsSystemMenuOpen(false);
     const worldEl = document.getElementById('world');
     if (!worldEl || thoughts.length === 0) return;
 
@@ -73,17 +119,32 @@ const Toolbar: React.FC = () => {
       
       thoughts.forEach(t => {
         const el = document.querySelector(`.thought-bulb[data-id="${t.id}"]`) as HTMLElement;
-        const width = 280;
-        const height = el?.offsetHeight || 200;
+        const nodeWidth = 280;
+        const nodeHeight = el?.offsetHeight || 200;
         
-        const x = t.x - 140; 
-        const y = t.y - height / 2;
+        let x, y;
+        if (isMobile && el) {
+          // On mobile, use actual visual position from the DOM transform for accuracy
+          try {
+            const matrix = new DOMMatrix(window.getComputedStyle(el).transform);
+            x = matrix.m41;
+            y = matrix.m42;
+          } catch (e) {
+            x = t.x - 140;
+            y = t.y - nodeHeight / 2;
+          }
+        } else {
+          x = t.x - 140; 
+          y = t.y - nodeHeight / 2;
+        }
         
         if (x < minX) minX = x;
         if (y < minY) minY = y;
-        if (x + width > maxX) maxX = x + width;
-        if (y + height > maxY) maxY = y + height;
+        if (x + nodeWidth > maxX) maxX = x + nodeWidth;
+        if (y + nodeHeight > maxY) maxY = y + nodeHeight;
       });
+
+      if (minX === Infinity) return;
 
       const padding = 100;
       minX -= padding; minY -= padding; maxX += padding; maxY += padding;
@@ -231,9 +292,9 @@ const Toolbar: React.FC = () => {
   return (
     <>
       {/* TOP UI */}
-      <div className="ui-layer top-8 left-8 right-8 flex items-center justify-between pointer-events-none fixed z-[9999]">
-        {/* LEFT SIDE: Logo & Settings */}
-        <div className="pointer-events-auto flex items-center gap-6 h-[48px]">
+      <div className="fixed top-4 md:top-8 left-4 md:left-8 right-4 md:right-8 z-[9999] flex flex-col md:flex-row items-center justify-between pointer-events-none gap-4">
+        {/* LEFT SIDE: Logo & Settings - Hidden on mobile to save space */}
+        <div className="hidden md:flex pointer-events-auto items-center gap-4 h-[48px]">
           <div className="flex items-center gap-4">
             <div>
               <h1 className="text-3xl font-bold tracking-tighter text-[var(--text-primary)]">CYBERIA</h1>
@@ -267,39 +328,133 @@ const Toolbar: React.FC = () => {
           </div>
         </div>
 
-        {/* CENTER: Space Switcher */}
-        <div className="absolute left-1/2 -translate-x-1/2 flex items-center h-[48px] px-2 glass rounded-full shadow-2xl transition-all pointer-events-auto">
-          <div className="flex items-center gap-1 h-full">
-            {spaces.map((space) => {
-              const isActive = space.id === activeSpaceId;
-              return (
-                <button
-                  key={space.id}
-                  onClick={() => setActiveSpace(space.id)}
-                  className={cn(
-                    "px-5 h-9 rounded-full text-[10px] uppercase font-black tracking-widest flex-shrink-0 transition-all duration-500 flex items-center justify-center gap-2",
-                    isActive 
-                      ? "bg-white/10 text-white border border-white/10 shadow-[0_0_20px_rgba(255,255,255,0.05)]" 
-                      : "text-slate-500 hover:text-slate-300 hover:bg-white/[0.03] border border-transparent"
-                  )}
-                >
-                  {isActive && <div className="w-1 h-1 rounded-full bg-[var(--accent-secondary)] shadow-[0_0_8px_var(--accent)]" />}
-                  {space.name}
-                </button>
-              );
-            })}
-            <div className="w-[1px] h-3 bg-white/10 mx-2"></div>
-            <button 
-              onClick={handleCreateSpace}
-              className="w-9 h-9 rounded-full text-slate-600 hover:text-white hover:bg-white/10 transition-all flex-shrink-0 flex items-center justify-center border border-white/10 border-dashed"
-            >
-              <Plus className="w-3.5 h-3.5" />
-            </button>
+        {/* CENTER: Space Switcher - Primary focus on mobile top */}
+        <div className="md:absolute md:left-1/2 md:-translate-x-1/2 flex flex-col items-center gap-2 pointer-events-none">
+          <div className="flex items-center h-[44px] md:h-[48px] max-w-[90vw] md:max-w-full glass rounded-full shadow-2xl transition-all pointer-events-auto overflow-x-auto no-scrollbar px-2 border border-white/5">
+            <div className="flex items-center gap-1 h-full min-w-max">
+              {spaces.map((space) => {
+                const isActive = space.id === activeSpaceId;
+                return (
+                  <button
+                    key={space.id}
+                    onClick={() => {
+                      if (!isMobile) setActiveSpace(space.id);
+                    }}
+                    onPointerDown={() => isMobile && handleTouchStart(space.id)}
+                    onPointerUp={(e) => isMobile && handleTouchEnd(space.id, e)}
+                    onPointerLeave={() => {
+                      if (isMobile && longPressTimer.current) {
+                        clearTimeout(longPressTimer.current);
+                        longPressTimer.current = null;
+                      }
+                    }}
+                    className={cn(
+                      "px-4 md:px-5 h-8 md:h-9 rounded-full text-[9px] md:text-[10px] uppercase font-black tracking-widest flex-shrink-0 transition-all duration-500 flex items-center justify-center gap-2",
+                      isActive 
+                        ? "bg-white/10 text-white border border-white/10 shadow-[0_0_20px_rgba(255,255,255,0.05)]" 
+                        : "text-slate-500 hover:text-slate-300 hover:bg-white/[0.03] border border-transparent"
+                    )}
+                  >
+                    {isActive && <div className="w-1 h-1 rounded-full bg-[var(--accent-secondary)] shadow-[0_0_8px_var(--accent)]" />}
+                    {space.name}
+                  </button>
+                );
+              })}
+              <div className="w-[1px] h-3 bg-white/10 mx-2"></div>
+              <button 
+                onClick={handleCreateSpace}
+                className="w-8 h-8 md:w-9 md:h-9 rounded-full text-slate-600 hover:text-white hover:bg-white/10 transition-all flex-shrink-0 flex items-center justify-center border border-white/10 border-dashed"
+              >
+                <Plus className="w-3.5 h-3.5" />
+              </button>
+            </div>
           </div>
+
+          {/* MOBILE SPACE MANAGEMENT MENU */}
+          {isMobile && mobileMenuSpaceId && (
+            <div className="mobile-space-menu glass p-1.5 rounded-2xl flex items-center gap-1 border border-white/10 shadow-2xl pointer-events-auto animate-in fade-in zoom-in duration-200">
+              <button 
+                onClick={() => { 
+                  const s = spaces.find(sp => sp.id === mobileMenuSpaceId);
+                  if (s) {
+                    openModal({
+                      title: 'Rename Space',
+                      type: 'rename',
+                      inputValue: s.name,
+                      confirmText: 'Rename',
+                      onConfirm: (newName) => {
+                        if (newName && newName.trim()) {
+                          updateSpace(s.id, { name: (newName as string).substring(0, 15) });
+                        }
+                      }
+                    });
+                  }
+                  setMobileMenuSpaceId(null);
+                }} 
+                className="p-2.5 bg-white/5 hover:bg-white/10 rounded-xl text-white transition-all"
+              >
+                <Edit3 className="w-4 h-4" />
+              </button>
+              <button 
+                onClick={() => {
+                  const currentIndex = spaces.findIndex(s => s.id === mobileMenuSpaceId);
+                  if (currentIndex > 0) {
+                    const newSpaces = [...spaces];
+                    [newSpaces[currentIndex], newSpaces[currentIndex - 1]] = [newSpaces[currentIndex - 1], newSpaces[currentIndex]];
+                    reorderSpaces(newSpaces);
+                  }
+                }} 
+                className="p-2.5 bg-white/5 hover:bg-white/10 rounded-xl text-white transition-all"
+              >
+                <ChevronLeft className="w-4 h-4" />
+              </button>
+              <button 
+                onClick={() => {
+                  const currentIndex = spaces.findIndex(s => s.id === mobileMenuSpaceId);
+                  if (currentIndex < spaces.length - 1) {
+                    const newSpaces = [...spaces];
+                    [newSpaces[currentIndex], newSpaces[currentIndex + 1]] = [newSpaces[currentIndex + 1], newSpaces[currentIndex]];
+                    reorderSpaces(newSpaces);
+                  }
+                }} 
+                className="p-2.5 bg-white/5 hover:bg-white/10 rounded-xl text-white transition-all"
+              >
+                <ChevronRight className="w-4 h-4" />
+              </button>
+              <div className="w-[1px] h-4 bg-white/10 mx-1"></div>
+              <button 
+                onClick={() => {
+                  const s = spaces.find(sp => sp.id === mobileMenuSpaceId);
+                  if (s) {
+                    if (spaces.length <= LIMITS.MIN_SPACES) {
+                      openModal({
+                        title: 'Cannot Delete',
+                        description: `You must have at least ${LIMITS.MIN_SPACES} active space.`,
+                        type: 'alert',
+                        confirmText: 'Okay'
+                      });
+                    } else {
+                      openModal({
+                        title: `Delete "${s.name}"?`,
+                        description: 'This will delete all thoughts in this space.',
+                        type: 'delete_space',
+                        confirmText: 'Delete',
+                        onConfirm: () => deleteSpace(s.id)
+                      });
+                    }
+                  }
+                  setMobileMenuSpaceId(null);
+                }}
+                className="p-2.5 bg-red-500/20 hover:bg-red-500/40 rounded-xl text-red-400 transition-all"
+              >
+                <Trash2 className="w-4 h-4" />
+              </button>
+            </div>
+          )}
         </div>
 
-        {/* RIGHT SIDE: View Switcher */}
-        <div className="flex items-center h-[48px] p-1.5 glass rounded-2xl shadow-2xl transition-all pointer-events-auto">
+        {/* RIGHT SIDE: View Switcher - Moved to bottom on mobile, kept at top-right on desktop */}
+        <div className="hidden md:flex items-center h-[48px] p-1.5 glass rounded-2xl shadow-2xl transition-all pointer-events-auto border border-white/5">
           {[
             { id: 'spatial', icon: Orbit, color: 'bg-[var(--accent)]' },
             { id: 'kanban', icon: Columns3, color: 'bg-purple-500' },
@@ -336,27 +491,27 @@ const Toolbar: React.FC = () => {
       </div>
 
       {/* NEW THOUGHT FAB */}
-      <div className="fixed bottom-10 left-1/2 -translate-x-1/2 z-[10000] pointer-events-none flex flex-col items-center gap-4">
+      <div className={cn(
+        "fixed bottom-6 md:bottom-10 left-1/2 -translate-x-1/2 z-[10000] pointer-events-none flex flex-col items-center gap-4 transition-all duration-300",
+        (isMobile && isInspectorOpen) ? "opacity-0 translate-y-10 pointer-events-none" : "opacity-100 translate-y-0"
+      )}>
         <button 
           onClick={handleAddThought}
-          className="pointer-events-auto group relative flex items-center justify-center w-16 h-16 bg-[var(--bg-gradient-to)]/40 backdrop-blur-2xl text-white rounded-full border border-white/10 shadow-[0_0_50px_var(--accent-glow)] transition-all hover:scale-110 active:scale-95 hover:border-[var(--accent)]/40"
+          className="pointer-events-auto group relative flex items-center justify-center w-12 h-12 md:w-16 md:h-16 bg-[var(--bg-gradient-to)]/40 backdrop-blur-2xl text-white rounded-full border border-white/10 shadow-[0_0_50px_var(--accent-glow)] transition-all hover:scale-110 active:scale-95 hover:border-[var(--accent)]/40"
         >
           <div className="absolute inset-0 rounded-full bg-[var(--accent)]/5 opacity-0 group-hover:opacity-100 transition-opacity blur-xl" />
-          <Plus className="w-8 h-8 text-slate-400 group-hover:text-white transition-all group-hover:rotate-90 relative z-10" />
-          <div className="absolute -top-12 opacity-0 group-hover:opacity-100 transition-opacity bg-[var(--bg-main)]/80 backdrop-blur-xl border border-white/10 text-[var(--accent-secondary)] text-[9px] font-black uppercase tracking-[0.2em] px-4 py-2 rounded-xl pointer-events-none whitespace-nowrap shadow-2xl">
-            New Thought <span className="text-white/20 ml-2 font-mono">SPACE</span>
-          </div>
+          <Plus className="w-5 h-5 md:w-8 md:h-8 text-slate-400 group-hover:text-white transition-all group-hover:rotate-90 relative z-10" />
         </button>
       </div>
 
       {/* SYSTEM TRAY */}
-      <div className="ui-layer bottom-8 right-8 flex flex-col items-end gap-3 pointer-events-none">
+      <div className="fixed bottom-4 md:bottom-8 right-4 md:right-8 z-[9999] flex flex-col items-end gap-3 pointer-events-none system-tray-container">
         <div className={cn(
-          "glass p-2 rounded-2xl flex flex-col gap-1 transition-all pointer-events-auto w-64",
+          "glass p-2 rounded-2xl flex flex-col gap-1 transition-all pointer-events-auto w-52 md:w-64",
           isSystemMenuOpen ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4 pointer-events-none"
         )}>
           {/* Theme Selector */}
-          <div className="px-4 py-3 border-b border-white/5 mb-1">
+          <div className="px-3 md:px-4 py-3 border-b border-white/5 mb-1">
             <p className="text-[8px] font-black uppercase tracking-[0.2em] text-slate-500 mb-3">Workspace Theme</p>
             <div className="grid grid-cols-3 gap-2">
               {[
@@ -374,9 +529,9 @@ const Toolbar: React.FC = () => {
                       : "border-transparent hover:bg-white/5"
                   )}
                 >
-                  <div className="w-4 h-4 rounded-full shadow-lg" style={{ backgroundColor: t.color }} />
+                  <div className="w-3.5 h-3.5 md:w-4 md:h-4 rounded-full shadow-lg" style={{ backgroundColor: t.color }} />
                   <span className={cn(
-                    "text-[8px] font-bold uppercase tracking-widest",
+                    "text-[7px] md:text-[8px] font-bold uppercase tracking-widest",
                     theme === t.id ? "text-white" : "text-slate-500"
                   )}>{t.label}</span>
                 </button>
@@ -385,44 +540,54 @@ const Toolbar: React.FC = () => {
           </div>
 
           {deferredPrompt && (
-            <button onClick={handleInstall} className="flex items-center gap-3 px-4 py-3 rounded-xl bg-[var(--accent)]/10 hover:bg-[var(--accent)]/20 text-[10px] font-black uppercase tracking-[0.2em] text-[var(--accent-secondary)] transition-all mb-1 border border-[var(--accent)]/20">
-              <MonitorSmartphone className="w-4 h-4" /> Install Application
+            <button onClick={handleInstall} className="flex items-center gap-3 px-3 md:px-4 py-2.5 md:py-3 rounded-xl bg-[var(--accent)]/10 hover:bg-[var(--accent)]/20 text-[9px] md:text-[10px] font-black uppercase tracking-[0.2em] text-[var(--accent-secondary)] transition-all mb-1 border border-[var(--accent)]/20">
+              <MonitorSmartphone className="w-3.5 h-3.5 md:w-4 md:h-4" /> Install App
             </button>
           )}
 
-          <button onClick={handleExport} className="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-white/5 text-[10px] font-bold uppercase tracking-widest text-slate-300 transition-colors">
-            <Download className="w-4 h-4" /> Export Data
+          <button onClick={handleExport} className="flex items-center gap-3 px-3 md:px-4 py-2.5 md:py-3 rounded-xl hover:bg-white/5 text-[9px] md:text-[10px] font-bold uppercase tracking-widest text-slate-300 transition-colors">
+            <Download className="w-3.5 h-3.5 md:w-4 md:h-4" /> Export Data
           </button>
-          <label className="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-white/5 text-[10px] font-bold uppercase tracking-widest text-slate-300 transition-colors cursor-pointer">
-            <Upload className="w-4 h-4" /> Import Data
+          <label className="flex items-center gap-3 px-3 md:px-4 py-2.5 md:py-3 rounded-xl hover:bg-white/5 text-[9px] md:text-[10px] font-bold uppercase tracking-widest text-slate-300 transition-colors cursor-pointer">
+            <Upload className="w-3.5 h-3.5 md:w-4 md:h-4" /> Import Data
             <input type="file" className="hidden" accept=".json" onChange={handleImport} />
           </label>
-          <button onClick={handleScreenshot} disabled={isCapturing} className="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-white/5 text-[10px] font-bold uppercase tracking-widest text-slate-300 transition-colors">
-            <Camera className="w-4 h-4" /> {isCapturing ? 'Capturing...' : 'Take Screenshot'}
+          <button onClick={handleScreenshot} disabled={isCapturing} className="flex items-center gap-3 px-3 md:px-4 py-2.5 md:py-3 rounded-xl hover:bg-white/5 text-[9px] md:text-[10px] font-bold uppercase tracking-widest text-slate-300 transition-colors">
+            <Camera className="w-3.5 h-3.5 md:w-4 md:h-4" /> {isCapturing ? 'Saving...' : 'Screenshot'}
           </button>
         </div>
         
         <div className="flex gap-2 pointer-events-auto">
           <div className="relative group">
-            <div className="absolute bottom-full right-0 mb-4 opacity-0 group-hover:opacity-100 transition-all duration-300 pointer-events-none w-64 translate-y-2 group-hover:translate-y-0">
-              <div className="glass p-6 rounded-[2rem] border-white/10 shadow-2xl bg-[var(--bg-main)]/95">
+            <div className={cn(
+              "absolute bottom-full right-0 mb-4 transition-all duration-300 pointer-events-none w-52 md:w-64 translate-y-2",
+              "opacity-0 group-hover:opacity-100 group-hover:translate-y-0",
+              isPrivacyTooltipOpen && "opacity-100 translate-y-0"
+            )}>
+              <div className="glass p-5 md:p-6 rounded-[2rem] border-white/10 shadow-2xl bg-[var(--bg-main)]/95">
                 <div className="flex items-center gap-3 mb-2">
                   <div className="w-1.5 h-1.5 rounded-full bg-green-500 shadow-[0_0_8px_#22c55e]" />
-                  <p className="text-[10px] font-black uppercase tracking-widest text-white">Local & Secure</p>
+                  <p className="text-[9px] md:text-[10px] font-black uppercase tracking-widest text-white">Local & Secure</p>
                 </div>
-                <p className="text-[10px] leading-relaxed text-slate-400">
-                  Your thoughts are stored 100% locally in your browser. Nothing is ever sent to a server or the cloud. Privacy is built-in by design.
+                <p className="text-[9px] md:text-[10px] leading-relaxed text-slate-400">
+                  Your thoughts are stored 100% locally. Privacy is built-in.
                 </p>
               </div>
             </div>
-            <div className="glass w-12 h-12 flex items-center justify-center rounded-2xl border border-white/5 text-slate-500 hover:text-green-400 hover:border-green-500/20 transition-all cursor-help">
-              <Shield className="w-5 h-5" />
-            </div>
+            <button 
+              onClick={() => setIsPrivacyTooltipOpen(!isPrivacyTooltipOpen)}
+              className={cn(
+                "glass w-10 h-10 md:w-12 md:h-12 flex items-center justify-center rounded-2xl border border-white/5 transition-all cursor-help",
+                isPrivacyTooltipOpen ? "text-green-400 border-green-500/20" : "text-slate-500 hover:text-green-400 hover:border-green-500/20"
+              )}
+            >
+              <Shield className="w-4 h-4 md:w-5 md:h-5" />
+            </button>
           </div>
           <button 
             onClick={() => setIsShortcutsOpen(!isShortcutsOpen)}
             className={cn(
-              "glass w-12 h-12 flex items-center justify-center rounded-2xl transition-all border border-white/5",
+              "hidden md:flex glass w-12 h-12 items-center justify-center rounded-2xl transition-all border border-white/5",
               isShortcutsOpen ? "bg-[var(--accent)] text-white" : "text-slate-400 hover:text-white"
             )}
           >
@@ -431,32 +596,34 @@ const Toolbar: React.FC = () => {
           <button 
             onClick={() => setIsSystemMenuOpen(!isSystemMenuOpen)}
             className={cn(
-              "glass w-12 h-12 flex items-center justify-center rounded-2xl transition-all border border-white/5",
+              "glass w-10 h-10 md:w-12 md:h-12 flex items-center justify-center rounded-2xl transition-all border border-white/5",
               isSystemMenuOpen ? "bg-[var(--accent)] text-white" : "text-slate-400 hover:text-white"
             )}
           >
-            <MoreVertical className="w-5 h-5" />
+            <MoreVertical className="w-4 h-4 md:w-5 md:h-5" />
           </button>
         </div>
       </div>
-
       {/* STATUS BAR */}
-      <div className="ui-layer bottom-8 left-8 flex items-center gap-4 pointer-events-auto">
-        <div className="glass px-5 h-[48px] rounded-2xl flex items-center gap-6 border border-white/5">
-          <div className="flex items-center gap-3">
-            <span className="w-1.5 h-1.5 rounded-full bg-green-500 shadow-[0_0_10px_#22c55e]"></span> 
-            <span className="text-[10px] uppercase font-black tracking-widest text-white/80"><span>{thoughts.length}</span>/{LIMITS.MAX_THOUGHTS_PER_SPACE} Thoughts</span>
+      <div className="fixed bottom-4 md:bottom-8 left-4 md:left-8 z-[9999] flex items-center gap-4 pointer-events-none">
+        <div className="glass px-3 md:px-5 h-[40px] md:h-[48px] rounded-2xl flex items-center gap-3 md:gap-6 border border-white/5 pointer-events-auto">
+          <div className="flex items-center justify-center gap-2 md:gap-3">
+            <span className="w-1.5 h-1.5 rounded-full bg-green-500 shadow-[0_0_10px_#22c55e] flex-shrink-0"></span> 
+            <span className="text-[9px] md:text-[10px] uppercase font-black tracking-widest text-white/80 whitespace-nowrap">
+              <span>{thoughts.length}</span>
+              <span className="hidden sm:inline">/{LIMITS.MAX_THOUGHTS_PER_SPACE} Thoughts</span>
+            </span>
           </div>
           <div className="h-3 w-[1px] bg-white/10"></div>
           <button 
             onClick={handleTogglePhysics}
             className={cn(
-              "flex items-center gap-2 transition-all text-[10px] font-black uppercase tracking-widest",
+              "flex items-center gap-2 transition-all text-[9px] md:text-[10px] font-black uppercase tracking-widest",
               activeSpace?.physics ? "text-[var(--accent-secondary)]" : "text-slate-600"
             )}
           >
-            <Zap className="w-3 h-3" /> 
-            <span>Physics</span>
+            <Zap className="w-3 h-3 md:w-3.5 md:h-3.5" /> 
+            <span className="hidden sm:inline">Physics</span>
           </button>
         </div>
       </div>

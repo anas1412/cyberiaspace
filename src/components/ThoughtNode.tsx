@@ -13,7 +13,7 @@ function cn(...inputs: ClassValue[]) {
 interface ThoughtNodeProps {
   thought: Thought;
   registerElement: (id: number, el: HTMLDivElement | null) => void;
-  onMouseDown: (id: number, e: React.MouseEvent) => void;
+  onMouseDown: (id: number, e: React.MouseEvent | React.TouchEvent) => void;
   isDragging: boolean;
 }
 
@@ -69,6 +69,12 @@ const ThoughtNode: React.FC<ThoughtNodeProps> = React.memo(({ thought, registerE
 
   const handleLocalMouseDown = (e: React.MouseEvent) => {
     setStartPos({ x: e.clientX, y: e.clientY });
+    onMouseDown(thought.id, e);
+  };
+
+  const handleLocalTouchStart = (e: React.TouchEvent) => {
+    const touch = e.touches[0];
+    setStartPos({ x: touch.clientX, y: touch.clientY });
     onMouseDown(thought.id, e);
   };
 
@@ -311,12 +317,13 @@ const ThoughtNode: React.FC<ThoughtNodeProps> = React.memo(({ thought, registerE
         isDragging ? "z-[1000] cursor-grabbing" : "z-20 cursor-grab"
       )}
       onMouseDown={handleLocalMouseDown}
+      onTouchStart={handleLocalTouchStart}
       onClick={handleClick}
     >
       <div className={cn(
         "thought-bulb-content backdrop-blur-[20px] border p-6 rounded-[32px] flex flex-col gap-3 relative transition-all duration-300",
         isSelected 
-          ? "border-[var(--accent)]/50 shadow-[0_0_40px_var(--accent-glow)] bg-[var(--accent)]/5" 
+          ? "border-[var(--accent)]/50 shadow-[0_0_40px_var(--accent-glow)] bg-[var(--node-bg)]" 
           : "border-[var(--glass-border)] shadow-[0_10px_40px_rgba(0,0,0,0.5)] bg-[var(--node-bg)]",
         linkingSourceId === thought.id && "ring-2 ring-[var(--accent)] ring-offset-4 ring-offset-[var(--bg-page)]",
         linkingSourceId && linkingSourceId !== thought.id && "hover:scale-105 hover:border-[var(--accent)]/50 cursor-pointer"

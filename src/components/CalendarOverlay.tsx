@@ -59,30 +59,30 @@ const CalendarOverlay: React.FC = () => {
   }
 
   return (
-    <div className="calendar-overlay fixed inset-0 flex pointer-events-none p-10 pt-[100px] gap-5 opacity-100 transition-opacity duration-400 z-0">
-      {/* Sidebar - z-[30] to stay above cards (z-20) */}
-      <div className="cal-sidebar w-[260px] glass rounded-3xl flex flex-col overflow-hidden pointer-events-auto z-[30] relative border border-white/10 shadow-2xl">
-        <div className="cal-sidebar-header p-5 border-b border-white/[0.05] text-[10px] font-900 tracking-[0.2em] uppercase text-[var(--accent-secondary)] bg-[var(--bg-main)] z-[40] sticky top-0 shadow-lg">
+    <div className="calendar-overlay fixed inset-0 flex flex-col md:flex-row pointer-events-none p-4 md:p-10 pt-[100px] md:pt-[100px] gap-4 md:gap-5 opacity-100 transition-opacity duration-400 z-0 overflow-y-auto md:overflow-hidden">
+      {/* Sidebar */}
+      <div className="cal-sidebar w-full md:w-[260px] min-h-[200px] md:min-h-0 glass rounded-3xl flex flex-col overflow-hidden pointer-events-auto z-[30] relative border border-white/10 shadow-2xl">
+        <div className="cal-sidebar-header p-4 md:p-5 border-b border-white/[0.05] text-[9px] md:text-[10px] font-900 tracking-[0.2em] uppercase text-[var(--accent-secondary)] bg-[var(--bg-main)] z-[40] sticky top-0 shadow-lg">
           Unscheduled
         </div>
-        <div id="cal-sidebar-content" className="cal-sidebar-content flex-1 overflow-y-auto overflow-x-hidden relative p-5 custom-scroll">
+        <div id="cal-sidebar-content" className="cal-sidebar-content flex-1 overflow-y-auto overflow-x-hidden relative p-4 md:p-5 custom-scroll">
           <div id="cal-sidebar-spacer" style={{ height: '0px' }} />
         </div>
       </div>
       
-      {/* Main Grid - z-[5] to stay below cards (z-20) */}
-      <div className="cal-main flex-1 flex flex-col glass rounded-3xl overflow-hidden pointer-events-auto z-[5] relative border border-white/10 shadow-xl">
-        <div className="cal-header h-[60px] flex items-center justify-between px-[30px] border-b border-white/[0.05] bg-black/20">
+      {/* Main Grid */}
+      <div className="cal-main flex-1 flex flex-col min-h-[400px] md:min-h-0 glass rounded-3xl overflow-hidden pointer-events-auto z-[5] relative border border-white/10 shadow-xl">
+        <div className="cal-header h-[50px] md:h-[60px] flex items-center justify-between px-4 md:px-[30px] border-b border-white/[0.05] bg-black/20">
           <button onClick={() => changeMonth(-1)} className="p-2 hover:bg-white/5 rounded-lg text-slate-400 transition-colors">
             <ChevronLeft className="w-4 h-4" />
           </button>
-          <span className="cal-title text-base font-bold text-white">{monthTitle}</span>
+          <span className="cal-title text-sm md:text-base font-bold text-white">{monthTitle}</span>
           <button onClick={() => changeMonth(1)} className="p-2 hover:bg-white/5 rounded-lg text-slate-400 transition-colors">
             <ChevronRight className="w-4 h-4" />
           </button>
         </div>
         
-        <div className="cal-grid grid grid-cols-7 grid-rows-[30px_repeat(5,1fr)] h-full overflow-y-auto custom-scroll">
+        <div className="cal-grid grid grid-cols-7 grid-rows-[30px_repeat(5,1fr)] h-full overflow-y-auto custom-scroll min-w-[300px]">
           {['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map(day => (
             <div key={day} className="cal-day-label flex items-center justify-center text-[9px] font-800 text-white/40 uppercase border-b border-white/[0.05]">
               {day}
