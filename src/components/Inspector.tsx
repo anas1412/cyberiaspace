@@ -26,6 +26,20 @@ const Inspector: React.FC = () => {
 
   const isMobile = typeof window !== 'undefined' ? window.innerWidth < 768 : false;
 
+  // Local state for zero-latency typing
+  const [localText, setLocalText] = React.useState('');
+  const [localDesc, setLocalDesc] = React.useState('');
+  const [localDate, setLocalDate] = React.useState('');
+
+  // Sync local state when selected thought changes
+  React.useEffect(() => {
+    if (thought) {
+      setLocalText(thought.text || '');
+      setLocalDesc(thought.description || '');
+      setLocalDate(thought.date || '');
+    }
+  }, [selectedThoughtId]);
+
   const handleDeleteThought = () => {
     if (!thought) return;
     openModal({
@@ -142,15 +156,21 @@ const Inspector: React.FC = () => {
           <div className="space-y-5">
             <input
               type="text"
-              value={thought.text}
-              onChange={(e) => updateThought(thought.id, { text: e.target.value })}
+              value={localText}
+              onChange={(e) => {
+                setLocalText(e.target.value);
+                updateThought(thought.id, { text: e.target.value });
+              }}
               maxLength={30}
               className="w-full bg-[var(--bg-page)]/20 border border-white/10 rounded-xl p-3 text-sm outline-none focus:border-[var(--accent)] text-[var(--text-primary)] placeholder:text-slate-500"
               placeholder="Name"
             />
             <textarea
-              value={thought.description}
-              onChange={(e) => updateThought(thought.id, { description: e.target.value })}
+              value={localDesc}
+              onChange={(e) => {
+                setLocalDesc(e.target.value);
+                updateThought(thought.id, { description: e.target.value });
+              }}
               rows={2}
               maxLength={150}
               className="w-full bg-[var(--bg-page)]/20 border border-white/10 rounded-xl p-3 text-xs outline-none focus:border-[var(--accent)] text-[var(--text-primary)] placeholder:text-slate-500"
@@ -158,8 +178,11 @@ const Inspector: React.FC = () => {
             />
             <input
               type="date"
-              value={thought.date}
-              onChange={(e) => updateThought(thought.id, { date: e.target.value })}
+              value={localDate}
+              onChange={(e) => {
+                setLocalDate(e.target.value);
+                updateThought(thought.id, { date: e.target.value });
+              }}
               className="w-full bg-[var(--bg-page)]/20 border border-white/10 rounded-xl p-3 text-xs outline-none focus:border-[var(--accent)] text-[var(--text-primary)] font-mono uppercase"
             />
 

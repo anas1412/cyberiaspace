@@ -28,37 +28,53 @@ const TasksFocusEditor: React.FC = () => {
   const updateThought = useStore((state) => state.updateThought);
 
   const [isEditMode, setIsEditMode] = useState(false);
+  
+  // Local state for instant feedback
+  const [localTitle, setLocalTitle] = useState('');
+  const [localTasks, setLocalTasks] = useState<{ text: string; done: boolean }[]>([]);
 
   const thought = thoughts.find((t) => t.id === activeFocusId);
   const isVisible = focusType === 'tasks' && !!thought;
 
+  // Sync local state when thought changes
+  React.useEffect(() => {
+    if (thought) {
+      setLocalTitle(thought.text);
+      setLocalTasks(thought.tasks || []);
+    }
+  }, [activeFocusId]);
+
   const handleAddTask = () => {
     if (!thought) return;
-    const newTasks = [...(thought.tasks || []), { text: '', done: false }];
+    const newTasks = [...localTasks, { text: '', done: false }];
+    setLocalTasks(newTasks);
     updateThought(thought.id, { tasks: newTasks });
   };
 
   const handleUpdateTask = (index: number, updates: { text?: string; done?: boolean }) => {
     if (!thought) return;
-    const newTasks = [...thought.tasks];
+    const newTasks = [...localTasks];
     newTasks[index] = { ...newTasks[index], ...updates };
+    setLocalTasks(newTasks);
     updateThought(thought.id, { tasks: newTasks });
   };
 
   const handleDeleteTask = (index: number) => {
     if (!thought) return;
-    const newTasks = [...thought.tasks];
+    const newTasks = [...localTasks];
     newTasks.splice(index, 1);
+    setLocalTasks(newTasks);
     updateThought(thought.id, { tasks: newTasks });
   };
 
   const handleReorderTasks = (newTasks: { text: string; done: boolean }[]) => {
     if (!thought) return;
+    setLocalTasks(newTasks);
     updateThought(thought.id, { tasks: newTasks });
   };
 
-  const completedCount = thought?.tasks.filter(t => t.done).length || 0;
-  const totalCount = thought?.tasks.length || 0;
+  const completedCount = localTasks.filter(t => t.done).length || 0;
+  const totalCount = localTasks.length || 0;
   const progress = totalCount > 0 ? (completedCount / totalCount) * 100 : 0;
 
   return (
@@ -89,8 +105,11 @@ const TasksFocusEditor: React.FC = () => {
                 <div className="flex flex-col flex-1 min-w-0">
                   <input 
                     type="text" 
-                    value={thought.text}
-                    onChange={(e) => updateThought(thought.id, { text: e.target.value })}
+                    value={localTitle}
+                    onChange={(e) => {
+                      setLocalTitle(e.target.value);
+                      updateThought(thought.id, { text: e.target.value });
+                    }}
                     className="bg-transparent text-xl md:text-2xl font-bold text-white outline-none border-none p-0 md:w-[400px]" 
                     placeholder="Task List Title"
                   />
@@ -103,7 +122,7 @@ const TasksFocusEditor: React.FC = () => {
                       />
                     </div>
                     <span className="text-[8px] md:text-[10px] font-black uppercase tracking-widest text-slate-500 whitespace-nowrap">
-                      {completedCount}/{totalCount} Complete
+                      {completedCount}/{totalCount} Tasks Complete
                     </span>
                   </div>
                 </div>
@@ -142,11 +161,11 @@ const TasksFocusEditor: React.FC = () => {
               {isEditMode ? (
                 <Reorder.Group 
                   axis="y" 
-                  values={thought.tasks} 
+                  values={localTasks} 
                   onReorder={handleReorderTasks}
                   className="space-y-2 md:space-y-3"
                 >
-                  {thought.tasks.map((task, index) => (
+                  {localTasks.map((task, index) => (
                     <Reorder.Item 
                       key={index} 
                       value={task}
@@ -189,13 +208,13 @@ const TasksFocusEditor: React.FC = () => {
                 </Reorder.Group>
               ) : (
                 <div className="space-y-3 md:space-y-4 max-w-2xl mx-auto">
-                  {thought.tasks.length === 0 ? (
+                  {localTasks.length === 0 ? (
                     <div className="text-center py-10 md:py-20">
                       <CheckSquare className="w-12 h-12 md:w-16 md:h-16 text-slate-800 mx-auto mb-4" />
                       <p className="text-slate-500 font-medium italic text-sm">No tasks yet. Click Manage to add some.</p>
                     </div>
                   ) : (
-                    thought.tasks.map((task, index) => (
+                    localTasks.map((task, index) => (
                       <div 
                         key={index}
                         onClick={() => handleUpdateTask(index, { done: !task.done })}

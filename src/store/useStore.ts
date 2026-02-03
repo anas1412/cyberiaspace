@@ -211,9 +211,14 @@ export const useStore = create<CyberiaState>((set, get) => ({
       transformY: transform.y,
       transformScale: transform.scale
     });
-    // Update local state silently to avoid full refresh if possible, 
-    // but refreshSpaces is safer for consistency.
-    await get().refreshSpaces();
+    // Update local state silently to avoid full refresh
+    const { spaces } = get();
+    const index = spaces.findIndex(s => s.id === id);
+    if (index !== -1) {
+      const newSpaces = [...spaces];
+      newSpaces[index] = { ...newSpaces[index], transformX: transform.x, transformY: transform.y, transformScale: transform.scale };
+      set({ spaces: newSpaces });
+    }
   },
 
   addThought: async (partialThought) => {
@@ -256,9 +261,27 @@ export const useStore = create<CyberiaState>((set, get) => ({
     return result as number;
   },
 
+  // Centralized Debounced Save Logic
   updateThought: async (id, updates) => {
-    await db.thoughts.update(id, updates);
-    await get().refreshThoughts();
+    // 1. Optimistic Update (Instant UI feedback)
+    const { thoughts } = get();
+    const index = thoughts.findIndex(t => t.id === id);
+    if (index !== -1) {
+      const newThoughts = [...thoughts];
+      newThoughts[index] = { ...newThoughts[index], ...updates };
+      set({ thoughts: newThoughts });
+    }
+
+    // 2. Debounced Database Persistence
+    const saveTimers = (window as any)._cyberia_save_timers || {};
+    if (saveTimers[id]) clearTimeout(saveTimers[id]);
+
+    saveTimers[id] = setTimeout(async () => {
+      await db.thoughts.update(id, updates);
+      delete saveTimers[id];
+    }, 500); // 500ms debounce
+
+    (window as any)._cyberia_save_timers = saveTimers;
   },
 
   deleteThought: async (id) => {

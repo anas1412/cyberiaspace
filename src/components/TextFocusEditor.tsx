@@ -29,9 +29,21 @@ const TextFocusEditor: React.FC = () => {
   const updateThought = useStore((state) => state.updateThought);
 
   const [isEditMode, setIsEditMode] = useState(false);
+  
+  // Local state for instant feedback
+  const [localTitle, setLocalTitle] = useState('');
+  const [localContent, setLocalContent] = useState('');
 
   const thought = thoughts.find((t) => t.id === activeFocusId);
   const isVisible = focusType === 'text' && !!thought;
+
+  // Sync local state when thought changes (e.g., opening editor)
+  React.useEffect(() => {
+    if (thought) {
+      setLocalTitle(thought.text);
+      setLocalContent(thought.content);
+    }
+  }, [activeFocusId]);
 
   return (
     <AnimatePresence>
@@ -60,8 +72,11 @@ const TextFocusEditor: React.FC = () => {
                 </div>
                 <input 
                   type="text" 
-                  value={thought.text}
-                  onChange={(e) => updateThought(thought.id, { text: e.target.value })}
+                  value={localTitle}
+                  onChange={(e) => {
+                    setLocalTitle(e.target.value);
+                    updateThought(thought.id, { text: e.target.value });
+                  }}
                   className="bg-transparent text-xl md:text-2xl font-bold text-white outline-none border-none p-0 flex-1 md:w-[400px]" 
                   placeholder="Untitled Thought"
                 />
@@ -100,8 +115,11 @@ const TextFocusEditor: React.FC = () => {
               {isEditMode ? (
                 <div className="flex-1 p-6 md:p-10 overflow-y-auto custom-scroll bg-white/[0.02]">
                   <textarea 
-                    value={thought.content}
-                    onChange={(e) => updateThought(thought.id, { content: e.target.value })}
+                    value={localContent}
+                    onChange={(e) => {
+                      setLocalContent(e.target.value);
+                      updateThought(thought.id, { content: e.target.value });
+                    }}
                     className="w-full h-full bg-transparent text-lg md:text-xl text-slate-200 leading-relaxed outline-none border-none resize-none placeholder:text-slate-700 font-['Plus_Jakarta_Sans',_sans-serif]" 
                     placeholder="Dive deep into your thoughts..."
                     autoFocus
