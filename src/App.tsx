@@ -61,33 +61,69 @@ function App() {
       const clipboardData = e.clipboardData;
       if (!clipboardData) return;
 
-      const items = clipboardData.items;
-      
-      // Priority 1: Images
-      for (let i = 0; i < items.length; i++) {
-        if (items[i].type.indexOf('image') !== -1) {
-          const blob = items[i].getAsFile();
-          if (blob) {
-            const reader = new FileReader();
-            reader.onload = async (event) => {
-              const id = await addThought({ 
-                type: 'image', 
-                image: event.target?.result as string, 
-                text: "Image" 
-              });
-              if (id !== -1) {
-                setSelectedThoughtId(id);
-                setInspectorOpen(true);
-              }
-            };
-            reader.readAsDataURL(blob);
+      // Deep Scan Logic: Browsers often hide the original animated GIF source in the HTML payload
+      const html = clipboardData.getData('text/html');
+      if (html) {
+        const parser = new DOMParser();
+        const doc = parser.parseFromString(html, 'text/html');
+        const img = doc.querySelector('img');
+        const src = img?.getAttribute('src');
+        
+        if (src) {
+          // More robust GIF detection (handles hex encoding like Wattpad's 2e676966, query params, and anchors)
+          const isGif = /\.(gif|2e676966)($|\?|#|&)/i.test(src) || 
+                        src.includes('image/gif') || 
+                        src.includes('giphy.com') || 
+                        src.includes('tenor.com') ||
+                        src.toLowerCase().includes('/gif');
+          
+          const isImage = src.startsWith('data:image/') || 
+                          /\.(jpg|jpeg|png|webp|avif|svg)($|\?|#|&)/i.test(src) ||
+                          /2e(6a7067|706e67|77656270)/i.test(src); // Support hex for jpg, png, webp
+          
+          if (isGif || isImage) {
             e.preventDefault();
+            const id = await addThought({ 
+              type: 'image', 
+              image: src, 
+              text: "Image" 
+            });
+            if (id !== -1) {
+              setSelectedThoughtId(id);
+              setInspectorOpen(true);
+            }
             return;
           }
         }
       }
 
-      // Priority 2: Text
+      const items = Array.from(clipboardData.items);
+      const gifItem = items.find(item => item.type === 'image/gif');
+      const imageItem = gifItem || items.find(item => item.type.startsWith('image/'));
+
+      if (imageItem) {
+        const blob = imageItem.getAsFile();
+        if (blob) {
+          const reader = new FileReader();
+          reader.onload = async (event) => {
+            const isGif = imageItem.type === 'image/gif';
+            const id = await addThought({ 
+              type: 'image', 
+              image: event.target?.result as string, 
+              text: "Image" 
+            });
+            if (id !== -1) {
+              setSelectedThoughtId(id);
+              setInspectorOpen(true);
+            }
+          };
+          reader.readAsDataURL(blob);
+          e.preventDefault();
+          return;
+        }
+      }
+
+      // Priority 3: Text
       const text = clipboardData.getData('text');
       if (text && text.trim()) {
         e.preventDefault();
