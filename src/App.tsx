@@ -145,21 +145,36 @@ function App() {
             setSelectedThoughtId(id);
             setInspectorOpen(true);
             
-            const oEmbedUrl = encodeURIComponent(`https://www.youtube.com/watch?v=${videoId}`);
-            // Using a different robust proxy if allorigins fails
-            fetch(`https://api.allorigins.win/get?url=https://www.youtube.com/oembed?url=${oEmbedUrl}%26format=json`)
-              .then(res => res.ok ? res.json() : Promise.reject('Network error'))
-              .then(data => {
-                if (data && data.contents) {
-                  const metadata = JSON.parse(data.contents);
+            const oEmbedUrl = `https://www.youtube.com/oembed?url=https://www.youtube.com/watch?v=${videoId}&format=json`;
+            
+            const fetchMetadata = async () => {
+              // Strategy 1: AllOrigins (Current)
+              try {
+                const res = await fetch(`https://api.allorigins.win/get?url=${encodeURIComponent(oEmbedUrl)}`);
+                const data = await res.json();
+                return JSON.parse(data.contents);
+              } catch (e) {
+                // Strategy 2: CorsProxy.io (Fallback)
+                try {
+                  const res = await fetch(`https://corsproxy.io/?${encodeURIComponent(oEmbedUrl)}`);
+                  return await res.json();
+                } catch (e2) {
+                  throw new Error("All proxies failed");
+                }
+              }
+            };
+
+            fetchMetadata()
+              .then(metadata => {
+                if (metadata && metadata.title) {
                   useStore.getState().updateThought(id, {
-                    text: metadata.title || "YouTube Video",
+                    text: metadata.title,
                     description: metadata.author_name || ""
                   });
                 }
               })
               .catch(err => {
-                console.warn("YouTube metadata fetch failed:", err);
+                console.warn("YouTube metadata fetch failed after all attempts:", err);
                 useStore.getState().updateThought(id, { text: "YouTube Video" });
               });
           }
