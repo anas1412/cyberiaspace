@@ -5,7 +5,7 @@ import { LIMITS } from '../constants';
 import { Plus, Zap, Download, Upload, SlidersHorizontal, ChevronLeft, ChevronRight, Trash2, Edit3, Camera, MoreVertical, Keyboard, MousePointer2, Orbit, Columns3, CalendarDays, Shield, MonitorSmartphone } from 'lucide-react';
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
-import { toPng } from 'html-to-image';
+import { toPng, toCanvas } from 'html-to-image';
 
 function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -116,52 +116,63 @@ const Toolbar: React.FC = () => {
     
     try {
       let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+      const worldRect = worldEl.getBoundingClientRect();
       
+      // Get current scale to normalize measurements
+      const worldStyle = window.getComputedStyle(worldEl);
+      const matrix = new DOMMatrix(worldStyle.transform);
+      const currentScale = matrix.a || 1;
+
       thoughts.forEach(t => {
         const el = document.querySelector(`.thought-bulb[data-id="${t.id}"]`) as HTMLElement;
-        const nodeWidth = 280;
-        const nodeHeight = el?.offsetHeight || 200;
+        if (!el) return;
         
-        let x, y;
-        if (isMobile && el) {
-          // On mobile, use actual visual position from the DOM transform for accuracy
-          try {
-            const matrix = new DOMMatrix(window.getComputedStyle(el).transform);
-            x = matrix.m41;
-            y = matrix.m42;
-          } catch (e) {
-            x = t.x - 140;
-            y = t.y - nodeHeight / 2;
-          }
-        } else {
-          x = t.x - 140; 
-          y = t.y - nodeHeight / 2;
-        }
+        const rect = el.getBoundingClientRect();
+        // Normalize coordinates relative to world, ignoring current zoom
+        const x = (rect.left - worldRect.left) / currentScale;
+        const y = (rect.top - worldRect.top) / currentScale;
+        const w = rect.width / currentScale;
+        const h = rect.height / currentScale;
         
         if (x < minX) minX = x;
         if (y < minY) minY = y;
-        if (x + nodeWidth > maxX) maxX = x + nodeWidth;
-        if (y + nodeHeight > maxY) maxY = y + nodeHeight;
+        if (x + w > maxX) maxX = x + w;
+        if (y + h > maxY) maxY = y + h;
       });
 
       if (minX === Infinity) return;
 
-      const padding = 100;
-      minX -= padding; minY -= padding; maxX += padding; maxY += padding;
-      const width = maxX - minX; const height = maxY - minY;
+      const padding = 40;
+      const width = (maxX - minX) + (padding * 2);
+      const height = (maxY - minY) + (padding * 2);
+      const captureX = minX - padding;
+      const captureY = minY - padding;
 
-      const dataUrl = await toPng(worldEl, {
+      // Extreme Stability: Calculate a safe internal scale
+      // If the workspace is huge, we scale it down internally to prevent memory crash
+      const MAX_SAFE_DIMENSION = 4000;
+      const scaleFactor = Math.min(1, MAX_SAFE_DIMENSION / Math.max(width, height));
+      
+      const canvas = await toCanvas(worldEl, {
         backgroundColor: getComputedStyle(document.body).getPropertyValue('--bg-main').trim() || '#020408',
+        cacheBust: true,
+        pixelRatio: scaleFactor, // Scale down giant images to fit in memory
+        skipFonts: true,
         style: {
-          transform: `translate(${-minX}px, ${-minY}px) scale(1)`,
+          transform: `translate(${-captureX}px, ${-captureY}px) scale(1)`,
           position: 'absolute',
           width: `${width}px`,
           height: `${height}px`,
-          margin: '0', padding: '0', left: '0', top: '0'
+          margin: '0', 
+          padding: '0', 
+          left: '0', 
+          top: '0',
+          filter: 'none', 
+          backdropFilter: 'none', 
+          boxShadow: 'none'
         },
-        width: width,
-        height: height,
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        width: Math.floor(width * scaleFactor),
+        height: Math.floor(height * scaleFactor),
         filter: (node: any) => {
           const isUI = node.classList?.contains('ui-layer') || 
                        node.id === 'connection-canvas' ||
@@ -170,12 +181,22 @@ const Toolbar: React.FC = () => {
         }
       });
 
+      // Export as compressed JPEG (10x smaller than PNG, much safer for RAM)
+      const dataUrl = canvas.toDataURL('image/jpeg', 0.85);
+      if (!dataUrl || dataUrl.length < 100) throw new Error("Generated image is empty");
+
       const link = document.createElement('a');
-      link.download = `cyberia_${activeSpace?.name || 'space'}.png`;
+      link.style.display = 'none';
+      link.download = `cyberia_${activeSpace?.name || 'space'}.jpg`;
       link.href = dataUrl;
+      document.body.appendChild(link);
       link.click();
+      setTimeout(() => {
+        if (document.body.contains(link)) document.body.removeChild(link);
+      }, 100);
     } catch (error) {
       console.error('Screenshot failed:', error);
+      alert("Screenshot failed. Try zooming in more or reducing the number of large images in your space.");
     } finally {
       setIsCapturing(false);
     }
