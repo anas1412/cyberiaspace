@@ -403,11 +403,16 @@ export const usePhysics = (
             el.style.opacity = opacity.toString(); el.style.visibility = opacity === 0 ? 'hidden' : 'visible';
             el.style.pointerEvents = opacity < 0.1 ? 'none' : 'auto'; el.style.zIndex = '35';
         } else if (mode === 'kanban') {
-            // Kanban Fading at Header (140px)
-            const buffer = 40;
-            const topOverlap = cardBottom - 140;
-            const opacity = Math.max(0, Math.min(1, topOverlap / buffer));
-            el.style.opacity = opacity.toString(); el.style.visibility = opacity === 0 ? 'hidden' : 'visible';
+            // Kanban Fading Logic: Hide cards as they go behind headers
+            const isMobile = window.innerWidth < 768;
+            const headerBottom = isMobile ? 170 : 200; // Match KanbanOverlay heights
+            const buffer = 60; // Distance over which to fade
+            
+            // Fading based on the bottom of the card approaching the header bottom
+            const opacity = Math.max(0, Math.min(1, (cardBottom - headerBottom) / buffer));
+            
+            el.style.opacity = opacity.toString(); 
+            el.style.visibility = opacity === 0 ? 'hidden' : 'visible';
             el.style.pointerEvents = opacity < 0.1 ? 'none' : 'auto';
             el.style.zIndex = (20 + prioLevel).toString();
         } else {
