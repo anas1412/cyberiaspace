@@ -20,7 +20,7 @@ interface Thought {
   vy: number;
   text: string;
   description: string;
-  type: 'text' | 'tasks' | 'paint' | 'table' | 'image';
+  type: 'text' | 'tasks' | 'paint' | 'table' | 'image' | 'embed';
   content: string;
   image: string | null;
   drawing: string | null;

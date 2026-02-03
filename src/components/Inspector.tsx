@@ -1,7 +1,7 @@
 import React from 'react';
 import { useStore } from '../store/useStore';
 import { useModalStore } from '../store/useModalStore';
-import { X, Maximize2, Image as ImageIcon, Link, Trash2 } from 'lucide-react';
+import { X, Maximize2, Image as ImageIcon, Link, Trash2, Youtube } from 'lucide-react';
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 import { motion, AnimatePresence, useDragControls } from 'framer-motion';
@@ -51,7 +51,7 @@ const Inspector: React.FC = () => {
     });
   };
 
-  const handleTypeChange = (type: 'text' | 'tasks' | 'paint' | 'table' | 'image') => {
+  const handleTypeChange = (type: 'text' | 'tasks' | 'paint' | 'table' | 'image' | 'embed') => {
     if (!thought) return;
     updateThought(thought.id, { type });
   };
@@ -138,8 +138,8 @@ const Inspector: React.FC = () => {
             </button>
           </div>
 
-          <div className="grid grid-cols-5 gap-1 mb-6">
-            {(['text', 'tasks', 'paint', 'table', 'image'] as const).map((type) => (
+          <div className="grid grid-cols-6 gap-1 mb-6">
+            {(['text', 'tasks', 'paint', 'table', 'image', 'embed'] as const).map((type) => (
               <button
                 key={type}
                 onClick={() => handleTypeChange(type)}
@@ -323,6 +323,29 @@ const Inspector: React.FC = () => {
                   <Maximize2 className="w-5 h-5" />
                   Open Full-Screen Editor
                 </button>
+              )}
+
+              {thought.type === 'embed' && (
+                <div className="space-y-4">
+                  <button 
+                    onClick={() => setActiveFocus(thought.id, 'embed')}
+                    className="w-full bg-red-500/10 hover:bg-red-500/20 border border-red-500/30 text-red-400 py-6 rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] transition-all flex flex-col items-center gap-3"
+                  >
+                    <Youtube className="w-5 h-5" />
+                    Open Video Player
+                  </button>
+                  
+                  <div className="space-y-2">
+                    <label className="text-[9px] uppercase font-bold tracking-widest text-slate-500 ml-1">YouTube URL</label>
+                    <input 
+                      type="text" 
+                      value={thought.content}
+                      onChange={(e) => updateThought(thought.id, { content: e.target.value })}
+                      placeholder="https://www.youtube.com/watch?v=..."
+                      className="w-full bg-black/40 border border-white/10 rounded-xl p-3 text-xs outline-none focus:border-red-500 text-white"
+                    />
+                  </div>
+                </div>
               )}
 
               {thought.type === 'image' && (

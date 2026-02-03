@@ -8,7 +8,7 @@ interface CyberiaState {
   selectedThoughtId: number | null;
   isInspectorOpen: boolean;
   activeFocusId: number | null;
-  focusType: 'text' | 'table' | 'paint' | 'tasks' | null;
+  focusType: 'text' | 'table' | 'paint' | 'tasks' | 'embed' | null;
   calendarViewDate: Date;
   linkingSourceId: number | null;
   theme: 'cyberia' | 'rose' | 'neon';
@@ -38,7 +38,7 @@ interface CyberiaState {
   deleteThought: (id: number) => Promise<void>;
   setSelectedThoughtId: (id: number | null) => void;
   setInspectorOpen: (open: boolean) => void;
-  setActiveFocus: (id: number | null, type: 'text' | 'table' | 'paint' | 'tasks' | null) => void;
+  setActiveFocus: (id: number | null, type: 'text' | 'table' | 'paint' | 'tasks' | 'embed' | null) => void;
   setLinkingSourceId: (id: number | null) => void;
   
   // Data Lifecycle

@@ -16,6 +16,7 @@ import TextFocusEditor from './components/TextFocusEditor';
 import TableFocusEditor from './components/TableFocusEditor';
 import PaintFocusEditor from './components/PaintFocusEditor';
 import TasksFocusEditor from './components/TasksFocusEditor';
+import EmbedFocusEditor from './components/EmbedFocusEditor';
 
 function App() {
   const init = useStore((state) => state.init);
@@ -106,7 +107,6 @@ function App() {
         if (blob) {
           const reader = new FileReader();
           reader.onload = async (event) => {
-            const isGif = imageItem.type === 'image/gif';
             const id = await addThought({ 
               type: 'image', 
               image: event.target?.result as string, 
@@ -127,14 +127,52 @@ function App() {
       const text = clipboardData.getData('text');
       if (text && text.trim()) {
         e.preventDefault();
-        const id = await addThought({ 
-          type: 'text', 
-          text: "Note", 
-          content: text 
-        });
-        if (id !== -1) {
-          setSelectedThoughtId(id);
-          setInspectorOpen(true);
+        
+        const cleanText = text.trim();
+        // Extract YouTube ID to create a clean oEmbed URL
+        const ytRegex = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|&v=)([^#&?]*).*/;
+        const ytMatch = cleanText.match(ytRegex);
+        const videoId = (ytMatch && ytMatch[2].length === 11) ? ytMatch[2] : null;
+        
+        if (videoId) {
+          const id = await addThought({ 
+            type: 'embed', 
+            text: "Loading Title...", 
+            content: cleanText 
+          });
+          
+          if (id !== -1) {
+            setSelectedThoughtId(id);
+            setInspectorOpen(true);
+            
+            const oEmbedUrl = encodeURIComponent(`https://www.youtube.com/watch?v=${videoId}`);
+            // Using a different robust proxy if allorigins fails
+            fetch(`https://api.allorigins.win/get?url=https://www.youtube.com/oembed?url=${oEmbedUrl}%26format=json`)
+              .then(res => res.ok ? res.json() : Promise.reject('Network error'))
+              .then(data => {
+                if (data && data.contents) {
+                  const metadata = JSON.parse(data.contents);
+                  useStore.getState().updateThought(id, {
+                    text: metadata.title || "YouTube Video",
+                    description: metadata.author_name || ""
+                  });
+                }
+              })
+              .catch(err => {
+                console.warn("YouTube metadata fetch failed:", err);
+                useStore.getState().updateThought(id, { text: "YouTube Video" });
+              });
+          }
+        } else {
+          const id = await addThought({ 
+            type: 'text', 
+            text: "Note", 
+            content: cleanText 
+          });
+          if (id !== -1) {
+            setSelectedThoughtId(id);
+            setInspectorOpen(true);
+          }
         }
       }
     };
@@ -157,6 +195,7 @@ function App() {
       <TableFocusEditor />
       <PaintFocusEditor />
       <TasksFocusEditor />
+      <EmbedFocusEditor />
       <Analytics />
       <SpeedInsights />
       {/* Modals and Lightbox would go here */}

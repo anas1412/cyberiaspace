@@ -302,6 +302,43 @@ const ThoughtNode: React.FC<ThoughtNodeProps> = React.memo(({ thought, registerE
           </div>
         );
       }
+      case 'embed': {
+        const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|&v=)([^#&?]*).*/;
+        const match = thought.content.match(regExp);
+        const videoId = (match && match[2].length === 11) ? match[2] : null;
+        
+        return (
+          <div data-trigger="embed" className="mt-2 relative group prevent-drag cursor-pointer overflow-hidden rounded-xl border border-white/10 bg-black/50 aspect-video flex items-center justify-center">
+            {videoId ? (
+              <>
+                <img 
+                  src={`https://img.youtube.com/vi/${videoId}/mqdefault.jpg`} 
+                  className="w-full h-full object-cover opacity-60 group-hover:opacity-100 transition-opacity"
+                  alt="YouTube Preview" 
+                />
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <div className="w-12 h-12 bg-red-600 rounded-full flex items-center justify-center shadow-2xl transform group-hover:scale-110 transition-transform">
+                    <div className="w-0 h-0 border-t-[8px] border-t-transparent border-l-[14px] border-l-white border-b-[8px] border-b-transparent ml-1" />
+                  </div>
+                </div>
+              </>
+            ) : (
+              <div className="flex flex-col items-center gap-2 p-6 text-center">
+                <Maximize2 className="w-6 h-6 text-white/20" />
+                <span className="text-[10px] text-white/20 font-bold uppercase tracking-widest leading-tight">Paste YouTube Link<br/>in Editor</span>
+              </div>
+            )}
+            <div className="absolute inset-0 bg-[var(--accent)]/10 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center pointer-events-none">
+              <button 
+                onClick={(e) => { e.stopPropagation(); setActiveFocus(thought.id, 'embed'); }}
+                className="pointer-events-auto bg-[var(--accent)] text-white p-2 rounded-lg shadow-xl transform scale-90 group-hover:scale-100 transition-all"
+              >
+                <Maximize2 className="w-4 h-4" />
+              </button>
+            </div>
+          </div>
+        );
+      }
       default:
         return null;
     }
