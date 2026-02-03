@@ -2,6 +2,14 @@
 
 @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap');
 
+@font-face {
+  font-family: 'CyberiaComic';
+  src: url('/comic_font.TTF') format('truetype');
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
+
 :root {
 
   /* Cyberia (Default) */
@@ -156,6 +164,12 @@
 
     font-family: 'Plus Jakarta Sans', sans-serif;
 
+    -webkit-font-smoothing: antialiased;
+
+    -moz-osx-font-smoothing: grayscale;
+
+    text-rendering: optimizeLegibility;
+
 
 
   
@@ -196,6 +210,12 @@
 
   
 
+  }
+
+
+
+  input, button, textarea, select {
+    font-family: inherit;
   }
 
 
