@@ -218,7 +218,8 @@ export const usePhysics = (
     const physicsEnabled = activeSpace?.physics ?? true;
 
     const sbContent = document.getElementById('cal-sidebar-content');
-    const sbRect = sbContent?.getBoundingClientRect();
+    const sidebarEl = document.querySelector('.cal-sidebar');
+    const sbRect = sidebarEl?.getBoundingClientRect();
 
     if (mode === 'kanban') {
        const allThoughts = Array.from(thoughtMap.current.values());
@@ -257,7 +258,9 @@ export const usePhysics = (
         } else { target.x = window.innerWidth / 2; target.y = window.innerHeight + 500; target.scale = 0; }
         p.x += (target.x - p.x) * 0.15; p.y += (target.y - p.y) * 0.15; p.scale += (target.scale - p.scale) * 0.1; p.vx = 0; p.vy = 0;
       });
-      let currentSB_Y = sbRect ? sbRect.top + 20 : 200; const scrollTop = sbContent?.scrollTop || 0;
+      const contentRect = sbContent?.getBoundingClientRect();
+      let currentSB_Y = contentRect ? contentRect.top + 20 : 200; 
+      const scrollTop = sbContent?.scrollTop || 0;
       unscheduled.forEach((t) => {
         const stateP = state.get(t.id); if (!stateP) return; if (dragRef.current?.id === t.id) return;
         const el = elements.current.get(t.id); const height = (el?.offsetHeight || 120) * 0.6;
@@ -265,7 +268,7 @@ export const usePhysics = (
         currentSB_Y += height + 20;
         stateP.x += (target.x - stateP.x) * 0.15; stateP.y += (target.y - stateP.y) * 0.15; stateP.scale += (target.scale - stateP.scale) * 0.1; stateP.vx = 0; stateP.vy = 0;
       });
-      sbHeight.current = currentSB_Y - (sbRect?.top || 0); 
+      sbHeight.current = currentSB_Y - (contentRect?.top || 0); 
       const spacer = document.getElementById('cal-sidebar-spacer'); if (spacer) spacer.style.height = `${sbHeight.current + 40}px`;
     } else if (mode === 'spatial' && physicsEnabled) {
       ids.forEach((id) => {
@@ -389,26 +392,34 @@ export const usePhysics = (
         const isDraggingThis = dragRef.current?.id === id;
 
         if (mode === 'calendar' && t && !t.date && sbRect && !isDraggingThis) {
-            const buffer = 40; 
-            const topOverlap = cardBottom - sbRect.top;
-            const bottomOverlap = sbRect.bottom - cardTop;
-            const isInsideHorizontal = (p.x * s + transform.x) > (sbRect.left - 50) && (p.x * s + transform.x) < (sbRect.right + 50);
-            let opacity = 1;
-            if (!isInsideHorizontal) opacity = 0;
-            else {
-                const topOpacity = Math.max(0, Math.min(1, topOverlap / buffer));
-                const bottomOpacity = Math.max(0, Math.min(1, bottomOverlap / buffer));
-                opacity = Math.min(topOpacity, bottomOpacity);
+            // Precision Clipping using the actual scrollable content rect
+            const contentEl = document.getElementById('cal-sidebar-content');
+            const cRect = contentEl?.getBoundingClientRect();
+            
+            if (cRect) {
+                const nodeHeight = (offsetHeight * p.scale) * transform.scale;
+                // Calculate percentage to hide from top and bottom
+                const topDiff = cRect.top - cardTop;
+                const bottomDiff = cardBottom - cRect.bottom;
+                
+                const topClip = Math.max(0, (topDiff / nodeHeight) * 100);
+                const bottomClip = Math.max(0, (bottomDiff / nodeHeight) * 100);
+                
+                el.style.clipPath = `inset(${topClip}% 0% ${bottomClip}% 0%)`;
+                el.style.opacity = '1';
+                el.style.visibility = (topClip > 95 || bottomClip > 95) ? 'hidden' : 'visible';
+                el.style.pointerEvents = (topClip > 80 || bottomClip > 80) ? 'none' : 'auto';
+            } else {
+                el.style.clipPath = 'none';
             }
-            el.style.opacity = opacity.toString(); el.style.visibility = opacity === 0 ? 'hidden' : 'visible';
-            el.style.pointerEvents = opacity < 0.1 ? 'none' : 'auto'; el.style.zIndex = '35';
+            el.style.zIndex = '35';
         } else if (mode === 'kanban') {
+            el.style.clipPath = 'none'; // Ensure no clipping in other modes
             // Kanban Fading Logic: Hide cards as they go behind headers
             const isMobile = window.innerWidth < 768;
-            const headerBottom = isMobile ? 170 : 200; // Match KanbanOverlay heights
-            const buffer = 60; // Distance over which to fade
+            const headerBottom = isMobile ? 170 : 200; 
+            const buffer = 60; 
             
-            // Fading based on the bottom of the card approaching the header bottom
             const opacity = Math.max(0, Math.min(1, (cardBottom - headerBottom) / buffer));
             
             el.style.opacity = opacity.toString(); 
@@ -416,6 +427,7 @@ export const usePhysics = (
             el.style.pointerEvents = opacity < 0.1 ? 'none' : 'auto';
             el.style.zIndex = (20 + prioLevel).toString();
         } else {
+            el.style.clipPath = 'none';
             el.style.opacity = '1'; el.style.visibility = 'visible'; el.style.pointerEvents = 'auto';
             if (dragRef.current?.id === id) el.style.zIndex = '1000'; else el.style.zIndex = (20 + prioLevel).toString();
         }
