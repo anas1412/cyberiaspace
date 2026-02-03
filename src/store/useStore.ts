@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { db, type Space, type Thought } from '../db';
 import { aiService } from '../services/ai';
+import { DEFAULT_MODEL } from '../constants';
 
 interface CyberiaState {
   activeSpaceId: string | null;
@@ -18,6 +19,7 @@ interface CyberiaState {
 
   // God Mode (AI) State
   apiKey: string | null;
+  activeModel: string;
   oracleMode: boolean; // True = AI Enabled
   isChatOpen: boolean;
   
@@ -31,6 +33,7 @@ interface CyberiaState {
 
   // AI Actions
   setApiKey: (key: string) => void;
+  setActiveModel: (model: string) => void;
   removeApiKey: () => void;
   toggleOracleMode: () => void;
   setChatOpen: (isOpen: boolean) => void;
@@ -84,6 +87,7 @@ export const useStore = create<CyberiaState>((set, get) => ({
   deferredPrompt: null,
   
   apiKey: localStorage.getItem('cyberia-api-key'),
+  activeModel: localStorage.getItem('cyberia-active-model') || DEFAULT_MODEL,
   oracleMode: localStorage.getItem('cyberia-oracle-mode') === 'true',
   isChatOpen: false,
 
@@ -102,7 +106,16 @@ export const useStore = create<CyberiaState>((set, get) => ({
     set({ apiKey: key });
     localStorage.setItem('cyberia-api-key', key);
     if (key) {
-      aiService.initialize(key);
+      aiService.initialize(key, get().activeModel);
+    }
+  },
+
+  setActiveModel: (model) => {
+    set({ activeModel: model });
+    localStorage.setItem('cyberia-active-model', model);
+    const { apiKey } = get();
+    if (apiKey) {
+      aiService.initialize(apiKey, model);
     }
   },
 
@@ -127,8 +140,9 @@ export const useStore = create<CyberiaState>((set, get) => ({
 
     // Initialize AI if key exists
     const savedKey = localStorage.getItem('cyberia-api-key');
+    const savedModel = localStorage.getItem('cyberia-active-model') || DEFAULT_MODEL;
     if (savedKey) {
-      aiService.initialize(savedKey);
+      aiService.initialize(savedKey, savedModel);
     }
 
     await get().refreshSpaces();

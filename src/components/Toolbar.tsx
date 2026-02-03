@@ -1,22 +1,26 @@
 import React, { useState } from 'react';
 import { useStore } from '../store/useStore';
 import { useModalStore } from '../store/useModalStore';
-import { LIMITS } from '../constants';
-import { Plus, Zap, Download, Upload, SlidersHorizontal, ChevronLeft, ChevronRight, Trash2, Edit3, Camera, MoreVertical, Keyboard, MousePointer2, Orbit, Columns3, CalendarDays, Shield, MonitorSmartphone, Sparkles, Key } from 'lucide-react';
+import { LIMITS, AVAILABLE_MODELS } from '../constants';
+import { Plus, Zap, Download, Upload, SlidersHorizontal, ChevronLeft, ChevronRight, Trash2, Edit3, Camera, MoreVertical, Keyboard, MousePointer2, Orbit, Columns3, CalendarDays, Shield, MonitorSmartphone, Sparkles, Key, ChevronDown } from 'lucide-react';
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 /* import { toPng, toCanvas } from 'html-to-image'; */
 import { toCanvas } from 'html-to-image';
-import { MODEL_NAME } from '../services/ai';
 
 function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
 
 const formatModelName = (name: string) => {
-  if (name.includes('gemini-3')) return 'Gemini 3';
-  if (name.includes('gemini-1.5')) return 'Gemini 1.5';
-  return name.split('-')[0].charAt(0).toUpperCase() + name.split('-')[0].slice(1);
+  if (name.includes('gemini-3-pro')) return 'Gemini 3 Pro';
+  if (name.includes('gemini-3-flash')) return 'Gemini 3 Flash';
+  if (name.includes('gemini-2.5-pro')) return 'Gemini 2.5 Pro';
+  if (name.includes('gemini-2.5-flash-lite')) return 'Gemini 2.5 Flash Lite';
+  if (name.includes('gemini-2.5-flash')) return 'Gemini 2.5 Flash';
+  if (name.includes('flash-lite')) return 'Flash Lite';
+  if (name.includes('flash')) return 'Flash';
+  return name;
 };
 
 const Toolbar: React.FC = () => {
@@ -26,6 +30,8 @@ const Toolbar: React.FC = () => {
   const setApiKey = useStore((state) => state.setApiKey);
   const removeApiKey = useStore((state) => state.removeApiKey);
   const apiKey = useStore((state) => state.apiKey);
+  const activeModel = useStore((state) => state.activeModel);
+  const setActiveModel = useStore((state) => state.setActiveModel);
   const setChatOpen = useStore((state) => state.setChatOpen);
   const isChatOpen = useStore((state) => state.isChatOpen);
   
@@ -725,65 +731,87 @@ const Toolbar: React.FC = () => {
               The key is stored locally in your browser and sent directly to Google.
             </p>
 
-            <div className="space-y-4">
-              <div className="relative">
-                <input
-                  type="password"
-                  value={tempKey}
-                  onChange={(e) => setTempKey(e.target.value)}
-                  placeholder={apiKey ? "••••••••••••••••" : "sk-..."}
-                  className="w-full bg-black/40 border border-white/10 rounded-xl p-4 text-xs text-white outline-none focus:border-purple-500 font-mono"
-                />
-                {apiKey && (
-                  <div className="absolute right-4 top-1/2 -translate-y-1/2 flex items-center gap-2">
-                    <span className="text-[8px] font-black text-green-500 uppercase tracking-widest bg-green-500/10 px-2 py-1 rounded-md border border-green-500/20">Active</span>
+            <div className="space-y-6">
+              <div className="space-y-2">
+                <label className="text-[9px] uppercase font-bold tracking-widest text-slate-500 ml-1">Intelligence Model</label>
+                <div className="relative">
+                  <select
+                    value={activeModel}
+                    onChange={(e) => setActiveModel(e.target.value)}
+                    className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-[10px] font-bold uppercase tracking-widest text-white outline-none focus:border-purple-500 appearance-none cursor-pointer transition-all hover:bg-white/[0.03]"
+                  >
+                    {AVAILABLE_MODELS.map((m) => (
+                      <option key={m} value={m} className="bg-[#0f172a] text-white">
+                        {formatModelName(m)}
+                      </option>
+                    ))}
+                  </select>
+                  <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-slate-500">
+                    <ChevronDown className="w-3.5 h-3.5" />
                   </div>
-                )}
+                </div>
               </div>
-              
-              <div className="flex gap-2">
-                {apiKey ? (
+
+              <div className="space-y-4 pt-2 border-t border-white/5">
+                <label className="text-[9px] uppercase font-bold tracking-widest text-slate-500 ml-1">API Credentials</label>
+                <div className="relative">
+                  <input
+                    type="password"
+                    value={tempKey}
+                    onChange={(e) => setTempKey(e.target.value)}
+                    placeholder={apiKey ? "••••••••••••••••" : "sk-..."}
+                    className="w-full bg-black/40 border border-white/10 rounded-xl p-4 text-xs text-white outline-none focus:border-purple-500 font-mono"
+                  />
+                  {apiKey && (
+                    <div className="absolute right-4 top-1/2 -translate-y-1/2 flex items-center gap-2">
+                      <span className="text-[8px] font-black text-green-500 uppercase tracking-widest bg-green-500/10 px-2 py-1 rounded-md border border-green-500/20">Active</span>
+                    </div>
+                  )}
+                </div>
+                
+                <div className="flex gap-2">
+                  {apiKey ? (
+                    <button 
+                      onClick={() => {
+                        removeApiKey();
+                        setTempKey('');
+                        setIsKeyModalOpen(false);
+                      }}
+                      className="flex-1 py-3 rounded-xl border border-red-500/30 hover:bg-red-500/10 text-[10px] font-bold uppercase tracking-widest text-red-400 transition-colors flex items-center justify-center gap-2"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" /> Remove
+                    </button>
+                  ) : (
+                    <button 
+                      onClick={() => window.open('https://aistudio.google.com/app/apikey', '_blank')}
+                      className="flex-1 py-3 rounded-xl border border-white/10 hover:bg-white/5 text-[10px] font-bold uppercase tracking-widest text-slate-400 transition-colors"
+                    >
+                      Get Key
+                    </button>
+                  )}
+                  
                   <button 
                     onClick={() => {
-                      removeApiKey();
-                      setTempKey('');
-                      setIsKeyModalOpen(false);
+                      if (tempKey.trim()) {
+                        setApiKey(tempKey.trim());
+                        setTempKey('');
+                        setIsKeyModalOpen(false);
+                        if (!oracleMode) toggleOracleMode();
+                      } else if (apiKey) {
+                        setIsKeyModalOpen(false);
+                      }
                     }}
-                    className="flex-1 py-3 rounded-xl border border-red-500/30 hover:bg-red-500/10 text-[10px] font-bold uppercase tracking-widest text-red-400 transition-colors flex items-center justify-center gap-2"
+                    className="flex-[2] py-3 rounded-xl bg-purple-500 hover:bg-purple-400 text-[10px] font-black uppercase tracking-widest text-white transition-colors"
                   >
-                    <Trash2 className="w-3.5 h-3.5" /> Remove
+                    {apiKey ? 'Save Changes' : 'Activate Oracle'}
                   </button>
-                ) : (
-                  <button 
-                    onClick={() => window.open('https://aistudio.google.com/app/apikey', '_blank')}
-                    className="flex-1 py-3 rounded-xl border border-white/10 hover:bg-white/5 text-[10px] font-bold uppercase tracking-widest text-slate-400 transition-colors"
-                  >
-                    Get Key
-                  </button>
-                )}
-                
-                <button 
-                  onClick={() => {
-                    if (tempKey.trim()) {
-                      setApiKey(tempKey.trim());
-                      setTempKey('');
-                      setIsKeyModalOpen(false);
-                      if (!oracleMode) toggleOracleMode();
-                    } else if (apiKey) {
-                      // Just closing if no new key provided but one exists
-                      setIsKeyModalOpen(false);
-                    }
-                  }}
-                  className="flex-[2] py-3 rounded-xl bg-purple-500 hover:bg-purple-400 text-[10px] font-black uppercase tracking-widest text-white transition-colors"
-                >
-                  {apiKey ? 'Update Key' : 'Activate Oracle'}
-                </button>
+                </div>
               </div>
             </div>
             
             <div className="mt-6 pt-6 border-t border-white/5 text-center">
               <p className="text-[9px] text-slate-600 uppercase font-bold tracking-widest">
-                Powered by Google {formatModelName(MODEL_NAME)}
+                Powered by Google {formatModelName(activeModel)}
               </p>
             </div>
           </div>

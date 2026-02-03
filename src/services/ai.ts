@@ -1,9 +1,9 @@
 import { GoogleGenerativeAI, HarmCategory, HarmBlockThreshold, type ChatSession, type GenerativeModel, type Part, SchemaType } from '@google/generative-ai';
 import { useStore } from '../store/useStore';
+import { DEFAULT_MODEL } from '../constants';
 
 // Configuration
-/* export const MODEL_NAME = 'gemini-3-flash-preview'; */
-export const MODEL_NAME = 'gemini-flash-lite-latest';
+// Removed static MODEL_NAME to support dynamic switching via store.
 
 // Safety Settings
 const SAFETY_SETTINGS = [
@@ -21,6 +21,7 @@ Your goal is to help the user organize their thoughts, brainstorm ideas, and man
 Key Traits:
 - Concise: Give short, punchy answers. Avoid fluff.
 - Spatial: You understand that ideas are physical objects with (x, y) coordinates. Center is (0,0) usually, but check existing thoughts.
+- Temporal Aware: You are provided with the current system time. Use it for scheduling or relative date references (e.g., "tomorrow", "next week").
 - Proactive: Don't just talk; use tools to create, update, or move thoughts when helpful.
 - Visual: When asked to visualize, you can assume the user wants to see a change in the workspace.
 
@@ -130,6 +131,7 @@ const TOOLS = [
 let genAI: GoogleGenerativeAI | null = null;
 let model: GenerativeModel | null = null;
 let chatSession: ChatSession | null = null;
+export let ACTIVE_MODEL_NAME = 'gemini-1.5-flash';
 
 async function executeTool(name: string, args: Record<string, unknown>) {
   const store = useStore.getState();
@@ -168,16 +170,18 @@ async function executeTool(name: string, args: Record<string, unknown>) {
 }
 
 export const aiService = {
-  initialize: (apiKey: string) => {
+  initialize: (apiKey: string, modelName: string = DEFAULT_MODEL) => {
     if (!apiKey) return;
+    ACTIVE_MODEL_NAME = modelName;
     genAI = new GoogleGenerativeAI(apiKey);
     model = genAI.getGenerativeModel({ 
-      model: MODEL_NAME,
+      model: modelName,
       systemInstruction: SYSTEM_INSTRUCTION,
       safetySettings: SAFETY_SETTINGS,
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       tools: TOOLS as any
     });
+    chatSession = null; // Reset chat session when model or key changes
   },
 
   startChat: async (history: { role: 'user' | 'model'; parts: { text: string }[] }[] = []) => {

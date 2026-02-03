@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { useStore } from '../store/useStore';
-import { aiService, MODEL_NAME } from '../services/ai';
+import { aiService } from '../services/ai';
 import { serializeWorkspace } from '../utils/contextBuilder';
 import { X, Send, Eye, Shield, Loader2, Sparkles } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -13,9 +13,14 @@ interface Message {
 }
 
 const formatModelName = (name: string) => {
-  if (name.includes('gemini-3')) return 'Gemini 3';
-  if (name.includes('gemini-1.5')) return 'Gemini 1.5';
-  return name.split('-')[0].charAt(0).toUpperCase() + name.split('-')[0].slice(1);
+  if (name.includes('gemini-3-pro')) return 'Gemini 3 Pro';
+  if (name.includes('gemini-3-flash')) return 'Gemini 3 Flash';
+  if (name.includes('gemini-2.5-pro')) return 'Gemini 2.5 Pro';
+  if (name.includes('gemini-2.5-flash-lite')) return 'Gemini 2.5 Flash Lite';
+  if (name.includes('gemini-2.5-flash')) return 'Gemini 2.5 Flash';
+  if (name.includes('flash-lite')) return 'Flash Lite';
+  if (name.includes('flash')) return 'Flash';
+  return name;
 };
 
 const ChatOverlay: React.FC = () => {
@@ -23,6 +28,7 @@ const ChatOverlay: React.FC = () => {
   const setChatOpen = useStore((state) => state.setChatOpen);
   const oracleMode = useStore((state) => state.oracleMode);
   const apiKey = useStore((state) => state.apiKey);
+  const activeModel = useStore((state) => state.activeModel);
   
   const [input, setInput] = useState('');
   const [history, setHistory] = useState<Message[]>([]);
@@ -112,7 +118,7 @@ ${userMsg.text}
               </div>
               <div>
                 <h3 className="text-sm font-bold text-white tracking-wide">Cyberia Oracle</h3>
-                <p className="text-[10px] text-[var(--accent)] font-mono uppercase tracking-wider">{formatModelName(MODEL_NAME)} Active</p>
+                <p className="text-[10px] text-[var(--accent)] font-mono uppercase tracking-wider">{formatModelName(activeModel)} Active</p>
               </div>
             </div>
             <button 

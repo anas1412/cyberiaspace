@@ -23,6 +23,11 @@ export const serializeWorkspace = (activeSpaceId: string | null, thoughts: Thoug
   }));
 
   const context = {
+    currentTime: {
+      date: new Date().toLocaleDateString('en-CA'), // YYYY-MM-DD
+      full: new Date().toLocaleString(),
+      day: new Date().toLocaleDateString('en-US', { weekday: 'long' })
+    },
     currentSpace: {
       name: activeSpace.name,
       mode: activeSpace.mode,
