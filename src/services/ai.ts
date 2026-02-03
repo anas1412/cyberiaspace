@@ -45,7 +45,30 @@ const TOOLS = [
             x: { type: SchemaType.NUMBER, description: "X coordinate." },
             y: { type: SchemaType.NUMBER, description: "Y coordinate." },
             priority: { type: SchemaType.STRING, enum: ["none", "low", "medium", "high", "urgent"], description: "Priority level." },
-            content: { type: SchemaType.STRING, description: "Detailed content (Markdown) or Description." }
+            content: { type: SchemaType.STRING, description: "Detailed content (Markdown)." },
+            description: { type: SchemaType.STRING, description: "Short description." },
+            date: { type: SchemaType.STRING, description: "Date in YYYY-MM-DD format." },
+            tags: { type: SchemaType.ARRAY, items: { type: SchemaType.STRING } },
+            status: { type: SchemaType.STRING, enum: ["none", "todo", "doing", "done"] },
+            tasks: { 
+              type: SchemaType.ARRAY, 
+              items: { 
+                type: SchemaType.OBJECT,
+                properties: {
+                  text: { type: SchemaType.STRING },
+                  done: { type: SchemaType.BOOLEAN }
+                }
+              }
+            },
+            table: { 
+              type: SchemaType.ARRAY, 
+              items: { 
+                type: SchemaType.ARRAY, 
+                items: { type: SchemaType.STRING }
+              } 
+            },
+            image: { type: SchemaType.STRING, description: "URL or Base64 image data." },
+            drawing: { type: SchemaType.STRING, description: "Base64 canvas drawing data." }
           },
           required: ["text", "x", "y"]
         }
@@ -57,13 +80,34 @@ const TOOLS = [
           type: SchemaType.OBJECT,
           properties: {
             id: { type: SchemaType.NUMBER, description: "The ID of the thought to update." },
-            text: { type: SchemaType.STRING },
-            description: { type: SchemaType.STRING },
+            text: { type: SchemaType.STRING, description: "The title of the thought." },
+            description: { type: SchemaType.STRING, description: "Short description." },
+            content: { type: SchemaType.STRING, description: "The main content (Markdown)." },
             priority: { type: SchemaType.STRING, enum: ["none", "low", "medium", "high", "urgent"] },
             status: { type: SchemaType.STRING, enum: ["none", "todo", "doing", "done"] },
             x: { type: SchemaType.NUMBER },
             y: { type: SchemaType.NUMBER },
-            tags: { type: SchemaType.ARRAY, items: { type: SchemaType.STRING }, description: "List of tags." }
+            date: { type: SchemaType.STRING, description: "Date in YYYY-MM-DD format." },
+            tags: { type: SchemaType.ARRAY, items: { type: SchemaType.STRING }, description: "List of tags." },
+            tasks: { 
+              type: SchemaType.ARRAY, 
+              items: { 
+                type: SchemaType.OBJECT,
+                properties: {
+                  text: { type: SchemaType.STRING },
+                  done: { type: SchemaType.BOOLEAN }
+                }
+              }
+            },
+            table: { 
+              type: SchemaType.ARRAY, 
+              items: { 
+                type: SchemaType.ARRAY, 
+                items: { type: SchemaType.STRING }
+              } 
+            },
+            image: { type: SchemaType.STRING, description: "URL or Base64 image data." },
+            drawing: { type: SchemaType.STRING, description: "Base64 canvas drawing data." }
           },
           required: ["id"]
         }
