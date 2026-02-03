@@ -174,6 +174,9 @@ export const aiService = {
     if (!apiKey) return;
     ACTIVE_MODEL_NAME = modelName;
     genAI = new GoogleGenerativeAI(apiKey);
+
+    console.log(`[Oracle] Initializing with model: ${modelName}`);
+    
     model = genAI.getGenerativeModel({ 
       model: modelName,
       systemInstruction: SYSTEM_INSTRUCTION,

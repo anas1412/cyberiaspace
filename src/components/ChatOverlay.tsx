@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { useStore } from '../store/useStore';
 import { aiService } from '../services/ai';
 import { serializeWorkspace } from '../utils/contextBuilder';
+import { parseAIError } from '../utils/errorParser';
 import { X, Send, Eye, Shield, Loader2, Sparkles } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { toPng } from 'html-to-image';
@@ -34,8 +35,26 @@ const ChatOverlay: React.FC = () => {
   const [history, setHistory] = useState<Message[]>([]);
   const [loading, setLoading] = useState(false);
   const [includeVision, setIncludeVision] = useState(true);
+  const [currentTipIndex, setCurrentTipIndex] = useState(0);
   
   const scrollRef = useRef<HTMLDivElement>(null);
+
+  const tips = [
+    "Ask Oracle to reorganize your workspace",
+    "Press [Space] to spawn a new thought",
+    "Link nodes to form physical clusters",
+    "Double-click nodes for deep editing",
+    "Paste images, text, youtube links directly into the space",
+    "Toggle Shield icon for local-only mode"
+  ];
+
+  // Rotate tips
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setCurrentTipIndex((prev) => (prev + 1) % tips.length);
+    }, 5000);
+    return () => clearInterval(interval);
+  }, [tips.length]);
 
   // Auto-scroll
   useEffect(() => {
@@ -89,9 +108,10 @@ ${userMsg.text}
       const response = await aiService.sendMessage(prompt, imageBase64);
       
       setHistory(prev => [...prev, { role: 'model', text: response }]);
-    } catch (err) {
-      setHistory(prev => [...prev, { role: 'model', text: 'Error: Failed to connect to Cyberia Oracle. Check your API Key or connection.' }]);
-      console.error(err);
+    } catch (err: any) {
+      const friendlyError = parseAIError(err);
+      setHistory(prev => [...prev, { role: 'model', text: `**Oracle Error:** ${friendlyError}` }]);
+      console.error("[Oracle Debug]", err);
     } finally {
       setLoading(false);
     }
@@ -188,18 +208,37 @@ ${userMsg.text}
               </button>
             </div>
             
-            <div className="mt-2 flex items-center gap-4 px-1">
-              <label className="flex items-center gap-2 cursor-pointer group">
+            <div className="mt-2 flex items-center justify-between px-1 overflow-hidden">
+              <label 
+                className="flex items-center gap-2 cursor-pointer group flex-shrink-0"
+                onClick={() => setIncludeVision(!includeVision)}
+              >
                 <div 
                   className={`w-4 h-4 rounded border flex items-center justify-center transition-colors ${includeVision ? 'bg-[var(--accent)] border-[var(--accent)]' : 'border-slate-600 group-hover:border-slate-500'}`}
-                  onClick={() => setIncludeVision(!includeVision)}
                 >
                   {includeVision && <Eye className="w-2.5 h-2.5 text-white" />}
                 </div>
-                <span className="text-[10px] uppercase font-bold tracking-wider text-slate-500 group-hover:text-slate-400 select-none">
-                  Vision Context
+                <span className="text-[10px] uppercase font-bold tracking-wider text-slate-500 group-hover:text-slate-400 select-none whitespace-nowrap">
+                  Vision
                 </span>
               </label>
+
+              <div className="flex items-center gap-1.5 text-[9px] font-medium text-slate-500 italic select-none overflow-hidden">
+                <span className="opacity-40 flex-shrink-0 whitespace-nowrap">Tip:</span>
+                <AnimatePresence mode="wait">
+                  <motion.span 
+                    key={currentTipIndex}
+                    initial={{ opacity: 0, y: 5 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -5 }}
+                    className="text-slate-400 truncate block whitespace-nowrap"
+                  >
+                    {!activeModel.includes('gemini-3') && currentTipIndex === 0
+                      ? "Use Gemini 3 for better reasoning" 
+                      : tips[currentTipIndex]}
+                  </motion.span>
+                </AnimatePresence>
+              </div>
             </div>
           </div>
         </motion.div>
