@@ -434,6 +434,7 @@ export const useStore = create<CyberiaState>((set, get) => ({
         table: [['', ''], ['', '']],
         date: '',
         priority: 'none',
+        size: 1.0,
         order: currentCount,
         ...partialThought
       } as Thought;

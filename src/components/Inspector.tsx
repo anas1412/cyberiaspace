@@ -237,6 +237,22 @@ const Inspector: React.FC = () => {
               </div>
             </div>
 
+            <div className="space-y-3">
+              <div className="flex justify-between items-center ml-1">
+                <label className="text-[9px] uppercase font-bold tracking-widest text-slate-500">Node Size</label>
+                <span className="text-[9px] font-mono text-[var(--accent-secondary)]">{(thought.size || 1.0).toFixed(1)}x</span>
+              </div>
+              <input
+                type="range"
+                min="0.5"
+                max="2.0"
+                step="0.1"
+                value={thought.size || 1.0}
+                onChange={(e) => updateThought(thought.id, { size: parseFloat(e.target.value) })}
+                className="w-full h-1.5 bg-white/5 rounded-lg appearance-none cursor-pointer accent-[var(--accent)]"
+              />
+            </div>
+
             <div className="pt-4 border-t border-white/5">
               {thought.type === 'text' && (
                 <button 

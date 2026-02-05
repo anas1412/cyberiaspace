@@ -290,12 +290,14 @@ export const usePhysics = (
       ids.forEach((id) => {
         if (dragRef.current?.initialPositions.has(id)) return; 
         const p = state.get(id)!; const t = thoughtMap.current.get(id); if (!t) return;
-        const prioLevel = PRIORITY_WEIGHT[t.priority] || 0; const gravityMultiplier = 1 + prioLevel * 0.5; const targetScale = 1 + prioLevel * 0.05;
+        const prioLevel = PRIORITY_WEIGHT[t.priority] || 0; 
+        const gravityMultiplier = 1 + prioLevel * 0.5; 
+        const targetScale = (1 + prioLevel * 0.05) * (t.size || 1);
         p.vx += (window.innerWidth / 2 - p.x) * (GRAVITY * gravityMultiplier); p.vy += (window.innerHeight / 2 - p.y) * (GRAVITY * gravityMultiplier);
         
         const el = elements.current.get(id); 
         const nHeight = el?.offsetHeight || 120; 
-        const nRadius = Math.max(120, nHeight / 2);
+        const nRadius = Math.max(120, (nHeight / 2) * p.scale);
 
         ids.forEach((otherId) => {
           if (id === otherId) return; const otherP = state.get(otherId)!; const otherT = thoughtMap.current.get(otherId); if (!otherT) return;
@@ -305,7 +307,7 @@ export const usePhysics = (
           
           const otherEl = elements.current.get(otherId); 
           const otherHeight = otherEl?.offsetHeight || 120; 
-          const otherRadius = Math.max(120, otherHeight / 2);
+          const otherRadius = Math.max(120, (otherHeight / 2) * otherP.scale);
           const minDistance = (nRadius + otherRadius);
           
           const otherPrio = PRIORITY_WEIGHT[otherT.priority] || 0; 

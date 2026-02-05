@@ -31,6 +31,7 @@ interface Thought {
   table: string[][];
   date: string;
   priority: 'none' | 'low' | 'medium' | 'high' | 'urgent';
+  size: number; // 0.5 to 2.0
   order: number;
 }
 
