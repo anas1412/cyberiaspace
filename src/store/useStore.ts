@@ -107,7 +107,7 @@ export const useStore = create<CyberiaState>((set, get) => ({
   lightboxImage: null,
   linkingSourceId: null,
   theme: (localStorage.getItem('cyberia-theme') as 'cyberia' | 'sakura' | 'neon') || 'cyberia',
-  isSpaceLoading: false,
+  isSpaceLoading: true,
   deferredPrompt: null,
   
   transform: { x: 0, y: 0, scale: 1 },
@@ -236,6 +236,7 @@ export const useStore = create<CyberiaState>((set, get) => ({
   setChatOpen: (isOpen) => set({ isChatOpen: isOpen }),
 
   init: async () => {
+    set({ isSpaceLoading: true });
     // Apply theme on init
     const savedTheme = localStorage.getItem('cyberia-theme') || 'cyberia';
     document.body.setAttribute('data-theme', savedTheme);
@@ -299,6 +300,7 @@ export const useStore = create<CyberiaState>((set, get) => ({
         priority: 'none'
       });
 
+      set({ isSpaceLoading: false });
     } else {
       const savedSpaceId = localStorage.getItem('cyberia-active-space-id');
       const spaceExists = savedSpaceId ? spaces.find(s => s.id === savedSpaceId) : null;
