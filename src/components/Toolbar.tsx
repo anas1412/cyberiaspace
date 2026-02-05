@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useStore } from '../store/useStore';
 import { useModalStore } from '../store/useModalStore';
 import { LIMITS, AVAILABLE_MODELS } from '../constants';
-import { Plus, Zap, Download, Upload, ChevronLeft, ChevronRight, Trash2, Edit3, Camera, MoreVertical, Keyboard, MousePointer2, Orbit, Columns3, CalendarDays, Shield, MonitorSmartphone, Sparkles, Key, ChevronDown, ZoomIn, ZoomOut, RotateCcw, Undo2, Redo2, Settings } from 'lucide-react';
+import { Plus, Zap, Download, Upload, ChevronLeft, ChevronRight, Trash2, Edit3, Camera, MoreVertical, Keyboard, MousePointer2, Orbit, Columns3, CalendarDays, Shield, MonitorSmartphone, BotMessageSquare, Key, ChevronDown, ZoomIn, ZoomOut, RotateCcw, Undo2, Redo2, Settings } from 'lucide-react';
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 /* import { toPng, toCanvas } from 'html-to-image'; */
@@ -658,7 +658,7 @@ const Toolbar: React.FC = () => {
                 isChatOpen ? "bg-[var(--accent)] text-white shadow-[0_0_20px_var(--accent-glow)]" : "text-[var(--accent)] hover:bg-[var(--accent)]/10"
               )}
             >
-              <Sparkles className="w-4 h-4 md:w-5 md:h-5" />
+              <BotMessageSquare className="w-4 h-4 md:w-5 md:h-5" />
             </button>
           )}
 

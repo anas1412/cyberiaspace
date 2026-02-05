@@ -3,7 +3,7 @@ import { useStore } from '../store/useStore';
 import { aiService } from '../services/ai';
 import { serializeWorkspace } from '../utils/contextBuilder';
 import { parseAIError } from '../utils/errorParser';
-import { X, Send, Eye, Shield, Loader2, Sparkles } from 'lucide-react';
+import { X, Send, Eye, Shield, Loader2, Bot } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { toPng } from 'html-to-image';
 import ReactMarkdown from 'react-markdown';
@@ -139,7 +139,7 @@ ${userMsg.text}
           <div className="flex items-center justify-between p-4 md:p-6 border-b border-white/5 bg-white/5">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-full bg-[var(--accent)]/20 flex items-center justify-center border border-[var(--accent)]/50">
-                <Sparkles className="w-5 h-5 text-[var(--accent)]" />
+                <Bot className="w-5 h-5 text-[var(--accent)]" />
               </div>
               <div>
                 <h3 className="text-sm font-bold text-white tracking-wide">Cyberia Oracle</h3>
