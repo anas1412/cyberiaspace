@@ -14,13 +14,13 @@ interface Message {
 }
 
 const formatModelName = (name: string) => {
-  if (name.includes('gemini-3-pro')) return 'Gemini 3 Pro';
-  if (name.includes('gemini-3-flash')) return 'Gemini 3 Flash';
-  if (name.includes('gemini-2.5-pro')) return 'Gemini 2.5 Pro';
-  if (name.includes('gemini-2.5-flash-lite')) return 'Gemini 2.5 Flash Lite';
-  if (name.includes('gemini-2.5-flash')) return 'Gemini 2.5 Flash';
-  if (name.includes('flash-lite')) return 'Flash Lite';
-  if (name.includes('flash')) return 'Flash';
+  if (name.includes('gemini-3-flash')) return '3 Flash';
+  if (name.includes('gemini-3-pro')) return '3 Pro';
+  if (name.includes('gemini-2.5-pro')) return '2.5 Pro';
+  if (name.includes('gemini-flash-lite-latest')) return '2.5 Flash Lite Latest';
+  if (name.includes('gemini-flash-latest')) return '2.5 Flash Latest';
+  if (name.includes('gemini-2.5-flash-lite')) return '2.5 Flash Lite';
+  if (name.includes('gemini-2.5-flash')) return '2.5 Flash';
   return name;
 };
 
@@ -44,7 +44,7 @@ const ChatOverlay: React.FC = () => {
     "Press [Space] to spawn a new thought",
     "Link nodes to form physical clusters",
     "Double-click nodes for deep editing",
-    "Paste images, text, youtube links directly into the space",
+    "Paste images, text, youtube links",
     "Toggle Shield icon for local-only mode"
   ];
 
