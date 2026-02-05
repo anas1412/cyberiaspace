@@ -74,7 +74,7 @@ const EmptyState: React.FC = () => {
           <div className="mt-8 px-6 py-3 bg-white/[0.02] border border-dashed border-white/[0.05] rounded-[24px] inline-block">
             <p className="font-['CyberiaBlueprint',_cursive,_sans-serif] text-white/30 text-[12px] tracking-[1px] uppercase">
               <span className="bg-white/10 px-2 py-1 rounded-[6px] mr-2 text-white/60">Ctrl + V</span> 
-              Paste anything to create a thought instantly
+              Paste Text, Images, or YouTube links
             </p>
           </div>
         )}

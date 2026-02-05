@@ -18,6 +18,10 @@ const Viewport: React.FC = () => {
   const setInspectorOpen = useStore((state) => state.setInspectorOpen);
   const selectedThoughtId = useStore((state) => state.selectedThoughtId);
   const setSelectedThoughtId = useStore((state) => state.setSelectedThoughtId);
+  const selectedThoughtIds = useStore((state) => state.selectedThoughtIds);
+  const setSelectedThoughtIds = useStore((state) => state.setSelectedThoughtIds);
+  const clearSelection = useStore((state) => state.clearSelection);
+  const deleteSelectedThoughts = useStore((state) => state.deleteSelectedThoughts);
   const deleteThought = useStore((state) => state.deleteThought);
   const addThought = useStore((state) => state.addThought);
   const saveSpaceTransform = useStore((state) => state.saveSpaceTransform);
@@ -26,9 +30,12 @@ const Viewport: React.FC = () => {
   const { openModal } = useModalStore();
   const [transform, setTransform] = useState({ x: 0, y: 0, scale: 1 });
   const [isGrabbing, setIsGrabbing] = useState(false);
+  const [selectionRect, setSelectionRect] = useState<{ x: number, y: number, w: number, h: number } | null>(null);
   
   const lastMousePos = useRef({ x: 0, y: 0 });
   const isPanningRef = useRef(false);
+  const isSelectingRef = useRef(false);
+  const selectionStartRef = useRef({ x: 0, y: 0 });
   const initialTouchDistance = useRef<number | null>(null);
   const initialTouchScale = useRef<number>(1);
   const initialTouchMidpoint = useRef<{ x: number, y: number } | null>(null);
@@ -84,16 +91,22 @@ const Viewport: React.FC = () => {
     const handleMouseDownLocal = (e: MouseEvent) => {
       const isMiddleClick = e.button === 1;
       const isAltLeftClick = e.button === 0 && e.altKey;
+      const isLeftClick = e.button === 0 && !e.altKey;
 
       if (
         activeSpace?.mode === 'spatial' &&
-        !(e.target as HTMLElement).closest('button, input, textarea, .thought-bulb, #inspector, .ui-layer, .glass, #cal-sidebar-content, .cal-grid') &&
-        (isMiddleClick || isAltLeftClick)
+        !(e.target as HTMLElement).closest('button, input, textarea, .thought-bulb, #inspector, .ui-layer, .glass, #cal-sidebar-content, .cal-grid')
       ) {
-        isPanningRef.current = true;
-        setIsGrabbing(true);
-        lastMousePos.current = { x: e.clientX, y: e.clientY };
-        e.preventDefault();
+        if (isMiddleClick || isAltLeftClick) {
+          isPanningRef.current = true;
+          setIsGrabbing(true);
+          lastMousePos.current = { x: e.clientX, y: e.clientY };
+          e.preventDefault();
+        } else if (isLeftClick) {
+          isSelectingRef.current = true;
+          selectionStartRef.current = { x: e.clientX, y: e.clientY };
+          clearSelection();
+        }
       }
     };
 
@@ -109,12 +122,41 @@ const Viewport: React.FC = () => {
         }));
         
         lastMousePos.current = { x: e.clientX, y: e.clientY };
+      } else if (isSelectingRef.current) {
+        const x = Math.min(e.clientX, selectionStartRef.current.x);
+        const y = Math.min(e.clientY, selectionStartRef.current.y);
+        const w = Math.abs(e.clientX - selectionStartRef.current.x);
+        const h = Math.abs(e.clientY - selectionStartRef.current.y);
+        
+        if (w > 5 || h > 5) {
+          setSelectionRect({ x, y, w, h });
+          
+          // Selection Logic
+          const rectX = (x - transform.x) / transform.scale;
+          const rectY = (y - transform.y) / transform.scale;
+          const rectW = w / transform.scale;
+          const rectH = h / transform.scale;
+
+          const selectedIds = thoughts.filter(t => {
+            const tx = t.x;
+            const ty = t.y;
+            // Rough bounding box check for thoughts (centered at x,y with approx 280x200 size)
+            const tw = 280 / 2;
+            const th = 200 / 2;
+            return tx + tw > rectX && tx - tw < rectX + rectW &&
+                   ty + th > rectY && ty - th < rectY + rectH;
+          }).map(t => t.id);
+          
+          setSelectedThoughtIds(selectedIds);
+        }
       }
     };
 
     const handleMouseUp = () => {
       isPanningRef.current = false;
+      isSelectingRef.current = false;
       setIsGrabbing(false);
+      setSelectionRect(null);
     };
 
     const handleTouchStart = (e: TouchEvent) => {
@@ -197,7 +239,9 @@ const Viewport: React.FC = () => {
       const target = e.target as HTMLElement;
       if (!target.closest('.thought-bulb, #inspector, .ui-layer, .glass, .expand-img, button, input, textarea, #cal-sidebar-content, .cal-grid, #chat-overlay')) {
         setInspectorOpen(false);
-        setSelectedThoughtId(null);
+        if (selectedThoughtIds.length === 0) {
+          setSelectedThoughtId(null);
+        }
       }
     };
 
@@ -250,15 +294,26 @@ const Viewport: React.FC = () => {
       const target = e.target as HTMLElement;
       if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable) return;
 
-      if ((e.key === 'Delete' || e.key === 'Backspace') && selectedThoughtId) {
-        e.preventDefault();
-        openModal({
-          title: 'Delete Thought?',
-          description: 'This action cannot be undone.',
-          type: 'delete_thought',
-          confirmText: 'Delete',
-          onConfirm: () => deleteThought(selectedThoughtId)
-        });
+      if (e.key === 'Delete' || e.key === 'Backspace') {
+        if (selectedThoughtIds.length > 0) {
+          e.preventDefault();
+          openModal({
+            title: `Delete ${selectedThoughtIds.length} Thoughts?`,
+            description: 'This action cannot be undone.',
+            type: 'delete_thought',
+            confirmText: 'Delete All',
+            onConfirm: () => deleteSelectedThoughts()
+          });
+        } else if (selectedThoughtId) {
+          e.preventDefault();
+          openModal({
+            title: 'Delete Thought?',
+            description: 'This action cannot be undone.',
+            type: 'delete_thought',
+            confirmText: 'Delete',
+            onConfirm: () => deleteThought(selectedThoughtId)
+          });
+        }
       }
 
       if (e.key === ' ') {
@@ -306,7 +361,7 @@ const Viewport: React.FC = () => {
       window.removeEventListener('wheel', handleWheel);
       window.removeEventListener('keydown', handleKeyDown);
     };
-  }, [activeSpace, setInspectorOpen, isGrabbing, selectedThoughtId, openModal, deleteThought, thoughts, addThought, setSelectedThoughtId]);
+  }, [activeSpace, setInspectorOpen, isGrabbing, selectedThoughtId, selectedThoughtIds, openModal, deleteThought, deleteSelectedThoughts, thoughts, addThought, setSelectedThoughtId, setSelectedThoughtIds, clearSelection, transform]);
 
   return (
     <div 
@@ -316,6 +371,19 @@ const Viewport: React.FC = () => {
         isGrabbing ? "pointer-events-auto cursor-grabbing" : "pointer-events-none"
       )}
     >
+      {/* Selection Marquee */}
+      {selectionRect && (
+        <div 
+          className="fixed border-2 border-indigo-500/50 bg-indigo-500/10 z-[1001] pointer-events-none"
+          style={{
+            left: selectionRect.x,
+            top: selectionRect.y,
+            width: selectionRect.w,
+            height: selectionRect.h,
+          }}
+        />
+      )}
+
       {/* Moving Background Grid */}
       <div 
         className="absolute inset-0 dot-grid pointer-events-none opacity-[0.03]"

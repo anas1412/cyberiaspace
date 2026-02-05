@@ -829,7 +829,10 @@ const Toolbar: React.FC = () => {
             <div className="space-y-6">
               {[
                 { keys: ['Space'], label: 'Create New Thought' },
-                { keys: ['Del', 'Backspace'], label: 'Delete Selected Thought' },
+                { keys: ['Del', 'Backspace'], label: 'Delete Selected' },
+                { keys: ['Ctrl', 'V'], label: 'Paste (Text, Image, YT)' },
+                { keys: ['L-Click', 'Drag'], label: 'Thought Selection' },
+                { keys: ['Ctrl', 'L-Click'], label: 'Multi-Select' },
                 { keys: ['Enter'], label: 'Confirm Modal / Open Editor' },
                 { keys: ['Alt', 'L-Click'], label: 'Pan Viewport' },
                 { keys: ['Wheel'], label: 'Zoom In / Out' },

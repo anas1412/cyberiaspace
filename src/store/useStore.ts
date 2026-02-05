@@ -8,6 +8,7 @@ interface CyberiaState {
   spaces: Space[];
   thoughts: Thought[];
   selectedThoughtId: number | null;
+  selectedThoughtIds: number[];
   isInspectorOpen: boolean;
   activeFocusId: number | null;
   focusType: 'text' | 'table' | 'paint' | 'tasks' | 'embed' | null;
@@ -52,6 +53,12 @@ interface CyberiaState {
   updateThought: (id: number, updates: Partial<Thought>) => Promise<void>;
   deleteThought: (id: number) => Promise<void>;
   setSelectedThoughtId: (id: number | null) => void;
+  setSelectedThoughtIds: (ids: number[]) => void;
+  toggleThoughtSelection: (id: number) => void;
+  clearSelection: () => void;
+  deleteSelectedThoughts: () => Promise<void>;
+  linkSelectedThoughts: () => Promise<void>;
+  unlinkSelectedThoughts: () => Promise<void>;
   setInspectorOpen: (open: boolean) => void;
   setActiveFocus: (id: number | null, type: 'text' | 'table' | 'paint' | 'tasks' | 'embed' | null) => void;
   setLinkingSourceId: (id: number | null) => void;
@@ -76,6 +83,7 @@ export const useStore = create<CyberiaState>((set, get) => ({
   spaces: [],
   thoughts: [],
   selectedThoughtId: null,
+  selectedThoughtIds: [],
   isInspectorOpen: false,
   activeFocusId: null,
   focusType: null,
@@ -348,10 +356,106 @@ export const useStore = create<CyberiaState>((set, get) => ({
     if (get().selectedThoughtId === id) {
       set({ selectedThoughtId: null, isInspectorOpen: false });
     }
+    if (get().selectedThoughtIds.includes(id)) {
+      const newIds = get().selectedThoughtIds.filter(tid => tid !== id);
+      set({ selectedThoughtIds: newIds });
+    }
   },
 
   setSelectedThoughtId: (id) => {
-    set({ selectedThoughtId: id });
+    // If we are currently linking, don't clear the linkingSourceId
+    set({ 
+      selectedThoughtId: id, 
+      selectedThoughtIds: id ? [id] : [] 
+    });
+  },
+
+  setSelectedThoughtIds: (ids) => {
+    set({ 
+      selectedThoughtIds: ids,
+      selectedThoughtId: ids.length === 1 ? ids[0] : null,
+      isInspectorOpen: ids.length === 1
+    });
+  },
+
+  toggleThoughtSelection: (id) => {
+    const { selectedThoughtIds, selectedThoughtId } = get();
+    let currentIds = [...selectedThoughtIds];
+    
+    // If we have a single selectedThoughtId that isn't in selectedThoughtIds yet, add it
+    if (selectedThoughtId && !currentIds.includes(selectedThoughtId)) {
+      currentIds.push(selectedThoughtId);
+    }
+
+    let newIds;
+    if (currentIds.includes(id)) {
+      newIds = currentIds.filter(tid => tid !== id);
+    } else {
+      newIds = [...currentIds, id];
+    }
+    
+    set({ 
+      selectedThoughtIds: newIds,
+      selectedThoughtId: newIds.length === 1 ? newIds[0] : null,
+      isInspectorOpen: newIds.length === 1
+    });
+  },
+
+  clearSelection: () => {
+    set({ selectedThoughtIds: [], selectedThoughtId: null, isInspectorOpen: false });
+  },
+
+  deleteSelectedThoughts: async () => {
+    const { selectedThoughtIds } = get();
+    if (selectedThoughtIds.length === 0) return;
+    
+    await db.thoughts.bulkDelete(selectedThoughtIds);
+    await get().refreshThoughts();
+    set({ selectedThoughtIds: [], selectedThoughtId: null, isInspectorOpen: false });
+  },
+
+  linkSelectedThoughts: async () => {
+    const { selectedThoughtIds, thoughts } = get();
+    if (selectedThoughtIds.length < 2) return;
+
+    const commonTag = `stack-${Math.random().toString(36).substr(2, 6)}`;
+    
+    const updates = selectedThoughtIds.map(id => {
+      const thought = thoughts.find(t => t.id === id);
+      if (!thought) return Promise.resolve();
+      const newTags = Array.from(new Set([...thought.tags, commonTag]));
+      return get().updateThought(id, { tags: newTags });
+    });
+
+    await Promise.all(updates);
+  },
+
+  unlinkSelectedThoughts: async () => {
+    const { selectedThoughtIds, thoughts } = get();
+    if (selectedThoughtIds.length < 2) return;
+
+    // Find all stack tags shared by ALL selected thoughts
+    const firstThought = thoughts.find(t => t.id === selectedThoughtIds[0]);
+    if (!firstThought) return;
+
+    const commonStackTags = firstThought.tags.filter(tag => 
+      tag.startsWith('stack-') && 
+      selectedThoughtIds.every(id => {
+        const t = thoughts.find(th => th.id === id);
+        return t?.tags.includes(tag);
+      })
+    );
+
+    if (commonStackTags.length === 0) return;
+
+    const updates = selectedThoughtIds.map(id => {
+      const thought = thoughts.find(t => t.id === id);
+      if (!thought) return Promise.resolve();
+      const newTags = thought.tags.filter(tag => !commonStackTags.includes(tag));
+      return get().updateThought(id, { tags: newTags });
+    });
+
+    await Promise.all(updates);
   },
 
   setInspectorOpen: (open) => {

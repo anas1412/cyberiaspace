@@ -7,6 +7,7 @@ import { LIMITS } from './constants';
 import Viewport from './components/Viewport';                                                                                            
 import Toolbar from './components/Toolbar';                                                                                              
 import Inspector from './components/Inspector';                                                                                          
+import MultiSelectionMenu from './components/MultiSelectionMenu';
 import EmptyState from './components/EmptyState';                                                                                        
 import KanbanOverlay from './components/KanbanOverlay';                                                                                  
 import CalendarOverlay from './components/CalendarOverlay';                                                                              
@@ -205,6 +206,7 @@ function App() {
       <CalendarOverlay />
       <Toolbar />
       <Inspector />
+      <MultiSelectionMenu />
       <ChatOverlay />
       <Modal />
       <Lightbox />

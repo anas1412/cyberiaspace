@@ -46,8 +46,11 @@ const STATUS_COLORS = {
 const ThoughtNode: React.FC<ThoughtNodeProps> = React.memo(({ thought, registerElement, onMouseDown, isDragging }) => {
   const elRef = useRef<HTMLDivElement>(null);
   const selectedThoughtId = useStore((state) => state.selectedThoughtId);
-  const isSelected = selectedThoughtId === thought.id;
+  const selectedThoughtIds = useStore((state) => state.selectedThoughtIds);
+  const isSelected = selectedThoughtId === thought.id || selectedThoughtIds.includes(thought.id);
+  
   const setSelectedThoughtId = useStore((state) => state.setSelectedThoughtId);
+  const toggleThoughtSelection = useStore((state) => state.toggleThoughtSelection);
   const setInspectorOpen = useStore((state) => state.setInspectorOpen);
   const setActiveFocus = useStore((state) => state.setActiveFocus);
   const openLightbox = useStore((state) => state.openLightbox);
@@ -91,6 +94,12 @@ const ThoughtNode: React.FC<ThoughtNodeProps> = React.memo(({ thought, registerE
     const dist = Math.sqrt(Math.pow(e.clientX - startPos.x, 2) + Math.pow(e.clientY - startPos.y, 2));
     if (dist > 5) return;
 
+    if (e.ctrlKey || e.metaKey) {
+      e.stopPropagation();
+      toggleThoughtSelection(thought.id);
+      return;
+    }
+
     if (linkingSourceId && linkingSourceId !== thought.id) {
       // Complete the link
       const sourceThought = thoughts.find(t => t.id === linkingSourceId);
@@ -109,6 +118,11 @@ const ThoughtNode: React.FC<ThoughtNodeProps> = React.memo(({ thought, registerE
         }
       }
       setLinkingSourceId(null);
+      return;
+    }
+
+    // If we're clicking the SAME thought that is the linking source, just toggle it off (handled by button but for safety)
+    if (linkingSourceId === thought.id) {
       return;
     }
 
