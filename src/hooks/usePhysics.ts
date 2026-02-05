@@ -36,6 +36,8 @@ export const usePhysics = (
   const kMaxHeight = useRef(0);
   const requestRef = useRef<number | null>(null);
   const prevModeRef = useRef<string | null>(null);
+  const prevTransformRef = useRef(transform);
+  const isReturningHome = useRef(false);
   
   const thoughtMap = useRef<Map<number, Thought>>(new Map());
   const dragRef = useRef<{ 
@@ -84,22 +86,29 @@ export const usePhysics = (
     const currentMode = activeSpace?.mode || 'spatial';
     const currentSpaceId = activeSpaceId;
 
-    if (currentMode === 'spatial' && prevModeRef.current !== 'spatial') {
-      // Sync from DB to ensure we have the absolute latest positions (especially after leaving another mode)
-      db.thoughts.where('spaceId').equals(currentSpaceId!).toArray().then(latestThoughts => {
-        latestThoughts.forEach((t) => {
-          const p = physicsState.current.get(t.id);
-          if (p) {
-            p.x = t.x;
-            p.y = t.y;
-            p.vx = 0;
-            p.vy = 0;
-          }
-        });
+    if (currentMode === 'spatial' && prevModeRef.current !== 'spatial' && prevModeRef.current !== null) {
+      isReturningHome.current = true;
+      
+      // Coordinate Space Shift Compensation:
+      // When switching to spatial, the Viewport transform jumps to saved values.
+      // We must adjust the physics p.x/p.y so the screen position stays identical for the first frame.
+      const oldT = prevTransformRef.current;
+      const newT = transform; // This is the new transform from Viewport useEffect
+      
+      physicsState.current.forEach((p) => {
+          const oldScreenX = p.x * oldT.scale + oldT.x;
+          const oldScreenY = p.y * oldT.scale + oldT.y;
+          // New world pos = (screen pos - new transform) / new scale
+          p.x = (oldScreenX - newT.x) / newT.scale;
+          p.y = (oldScreenY - newT.y) / newT.scale;
+          p.scale = (p.scale * oldT.scale) / newT.scale;
+          p.vx = 0;
+          p.vy = 0;
       });
     }
     
     prevModeRef.current = currentMode;
+    prevTransformRef.current = transform;
 
     return () => {
       // Save all positions when leaving spatial mode
@@ -112,7 +121,7 @@ export const usePhysics = (
         });
       }
     };
-  }, [activeSpace?.mode, activeSpaceId, thoughts]);
+  }, [activeSpace?.mode, activeSpaceId, thoughts, transform]);
 
   useEffect(() => {
     const handleMove = (clientX: number, clientY: number) => {
@@ -286,6 +295,36 @@ export const usePhysics = (
       });
       sbHeight.current = currentSB_Y - (contentRect?.top || 0); 
       const spacer = document.getElementById('cal-sidebar-spacer'); if (spacer) spacer.style.height = `${sbHeight.current + 40}px`;
+    } else if (mode === 'spatial' && isReturningHome.current) {
+      let allSettled = true;
+      ids.forEach((id) => {
+        const p = state.get(id)!; 
+        const t = thoughtMap.current.get(id); 
+        if (!t) return;
+
+        const dx = t.x - p.x;
+        const dy = t.y - p.y;
+        const dist = Math.sqrt(dx * dx + dy * dy);
+
+        const prioLevel = PRIORITY_WEIGHT[t.priority] || 0;
+        const targetScale = (1 + prioLevel * 0.05) * (t.size || 1);
+
+        if (dist > 1) {
+          p.x += dx * 0.12;
+          p.y += dy * 0.12;
+          allSettled = false;
+        } else {
+          p.x = t.x;
+          p.y = t.y;
+        }
+        
+        p.scale += (targetScale - p.scale) * 0.12;
+        p.vx = 0;
+        p.vy = 0;
+      });
+
+      if (allSettled) isReturningHome.current = false;
+
     } else if (mode === 'spatial' && physicsEnabled) {
       ids.forEach((id) => {
         if (dragRef.current?.initialPositions.has(id)) return; 
