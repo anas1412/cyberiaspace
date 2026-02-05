@@ -50,7 +50,6 @@ const ThoughtNode: React.FC<ThoughtNodeProps> = React.memo(({ thought, registerE
   const isSelected = selectedThoughtId === thought.id || selectedThoughtIds.includes(thought.id);
   
   const setSelectedThoughtId = useStore((state) => state.setSelectedThoughtId);
-  const toggleThoughtSelection = useStore((state) => state.toggleThoughtSelection);
   const setInspectorOpen = useStore((state) => state.setInspectorOpen);
   const setActiveFocus = useStore((state) => state.setActiveFocus);
   const openLightbox = useStore((state) => state.openLightbox);

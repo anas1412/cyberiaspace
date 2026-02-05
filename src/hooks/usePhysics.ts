@@ -24,15 +24,12 @@ export const usePhysics = (
   const thoughts = useStore((state) => state.thoughts);
   const spaces = useStore((state) => state.spaces);
   const activeSpaceId = useStore((state) => state.activeSpaceId);
-  const activeSpace = spaces.find((s) => s.id === activeSpaceId);
-  const updateThought = useStore((state) => state.updateThought);
-  const calendarViewDate = useStore((state) => state.calendarViewDate);
-  const linkingSourceId = useStore((state) => state.linkingSourceId);
-
-  const setSelectedThoughtId = useStore((state) => state.setSelectedThoughtId);
-  const selectedThoughtIds = useStore((state) => state.selectedThoughtIds);
-
-  const physicsState = useRef<Map<number, { x: number; y: number; vx: number; vy: number; scale: number }>>(new Map());
+    const activeSpace = spaces.find((s) => s.id === activeSpaceId);
+    const updateThought = useStore((state) => state.updateThought);
+    const calendarViewDate = useStore((state) => state.calendarViewDate);
+    const linkingSourceId = useStore((state) => state.linkingSourceId);
+  
+    const physicsState = useRef<Map<number, { x: number; y: number; vx: number; vy: number; scale: number }>>(new Map());
   const elements = useRef<Map<number, HTMLDivElement>>(new Map());
   const mousePosRef = useRef({ x: 0, y: 0 });
   const sbHeight = useRef(0);
