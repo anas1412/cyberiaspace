@@ -396,7 +396,7 @@ const ThoughtNode: React.FC<ThoughtNodeProps> = React.memo(({ thought, registerE
               "text-[13px] font-bold leading-tight break-all", 
               thought.text ? "text-[var(--text-primary)]" : "text-slate-600 italic"
             )}>
-              {thought.text || "Untitled"}
+              {thought.text || thought.placeholder || "Untitled"}
             </p>
           </div>
 

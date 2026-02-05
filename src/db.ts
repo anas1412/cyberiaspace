@@ -19,6 +19,7 @@ interface Thought {
   vx: number;
   vy: number;
   text: string;
+  placeholder?: string;
   description: string;
   type: 'text' | 'tasks' | 'paint' | 'table' | 'image' | 'embed';
   content: string;

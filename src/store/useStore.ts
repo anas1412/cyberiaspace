@@ -291,9 +291,34 @@ export const useStore = create<CyberiaState>((set, get) => ({
     const { activeSpaceId } = get();
     if (!activeSpaceId) throw new Error('No active space');
 
+    const QUIRKY_TITLES = [
+      "Still Thinking About It",
+      "Name Pending",
+      "This Will Make Sense Later",
+      "I’ll Rename This, I Promise",
+      "Untitled but Trying Its Best",
+      "Just Go With It",
+      "Something Is Happening Here",
+      "Please Ignore the Title",
+      "This Seemed Like a Good Idea",
+      "We’ll Call It This for Now",
+      "Don’t Worry About the Name",
+      "Almost Had a Title",
+      "This Exists",
+      "Title in Progress",
+      "No Name, Just Vibes",
+      "I Panicked and Picked This",
+      "It’s Not What It Looks Like",
+      "Temporary, Probably",
+      "Let’s Pretend This Is Clever",
+      "Trust the Process"
+    ];
+
     const result = await db.transaction('rw', db.thoughts, async () => {
       const currentCount = await db.thoughts.where('spaceId').equals(activeSpaceId).count();
       if (currentCount >= 40) return -1;
+
+      const randomTitle = QUIRKY_TITLES[Math.floor(Math.random() * QUIRKY_TITLES.length)];
 
       const thought: Thought = {
         spaceId: activeSpaceId,
@@ -302,6 +327,7 @@ export const useStore = create<CyberiaState>((set, get) => ({
         vx: 0,
         vy: 0,
         text: '',
+        placeholder: randomTitle,
         description: '',
         type: 'text',
         content: '',

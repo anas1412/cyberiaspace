@@ -163,7 +163,7 @@ const Inspector: React.FC = () => {
               }}
               maxLength={30}
               className="w-full bg-[var(--bg-page)]/20 border border-white/10 rounded-xl p-3 text-sm outline-none focus:border-[var(--accent)] text-[var(--text-primary)] placeholder:text-slate-500"
-              placeholder="Name"
+              placeholder={thought.placeholder || "Name"}
             />
             <textarea
               value={localDesc}
