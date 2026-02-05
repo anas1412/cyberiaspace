@@ -6,8 +6,7 @@
 - add a vercel api route to enable oracle external api for built-in vercel key / add limiters
 
 
-- the scrollbar of thought editor is making me uncomfortable its sticking out
-
+- make CYBERIA text clickable and takes you to "/" of the website obviously isnt that best practice instead of normal text?
 
 i changed variables in constants, i want oracle to have 2 modes one thats uses the user's key and one uses external key (my key) but the catch is, when the user puts his own key it uses the multimodal models and can select from them, if no key provded it shows the user that uses the free, and and disable the vision function in chat and can only select text models from oracle settings, i also want u to make a vercel api route for this api  external function since we cant store my own api key  
 

@@ -312,9 +312,14 @@ const Toolbar: React.FC = () => {
     <>
       {/* TOP UI */}
       <div className="fixed top-4 md:top-8 left-4 md:left-8 right-4 md:right-8 z-[9999] flex flex-col md:flex-row items-center justify-between pointer-events-none gap-4">
-        {/* LEFT SIDE: Logo - Simplified */}
+        {/* LEFT SIDE: Logo */}
         <div className="hidden md:flex pointer-events-auto items-center h-[48px]">
-          <h1 className="text-3xl font-bold tracking-tighter text-[var(--text-primary)]">CYBERIA</h1>
+          <a 
+            href="/" 
+            className="text-3xl font-bold tracking-tighter text-[var(--text-primary)] hover:opacity-70 transition-opacity"
+          >
+            CYBERIA
+          </a>
         </div>
 
         {/* CENTER: Space Switcher */}
