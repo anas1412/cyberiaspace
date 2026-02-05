@@ -33,6 +33,7 @@ const Viewport: React.FC = () => {
   const [selectionRect, setSelectionRect] = useState<{ x: number, y: number, w: number, h: number } | null>(null);
   
   const lastMousePos = useRef({ x: 0, y: 0 });
+  const mouseWorldPos = useRef({ x: 0, y: 0 });
   const isPanningRef = useRef(false);
   const isSelectingRef = useRef(false);
   const selectionStartRef = useRef({ x: 0, y: 0 });
@@ -111,6 +112,12 @@ const Viewport: React.FC = () => {
     };
 
     const handleMouseMove = (e: MouseEvent) => {
+      // Always track world position for spawning
+      mouseWorldPos.current = {
+        x: (e.clientX - transform.x) / transform.scale,
+        y: (e.clientY - transform.y) / transform.scale
+      };
+
       if (isPanningRef.current) {
         const dx = e.clientX - lastMousePos.current.x;
         const dy = e.clientY - lastMousePos.current.y;
@@ -120,8 +127,6 @@ const Viewport: React.FC = () => {
           x: prev.x + dx,
           y: prev.y + dy,
         }));
-        
-        lastMousePos.current = { x: e.clientX, y: e.clientY };
       } else if (isSelectingRef.current) {
         const x = Math.min(e.clientX, selectionStartRef.current.x);
         const y = Math.min(e.clientY, selectionStartRef.current.y);
@@ -150,6 +155,7 @@ const Viewport: React.FC = () => {
           setSelectedThoughtIds(selectedIds);
         }
       }
+      lastMousePos.current = { x: e.clientX, y: e.clientY };
     };
 
     const handleMouseUp = () => {
@@ -329,7 +335,29 @@ const Viewport: React.FC = () => {
           });
           return;
         }
-        addThought({}).then(id => {
+
+        let newThoughtProps: any = {
+          x: mouseWorldPos.current.x,
+          y: mouseWorldPos.current.y
+        };
+
+        // Mode-specific logic
+        if (activeSpace?.mode === 'kanban') {
+          const x = lastMousePos.current.x; // screen x
+          const width = window.innerWidth;
+          if (x < width * 0.25) newThoughtProps.status = 'none';
+          else if (x < width * 0.50) newThoughtProps.status = 'todo';
+          else if (x < width * 0.75) newThoughtProps.status = 'doing';
+          else newThoughtProps.status = 'done';
+        } else if (activeSpace?.mode === 'calendar') {
+          const elements = document.elementsFromPoint(lastMousePos.current.x, lastMousePos.current.y);
+          const cell = elements.find(el => (el as HTMLElement).classList.contains('cal-cell'));
+          if (cell) {
+            newThoughtProps.date = (cell as HTMLElement).dataset.date;
+          }
+        }
+
+        addThought(newThoughtProps).then(id => {
           if (id !== -1) {
             setSelectedThoughtId(id);
             setInspectorOpen(true);

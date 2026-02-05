@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { Analytics } from '@vercel/analytics/react';
 import { SpeedInsights } from '@vercel/speed-insights/react';
 import { useStore } from './store/useStore';
@@ -27,8 +27,57 @@ function App() {
   const addThought = useStore((state) => state.addThought);
   const setSelectedThoughtId = useStore((state) => state.setSelectedThoughtId);
   const setInspectorOpen = useStore((state) => state.setInspectorOpen);
+  const activeSpaceId = useStore((state) => state.activeSpaceId);
+  const spaces = useStore((state) => state.spaces);
   
   const { openModal } = useModalStore();
+  const mouseWorldPos = useRef({ x: 0, y: 0 });
+  const mouseScreenPos = useRef({ x: 0, y: 0 });
+
+  useEffect(() => {
+    const handleMouseMove = (e: MouseEvent) => {
+      mouseScreenPos.current = { x: e.clientX, y: e.clientY };
+      const activeSpace = useStore.getState().spaces.find(s => s.id === useStore.getState().activeSpaceId);
+      
+      if (activeSpace?.mode === 'spatial') {
+        const tx = activeSpace.transformX ?? 0;
+        const ty = activeSpace.transformY ?? 0;
+        const scale = activeSpace.transformScale ?? 1;
+        mouseWorldPos.current = {
+          x: (e.clientX - tx) / scale,
+          y: (e.clientY - ty) / scale
+        };
+      } else {
+        mouseWorldPos.current = { x: e.clientX, y: e.clientY };
+      }
+    };
+    window.addEventListener('mousemove', handleMouseMove);
+    return () => window.removeEventListener('mousemove', handleMouseMove);
+  }, []);
+
+  const getPlacementProps = () => {
+    const activeSpace = spaces.find(s => s.id === activeSpaceId);
+    const props: any = {
+      x: mouseWorldPos.current.x,
+      y: mouseWorldPos.current.y
+    };
+
+    if (activeSpace?.mode === 'kanban') {
+      const x = mouseScreenPos.current.x;
+      const width = window.innerWidth;
+      if (x < width * 0.25) props.status = 'none';
+      else if (x < width * 0.50) props.status = 'todo';
+      else if (x < width * 0.75) props.status = 'doing';
+      else props.status = 'done';
+    } else if (activeSpace?.mode === 'calendar') {
+      const elements = document.elementsFromPoint(mouseScreenPos.current.x, mouseScreenPos.current.y);
+      const cell = elements.find(el => (el as HTMLElement).classList.contains('cal-cell'));
+      if (cell) {
+        props.date = (cell as HTMLElement).dataset.date;
+      }
+    }
+    return props;
+  };
 
   useEffect(() => {
     init();
@@ -87,6 +136,7 @@ function App() {
           if (isGif || isImage) {
             e.preventDefault();
             const id = await addThought({ 
+              ...getPlacementProps(),
               type: 'image', 
               image: src, 
               text: "Image" 
@@ -110,6 +160,7 @@ function App() {
           const reader = new FileReader();
           reader.onload = async (event) => {
             const id = await addThought({ 
+              ...getPlacementProps(),
               type: 'image', 
               image: event.target?.result as string, 
               text: "Image" 
@@ -138,6 +189,7 @@ function App() {
         
         if (videoId) {
           const id = await addThought({ 
+            ...getPlacementProps(),
             type: 'embed', 
             text: "Loading Title...", 
             content: cleanText 
@@ -182,6 +234,7 @@ function App() {
           }
         } else {
           const id = await addThought({ 
+            ...getPlacementProps(),
             type: 'text', 
             text: "Note", 
             content: cleanText 

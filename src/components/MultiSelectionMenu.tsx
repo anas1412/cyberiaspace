@@ -2,13 +2,7 @@ import React from 'react';
 import { useStore } from '../store/useStore';
 import { useModalStore } from '../store/useModalStore';
 import { X, Link, Trash2, Hash } from 'lucide-react';
-import { clsx, type ClassValue } from 'clsx';
-import { twMerge } from 'tailwind-merge';
 import { motion, AnimatePresence } from 'framer-motion';
-
-function cn(...inputs: ClassValue[]) {
-  return twMerge(clsx(inputs));
-}
 
 const MultiSelectionMenu: React.FC = () => {
   const selectedThoughtIds = useStore((state) => state.selectedThoughtIds);

@@ -831,7 +831,7 @@ const Toolbar: React.FC = () => {
                 { keys: ['Space'], label: 'Create New Thought' },
                 { keys: ['Del', 'Backspace'], label: 'Delete Selected' },
                 { keys: ['Ctrl', 'V'], label: 'Paste (Text, Image, YT)' },
-                { keys: ['L-Click', 'Drag'], label: 'Thought Selection' },
+                { keys: ['L-Click', 'Drag'], label: 'Select Thoughts' },
                 { keys: ['Ctrl', 'L-Click'], label: 'Multi-Select' },
                 { keys: ['Enter'], label: 'Confirm Modal / Open Editor' },
                 { keys: ['Alt', 'L-Click'], label: 'Pan Viewport' },
