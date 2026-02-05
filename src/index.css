@@ -163,6 +163,15 @@
     to { transform: translate(-100px, -100px); }
   }
 
+  .animate-spin-slow {
+    animation: spin 8s linear infinite;
+  }
+
+  @keyframes spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+  }
+
   @keyframes twinkle {
     0% { opacity: 0.1; transform: scale(0.8); }
     100% { opacity: 0.6; transform: scale(1.2); }

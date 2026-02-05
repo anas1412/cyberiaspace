@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useStore } from '../store/useStore';
 import { useModalStore } from '../store/useModalStore';
 import { LIMITS, AVAILABLE_MODELS } from '../constants';
-import { Plus, Zap, Download, Upload, SlidersHorizontal, ChevronLeft, ChevronRight, Trash2, Edit3, Camera, MoreVertical, Keyboard, MousePointer2, Orbit, Columns3, CalendarDays, Shield, MonitorSmartphone, Sparkles, Key, ChevronDown, ZoomIn, ZoomOut, RotateCcw, Undo2, Redo2 } from 'lucide-react';
+import { Plus, Zap, Download, Upload, ChevronLeft, ChevronRight, Trash2, Edit3, Camera, MoreVertical, Keyboard, MousePointer2, Orbit, Columns3, CalendarDays, Shield, MonitorSmartphone, Sparkles, Key, ChevronDown, ZoomIn, ZoomOut, RotateCcw, Undo2, Redo2, Settings } from 'lucide-react';
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 /* import { toPng, toCanvas } from 'html-to-image'; */
@@ -345,45 +345,32 @@ const Toolbar: React.FC = () => {
     <>
       {/* TOP UI */}
       <div className="fixed top-4 md:top-8 left-4 md:left-8 right-4 md:right-8 z-[9999] flex flex-col md:flex-row items-center justify-between pointer-events-none gap-4">
-        {/* LEFT SIDE: Logo & Settings - Hidden on mobile to save space */}
-        <div className="hidden md:flex pointer-events-auto items-center gap-4 h-[48px]">
-          <div className="flex items-center gap-4">
-            <div>
-              <h1 className="text-3xl font-bold tracking-tighter text-[var(--text-primary)]">CYBERIA</h1>
-              <div className="flex items-center gap-3 mt-1 group cursor-pointer" onClick={() => setIsSpaceMenuOpen(!isSpaceMenuOpen)}>
-                <div className={cn(
-                  "w-2 h-2 rounded-full transition-all duration-500 shadow-[0_0_10px_var(--accent-glow)]",
-                  isSpaceMenuOpen ? "bg-[var(--accent-secondary)] scale-125" : "bg-[var(--accent)]/40"
-                )} />
-                <p className="text-[10px] uppercase font-black tracking-[0.2em] text-[var(--accent-secondary)]/80 group-hover:text-[var(--accent-secondary)] transition-colors">
-                  {activeSpace?.name || 'Space'}
-                </p>
-                <SlidersHorizontal className={cn("w-3 h-3 text-white/20 group-hover:text-white/60 transition-all", isSpaceMenuOpen && "text-[var(--accent-secondary)] rotate-90")} />
-              </div>
-            </div>
-          </div>
-          
-          <div className={cn(
-            "glass p-1 h-full rounded-2xl flex items-center gap-1 transition-all duration-500 border border-white/5",
-            isSpaceMenuOpen ? "opacity-100 translate-x-0 scale-100" : "opacity-0 -translate-x-8 scale-90 pointer-events-none"
-          )}>
-            <button onClick={handleRenameSpace} className="p-2 hover:bg-white/5 rounded-xl text-slate-400 hover:text-white transition-all"><Edit3 className="w-4 h-4" /></button>
-            <button onClick={() => handleMoveSpace(-1)} className="p-2 hover:bg-white/5 rounded-xl text-slate-400 hover:text-white transition-all"><ChevronLeft className="w-4 h-4" /></button>
-            <button onClick={() => handleMoveSpace(1)} className="p-2 hover:bg-white/5 rounded-xl text-slate-400 hover:text-white transition-all"><ChevronRight className="w-4 h-4" /></button>
-            <div className="w-[1px] h-4 bg-white/10 mx-1"></div>
-            <button 
-              onClick={handleDeleteSpace}
-              className="p-2 hover:bg-red-500/10 rounded-xl transition-all text-red-500/50 hover:text-red-400"
-            >
-              <Trash2 className="w-4 h-4" />
-            </button>
-          </div>
+        {/* LEFT SIDE: Logo - Simplified */}
+        <div className="hidden md:flex pointer-events-auto items-center h-[48px]">
+          <h1 className="text-3xl font-bold tracking-tighter text-[var(--text-primary)]">CYBERIA</h1>
         </div>
 
         {/* CENTER: Space Switcher - Primary focus on mobile top */}
         <div className="md:absolute md:left-1/2 md:-translate-x-1/2 flex flex-col items-center gap-2 pointer-events-none">
           <div className="flex items-center h-[44px] md:h-[48px] max-w-[90vw] md:max-w-full glass rounded-full shadow-2xl transition-all pointer-events-auto overflow-x-auto no-scrollbar px-2 border border-white/5">
             <div className="flex items-center gap-1 h-full min-w-max">
+              {!isMobile && (
+                <>
+                  <button 
+                    onClick={() => setIsSpaceMenuOpen(!isSpaceMenuOpen)}
+                    className={cn(
+                      "w-8 h-8 md:w-9 md:h-9 rounded-full transition-all flex-shrink-0 flex items-center justify-center border",
+                      isSpaceMenuOpen 
+                        ? "bg-[var(--accent)] text-white border-[var(--accent)] shadow-[0_0_15px_var(--accent-glow)]" 
+                        : "text-slate-600 hover:text-white hover:bg-white/10 border-white/10"
+                    )}
+                    title="Space Settings"
+                  >
+                    <Settings className={cn("w-3.5 h-3.5", isSpaceMenuOpen && "animate-spin-slow")} />
+                  </button>
+                  <div className="w-[1px] h-3 bg-white/10 mx-2"></div>
+                </>
+              )}
               {spaces.map((space) => {
                 const isActive = space.id === activeSpaceId;
                 return (
@@ -421,6 +408,46 @@ const Toolbar: React.FC = () => {
               </button>
             </div>
           </div>
+
+          {/* WEB SPACE SETTINGS - Toggleable Under the Switcher */}
+          {!isMobile && activeSpace && isSpaceMenuOpen && (
+            <div className="absolute top-full mt-2 flex items-center gap-1.5 transition-all animate-in fade-in slide-in-from-top-2 duration-300 pointer-events-auto">
+              <div className="glass px-3 py-1.5 rounded-xl border border-white/10 flex items-center gap-1 shadow-2xl">
+                <button 
+                  onClick={handleRenameSpace}
+                  className="p-1.5 hover:bg-white/5 rounded-lg text-slate-400 hover:text-white transition-all flex items-center gap-2 group"
+                  title="Rename Space"
+                >
+                  <Edit3 className="w-3.5 h-3.5 group-hover:scale-110 transition-transform" />
+                  <span className="text-[8px] font-black uppercase tracking-widest">Rename</span>
+                </button>
+                <div className="w-px h-3 bg-white/5 mx-1" />
+                <button 
+                  onClick={() => handleMoveSpace(-1)}
+                  className="p-1.5 hover:bg-white/5 rounded-lg text-slate-400 hover:text-white transition-all group"
+                  title="Move Left"
+                >
+                  <ChevronLeft className="w-3.5 h-3.5 group-hover:-translate-x-0.5 transition-transform" />
+                </button>
+                <button 
+                  onClick={() => handleMoveSpace(1)}
+                  className="p-1.5 hover:bg-white/5 rounded-lg text-slate-400 hover:text-white transition-all group"
+                  title="Move Right"
+                >
+                  <ChevronRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" />
+                </button>
+                <div className="w-px h-3 bg-white/10 mx-1" />
+                <button 
+                  onClick={handleDeleteSpace}
+                  className="p-1.5 hover:bg-red-500/10 rounded-lg text-slate-500 hover:text-red-400 transition-all flex items-center gap-2 group"
+                  title="Delete Space"
+                >
+                  <Trash2 className="w-3.5 h-3.5 group-hover:scale-110 transition-transform" />
+                  <span className="text-[8px] font-black uppercase tracking-widest">Delete</span>
+                </button>
+              </div>
+            </div>
+          )}
 
           {/* MOBILE SPACE MANAGEMENT MENU */}
           {isMobile && mobileMenuSpaceId && (

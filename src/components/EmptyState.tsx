@@ -29,16 +29,11 @@ const EmptyState: React.FC = () => {
 
   return (
     <div id="empty-guide" className="fixed inset-0 z-[5] pointer-events-none flex items-center justify-center">
-      {/* 0. Manage Spaces (Top Left) - Hidden on Mobile */}
-      <div className="hidden md:flex absolute top-[110px] left-[100px] rotate-[5deg] text-center flex-col items-center">
-        <ChalkArrow d="M 30 70 Q 30 40 30 10 M 15 30 L 30 10 L 45 30" />
-        <p className="font-['CyberiaBlueprint',_cursive,_sans-serif] text-white/30 text-[12px] mt-2">Space Settings</p>
-      </div>
 
       {/* 1. Switch Spaces (Top Center) */}
       <div className="absolute top-[80px] md:top-[110px] left-1/2 -translate-x-1/2 -rotate-[2deg] text-center flex flex-col items-center">
         <ChalkArrow d="M 30 70 Q 30 40 30 10 M 15 30 L 30 10 L 45 30" />
-        <p className="font-['CyberiaBlueprint',_cursive,_sans-serif] text-white/30 text-[10px] md:text-[12px] mt-2">Switch Spaces</p>
+        <p className="font-['CyberiaBlueprint',_cursive,_sans-serif] text-white/30 text-[10px] md:text-[12px] mt-2">Manage Spaces</p>
       </div>
 
       {/* 2. Create Thought (Bottom Center - The FAB) */}
