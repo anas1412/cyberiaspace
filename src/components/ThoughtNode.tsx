@@ -241,7 +241,7 @@ const ThoughtNode: React.FC<ThoughtNodeProps> = React.memo(({ thought, registerE
         return (
           <div data-trigger="paint" className="paint-container bg-black/40 rounded-xl p-2 mt-1 border border-white/5 prevent-drag cursor-pointer group/paint relative overflow-hidden min-h-[60px] flex items-center justify-center">
             {thought.drawing ? (
-              <img src={thought.drawing} className="w-full rounded-lg object-contain max-h-[140px]" alt="Drawing" />
+              <img src={thought.drawing} draggable="false" className="w-full rounded-lg object-contain max-h-[140px]" alt="Drawing" />
             ) : (
               <div className="flex flex-col items-center gap-2 py-4">
                 <Palette className="w-6 h-6 text-white/20" />
@@ -305,6 +305,7 @@ const ThoughtNode: React.FC<ThoughtNodeProps> = React.memo(({ thought, registerE
           <div data-trigger="image" className="mt-2 relative group prevent-drag cursor-pointer">
             <img 
               src={thought.image} 
+              draggable="false"
               onClick={(e) => { e.stopPropagation(); if (thought.image) openLightbox(thought.image); }}
               className="w-full rounded-xl border border-white/10 max-h-[160px] object-cover bg-black/50 cursor-zoom-in" 
               alt="Thought" 
@@ -329,6 +330,7 @@ const ThoughtNode: React.FC<ThoughtNodeProps> = React.memo(({ thought, registerE
               <>
                 <img 
                   src={`https://img.youtube.com/vi/${videoId}/mqdefault.jpg`} 
+                  draggable="false"
                   className="w-full h-full object-cover opacity-60 group-hover:opacity-100 transition-opacity"
                   alt="YouTube Preview" 
                 />
@@ -370,6 +372,7 @@ const ThoughtNode: React.FC<ThoughtNodeProps> = React.memo(({ thought, registerE
         isDragging ? "z-[1000] cursor-grabbing" : "z-20 cursor-grab"
       )}
       onMouseDown={handleLocalMouseDown}
+      onDragStart={(e) => e.preventDefault()}
       onTouchStart={handleLocalTouchStart}
       onClick={handleClick}
     >
