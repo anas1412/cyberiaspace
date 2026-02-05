@@ -3,7 +3,6 @@ import { useStore } from '../store/useStore';
 import ThoughtNode from './ThoughtNode';
 
 interface WorldProps {
-  transform: { x: number; y: number; scale: number };
   canvasRef: React.RefObject<HTMLCanvasElement | null>;
   physicsResults: {
     registerElement: (id: number, el: HTMLDivElement | null) => void;
@@ -13,7 +12,7 @@ interface WorldProps {
   };
 }
 
-const World: React.FC<WorldProps> = ({ transform, canvasRef, physicsResults }) => {
+const World: React.FC<WorldProps> = ({ canvasRef, physicsResults }) => {
   const thoughts = useStore((state) => state.thoughts);
   const { registerElement, registerWorld, handleMouseDown, isDragging } = physicsResults;
   

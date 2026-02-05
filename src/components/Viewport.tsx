@@ -26,7 +26,6 @@ const Viewport: React.FC = () => {
   const deleteThought = useStore((state) => state.deleteThought);
   const addThought = useStore((state) => state.addThought);
   const saveSpaceTransform = useStore((state) => state.saveSpaceTransform);
-  const updateSpace = useStore((state) => state.updateSpace);
   const transform = useStore((state) => state.transform);
   const setTransform = useStore((state) => state.setTransform);
   const isSpaceLoading = useStore((state) => state.isSpaceLoading);
@@ -399,7 +398,6 @@ const Viewport: React.FC = () => {
         }}
       />
       <World 
-        transform={transform} 
         canvasRef={canvasRef}
         physicsResults={{ registerElement, registerWorld, handleMouseDown, isDragging }}
       />
