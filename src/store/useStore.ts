@@ -300,7 +300,14 @@ export const useStore = create<CyberiaState>((set, get) => ({
       });
 
     } else {
-      set({ activeSpaceId: spaces[0].id });
+      const savedSpaceId = localStorage.getItem('cyberia-active-space-id');
+      const spaceExists = savedSpaceId ? spaces.find(s => s.id === savedSpaceId) : null;
+      
+      if (spaceExists) {
+        get().setActiveSpace(savedSpaceId!);
+      } else {
+        get().setActiveSpace(spaces[0].id);
+      }
     }
     
     await get().refreshThoughts();
@@ -322,6 +329,7 @@ export const useStore = create<CyberiaState>((set, get) => ({
   },
 
   setActiveSpace: (id) => {
+    localStorage.setItem('cyberia-active-space-id', id);
     const space = get().spaces.find(s => s.id === id);
     const updates: any = { activeSpaceId: id, thoughts: [], isSpaceLoading: true, history: [], historyIndex: -1 };
     
@@ -363,14 +371,24 @@ export const useStore = create<CyberiaState>((set, get) => ({
   },
 
   deleteSpace: async (id) => {
+    const { spaces, activeSpaceId } = get();
+    const deleteIndex = spaces.findIndex(s => s.id === id);
+    
     await db.spaces.delete(id);
     await db.thoughts.where('spaceId').equals(id).delete();
     await get().refreshSpaces();
     
-    const { spaces } = get();
-    if (spaces.length > 0) {
-      get().setActiveSpace(spaces[0].id);
+    const updatedSpaces = get().spaces;
+    
+    if (updatedSpaces.length > 0) {
+      if (id === activeSpaceId) {
+        // Find the most logical 'next' space: 
+        // The one before the deleted one, or the new first one if we deleted index 0
+        const fallbackIndex = Math.max(0, deleteIndex - 1);
+        get().setActiveSpace(updatedSpaces[fallbackIndex].id);
+      }
     } else {
+      localStorage.removeItem('cyberia-active-space-id');
       set({ activeSpaceId: null, thoughts: [] });
     }
   },
