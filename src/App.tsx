@@ -270,7 +270,6 @@ function App() {
       <EmbedFocusEditor />
       <Analytics />
       <SpeedInsights />
-      {/* Modals and Lightbox would go here */}
     </div>
   );
 }

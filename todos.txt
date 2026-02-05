@@ -1,12 +1,11 @@
-- make a featurey to make thoughts bigger in size (maybe a slider inside thought editor)
+- make a feature to make thoughts bigger in size (maybe a slider inside thought editor)
 - add a feature to select thoughts to batch (edit, stack them together, unstack them, remove them)
-- the ai mistaking the stack system with tags we should seperate the stack system and tags
-- add a feature to rename stacks-name from tags and the ability to rename them from one place
+
 - i want the stack to have a name not all thoughts have same tag name
-- take hovering on a palce into consideration when pasting/creating a new thought including spatial/kanban and calendar
+
+
 - add a vercel api route to enable oracle external api for built-in vercel key / add limiters
-- remove the ugly pruple bar from oracle setting
-- add zooming buttons and centering/reset view 
+- add zooming buttons and centering/reset view , undo and redo in the layout with best practuces on bottom left please make sure UI and UX are consistent
 - change the comic sans font to something related to the theme of the application
 
 i changed variables in constants, i want oracle to have 2 modes one thats uses the user's key and one uses external key (my key) but the catch is, when the user puts his own key it uses the multimodal models and can select from them, if no key provded it shows the user that uses the free, and and disable the vision function in chat and can only select text models from oracle settings, i also want u to make a vercel api route for this api  external function since we cant store my own api key  

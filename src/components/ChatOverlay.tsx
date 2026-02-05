@@ -124,14 +124,19 @@ ${userMsg.text}
       {isChatOpen && (
         <motion.div
           id="chat-overlay"
-          initial={{ opacity: 0, scale: 0.9, y: 20 }}
-          animate={{ opacity: 1, scale: 1, y: 0 }}
-          exit={{ opacity: 0, scale: 0.9, y: 20 }}
+          initial={typeof window !== 'undefined' && window.innerWidth < 768 ? { y: '100%' } : { opacity: 0, scale: 0.9, y: 20 }}
+          animate={typeof window !== 'undefined' && window.innerWidth < 768 ? { y: 0 } : { opacity: 1, scale: 1, y: 0 }}
+          exit={typeof window !== 'undefined' && window.innerWidth < 768 ? { y: '100%' } : { opacity: 0, scale: 0.9, y: 20 }}
           transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-          className="fixed bottom-24 right-8 w-96 h-[600px] glass rounded-[2rem] shadow-2xl flex flex-col overflow-hidden z-[9999]"
+          className="fixed inset-0 md:inset-auto md:bottom-24 md:right-8 w-full md:w-96 h-full md:h-[600px] glass md:rounded-[2rem] shadow-2xl flex flex-col overflow-hidden z-[9999]"
         >
+          {/* Mobile Close Handle */}
+          <div className="md:hidden flex justify-center pt-4 pb-2" onClick={() => setChatOpen(false)}>
+            <div className="w-12 h-1.5 bg-white/10 rounded-full" />
+          </div>
+
           {/* Header */}
-          <div className="flex items-center justify-between p-6 border-b border-white/5 bg-white/5">
+          <div className="flex items-center justify-between p-4 md:p-6 border-b border-white/5 bg-white/5">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-full bg-[var(--accent)]/20 flex items-center justify-center border border-[var(--accent)]/50">
                 <Sparkles className="w-5 h-5 text-[var(--accent)]" />
@@ -150,12 +155,12 @@ ${userMsg.text}
           </div>
 
           {/* Chat Area */}
-          <div className="flex-1 overflow-y-auto p-6 space-y-4 custom-scroll" ref={scrollRef}>
+          <div className="flex-1 overflow-y-auto p-4 md:p-6 space-y-4 custom-scroll" ref={scrollRef}>
             {history.length === 0 && (
-              <div className="text-center text-slate-500 mt-20">
-                <Shield className="w-12 h-12 mx-auto mb-4 opacity-20" />
+              <div className="text-center text-slate-500 mt-10 md:mt-20">
+                <Shield className="w-10 h-10 md:w-12 md:h-12 mx-auto mb-4 opacity-20" />
                 <p className="text-sm">Oracle Mode Enabled</p>
-                <p className="text-xs mt-2 opacity-60">I can see your workspace and help you organize.</p>
+                <p className="text-xs mt-2 opacity-60 px-10">I can see your workspace and help you organize.</p>
               </div>
             )}
             
@@ -163,7 +168,7 @@ ${userMsg.text}
               <div key={i} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
                 <div 
                   className={`
-                    max-w-[85%] p-4 rounded-2xl text-sm leading-relaxed prose prose-invert
+                    max-w-[90%] md:max-w-[85%] p-3 md:p-4 rounded-2xl text-sm leading-relaxed prose prose-invert
                     ${msg.role === 'user' 
                       ? 'bg-[var(--accent)]/20 border border-[var(--accent)]/30 text-white rounded-tr-sm' 
                       : 'bg-white/5 border border-white/10 text-slate-200 rounded-tl-sm'}
@@ -185,7 +190,7 @@ ${userMsg.text}
           </div>
 
           {/* Input Area */}
-          <div className="p-4 border-t border-white/5 bg-black/20">
+          <div className="p-4 pb-8 md:pb-4 border-t border-white/5 bg-black/20">
             <div className="relative">
               <textarea
                 value={input}
@@ -197,7 +202,7 @@ ${userMsg.text}
                   }
                 }}
                 placeholder="Ask Oracle..."
-                className="w-full bg-white/5 border border-white/10 rounded-xl py-3 pl-4 pr-12 text-sm text-white outline-none focus:border-[var(--accent)]/50 resize-none h-14 custom-scroll"
+                className="w-full bg-white/5 border border-white/10 rounded-xl py-3 pl-4 pr-12 text-sm text-white outline-none focus:border-[var(--accent)]/50 resize-none h-14 custom-scroll md:h-14"
               />
               <button 
                 onClick={handleSend}

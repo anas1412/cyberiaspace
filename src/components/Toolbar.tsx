@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useStore } from '../store/useStore';
 import { useModalStore } from '../store/useModalStore';
 import { LIMITS, AVAILABLE_MODELS } from '../constants';
-import { Plus, Zap, Download, Upload, SlidersHorizontal, ChevronLeft, ChevronRight, Trash2, Edit3, Camera, MoreVertical, Keyboard, MousePointer2, Orbit, Columns3, CalendarDays, Shield, MonitorSmartphone, Sparkles, Key, ChevronDown } from 'lucide-react';
+import { Plus, Zap, Download, Upload, SlidersHorizontal, ChevronLeft, ChevronRight, Trash2, Edit3, Camera, MoreVertical, Keyboard, MousePointer2, Orbit, Columns3, CalendarDays, Shield, MonitorSmartphone, Sparkles, Key, ChevronDown, ZoomIn, ZoomOut, RotateCcw, Undo2, Redo2 } from 'lucide-react';
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 /* import { toPng, toCanvas } from 'html-to-image'; */
@@ -52,6 +52,14 @@ const Toolbar: React.FC = () => {
   const setTheme = useStore((state) => state.setTheme);
   const deferredPrompt = useStore((state) => state.deferredPrompt);
   const setDeferredPrompt = useStore((state) => state.setDeferredPrompt);
+  
+  const zoomIn = useStore((state) => state.zoomIn);
+  const zoomOut = useStore((state) => state.zoomOut);
+  const resetTransform = useStore((state) => state.resetTransform);
+  const undo = useStore((state) => state.undo);
+  const redo = useStore((state) => state.redo);
+  const history = useStore((state) => state.history);
+  const historyIndex = useStore((state) => state.historyIndex);
   
   const { openModal } = useModalStore();
   
@@ -536,12 +544,15 @@ const Toolbar: React.FC = () => {
 
       {/* NEW THOUGHT FAB */}
       <div className={cn(
-        "fixed bottom-6 md:bottom-10 left-1/2 -translate-x-1/2 z-[10000] pointer-events-none flex flex-col items-center gap-4 transition-all duration-300",
-        (isMobile && isInspectorOpen) ? "opacity-0 translate-y-10 pointer-events-none" : "opacity-100 translate-y-0"
+        "fixed bottom-14 md:bottom-10 left-1/2 -translate-x-1/2 z-[10000] pointer-events-none flex flex-col items-center gap-4 transition-all duration-300",
+        (isMobile && (isInspectorOpen || isChatOpen)) ? "opacity-0 translate-y-10" : "opacity-100 translate-y-0"
       )}>
         <button 
           onClick={handleAddThought}
-          className="pointer-events-auto group relative flex items-center justify-center w-12 h-12 md:w-16 md:h-16 bg-[var(--bg-gradient-to)]/40 backdrop-blur-2xl text-white rounded-full border border-white/10 shadow-[0_0_50px_var(--accent-glow)] transition-all hover:scale-110 active:scale-95 hover:border-[var(--accent)]/40"
+          className={cn(
+            "group relative flex items-center justify-center w-12 h-12 md:w-16 md:h-16 bg-[var(--bg-gradient-to)]/40 backdrop-blur-2xl text-white rounded-full border border-white/10 shadow-[0_0_50px_var(--accent-glow)] transition-all hover:scale-110 active:scale-95 hover:border-[var(--accent)]/40",
+            (isMobile && (isInspectorOpen || isChatOpen)) ? "pointer-events-none" : "pointer-events-auto"
+          )}
         >
           <div className="absolute inset-0 rounded-full bg-[var(--accent)]/5 opacity-0 group-hover:opacity-100 transition-opacity blur-xl" />
           <Plus className="w-5 h-5 md:w-8 md:h-8 text-slate-400 group-hover:text-white transition-all group-hover:rotate-90 relative z-10" />
@@ -684,8 +695,9 @@ const Toolbar: React.FC = () => {
         </div>
       </div>
       {/* STATUS BAR */}
-      <div className="fixed bottom-4 md:bottom-8 left-4 md:left-8 z-[9999] flex items-center gap-4 pointer-events-none">
-        <div className="glass px-3 md:px-5 h-[40px] md:h-[48px] rounded-2xl flex items-center gap-3 md:gap-6 border border-white/5 pointer-events-auto">
+      <div className="fixed bottom-4 md:bottom-8 left-4 md:left-8 z-[9999] flex items-center gap-2 pointer-events-none">
+        <div className="glass px-3 md:px-4 h-[40px] md:h-[48px] rounded-2xl flex items-center gap-2 md:gap-4 border border-white/5 pointer-events-auto">
+          {/* Thought Count */}
           <div className="flex items-center justify-center gap-2 md:gap-3">
             <span className="w-1.5 h-1.5 rounded-full bg-green-500 shadow-[0_0_10px_#22c55e] flex-shrink-0"></span> 
             <span className="text-[9px] md:text-[10px] uppercase font-black tracking-widest text-white/80 whitespace-nowrap">
@@ -693,7 +705,10 @@ const Toolbar: React.FC = () => {
               <span className="hidden sm:inline">/{LIMITS.MAX_THOUGHTS_PER_SPACE} Thoughts</span>
             </span>
           </div>
-          <div className="h-3 w-[1px] bg-white/10"></div>
+
+          <div className="h-3 w-[1px] bg-white/10 mx-0.5"></div>
+
+          {/* Physics Toggle */}
           <button 
             onClick={handleTogglePhysics}
             className={cn(
@@ -701,9 +716,74 @@ const Toolbar: React.FC = () => {
               activeSpace?.physics ? "text-[var(--accent-secondary)]" : "text-slate-600"
             )}
           >
-            <Zap className="w-3 h-3 md:w-3.5 md:h-3.5" /> 
-            <span className="hidden sm:inline">Physics</span>
+            <Zap className="w-3.5 h-3.5 md:w-4 md:h-4" /> 
+            <span className="hidden xl:inline">Physics</span>
           </button>
+
+          {/* History Controls - Hidden on tiny mobile screens if needed, but keeping small for now */}
+          <div className="hidden sm:flex h-3 w-[1px] bg-white/10 mx-0.5"></div>
+          <div className="hidden sm:flex items-center gap-1">
+            <button 
+              onClick={undo}
+              disabled={historyIndex <= 0}
+              className="p-1.5 md:p-2 hover:bg-white/10 text-slate-400 hover:text-white disabled:opacity-20 disabled:cursor-not-allowed transition-all rounded-lg"
+              title="Undo"
+            >
+              <Undo2 className="w-3.5 h-3.5 md:w-4 md:h-4" />
+            </button>
+            <button 
+              onClick={redo}
+              disabled={historyIndex >= history.length - 1}
+              className="p-1.5 md:p-2 hover:bg-white/10 text-slate-400 hover:text-white disabled:opacity-20 disabled:cursor-not-allowed transition-all rounded-lg"
+              title="Redo"
+            >
+              <Redo2 className="w-3.5 h-3.5 md:w-4 md:h-4" />
+            </button>
+          </div>
+
+          {/* Zoom Controls (Spatial Only & Desktop Only) */}
+          {activeSpace?.mode === 'spatial' && !isMobile && (
+            <>
+              <div className="h-3 w-[1px] bg-white/10 mx-0.5"></div>
+              <div className="flex items-center gap-1">
+                <button 
+                  onClick={zoomIn}
+                  className="p-2 hover:bg-white/10 text-slate-400 hover:text-white transition-colors rounded-lg"
+                  title="Zoom In"
+                >
+                  <ZoomIn className="w-4 h-4" />
+                </button>
+                <button 
+                  onClick={zoomOut}
+                  className="p-2 hover:bg-white/10 text-slate-400 hover:text-white transition-colors rounded-lg"
+                  title="Zoom Out"
+                >
+                  <ZoomOut className="w-4 h-4" />
+                </button>
+                <button 
+                  onClick={resetTransform}
+                  className="p-2 hover:bg-white/10 text-slate-400 hover:text-white transition-colors rounded-lg"
+                  title="Reset View"
+                >
+                  <RotateCcw className="w-4 h-4" />
+                </button>
+              </div>
+            </>
+          )}
+          
+          {/* Mobile Reset Only */}
+          {activeSpace?.mode === 'spatial' && isMobile && (
+            <>
+              <div className="h-3 w-[1px] bg-white/10 mx-0.5"></div>
+              <button 
+                onClick={resetTransform}
+                className="p-1.5 hover:bg-white/10 text-slate-400 hover:text-white transition-colors rounded-lg"
+                title="Reset View"
+              >
+                <RotateCcw className="w-3.5 h-3.5" />
+              </button>
+            </>
+          )}
         </div>
       </div>
 

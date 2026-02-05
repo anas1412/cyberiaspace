@@ -73,6 +73,20 @@ interface CyberiaState {
   openLightbox: (image: string) => void;
   closeLightbox: () => void;
   
+  // Transform State (Moved from Viewport)
+  transform: { x: number; y: number; scale: number };
+  setTransform: (transform: { x: number; y: number; scale: number }) => void;
+  resetTransform: () => void;
+  zoomIn: () => void;
+  zoomOut: () => void;
+
+  // History (Undo/Redo)
+  history: Thought[][];
+  historyIndex: number;
+  undo: () => Promise<void>;
+  redo: () => Promise<void>;
+  pushHistory: () => void;
+
   // Refresh data
   refreshThoughts: () => Promise<void>;
   refreshSpaces: () => Promise<void>;
@@ -94,6 +108,84 @@ export const useStore = create<CyberiaState>((set, get) => ({
   theme: (localStorage.getItem('cyberia-theme') as 'cyberia' | 'rose' | 'neon') || 'cyberia',
   deferredPrompt: null,
   
+  transform: { x: 0, y: 0, scale: 1 },
+  history: [],
+  historyIndex: -1,
+
+  setTransform: (transform) => set({ transform }),
+  resetTransform: () => set({ transform: { x: 0, y: 0, scale: 1 } }),
+  zoomIn: () => {
+    const { transform } = get();
+    const newScale = Math.min(transform.scale * 1.2, 2);
+    // Zoom centered on screen
+    const centerX = window.innerWidth / 2;
+    const centerY = window.innerHeight / 2;
+    const wx = (centerX - transform.x) / transform.scale;
+    const wy = (centerY - transform.y) / transform.scale;
+    set({ transform: {
+      x: centerX - wx * newScale,
+      y: centerY - wy * newScale,
+      scale: newScale
+    }});
+  },
+  zoomOut: () => {
+    const { transform } = get();
+    const newScale = Math.max(transform.scale / 1.2, 0.1);
+    const centerX = window.innerWidth / 2;
+    const centerY = window.innerHeight / 2;
+    const wx = (centerX - transform.x) / transform.scale;
+    const wy = (centerY - transform.y) / transform.scale;
+    set({ transform: {
+      x: centerX - wx * newScale,
+      y: centerY - wy * newScale,
+      scale: newScale
+    }});
+  },
+
+  pushHistory: () => {
+    const { thoughts, history, historyIndex } = get();
+    const newHistory = history.slice(0, historyIndex + 1);
+    // Only push if different from last
+    const last = newHistory[newHistory.length - 1];
+    if (last && JSON.stringify(last) === JSON.stringify(thoughts)) return;
+    
+    newHistory.push(JSON.parse(JSON.stringify(thoughts)));
+    if (newHistory.length > 50) newHistory.shift(); // Limit history
+    set({ history: newHistory, historyIndex: newHistory.length - 1 });
+  },
+
+  undo: async () => {
+    const { history, historyIndex, activeSpaceId } = get();
+    if (historyIndex <= 0 || !activeSpaceId) return;
+    
+    const newIndex = historyIndex - 1;
+    const prevThoughts = history[newIndex];
+    
+    // Sync to DB
+    await db.transaction('rw', db.thoughts, async () => {
+      await db.thoughts.where('spaceId').equals(activeSpaceId).delete();
+      await db.thoughts.bulkAdd(prevThoughts);
+    });
+    
+    set({ thoughts: prevThoughts, historyIndex: newIndex });
+  },
+
+  redo: async () => {
+    const { history, historyIndex, activeSpaceId } = get();
+    if (historyIndex >= history.length - 1 || !activeSpaceId) return;
+    
+    const newIndex = historyIndex + 1;
+    const nextThoughts = history[newIndex];
+    
+    // Sync to DB
+    await db.transaction('rw', db.thoughts, async () => {
+      await db.thoughts.where('spaceId').equals(activeSpaceId).delete();
+      await db.thoughts.bulkAdd(nextThoughts);
+    });
+    
+    set({ thoughts: nextThoughts, historyIndex: newIndex });
+  },
+
   apiKey: localStorage.getItem('cyberia-api-key'),
   activeModel: localStorage.getItem('cyberia-active-model') || DEFAULT_MODEL,
   oracleMode: localStorage.getItem('cyberia-oracle-mode') === 'true',
@@ -222,10 +314,13 @@ export const useStore = create<CyberiaState>((set, get) => ({
     if (!activeSpaceId) return;
     const thoughts = await db.thoughts.where('spaceId').equals(activeSpaceId).toArray();
     set({ thoughts });
+    if (get().history.length === 0) {
+      set({ history: [JSON.parse(JSON.stringify(thoughts))], historyIndex: 0 });
+    }
   },
 
   setActiveSpace: (id) => {
-    set({ activeSpaceId: id });
+    set({ activeSpaceId: id, history: [], historyIndex: -1 });
     get().refreshThoughts();
   },
 
@@ -348,6 +443,7 @@ export const useStore = create<CyberiaState>((set, get) => ({
 
     if (result !== -1) {
       await get().refreshThoughts();
+      get().pushHistory();
     }
     
     return result as number;
@@ -371,6 +467,7 @@ export const useStore = create<CyberiaState>((set, get) => ({
     saveTimers[id] = setTimeout(async () => {
       await db.thoughts.update(id, updates);
       delete saveTimers[id];
+      get().pushHistory(); // Push history after debounce
     }, 500); // 500ms debounce
 
     (window as any)._cyberia_save_timers = saveTimers;
@@ -386,6 +483,7 @@ export const useStore = create<CyberiaState>((set, get) => ({
       const newIds = get().selectedThoughtIds.filter(tid => tid !== id);
       set({ selectedThoughtIds: newIds });
     }
+    get().pushHistory();
   },
 
   setSelectedThoughtId: (id) => {
@@ -438,6 +536,7 @@ export const useStore = create<CyberiaState>((set, get) => ({
     await db.thoughts.bulkDelete(selectedThoughtIds);
     await get().refreshThoughts();
     set({ selectedThoughtIds: [], selectedThoughtId: null, isInspectorOpen: false });
+    get().pushHistory();
   },
 
   linkSelectedThoughts: async () => {
@@ -454,6 +553,7 @@ export const useStore = create<CyberiaState>((set, get) => ({
     });
 
     await Promise.all(updates);
+    get().pushHistory();
   },
 
   unlinkSelectedThoughts: async () => {
@@ -482,6 +582,7 @@ export const useStore = create<CyberiaState>((set, get) => ({
     });
 
     await Promise.all(updates);
+    get().pushHistory();
   },
 
   setInspectorOpen: (open) => {

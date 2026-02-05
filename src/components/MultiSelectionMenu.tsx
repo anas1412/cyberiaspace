@@ -2,7 +2,13 @@ import React from 'react';
 import { useStore } from '../store/useStore';
 import { useModalStore } from '../store/useModalStore';
 import { X, Link, Trash2, Hash } from 'lucide-react';
+import { clsx, type ClassValue } from 'clsx';
+import { twMerge } from 'tailwind-merge';
 import { motion, AnimatePresence } from 'framer-motion';
+
+function cn(...inputs: ClassValue[]) {
+  return twMerge(clsx(inputs));
+}
 
 const MultiSelectionMenu: React.FC = () => {
   const selectedThoughtIds = useStore((state) => state.selectedThoughtIds);
@@ -12,6 +18,8 @@ const MultiSelectionMenu: React.FC = () => {
   const unlinkSelectedThoughts = useStore((state) => state.unlinkSelectedThoughts);
   const thoughts = useStore((state) => state.thoughts);
   const updateThought = useStore((state) => state.updateThought);
+  const isInspectorOpen = useStore((state) => state.isInspectorOpen);
+  const isChatOpen = useStore((state) => state.isChatOpen);
   
   const { openModal } = useModalStore();
 
@@ -63,9 +71,14 @@ const MultiSelectionMenu: React.FC = () => {
     <AnimatePresence>
       <motion.div 
         initial={isMobile ? { y: '100%' } : { opacity: 0, x: 20 }}
-        animate={isMobile ? { y: 0 } : { opacity: 1, x: 0 }}
+        animate={isMobile 
+          ? (isInspectorOpen || isChatOpen ? { y: '100%', opacity: 0 } : { y: 0, opacity: 1 }) 
+          : { opacity: 1, x: 0 }}
         exit={isMobile ? { y: '100%' } : { opacity: 0, x: 20 }}
-        className="ui-layer fixed bottom-0 left-0 right-0 md:bottom-auto md:left-auto md:top-[120px] md:right-8 w-full md:w-80 glass rounded-t-[2.5rem] md:rounded-[2.5rem] p-6 md:p-8 shadow-2xl pointer-events-auto"
+        className={cn(
+          "ui-layer fixed bottom-0 left-0 right-0 md:bottom-auto md:left-auto md:top-[120px] md:right-8 w-full md:w-80 glass rounded-t-[2.5rem] md:rounded-[2.5rem] p-6 md:p-8 shadow-2xl pointer-events-auto",
+          isMobile && (isInspectorOpen || isChatOpen) && "pointer-events-none"
+        )}
       >
         <div className="flex justify-between items-center mb-6">
           <div className="flex flex-col">

@@ -29,6 +29,9 @@ export const usePhysics = (
   const calendarViewDate = useStore((state) => state.calendarViewDate);
   const linkingSourceId = useStore((state) => state.linkingSourceId);
 
+  const setSelectedThoughtId = useStore((state) => state.setSelectedThoughtId);
+  const selectedThoughtIds = useStore((state) => state.selectedThoughtIds);
+
   const physicsState = useRef<Map<number, { x: number; y: number; vx: number; vy: number; scale: number }>>(new Map());
   const elements = useRef<Map<number, HTMLDivElement>>(new Map());
   const mousePosRef = useRef({ x: 0, y: 0 });
@@ -42,11 +45,10 @@ export const usePhysics = (
     id: number; 
     startX: number; 
     startY: number; 
-    nodeStartX: number; 
-    nodeStartY: number; 
     moved: boolean;
     lastMouseX: number;
     lastMouseY: number;
+    initialPositions: Map<number, { x: number, y: number }>;
   } | null>(null);
 
   useEffect(() => {
@@ -118,12 +120,25 @@ export const usePhysics = (
   useEffect(() => {
     const handleMove = (clientX: number, clientY: number) => {
       if (!dragRef.current) return;
-      const { id, startX, startY, nodeStartX, nodeStartY } = dragRef.current;
+      const { startX, startY, initialPositions } = dragRef.current;
       const dx = (clientX - startX) / transform.scale;
       const dy = (clientY - startY) / transform.scale;
-      if (Math.abs(clientX - startX) > 5 || Math.abs(clientY - startY) > 5) dragRef.current.moved = true;
-      const p = physicsState.current.get(id);
-      if (p) { p.x = nodeStartX + dx; p.y = nodeStartY + dy; p.vx = 0; p.vy = 0; }
+      
+      if (Math.abs(clientX - startX) > 5 || Math.abs(clientY - startY) > 5) {
+        dragRef.current.moved = true;
+      }
+
+      if (dragRef.current.moved) {
+        initialPositions.forEach((pos, id) => {
+          const p = physicsState.current.get(id);
+          if (p) {
+            p.x = pos.x + dx;
+            p.y = pos.y + dy;
+            p.vx = 0;
+            p.vy = 0;
+          }
+        });
+      }
     };
 
     const handleMouseMove = (e: MouseEvent) => handleMove(e.clientX, e.clientY);
@@ -136,9 +151,8 @@ export const usePhysics = (
 
     const handleUp = (lastMouseX: number, lastMouseY: number) => {
       if (dragRef.current) {
-        const { id, moved } = dragRef.current;
+        const { id, moved, initialPositions } = dragRef.current;
         if (moved) {
-          const p = physicsState.current.get(id);
           const mode = activeSpace?.mode || 'spatial';
           if (mode === 'kanban') {
              const colWidth = window.innerWidth / 4;
@@ -147,6 +161,9 @@ export const usePhysics = (
              else if (lastMouseX >= colWidth * 2 && lastMouseX < colWidth * 3) status = 'doing';
              else if (lastMouseX >= colWidth * 3) status = 'done';
              
+             // For simplicity, only the primary dragged node gets re-ordered/status changed in Kanban for now
+             // Bulk move in Kanban is complex due to sorting
+             const p = physicsState.current.get(id);
              const thoughtsInStatus = Array.from(thoughtMap.current.values()).filter(t => (t.id === id ? status : t.status) === status);
              const sorted = thoughtsInStatus.sort((a, b) => {
                  const pA = physicsState.current.get(a.id); const pB = physicsState.current.get(b.id);
@@ -162,7 +179,6 @@ export const usePhysics = (
           } else if (mode === 'calendar') {
              const sidebarWidth = 260; const gap = 20; const padding = 40; const topPadding = 190; const mainLeft = padding + sidebarWidth + gap;
              if (lastMouseX < mainLeft) {
-                 const mapEntry = thoughtMap.current.get(id); if (mapEntry) mapEntry.date = '';
                  updateThought(id, { date: '' });
              } else {
                  const mainWidth = window.innerWidth - mainLeft - padding;
@@ -177,14 +193,17 @@ export const usePhysics = (
                          const newDate = new Date(year, month, dayIndex + 1);
                          if (newDate.getMonth() === month) {
                              const dateStr = newDate.toLocaleDateString('en-CA');
-                             const mapEntry = thoughtMap.current.get(id); if (mapEntry) mapEntry.date = dateStr;
                              updateThought(id, { date: dateStr });
                          }
                      }
                  }
              }
-          } else if (p) {
-              updateThought(id, { x: p.x, y: p.y });
+          } else {
+              // Spatial Mode: Save all new positions
+              initialPositions.forEach((_, draggedId) => {
+                const p = physicsState.current.get(draggedId);
+                if (p) updateThought(draggedId, { x: p.x, y: p.y });
+              });
           }
         }
         dragRef.current = null;
@@ -231,7 +250,7 @@ export const usePhysics = (
           const isMobile = window.innerWidth < 768;
           let currentY = isMobile ? 200 : 280;
           list.forEach((t) => {
-             const p = state.get(t.id); if (!p) return; if (dragRef.current?.id === t.id) return;
+             const p = state.get(t.id); if (!p) return; if (dragRef.current?.initialPositions.has(t.id)) return;
              const colWidth = window.innerWidth / 4; 
              const targetX = (colWidth * colIdx) + (colWidth / 2);
              const el = elements.current.get(t.id); const height = el?.offsetHeight || 120; const targetY = currentY + height / 2; currentY += height + 24;
@@ -248,7 +267,7 @@ export const usePhysics = (
       const allThoughts = Array.from(thoughtMap.current.values());
       const scheduled = allThoughts.filter(t => !!t.date); const unscheduled = allThoughts.filter(t => !t.date).sort((a,b) => a.order - b.order);
       scheduled.forEach((t) => {
-        const p = state.get(t.id); if (!p) return; if (dragRef.current?.id === t.id) return;
+        const p = state.get(t.id); if (!p) return; if (dragRef.current?.initialPositions.has(t.id)) return;
         const target = { x: 0, y: 0, scale: 0 };
         const tDate = new Date(t.date + 'T00:00:00');
         if (tDate.getFullYear() === year && tDate.getMonth() === month) {
@@ -262,7 +281,7 @@ export const usePhysics = (
       let currentSB_Y = contentRect ? contentRect.top + 20 : 200; 
       const scrollTop = sbContent?.scrollTop || 0;
       unscheduled.forEach((t) => {
-        const stateP = state.get(t.id); if (!stateP) return; if (dragRef.current?.id === t.id) return;
+        const stateP = state.get(t.id); if (!stateP) return; if (dragRef.current?.initialPositions.has(t.id)) return;
         const el = elements.current.get(t.id); const height = (el?.offsetHeight || 120) * 0.6;
         const target = { x: padding + sidebarWidth / 2, y: currentSB_Y - scrollTop + height / 2, scale: 0.6 };
         currentSB_Y += height + 20;
@@ -272,7 +291,7 @@ export const usePhysics = (
       const spacer = document.getElementById('cal-sidebar-spacer'); if (spacer) spacer.style.height = `${sbHeight.current + 40}px`;
     } else if (mode === 'spatial' && physicsEnabled) {
       ids.forEach((id) => {
-        if (dragRef.current?.id === id) return; 
+        if (dragRef.current?.initialPositions.has(id)) return; 
         const p = state.get(id)!; const t = thoughtMap.current.get(id); if (!t) return;
         const prioLevel = PRIORITY_WEIGHT[t.priority] || 0; const gravityMultiplier = 1 + prioLevel * 0.5; const targetScale = 1 + prioLevel * 0.05;
         p.vx += (window.innerWidth / 2 - p.x) * (GRAVITY * gravityMultiplier); p.vy += (window.innerHeight / 2 - p.y) * (GRAVITY * gravityMultiplier);
@@ -389,7 +408,7 @@ export const usePhysics = (
         const cardTop = nodeScreenY - nodeHeightOnScreen / 2;
         const cardBottom = nodeScreenY + nodeHeightOnScreen / 2;
 
-        const isDraggingThis = dragRef.current?.id === id;
+        const isDraggingThis = dragRef.current?.initialPositions.has(id);
 
         if (mode === 'calendar' && t && !t.date && sbRect && !isDraggingThis) {
             // Precision Clipping using the actual scrollable content rect
@@ -429,7 +448,7 @@ export const usePhysics = (
         } else {
             el.style.clipPath = 'none';
             el.style.opacity = '1'; el.style.visibility = 'visible'; el.style.pointerEvents = 'auto';
-            if (dragRef.current?.id === id) el.style.zIndex = '1000'; else el.style.zIndex = (20 + prioLevel).toString();
+            if (dragRef.current?.initialPositions.has(id)) el.style.zIndex = '1000'; else el.style.zIndex = (20 + prioLevel).toString();
         }
       }
     });
@@ -453,20 +472,33 @@ export const usePhysics = (
     const clientX = isTouch ? (e as React.TouchEvent).touches[0].clientX : (e as React.MouseEvent).clientX;
     const clientY = isTouch ? (e as React.TouchEvent).touches[0].clientY : (e as React.MouseEvent).clientY;
 
-    const p = physicsState.current.get(id);
-    if (p) { 
-      dragRef.current = { 
-        id, 
-        startX: clientX, 
-        startY: clientY, 
-        nodeStartX: p.x, 
-        nodeStartY: p.y, 
-        moved: false, 
-        lastMouseX: clientX, 
-        lastMouseY: clientY 
-      }; 
+    // Use latest state from store
+    const currentSelectedIds = useStore.getState().selectedThoughtIds;
+    const targets = new Set(currentSelectedIds);
+    
+    if (!targets.has(id)) {
+      // If we drag something not selected, it becomes the ONLY selection
+      setSelectedThoughtId(id);
+      targets.clear();
+      targets.add(id);
     }
-  }, []);
-  const isDragging = useCallback((id: number) => dragRef.current?.id === id, []);
+
+    const initialPositions = new Map();
+    targets.forEach(tid => {
+      const p = physicsState.current.get(tid);
+      if (p) initialPositions.set(tid, { x: p.x, y: p.y });
+    });
+
+    dragRef.current = { 
+      id, 
+      startX: clientX, 
+      startY: clientY, 
+      moved: false, 
+      lastMouseX: clientX, 
+      lastMouseY: clientY,
+      initialPositions
+    };
+  }, [setSelectedThoughtId]);
+  const isDragging = useCallback((id: number) => dragRef.current?.initialPositions.has(id), []);
   return { registerElement, handleMouseDown, isDragging, sidebarHeight: sbHeight, kanbanHeight: kMaxHeight };
 };

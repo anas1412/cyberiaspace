@@ -26,9 +26,10 @@ const Viewport: React.FC = () => {
   const addThought = useStore((state) => state.addThought);
   const saveSpaceTransform = useStore((state) => state.saveSpaceTransform);
   const updateSpace = useStore((state) => state.updateSpace);
+  const transform = useStore((state) => state.transform);
+  const setTransform = useStore((state) => state.setTransform);
   
   const { openModal } = useModalStore();
-  const [transform, setTransform] = useState({ x: 0, y: 0, scale: 1 });
   const [isGrabbing, setIsGrabbing] = useState(false);
   const [selectionRect, setSelectionRect] = useState<{ x: number, y: number, w: number, h: number } | null>(null);
   
@@ -106,7 +107,9 @@ const Viewport: React.FC = () => {
         } else if (isLeftClick) {
           isSelectingRef.current = true;
           selectionStartRef.current = { x: e.clientX, y: e.clientY };
-          clearSelection();
+          if (!e.ctrlKey && !e.metaKey) {
+            clearSelection();
+          }
         }
       }
     };
@@ -122,11 +125,11 @@ const Viewport: React.FC = () => {
         const dx = e.clientX - lastMousePos.current.x;
         const dy = e.clientY - lastMousePos.current.y;
         
-        setTransform((prev) => ({
-          ...prev,
-          x: prev.x + dx,
-          y: prev.y + dy,
-        }));
+        setTransform({
+          ...transform,
+          x: transform.x + dx,
+          y: transform.y + dy,
+        });
       } else if (isSelectingRef.current) {
         const x = Math.min(e.clientX, selectionStartRef.current.x);
         const y = Math.min(e.clientY, selectionStartRef.current.y);
@@ -198,11 +201,11 @@ const Viewport: React.FC = () => {
         const dx = touch.clientX - lastMousePos.current.x;
         const dy = touch.clientY - lastMousePos.current.y;
         
-        setTransform((prev) => ({
-          ...prev,
-          x: prev.x + dx,
-          y: prev.y + dy,
-        }));
+        setTransform({
+          ...transform,
+          x: transform.x + dx,
+          y: transform.y + dy,
+        });
         
         lastMousePos.current = { x: touch.clientX, y: touch.clientY };
       } else if (e.touches.length === 2 && initialTouchDistance.current && initialTouchMidpoint.current && activeSpace?.mode === 'spatial') {
@@ -216,16 +219,14 @@ const Viewport: React.FC = () => {
         const midX = initialTouchMidpoint.current.x;
         const midY = initialTouchMidpoint.current.y;
 
-        setTransform((prev) => {
-          // Anchor zoom at the initial midpoint
-          const wx = (midX - prev.x) / prev.scale;
-          const wy = (midY - prev.y) / prev.scale;
-          
-          return {
-            x: midX - wx * newScale,
-            y: midY - wy * newScale,
-            scale: newScale,
-          };
+        // Anchor zoom at the initial midpoint
+        const wx = (midX - transform.x) / transform.scale;
+        const wy = (midY - transform.y) / transform.scale;
+        
+        setTransform({
+          x: midX - wx * newScale,
+          y: midY - wy * newScale,
+          scale: newScale,
         });
       }
     };
@@ -267,31 +268,27 @@ const Viewport: React.FC = () => {
       }
 
       if (activeSpace?.mode === 'kanban') {
-        setTransform((prev) => {
-          let newY = prev.y - e.deltaY;
-          if (newY > 0) newY = 0;
-          
-          const viewHeight = window.innerHeight;
-          const contentHeight = kanbanHeight.current + 100;
-          const limit = Math.min(0, viewHeight - contentHeight);
-          
-          if (newY < limit) newY = limit;
+        let newY = transform.y - e.deltaY;
+        if (newY > 0) newY = 0;
+        
+        const viewHeight = window.innerHeight;
+        const contentHeight = kanbanHeight.current + 100;
+        const limit = Math.min(0, viewHeight - contentHeight);
+        
+        if (newY < limit) newY = limit;
 
-          return { ...prev, x: 0, y: newY, scale: 1 };
-        });
+        setTransform({ ...transform, x: 0, y: newY, scale: 1 });
       } else if (activeSpace?.mode === 'calendar') {
         setTransform({ x: 0, y: 0, scale: 1 });
       } else {
         const delta = -e.deltaY;
-        setTransform((prev) => {
-          const newScale = Math.min(Math.max(0.1, prev.scale + delta * 0.001), 2);
-          const wx = (e.clientX - prev.x) / prev.scale;
-          const wy = (e.clientY - prev.y) / prev.scale;
-          return {
-            x: e.clientX - wx * newScale,
-            y: e.clientY - wy * newScale,
-            scale: newScale,
-          };
+        const newScale = Math.min(Math.max(0.1, transform.scale + delta * 0.001), 2);
+        const wx = (e.clientX - transform.x) / transform.scale;
+        const wy = (e.clientY - transform.y) / transform.scale;
+        setTransform({
+          x: e.clientX - wx * newScale,
+          y: e.clientY - wy * newScale,
+          scale: newScale,
         });
       }
     };
