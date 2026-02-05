@@ -13,7 +13,7 @@ function cn(...inputs: ClassValue[]) {
 interface ThoughtNodeProps {
   thought: Thought;
   registerElement: (id: number, el: HTMLDivElement | null) => void;
-  onMouseDown: (id: number, e: React.MouseEvent | React.TouchEvent) => void;
+  onMouseDown: (id: number, e: React.MouseEvent) => void;
   isDragging: boolean;
 }
 
@@ -74,12 +74,6 @@ const ThoughtNode: React.FC<ThoughtNodeProps> = React.memo(({ thought, registerE
       e.stopPropagation();
     }
     setStartPos({ x: e.clientX, y: e.clientY });
-    onMouseDown(thought.id, e);
-  };
-
-  const handleLocalTouchStart = (e: React.TouchEvent) => {
-    const touch = e.touches[0];
-    setStartPos({ x: touch.clientX, y: touch.clientY });
     onMouseDown(thought.id, e);
   };
 
@@ -379,7 +373,6 @@ const ThoughtNode: React.FC<ThoughtNodeProps> = React.memo(({ thought, registerE
       )}
       onMouseDown={handleLocalMouseDown}
       onDragStart={(e) => e.preventDefault()}
-      onTouchStart={handleLocalTouchStart}
       onClick={handleClick}
     >
       <div className={cn(

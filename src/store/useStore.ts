@@ -402,13 +402,19 @@ export const useStore = create<CyberiaState>((set, get) => ({
   },
 
   saveSpaceTransform: async (id, transform) => {
+    const { spaces } = get();
+    const space = spaces.find(s => s.id === id);
+    
+    // SAFETY: Never save the transform if we aren't in spatial mode.
+    // This prevents structural view resets from overwriting spatial coordinates.
+    if (!space || space.mode !== 'spatial') return;
+
     await db.spaces.update(id, {
       transformX: transform.x,
       transformY: transform.y,
       transformScale: transform.scale
     });
     // Update local state silently to avoid full refresh
-    const { spaces } = get();
     const index = spaces.findIndex(s => s.id === id);
     if (index !== -1) {
       const newSpaces = [...spaces];

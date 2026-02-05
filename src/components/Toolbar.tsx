@@ -37,7 +37,6 @@ const Toolbar: React.FC = () => {
   
   const spaces = useStore((state) => state.spaces);
   const thoughts = useStore((state) => state.thoughts);
-  const isInspectorOpen = useStore((state) => state.isInspectorOpen);
   const setActiveSpace = useStore((state) => state.setActiveSpace);
   const addThought = useStore((state) => state.addThought);
   const updateSpace = useStore((state) => state.updateSpace);
@@ -62,6 +61,8 @@ const Toolbar: React.FC = () => {
   const historyIndex = useStore((state) => state.historyIndex);
   
   const { openModal } = useModalStore();
+  
+  const setTransform = useStore((state) => state.setTransform);
   
   const activeSpace = spaces.find((s) => s.id === activeSpaceId);
   const [isSpaceMenuOpen, setIsSpaceMenuOpen] = useState(false);
@@ -229,6 +230,19 @@ const Toolbar: React.FC = () => {
 
   const setViewMode = (mode: 'spatial' | 'kanban' | 'calendar') => {
     if (!activeSpace) return;
+    
+    // Only reset transform if switching TO a non-spatial mode
+    if (mode !== 'spatial') {
+      setTransform({ x: 0, y: 0, scale: 1 });
+    } else if (activeSpace.mode !== 'spatial') {
+      // If returning to spatial, reload the saved state
+      setTransform({
+        x: activeSpace.transformX ?? 0,
+        y: activeSpace.transformY ?? 0,
+        scale: activeSpace.transformScale ?? 1
+      });
+    }
+
     updateSpace(activeSpace.id, { mode });
   };
 
