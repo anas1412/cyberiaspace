@@ -464,41 +464,50 @@ export const usePhysics = (
   }, [loop]);
 
   const registerElement = useCallback((id: number, el: HTMLDivElement | null) => { if (el) elements.current.set(id, el); else elements.current.delete(id); }, []);
-  const handleMouseDown = useCallback((id: number, e: React.MouseEvent | React.TouchEvent) => {
-    const isTouch = 'touches' in e;
-    if (!isTouch && (e as React.MouseEvent).button !== 0) return; 
-    if ((e.target as HTMLElement).closest('.prevent-drag')) return;
-    
-    const clientX = isTouch ? (e as React.TouchEvent).touches[0].clientX : (e as React.MouseEvent).clientX;
-    const clientY = isTouch ? (e as React.TouchEvent).touches[0].clientY : (e as React.MouseEvent).clientY;
-
-    // Use latest state from store
-    const currentSelectedIds = useStore.getState().selectedThoughtIds;
-    const targets = new Set(currentSelectedIds);
-    
-    if (!targets.has(id)) {
-      // If we drag something not selected, it becomes the ONLY selection
-      setSelectedThoughtId(id);
-      targets.clear();
-      targets.add(id);
-    }
-
-    const initialPositions = new Map();
-    targets.forEach(tid => {
-      const p = physicsState.current.get(tid);
-      if (p) initialPositions.set(tid, { x: p.x, y: p.y });
-    });
-
-    dragRef.current = { 
-      id, 
-      startX: clientX, 
-      startY: clientY, 
-      moved: false, 
-      lastMouseX: clientX, 
-      lastMouseY: clientY,
-      initialPositions
-    };
-  }, [setSelectedThoughtId]);
-  const isDragging = useCallback((id: number) => dragRef.current?.initialPositions.has(id), []);
+    const handleMouseDown = useCallback((id: number, e: React.MouseEvent | React.TouchEvent) => {
+      const isTouch = 'touches' in e;
+      if (!isTouch && (e as React.MouseEvent).button !== 0) return; 
+      if ((e.target as HTMLElement).closest('.prevent-drag')) return;
+      
+      const clientX = isTouch ? (e as React.TouchEvent).touches[0].clientX : (e as React.MouseEvent).clientX;
+      const clientY = isTouch ? (e as React.TouchEvent).touches[0].clientY : (e as React.MouseEvent).clientY;
+  
+      const isCtrl = 'ctrlKey' in e ? (e as React.MouseEvent).ctrlKey : false;
+      const isMeta = 'metaKey' in e ? (e as React.MouseEvent).metaKey : false;
+  
+      // Use latest state from store
+      const store = useStore.getState();
+      const currentSelectedIds = store.selectedThoughtIds;
+      let targets = new Set(currentSelectedIds);
+      
+      if (isCtrl || isMeta) {
+        store.toggleThoughtSelection(id);
+        // Update targets immediately from the state change
+        const nextIds = useStore.getState().selectedThoughtIds;
+        targets = new Set(nextIds);
+      } else if (!targets.has(id)) {
+        // If we drag something not selected (and no modifier), it becomes the ONLY selection
+        store.setSelectedThoughtId(id);
+        targets = new Set([id]);
+      }
+  
+      const initialPositions = new Map();
+      targets.forEach(tid => {
+        const p = physicsState.current.get(tid);
+        if (p) initialPositions.set(tid, { x: p.x, y: p.y });
+      });
+  
+      dragRef.current = { 
+        id, 
+        startX: clientX, 
+        startY: clientY, 
+        moved: false, 
+        lastMouseX: clientX, 
+        lastMouseY: clientY,
+        initialPositions
+      };
+    }, []);
+  
+    const isDragging = useCallback((id: number) => !!dragRef.current?.initialPositions.has(id), []);
   return { registerElement, handleMouseDown, isDragging, sidebarHeight: sbHeight, kanbanHeight: kMaxHeight };
 };

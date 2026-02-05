@@ -71,6 +71,9 @@ const ThoughtNode: React.FC<ThoughtNodeProps> = React.memo(({ thought, registerE
   }, [thought.id, registerElement]);
 
   const handleLocalMouseDown = (e: React.MouseEvent) => {
+    if (e.ctrlKey || e.metaKey) {
+      e.stopPropagation();
+    }
     setStartPos({ x: e.clientX, y: e.clientY });
     onMouseDown(thought.id, e);
   };
@@ -96,7 +99,7 @@ const ThoughtNode: React.FC<ThoughtNodeProps> = React.memo(({ thought, registerE
 
     if (e.ctrlKey || e.metaKey) {
       e.stopPropagation();
-      toggleThoughtSelection(thought.id);
+      // toggle is now handled in usePhysics.ts onMouseDown to allow instant drag
       return;
     }
 
