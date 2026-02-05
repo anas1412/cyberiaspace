@@ -252,7 +252,14 @@ function App() {
   }, [addThought, setSelectedThoughtId, setInspectorOpen, thoughts.length, openModal]);
 
   return (
-    <div className="w-full h-full relative">
+    <div className="w-full h-full relative overflow-hidden bg-black">
+      {/* Deep Space Background Layers */}
+      <div className="stars-layer stars-1" />
+      <div className="stars-layer stars-2" />
+      <div className="stars-layer stars-twinkle" />
+      <div className="nebula-cloud" />
+      <div className="grain" />
+      
       <Viewport />
       <EmptyState />
       <KanbanOverlay />

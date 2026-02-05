@@ -14,7 +14,7 @@ interface CyberiaState {
   focusType: 'text' | 'table' | 'paint' | 'tasks' | 'embed' | null;
   calendarViewDate: Date;
   linkingSourceId: number | null;
-  theme: 'cyberia' | 'rose' | 'neon';
+  theme: 'cyberia' | 'sakura' | 'neon';
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   deferredPrompt: any;
 
@@ -28,7 +28,7 @@ interface CyberiaState {
   init: () => Promise<void>;
   
   // Actions
-  setTheme: (theme: 'cyberia' | 'rose' | 'neon') => void;
+  setTheme: (theme: 'cyberia' | 'sakura' | 'neon') => void;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   setDeferredPrompt: (prompt: any) => void;
 
@@ -105,7 +105,7 @@ export const useStore = create<CyberiaState>((set, get) => ({
   isLightboxOpen: false,
   lightboxImage: null,
   linkingSourceId: null,
-  theme: (localStorage.getItem('cyberia-theme') as 'cyberia' | 'rose' | 'neon') || 'cyberia',
+  theme: (localStorage.getItem('cyberia-theme') as 'cyberia' | 'sakura' | 'neon') || 'cyberia',
   deferredPrompt: null,
   
   transform: { x: 0, y: 0, scale: 1 },

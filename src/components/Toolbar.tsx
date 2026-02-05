@@ -571,12 +571,12 @@ const Toolbar: React.FC = () => {
             <div className="grid grid-cols-3 gap-2">
               {[
                 { id: 'cyberia', label: 'Cyber', color: '#6366f1' },
-                { id: 'rose', label: 'Rose', color: '#ec4899' },
+                { id: 'sakura', label: 'Sakura', color: '#fdb9c8' },
                 { id: 'neon', label: 'Neon', color: '#10b981' }
               ].map((t) => (
                 <button
                   key={t.id}
-                  onClick={() => setTheme(t.id as 'cyberia' | 'rose' | 'neon')}
+                  onClick={() => setTheme(t.id as 'cyberia' | 'sakura' | 'neon')}
                   className={cn(
                     "flex flex-col items-center gap-2 p-2 rounded-xl border transition-all",
                     theme === t.id 

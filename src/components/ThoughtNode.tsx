@@ -158,25 +158,28 @@ const ThoughtNode: React.FC<ThoughtNodeProps> = React.memo(({ thought, registerE
       case 'text': {
         const hasContent = thought.content && thought.content.trim().length > 0;
         return (
-          <div data-trigger="text" className="relative group/text overflow-hidden rounded-xl prevent-drag cursor-pointer">
-            <div className={cn("overflow-hidden relative", hasContent && "max-h-[120px]")}>
+          <div data-trigger="text" className="relative group/text overflow-hidden rounded-xl prevent-drag cursor-pointer pt-1">
+            <div className={cn("overflow-hidden relative", hasContent && "max-h-[140px]")}>
               {hasContent && (
                 <div 
-                  className="markdown-body mt-1 line-clamp-6"
+                  className="markdown-body text-[11px] leading-relaxed text-slate-300/90"
                   dangerouslySetInnerHTML={{ __html: parsedContent as string }}
                 />
               )}
-              {hasContent && (
-                <div className="absolute bottom-0 left-0 right-0 h-8 bg-gradient-to-t from-[var(--bg-main)] to-transparent pointer-events-none" />
+              {hasContent && thought.content.length > 150 && (
+                <div className="absolute bottom-0 left-0 right-0 h-16 bg-gradient-to-t from-[var(--bg-main)] via-[var(--bg-main)]/80 to-transparent pointer-events-none" />
               )}
             </div>
-            {hasContent && thought.content.length > 200 && (
-              <div className="text-[8px] opacity-30 text-center mt-1">Read more...</div>
+            {hasContent && thought.content.length > 150 && (
+              <div className="absolute bottom-1 left-1/2 -translate-x-1/2 flex flex-col items-center gap-1 opacity-40 group-hover/text:opacity-100 transition-opacity">
+                <div className="w-8 h-0.5 bg-white/10 rounded-full" />
+                <span className="text-[8px] font-black uppercase tracking-[0.2em] text-white/40">Open Note</span>
+              </div>
             )}
-            <div className="absolute inset-0 bg-[var(--accent)]/10 opacity-0 group-hover/text:opacity-100 transition-opacity rounded-xl flex items-center justify-center pointer-events-none">
+            <div className="absolute inset-0 bg-[var(--accent)]/5 opacity-0 group-hover/text:opacity-100 transition-opacity rounded-xl flex items-center justify-center pointer-events-none">
               <button 
                 onClick={(e) => { e.stopPropagation(); setActiveFocus(thought.id, 'text'); }}
-                className="pointer-events-auto bg-[var(--accent)] text-white p-2 rounded-lg shadow-xl transform scale-90 group-hover/text:scale-100 transition-all"
+                className="pointer-events-auto bg-[var(--accent)] text-white p-2.5 rounded-xl shadow-2xl transform scale-90 group-hover/text:scale-100 transition-all hover:scale-110 active:scale-95"
               >
                 <Maximize2 className="w-4 h-4" />
               </button>
@@ -229,7 +232,7 @@ const ThoughtNode: React.FC<ThoughtNodeProps> = React.memo(({ thought, registerE
             <div className="absolute inset-0 bg-[var(--accent)]/10 opacity-0 group-hover/tasks:opacity-100 transition-opacity rounded-xl flex items-center justify-center pointer-events-none">
               <button 
                 onClick={(e) => { e.stopPropagation(); setActiveFocus(thought.id, 'tasks'); }}
-                className="pointer-events-auto bg-[var(--accent)] text-white p-2 rounded-lg shadow-xl transform scale-90 group-hover/tasks:scale-100 transition-all"
+                className="pointer-events-auto bg-[var(--accent)] text-white p-2 rounded-lg shadow-xl transform scale-90 group-hover/tasks:scale-100 transition-all hover:scale-110 active:scale-95"
               >
                 <Maximize2 className="w-4 h-4" />
               </button>
@@ -249,7 +252,10 @@ const ThoughtNode: React.FC<ThoughtNodeProps> = React.memo(({ thought, registerE
               </div>
             )}
             <div className="absolute inset-0 bg-[var(--accent)]/10 opacity-0 group-hover/paint:opacity-100 transition-opacity flex items-center justify-center pointer-events-none">
-              <button className="pointer-events-auto bg-[var(--accent)] text-white p-2 rounded-lg shadow-xl transform scale-90 group-hover/paint:scale-100 transition-all">
+              <button 
+                onClick={(e) => { e.stopPropagation(); setActiveFocus(thought.id, 'paint'); }}
+                className="pointer-events-auto bg-[var(--accent)] text-white p-2 rounded-lg shadow-xl transform scale-90 group-hover/paint:scale-100 transition-all hover:scale-110 active:scale-95"
+              >
                 <Maximize2 className="w-4 h-4" />
               </button>
             </div>
@@ -291,7 +297,7 @@ const ThoughtNode: React.FC<ThoughtNodeProps> = React.memo(({ thought, registerE
             <div className="absolute inset-0 bg-[var(--accent)]/10 opacity-0 group-hover/table:opacity-100 transition-opacity rounded-xl flex items-center justify-center pointer-events-none">
               <button 
                 onClick={(e) => { e.stopPropagation(); setActiveFocus(thought.id, 'table'); }}
-                className="pointer-events-auto bg-[var(--accent)] text-white p-2 rounded-lg shadow-xl transform scale-90 group-hover/table:scale-100 transition-all"
+                className="pointer-events-auto bg-[var(--accent)] text-white p-2 rounded-lg shadow-xl transform scale-90 group-hover/table:scale-100 transition-all hover:scale-110 active:scale-95"
               >
                 <Maximize2 className="w-4 h-4" />
               </button>
@@ -349,7 +355,7 @@ const ThoughtNode: React.FC<ThoughtNodeProps> = React.memo(({ thought, registerE
             <div className="absolute inset-0 bg-[var(--accent)]/10 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center pointer-events-none">
               <button 
                 onClick={(e) => { e.stopPropagation(); setActiveFocus(thought.id, 'embed'); }}
-                className="pointer-events-auto bg-[var(--accent)] text-white p-2 rounded-lg shadow-xl transform scale-90 group-hover:scale-100 transition-all"
+                className="pointer-events-auto bg-[var(--accent)] text-white p-2 rounded-lg shadow-xl transform scale-90 group-hover:scale-100 transition-all hover:scale-110 active:scale-95"
               >
                 <Maximize2 className="w-4 h-4" />
               </button>
@@ -379,8 +385,8 @@ const ThoughtNode: React.FC<ThoughtNodeProps> = React.memo(({ thought, registerE
       <div className={cn(
         "thought-bulb-content backdrop-blur-[20px] border p-6 rounded-[32px] flex flex-col gap-3 relative transition-all duration-300",
         isSelected 
-          ? "border-[var(--accent)]/50 shadow-[0_0_40px_var(--accent-glow)] bg-[var(--node-bg)]" 
-          : "border-[var(--glass-border)] shadow-[0_10px_40px_rgba(0,0,0,0.5)] bg-[var(--node-bg)]",
+          ? "border-[var(--accent)]/50 shadow-[0_0_40px_var(--accent-glow)] bg-[var(--node-bg)]/80" 
+          : "border-[var(--glass-border)] shadow-[0_10px_40px_rgba(0,0,0,0.5)] bg-[var(--node-bg)]/60",
         linkingSourceId === thought.id && "ring-2 ring-[var(--accent)] ring-offset-4 ring-offset-[var(--bg-page)]",
         linkingSourceId && linkingSourceId !== thought.id && "hover:scale-105 hover:border-[var(--accent)]/50 cursor-pointer"
       )}>
