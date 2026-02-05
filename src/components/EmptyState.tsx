@@ -32,10 +32,20 @@ const EmptyState: React.FC = () => {
     "THINK IN 3D",
     "FREE YOUR THOUGHTS",
     "DROP A THOUGHT",
-    "CREATE SOMETHING NEW"
+    "CREATE SOMETHING NEW",
+    "THE CANVAS IS YOURS",
+    "DESIGN THE FLOW",
+    "BUILD YOUR BRAIN",
+    "A SPACE FOR FOCUS",
+    "NEURAL DRAFT ACTIVE",
+    "START THE CONSTRUCT",
+    "YOUR MIND, SPATIALIZED",
+    "PLANT A SEED",
+    "VOID READY FOR INPUT",
+    "ZEN MODE INITIALIZED"
   ];
 
-  const randomPhrase = React.useMemo(() => PHRASES[Math.floor(Math.random() * PHRASES.length)], []);
+  const randomPhrase = React.useMemo(() => PHRASES[Math.floor(Math.random() * PHRASES.length)], [activeSpaceId, thoughts.length === 0]);
 
   const isMobile = typeof window !== 'undefined' ? window.innerWidth < 768 : false;
 
