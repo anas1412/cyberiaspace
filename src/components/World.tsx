@@ -7,7 +7,7 @@ interface WorldProps {
   physicsResults: {
     registerElement: (id: number, el: HTMLDivElement | null) => void;
     registerWorld: (el: HTMLDivElement | null) => void;
-    handleMouseDown: (id: number, e: React.MouseEvent | React.TouchEvent) => void;
+    handleMouseDown: (id: number, e: React.MouseEvent) => void;
     isDragging: (id: number) => boolean;
   };
 }

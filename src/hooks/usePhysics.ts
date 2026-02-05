@@ -163,12 +163,6 @@ export const usePhysics = (
     };
 
     const handleMouseMove = (e: MouseEvent) => handleMove(e.clientX, e.clientY);
-    const handleTouchMove = (e: TouchEvent) => {
-      if (dragRef.current) {
-        handleMove(e.touches[0].clientX, e.touches[0].clientY);
-        if (e.cancelable) e.preventDefault();
-      }
-    };
 
     const handleUp = (lastMouseX: number, lastMouseY: number) => {
       if (dragRef.current) {
@@ -232,22 +226,12 @@ export const usePhysics = (
     };
 
     const handleMouseUp = (e: MouseEvent) => handleUp(e.clientX, e.clientY);
-    const handleTouchEnd = (e: TouchEvent) => {
-      if (dragRef.current) {
-        const touch = e.changedTouches[0];
-        handleUp(touch.clientX, touch.clientY);
-      }
-    };
 
     window.addEventListener('mousemove', handleMouseMove);
     window.addEventListener('mouseup', handleMouseUp);
-    window.addEventListener('touchmove', handleTouchMove, { passive: false });
-    window.addEventListener('touchend', handleTouchEnd);
     return () => { 
       window.removeEventListener('mousemove', handleMouseMove); 
       window.removeEventListener('mouseup', handleMouseUp); 
-      window.removeEventListener('touchmove', handleTouchMove);
-      window.removeEventListener('touchend', handleTouchEnd);
     };
   }, [transform.scale, updateThought, activeSpace, calendarViewDate]);
 
@@ -293,8 +277,7 @@ export const usePhysics = (
 
        statuses.forEach((s, colIdx) => {
           const list = allThoughts.filter(t => t.status === s).sort((a, b) => a.order - b.order);
-          const isMobile = window.innerWidth < 768;
-          let currentY = isMobile ? 200 : 280;
+          let currentY = 280;
           list.forEach((t) => {
              const p = state.get(t.id); if (!p) return; if (dragRef.current?.initialPositions.has(t.id)) return;
              const colWidth = window.innerWidth / 4; 
@@ -574,16 +557,15 @@ export const usePhysics = (
   const registerWorld = useCallback((el: HTMLDivElement | null) => { worldRef.current = el; }, []);
   const registerGrid = useCallback((el: HTMLDivElement | null) => { gridRef.current = el; }, []);
 
-    const handleMouseDown = useCallback((id: number, e: React.MouseEvent | React.TouchEvent) => {
-      const isTouch = 'touches' in e;
-      if (!isTouch && (e as React.MouseEvent).button !== 0) return; 
+    const handleMouseDown = useCallback((id: number, e: React.MouseEvent) => {
+      if (e.button !== 0) return; 
       if ((e.target as HTMLElement).closest('.prevent-drag')) return;
       
-      const clientX = isTouch ? (e as React.TouchEvent).touches[0].clientX : (e as React.MouseEvent).clientX;
-      const clientY = isTouch ? (e as React.TouchEvent).touches[0].clientY : (e as React.MouseEvent).clientY;
+      const clientX = e.clientX;
+      const clientY = e.clientY;
   
-      const isCtrl = 'ctrlKey' in e ? (e as React.MouseEvent).ctrlKey : false;
-      const isMeta = 'metaKey' in e ? (e as React.MouseEvent).metaKey : false;
+      const isCtrl = e.ctrlKey;
+      const isMeta = e.metaKey;
   
       // Use latest state from store
       const store = useStore.getState();
@@ -618,6 +600,14 @@ export const usePhysics = (
       };
     }, []);
   
-    const isDragging = useCallback((id: number) => !!dragRef.current?.initialPositions.has(id), []);
-  return { registerElement, registerWorld, registerGrid, handleMouseDown, isDragging, sidebarHeight: sbHeight, kanbanHeight: kMaxHeight };
+  const isDragging = useCallback((id: number) => !!dragRef.current?.initialPositions.has(id), []);
+  return { 
+    registerElement, 
+    registerWorld, 
+    registerGrid, 
+    handleMouseDown: handleMouseDown as (id: number, e: React.MouseEvent) => void, 
+    isDragging, 
+    sidebarHeight: sbHeight, 
+    kanbanHeight: kMaxHeight 
+  };
 };

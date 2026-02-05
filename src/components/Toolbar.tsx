@@ -70,51 +70,18 @@ const Toolbar: React.FC = () => {
   const [isKeyModalOpen, setIsKeyModalOpen] = useState(false);
   const [tempKey, setTempKey] = useState('');
   const [isCapturing, setIsCapturing] = useState(false);
-  const [mobileMenuSpaceId, setMobileMenuSpaceId] = useState<string | null>(null);
-  
-  const longPressTimer = React.useRef<number | null>(null);
-  const touchStartTime = React.useRef<number>(0);
-
-  const isMobile = typeof window !== 'undefined' ? window.innerWidth < 768 : false;
-
-  const handleSpaceLongPress = (id: string) => {
-    if (!isMobile) return;
-    setMobileMenuSpaceId(id);
-    if (window.navigator.vibrate) window.navigator.vibrate(50);
-  };
-
-  const handleTouchStart = (id: string) => {
-    if (!isMobile) return;
-    touchStartTime.current = Date.now();
-    longPressTimer.current = window.setTimeout(() => handleSpaceLongPress(id), 600);
-  };
-
-  const handleTouchEnd = (id: string) => {
-    if (longPressTimer.current) {
-      clearTimeout(longPressTimer.current);
-      longPressTimer.current = null;
-    }
-    
-    // If it was a quick tap (less than 600ms) and not a long press
-    if (Date.now() - touchStartTime.current < 600 && !mobileMenuSpaceId) {
-      setActiveSpace(id);
-    }
-  };
 
   // Close menus on click elsewhere
   React.useEffect(() => {
     const handleGlobalClick = (e: MouseEvent) => {
       const target = e.target as HTMLElement;
-      if (mobileMenuSpaceId && !target.closest('.mobile-space-menu')) {
-        setMobileMenuSpaceId(null);
-      }
       if (isSystemMenuOpen && !target.closest('.system-tray-container')) {
         setIsSystemMenuOpen(false);
       }
     };
     window.addEventListener('mousedown', handleGlobalClick);
     return () => window.removeEventListener('mousedown', handleGlobalClick);
-  }, [mobileMenuSpaceId, isSystemMenuOpen]);
+  }, [isSystemMenuOpen]);
 
   const handleExport = () => {
     exportData();
@@ -350,45 +317,32 @@ const Toolbar: React.FC = () => {
           <h1 className="text-3xl font-bold tracking-tighter text-[var(--text-primary)]">CYBERIA</h1>
         </div>
 
-        {/* CENTER: Space Switcher - Primary focus on mobile top */}
+        {/* CENTER: Space Switcher */}
         <div className="md:absolute md:left-1/2 md:-translate-x-1/2 flex flex-col items-center gap-2 pointer-events-none">
-          <div className="flex items-center h-[44px] md:h-[48px] max-w-[90vw] md:max-w-full glass rounded-full shadow-2xl transition-all pointer-events-auto overflow-x-auto no-scrollbar px-2 border border-white/5">
+          <div className="flex items-center h-[48px] glass rounded-full shadow-2xl transition-all pointer-events-auto overflow-x-auto no-scrollbar px-2 border border-white/5">
             <div className="flex items-center gap-1 h-full min-w-max">
-              {!isMobile && (
-                <>
-                  <button 
-                    onClick={() => setIsSpaceMenuOpen(!isSpaceMenuOpen)}
-                    className={cn(
-                      "w-8 h-8 md:w-9 md:h-9 rounded-full transition-all flex-shrink-0 flex items-center justify-center border",
-                      isSpaceMenuOpen 
-                        ? "bg-[var(--accent)] text-white border-[var(--accent)] shadow-[0_0_15px_var(--accent-glow)]" 
-                        : "text-slate-600 hover:text-white hover:bg-white/10 border-white/10"
-                    )}
-                    title="Space Settings"
-                  >
-                    <Settings className={cn("w-3.5 h-3.5", isSpaceMenuOpen && "animate-spin-slow")} />
-                  </button>
-                  <div className="w-[1px] h-3 bg-white/10 mx-2"></div>
-                </>
-              )}
+              <button 
+                onClick={() => setIsSpaceMenuOpen(!isSpaceMenuOpen)}
+                className={cn(
+                  "w-9 h-9 rounded-full transition-all flex-shrink-0 flex items-center justify-center border",
+                  isSpaceMenuOpen 
+                    ? "bg-[var(--accent)] text-white border-[var(--accent)] shadow-[0_0_15px_var(--accent-glow)]" 
+                    : "text-slate-600 hover:text-white hover:bg-white/10 border-white/10"
+                )}
+                title="Space Settings"
+              >
+                <Settings className={cn("w-3.5 h-3.5", isSpaceMenuOpen && "animate-spin-slow")} />
+              </button>
+              <div className="w-[1px] h-3 bg-white/10 mx-2"></div>
+              
               {spaces.map((space) => {
                 const isActive = space.id === activeSpaceId;
                 return (
                   <button
                     key={space.id}
-                    onClick={() => {
-                      if (!isMobile) setActiveSpace(space.id);
-                    }}
-                    onPointerDown={() => isMobile && handleTouchStart(space.id)}
-                    onPointerUp={() => isMobile && handleTouchEnd(space.id)}
-                    onPointerLeave={() => {
-                      if (isMobile && longPressTimer.current) {
-                        clearTimeout(longPressTimer.current);
-                        longPressTimer.current = null;
-                      }
-                    }}
+                    onClick={() => setActiveSpace(space.id)}
                     className={cn(
-                      "px-4 md:px-5 h-8 md:h-9 rounded-full text-[9px] md:text-[10px] uppercase font-black tracking-widest flex-shrink-0 transition-all duration-500 flex items-center justify-center gap-2",
+                      "px-5 h-9 rounded-full text-[10px] uppercase font-black tracking-widest flex-shrink-0 transition-all duration-500 flex items-center justify-center gap-2",
                       isActive 
                         ? "bg-white/10 text-white border border-white/10 shadow-[0_0_20px_rgba(255,255,255,0.05)]" 
                         : "text-slate-500 hover:text-slate-300 hover:bg-white/[0.03] border border-transparent"
@@ -402,15 +356,15 @@ const Toolbar: React.FC = () => {
               <div className="w-[1px] h-3 bg-white/10 mx-2"></div>
               <button 
                 onClick={handleCreateSpace}
-                className="w-8 h-8 md:w-9 md:h-9 rounded-full text-slate-600 hover:text-white hover:bg-white/10 transition-all flex-shrink-0 flex items-center justify-center border border-white/10 border-dashed"
+                className="w-9 h-9 rounded-full text-slate-600 hover:text-white hover:bg-white/10 transition-all flex-shrink-0 flex items-center justify-center border border-white/10 border-dashed"
               >
                 <Plus className="w-3.5 h-3.5" />
               </button>
             </div>
           </div>
 
-          {/* WEB SPACE SETTINGS - Toggleable Under the Switcher */}
-          {!isMobile && activeSpace && isSpaceMenuOpen && (
+          {/* WEB SPACE SETTINGS */}
+          {activeSpace && isSpaceMenuOpen && (
             <div className="absolute top-full mt-2 flex items-center gap-1.5 transition-all animate-in fade-in slide-in-from-top-2 duration-300 pointer-events-auto">
               <div className="glass px-3 py-1.5 rounded-xl border border-white/10 flex items-center gap-1 shadow-2xl">
                 <button 
@@ -446,88 +400,6 @@ const Toolbar: React.FC = () => {
                   <span className="text-[8px] font-black uppercase tracking-widest">Delete</span>
                 </button>
               </div>
-            </div>
-          )}
-
-          {/* MOBILE SPACE MANAGEMENT MENU */}
-          {isMobile && mobileMenuSpaceId && (
-            <div className="mobile-space-menu glass p-1.5 rounded-2xl flex items-center gap-1 border border-white/10 shadow-2xl pointer-events-auto animate-in fade-in zoom-in duration-200">
-              <button 
-                onClick={() => { 
-                  const s = spaces.find(sp => sp.id === mobileMenuSpaceId);
-                  if (s) {
-                    openModal({
-                      title: 'Rename Space',
-                      type: 'rename',
-                      inputValue: s.name,
-                      confirmText: 'Rename',
-                      onConfirm: (newName) => {
-                        if (newName && newName.trim()) {
-                          updateSpace(s.id, { name: (newName as string).substring(0, 15) });
-                        }
-                      }
-                    });
-                  }
-                  setMobileMenuSpaceId(null);
-                }} 
-                className="p-2.5 bg-white/5 hover:bg-white/10 rounded-xl text-white transition-all"
-              >
-                <Edit3 className="w-4 h-4" />
-              </button>
-              <button 
-                onClick={() => {
-                  const currentIndex = spaces.findIndex(s => s.id === mobileMenuSpaceId);
-                  if (currentIndex > 0) {
-                    const newSpaces = [...spaces];
-                    [newSpaces[currentIndex], newSpaces[currentIndex - 1]] = [newSpaces[currentIndex - 1], newSpaces[currentIndex]];
-                    reorderSpaces(newSpaces);
-                  }
-                }} 
-                className="p-2.5 bg-white/5 hover:bg-white/10 rounded-xl text-white transition-all"
-              >
-                <ChevronLeft className="w-4 h-4" />
-              </button>
-              <button 
-                onClick={() => {
-                  const currentIndex = spaces.findIndex(s => s.id === mobileMenuSpaceId);
-                  if (currentIndex < spaces.length - 1) {
-                    const newSpaces = [...spaces];
-                    [newSpaces[currentIndex], newSpaces[currentIndex + 1]] = [newSpaces[currentIndex + 1], newSpaces[currentIndex]];
-                    reorderSpaces(newSpaces);
-                  }
-                }} 
-                className="p-2.5 bg-white/5 hover:bg-white/10 rounded-xl text-white transition-all"
-              >
-                <ChevronRight className="w-4 h-4" />
-              </button>
-              <div className="w-[1px] h-4 bg-white/10 mx-1"></div>
-              <button 
-                onClick={() => {
-                  const s = spaces.find(sp => sp.id === mobileMenuSpaceId);
-                  if (s) {
-                    if (spaces.length <= LIMITS.MIN_SPACES) {
-                      openModal({
-                        title: 'Cannot Delete',
-                        description: `You must have at least ${LIMITS.MIN_SPACES} active space.`,
-                        type: 'alert',
-                        confirmText: 'Okay'
-                      });
-                    } else {
-                      openModal({
-                        title: `Delete "${s.name}"?`,
-                        description: 'This will delete all thoughts in this space.',
-                        type: 'delete_space',
-                        confirmText: 'Delete',
-                        onConfirm: () => deleteSpace(s.id)
-                      });
-                    }
-                  }
-                  setMobileMenuSpaceId(null);
-                }}
-                className="p-2.5 bg-red-500/20 hover:bg-red-500/40 rounded-xl text-red-400 transition-all"
-              >
-                <Trash2 className="w-4 h-4" />
-              </button>
             </div>
           )}
         </div>
@@ -570,19 +442,13 @@ const Toolbar: React.FC = () => {
       </div>
 
       {/* NEW THOUGHT FAB */}
-      <div className={cn(
-        "fixed bottom-14 md:bottom-10 left-1/2 -translate-x-1/2 z-[10000] pointer-events-none flex flex-col items-center gap-4 transition-all duration-300",
-        (isMobile && (isInspectorOpen || isChatOpen)) ? "opacity-0 translate-y-10" : "opacity-100 translate-y-0"
-      )}>
+      <div className="fixed bottom-10 left-1/2 -translate-x-1/2 z-[10000] pointer-events-none flex flex-col items-center gap-4 transition-all duration-300">
         <button 
           onClick={handleAddThought}
-          className={cn(
-            "group relative flex items-center justify-center w-12 h-12 md:w-16 md:h-16 bg-[var(--bg-gradient-to)]/40 backdrop-blur-2xl text-white rounded-full border border-white/10 shadow-[0_0_50px_var(--accent-glow)] transition-all hover:scale-110 active:scale-95 hover:border-[var(--accent)]/40",
-            (isMobile && (isInspectorOpen || isChatOpen)) ? "pointer-events-none" : "pointer-events-auto"
-          )}
+          className="group relative flex items-center justify-center w-16 h-16 bg-[var(--bg-gradient-to)]/40 backdrop-blur-2xl text-white rounded-full border border-white/10 shadow-[0_0_50px_var(--accent-glow)] transition-all hover:scale-110 active:scale-95 hover:border-[var(--accent)]/40 pointer-events-auto"
         >
           <div className="absolute inset-0 rounded-full bg-[var(--accent)]/5 opacity-0 group-hover:opacity-100 transition-opacity blur-xl" />
-          <Plus className="w-5 h-5 md:w-8 md:h-8 text-slate-400 group-hover:text-white transition-all group-hover:rotate-90 relative z-10" />
+          <Plus className="w-8 h-8 text-slate-400 group-hover:text-white transition-all group-hover:rotate-90 relative z-10" />
         </button>
       </div>
 
@@ -768,8 +634,8 @@ const Toolbar: React.FC = () => {
             </button>
           </div>
 
-          {/* Zoom Controls (Spatial Only & Desktop Only) */}
-          {activeSpace?.mode === 'spatial' && !isMobile && (
+          {/* Zoom Controls (Spatial Only) */}
+          {activeSpace?.mode === 'spatial' && (
             <>
               <div className="h-3 w-[1px] bg-white/10 mx-0.5"></div>
               <div className="flex items-center gap-1">
@@ -795,20 +661,6 @@ const Toolbar: React.FC = () => {
                   <RotateCcw className="w-4 h-4" />
                 </button>
               </div>
-            </>
-          )}
-          
-          {/* Mobile Reset Only */}
-          {activeSpace?.mode === 'spatial' && isMobile && (
-            <>
-              <div className="h-3 w-[1px] bg-white/10 mx-0.5"></div>
-              <button 
-                onClick={resetTransform}
-                className="p-1.5 hover:bg-white/10 text-slate-400 hover:text-white transition-colors rounded-lg"
-                title="Reset View"
-              >
-                <RotateCcw className="w-3.5 h-3.5" />
-              </button>
             </>
           )}
         </div>

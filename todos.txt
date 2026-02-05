@@ -1,14 +1,13 @@
-- make a feature to make thoughts bigger in size (maybe a slider inside thought editor)
-- add a feature to select thoughts to batch (edit, stack them together, unstack them, remove them)
+
 
 - i want the stack to have a name not all thoughts have same tag name
 
 
 - add a vercel api route to enable oracle external api for built-in vercel key / add limiters
 
-- there is a smooth animation when changing to kanban and to calendar, but its not smooth when changing back to spatial why?
 
-- mae space settings udner the space switcher
+- the scrollbar of thought editor is making me uncomfortable its sticking out
+
 
 i changed variables in constants, i want oracle to have 2 modes one thats uses the user's key and one uses external key (my key) but the catch is, when the user puts his own key it uses the multimodal models and can select from them, if no key provded it shows the user that uses the free, and and disable the vision function in chat and can only select text models from oracle settings, i also want u to make a vercel api route for this api  external function since we cant store my own api key  
 

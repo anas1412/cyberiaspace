@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import React, { useEffect, useRef } from 'react';
 import { Analytics } from '@vercel/analytics/react';
 import { SpeedInsights } from '@vercel/speed-insights/react';
 import { useStore } from './store/useStore';
@@ -19,6 +19,7 @@ import PaintFocusEditor from './components/PaintFocusEditor';
 import TasksFocusEditor from './components/TasksFocusEditor';                                                                            
 import EmbedFocusEditor from './components/EmbedFocusEditor';
 import ChatOverlay from './components/ChatOverlay';
+import MobileNotSupported from './components/MobileNotSupported';
 
 function App() {
   const init = useStore((state) => state.init);
@@ -33,6 +34,14 @@ function App() {
   const { openModal } = useModalStore();
   const mouseWorldPos = useRef({ x: 0, y: 0 });
   const mouseScreenPos = useRef({ x: 0, y: 0 });
+
+  const [isMobile, setIsMobile] = React.useState(typeof window !== 'undefined' ? window.innerWidth < 1024 : false);
+
+  useEffect(() => {
+    const handleResize = () => setIsMobile(window.innerWidth < 1024);
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   useEffect(() => {
     const handleMouseMove = (e: MouseEvent) => {
@@ -253,28 +262,34 @@ function App() {
 
   return (
     <div className="w-full h-full relative overflow-hidden bg-black">
-      {/* Deep Space Background Layers */}
-      <div className="stars-layer stars-1" />
-      <div className="stars-layer stars-2" />
-      <div className="stars-layer stars-twinkle" />
-      <div className="nebula-cloud" />
-      <div className="grain" />
-      
-      <Viewport />
-      <EmptyState />
-      <KanbanOverlay />
-      <CalendarOverlay />
-      <Toolbar />
-      <Inspector />
-      <MultiSelectionMenu />
-      <ChatOverlay />
-      <Modal />
-      <Lightbox />
-      <TextFocusEditor />
-      <TableFocusEditor />
-      <PaintFocusEditor />
-      <TasksFocusEditor />
-      <EmbedFocusEditor />
+      {isMobile ? (
+        <MobileNotSupported />
+      ) : (
+        <>
+          {/* Deep Space Background Layers */}
+          <div className="stars-layer stars-1" />
+          <div className="stars-layer stars-2" />
+          <div className="stars-layer stars-twinkle" />
+          <div className="nebula-cloud" />
+          <div className="grain" />
+          
+          <Viewport />
+          <EmptyState />
+          <KanbanOverlay />
+          <CalendarOverlay />
+          <Toolbar />
+          <Inspector />
+          <MultiSelectionMenu />
+          <ChatOverlay />
+          <Modal />
+          <Lightbox />
+          <TextFocusEditor />
+          <TableFocusEditor />
+          <PaintFocusEditor />
+          <TasksFocusEditor />
+          <EmbedFocusEditor />
+        </>
+      )}
       <Analytics />
       <SpeedInsights />
     </div>
