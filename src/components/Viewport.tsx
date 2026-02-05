@@ -5,6 +5,7 @@ import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 import World from './World';
 import { usePhysics } from '../hooks/usePhysics';
+import { motion, AnimatePresence } from 'framer-motion';
 
 function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -28,6 +29,7 @@ const Viewport: React.FC = () => {
   const updateSpace = useStore((state) => state.updateSpace);
   const transform = useStore((state) => state.transform);
   const setTransform = useStore((state) => state.setTransform);
+  const isSpaceLoading = useStore((state) => state.isSpaceLoading);
   
   const { openModal } = useModalStore();
   const [isGrabbing, setIsGrabbing] = useState(false);
@@ -44,32 +46,7 @@ const Viewport: React.FC = () => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const saveTimeoutRef = useRef<number | null>(null);
 
-  const { registerElement, handleMouseDown, isDragging, kanbanHeight } = usePhysics(canvasRef, transform);
-
-  // Load transform when space changes
-  useEffect(() => {
-    if (activeSpace) {
-      const isMobile = window.innerWidth < 768;
-      
-      if (isMobile && activeSpace.mode !== 'spatial') {
-        updateSpace(activeSpaceId!, { mode: 'spatial' });
-        setTransform({ x: 0, y: 0, scale: 1 });
-        return;
-      }
-
-      if (activeSpace.mode === 'spatial') {
-        // eslint-disable-next-line react-hooks/set-state-in-effect
-        setTransform({
-          x: activeSpace.transformX ?? 0,
-          y: activeSpace.transformY ?? 0,
-          scale: activeSpace.transformScale ?? 1
-        });
-      } else {
-        // Reset for non-spatial modes to ensure consistency
-        setTransform({ x: 0, y: 0, scale: 1 });
-      }
-    }
-  }, [activeSpaceId, activeSpace?.mode]);
+  const { registerElement, registerWorld, registerGrid, handleMouseDown, isDragging, kanbanHeight } = usePhysics(canvasRef, transform);
 
   // Save transform when it changes (Debounced)
   useEffect(() => {
@@ -411,9 +388,9 @@ const Viewport: React.FC = () => {
 
       {/* Moving Background Grid */}
       <div 
+        ref={registerGrid}
         className="absolute inset-0 dot-grid pointer-events-none opacity-[0.03]"
         style={{ 
-          transform: `translate(${transform.x}px, ${transform.y}px) scale(${transform.scale})`,
           width: '5000px',
           height: '5000px',
           left: '-2500px',
@@ -424,8 +401,48 @@ const Viewport: React.FC = () => {
       <World 
         transform={transform} 
         canvasRef={canvasRef}
-        physicsResults={{ registerElement, handleMouseDown, isDragging }}
+        physicsResults={{ registerElement, registerWorld, handleMouseDown, isDragging }}
       />
+
+      {/* Loading Overlay */}
+      <AnimatePresence>
+        {isSpaceLoading && (
+          <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[10005] bg-[#020408]/60 backdrop-blur-2xl flex flex-col items-center justify-center pointer-events-auto"
+          >
+            <div className="relative">
+              {/* Pulsing Glow */}
+              <motion.div 
+                animate={{ scale: [1, 1.2, 1], opacity: [0.3, 0.6, 0.3] }}
+                transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
+                className="absolute inset-0 bg-indigo-500/20 blur-[60px] rounded-full"
+              />
+              
+              <div className="flex flex-col items-center gap-6 relative z-10">
+                {/* Spinner */}
+                <div className="w-16 h-16 border-2 border-indigo-500/20 border-t-indigo-500 rounded-full animate-spin" />
+                
+                <div className="text-center">
+                  <h2 className="text-white/80 text-[10px] font-black uppercase tracking-[0.5em] mb-2">Accessing Neural Layer</h2>
+                  <div className="flex gap-1 justify-center">
+                    {[0, 1, 2].map((i) => (
+                      <motion.div
+                        key={i}
+                        animate={{ opacity: [0.2, 1, 0.2] }}
+                        transition={{ duration: 1, repeat: Infinity, delay: i * 0.2 }}
+                        className="w-1 h-1 bg-indigo-400 rounded-full"
+                      />
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 };

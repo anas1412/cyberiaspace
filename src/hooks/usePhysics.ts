@@ -31,12 +31,18 @@ export const usePhysics = (
   
     const physicsState = useRef<Map<number, { x: number; y: number; vx: number; vy: number; scale: number }>>(new Map());
   const elements = useRef<Map<number, HTMLDivElement>>(new Map());
+  const worldRef = useRef<HTMLDivElement | null>(null);
+  const gridRef = useRef<HTMLDivElement | null>(null);
   const mousePosRef = useRef({ x: 0, y: 0 });
   const sbHeight = useRef(0);
   const kMaxHeight = useRef(0);
   const requestRef = useRef<number | null>(null);
   const prevModeRef = useRef<string | null>(null);
+  const prevSpaceIdRef = useRef<string | null>(null);
+  const lastLoopSpaceId = useRef<string | null>(null);
+  const snapNextFrame = useRef(false);
   const prevTransformRef = useRef(transform);
+  const visualTransformRef = useRef(transform);
   const isReturningHome = useRef(false);
   
   const thoughtMap = useRef<Map<number, Thought>>(new Map());
@@ -60,15 +66,19 @@ export const usePhysics = (
 
   useEffect(() => {
     thoughtMap.current.clear();
+    const mode = activeSpace?.mode || 'spatial';
+    
     thoughts.forEach((t) => {
       thoughtMap.current.set(t.id, { ...t });
       if (!physicsState.current.has(t.id)) {
+        // If we are in Kanban or Calendar and just switched space, 
+        // we might want a hard snap. We initialize with a flag or just use t.x/y.
         physicsState.current.set(t.id, {
           x: t.x,
           y: t.y,
           vx: t.vx || 0,
           vy: t.vy || 0,
-          scale: 1
+          scale: mode === 'spatial' ? 1 : 0.1 // Small scale start for non-spatial
         });
       }
     });
@@ -86,19 +96,24 @@ export const usePhysics = (
     const currentMode = activeSpace?.mode || 'spatial';
     const currentSpaceId = activeSpaceId;
 
+    // 1. Handle Space Switch (Sync refs only, snap happens in loop)
+    if (currentSpaceId !== prevSpaceIdRef.current) {
+        prevSpaceIdRef.current = currentSpaceId || null;
+        prevModeRef.current = currentMode;
+        prevTransformRef.current = { ...transform };
+        return; 
+    }
+
+    // 2. Handle Mode Switch within same space (Smooth Transition)
     if (currentMode === 'spatial' && prevModeRef.current !== 'spatial' && prevModeRef.current !== null) {
       isReturningHome.current = true;
       
-      // Coordinate Space Shift Compensation:
-      // When switching to spatial, the Viewport transform jumps to saved values.
-      // We must adjust the physics p.x/p.y so the screen position stays identical for the first frame.
       const oldT = prevTransformRef.current;
-      const newT = transform; // This is the new transform from Viewport useEffect
+      const newT = transform; 
       
       physicsState.current.forEach((p) => {
           const oldScreenX = p.x * oldT.scale + oldT.x;
           const oldScreenY = p.y * oldT.scale + oldT.y;
-          // New world pos = (screen pos - new transform) / new scale
           p.x = (oldScreenX - newT.x) / newT.scale;
           p.y = (oldScreenY - newT.y) / newT.scale;
           p.scale = (p.scale * oldT.scale) / newT.scale;
@@ -108,7 +123,7 @@ export const usePhysics = (
     }
     
     prevModeRef.current = currentMode;
-    prevTransformRef.current = transform;
+    prevTransformRef.current = { ...transform };
 
     return () => {
       // Save all positions when leaving spatial mode
@@ -241,6 +256,31 @@ export const usePhysics = (
     const ids = Array.from(state.keys());
     const mode = activeSpace?.mode || 'spatial';
     const physicsEnabled = activeSpace?.physics ?? true;
+    const currentSpaceId = activeSpaceId || null;
+
+    // --- CRITICAL: Frame-Accurate Space Snapping ---
+    if (currentSpaceId !== lastLoopSpaceId.current) {
+        lastLoopSpaceId.current = currentSpaceId;
+        visualTransformRef.current = { ...transform }; // Snap camera
+        isReturningHome.current = false;
+        snapNextFrame.current = true; // Signal thoughts to snap next time they appear
+    }
+
+    // Smooth Viewport Transition (Visual Transform)
+    const lerpFactor = 0.15;
+    visualTransformRef.current.x += (transform.x - visualTransformRef.current.x) * lerpFactor;
+    visualTransformRef.current.y += (transform.y - visualTransformRef.current.y) * lerpFactor;
+    visualTransformRef.current.scale += (transform.scale - visualTransformRef.current.scale) * lerpFactor;
+
+    const vT = visualTransformRef.current;
+
+    // Apply smooth transform to World and Grid directly for zero-jank
+    if (worldRef.current) {
+        worldRef.current.style.transform = `translate(${vT.x}px, ${vT.y}px) scale(${vT.scale})`;
+    }
+    if (gridRef.current) {
+        gridRef.current.style.transform = `translate(${vT.x}px, ${vT.y}px) scale(${vT.scale})`;
+    }
 
     const sbContent = document.getElementById('cal-sidebar-content');
     const sidebarEl = document.querySelector('.cal-sidebar');
@@ -260,11 +300,18 @@ export const usePhysics = (
              const colWidth = window.innerWidth / 4; 
              const targetX = (colWidth * colIdx) + (colWidth / 2);
              const el = elements.current.get(t.id); const height = el?.offsetHeight || 120; const targetY = currentY + height / 2; currentY += height + 24;
-             p.x += (targetX - p.x) * 0.15; p.y += (targetY - p.y) * 0.15; p.scale += (1 - p.scale) * 0.1; p.vx = 0; p.vy = 0;
+             
+             if (snapNextFrame.current) {
+                p.x = targetX; p.y = targetY; p.scale = 1;
+             } else {
+                p.x += (targetX - p.x) * 0.15; p.y += (targetY - p.y) * 0.15; p.scale += (1 - p.scale) * 0.1;
+             }
+             p.vx = 0; p.vy = 0;
           });
           if (currentY > maxColHeight) maxColHeight = currentY;
        });
        kMaxHeight.current = maxColHeight;
+       if (allThoughts.length > 0) snapNextFrame.current = false;
 
     } else if (mode === 'calendar') {
       const year = calendarViewDate.getFullYear(); const month = calendarViewDate.getMonth(); const firstDay = new Date(year, month, 1).getDay() || 7;
@@ -281,7 +328,13 @@ export const usePhysics = (
             target.x = mainLeft + col * cellWidth + cellWidth / 2; target.y = topPadding + row * cellHeight + cellHeight / 2;
             target.scale = Math.min((cellWidth - 20) / 280, 0.45); const offset = (t.id % 5) * 5; target.x += offset; target.y += offset;
         } else { target.x = window.innerWidth / 2; target.y = window.innerHeight + 500; target.scale = 0; }
-        p.x += (target.x - p.x) * 0.15; p.y += (target.y - p.y) * 0.15; p.scale += (target.scale - p.scale) * 0.1; p.vx = 0; p.vy = 0;
+        
+        if (snapNextFrame.current) {
+            p.x = target.x; p.y = target.y; p.scale = target.scale;
+        } else {
+            p.x += (target.x - p.x) * 0.15; p.y += (target.y - p.y) * 0.15; p.scale += (target.scale - p.scale) * 0.1;
+        }
+        p.vx = 0; p.vy = 0;
       });
       const contentRect = sbContent?.getBoundingClientRect();
       let currentSB_Y = contentRect ? contentRect.top + 20 : 200; 
@@ -291,10 +344,17 @@ export const usePhysics = (
         const el = elements.current.get(t.id); const height = (el?.offsetHeight || 120) * 0.6;
         const target = { x: padding + sidebarWidth / 2, y: currentSB_Y - scrollTop + height / 2, scale: 0.6 };
         currentSB_Y += height + 20;
-        stateP.x += (target.x - stateP.x) * 0.15; stateP.y += (target.y - stateP.y) * 0.15; stateP.scale += (target.scale - stateP.scale) * 0.1; stateP.vx = 0; stateP.vy = 0;
+        
+        if (snapNextFrame.current) {
+            stateP.x = target.x; stateP.y = target.y; stateP.scale = target.scale;
+        } else {
+            stateP.x += (target.x - stateP.x) * 0.15; stateP.y += (target.y - stateP.y) * 0.15; stateP.scale += (target.scale - stateP.scale) * 0.1;
+        }
+        stateP.vx = 0; stateP.vy = 0;
       });
       sbHeight.current = currentSB_Y - (contentRect?.top || 0); 
       const spacer = document.getElementById('cal-sidebar-spacer'); if (spacer) spacer.style.height = `${sbHeight.current + 40}px`;
+      if (allThoughts.length > 0) snapNextFrame.current = false;
     } else if (mode === 'spatial' && isReturningHome.current) {
       let allSettled = true;
       ids.forEach((id) => {
@@ -329,6 +389,14 @@ export const usePhysics = (
       ids.forEach((id) => {
         if (dragRef.current?.initialPositions.has(id)) return; 
         const p = state.get(id)!; const t = thoughtMap.current.get(id); if (!t) return;
+
+        if (snapNextFrame.current) {
+            p.x = t.x; p.y = t.y; p.vx = 0; p.vy = 0;
+            const prioLevel = PRIORITY_WEIGHT[t.priority] || 0; 
+            p.scale = (1 + prioLevel * 0.05) * (t.size || 1);
+            return;
+        }
+
         const prioLevel = PRIORITY_WEIGHT[t.priority] || 0; 
         const gravityMultiplier = 1 + prioLevel * 0.5; 
         const targetScale = (1 + prioLevel * 0.05) * (t.size || 1);
@@ -387,12 +455,13 @@ export const usePhysics = (
         p.y += p.vy; 
         p.scale += (targetScale - p.scale) * 0.1;
       });
+      if (ids.length > 0) snapNextFrame.current = false;
     }
 
     const ctx = canvasRef?.current?.getContext('2d');
     if (ctx && canvasRef.current) {
       ctx.clearRect(0, 0, canvasRef.current.width, canvasRef.current.height); ctx.lineWidth = 1; 
-      const { x: tx, y: ty, scale: s } = transform;
+      const { x: tx, y: ty, scale: s } = vT;
       
       const computedStyle = getComputedStyle(document.body);
       const accentColor = computedStyle.getPropertyValue('--accent').trim() || '#6366f1';
@@ -440,7 +509,7 @@ export const usePhysics = (
         const t = thoughtMap.current.get(id);
         const prioLevel = t ? (PRIORITY_WEIGHT[t.priority] || 0) : 0;
         
-        const { y: ty, scale: s } = transform;
+        const { y: ty, scale: s } = vT;
         const nodeScreenY = p.y * s + ty;
         const nodeHeightOnScreen = (offsetHeight * p.scale) * s;
         const cardTop = nodeScreenY - nodeHeightOnScreen / 2;
@@ -454,7 +523,7 @@ export const usePhysics = (
             const cRect = contentEl?.getBoundingClientRect();
             
             if (cRect) {
-                const nodeHeight = (offsetHeight * p.scale) * transform.scale;
+                const nodeHeight = (offsetHeight * p.scale) * vT.scale;
                 // Calculate percentage to hide from top and bottom
                 const topDiff = cRect.top - cardTop;
                 const bottomDiff = cardBottom - cRect.bottom;
@@ -502,6 +571,9 @@ export const usePhysics = (
   }, [loop]);
 
   const registerElement = useCallback((id: number, el: HTMLDivElement | null) => { if (el) elements.current.set(id, el); else elements.current.delete(id); }, []);
+  const registerWorld = useCallback((el: HTMLDivElement | null) => { worldRef.current = el; }, []);
+  const registerGrid = useCallback((el: HTMLDivElement | null) => { gridRef.current = el; }, []);
+
     const handleMouseDown = useCallback((id: number, e: React.MouseEvent | React.TouchEvent) => {
       const isTouch = 'touches' in e;
       if (!isTouch && (e as React.MouseEvent).button !== 0) return; 
@@ -547,5 +619,5 @@ export const usePhysics = (
     }, []);
   
     const isDragging = useCallback((id: number) => !!dragRef.current?.initialPositions.has(id), []);
-  return { registerElement, handleMouseDown, isDragging, sidebarHeight: sbHeight, kanbanHeight: kMaxHeight };
+  return { registerElement, registerWorld, registerGrid, handleMouseDown, isDragging, sidebarHeight: sbHeight, kanbanHeight: kMaxHeight };
 };

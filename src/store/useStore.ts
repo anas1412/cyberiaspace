@@ -15,6 +15,7 @@ interface CyberiaState {
   calendarViewDate: Date;
   linkingSourceId: number | null;
   theme: 'cyberia' | 'sakura' | 'neon';
+  isSpaceLoading: boolean;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   deferredPrompt: any;
 
@@ -106,6 +107,7 @@ export const useStore = create<CyberiaState>((set, get) => ({
   lightboxImage: null,
   linkingSourceId: null,
   theme: (localStorage.getItem('cyberia-theme') as 'cyberia' | 'sakura' | 'neon') || 'cyberia',
+  isSpaceLoading: false,
   deferredPrompt: null,
   
   transform: { x: 0, y: 0, scale: 1 },
@@ -313,14 +315,27 @@ export const useStore = create<CyberiaState>((set, get) => ({
     const { activeSpaceId } = get();
     if (!activeSpaceId) return;
     const thoughts = await db.thoughts.where('spaceId').equals(activeSpaceId).toArray();
-    set({ thoughts });
+    set({ thoughts, isSpaceLoading: false });
     if (get().history.length === 0) {
       set({ history: [JSON.parse(JSON.stringify(thoughts))], historyIndex: 0 });
     }
   },
 
   setActiveSpace: (id) => {
-    set({ activeSpaceId: id, history: [], historyIndex: -1 });
+    const space = get().spaces.find(s => s.id === id);
+    const updates: any = { activeSpaceId: id, thoughts: [], isSpaceLoading: true, history: [], historyIndex: -1 };
+    
+    if (space && space.mode === 'spatial') {
+      updates.transform = {
+        x: space.transformX ?? 0,
+        y: space.transformY ?? 0,
+        scale: space.transformScale ?? 1
+      };
+    } else {
+      updates.transform = { x: 0, y: 0, scale: 1 };
+    }
+
+    set(updates);
     get().refreshThoughts();
   },
 

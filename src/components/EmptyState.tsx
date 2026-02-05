@@ -19,13 +19,27 @@ const ChalkArrow = ({ d, className }: { d: string, className?: string }) => (
 
 const EmptyState: React.FC = () => {
   const thoughts = useStore((state) => state.thoughts);
+  const isSpaceLoading = useStore((state) => state.isSpaceLoading);
   const activeSpaceId = useStore((state) => state.activeSpaceId);
   const spaces = useStore((state) => state.spaces);
   const activeSpace = spaces.find((s) => s.id === activeSpaceId);
 
+  const PHRASES = [
+    "WHERE IDEAS BEGIN",
+    "READY WHEN YOU ARE",
+    "MAP YOUR THOUGHTS",
+    "ORGANIZE YOUR WORLD",
+    "THINK IN 3D",
+    "FREE YOUR THOUGHTS",
+    "DROP A THOUGHT",
+    "CREATE SOMETHING NEW"
+  ];
+
+  const randomPhrase = React.useMemo(() => PHRASES[Math.floor(Math.random() * PHRASES.length)], []);
+
   const isMobile = typeof window !== 'undefined' ? window.innerWidth < 768 : false;
 
-  if (thoughts.length > 0 || activeSpace?.mode !== 'spatial') return null;
+  if (isSpaceLoading || thoughts.length > 0 || activeSpace?.mode !== 'spatial') return null;
 
   return (
     <div id="empty-guide" className="fixed inset-0 z-[5] pointer-events-none flex items-center justify-center">
@@ -61,7 +75,7 @@ const EmptyState: React.FC = () => {
           animate={{ opacity: 0.15, y: 0 }}
           className="font-['CyberiaBlueprint',_cursive,_sans-serif] text-white text-[32px] md:text-[48px] tracking-[4px] md:tracking-[8px] font-bold"
         >
-          OPEN YOUR MIND
+          {randomPhrase}
         </motion.h2>
         
         {/* Paste Hint - Hidden on Mobile */}
