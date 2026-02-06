@@ -56,7 +56,9 @@ const ThoughtNode: React.FC<ThoughtNodeProps> = React.memo(({ thought, registerE
   const linkingSourceId = useStore((state) => state.linkingSourceId);
   const setLinkingSourceId = useStore((state) => state.setLinkingSourceId);
   const updateThought = useStore((state) => state.updateThought);
-  const thoughts = useStore((state) => state.thoughts);
+  const stacks = useStore((state) => state.stacks);
+  
+  const stack = useMemo(() => stacks.find(s => s.id === thought.stackId), [stacks, thought.stackId]);
   
   const [startPos, setStartPos] = useState({ x: 0, y: 0 });
   
@@ -97,22 +99,11 @@ const ThoughtNode: React.FC<ThoughtNodeProps> = React.memo(({ thought, registerE
     }
 
     if (linkingSourceId && linkingSourceId !== thought.id) {
-      // Complete the link
-      const sourceThought = thoughts.find(t => t.id === linkingSourceId);
-      if (sourceThought) {
-        // Check if they already share a stack tag
-        const existingStackTag = sourceThought.tags.find(tag => tag.startsWith('stack-')) || 
-                               thought.tags.find(tag => tag.startsWith('stack-'));
-        
-        const stackTag = existingStackTag || `stack-${Math.random().toString(36).substr(2, 6)}`;
-        
-        if (!sourceThought.tags.includes(stackTag)) {
-          updateThought(sourceThought.id, { tags: [...sourceThought.tags, stackTag] });
-        }
-        if (!thought.tags.includes(stackTag)) {
-          updateThought(thought.id, { tags: [...thought.tags, stackTag] });
-        }
-      }
+      // Complete the link using the store's bulk link logic (merges stacks)
+      const store = useStore.getState();
+      store.setSelectedThoughtIds([linkingSourceId, thought.id]);
+      store.linkSelectedThoughts();
+      store.setSelectedThoughtIds([thought.id]); // Keep current selected
       setLinkingSourceId(null);
       return;
     }
@@ -428,13 +419,21 @@ const ThoughtNode: React.FC<ThoughtNodeProps> = React.memo(({ thought, registerE
           <p className="text-[10px] text-[var(--text-dimmed)] italic pr-10">{thought.description}</p>
         )}
         {renderContent()}
-        <div className="flex flex-wrap gap-1.5 mt-1">
-          {thought.tags.map((tag, i) => (
-            <span key={i} className="tag-pill text-[9px] font-700 px-2.5 py-1 rounded-lg border border-white/10 flex items-center gap-1.5 whitespace-nowrap" style={getTagStyle(tag)}>
-              {tag}
-            </span>
-          ))}
-        </div>
+        
+        {stack && (
+          <div className="flex items-center gap-2 mt-1">
+            <div 
+              className="px-2 py-0.5 rounded-md text-[8px] font-black uppercase tracking-wider border border-white/10"
+              style={{ 
+                backgroundColor: stack.color.replace('1)', '0.15)'), 
+                color: stack.color,
+                borderColor: stack.color.replace('1)', '0.3)')
+              }}
+            >
+              {stack.name}
+            </div>
+          </div>
+        )}
 
         {/* Bottom Right Link Button */}
         <button 

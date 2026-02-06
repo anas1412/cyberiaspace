@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { db, type Space, type Thought } from '../db';
+import { db, type Space, type Thought, type Stack } from '../db';
 import { aiService } from '../services/ai';
 import { DEFAULT_MODEL } from '../constants';
 
@@ -7,6 +7,7 @@ interface CyberiaState {
   activeSpaceId: string | null;
   spaces: Space[];
   thoughts: Thought[];
+  stacks: Stack[];
   selectedThoughtId: number | null;
   selectedThoughtIds: number[];
   isInspectorOpen: boolean;
@@ -65,6 +66,11 @@ interface CyberiaState {
   setInspectorOpen: (open: boolean) => void;
   setActiveFocus: (id: number | null, type: 'text' | 'table' | 'paint' | 'tasks' | 'embed' | null) => void;
   setLinkingSourceId: (id: number | null) => void;
+
+  // Stack Actions
+  createStack: (name: string, thoughtId: number) => Promise<void>;
+  updateStack: (id: string, updates: Partial<Stack>) => Promise<void>;
+  deleteStack: (id: string) => Promise<void>;
   
   // Data Lifecycle
   exportData: () => Promise<void>;
@@ -93,12 +99,14 @@ interface CyberiaState {
   // Refresh data
   refreshThoughts: () => Promise<void>;
   refreshSpaces: () => Promise<void>;
+  refreshStacks: () => Promise<void>;
 }
 
 export const useStore = create<CyberiaState>((set, get) => ({
   activeSpaceId: null,
   spaces: [],
   thoughts: [],
+  stacks: [],
   selectedThoughtId: null,
   selectedThoughtIds: [],
   isInspectorOpen: false,
@@ -276,18 +284,16 @@ export const useStore = create<CyberiaState>((set, get) => ({
       // Seed Onboarding Thoughts
       const centerX = window.innerWidth / 2;
       const centerY = window.innerHeight / 2;
-      const stackTag = `stack-${Math.random().toString(36).substr(2, 6)}`;
 
-      await get().addThought({
+      const welcomeId = await get().addThought({
         text: 'Welcome to Cyberia',
         content: 'This is a **spatial workspace**. Ideas are physical objects here. \n\nPress **[Space]** to create a new thought anywhere.',
         x: centerX,
         y: centerY - 150,
-        tags: [stackTag],
         priority: 'high'
       });
 
-      await get().addThought({
+      const kineticId = await get().addThought({
         text: 'Kinetic Stacking',
         type: 'tasks',
         tasks: [
@@ -297,16 +303,19 @@ export const useStore = create<CyberiaState>((set, get) => ({
         ],
         x: centerX + 250,
         y: centerY,
-        tags: [stackTag],
         priority: 'medium'
       });
+
+      // Link them together into a stack
+      set({ selectedThoughtIds: [welcomeId, kineticId] });
+      await get().linkSelectedThoughts();
+      set({ selectedThoughtIds: [] });
 
       await get().addThought({
         text: 'Morphing Views',
         content: 'Use the **View Toggle** in the top right to switch between **Spatial**, **Kanban**, and **Calendar** modes. \n\nYour ideas adapt to the structure you need.',
         x: centerX - 250,
         y: centerY,
-        tags: [stackTag],
         priority: 'none'
       });
 
@@ -323,6 +332,7 @@ export const useStore = create<CyberiaState>((set, get) => ({
     }
     
     await get().refreshThoughts();
+    await get().refreshStacks();
   },
 
   refreshSpaces: async () => {
@@ -340,10 +350,17 @@ export const useStore = create<CyberiaState>((set, get) => ({
     }
   },
 
+  refreshStacks: async () => {
+    const { activeSpaceId } = get();
+    if (!activeSpaceId) return;
+    const stacks = await db.stacks.where('spaceId').equals(activeSpaceId).toArray();
+    set({ stacks });
+  },
+
   setActiveSpace: (id) => {
     localStorage.setItem('cyberia-active-space-id', id);
     const space = get().spaces.find(s => s.id === id);
-    const updates: any = { activeSpaceId: id, thoughts: [], isSpaceLoading: true, history: [], historyIndex: -1 };
+    const updates: any = { activeSpaceId: id, thoughts: [], stacks: [], isSpaceLoading: true, history: [], historyIndex: -1 };
     
     if (space && space.mode === 'spatial') {
       updates.transform = {
@@ -357,6 +374,7 @@ export const useStore = create<CyberiaState>((set, get) => ({
 
     set(updates);
     get().refreshThoughts();
+    get().refreshStacks();
   },
 
   setCalendarViewDate: (date) => {
@@ -388,6 +406,7 @@ export const useStore = create<CyberiaState>((set, get) => ({
     
     await db.spaces.delete(id);
     await db.thoughts.where('spaceId').equals(id).delete();
+    await db.stacks.where('spaceId').equals(id).delete();
     await get().refreshSpaces();
     
     const updatedSpaces = get().spaces;
@@ -401,7 +420,7 @@ export const useStore = create<CyberiaState>((set, get) => ({
       }
     } else {
       localStorage.removeItem('cyberia-active-space-id');
-      set({ activeSpaceId: null, thoughts: [] });
+      set({ activeSpaceId: null, thoughts: [], stacks: [] });
     }
   },
 
@@ -468,6 +487,7 @@ export const useStore = create<CyberiaState>((set, get) => ({
 
       const thought: Thought = {
         spaceId: activeSpaceId,
+        stackId: null,
         x: window.innerWidth / 2,
         y: window.innerHeight / 2,
         vx: 0,
@@ -479,7 +499,6 @@ export const useStore = create<CyberiaState>((set, get) => ({
         content: '',
         image: null,
         drawing: null,
-        tags: [],
         status: 'none',
         tasks: [],
         table: [['', ''], ['', '']],
@@ -539,7 +558,6 @@ export const useStore = create<CyberiaState>((set, get) => ({
   },
 
   setSelectedThoughtId: (id) => {
-    // If we are currently linking, don't clear the linkingSourceId
     set({ 
       selectedThoughtId: id, 
       selectedThoughtIds: id ? [id] : [] 
@@ -592,48 +610,107 @@ export const useStore = create<CyberiaState>((set, get) => ({
   },
 
   linkSelectedThoughts: async () => {
-    const { selectedThoughtIds, thoughts } = get();
-    if (selectedThoughtIds.length < 2) return;
+    const { selectedThoughtIds, thoughts, activeSpaceId } = get();
+    if (selectedThoughtIds.length < 2 || !activeSpaceId) return;
 
-    const commonTag = `stack-${Math.random().toString(36).substr(2, 6)}`;
-    
-    const updates = selectedThoughtIds.map(id => {
-      const thought = thoughts.find(t => t.id === id);
-      if (!thought) return Promise.resolve();
-      const newTags = Array.from(new Set([...thought.tags, commonTag]));
-      return get().updateThought(id, { tags: newTags });
-    });
+    // Find existing stacks among selected thoughts
+    const thoughtsInSelection = thoughts.filter(t => selectedThoughtIds.includes(t.id));
+    const existingStackIds = Array.from(new Set(thoughtsInSelection.map(t => t.stackId).filter(Boolean))) as string[];
 
-    await Promise.all(updates);
+    let targetStackId: string;
+
+    if (existingStackIds.length > 0) {
+      // MERGE: Move everything to the first stack found
+      targetStackId = existingStackIds[0];
+      
+      // Update all thoughts in the selection to the targetStackId
+      // AND update all thoughts that were in the other stacks to the targetStackId
+      await db.transaction('rw', db.thoughts, db.stacks, async () => {
+        // 1. Update thoughts in selection
+        await db.thoughts.where('id').anyOf(selectedThoughtIds).modify({ stackId: targetStackId });
+        
+        // 2. Update thoughts in other merged stacks
+        if (existingStackIds.length > 1) {
+          const otherStackIds = existingStackIds.slice(1);
+          await db.thoughts.where('stackId').anyOf(otherStackIds).modify({ stackId: targetStackId });
+          // 3. Delete the now empty stacks
+          await db.stacks.where('id').anyOf(otherStackIds).delete();
+        }
+      });
+    } else {
+      // CREATE NEW STACK
+      targetStackId = 'st-' + Date.now();
+      const randomHue = Math.floor(Math.random() * 360);
+      await db.stacks.add({
+        id: targetStackId,
+        name: 'New Cluster',
+        color: `hsla(${randomHue}, 70%, 50%, 1)`,
+        spaceId: activeSpaceId
+      });
+      await db.thoughts.where('id').anyOf(selectedThoughtIds).modify({ stackId: targetStackId });
+    }
+
+    await get().refreshThoughts();
+    await get().refreshStacks();
     get().pushHistory();
   },
 
   unlinkSelectedThoughts: async () => {
-    const { selectedThoughtIds, thoughts } = get();
-    if (selectedThoughtIds.length < 2) return;
+    const { selectedThoughtIds } = get();
+    if (selectedThoughtIds.length === 0) return;
 
-    // Find all stack tags shared by ALL selected thoughts
-    const firstThought = thoughts.find(t => t.id === selectedThoughtIds[0]);
-    if (!firstThought) return;
+    await db.thoughts.where('id').anyOf(selectedThoughtIds).modify({ stackId: null });
+    
+    // Cleanup: Remove stacks that no longer have any thoughts
+    const { activeSpaceId } = get();
+    if (activeSpaceId) {
+      const allThoughts = await db.thoughts.where('spaceId').equals(activeSpaceId).toArray();
+      const activeStackIds = new Set(allThoughts.map(t => t.stackId).filter(Boolean));
+      const allStacks = await db.stacks.where('spaceId').equals(activeSpaceId).toArray();
+      const orphanedStackIds = allStacks.filter(s => !activeStackIds.has(s.id)).map(s => s.id);
+      
+      if (orphanedStackIds.length > 0) {
+        await db.stacks.where('id').anyOf(orphanedStackIds).delete();
+      }
+    }
 
-    const commonStackTags = firstThought.tags.filter(tag => 
-      tag.startsWith('stack-') && 
-      selectedThoughtIds.every(id => {
-        const t = thoughts.find(th => th.id === id);
-        return t?.tags.includes(tag);
-      })
-    );
+    await get().refreshThoughts();
+    await get().refreshStacks();
+    get().pushHistory();
+  },
 
-    if (commonStackTags.length === 0) return;
+  createStack: async (name, thoughtId) => {
+    const { activeSpaceId } = get();
+    if (!activeSpaceId) return;
 
-    const updates = selectedThoughtIds.map(id => {
-      const thought = thoughts.find(t => t.id === id);
-      if (!thought) return Promise.resolve();
-      const newTags = thought.tags.filter(tag => !commonStackTags.includes(tag));
-      return get().updateThought(id, { tags: newTags });
+    const newStackId = 'st-' + Date.now();
+    const randomHue = Math.floor(Math.random() * 360);
+    
+    await db.stacks.add({
+      id: newStackId,
+      name: name,
+      color: `hsla(${randomHue}, 70%, 50%, 1)`,
+      spaceId: activeSpaceId
     });
 
-    await Promise.all(updates);
+    await db.thoughts.update(thoughtId, { stackId: newStackId });
+    await get().refreshThoughts();
+    await get().refreshStacks();
+    get().pushHistory();
+  },
+
+  updateStack: async (id, updates) => {
+    await db.stacks.update(id, updates);
+    await get().refreshStacks();
+  },
+
+  deleteStack: async (id) => {
+    await db.transaction('rw', db.thoughts, db.stacks, async () => {
+      await db.thoughts.where('stackId').equals(id).modify({ stackId: null });
+      await db.stacks.delete(id);
+    });
+    await get().refreshThoughts();
+    await get().refreshStacks();
     get().pushHistory();
   },
 
@@ -652,10 +729,12 @@ export const useStore = create<CyberiaState>((set, get) => ({
   exportData: async () => {
     const allSpaces = await db.spaces.toArray();
     const allThoughts = await db.thoughts.toArray();
+    const allStacks = await db.stacks.toArray();
     const data = {
       spaces: allSpaces,
       thoughts: allThoughts,
-      version: 1,
+      stacks: allStacks,
+      version: 2,
       timestamp: Date.now()
     };
     const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
@@ -674,11 +753,13 @@ export const useStore = create<CyberiaState>((set, get) => ({
         const data = JSON.parse(e.target?.result as string);
         if (!data.spaces || !data.thoughts) throw new Error('Invalid backup file');
         
-        await db.transaction('rw', db.spaces, db.thoughts, async () => {
+        await db.transaction('rw', db.spaces, db.thoughts, db.stacks, async () => {
           await db.spaces.clear();
           await db.thoughts.clear();
+          await db.stacks.clear();
           await db.spaces.bulkAdd(data.spaces);
           await db.thoughts.bulkAdd(data.thoughts);
+          if (data.stacks) await db.stacks.bulkAdd(data.stacks);
         });
         
         window.location.reload();

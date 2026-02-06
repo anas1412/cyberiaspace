@@ -15,18 +15,24 @@ const Inspector: React.FC = () => {
   const setInspectorOpen = useStore((state) => state.setInspectorOpen);
   const selectedThoughtId = useStore((state) => state.selectedThoughtId);
   const thoughts = useStore((state) => state.thoughts);
+  const stacks = useStore((state) => state.stacks);
   const updateThought = useStore((state) => state.updateThought);
+  const updateStack = useStore((state) => state.updateStack);
+  const createStack = useStore((state) => state.createStack);
   const deleteThought = useStore((state) => state.deleteThought);
+  const unlinkSelectedThoughts = useStore((state) => state.unlinkSelectedThoughts);
   const setActiveFocus = useStore((state) => state.setActiveFocus);
   
   const { openModal } = useModalStore();
 
   const thought = thoughts.find((t) => t.id === selectedThoughtId);
+  const stack = stacks.find((s) => s.id === thought?.stackId);
 
   // Local state for zero-latency typing
   const [localText, setLocalText] = React.useState('');
   const [localDesc, setLocalDesc] = React.useState('');
   const [localDate, setLocalDate] = React.useState('');
+  const [localStackName, setLocalStackName] = React.useState('');
 
   // Sync local state when selected thought changes
   React.useEffect(() => {
@@ -35,7 +41,10 @@ const Inspector: React.FC = () => {
       setLocalDesc(thought.description || '');
       setLocalDate(thought.date || '');
     }
-  }, [selectedThoughtId]);
+    if (stack) {
+      setLocalStackName(stack.name || '');
+    }
+  }, [selectedThoughtId, stack?.id]);
 
   const handleDeleteThought = () => {
     if (!thought) return;
@@ -97,7 +106,7 @@ const Inspector: React.FC = () => {
           animate={{ opacity: 1, x: 0 }}
           exit={{ opacity: 0, x: 20 }}
           transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-          className="ui-layer fixed top-[120px] right-8 w-80 glass rounded-[2.5rem] shadow-2xl pointer-events-auto transition-shadow overflow-hidden flex flex-col"
+          className="ui-layer focus-box fixed top-[120px] right-8 w-80 glass rounded-[2.5rem] shadow-2xl pointer-events-auto transition-shadow overflow-hidden flex flex-col"
         >
           {/* HEADER AREA */}
           <div className="px-8 pt-8 pb-4 bg-white/[0.02]">
@@ -380,19 +389,59 @@ const Inspector: React.FC = () => {
                 )}
               </div>
 
-              <div className="tag-input-wrap flex flex-wrap gap-2 p-3 bg-[var(--bg-page)]/20 border border-white/10 rounded-xl min-h-[44px]">
-                {thought.tags.map((tag, i) => (
-                  <span key={i} className="tag-pill text-[9px] font-700 px-2 py-0.5 rounded-lg border flex items-center gap-1" style={getTagStyle(tag)}>
-                    {tag}
-                    <X className="w-2.5 h-2.5 cursor-pointer" onClick={() => removeTag(i)} />
-                  </span>
-                ))}
-                <input
-                  type="text"
-                  onKeyDown={handleTagInput}
-                  placeholder="Add tag..."
-                  className="bg-transparent outline-none text-[var(--text-primary)] text-xs flex-1 min-w-[60px] placeholder:text-slate-500"
-                />
+              <div className="space-y-3 pt-4 border-t border-white/5">
+                <label className="text-[9px] uppercase font-bold tracking-widest text-slate-500 ml-1">Stack / Cluster</label>
+                
+                {stack ? (
+                  <div className="p-4 bg-[var(--bg-page)]/20 border border-white/10 rounded-2xl space-y-4">
+                    <div className="flex items-center gap-3">
+                      <div className="w-2 h-2 rounded-full shadow-[0_0_10px_currentColor]" style={{ backgroundColor: stack.color, color: stack.color }} />
+                      <input
+                        type="text"
+                        value={localStackName}
+                        onChange={(e) => {
+                          setLocalStackName(e.target.value);
+                          updateStack(stack.id, { name: e.target.value });
+                        }}
+                        className="bg-transparent text-[10px] font-black uppercase tracking-widest text-white outline-none flex-1"
+                        placeholder="Stack Name"
+                      />
+                    </div>
+                    <button 
+                      onClick={() => unlinkSelectedThoughts()}
+                      className="w-full py-2 bg-white/5 hover:bg-red-500/10 text-slate-400 hover:text-red-400 border border-white/5 rounded-xl text-[8px] font-black uppercase tracking-widest transition-all"
+                    >
+                      Remove from Stack
+                    </button>
+                  </div>
+                ) : (
+                  <div className="relative group">
+                    <input
+                      type="text"
+                      placeholder="Create or Join Stack..."
+                      list="existing-stacks"
+                      onKeyDown={async (e) => {
+                        if (e.key === 'Enter' && e.currentTarget.value.trim()) {
+                          const name = e.currentTarget.value.trim();
+                          const existingStack = stacks.find(s => s.name.toLowerCase() === name.toLowerCase());
+                          
+                          if (existingStack) {
+                            updateThought(thought.id, { stackId: existingStack.id });
+                          } else {
+                            createStack(name, thought.id);
+                          }
+                          e.currentTarget.value = '';
+                        }
+                      }}
+                      className="w-full bg-[var(--bg-page)]/20 border border-white/10 rounded-xl p-3 text-xs outline-none focus:border-[var(--accent)] text-[var(--text-primary)] placeholder:text-slate-500 transition-all"
+                    />
+                    <datalist id="existing-stacks">
+                      {stacks.map(s => (
+                        <option key={s.id} value={s.name} />
+                      ))}
+                    </datalist>
+                  </div>
+                )}
               </div>
 
               <button 

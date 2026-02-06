@@ -477,8 +477,8 @@ export const usePhysics = (
             p.vy += (dy / d) * force;
           }
 
-          // Shared Tags Attraction
-          if (t.tags.some((tag) => otherT.tags.includes(tag)) && t.tags.length > 0) { 
+          // Unique Stack Attraction
+          if (t.stackId && t.stackId === otherT.stackId) { 
             if (d > COMFORT_ZONE) {
               const pull = (d - COMFORT_ZONE) * ATTRACTION;
               p.vx -= (dx / d) * pull;
@@ -513,8 +513,6 @@ export const usePhysics = (
       const accentGlow = computedStyle.getPropertyValue('--accent-glow').trim() || 'rgba(99, 102, 241, 0.5)';
 
       // Draw Connections
-      ctx.strokeStyle = accentColor.includes('var') ? '#6366f1' : accentColor + '22'; // fallback to semi-transparent
-      // More reliable: use a fixed alpha or the theme variable if it's already an rgba
       ctx.strokeStyle = accentColor.startsWith('#') ? accentColor + '1F' : accentColor.replace('rgb', 'rgba').replace(')', ', 0.12)');
       
       ctx.beginPath();
@@ -522,8 +520,8 @@ export const usePhysics = (
         const idA = ids[i]; const tA = thoughtMap.current.get(idA); const pA = state.get(idA); if (!tA || !pA) continue;
         for (let j = i + 1; j < ids.length; j++) {
             const idB = ids[j]; const tB = thoughtMap.current.get(idB); const pB = state.get(idB); if (!tB || !pB) continue;
-            const shared = tA.tags.some(tag => tB.tags.includes(tag));
-            if (shared) { const x1 = pA.x * s + tx; const y1 = pA.y * s + ty; const x2 = pB.x * s + tx; const y2 = pB.y * s + ty; ctx.moveTo(x1, y1); ctx.lineTo(x2, y2); }
+            const isSameStack = tA.stackId && tA.stackId === tB.stackId;
+            if (isSameStack) { const x1 = pA.x * s + tx; const y1 = pA.y * s + ty; const x2 = pB.x * s + tx; const y2 = pB.y * s + ty; ctx.moveTo(x1, y1); ctx.lineTo(x2, y2); }
         }
       }
       ctx.stroke();

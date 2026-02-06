@@ -20,14 +20,13 @@ Your goal is to help the user organize their thoughts, brainstorm ideas, and man
 
 Key Traits:
 - Concise: Give short, punchy answers. Avoid fluff.
-- Spatial: You understand that ideas are physical objects with (x, y) coordinates. Center is (0,0) usually, but check existing thoughts.
-- Temporal Aware: You are provided with the current system time. Use it for scheduling or relative date references (e.g., "tomorrow", "next week").
+- Spatial: You understand that ideas are physical objects with (x, y) coordinates.
+- Unique Stacks: Thoughts can belong to one "Stack" (cluster). Linking thoughts merges their stacks into one larger physical group.
 - Proactive: Don't just talk; use tools to create, update, or move thoughts when helpful.
-- Visual: When asked to visualize, you can assume the user wants to see a change in the workspace.
 
 Tools Usage:
 - When the user asks to "organize" or "move", use 'update_thought' to change (x, y).
-- When the user creates a list, spawn multiple thoughts or a single 'tasks' thought.
+- To group thoughts, use 'link_thoughts' (merges existing stacks or creates new ones).
 - Always prefer modifying the workspace over just describing changes in text.
 `;
 
@@ -50,7 +49,7 @@ const TOOLS = [
             description: { type: SchemaType.STRING, description: "Short description." },
             date: { type: SchemaType.STRING, description: "Date in YYYY-MM-DD format." },
             order: { type: SchemaType.NUMBER, description: "Stacking order for Kanban/Calendar." },
-            tags: { type: SchemaType.ARRAY, items: { type: SchemaType.STRING } },
+            stackId: { type: SchemaType.STRING, description: "Optional unique stack ID." },
             status: { type: SchemaType.STRING, enum: ["none", "todo", "doing", "done"] },
             tasks: { 
               type: SchemaType.ARRAY, 
@@ -69,8 +68,7 @@ const TOOLS = [
                 items: { type: SchemaType.STRING }
               } 
             },
-            image: { type: SchemaType.STRING, description: "URL or Base64 image data." },
-            drawing: { type: SchemaType.STRING, description: "Base64 canvas drawing data." }
+            image: { type: SchemaType.STRING, description: "URL or Base64 image data." }
           },
           required: ["text", "x", "y"]
         }
@@ -91,7 +89,7 @@ const TOOLS = [
             y: { type: SchemaType.NUMBER },
             date: { type: SchemaType.STRING, description: "Date in YYYY-MM-DD format." },
             order: { type: SchemaType.NUMBER, description: "Stacking order for Kanban/Calendar." },
-            tags: { type: SchemaType.ARRAY, items: { type: SchemaType.STRING }, description: "List of tags." },
+            stackId: { type: SchemaType.STRING, description: "Assign to a specific stack." },
             tasks: { 
               type: SchemaType.ARRAY, 
               items: { 
@@ -108,9 +106,29 @@ const TOOLS = [
                 type: SchemaType.ARRAY, 
                 items: { type: SchemaType.STRING }
               } 
-            },
-            image: { type: SchemaType.STRING, description: "URL or Base64 image data." },
-            drawing: { type: SchemaType.STRING, description: "Base64 canvas drawing data." }
+            }
+          },
+          required: ["id"]
+        }
+      },
+      {
+        name: "link_thoughts",
+        description: "Links multiple thoughts together into a single Stack (Cluster).",
+        parameters: {
+          type: SchemaType.OBJECT,
+          properties: {
+            ids: { type: SchemaType.ARRAY, items: { type: SchemaType.NUMBER }, description: "IDs of thoughts to link." }
+          },
+          required: ["ids"]
+        }
+      },
+      {
+        name: "unlink_thought",
+        description: "Removes a thought from its current stack.",
+        parameters: {
+          type: SchemaType.OBJECT,
+          properties: {
+            id: { type: SchemaType.NUMBER, description: "The ID of the thought to unlink." }
           },
           required: ["id"]
         }
@@ -156,6 +174,22 @@ async function executeTool(name: string, args: Record<string, unknown>) {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         await store.updateThought(updateId, updates as any);
         return { success: true, message: `Updated thought ${updateId}` };
+      }
+
+      case 'link_thoughts': {
+        const ids = args.ids as number[];
+        store.setSelectedThoughtIds(ids);
+        await store.linkSelectedThoughts();
+        store.setSelectedThoughtIds([]);
+        return { success: true, message: `Linked ${ids.length} thoughts into a stack.` };
+      }
+
+      case 'unlink_thought': {
+        const id = args.id as number;
+        store.setSelectedThoughtIds([id]);
+        await store.unlinkSelectedThoughts();
+        store.setSelectedThoughtIds([]);
+        return { success: true, message: `Removed thought ${id} from its stack.` };
       }
         
       case 'delete_thought':

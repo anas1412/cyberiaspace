@@ -68,9 +68,13 @@ const Viewport: React.FC = () => {
       const isAltLeftClick = e.button === 0 && e.altKey;
       const isLeftClick = e.button === 0 && !e.altKey;
 
+      if (isLeftClick) {
+        selectionStartRef.current = { x: e.clientX, y: e.clientY };
+      }
+
       if (
         activeSpace?.mode === 'spatial' &&
-        !(e.target as HTMLElement).closest('button, input, textarea, .thought-bulb, #inspector, .ui-layer, .glass, #cal-sidebar-content, .cal-grid')
+        !(e.target as HTMLElement).closest('button, input, textarea, .thought-bulb, #inspector, .ui-layer, .expand-img, #chat-overlay, .focus-box')
       ) {
         if (isMiddleClick || isAltLeftClick) {
           isPanningRef.current = true;
@@ -79,7 +83,6 @@ const Viewport: React.FC = () => {
           e.preventDefault();
         } else if (isLeftClick) {
           isSelectingRef.current = true;
-          selectionStartRef.current = { x: e.clientX, y: e.clientY };
           if (!e.ctrlKey && !e.metaKey) {
             clearSelection();
           }
@@ -147,9 +150,15 @@ const Viewport: React.FC = () => {
 
     const handleClick = (e: MouseEvent) => {
       const target = e.target as HTMLElement;
+      
+      // 5px rule for selection clearing: If they moved more than 5px, they were likely doing a marquee select
+      const dist = Math.sqrt(Math.pow(e.clientX - selectionStartRef.current.x, 2) + Math.pow(e.clientY - selectionStartRef.current.y, 2));
+      if (dist > 5) return;
+
       // We want to unselect if the user clicks the "background" of the workspace, 
       // including the calendar grid and sidebar, but NOT if they click a thought or specific UI panels.
-      if (!target.closest('.thought-bulb, #inspector, .ui-layer, .expand-img, button, input, textarea, #chat-overlay, .modal-content')) {
+      // Removed .ui-layer to allow specific UI elements to be defined individually
+      if (!target.closest('.thought-bulb, #inspector, .expand-img, button, input, textarea, #chat-overlay, .modal-content, .focus-box')) {
         setInspectorOpen(false);
         clearSelection();
         setSelectedThoughtId(null);

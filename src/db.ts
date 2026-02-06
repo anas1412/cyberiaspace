@@ -11,9 +11,17 @@ interface Space {
   transformScale?: number;
 }
 
+interface Stack {
+  id: string;
+  name: string;
+  color: string;
+  spaceId: string;
+}
+
 interface Thought {
   id: number;
   spaceId: string;
+  stackId: string | null; // Unique Stack Reference
   x: number;
   y: number;
   vx: number;
@@ -25,7 +33,6 @@ interface Thought {
   content: string;
   image: string | null;
   drawing: string | null;
-  tags: string[];
   status: 'none' | 'todo' | 'doing' | 'done';
   tasks: { text: string; done: boolean }[];
   table: string[][];
@@ -38,12 +45,14 @@ interface Thought {
 const db = new Dexie('CyberiaDB') as Dexie & {
   spaces: EntityTable<Space, 'id'>;
   thoughts: EntityTable<Thought, 'id'>;
+  stacks: EntityTable<Stack, 'id'>;
 };
 
-db.version(1).stores({
+db.version(2).stores({
   spaces: 'id, name, order',
-  thoughts: '++id, spaceId, text, *tags, status, date, priority, order'
+  thoughts: '++id, spaceId, stackId, text, status, date, priority, order',
+  stacks: 'id, spaceId, name'
 });
 
-export type { Space, Thought };
+export type { Space, Thought, Stack };
 export { db };

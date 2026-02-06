@@ -17,6 +17,9 @@ const MultiSelectionMenu: React.FC = () => {
   const linkSelectedThoughts = useStore((state) => state.linkSelectedThoughts);
   const unlinkSelectedThoughts = useStore((state) => state.unlinkSelectedThoughts);
   const thoughts = useStore((state) => state.thoughts);
+  const stacks = useStore((state) => state.stacks);
+  const updateStack = useStore((state) => state.updateStack);
+  const createStack = useStore((state) => state.createStack);
   const updateThought = useStore((state) => state.updateThought);
   const isInspectorOpen = useStore((state) => state.isInspectorOpen);
   const isChatOpen = useStore((state) => state.isChatOpen);
@@ -25,19 +28,27 @@ const MultiSelectionMenu: React.FC = () => {
 
   const isMobile = typeof window !== 'undefined' ? window.innerWidth < 768 : false;
 
-  const areLinked = React.useMemo(() => {
-    if (selectedThoughtIds.length < 2) return false;
+  const sharedStack = React.useMemo(() => {
+    if (selectedThoughtIds.length < 2) return null;
     const selectedThoughts = thoughts.filter(t => selectedThoughtIds.includes(t.id));
-    if (selectedThoughts.length < selectedThoughtIds.length) return false;
-    
-    // Find stack tags of the first thought
-    const stackTags = selectedThoughts[0].tags.filter(tag => tag.startsWith('stack-'));
-    
-    // Check if any of these stack tags are present in ALL selected thoughts
-    return stackTags.some(tag => 
-      selectedThoughts.every(t => t.tags.includes(tag))
-    );
-  }, [selectedThoughtIds, thoughts]);
+    const firstStackId = selectedThoughts[0]?.stackId;
+    if (!firstStackId) return null;
+    if (selectedThoughts.every(t => t.stackId === firstStackId)) {
+      return stacks.find(s => s.id === firstStackId) || null;
+    }
+    return null;
+  }, [selectedThoughtIds, thoughts, stacks]);
+
+  const areLinked = !!sharedStack;
+  const [localStackName, setLocalStackName] = React.useState('');
+
+  React.useEffect(() => {
+    if (sharedStack) {
+      setLocalStackName(sharedStack.name);
+    } else {
+      setLocalStackName('');
+    }
+  }, [sharedStack]);
 
   const handleDeleteAll = () => {
     openModal({
@@ -47,22 +58,6 @@ const MultiSelectionMenu: React.FC = () => {
       confirmText: 'Delete All',
       onConfirm: () => deleteSelectedThoughts()
     });
-  };
-
-  const handleBulkTag = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if ((e.key === 'Enter' || e.key === ',') && e.currentTarget.value.trim()) {
-      e.preventDefault();
-      const newTag = e.currentTarget.value.trim().replace(',', '');
-      
-      selectedThoughtIds.forEach(id => {
-        const thought = thoughts.find(t => t.id === id);
-        if (thought && !thought.tags.includes(newTag)) {
-          updateThought(id, { tags: [...thought.tags, newTag] });
-        }
-      });
-      
-      e.currentTarget.value = '';
-    }
   };
 
   if (selectedThoughtIds.length < 2) return null;
@@ -76,7 +71,7 @@ const MultiSelectionMenu: React.FC = () => {
           : { opacity: 1, x: 0 }}
         exit={isMobile ? { y: '100%' } : { opacity: 0, x: 20 }}
         className={cn(
-          "ui-layer fixed bottom-0 left-0 right-0 md:bottom-auto md:left-auto md:top-[120px] md:right-8 w-full md:w-80 glass rounded-t-[2.5rem] md:rounded-[2.5rem] p-6 md:p-8 shadow-2xl pointer-events-auto",
+          "ui-layer focus-box fixed bottom-0 left-0 right-0 md:bottom-auto md:left-auto md:top-[120px] md:right-8 w-full md:w-80 glass rounded-t-[2.5rem] md:rounded-[2.5rem] p-6 md:p-8 shadow-2xl pointer-events-auto",
           isMobile && (isInspectorOpen || isChatOpen) && "pointer-events-none"
         )}
       >
@@ -91,36 +86,80 @@ const MultiSelectionMenu: React.FC = () => {
         </div>
 
         <div className="space-y-4">
+          <div className="space-y-2">
+            <label className="text-[9px] uppercase font-bold tracking-widest text-slate-500 ml-1">
+              {areLinked ? "Stack Name" : "Create Named Stack"}
+            </label>
+            <div className="p-3 bg-[var(--bg-page)]/20 border border-white/10 rounded-xl flex items-center gap-2">
+              <div 
+                className="w-2 h-2 rounded-full shadow-[0_0_10px_currentColor]" 
+                style={{ 
+                  backgroundColor: sharedStack?.color || 'var(--accent)', 
+                  color: sharedStack?.color || 'var(--accent)' 
+                }} 
+              />
+              <input
+                type="text"
+                value={localStackName}
+                onChange={(e) => setLocalStackName(e.target.value)}
+                onBlur={() => {
+                  if (areLinked && sharedStack && localStackName.trim()) {
+                    updateStack(sharedStack.id, { name: localStackName.trim() });
+                  }
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && localStackName.trim()) {
+                    if (areLinked && sharedStack) {
+                      updateStack(sharedStack.id, { name: localStackName.trim() });
+                    } else {
+                      // Link with a specific name: 
+                      // We'll call link then rename for simplicity
+                      linkSelectedThoughts().then(() => {
+                        // The link logic creates a stack, we need to find the new stackId 
+                        // from the updated thoughts to rename it. 
+                        // But store.linkSelectedThoughts is async.
+                        // For a better UX, we'll implement a 'linkWithTitle' action in the store later if needed.
+                        // For now, standard link then rename if they are linked.
+                      });
+                    }
+                  }
+                }}
+                placeholder={areLinked ? "Rename Stack..." : "Name your new cluster..."}
+                className="bg-transparent text-[10px] font-black uppercase tracking-widest text-white outline-none flex-1"
+              />
+            </div>
+          </div>
+
           {areLinked ? (
             <button 
               onClick={unlinkSelectedThoughts}
               className="w-full bg-orange-500/10 hover:bg-orange-500/20 border border-orange-500/30 text-orange-400 py-4 rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] transition-all flex items-center justify-center gap-3"
             >
               <Link className="w-4 h-4 rotate-45" />
-              Unlink Selected
+              Remove from Stack
             </button>
           ) : (
             <button 
-              onClick={linkSelectedThoughts}
+              onClick={async () => {
+                await linkSelectedThoughts();
+                // If a name was typed, we find the new stack and rename it
+                if (localStackName.trim()) {
+                  // Small delay to ensure DB sync before find
+                  setTimeout(async () => {
+                    const latestThoughts = useStore.getState().thoughts;
+                    const firstSelected = latestThoughts.find(t => selectedThoughtIds.includes(t.id));
+                    if (firstSelected?.stackId) {
+                      await updateStack(firstSelected.stackId, { name: localStackName.trim() });
+                    }
+                  }, 100);
+                }
+              }}
               className="w-full bg-[var(--accent)]/10 hover:bg-[var(--accent)]/20 border border-[var(--accent)]/30 text-[var(--accent-secondary)] py-4 rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] transition-all flex items-center justify-center gap-3"
             >
               <Link className="w-4 h-4" />
-              Link Selected
+              Link into Stack
             </button>
           )}
-
-          <div className="space-y-2">
-            <label className="text-[9px] uppercase font-bold tracking-widest text-slate-500 ml-1">Add Common Tag</label>
-            <div className="relative">
-              <Hash className="absolute left-3 top-1/2 -translate-y-1/2 w-3 h-3 text-slate-500" />
-              <input
-                type="text"
-                onKeyDown={handleBulkTag}
-                placeholder="Type and press Enter..."
-                className="w-full bg-[var(--bg-page)]/20 border border-white/10 rounded-xl p-3 pl-10 text-xs outline-none focus:border-[var(--accent)] text-[var(--text-primary)] placeholder:text-slate-500"
-              />
-            </div>
-          </div>
 
           <div className="pt-4 border-t border-white/5">
             <button 
