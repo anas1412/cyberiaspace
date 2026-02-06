@@ -97,9 +97,9 @@ interface CyberiaState {
   pushHistory: () => void;
 
   // Refresh data
-  refreshThoughts: () => Promise<void>;
+  refreshThoughts: (spaceId?: string) => Promise<void>;
   refreshSpaces: () => Promise<void>;
-  refreshStacks: () => Promise<void>;
+  refreshStacks: (spaceId?: string) => Promise<void>;
 }
 
 export const useStore = create<CyberiaState>((set, get) => ({
@@ -273,7 +273,7 @@ export const useStore = create<CyberiaState>((set, get) => ({
       const defaultSpaceId = 's' + Date.now();
       await db.spaces.add({
         id: defaultSpaceId,
-        name: 'My First Space',
+        name: 'Neural Workspace',
         mode: 'spatial',
         physics: true,
         order: 0
@@ -281,44 +281,119 @@ export const useStore = create<CyberiaState>((set, get) => ({
       await get().refreshSpaces();
       set({ activeSpaceId: defaultSpaceId });
       
-      // Seed Onboarding Thoughts
-      const centerX = window.innerWidth / 2;
-      const centerY = window.innerHeight / 2;
+      const cx = window.innerWidth / 2;
+      const cy = window.innerHeight / 2;
 
-      const welcomeId = await get().addThought({
-        text: 'Welcome to Cyberia',
-        content: 'This is a **spatial workspace**. Ideas are physical objects here. \n\nPress **[Space]** to create a new thought anywhere.',
-        x: centerX,
-        y: centerY - 150,
-        priority: 'high'
+      // STACK 1: THE BASICS (INDIGO)
+      const basicsId = 'st-basics';
+      await db.stacks.add({
+        id: basicsId,
+        name: 'Core Concepts',
+        color: 'hsla(230, 80%, 60%, 1)',
+        spaceId: defaultSpaceId
       });
-
-      const kineticId = await get().addThought({
-        text: 'Kinetic Stacking',
-        type: 'tasks',
-        tasks: [
-          { text: 'Drag thoughts to move them', done: true },
-          { text: 'Connect them with the Link button', done: false },
-          { text: 'Watch them form a stack', done: false }
-        ],
-        x: centerX + 250,
-        y: centerY,
-        priority: 'medium'
-      });
-
-      // Link them together into a stack
-      set({ selectedThoughtIds: [welcomeId, kineticId] });
-      await get().linkSelectedThoughts();
-      set({ selectedThoughtIds: [] });
 
       await get().addThought({
-        text: 'Morphing Views',
-        content: 'Use the **View Toggle** in the top right to switch between **Spatial**, **Kanban**, and **Calendar** modes. \n\nYour ideas adapt to the structure you need.',
-        x: centerX - 250,
-        y: centerY,
-        priority: 'none'
+        text: 'Welcome to Cyberia',
+        content: 'This is a **kinetic spatial workspace**. Thoughts are physical objects that interact with each other. \n\nDrag nodes to move them, or let the physics engine form natural clusters.',
+        x: cx - 400, y: cy - 200, priority: 'high', stackId: basicsId,
+        status: 'done',
+        spaceId: defaultSpaceId
       });
 
+      await get().addThought({
+        text: 'The Art of Interaction',
+        content: 'Click a node to **Edit**. \n\nGive it a gentle pull to **Move**. Cyberia distinguishes between your intent to refine and your intent to organize automatically.',
+        x: cx - 400, y: cy, priority: 'medium', stackId: basicsId,
+        status: 'doing',
+        spaceId: defaultSpaceId
+      });
+
+      // STACK 2: THE LAIN SYSTEM (PURPLE)
+      const mediaId = 'st-media';
+      await db.stacks.add({
+        id: mediaId,
+        name: 'The Wired',
+        color: 'hsla(280, 80%, 65%, 1)',
+        spaceId: defaultSpaceId
+      });
+
+      await get().addThought({
+        text: 'Cyberia - An Epic Ambient Cyberpunk Journey',
+        type: 'embed',
+        content: 'https://youtu.be/P6kS_CD9H6I',
+        description: 'Cyberia supports full YouTube integration. Experience the Wired. Click to open the video, or drag the node to reposition it in your mental landscape.',
+        x: cx + 400, y: cy - 250, priority: 'urgent', stackId: mediaId,
+        status: 'doing',
+        spaceId: defaultSpaceId
+      });
+
+      await get().addThought({
+        text: 'Protocol 7',
+        type: 'image',
+        image: 'https://media.tenor.com/v-d5E2Xnv_sAAAAM/lain-serial-experiments-lain.gif',
+        description: 'Visualizing non-linear thought patterns. Cyberia’s spatial canvas allows you to break free from hierarchical constraints and explore ideas in a truly multidimensional way.',
+        x: cx + 400, y: cy + 50, priority: 'medium', stackId: mediaId,
+        status: 'done',
+        spaceId: defaultSpaceId
+      });
+
+      await get().addThought({
+        text: 'System Security',
+        type: 'image',
+        image: 'https://media.tenor.com/40W5BiKcSBEAAAAM/serial-experiments-lain-police.gif',
+        description: 'Managing the boundaries of the digital self. All your data are hosted locally in your browser, and never leaves it without your explicit action.',
+        x: cx + 650, y: cy - 100, priority: 'low', stackId: mediaId,
+        status: 'todo',
+        spaceId: defaultSpaceId
+      });
+
+      await get().addThought({
+        text: 'Soundtrack Analysis',
+        content: '### Cyberia Mix Summary\n\n- **Track:** Duvet (BoA)\n- **Vibe:** Melancholic, Ethereal, Cyber-folk.\n- **Significance:** The boundary between the physical world and the Wired. Perfect for deep focus and architectural brainstorming.',
+        x: cx + 650, y: cy + 150, priority: 'medium', stackId: mediaId,
+        status: 'done',
+        spaceId: defaultSpaceId
+      });
+
+      // STACK 3: PRODUCTIVITY (AMBER)
+      const toolsId = 'st-tools';
+      await db.stacks.add({
+        id: toolsId,
+        name: 'Deep Tools',
+        color: 'hsla(40, 90%, 55%, 1)',
+        spaceId: defaultSpaceId
+      });
+
+      await get().addThought({
+        text: 'Task Management',
+        type: 'tasks',
+        tasks: [
+          { text: 'Double-click to expand', done: true },
+          { text: 'Drag tasks to reorder', done: false },
+          { text: 'Mark items as done', done: false }
+        ],
+        x: cx, y: cy + 300, priority: 'high', stackId: toolsId,
+        status: 'todo',
+        spaceId: defaultSpaceId
+      });
+
+      await get().addThought({
+        text: 'Structured Tables',
+        type: 'table',
+        table: [
+          ['Feature', 'Status'],
+          ['Physics', 'Active'],
+          ['Vision', 'Online'],
+          ['Stacks', 'Unique']
+        ],
+        x: cx + 250, y: cy + 400, priority: 'none', stackId: toolsId,
+        status: 'todo',
+        spaceId: defaultSpaceId
+      });
+
+      await get().refreshThoughts(defaultSpaceId);
+      await get().refreshStacks(defaultSpaceId);
       set({ isSpaceLoading: false });
     } else {
       const savedSpaceId = localStorage.getItem('cyberia-active-space-id');
@@ -330,9 +405,6 @@ export const useStore = create<CyberiaState>((set, get) => ({
         get().setActiveSpace(spaces[0].id);
       }
     }
-    
-    await get().refreshThoughts();
-    await get().refreshStacks();
   },
 
   refreshSpaces: async () => {
@@ -340,20 +412,20 @@ export const useStore = create<CyberiaState>((set, get) => ({
     set({ spaces });
   },
 
-  refreshThoughts: async () => {
-    const { activeSpaceId } = get();
-    if (!activeSpaceId) return;
-    const thoughts = await db.thoughts.where('spaceId').equals(activeSpaceId).toArray();
+  refreshThoughts: async (spaceId?: string) => {
+    const targetId = spaceId || get().activeSpaceId;
+    if (!targetId) return;
+    const thoughts = await db.thoughts.where('spaceId').equals(targetId).toArray();
     set({ thoughts, isSpaceLoading: false });
     if (get().history.length === 0) {
       set({ history: [JSON.parse(JSON.stringify(thoughts))], historyIndex: 0 });
     }
   },
 
-  refreshStacks: async () => {
-    const { activeSpaceId } = get();
-    if (!activeSpaceId) return;
-    const stacks = await db.stacks.where('spaceId').equals(activeSpaceId).toArray();
+  refreshStacks: async (spaceId?: string) => {
+    const targetId = spaceId || get().activeSpaceId;
+    if (!targetId) return;
+    const stacks = await db.stacks.where('spaceId').equals(targetId).toArray();
     set({ stacks });
   },
 
@@ -373,8 +445,8 @@ export const useStore = create<CyberiaState>((set, get) => ({
     }
 
     set(updates);
-    get().refreshThoughts();
-    get().refreshStacks();
+    get().refreshThoughts(id);
+    get().refreshStacks(id);
   },
 
   setCalendarViewDate: (date) => {
@@ -454,7 +526,8 @@ export const useStore = create<CyberiaState>((set, get) => ({
 
   addThought: async (partialThought) => {
     const { activeSpaceId } = get();
-    if (!activeSpaceId) throw new Error('No active space');
+    const targetSpaceId = partialThought.spaceId || activeSpaceId;
+    if (!targetSpaceId) throw new Error('No active space');
 
     const QUIRKY_TITLES = [
       "Still Thinking About It",
@@ -480,13 +553,13 @@ export const useStore = create<CyberiaState>((set, get) => ({
     ];
 
     const result = await db.transaction('rw', db.thoughts, async () => {
-      const currentCount = await db.thoughts.where('spaceId').equals(activeSpaceId).count();
+      const currentCount = await db.thoughts.where('spaceId').equals(targetSpaceId).count();
       if (currentCount >= 40) return -1;
 
       const randomTitle = QUIRKY_TITLES[Math.floor(Math.random() * QUIRKY_TITLES.length)];
 
       const thought: Thought = {
-        spaceId: activeSpaceId,
+        spaceId: targetSpaceId,
         stackId: null,
         x: window.innerWidth / 2,
         y: window.innerHeight / 2,
@@ -513,7 +586,7 @@ export const useStore = create<CyberiaState>((set, get) => ({
     });
 
     if (result !== -1) {
-      await get().refreshThoughts();
+      await get().refreshThoughts(targetSpaceId);
       get().pushHistory();
     }
     
@@ -776,4 +849,3 @@ export const useStore = create<CyberiaState>((set, get) => ({
     reader.readAsText(file);
   }
 }));
-

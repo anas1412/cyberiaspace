@@ -420,12 +420,12 @@ const ThoughtNode: React.FC<ThoughtNodeProps> = React.memo(({ thought, registerE
             <div 
               className="px-2 py-0.5 rounded-md text-[8px] font-black uppercase tracking-wider border border-white/10"
               style={{ 
-                backgroundColor: stack.color.replace('1)', '0.15)'), 
-                color: stack.color,
-                borderColor: stack.color.replace('1)', '0.3)')
+                backgroundColor: stack.color ? stack.color.replace('1)', '0.15)') : 'rgba(255,255,255,0.1)', 
+                color: stack.color || '#fff',
+                borderColor: stack.color ? stack.color.replace('1)', '0.3)') : 'rgba(255,255,255,0.2)'
               }}
             >
-              {stack.name}
+              {stack.name || "Unnamed Stack"}
             </div>
           </div>
         )}
