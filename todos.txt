@@ -11,13 +11,13 @@
 
 - small thing, when only two in a stack and unlink one of them the other one should unlink as well and remove the stack no?
 
-- the link/unlink icon is overlapped with progress bar on thoughts with type tasks
+- the link/unlink icon is overlapped with progress bar on thoughts with type tasks when its not linked
 
 - maybe change ai chat on the right
 
 - add verification of the oracle key
 
-- fix the fetching youtube videos title/uploader, and if it gets saved to database or always fetching and repeating
+
 
 - add clear data button in system menu
 

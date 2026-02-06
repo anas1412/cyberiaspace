@@ -170,7 +170,7 @@ const ThoughtNode: React.FC<ThoughtNodeProps> = React.memo(({ thought, registerE
       }
       case 'tasks': {
         if (!thought.tasks.length) return (
-          <div data-trigger="tasks" className="p-3 bg-black/20 rounded-xl border border-white/5 mt-1 cursor-pointer hover:bg-white/[0.05] transition-colors group/tasks relative">
+          <div data-trigger="tasks" className="p-3 bg-black/20 rounded-xl border border-white/5 mt-1 cursor-pointer hover:bg-white/[0.05] transition-colors group/tasks relative pr-10">
             <div className="flex items-center gap-2 text-slate-600">
               <Maximize2 className="w-3 h-3" />
               <span className="text-[10px] font-bold uppercase tracking-widest">No tasks yet</span>
@@ -182,7 +182,7 @@ const ThoughtNode: React.FC<ThoughtNodeProps> = React.memo(({ thought, registerE
         const previewTasks = thought.tasks.slice(0, 3);
 
         return (
-          <div data-trigger="tasks" className="mt-1 space-y-2 group/tasks relative cursor-pointer prevent-drag">
+          <div data-trigger="tasks" className="mt-1 space-y-2 group/tasks relative cursor-pointer prevent-drag pr-10">
             <div className="space-y-1.5">
               {previewTasks.map((task, i) => (
                 <div key={i} className="flex items-center gap-2 min-w-0">
