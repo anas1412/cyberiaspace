@@ -205,7 +205,8 @@ function App() {
           
           if (id !== -1) {
             setSelectedThoughtId(id);
-            setInspectorOpen(true);
+            // We specifically don't open the inspector for YouTube pastes 
+            // to keep the flow uninterrupted.
             
             fetchYouTubeMeta(cleanText)
               .then(metadata => {
