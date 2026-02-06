@@ -390,7 +390,7 @@ const Inspector: React.FC = () => {
               </div>
 
               <div className="space-y-3 pt-4 border-t border-white/5">
-                <label className="text-[9px] uppercase font-bold tracking-widest text-slate-500 ml-1">Stack / Cluster</label>
+                <label className="text-[9px] uppercase font-bold tracking-widest text-slate-500 ml-1">Stack</label>
                 
                 {stack ? (
                   <div className="p-4 bg-[var(--bg-page)]/20 border border-white/10 rounded-2xl space-y-4">

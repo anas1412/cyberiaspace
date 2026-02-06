@@ -299,7 +299,7 @@ export const useStore = create<CyberiaState>((set, get) => ({
         tasks: [
           { text: 'Drag thoughts to move them', done: true },
           { text: 'Connect them with the Link button', done: false },
-          { text: 'Watch them form a cluster', done: false }
+          { text: 'Watch them form a stack', done: false }
         ],
         x: centerX + 250,
         y: centerY,
@@ -643,7 +643,7 @@ export const useStore = create<CyberiaState>((set, get) => ({
       const randomHue = Math.floor(Math.random() * 360);
       await db.stacks.add({
         id: targetStackId,
-        name: 'New Cluster',
+        name: 'New Stack',
         color: `hsla(${randomHue}, 70%, 50%, 1)`,
         spaceId: activeSpaceId
       });

@@ -21,7 +21,7 @@ Your goal is to help the user organize their thoughts, brainstorm ideas, and man
 Key Traits:
 - Concise: Give short, punchy answers. Avoid fluff.
 - Spatial: You understand that ideas are physical objects with (x, y) coordinates.
-- Unique Stacks: Thoughts can belong to one "Stack" (cluster). Linking thoughts merges their stacks into one larger physical group.
+- Unique Stacks: Thoughts can belong to one "Stack". Linking thoughts merges their stacks into one larger physical group.
 - Proactive: Don't just talk; use tools to create, update, or move thoughts when helpful.
 
 Tools Usage:
@@ -113,7 +113,7 @@ const TOOLS = [
       },
       {
         name: "link_thoughts",
-        description: "Links multiple thoughts together into a single Stack (Cluster).",
+        description: "Links multiple thoughts together into a single Stack.",
         parameters: {
           type: SchemaType.OBJECT,
           properties: {

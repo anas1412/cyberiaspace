@@ -124,7 +124,7 @@ const MultiSelectionMenu: React.FC = () => {
                     }
                   }
                 }}
-                placeholder={areLinked ? "Rename Stack..." : "Name your new cluster..."}
+                placeholder={areLinked ? "Rename Stack..." : "Name your new stack..."}
                 className="bg-transparent text-[10px] font-black uppercase tracking-widest text-white outline-none flex-1"
               />
             </div>
