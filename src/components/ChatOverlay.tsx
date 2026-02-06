@@ -87,8 +87,8 @@ const ChatOverlay: React.FC = () => {
       }
 
       // Build Context
-      const { activeSpaceId, thoughts, spaces } = useStore.getState();
-      const workspaceContext = serializeWorkspace(activeSpaceId, thoughts, spaces);
+      const { activeSpaceId, thoughts, spaces, stacks } = useStore.getState();
+      const workspaceContext = serializeWorkspace(activeSpaceId, thoughts, spaces, stacks);
       
       const prompt = `
 [SYSTEM CONTEXT]

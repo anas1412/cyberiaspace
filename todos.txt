@@ -15,6 +15,16 @@
 
 - maybe change ai chat on the right
 
+- add verification of the oracle key
+
+- fix the fetching youtube videos title/uploader, and if it gets saved to database or always fetching and repeating
+
+- add clear data button in system menu
+
+- make accounts / data sync 
+
+- fix stacks naming in ai tools, always name the stack when creating/linking thoughts
+
 
 i changed variables in constants, i want oracle to have 2 modes one thats uses the user's key and one uses external key (my key) but the catch is, when the user puts his own key it uses the multimodal models and can select from them, if no key provded it shows the user that uses the free, and and disable the vision function in chat and can only select text models from oracle settings, i also want u to make a vercel api route for this api  external function since we cant store my own api key  
 
