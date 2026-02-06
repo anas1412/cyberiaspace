@@ -309,6 +309,14 @@ export const useStore = create<CyberiaState>((set, get) => ({
         spaceId: defaultSpaceId
       });
 
+      await get().addThought({
+        text: 'Morphing Views',
+        content: 'Switch between views in the top right: \n\n- **Spatial:** Free-form physics playground. \n- **Kanban:** Structured columnar workflow. \n- **Calendar:** Time-based stacking grid. \n\nYour data adapts to the shape you need.',
+        x: cx - 400, y: cy + 200, priority: 'medium', stackId: basicsId,
+        status: 'todo',
+        spaceId: defaultSpaceId
+      });
+
       // STACK 2: THE LAIN SYSTEM (PURPLE)
       const mediaId = 'st-media';
       await db.stacks.add({
@@ -349,8 +357,8 @@ export const useStore = create<CyberiaState>((set, get) => ({
       });
 
       await get().addThought({
-        text: 'Soundtrack Analysis',
-        content: '### Cyberia Mix Summary\n\n- **Track:** Duvet (BoA)\n- **Vibe:** Melancholic, Ethereal, Cyber-folk.\n- **Significance:** The boundary between the physical world and the Wired. Perfect for deep focus and architectural brainstorming.',
+        text: 'README',
+        content: '# Cyberia: The Kinetic Mind\n\nCyberia is a **spatial operating system** for your thoughts. In a world of flat lists and rigid folders, Cyberia treats information as **physical matter**.\n\n### 1. Kinetic Architecture\nIdeas here have mass, velocity, and gravity. Using our custom physics engine, your thoughts form natural clusters—**Stacks**—based on your internal logic. It moves with you, resisting the static nature of traditional apps.\n\n### 2. Dimensional Morphing\nInformation is fluid. Switch between **Spatial**, **Kanban**, and **Calendar** modes to see your data transform. What was a free-form brainstorm becomes a structured workflow, then a temporal roadmap, all without losing context.\n\n### 3. The Oracle (AI)\nPowered by Gemini, the **Oracle** is your spatial assistant. With **Vision**, it sees what you see. With **Thinking Mode**, it reasons deeply about your architecture. It doesn\'t just chat; it organizes, moves, and links your ideas into a coherent neural layer.\n\n### 4. Local & Secure\nYour mind belongs to you. All data is stored locally in your browser. Cyberia is a private sanctuary for non-linear thinking.\n\n---\n*Welcome to the Wired.*',
         x: cx + 650, y: cy + 150, priority: 'medium', stackId: mediaId,
         status: 'done',
         spaceId: defaultSpaceId
