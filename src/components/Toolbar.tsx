@@ -461,11 +461,20 @@ const Toolbar: React.FC = () => {
       </div>
 
       {/* NEW THOUGHT FAB */}
-      <div className="fixed bottom-10 left-1/2 -translate-x-1/2 z-[10000] pointer-events-none flex flex-col items-center gap-4 transition-all duration-300">
+      <div className="fixed bottom-10 left-1/2 -translate-x-1/2 z-[10000] pointer-events-none flex flex-col items-center transition-all duration-300">
         <button 
           onClick={handleAddThought}
           className="group relative flex items-center justify-center w-16 h-16 bg-[var(--bg-gradient-to)]/40 backdrop-blur-2xl text-white rounded-full border border-white/10 shadow-[0_0_50px_var(--accent-glow)] transition-all hover:scale-110 active:scale-95 hover:border-[var(--accent)]/40 pointer-events-auto"
         >
+          {/* Tooltip */}
+          <div className="absolute bottom-full mb-4 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-all duration-300 translate-y-2 group-hover:translate-y-0 pointer-events-none whitespace-nowrap">
+            <div className="glass px-3 py-1.5 rounded-xl border border-white/10 flex items-center gap-2 shadow-2xl bg-[var(--bg-main)]/90 backdrop-blur-xl">
+              <span className="text-[10px] font-black uppercase tracking-widest text-white/80">New Thought</span>
+              <div className="w-[1px] h-2 bg-white/10 mx-0.5" />
+              <kbd className="bg-white/5 border border-white/10 px-1.5 py-0.5 rounded text-[8px] font-black text-[var(--accent-secondary)]">SPACE</kbd>
+            </div>
+          </div>
+
           <div className="absolute inset-0 rounded-full bg-[var(--accent)]/5 opacity-0 group-hover:opacity-100 transition-opacity blur-xl" />
           <Plus className="w-8 h-8 text-slate-400 group-hover:text-white transition-all group-hover:rotate-90 relative z-10" />
         </button>
@@ -539,10 +548,16 @@ const Toolbar: React.FC = () => {
             <button 
               onClick={() => setChatOpen(!isChatOpen)}
               className={cn(
-                "glass w-10 h-10 md:w-12 md:h-12 flex items-center justify-center rounded-2xl border border-white/5 transition-all",
+                "group relative glass w-10 h-10 md:w-12 md:h-12 flex items-center justify-center rounded-2xl border border-white/5 transition-all",
                 isChatOpen ? "bg-[var(--accent)] text-white shadow-[0_0_20px_var(--accent-glow)]" : "text-[var(--accent)] hover:bg-[var(--accent)]/10"
               )}
             >
+              {/* Tooltip */}
+              <div className="absolute bottom-full mb-4 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-all duration-300 translate-y-2 group-hover:translate-y-0 pointer-events-none whitespace-nowrap z-[10001]">
+                <div className="glass px-3 py-1.5 rounded-xl border border-white/10 flex items-center gap-2 shadow-2xl bg-[var(--bg-main)]/90 backdrop-blur-xl">
+                  <span className="text-[10px] font-black uppercase tracking-widest text-white/80">Oracle Chat</span>
+                </div>
+              </div>
               <BotMessageSquare className="w-4 h-4 md:w-5 md:h-5" />
             </button>
           )}
@@ -589,19 +604,31 @@ const Toolbar: React.FC = () => {
           <button 
             onClick={() => setIsShortcutsOpen(!isShortcutsOpen)}
             className={cn(
-              "hidden md:flex glass w-12 h-12 items-center justify-center rounded-2xl transition-all border border-white/5",
+              "group relative hidden md:flex glass w-12 h-12 items-center justify-center rounded-2xl transition-all border border-white/5",
               isShortcutsOpen ? "bg-[var(--accent)] text-white" : "text-slate-400 hover:text-white"
             )}
           >
+            {/* Tooltip */}
+            <div className="absolute bottom-full mb-4 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-all duration-300 translate-y-2 group-hover:translate-y-0 pointer-events-none whitespace-nowrap z-[10001]">
+              <div className="glass px-3 py-1.5 rounded-xl border border-white/10 flex items-center gap-2 shadow-2xl bg-[var(--bg-main)]/90 backdrop-blur-xl">
+                <span className="text-[10px] font-black uppercase tracking-widest text-white/80">Command Center</span>
+              </div>
+            </div>
             <Keyboard className="w-5 h-5" />
           </button>
           <button 
             onClick={() => setIsSystemMenuOpen(!isSystemMenuOpen)}
             className={cn(
-              "glass w-10 h-10 md:w-12 md:h-12 flex items-center justify-center rounded-2xl transition-all border border-white/5",
+              "group relative glass w-10 h-10 md:w-12 md:h-12 flex items-center justify-center rounded-2xl transition-all border border-white/5",
               isSystemMenuOpen ? "bg-[var(--accent)] text-white" : "text-slate-400 hover:text-white"
             )}
           >
+            {/* Tooltip */}
+            <div className="absolute bottom-full mb-4 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-all duration-300 translate-y-2 group-hover:translate-y-0 pointer-events-none whitespace-nowrap z-[10001]">
+              <div className="glass px-3 py-1.5 rounded-xl border border-white/10 flex items-center gap-2 shadow-2xl bg-[var(--bg-main)]/90 backdrop-blur-xl">
+                <span className="text-[10px] font-black uppercase tracking-widest text-white/80">System Menu</span>
+              </div>
+            </div>
             <MoreVertical className="w-4 h-4 md:w-5 md:h-5" />
           </button>
         </div>
@@ -610,7 +637,16 @@ const Toolbar: React.FC = () => {
       <div className="fixed bottom-4 md:bottom-8 left-4 md:left-8 z-[9999] flex items-center gap-2 pointer-events-none">
         <div className="glass px-3 md:px-4 h-[40px] md:h-[48px] rounded-2xl flex items-center gap-2 md:gap-4 border border-white/5 pointer-events-auto">
           {/* Thought Count */}
-          <div className="flex items-center justify-center gap-2 md:gap-3">
+          <div className="group relative flex items-center justify-center gap-2 md:gap-3 cursor-default">
+            {/* Tooltip */}
+            <div className="absolute bottom-full mb-4 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-all duration-300 translate-y-2 group-hover:translate-y-0 pointer-events-none whitespace-nowrap z-[10001]">
+              <div className="glass px-3 py-1.5 rounded-xl border border-white/10 flex items-center gap-2 shadow-2xl bg-[var(--bg-main)]/90 backdrop-blur-xl">
+                <span className="text-[10px] font-black uppercase tracking-widest text-white/80">Capacity</span>
+                <div className="w-[1px] h-2 bg-white/10 mx-0.5" />
+                <span className="text-[10px] font-black text-[var(--accent-secondary)]">{LIMITS.MAX_THOUGHTS_PER_SPACE} Max</span>
+              </div>
+            </div>
+
             <span className="w-1.5 h-1.5 rounded-full bg-green-500 shadow-[0_0_10px_#22c55e] flex-shrink-0"></span> 
             <span className="text-[9px] md:text-[10px] uppercase font-black tracking-widest text-white/80 whitespace-nowrap">
               <span>{thoughts.length}</span>
@@ -624,31 +660,56 @@ const Toolbar: React.FC = () => {
           <button 
             onClick={handleTogglePhysics}
             className={cn(
-              "flex items-center gap-2 transition-all text-[9px] md:text-[10px] font-black uppercase tracking-widest",
+              "group relative flex items-center gap-2 transition-all text-[9px] md:text-[10px] font-black uppercase tracking-widest",
               activeSpace?.physics ? "text-[var(--accent-secondary)]" : "text-slate-600"
             )}
           >
+            {/* Tooltip */}
+            <div className="absolute bottom-full mb-4 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-all duration-300 translate-y-2 group-hover:translate-y-0 pointer-events-none whitespace-nowrap z-[10001]">
+              <div className="glass px-3 py-1.5 rounded-xl border border-white/10 flex items-center gap-2 shadow-2xl bg-[var(--bg-main)]/90 backdrop-blur-xl">
+                <span className="text-[10px] font-black uppercase tracking-widest text-white/80">Physics</span>
+                <div className="w-[1px] h-2 bg-white/10 mx-0.5" />
+                <span className={cn("text-[8px] font-black uppercase tracking-widest", activeSpace?.physics ? "text-green-400" : "text-slate-400")}>
+                  {activeSpace?.physics ? "Enabled" : "Disabled"}
+                </span>
+              </div>
+            </div>
+
             <Zap className="w-3.5 h-3.5 md:w-4 md:h-4" /> 
             <span className="hidden xl:inline">Physics</span>
           </button>
 
-          {/* History Controls - Hidden on tiny mobile screens if needed, but keeping small for now */}
+          {/* History Controls */}
           <div className="hidden sm:flex h-3 w-[1px] bg-white/10 mx-0.5"></div>
           <div className="hidden sm:flex items-center gap-1">
             <button 
               onClick={undo}
               disabled={historyIndex <= 0}
-              className="p-1.5 md:p-2 hover:bg-white/10 text-slate-400 hover:text-white disabled:opacity-20 disabled:cursor-not-allowed transition-all rounded-lg"
-              title="Undo"
+              className="group relative p-1.5 md:p-2 hover:bg-white/10 text-slate-400 hover:text-white disabled:opacity-20 disabled:cursor-not-allowed transition-all rounded-lg"
             >
+              {/* Tooltip */}
+              <div className="absolute bottom-full mb-4 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-all duration-300 translate-y-2 group-hover:translate-y-0 pointer-events-none whitespace-nowrap z-[10001]">
+                <div className="glass px-3 py-1.5 rounded-xl border border-white/10 flex items-center gap-2 shadow-2xl bg-[var(--bg-main)]/90 backdrop-blur-xl">
+                  <span className="text-[10px] font-black uppercase tracking-widest text-white/80">Undo</span>
+                  <div className="w-[1px] h-2 bg-white/10 mx-0.5" />
+                  <kbd className="bg-white/5 border border-white/10 px-1.5 py-0.5 rounded text-[8px] font-black text-[var(--accent-secondary)]">CTRL+Z</kbd>
+                </div>
+              </div>
               <Undo2 className="w-3.5 h-3.5 md:w-4 md:h-4" />
             </button>
             <button 
               onClick={redo}
               disabled={historyIndex >= history.length - 1}
-              className="p-1.5 md:p-2 hover:bg-white/10 text-slate-400 hover:text-white disabled:opacity-20 disabled:cursor-not-allowed transition-all rounded-lg"
-              title="Redo"
+              className="group relative p-1.5 md:p-2 hover:bg-white/10 text-slate-400 hover:text-white disabled:opacity-20 disabled:cursor-not-allowed transition-all rounded-lg"
             >
+              {/* Tooltip */}
+              <div className="absolute bottom-full mb-4 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-all duration-300 translate-y-2 group-hover:translate-y-0 pointer-events-none whitespace-nowrap z-[10001]">
+                <div className="glass px-3 py-1.5 rounded-xl border border-white/10 flex items-center gap-2 shadow-2xl bg-[var(--bg-main)]/90 backdrop-blur-xl">
+                  <span className="text-[10px] font-black uppercase tracking-widest text-white/80">Redo</span>
+                  <div className="w-[1px] h-2 bg-white/10 mx-0.5" />
+                  <kbd className="bg-white/5 border border-white/10 px-1.5 py-0.5 rounded text-[8px] font-black text-[var(--accent-secondary)]">CTRL+Y</kbd>
+                </div>
+              </div>
               <Redo2 className="w-3.5 h-3.5 md:w-4 md:h-4" />
             </button>
           </div>
@@ -660,23 +721,42 @@ const Toolbar: React.FC = () => {
               <div className="flex items-center gap-1">
                 <button 
                   onClick={zoomIn}
-                  className="p-2 hover:bg-white/10 text-slate-400 hover:text-white transition-colors rounded-lg"
-                  title="Zoom In"
+                  className="group relative p-2 hover:bg-white/10 text-slate-400 hover:text-white transition-colors rounded-lg"
                 >
+                  {/* Tooltip */}
+                  <div className="absolute bottom-full mb-4 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-all duration-300 translate-y-2 group-hover:translate-y-0 pointer-events-none whitespace-nowrap z-[10001]">
+                    <div className="glass px-3 py-1.5 rounded-xl border border-white/10 flex items-center gap-2 shadow-2xl bg-[var(--bg-main)]/90 backdrop-blur-xl">
+                      <span className="text-[10px] font-black uppercase tracking-widest text-white/80">Zoom In</span>
+                      <div className="w-[1px] h-2 bg-white/10 mx-0.5" />
+                      <kbd className="bg-white/5 border border-white/10 px-1.5 py-0.5 rounded text-[8px] font-black text-[var(--accent-secondary)]">WHEEL UP</kbd>
+                    </div>
+                  </div>
                   <ZoomIn className="w-4 h-4" />
                 </button>
                 <button 
                   onClick={zoomOut}
-                  className="p-2 hover:bg-white/10 text-slate-400 hover:text-white transition-colors rounded-lg"
-                  title="Zoom Out"
+                  className="group relative p-2 hover:bg-white/10 text-slate-400 hover:text-white transition-colors rounded-lg"
                 >
+                  {/* Tooltip */}
+                  <div className="absolute bottom-full mb-4 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-all duration-300 translate-y-2 group-hover:translate-y-0 pointer-events-none whitespace-nowrap z-[10001]">
+                    <div className="glass px-3 py-1.5 rounded-xl border border-white/10 flex items-center gap-2 shadow-2xl bg-[var(--bg-main)]/90 backdrop-blur-xl">
+                      <span className="text-[10px] font-black uppercase tracking-widest text-white/80">Zoom Out</span>
+                      <div className="w-[1px] h-2 bg-white/10 mx-0.5" />
+                      <kbd className="bg-white/5 border border-white/10 px-1.5 py-0.5 rounded text-[8px] font-black text-[var(--accent-secondary)]">WHEEL DN</kbd>
+                    </div>
+                  </div>
                   <ZoomOut className="w-4 h-4" />
                 </button>
                 <button 
                   onClick={resetTransform}
-                  className="p-2 hover:bg-white/10 text-slate-400 hover:text-white transition-colors rounded-lg"
-                  title="Reset View"
+                  className="group relative p-2 hover:bg-white/10 text-slate-400 hover:text-white transition-colors rounded-lg"
                 >
+                  {/* Tooltip */}
+                  <div className="absolute bottom-full mb-4 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-all duration-300 translate-y-2 group-hover:translate-y-0 pointer-events-none whitespace-nowrap z-[10001]">
+                    <div className="glass px-3 py-1.5 rounded-xl border border-white/10 flex items-center gap-2 shadow-2xl bg-[var(--bg-main)]/90 backdrop-blur-xl">
+                      <span className="text-[10px] font-black uppercase tracking-widest text-white/80">Reset View</span>
+                    </div>
+                  </div>
                   <RotateCcw className="w-4 h-4" />
                 </button>
               </div>

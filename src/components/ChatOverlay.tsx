@@ -35,26 +35,8 @@ const ChatOverlay: React.FC = () => {
   const [history, setHistory] = useState<Message[]>([]);
   const [loading, setLoading] = useState(false);
   const [includeVision, setIncludeVision] = useState(true);
-  const [currentTipIndex, setCurrentTipIndex] = useState(0);
   
   const scrollRef = useRef<HTMLDivElement>(null);
-
-  const tips = [
-    "Ask Oracle to reorganize your workspace",
-    "Press [Space] to spawn a new thought",
-    "Link nodes to form physical clusters",
-    "Double-click nodes for deep editing",
-    "Paste images, text, youtube links",
-    "Toggle Shield icon for local-only mode"
-  ];
-
-  // Rotate tips
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setCurrentTipIndex((prev) => (prev + 1) % tips.length);
-    }, 5000);
-    return () => clearInterval(interval);
-  }, [tips.length]);
 
   // Auto-scroll
   useEffect(() => {
@@ -229,20 +211,11 @@ ${userMsg.text}
               </label>
 
               <div className="flex items-center gap-1.5 text-[9px] font-medium text-slate-500 italic select-none overflow-hidden">
-                <span className="opacity-40 flex-shrink-0 whitespace-nowrap">Tip:</span>
-                <AnimatePresence mode="wait">
-                  <motion.span 
-                    key={currentTipIndex}
-                    initial={{ opacity: 0, y: 5 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -5 }}
-                    className="text-slate-400 truncate block whitespace-nowrap"
-                  >
-                    {!activeModel.includes('gemini-3') && currentTipIndex === 0
-                      ? "Use Gemini 3 for better reasoning" 
-                      : tips[currentTipIndex]}
-                  </motion.span>
-                </AnimatePresence>
+                <span className="text-slate-400 truncate block whitespace-nowrap">
+                  {includeVision 
+                    ? "Oracle sees your workspace to help you organize." 
+                    : "Oracle is blind. Text-only mode active."}
+                </span>
               </div>
             </div>
           </div>
