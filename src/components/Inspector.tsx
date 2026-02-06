@@ -5,6 +5,7 @@ import { X, Maximize2, Image as ImageIcon, Link, Trash2, Youtube } from 'lucide-
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 import { motion, AnimatePresence } from 'framer-motion';
+import { fetchYouTubeMeta, getYouTubeVideoId } from '../utils/youtube';
 
 function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -113,7 +114,7 @@ const Inspector: React.FC = () => {
                   setLocalText(e.target.value);
                   updateThought(thought.id, { text: e.target.value });
                 }}
-                maxLength={30}
+                maxLength={100}
                 className="w-full bg-[var(--bg-page)]/20 border border-white/10 rounded-xl p-3 text-sm outline-none focus:border-[var(--accent)] text-[var(--text-primary)] placeholder:text-slate-500"
                 placeholder={thought.placeholder || "Name"}
               />
@@ -308,7 +309,27 @@ const Inspector: React.FC = () => {
                       <input 
                         type="text" 
                         value={thought.content}
-                        onChange={(e) => updateThought(thought.id, { content: e.target.value })}
+                        onChange={(e) => {
+                          const newUrl = e.target.value;
+                          updateThought(thought.id, { content: newUrl });
+                          
+                          const videoId = getYouTubeVideoId(newUrl);
+                          if (videoId) {
+                            // Fetch metadata for the new URL
+                            fetchYouTubeMeta(newUrl)
+                              .then(metadata => {
+                                if (metadata && metadata.title) {
+                                  updateThought(thought.id, { 
+                                    text: metadata.title,
+                                    description: metadata.author_name || "" 
+                                  });
+                                }
+                              })
+                              .catch(err => {
+                                console.warn("YouTube metadata fetch failed:", err);
+                              });
+                          }
+                        }}
                         placeholder="https://www.youtube.com/watch?v=..."
                         className="w-full bg-black/40 border border-white/10 rounded-xl p-3 text-xs outline-none focus:border-red-500 text-white"
                       />

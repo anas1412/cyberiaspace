@@ -1,28 +1,26 @@
-import type { Thought, Space } from '../db';
+import type { Thought, Space, Stack } from '../db';
 
-export const serializeWorkspace = (activeSpaceId: string | null, thoughts: Thought[], spaces: Space[]) => {
+export const serializeWorkspace = (activeSpaceId: string | null, thoughts: Thought[], spaces: Space[], stacks: Stack[]) => {
   const activeSpace = spaces.find(s => s.id === activeSpaceId);
   
   if (!activeSpace) return "No active space selected.";
 
-  // Simplify thoughts for token efficiency (though Gemini 1.5 is generous)
-  // We remove the full base64 images from the text context since we use Vision for that.
+  // Map stacks for quick lookup
+  const stackMap = new Map(stacks.map(s => [s.id, s.name]));
+
+  // Simplify thoughts for token efficiency
   const simplifiedThoughts = thoughts.map(t => ({
     id: t.id,
-    spaceId: t.spaceId,
     text: t.text,
     description: t.description,
     type: t.type,
     position: { x: Math.round(t.x), y: Math.round(t.y) },
     order: t.order,
-    content: t.content?.substring(0, 1000), // Increased limit for better context
-    stackId: t.stackId,
+    content: t.content?.substring(0, 500), // Slightly reduced to save tokens
+    stack: t.stackId ? { id: t.stackId, name: stackMap.get(t.stackId) || "Unnamed Stack" } : null,
     status: t.status,
     priority: t.priority,
     date: t.date,
-    tasks: t.tasks,
-    table: t.table,
-    // Base64 signals
     hasImage: !!t.image,
     hasDrawing: !!t.drawing
   }));
@@ -36,10 +34,9 @@ export const serializeWorkspace = (activeSpaceId: string | null, thoughts: Thoug
     currentSpace: {
       id: activeSpace.id,
       name: activeSpace.name,
-      mode: activeSpace.mode,
-      physics: activeSpace.physics,
-      order: activeSpace.order
+      mode: activeSpace.mode
     },
+    stacks: stacks.map(s => ({ id: s.id, name: s.name })),
     thoughts: simplifiedThoughts
   };
 

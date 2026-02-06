@@ -71,10 +71,12 @@ interface CyberiaState {
   createStack: (name: string, thoughtId: number) => Promise<void>;
   updateStack: (id: string, updates: Partial<Stack>) => Promise<void>;
   deleteStack: (id: string) => Promise<void>;
+  cleanupStacks: () => Promise<void>;
   
   // Data Lifecycle
   exportData: () => Promise<void>;
   importData: (file: File) => Promise<void>;
+  resetData: () => Promise<void>;
   
   // Lightbox
   isLightboxOpen: boolean;
@@ -640,8 +642,16 @@ export const useStore = create<CyberiaState>((set, get) => ({
   },
 
   deleteThought: async (id) => {
+    const thought = get().thoughts.find(t => t.id === id);
+    const affectedStackId = thought?.stackId;
+
     await db.thoughts.delete(id);
     await get().refreshThoughts();
+    
+    if (affectedStackId) {
+      await get().cleanupStacks();
+    }
+
     if (get().selectedThoughtId === id) {
       set({ selectedThoughtId: null, isInspectorOpen: false });
     }
@@ -695,11 +705,20 @@ export const useStore = create<CyberiaState>((set, get) => ({
   },
 
   deleteSelectedThoughts: async () => {
-    const { selectedThoughtIds } = get();
+    const { selectedThoughtIds, thoughts } = get();
     if (selectedThoughtIds.length === 0) return;
     
+    const affectedStackIds = Array.from(new Set(
+      thoughts.filter(t => selectedThoughtIds.includes(t.id)).map(t => t.stackId).filter(Boolean)
+    )) as string[];
+
     await db.thoughts.bulkDelete(selectedThoughtIds);
     await get().refreshThoughts();
+    
+    if (affectedStackIds.length > 0) {
+      await get().cleanupStacks();
+    }
+
     set({ selectedThoughtIds: [], selectedThoughtId: null, isInspectorOpen: false });
     get().pushHistory();
   },
@@ -734,7 +753,7 @@ export const useStore = create<CyberiaState>((set, get) => ({
 
         // If a name was provided, rename the merged stack
         if (name) {
-          await db.stacks.update(targetStackId, { name: name });
+          await db.stacks.update(targetStackId, { name: name?.trim() || 'Unnamed Stack' });
         }
       });
     } else {
@@ -743,7 +762,7 @@ export const useStore = create<CyberiaState>((set, get) => ({
       const randomHue = Math.floor(Math.random() * 360);
       await db.stacks.add({
         id: targetStackId,
-        name: name || 'New Stack',
+        name: name?.trim() || 'Unnamed Stack',
         color: `hsla(${randomHue}, 70%, 50%, 1)`,
         spaceId: activeSpaceId
       });
@@ -760,35 +779,57 @@ export const useStore = create<CyberiaState>((set, get) => ({
     if (selectedThoughtIds.length === 0) return;
 
     await db.thoughts.where('id').anyOf(selectedThoughtIds).modify({ stackId: null });
-    
-    // Cleanup: Remove stacks that no longer have any thoughts
-    const { activeSpaceId } = get();
-    if (activeSpaceId) {
-      const allThoughts = await db.thoughts.where('spaceId').equals(activeSpaceId).toArray();
-      const activeStackIds = new Set(allThoughts.map(t => t.stackId).filter(Boolean));
-      const allStacks = await db.stacks.where('spaceId').equals(activeSpaceId).toArray();
-      const orphanedStackIds = allStacks.filter(s => !activeStackIds.has(s.id)).map(s => s.id);
-      
-      if (orphanedStackIds.length > 0) {
-        await db.stacks.where('id').anyOf(orphanedStackIds).delete();
-      }
-    }
+    await get().cleanupStacks();
 
     await get().refreshThoughts();
     await get().refreshStacks();
     get().pushHistory();
   },
 
-  createStack: async (name, thoughtId) => {
+  cleanupStacks: async () => {
     const { activeSpaceId } = get();
     if (!activeSpaceId) return;
+
+    await db.transaction('rw', db.thoughts, db.stacks, async () => {
+      const allThoughts = await db.thoughts.where('spaceId').equals(activeSpaceId).toArray();
+      const allStacks = await db.stacks.where('spaceId').equals(activeSpaceId).toArray();
+      
+      for (const stack of allStacks) {
+        const stackThoughts = allThoughts.filter(t => t.stackId === stack.id);
+        
+        // If 0 or 1 thoughts remain, the stack is invalid
+        if (stackThoughts.length < 2) {
+          if (stackThoughts.length === 1) {
+            await db.thoughts.update(stackThoughts[0].id, { stackId: null });
+          }
+          await db.stacks.delete(stack.id);
+        }
+      }
+    });
+
+    await get().refreshThoughts();
+    await get().refreshStacks();
+  },
+
+  createStack: async (name, thoughtId) => {
+    const { activeSpaceId, stacks } = get();
+    if (!activeSpaceId) return;
+
+    const trimmedName = name?.trim() || 'Unnamed Stack';
+    const existingStack = stacks.find(s => s.name.toLowerCase() === trimmedName.toLowerCase() && s.spaceId === activeSpaceId);
+
+    if (existingStack) {
+      await db.thoughts.update(thoughtId, { stackId: existingStack.id });
+      await get().refreshThoughts();
+      return;
+    }
 
     const newStackId = 'st-' + Date.now();
     const randomHue = Math.floor(Math.random() * 360);
     
     await db.stacks.add({
       id: newStackId,
-      name: name,
+      name: trimmedName,
       color: `hsla(${randomHue}, 70%, 50%, 1)`,
       spaceId: activeSpaceId
     });
@@ -846,28 +887,82 @@ export const useStore = create<CyberiaState>((set, get) => ({
     URL.revokeObjectURL(url);
   },
 
-  importData: async (file) => {
-    const reader = new FileReader();
-    reader.onload = async (e) => {
+    importData: async (file) => {
+
+      const reader = new FileReader();
+
+      reader.onload = async (e) => {
+
+        try {
+
+          const data = JSON.parse(e.target?.result as string);
+
+          if (!data.spaces || !data.thoughts) throw new Error('Invalid backup file');
+
+          
+
+          await db.transaction('rw', db.spaces, db.thoughts, db.stacks, async () => {
+
+            await db.spaces.clear();
+
+            await db.thoughts.clear();
+
+            await db.stacks.clear();
+
+            await db.spaces.bulkAdd(data.spaces);
+
+            await db.thoughts.bulkAdd(data.thoughts);
+
+            if (data.stacks) await db.stacks.bulkAdd(data.stacks);
+
+          });
+
+          
+
+          window.location.reload();
+
+        } catch (err) {
+
+          console.error('Import failed:', err);
+
+          alert('Import failed. Please make sure the file is a valid Cyberia backup.');
+
+        }
+
+      };
+
+      reader.readAsText(file);
+
+    },
+
+  
+
+    resetData: async () => {
+
       try {
-        const data = JSON.parse(e.target?.result as string);
-        if (!data.spaces || !data.thoughts) throw new Error('Invalid backup file');
-        
+
         await db.transaction('rw', db.spaces, db.thoughts, db.stacks, async () => {
+
           await db.spaces.clear();
+
           await db.thoughts.clear();
+
           await db.stacks.clear();
-          await db.spaces.bulkAdd(data.spaces);
-          await db.thoughts.bulkAdd(data.thoughts);
-          if (data.stacks) await db.stacks.bulkAdd(data.stacks);
+
         });
-        
+
+        localStorage.clear();
+
         window.location.reload();
+
       } catch (err) {
-        console.error('Import failed:', err);
-        alert('Import failed. Please make sure the file is a valid Cyberia backup.');
+
+        console.error('Reset failed:', err);
+
       }
-    };
-    reader.readAsText(file);
-  }
-}));
+
+    }
+
+  }));
+
+  

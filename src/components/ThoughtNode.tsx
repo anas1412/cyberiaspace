@@ -5,6 +5,7 @@ import { Maximize2, Palette, Link as LinkIcon, Link2Off } from 'lucide-react';
 import { marked } from 'marked';
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
+import { getYouTubeVideoId } from '../utils/youtube';
 
 function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -169,7 +170,7 @@ const ThoughtNode: React.FC<ThoughtNodeProps> = React.memo(({ thought, registerE
       }
       case 'tasks': {
         if (!thought.tasks.length) return (
-          <div data-trigger="tasks" className="p-3 bg-black/20 rounded-xl border border-white/5 mt-1 cursor-pointer hover:bg-white/[0.05] transition-colors group/tasks relative">
+          <div data-trigger="tasks" className="p-3 bg-black/20 rounded-xl border border-white/5 mt-1 cursor-pointer hover:bg-white/[0.05] transition-colors group/tasks relative pr-10">
             <div className="flex items-center gap-2 text-slate-600">
               <Maximize2 className="w-3 h-3" />
               <span className="text-[10px] font-bold uppercase tracking-widest">No tasks yet</span>
@@ -181,7 +182,7 @@ const ThoughtNode: React.FC<ThoughtNodeProps> = React.memo(({ thought, registerE
         const previewTasks = thought.tasks.slice(0, 3);
 
         return (
-          <div data-trigger="tasks" className="mt-1 space-y-2 group/tasks relative cursor-pointer prevent-drag">
+          <div data-trigger="tasks" className="mt-1 space-y-2 group/tasks relative cursor-pointer prevent-drag pr-10">
             <div className="space-y-1.5">
               {previewTasks.map((task, i) => (
                 <div key={i} className="flex items-center gap-2 min-w-0">
@@ -306,9 +307,7 @@ const ThoughtNode: React.FC<ThoughtNodeProps> = React.memo(({ thought, registerE
         );
       }
       case 'embed': {
-        const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|&v=)([^#&?]*).*/;
-        const match = thought.content.match(regExp);
-        const videoId = (match && match[2].length === 11) ? match[2] : null;
+        const videoId = getYouTubeVideoId(thought.content);
         
         return (
           <div data-trigger="embed" className="mt-2 relative group prevent-drag cursor-pointer overflow-hidden rounded-xl border border-white/10 bg-black/50 aspect-video flex items-center justify-center">

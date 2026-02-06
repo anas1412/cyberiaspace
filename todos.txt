@@ -4,17 +4,21 @@
 
 - add a vercel api route to enable oracle external api for built-in vercel key / add limiters
 
--improve onboarding by adding a youtube link a gif images and a drawing explaining how does the app works, mroe stacks and thoughts in details the better
-
 - add support to instagram/facebook/reddit/twitter/spotify and popular plateforms embed support
 
 
-- small thing, when only two in a stack and unlink one of them the other one should unlink as well and remove the stack no?
 
-- the link/unlink icon is overlapped with progress bar on thoughts with type tasks
 
 - maybe change ai chat on the right
 
+- add verification of the oracle key
 
-i changed variables in constants, i want oracle to have 2 modes one thats uses the user's key and one uses external key (my key) but the catch is, when the user puts his own key it uses the multimodal models and can select from them, if no key provded it shows the user that uses the free, and and disable the vision function in chat and can only select text models from oracle settings, i also want u to make a vercel api route for this api  external function since we cant store my own api key  
+
+
+
+- make accounts / data sync 
+
+- use ytb-dl backend to fetch/manage/verify youtube links
+
+  
 

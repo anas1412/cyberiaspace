@@ -1,6 +1,7 @@
 import { GoogleGenerativeAI, HarmCategory, HarmBlockThreshold, type ChatSession, type GenerativeModel, type Part, SchemaType } from '@google/generative-ai';
 import { useStore } from '../store/useStore';
-import { DEFAULT_MODEL } from '../constants';
+import { DEFAULT_MODEL, VERIFICATION_MODEL } from '../constants';
+import { fetchYouTubeMeta } from '../utils/youtube';
 
 // Configuration
 // Removed static MODEL_NAME to support dynamic switching via store.
@@ -23,6 +24,10 @@ Key Traits:
 - Spatial: You understand that ideas are physical objects with (x, y) coordinates.
 - Unique Stacks: Thoughts can belong to one "Stack". Linking thoughts merges their stacks into one larger physical group.
 - Proactive: Don't just talk; use tools to create, update, or move thoughts when helpful.
+- Organized: ALWAYS provide descriptive names when linking thoughts or creating stacks. Never leave a stack unnamed.
+- Media Savvy: When the user asks for music or videos, use 'type: "embed"'. ALWAYS provide a valid, full YouTube URL (e.g., https://www.youtube.com/watch?v=...) in the 'content' field for embeds. Do NOT leave content empty for embeds.
+- NO HALLUCINATIONS: Do NOT hallucinate YouTube video IDs. If you are not 100% certain of a working video URL, create a 'text' thought instead with the title of the media and explain that the user can paste a link later.
+- Stacking Strategy: When creating multiple related thoughts, prefer creating them first and then using 'link_thoughts' to group them all at once into a named stack. This is more reliable than using 'stackName' on individual creations.
 
 Tools Usage:
 - When the user asks to "organize" or "move", use 'update_thought' to change (x, y).
@@ -42,15 +47,16 @@ const TOOLS = [
           type: SchemaType.OBJECT,
           properties: {
             text: { type: SchemaType.STRING, description: "The title or main text." },
-            type: { type: SchemaType.STRING, enum: ["text", "tasks", "paint", "table", "image", "embed"], description: "The content type." },
+            type: { type: SchemaType.STRING, enum: ["text", "tasks", "paint", "table", "image", "embed"], description: "The content type. Use 'embed' for YouTube videos." },
             x: { type: SchemaType.NUMBER, description: "X coordinate." },
             y: { type: SchemaType.NUMBER, description: "Y coordinate." },
             priority: { type: SchemaType.STRING, enum: ["none", "low", "medium", "high", "urgent"], description: "Priority level." },
-            content: { type: SchemaType.STRING, description: "Detailed content (Markdown)." },
+            content: { type: SchemaType.STRING, description: "Detailed content (Markdown). For 'embed' type, this MUST be the full URL (e.g. YouTube link)." },
             description: { type: SchemaType.STRING, description: "Short description." },
             date: { type: SchemaType.STRING, description: "Date in YYYY-MM-DD format." },
             order: { type: SchemaType.NUMBER, description: "Stacking order for Kanban/Calendar." },
-            stackId: { type: SchemaType.STRING, description: "Optional unique stack ID." },
+            stackId: { type: SchemaType.STRING, description: "Optional unique stack ID if joining an existing stack." },
+            stackName: { type: SchemaType.STRING, description: "Create a new stack with this name for this thought, or join an existing stack with this name." },
             status: { type: SchemaType.STRING, enum: ["none", "todo", "doing", "done"] },
             tasks: { 
               type: SchemaType.ARRAY, 
@@ -115,14 +121,14 @@ const TOOLS = [
       },
       {
         name: "link_thoughts",
-        description: "Links multiple thoughts together into a single Stack.",
+        description: "Links multiple thoughts together into a single Stack. Use this to group multiple new or existing thoughts. ALWAYS provide a descriptive name.",
         parameters: {
           type: SchemaType.OBJECT,
           properties: {
             ids: { type: SchemaType.ARRAY, items: { type: SchemaType.NUMBER }, description: "IDs of thoughts to link." },
-            name: { type: SchemaType.STRING, description: "Descriptive name for the new or merged stack." }
+            name: { type: SchemaType.STRING, description: "Descriptive name for the new or merged stack. REQUIRED." }
           },
-          required: ["ids"]
+          required: ["ids", "name"]
         }
       },
       {
@@ -166,14 +172,63 @@ async function executeTool(name: string, args: Record<string, unknown>) {
         if (args.priority && typeof args.priority === 'string' && !['none', 'low', 'medium', 'high', 'urgent'].includes(args.priority)) {
            delete args.priority;
         }
+        
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const id = await store.addThought(args as any);
-        return { success: true, id, message: `Created thought ${id} at (${args.x}, ${args.y})` };
+        const { stackName, ...thoughtArgs } = args as any;
+
+        // YouTube Validation for Embeds
+        if (thoughtArgs.type === 'embed' && thoughtArgs.content) {
+          try {
+            const meta = await fetchYouTubeMeta(thoughtArgs.content);
+            if (meta) {
+              // Automatically use the real title and uploader if the AI's title is generic
+              if (!thoughtArgs.text || thoughtArgs.text.toLowerCase().includes('video') || thoughtArgs.text.toLowerCase().includes('music')) {
+                thoughtArgs.text = meta.title;
+              }
+              thoughtArgs.description = meta.author_name;
+            }
+          } catch (err) {
+            return { error: `Invalid YouTube URL: "${thoughtArgs.content}". Please provide a valid, working YouTube link.` };
+          }
+        }
+
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const id = await store.addThought(thoughtArgs as any);
+
+        if (stackName) {
+          const name = stackName as string;
+          const existingStack = store.stacks.find(s => s.name.toLowerCase() === name.toLowerCase());
+          
+          if (existingStack) {
+            await store.updateThought(id, { stackId: existingStack.id });
+          } else {
+            // Create new stack and get ID
+            await store.createStack(name, id);
+          }
+        }
+
+        return { success: true, id, message: `Created thought ${id} at (${args.x}, ${args.y})${stackName ? ` in stack "${stackName}"` : ""}` };
       }
         
       case 'update_thought': {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const { id: updateId, stackName, ...updates } = args as any;
+
+        // YouTube Validation for Embeds
+        const currentThought = store.thoughts.find(t => t.id === updateId);
+        const targetType = updates.type || currentThought?.type;
+
+        if (targetType === 'embed' && updates.content) {
+          try {
+            const meta = await fetchYouTubeMeta(updates.content);
+            if (meta) {
+              if (!updates.text) updates.text = meta.title;
+              updates.description = meta.author_name;
+            }
+          } catch (err) {
+            return { error: `Invalid YouTube URL: "${updates.content}". Update failed.` };
+          }
+        }
         
         if (stackName) {
           const name = stackName as string;
@@ -431,5 +486,52 @@ export const aiService = {
     }
   },
 
-  isInitialized: () => !!model,
-};
+    isInitialized: () => !!model,
+
+  
+
+      validateKey: async (apiKey: string) => {
+
+  
+
+        const testGenAI = new GoogleGenerativeAI(apiKey);
+
+  
+
+        const testModel = testGenAI.getGenerativeModel({ model: VERIFICATION_MODEL[0] });
+
+  
+
+        try {
+
+  
+
+          // Smallest possible prompt to verify key
+
+  
+
+          const result = await testModel.generateContent("hi");
+
+  
+
+          return !!result.response.text();
+
+  
+
+        } catch (error) {
+
+  
+
+    
+
+        console.error("API Key Validation Failed:", error);
+
+        throw error;
+
+      }
+
+    }
+
+  };
+
+  
