@@ -1,7 +1,7 @@
 import React, { useRef, useEffect, useState, useMemo } from 'react';
 import { type Thought } from '../db';
 import { useStore } from '../store/useStore';
-import { Maximize2, Palette, Link as LinkIcon } from 'lucide-react';
+import { Maximize2, Palette, Link as LinkIcon, Link2Off } from 'lucide-react';
 import { marked } from 'marked';
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
@@ -67,12 +67,22 @@ const ThoughtNode: React.FC<ThoughtNodeProps> = React.memo(({ thought, registerE
     onMouseDown(thought.id, e);
   };
 
-  const handleLinkClick = (e: React.MouseEvent) => {
+  const handleLinkAction = (e: React.MouseEvent) => {
     e.stopPropagation();
-    if (linkingSourceId === thought.id) {
-      setLinkingSourceId(null);
+    
+    if (thought.stackId) {
+      // If already in a stack, this button unlinks it
+      const store = useStore.getState();
+      store.setSelectedThoughtIds([thought.id]);
+      store.unlinkSelectedThoughts();
+      store.setSelectedThoughtIds([]);
     } else {
-      setLinkingSourceId(thought.id);
+      // If not in a stack, this button toggles linking mode
+      if (linkingSourceId === thought.id) {
+        setLinkingSourceId(null);
+      } else {
+        setLinkingSourceId(thought.id);
+      }
     }
   };
 
@@ -420,18 +430,23 @@ const ThoughtNode: React.FC<ThoughtNodeProps> = React.memo(({ thought, registerE
           </div>
         )}
 
-        {/* Bottom Right Link Button */}
+        {/* Bottom Right Action Button (Link or Unlink) */}
         <button 
-          onClick={handleLinkClick}
+          onClick={handleLinkAction}
           className={cn(
             "absolute bottom-4 right-4 p-2 rounded-xl transition-all z-10",
             linkingSourceId === thought.id 
               ? "bg-[var(--accent)] text-white shadow-[0_0_20px_var(--accent-glow)]" 
-              : "bg-white/5 text-slate-500 hover:text-white hover:bg-white/10 border border-white/5"
+              : "bg-white/5 text-slate-500 hover:text-white hover:bg-white/10 border border-white/5",
+            thought.stackId && "hover:text-red-400 hover:bg-red-500/10"
           )}
-          title="Link to another thought"
+          title={thought.stackId ? "Remove from stack" : "Link to another thought"}
         >
-          <LinkIcon className="w-4 h-4" />
+          {thought.stackId ? (
+            <Link2Off className="w-4 h-4" />
+          ) : (
+            <LinkIcon className="w-4 h-4" />
+          )}
         </button>
       </div>
     </div>
