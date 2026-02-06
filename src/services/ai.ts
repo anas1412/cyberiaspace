@@ -26,7 +26,8 @@ Key Traits:
 
 Tools Usage:
 - When the user asks to "organize" or "move", use 'update_thought' to change (x, y).
-- To group thoughts, use 'link_thoughts' (merges existing stacks or creates new ones).
+- To file a thought into a specific category, use 'update_thought' with 'stackName'.
+- To group multiple thoughts, use 'link_thoughts'.
 - Always prefer modifying the workspace over just describing changes in text.
 `;
 
@@ -89,7 +90,8 @@ const TOOLS = [
             y: { type: SchemaType.NUMBER },
             date: { type: SchemaType.STRING, description: "Date in YYYY-MM-DD format." },
             order: { type: SchemaType.NUMBER, description: "Stacking order for Kanban/Calendar." },
-            stackId: { type: SchemaType.STRING, description: "Assign to a specific stack." },
+            stackId: { type: SchemaType.STRING, description: "Assign to a specific stack ID." },
+            stackName: { type: SchemaType.STRING, description: "Move thought into a stack with this name. Creates the stack if it doesn't exist." },
             tasks: { 
               type: SchemaType.ARRAY, 
               items: { 
@@ -117,7 +119,8 @@ const TOOLS = [
         parameters: {
           type: SchemaType.OBJECT,
           properties: {
-            ids: { type: SchemaType.ARRAY, items: { type: SchemaType.NUMBER }, description: "IDs of thoughts to link." }
+            ids: { type: SchemaType.ARRAY, items: { type: SchemaType.NUMBER }, description: "IDs of thoughts to link." },
+            name: { type: SchemaType.STRING, description: "Descriptive name for the new or merged stack." }
           },
           required: ["ids"]
         }
@@ -170,18 +173,33 @@ async function executeTool(name: string, args: Record<string, unknown>) {
         
       case 'update_thought': {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const { id: updateId, ...updates } = args as any;
+        const { id: updateId, stackName, ...updates } = args as any;
+        
+        if (stackName) {
+          const name = stackName as string;
+          const existingStack = store.stacks.find(s => s.name.toLowerCase() === name.toLowerCase());
+          
+          if (existingStack) {
+            updates.stackId = existingStack.id;
+          } else {
+            // Create new stack and get ID
+            await store.createStack(name, updateId);
+            // After creating stack, we still need to apply other updates if any
+          }
+        }
+
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         await store.updateThought(updateId, updates as any);
-        return { success: true, message: `Updated thought ${updateId}` };
+        return { success: true, message: `Updated thought ${updateId}${stackName ? ` and moved to stack "${stackName}"` : ""}` };
       }
 
       case 'link_thoughts': {
         const ids = args.ids as number[];
+        const name = args.name as string | undefined;
         store.setSelectedThoughtIds(ids);
-        await store.linkSelectedThoughts();
+        await store.linkSelectedThoughts(name);
         store.setSelectedThoughtIds([]);
-        return { success: true, message: `Linked ${ids.length} thoughts into a stack.` };
+        return { success: true, message: `Linked ${ids.length} thoughts into a stack${name ? ` named "${name}"` : ""}.` };
       }
 
       case 'unlink_thought': {

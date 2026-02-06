@@ -61,7 +61,7 @@ interface CyberiaState {
   toggleThoughtSelection: (id: number) => void;
   clearSelection: () => void;
   deleteSelectedThoughts: () => Promise<void>;
-  linkSelectedThoughts: () => Promise<void>;
+  linkSelectedThoughts: (name?: string) => Promise<void>;
   unlinkSelectedThoughts: () => Promise<void>;
   setInspectorOpen: (open: boolean) => void;
   setActiveFocus: (id: number | null, type: 'text' | 'table' | 'paint' | 'tasks' | 'embed' | null) => void;
@@ -609,7 +609,7 @@ export const useStore = create<CyberiaState>((set, get) => ({
     get().pushHistory();
   },
 
-  linkSelectedThoughts: async () => {
+  linkSelectedThoughts: async (name) => {
     const { selectedThoughtIds, thoughts, activeSpaceId } = get();
     if (selectedThoughtIds.length < 2 || !activeSpaceId) return;
 
@@ -636,6 +636,11 @@ export const useStore = create<CyberiaState>((set, get) => ({
           // 3. Delete the now empty stacks
           await db.stacks.where('id').anyOf(otherStackIds).delete();
         }
+
+        // If a name was provided, rename the merged stack
+        if (name) {
+          await db.stacks.update(targetStackId, { name: name });
+        }
       });
     } else {
       // CREATE NEW STACK
@@ -643,7 +648,7 @@ export const useStore = create<CyberiaState>((set, get) => ({
       const randomHue = Math.floor(Math.random() * 360);
       await db.stacks.add({
         id: targetStackId,
-        name: 'New Stack',
+        name: name || 'New Stack',
         color: `hsla(${randomHue}, 70%, 50%, 1)`,
         spaceId: activeSpaceId
       });
