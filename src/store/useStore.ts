@@ -270,16 +270,30 @@ export const useStore = create<CyberiaState>((set, get) => ({
     const { spaces } = get();
     
     if (spaces.length === 0) {
-      const defaultSpaceId = 's' + Date.now();
+      const workspaceId = 's-workspace';
+      const onboardingId = 's-onboarding';
+
+      // Create "Workspace" (Empty)
       await db.spaces.add({
-        id: defaultSpaceId,
-        name: 'Neural Workspace',
+        id: workspaceId,
+        name: 'Workspace',
         mode: 'spatial',
         physics: true,
         order: 0
       });
+
+      // Create "Onboarding"
+      await db.spaces.add({
+        id: onboardingId,
+        name: 'Onboarding',
+        mode: 'spatial',
+        physics: true,
+        order: 1
+      });
+
       await get().refreshSpaces();
-      set({ activeSpaceId: defaultSpaceId });
+      set({ activeSpaceId: onboardingId });
+      localStorage.setItem('cyberia-active-space-id', onboardingId);
       
       const cx = window.innerWidth / 2;
       const cy = window.innerHeight / 2;
@@ -290,7 +304,7 @@ export const useStore = create<CyberiaState>((set, get) => ({
         id: basicsId,
         name: 'Core Concepts',
         color: 'hsla(230, 80%, 60%, 1)',
-        spaceId: defaultSpaceId
+        spaceId: onboardingId
       });
 
       await get().addThought({
@@ -298,7 +312,7 @@ export const useStore = create<CyberiaState>((set, get) => ({
         content: 'This is a **kinetic spatial workspace**. Thoughts are physical objects that interact with each other. \n\nDrag nodes to move them, or let the physics engine form natural clusters.',
         x: cx - 400, y: cy - 200, priority: 'high', stackId: basicsId,
         status: 'done',
-        spaceId: defaultSpaceId
+        spaceId: onboardingId
       });
 
       await get().addThought({
@@ -306,7 +320,7 @@ export const useStore = create<CyberiaState>((set, get) => ({
         content: 'Click a node to **Edit**. \n\nGive it a gentle pull to **Move**. Cyberia distinguishes between your intent to refine and your intent to organize automatically.',
         x: cx - 400, y: cy, priority: 'medium', stackId: basicsId,
         status: 'doing',
-        spaceId: defaultSpaceId
+        spaceId: onboardingId
       });
 
       await get().addThought({
@@ -314,16 +328,16 @@ export const useStore = create<CyberiaState>((set, get) => ({
         content: 'Switch between views in the top right: \n\n- **Spatial:** Free-form physics playground. \n- **Kanban:** Structured columnar workflow. \n- **Calendar:** Time-based stacking grid. \n\nYour data adapts to the shape you need.',
         x: cx - 400, y: cy + 200, priority: 'medium', stackId: basicsId,
         status: 'todo',
-        spaceId: defaultSpaceId
+        spaceId: onboardingId
       });
 
-      // STACK 2: THE LAIN SYSTEM (PURPLE)
+      // STACK 2: THE wired SYSTEM (PURPLE)
       const mediaId = 'st-media';
       await db.stacks.add({
         id: mediaId,
         name: 'The Wired',
         color: 'hsla(280, 80%, 65%, 1)',
-        spaceId: defaultSpaceId
+        spaceId: onboardingId
       });
 
       await get().addThought({
@@ -333,7 +347,7 @@ export const useStore = create<CyberiaState>((set, get) => ({
         description: 'Cyberia supports full YouTube integration. Experience the Wired. Click to open the video, or drag the node to reposition it in your mental landscape.',
         x: cx + 400, y: cy - 250, priority: 'urgent', stackId: mediaId,
         status: 'doing',
-        spaceId: defaultSpaceId
+        spaceId: onboardingId
       });
 
       await get().addThought({
@@ -343,7 +357,7 @@ export const useStore = create<CyberiaState>((set, get) => ({
         description: 'Visualizing non-linear thought patterns. Cyberia’s spatial canvas allows you to break free from hierarchical constraints and explore ideas in a truly multidimensional way.',
         x: cx + 400, y: cy + 50, priority: 'medium', stackId: mediaId,
         status: 'done',
-        spaceId: defaultSpaceId
+        spaceId: onboardingId
       });
 
       await get().addThought({
@@ -353,7 +367,7 @@ export const useStore = create<CyberiaState>((set, get) => ({
         description: 'Managing the boundaries of the digital self. All your data are hosted locally in your browser, and never leaves it without your explicit action.',
         x: cx + 650, y: cy - 100, priority: 'low', stackId: mediaId,
         status: 'todo',
-        spaceId: defaultSpaceId
+        spaceId: onboardingId
       });
 
       await get().addThought({
@@ -361,7 +375,7 @@ export const useStore = create<CyberiaState>((set, get) => ({
         content: '# Cyberia: The Kinetic Mind\n\nCyberia is a **spatial operating system** for your thoughts. In a world of flat lists and rigid folders, Cyberia treats information as **physical matter**.\n\n### 1. Kinetic Architecture\nIdeas here have mass, velocity, and gravity. Using our custom physics engine, your thoughts form natural clusters—**Stacks**—based on your internal logic. It moves with you, resisting the static nature of traditional apps.\n\n### 2. Dimensional Morphing\nInformation is fluid. Switch between **Spatial**, **Kanban**, and **Calendar** modes to see your data transform. What was a free-form brainstorm becomes a structured workflow, then a temporal roadmap, all without losing context.\n\n### 3. The Oracle (AI)\nPowered by Gemini, the **Oracle** is your spatial assistant. With **Vision**, it sees what you see. With **Thinking Mode**, it reasons deeply about your architecture. It doesn\'t just chat; it organizes, moves, and links your ideas into a coherent neural layer.\n\n### 4. Local & Secure\nYour mind belongs to you. All data is stored locally in your browser. Cyberia is a private sanctuary for non-linear thinking.\n\n---\n*Welcome to the Wired.*',
         x: cx + 650, y: cy + 150, priority: 'medium', stackId: mediaId,
         status: 'done',
-        spaceId: defaultSpaceId
+        spaceId: onboardingId
       });
 
       // STACK 3: PRODUCTIVITY (AMBER)
@@ -370,7 +384,7 @@ export const useStore = create<CyberiaState>((set, get) => ({
         id: toolsId,
         name: 'Deep Tools',
         color: 'hsla(40, 90%, 55%, 1)',
-        spaceId: defaultSpaceId
+        spaceId: onboardingId
       });
 
       await get().addThought({
@@ -383,7 +397,7 @@ export const useStore = create<CyberiaState>((set, get) => ({
         ],
         x: cx, y: cy + 300, priority: 'high', stackId: toolsId,
         status: 'todo',
-        spaceId: defaultSpaceId
+        spaceId: onboardingId
       });
 
       await get().addThought({
@@ -397,11 +411,11 @@ export const useStore = create<CyberiaState>((set, get) => ({
         ],
         x: cx + 250, y: cy + 400, priority: 'none', stackId: toolsId,
         status: 'todo',
-        spaceId: defaultSpaceId
+        spaceId: onboardingId
       });
 
-      await get().refreshThoughts(defaultSpaceId);
-      await get().refreshStacks(defaultSpaceId);
+      await get().refreshThoughts(onboardingId);
+      await get().refreshStacks(onboardingId);
       set({ isSpaceLoading: false });
     } else {
       const savedSpaceId = localStorage.getItem('cyberia-active-space-id');
