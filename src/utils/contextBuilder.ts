@@ -16,7 +16,7 @@ export const serializeWorkspace = (activeSpaceId: string | null, thoughts: Thoug
     position: { x: Math.round(t.x), y: Math.round(t.y) },
     order: t.order,
     content: t.content?.substring(0, 1000), // Increased limit for better context
-    tags: t.tags,
+    stackId: t.stackId,
     status: t.status,
     priority: t.priority,
     date: t.date,

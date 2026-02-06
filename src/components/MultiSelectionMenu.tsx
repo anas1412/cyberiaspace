@@ -1,7 +1,7 @@
 import React from 'react';
 import { useStore } from '../store/useStore';
 import { useModalStore } from '../store/useModalStore';
-import { X, Link, Trash2, Hash } from 'lucide-react';
+import { X, Link, Trash2 } from 'lucide-react';
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -19,8 +19,6 @@ const MultiSelectionMenu: React.FC = () => {
   const thoughts = useStore((state) => state.thoughts);
   const stacks = useStore((state) => state.stacks);
   const updateStack = useStore((state) => state.updateStack);
-  const createStack = useStore((state) => state.createStack);
-  const updateThought = useStore((state) => state.updateThought);
   const isInspectorOpen = useStore((state) => state.isInspectorOpen);
   const isChatOpen = useStore((state) => state.isChatOpen);
   

@@ -67,36 +67,6 @@ const Inspector: React.FC = () => {
     updateThought(thought.id, { priority });
   };
 
-  const handleTagInput = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (!thought) return;
-    if ((e.key === 'Enter' || e.key === ',') && e.currentTarget.value.trim()) {
-      e.preventDefault();
-      const newTag = e.currentTarget.value.trim().replace(',', '');
-      if (!thought.tags.includes(newTag)) {
-        updateThought(thought.id, { tags: [...thought.tags, newTag] });
-      }
-      e.currentTarget.value = '';
-    }
-  };
-
-  const removeTag = (index: number) => {
-    if (!thought) return;
-    const newTags = [...thought.tags];
-    newTags.splice(index, 1);
-    updateThought(thought.id, { tags: newTags });
-  };
-
-  const getTagStyle = (tag: string) => {
-    let h = 0;
-    for (let i = 0; i < tag.length; i++) h = tag.charCodeAt(i) + ((h << 5) - h);
-    const hue = Math.abs(h * 137.5) % 360;
-    return {
-      backgroundColor: `hsla(${hue}, 70%, 50%, 0.15)`,
-      color: `hsla(${hue}, 90%, 75%, 1)`,
-      borderColor: `hsla(${hue}, 70%, 50%, 0.3)`,
-    };
-  };
-
   return (
     <AnimatePresence>
       {isInspectorOpen && thought && (

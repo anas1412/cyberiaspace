@@ -1,7 +1,5 @@
 
 
-- i want the stack to have a name not all thoughts have same tag name, i want to remove teh tag system for now and work on stack system/management bc its not best practice to use tag for this, each stack should have one id not multiple, it should be unique
- so its like one thought cannot be in 2 stacks, when linked with another stack the whole 2 stacks become one. you understand?
 
 
 - add a vercel api route to enable oracle external api for built-in vercel key / add limiters

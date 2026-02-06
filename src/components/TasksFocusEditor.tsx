@@ -9,22 +9,12 @@ function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
 
-const getTagStyle = (tag: string) => {
-  let h = 0;
-  for (let i = 0; i < tag.length; i++) h = tag.charCodeAt(i) + ((h << 5) - h);
-  const hue = Math.abs(h * 137.5) % 360;
-  return {
-    backgroundColor: `hsla(${hue}, 70%, 50%, 0.15)`,
-    color: `hsla(${hue}, 90%, 75%, 1)`,
-    borderColor: `hsla(${hue}, 70%, 50%, 0.3)`,
-  };
-};
-
 const TasksFocusEditor: React.FC = () => {
   const activeFocusId = useStore((state) => state.activeFocusId);
   const focusType = useStore((state) => state.focusType);
   const setActiveFocus = useStore((state) => state.setActiveFocus);
   const thoughts = useStore((state) => state.thoughts);
+  const stacks = useStore((state) => state.stacks);
   const updateThought = useStore((state) => state.updateThought);
 
   const [isEditMode, setIsEditMode] = useState(false);
@@ -34,6 +24,7 @@ const TasksFocusEditor: React.FC = () => {
   const [localTasks, setLocalTasks] = useState<{ id: string; text: string; done: boolean }[]>([]);
 
   const thought = thoughts.find((t) => t.id === activeFocusId);
+  const stack = stacks.find((s) => s.id === thought?.stackId);
   const isVisible = focusType === 'tasks' && !!thought;
 
   // Sync local state when thought changes
@@ -258,11 +249,18 @@ const TasksFocusEditor: React.FC = () => {
             
             <div className="p-4 md:p-6 bg-black/40 border-t border-white/5 flex flex-col md:flex-row justify-between items-center gap-4 md:gap-0">
               <div className="flex flex-wrap justify-center md:justify-start gap-2">
-                {thought.tags.map((tag, i) => (
-                  <span key={i} className="tag-pill text-[8px] md:text-[9px] font-700 px-2 md:px-2.5 py-1 rounded-lg border border-white/10" style={getTagStyle(tag)}>
-                    {tag}
+                {stack && (
+                  <span 
+                    className="tag-pill text-[8px] md:text-[9px] font-700 px-2 md:px-2.5 py-1 rounded-lg border border-white/10" 
+                    style={{
+                      backgroundColor: stack.color.replace('1)', '0.15)'),
+                      color: stack.color,
+                      borderColor: stack.color.replace('1)', '0.3)')
+                    }}
+                  >
+                    {stack.name}
                   </span>
-                ))}
+                )}
               </div>
               <p className="text-[8px] md:text-[10px] uppercase font-black tracking-widest text-slate-600">
                 Click a task in View mode to toggle it

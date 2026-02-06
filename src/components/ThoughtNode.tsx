@@ -17,17 +17,6 @@ interface ThoughtNodeProps {
   isDragging: boolean;
 }
 
-const getTagStyle = (tag: string) => {
-  let h = 0;
-  for (let i = 0; i < tag.length; i++) h = tag.charCodeAt(i) + ((h << 5) - h);
-  const hue = Math.abs(h * 137.5) % 360;
-  return {
-    backgroundColor: `hsla(${hue}, 70%, 50%, 0.15)`,
-    color: `hsla(${hue}, 90%, 75%, 1)`,
-    borderColor: `hsla(${hue}, 70%, 50%, 0.3)`,
-  };
-};
-
 const PRIO_COLORS = {
   none: 'transparent',
   low: 'var(--prio-low)',
@@ -55,7 +44,6 @@ const ThoughtNode: React.FC<ThoughtNodeProps> = React.memo(({ thought, registerE
   const openLightbox = useStore((state) => state.openLightbox);
   const linkingSourceId = useStore((state) => state.linkingSourceId);
   const setLinkingSourceId = useStore((state) => state.setLinkingSourceId);
-  const updateThought = useStore((state) => state.updateThought);
   const stacks = useStore((state) => state.stacks);
   
   const stack = useMemo(() => stacks.find(s => s.id === thought.stackId), [stacks, thought.stackId]);
@@ -94,21 +82,18 @@ const ThoughtNode: React.FC<ThoughtNodeProps> = React.memo(({ thought, registerE
 
     if (e.ctrlKey || e.metaKey) {
       e.stopPropagation();
-      // toggle is now handled in usePhysics.ts onMouseDown to allow instant drag
       return;
     }
 
     if (linkingSourceId && linkingSourceId !== thought.id) {
-      // Complete the link using the store's bulk link logic (merges stacks)
       const store = useStore.getState();
       store.setSelectedThoughtIds([linkingSourceId, thought.id]);
       store.linkSelectedThoughts();
-      store.setSelectedThoughtIds([thought.id]); // Keep current selected
+      store.setSelectedThoughtIds([thought.id]);
       setLinkingSourceId(null);
       return;
     }
 
-    // If we're clicking the SAME thought that is the linking source, just toggle it off (handled by button but for safety)
     if (linkingSourceId === thought.id) {
       return;
     }
@@ -337,7 +322,7 @@ const ThoughtNode: React.FC<ThoughtNodeProps> = React.memo(({ thought, registerE
                 <span className="text-[10px] text-white/20 font-bold uppercase tracking-widest leading-tight">Paste YouTube Link<br/>in Editor</span>
               </div>
             )}
-            <div className="absolute inset-0 bg-[var(--accent)]/10 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center pointer-events-none">
+            <div className="absolute inset-0 bg-[var(--accent)]/10 opacity-0 group-hover/tasks:opacity-100 transition-opacity flex items-center justify-center pointer-events-none">
               <button 
                 onClick={(e) => { e.stopPropagation(); setActiveFocus(thought.id, 'embed'); }}
                 className="pointer-events-auto bg-[var(--accent)] text-white p-2 rounded-lg shadow-xl transform scale-90 group-hover:scale-100 transition-all hover:scale-110 active:scale-95"
@@ -382,8 +367,8 @@ const ThoughtNode: React.FC<ThoughtNodeProps> = React.memo(({ thought, registerE
               <div 
                 className="w-1.5 h-1.5 rounded-full mt-[7px] flex-shrink-0"
                 style={{ 
-                  backgroundColor: PRIO_COLORS[thought.priority],
-                  boxShadow: `0 0 10px ${PRIO_COLORS[thought.priority]}, 0 0 8px rgba(0,0,0,0.5)`
+                  backgroundColor: PRIO_COLORS[thought.priority as keyof typeof PRIO_COLORS],
+                  boxShadow: `0 0 10px ${PRIO_COLORS[thought.priority as keyof typeof PRIO_COLORS]}, 0 0 8px rgba(0,0,0,0.5)`
                 }}
               />
             )}
@@ -401,7 +386,7 @@ const ThoughtNode: React.FC<ThoughtNodeProps> = React.memo(({ thought, registerE
                 className="text-[7px] font-black uppercase tracking-widest px-1.5 py-0.5 rounded-full border border-white/10 shadow-sm"
                 style={{ 
                   color: 'white',
-                  backgroundColor: STATUS_COLORS[thought.status],
+                  backgroundColor: STATUS_COLORS[thought.status as keyof typeof STATUS_COLORS],
                 }}
               >
                 {thought.status}
