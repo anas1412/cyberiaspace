@@ -14,7 +14,7 @@
 
 - maybe change ai chat on the right
 
-
+- improve the tasks changing location, make it feels smooth
 
 - ini calendar mode make all thought same size and add stacking effect when placed on the calendar it should have a good and intuitive user experience
 

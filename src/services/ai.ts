@@ -216,12 +216,13 @@ export const aiService = {
 
       if (isThinkingEnabled) {
         generationConfig.thinkingConfig = {
-          includeThoughts: true
+          includeThoughts: false
         };
       }
 
       chatSession = model.startChat({
         generationConfig,
+        history: [],
       });
     }
 
@@ -267,6 +268,120 @@ export const aiService = {
       return response.text();
     } catch (error) {
       console.error('Gemini API Error:', error);
+      chatSession = null;
+      throw error;
+    }
+  },
+
+  sendMessageStream: async (message: string, onChunk: (text: string) => void, onStatus?: (status: string) => void, imageBase64?: string) => {
+    const store = useStore.getState();
+    const isPro = store.activeModel.includes('-pro');
+    const isThinkingEnabled = store.thinkingMode || isPro;
+
+    if (!chatSession) {
+      if (!model) throw new Error('AI Service not initialized. Please provide an API Key.');
+      
+      const generationConfig: any = {
+        maxOutputTokens: 2000,
+      };
+
+      if (isThinkingEnabled) {
+        generationConfig.thinkingConfig = {
+          includeThoughts: false
+        };
+      }
+
+      chatSession = model.startChat({
+        generationConfig,
+        history: [],
+      });
+    }
+
+    try {
+      const parts: Part[] = [{ text: message }];
+      if (imageBase64) {
+        const base64Data = imageBase64.split(',')[1] || imageBase64;
+        parts.push({
+          inlineData: { data: base64Data, mimeType: 'image/png' }
+        });
+      }
+
+      let result = await chatSession.sendMessageStream(parts);
+      let fullText = "";
+      
+      for await (const chunk of result.stream) {
+        try {
+          const chunkText = chunk.text();
+          if (chunkText) {
+            fullText += chunkText;
+            onChunk(fullText);
+          }
+        } catch (e) {
+          // This happens if the chunk is a function call rather than text
+          console.log("[Oracle] Received non-text chunk (likely tool call)");
+        }
+      }
+
+      let response = await result.response;
+      
+      // Function Calling Loop (Max 5 turns)
+      let turns = 0;
+      while (response.functionCalls() && turns < 5) {
+        turns++;
+        const calls = response.functionCalls();
+        const functionResponses = [];
+        
+        if (calls) {
+          for (const call of calls) {
+            console.log(`[Oracle] Executing tool: ${call.name}`, call.args);
+            
+            // Status Updates
+            if (onStatus) {
+              if (call.name === 'create_thought') onStatus("Creating a new thought...");
+              else if (call.name === 'update_thought') onStatus("Organizing your workspace...");
+              else if (call.name === 'delete_thought') onStatus("Removing a thought...");
+            }
+
+            const apiResponse = await executeTool(call.name, call.args as Record<string, unknown>);
+            functionResponses.push({
+              functionResponse: {
+                name: call.name,
+                response: { result: apiResponse }
+              }
+            });
+          }
+        }
+        
+        // Send tool results back to the model
+        if (functionResponses.length > 0) {
+          // IMPORTANT: Disable thinkingConfig for the follow-up turn to prevent API conflicts
+          // Tool result turns are highly structural; deep reasoning can cause 400 errors here.
+          const toolResult = await chatSession.sendMessageStream(functionResponses, {
+            thinkingConfig: { includeThoughts: false }
+          } as any);
+          
+          fullText = ""; // Reset for the final explanation turn
+          if (onStatus) onStatus("Oracle is processing...");
+          
+          for await (const chunk of toolResult.stream) {
+            try {
+              const chunkText = chunk.text();
+              if (chunkText) {
+                fullText += chunkText;
+                onChunk(fullText);
+              }
+            } catch (e) {
+              // Non-text chunk
+            }
+          }
+          response = await toolResult.response;
+        }
+      }
+
+      return fullText;
+    } catch (error) {
+      console.error('Gemini API Error:', error);
+      chatSession = null;
       throw error;
     }
   },

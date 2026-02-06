@@ -218,7 +218,7 @@ export const useStore = create<CyberiaState>((set, get) => ({
   setActiveModel: (model) => {
     set({ activeModel: model });
     localStorage.setItem('cyberia-active-model', model);
-    const { apiKey, thinkingMode } = get();
+    const { apiKey } = get();
     if (apiKey) {
       aiService.initialize(apiKey, model);
     }

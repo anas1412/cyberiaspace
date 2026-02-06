@@ -42,6 +42,7 @@ const ChatOverlay: React.FC = () => {
   const [input, setInput] = useState('');
   const [history, setHistory] = useState<Message[]>([]);
   const [loading, setLoading] = useState(false);
+  const [status, setStatus] = useState('Oracle is processing...');
   const [includeVision, setIncludeVision] = useState(true);
   
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -53,7 +54,7 @@ const ChatOverlay: React.FC = () => {
     if (scrollRef.current) {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }
-  }, [history, isChatOpen]);
+  }, [history, isChatOpen, loading, status]);
 
   const handleSend = async () => {
     if (!input.trim() || !apiKey || loading) return;
@@ -62,12 +63,14 @@ const ChatOverlay: React.FC = () => {
     setHistory(prev => [...prev, userMsg]);
     setInput('');
     setLoading(true);
+    setStatus('Oracle is processing...');
 
     try {
       let imageBase64: string | undefined;
 
-      // Vision Capture
-      if (includeVision) {
+      // Vision Capture: Only capture if it's the first message or if specifically requested
+      // We do this to prevent the chat session from becoming bloated with multiple screenshots
+      if (includeVision && history.length === 0) {
         const viewport = document.getElementById('viewport');
         if (viewport) {
            try {
@@ -96,13 +99,38 @@ ${workspaceContext}
 ${userMsg.text}
 `;
 
-      // Send to Gemini
-      const response = await aiService.sendMessage(prompt, imageBase64);
+      // Streaming setup: Add an empty model message that we will update
+      setHistory(prev => [...prev, { role: 'model', text: '' }]);
       
-      setHistory(prev => [...prev, { role: 'model', text: response }]);
+      const response = await aiService.sendMessageStream(
+        prompt, 
+        (fullText) => {
+          setHistory(prev => {
+            const newHistory = [...prev];
+            newHistory[newHistory.length - 1] = { role: 'model', text: fullText };
+            return newHistory;
+          });
+        },
+        (newStatus) => setStatus(newStatus),
+        imageBase64
+      );
+      
+      // Ensure final text is set (though onChunk should have handled it)
+      setHistory(prev => {
+        const newHistory = [...prev];
+        newHistory[newHistory.length - 1] = { role: 'model', text: response };
+        return newHistory;
+      });
     } catch (err: any) {
       const friendlyError = parseAIError(err);
-      setHistory(prev => [...prev, { role: 'model', text: `**Oracle Error:** ${friendlyError}` }]);
+      // Remove the empty streaming message if it failed at the start
+      setHistory(prev => {
+        const newHistory = [...prev];
+        if (newHistory[newHistory.length - 1]?.text === '') {
+          newHistory.pop();
+        }
+        return [...newHistory, { role: 'model', text: `**Oracle Error:** ${friendlyError}` }];
+      });
       console.error("[Oracle Debug]", err);
     } finally {
       setLoading(false);
@@ -156,26 +184,29 @@ ${userMsg.text}
               </div>
             )}
             
-            {history.map((msg, i) => (
-              <div key={i} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-                <div 
-                  className={`
-                    max-w-[90%] md:max-w-[85%] p-3 md:p-4 rounded-2xl text-sm leading-relaxed prose prose-invert
-                    ${msg.role === 'user' 
-                      ? 'bg-[var(--accent)]/20 border border-[var(--accent)]/30 text-white rounded-tr-sm' 
-                      : 'bg-white/5 border border-white/10 text-slate-200 rounded-tl-sm'}
-                  `}
-                >
-                  <ReactMarkdown>{msg.text}</ReactMarkdown>
+            {history.map((msg, i) => {
+              if (!msg.text && msg.role === 'model') return null;
+              return (
+                <div key={i} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+                  <div 
+                    className={`
+                      max-w-[90%] md:max-w-[85%] p-3 md:p-4 rounded-2xl text-sm leading-relaxed prose prose-invert
+                      ${msg.role === 'user' 
+                        ? 'bg-[var(--accent)]/20 border border-[var(--accent)]/30 text-white rounded-tr-sm' 
+                        : 'bg-white/5 border border-white/10 text-slate-200 rounded-tl-sm'}
+                    `}
+                  >
+                    <ReactMarkdown>{msg.text}</ReactMarkdown>
+                  </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
             
             {loading && (
               <div className="flex justify-start">
                 <div className="bg-white/5 border border-white/10 p-4 rounded-2xl rounded-tl-sm flex items-center gap-2">
                   <Loader2 className="w-4 h-4 text-[var(--accent)] animate-spin" />
-                  <span className="text-xs text-slate-400">Thinking...</span>
+                  <span className="text-xs text-slate-400">{status}</span>
                 </div>
               </div>
             )}
