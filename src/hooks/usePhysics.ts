@@ -164,10 +164,22 @@ export const usePhysics = (
 
     const handleMouseMove = (e: MouseEvent) => handleMove(e.clientX, e.clientY);
 
-    const handleUp = (lastMouseX: number, lastMouseY: number) => {
+    const handleUp = (lastMouseX: number, lastMouseY: number, e: MouseEvent) => {
       if (dragRef.current) {
-        const { id, moved, initialPositions } = dragRef.current;
-        if (moved) {
+        const { id, moved, startX, startY } = dragRef.current;
+        const dist = Math.sqrt(Math.pow(lastMouseX - startX, 2) + Math.pow(lastMouseY - startY, 2));
+        
+        if (dist <= 5) {
+          // It was a click, handle selection/opening
+          const store = useStore.getState();
+          if (e.ctrlKey || e.metaKey) {
+            store.toggleThoughtSelection(id);
+          } else {
+            store.setSelectedThoughtId(id);
+            store.setInspectorOpen(true);
+          }
+        } else if (moved) {
+          // It was a drag, finalize positions
           const mode = activeSpace?.mode || 'spatial';
           if (mode === 'kanban') {
              const colWidth = window.innerWidth / 4;
@@ -176,8 +188,6 @@ export const usePhysics = (
              else if (lastMouseX >= colWidth * 2 && lastMouseX < colWidth * 3) status = 'doing';
              else if (lastMouseX >= colWidth * 3) status = 'done';
              
-             // For simplicity, only the primary dragged node gets re-ordered/status changed in Kanban for now
-             // Bulk move in Kanban is complex due to sorting
              const p = physicsState.current.get(id);
              const thoughtsInStatus = Array.from(thoughtMap.current.values()).filter(t => (t.id === id ? status : t.status) === status);
              const sorted = thoughtsInStatus.sort((a, b) => {
@@ -215,7 +225,7 @@ export const usePhysics = (
              }
           } else {
               // Spatial Mode: Save all new positions
-              initialPositions.forEach((_, draggedId) => {
+              dragRef.current.initialPositions.forEach((_, draggedId) => {
                 const p = physicsState.current.get(draggedId);
                 if (p) updateThought(draggedId, { x: p.x, y: p.y });
               });
@@ -225,7 +235,7 @@ export const usePhysics = (
       }
     };
 
-    const handleMouseUp = (e: MouseEvent) => handleUp(e.clientX, e.clientY);
+    const handleMouseUp = (e: MouseEvent) => handleUp(e.clientX, e.clientY, e);
 
     window.addEventListener('mousemove', handleMouseMove);
     window.addEventListener('mouseup', handleMouseUp);
@@ -279,10 +289,16 @@ export const usePhysics = (
           const list = allThoughts.filter(t => t.status === s).sort((a, b) => a.order - b.order);
           let currentY = 280;
           list.forEach((t) => {
-             const p = state.get(t.id); if (!p) return; if (dragRef.current?.initialPositions.has(t.id)) return;
+             const p = state.get(t.id); if (!p) return; 
+             const isDraggingThis = dragRef.current?.initialPositions.has(t.id);
+             
              const colWidth = window.innerWidth / 4; 
              const targetX = (colWidth * colIdx) + (colWidth / 2);
-             const el = elements.current.get(t.id); const height = el?.offsetHeight || 120; const targetY = currentY + height / 2; currentY += height + 24;
+             const el = elements.current.get(t.id); const height = el?.offsetHeight || 120; const targetY = currentY + height / 2; 
+             
+             currentY += height + 24; // Always increment Y to preserve layout space
+
+             if (isDraggingThis) return; // Skip position update for the dragged node
              
              if (snapNextFrame.current) {
                 p.x = targetX; p.y = targetY; p.scale = 1;
@@ -323,11 +339,16 @@ export const usePhysics = (
       let currentSB_Y = contentRect ? contentRect.top + 20 : 200; 
       const scrollTop = sbContent?.scrollTop || 0;
       unscheduled.forEach((t) => {
-        const stateP = state.get(t.id); if (!stateP) return; if (dragRef.current?.initialPositions.has(t.id)) return;
+        const stateP = state.get(t.id); if (!stateP) return; 
+        const isDraggingThis = dragRef.current?.initialPositions.has(t.id);
+        
         const el = elements.current.get(t.id); const height = (el?.offsetHeight || 120) * 0.6;
         const target = { x: padding + sidebarWidth / 2, y: currentSB_Y - scrollTop + height / 2, scale: 0.6 };
-        currentSB_Y += height + 20;
         
+        currentSB_Y += height + 20; // Always increment Y to preserve layout space
+        
+        if (isDraggingThis) return; // Skip position update for the dragged node
+
         if (snapNextFrame.current) {
             stateP.x = target.x; stateP.y = target.y; stateP.scale = target.scale;
         } else {
@@ -564,24 +585,10 @@ export const usePhysics = (
       const clientX = e.clientX;
       const clientY = e.clientY;
   
-      const isCtrl = e.ctrlKey;
-      const isMeta = e.metaKey;
-  
-      // Use latest state from store
       const store = useStore.getState();
       const currentSelectedIds = store.selectedThoughtIds;
       let targets = new Set(currentSelectedIds);
-      
-      if (isCtrl || isMeta) {
-        store.toggleThoughtSelection(id);
-        // Update targets immediately from the state change
-        const nextIds = useStore.getState().selectedThoughtIds;
-        targets = new Set(nextIds);
-      } else if (!targets.has(id)) {
-        // If we drag something not selected (and no modifier), it becomes the ONLY selection
-        store.setSelectedThoughtId(id);
-        targets = new Set([id]);
-      }
+      if (!targets.has(id)) targets.add(id);
   
       const initialPositions = new Map();
       targets.forEach(tid => {
