@@ -71,6 +71,7 @@ interface CyberiaState {
   createStack: (name: string, thoughtId: number) => Promise<void>;
   updateStack: (id: string, updates: Partial<Stack>) => Promise<void>;
   deleteStack: (id: string) => Promise<void>;
+  cleanupStacks: () => Promise<void>;
   
   // Data Lifecycle
   exportData: () => Promise<void>;
