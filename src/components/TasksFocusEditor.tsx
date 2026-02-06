@@ -31,7 +31,7 @@ const TasksFocusEditor: React.FC = () => {
   
   // Local state for instant feedback
   const [localTitle, setLocalTitle] = useState('');
-  const [localTasks, setLocalTasks] = useState<{ text: string; done: boolean }[]>([]);
+  const [localTasks, setLocalTasks] = useState<{ id: string; text: string; done: boolean }[]>([]);
 
   const thought = thoughts.find((t) => t.id === activeFocusId);
   const isVisible = focusType === 'tasks' && !!thought;
@@ -40,37 +40,47 @@ const TasksFocusEditor: React.FC = () => {
   React.useEffect(() => {
     if (thought) {
       setLocalTitle(thought.text);
-      setLocalTasks(thought.tasks || []);
+      // Ensure each task has a unique ID for smooth reordering
+      const tasksWithIds = (thought.tasks || []).map((t, i) => ({
+        ...t,
+        id: (t as any).id || `task-${i}-${Date.now()}`
+      }));
+      setLocalTasks(tasksWithIds);
     }
   }, [activeFocusId]);
 
   const handleAddTask = () => {
     if (!thought) return;
-    const newTasks = [...localTasks, { text: '', done: false }];
+    const newTask = { id: `task-${Date.now()}`, text: '', done: false };
+    const newTasks = [...localTasks, newTask];
     setLocalTasks(newTasks);
-    updateThought(thought.id, { tasks: newTasks });
+    // Remove IDs before saving to store to keep data clean
+    const tasksToSave = newTasks.map(({ id, ...rest }) => rest);
+    updateThought(thought.id, { tasks: tasksToSave });
   };
 
-  const handleUpdateTask = (index: number, updates: { text?: string; done?: boolean }) => {
+  const handleUpdateTask = (id: string, updates: { text?: string; done?: boolean }) => {
     if (!thought) return;
-    const newTasks = [...localTasks];
-    newTasks[index] = { ...newTasks[index], ...updates };
+    const newTasks = localTasks.map(t => t.id === id ? { ...t, ...updates } : t);
     setLocalTasks(newTasks);
-    updateThought(thought.id, { tasks: newTasks });
+    const tasksToSave = newTasks.map(({ id, ...rest }) => rest);
+    updateThought(thought.id, { tasks: tasksToSave });
   };
 
-  const handleDeleteTask = (index: number) => {
+  const handleDeleteTask = (id: string) => {
     if (!thought) return;
-    const newTasks = [...localTasks];
-    newTasks.splice(index, 1);
+    const newTasks = localTasks.filter(t => t.id !== id);
     setLocalTasks(newTasks);
-    updateThought(thought.id, { tasks: newTasks });
+    const tasksToSave = newTasks.map(({ id, ...rest }) => rest);
+    updateThought(thought.id, { tasks: tasksToSave });
   };
 
-  const handleReorderTasks = (newTasks: { text: string; done: boolean }[]) => {
+  const handleReorderTasks = (newTasks: { id: string; text: string; done: boolean }[]) => {
     if (!thought) return;
     setLocalTasks(newTasks);
-    updateThought(thought.id, { tasks: newTasks });
+    // Debounce the store update or only save when the order actually changes
+    const tasksToSave = newTasks.map(({ id, ...rest }) => rest);
+    updateThought(thought.id, { tasks: tasksToSave });
   };
 
   const completedCount = localTasks.filter(t => t.done).length || 0;
@@ -165,9 +175,9 @@ const TasksFocusEditor: React.FC = () => {
                   onReorder={handleReorderTasks}
                   className="space-y-2 md:space-y-3"
                 >
-                  {localTasks.map((task, index) => (
+                  {localTasks.map((task) => (
                     <Reorder.Item 
-                      key={index} 
+                      key={task.id} 
                       value={task}
                       className="group flex items-center gap-3 md:gap-4 bg-white/[0.03] hover:bg-white/[0.05] border border-white/5 p-3 md:p-4 rounded-xl md:rounded-2xl transition-colors"
                     >
@@ -177,13 +187,13 @@ const TasksFocusEditor: React.FC = () => {
                       <input 
                         type="checkbox"
                         checked={task.done}
-                        onChange={(e) => handleUpdateTask(index, { done: e.target.checked })}
+                        onChange={(e) => handleUpdateTask(task.id, { done: e.target.checked })}
                         className="w-5 h-5 rounded-lg border-2 border-white/20 bg-transparent checked:bg-[var(--status-todo)] checked:border-[var(--status-todo)] transition-all cursor-pointer accent-[var(--status-todo)] flex-shrink-0"
                       />
                       <input 
                         type="text"
                         value={task.text}
-                        onChange={(e) => handleUpdateTask(index, { text: e.target.value })}
+                        onChange={(e) => handleUpdateTask(task.id, { text: e.target.value })}
                         className={cn(
                           "flex-1 bg-transparent text-base md:text-lg outline-none border-none p-0 transition-all min-w-0",
                           task.done ? "text-slate-500 line-through" : "text-slate-200"
@@ -191,7 +201,7 @@ const TasksFocusEditor: React.FC = () => {
                         placeholder="What needs to be done?"
                       />
                       <button 
-                        onClick={() => handleDeleteTask(index)}
+                        onClick={() => handleDeleteTask(task.id)}
                         className="p-2 text-slate-500 hover:text-red-400 transition-all flex-shrink-0"
                       >
                         <Trash2 className="w-4 h-4 md:w-5 md:h-5" />
@@ -214,10 +224,10 @@ const TasksFocusEditor: React.FC = () => {
                       <p className="text-slate-500 font-medium italic text-sm">No tasks yet. Click Manage to add some.</p>
                     </div>
                   ) : (
-                    localTasks.map((task, index) => (
+                    localTasks.map((task) => (
                       <div 
-                        key={index}
-                        onClick={() => handleUpdateTask(index, { done: !task.done })}
+                        key={task.id}
+                        onClick={() => handleUpdateTask(task.id, { done: !task.done })}
                         className={cn(
                           "flex items-center gap-4 md:gap-6 p-4 md:p-6 rounded-[1.5rem] md:rounded-[2rem] border transition-all cursor-pointer",
                           task.done 
