@@ -1,6 +1,6 @@
 import { GoogleGenerativeAI, HarmCategory, HarmBlockThreshold, type ChatSession, type GenerativeModel, type Part, SchemaType } from '@google/generative-ai';
 import { useStore } from '../store/useStore';
-import { DEFAULT_MODEL } from '../constants';
+import { DEFAULT_MODEL, VERIFICATION_MODEL } from '../constants';
 import { fetchYouTubeMeta } from '../utils/youtube';
 
 // Configuration
@@ -486,5 +486,52 @@ export const aiService = {
     }
   },
 
-  isInitialized: () => !!model,
-};
+    isInitialized: () => !!model,
+
+  
+
+      validateKey: async (apiKey: string) => {
+
+  
+
+        const testGenAI = new GoogleGenerativeAI(apiKey);
+
+  
+
+        const testModel = testGenAI.getGenerativeModel({ model: VERIFICATION_MODEL[0] });
+
+  
+
+        try {
+
+  
+
+          // Smallest possible prompt to verify key
+
+  
+
+          const result = await testModel.generateContent("hi");
+
+  
+
+          return !!result.response.text();
+
+  
+
+        } catch (error) {
+
+  
+
+    
+
+        console.error("API Key Validation Failed:", error);
+
+        throw error;
+
+      }
+
+    }
+
+  };
+
+  

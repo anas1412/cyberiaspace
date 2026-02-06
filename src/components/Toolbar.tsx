@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useStore } from '../store/useStore';
 import { useModalStore } from '../store/useModalStore';
+import { aiService } from '../services/ai';
 import { LIMITS, AVAILABLE_MODELS } from '../constants';
 import { Plus, Zap, Download, Upload, ChevronLeft, ChevronRight, Trash2, Edit3, Camera, MoreVertical, Keyboard, MousePointer2, Orbit, Columns3, CalendarDays, Shield, MonitorSmartphone, BotMessageSquare, Key, ChevronDown, ZoomIn, ZoomOut, RotateCcw, Undo2, Redo2, Settings } from 'lucide-react';
 import { clsx, type ClassValue } from 'clsx';
@@ -66,9 +67,17 @@ const Toolbar: React.FC = () => {
   const [isShortcutsOpen, setIsShortcutsOpen] = useState(false);
   const [isKeyModalOpen, setIsKeyModalOpen] = useState(false);
   const [tempKey, setTempKey] = useState('');
+  const [isValidating, setIsValidating] = useState(false);
+  const [validationError, setValidationError] = useState<string | null>(null);
   const [isCapturing, setIsCapturing] = useState(false);
 
   // Close menus on click elsewhere
+  React.useEffect(() => {
+    if (isKeyModalOpen) {
+      setTempKey('');
+      setValidationError(null);
+    }
+  }, [isKeyModalOpen]);
   React.useEffect(() => {
     const handleGlobalClick = (e: MouseEvent) => {
       const target = e.target as HTMLElement;
@@ -798,6 +807,12 @@ const Toolbar: React.FC = () => {
               The key is stored locally in your browser and sent directly to Google.
             </p>
 
+            {validationError && (
+              <div className="mb-6 p-3 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 text-[10px] font-bold uppercase tracking-widest animate-in fade-in slide-in-from-top-1">
+                {validationError}
+              </div>
+            )}
+
             <div className="space-y-6">
               <div className="space-y-2">
                 <label className="text-[9px] uppercase font-bold tracking-widest text-slate-500 ml-1">Intelligence Model</label>
@@ -842,7 +857,7 @@ const Toolbar: React.FC = () => {
                       onClick={() => {
                         removeApiKey();
                         setTempKey('');
-                        setIsKeyModalOpen(false);
+                        setValidationError(null);
                       }}
                       className="flex-1 py-3 rounded-xl border border-red-500/30 hover:bg-red-500/10 text-[10px] font-bold uppercase tracking-widest text-red-400 transition-colors flex items-center justify-center gap-2"
                     >
@@ -858,19 +873,35 @@ const Toolbar: React.FC = () => {
                   )}
                   
                   <button 
-                    onClick={() => {
+                    onClick={async () => {
                       if (tempKey.trim()) {
-                        setApiKey(tempKey.trim());
-                        setTempKey('');
-                        setIsKeyModalOpen(false);
-                        if (!oracleMode) toggleOracleMode();
+                        setIsValidating(true);
+                        setValidationError(null);
+                        try {
+                          await aiService.validateKey(tempKey.trim());
+                          setApiKey(tempKey.trim());
+                          setTempKey('');
+                          setIsKeyModalOpen(false);
+                          if (!oracleMode) toggleOracleMode();
+                        } catch (err: any) {
+                          setValidationError("Invalid API Key. Please check and try again.");
+                        } finally {
+                          setIsValidating(false);
+                        }
                       } else if (apiKey) {
                         setIsKeyModalOpen(false);
                       }
                     }}
-                    className="flex-[2] py-3 rounded-xl bg-purple-500 hover:bg-purple-400 text-[10px] font-black uppercase tracking-widest text-white transition-colors"
+                    disabled={isValidating || (!tempKey.trim() && !apiKey)}
+                    className="flex-[2] py-3 rounded-xl bg-purple-500 hover:bg-purple-400 disabled:opacity-50 disabled:cursor-not-allowed text-[10px] font-black uppercase tracking-widest text-white transition-colors flex items-center justify-center gap-2"
                   >
-                    {apiKey ? 'Save Changes' : 'Activate Oracle'}
+                    {isValidating ? (
+                      <>
+                        <RotateCcw className="w-3.5 h-3.5 animate-spin" /> Verifying...
+                      </>
+                    ) : (
+                      apiKey ? 'Save Changes' : 'Activate Oracle'
+                    )}
                   </button>
                 </div>
               </div>
