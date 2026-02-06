@@ -317,24 +317,56 @@ export const usePhysics = (
       const sidebarWidth = 260; const gap = 20; const padding = 40; const topPadding = 190; const mainLeft = padding + sidebarWidth + gap;
       const mainWidth = window.innerWidth - mainLeft - padding; const cellWidth = mainWidth / 7; const cellHeight = (window.innerHeight - topPadding - padding) / 5;
       const allThoughts = Array.from(thoughtMap.current.values());
-      const scheduled = allThoughts.filter(t => !!t.date); const unscheduled = allThoughts.filter(t => !t.date).sort((a,b) => a.order - b.order);
-      scheduled.forEach((t) => {
-        const p = state.get(t.id); if (!p) return; if (dragRef.current?.initialPositions.has(t.id)) return;
-        const target = { x: 0, y: 0, scale: 0 };
-        const tDate = new Date(t.date + 'T00:00:00');
-        if (tDate.getFullYear() === year && tDate.getMonth() === month) {
-            const day = tDate.getDate(); const startOffset = firstDay - 1; const cellIndex = startOffset + (day - 1); const col = cellIndex % 7; const row = Math.floor(cellIndex / 7);
-            target.x = mainLeft + col * cellWidth + cellWidth / 2; target.y = topPadding + row * cellHeight + cellHeight / 2;
-            target.scale = Math.min((cellWidth - 20) / 280, 0.45); const offset = (t.id % 5) * 5; target.x += offset; target.y += offset;
-        } else { target.x = window.innerWidth / 2; target.y = window.innerHeight + 500; target.scale = 0; }
-        
-        if (snapNextFrame.current) {
-            p.x = target.x; p.y = target.y; p.scale = target.scale;
-        } else {
-            p.x += (target.x - p.x) * 0.15; p.y += (target.y - p.y) * 0.15; p.scale += (target.scale - p.scale) * 0.1;
-        }
-        p.vx = 0; p.vy = 0;
+      const scheduled = allThoughts.filter(t => !!t.date); 
+      const unscheduled = allThoughts.filter(t => !t.date).sort((a,b) => a.order - b.order);
+
+      // Group by date for stacking
+      const groups = new Map<string, Thought[]>();
+      scheduled.forEach(t => {
+        if (!groups.has(t.date)) groups.set(t.date, []);
+        groups.get(t.date)!.push(t);
       });
+
+      groups.forEach((groupThoughts, dateStr) => {
+        const tDate = new Date(dateStr + 'T00:00:00');
+        if (tDate.getFullYear() === year && tDate.getMonth() === month) {
+          const day = tDate.getDate();
+          const startOffset = firstDay - 1;
+          const cellIndex = startOffset + (day - 1);
+          const col = cellIndex % 7;
+          const row = Math.floor(cellIndex / 7);
+          
+          const baseX = mainLeft + col * cellWidth + cellWidth / 2;
+          const baseY = topPadding + row * cellHeight + cellHeight / 2;
+          const uniformScale = Math.min((cellWidth - 20) / 280, 0.45);
+
+          // Sort group by order to keep stack stable
+          groupThoughts.sort((a, b) => a.order - b.order).forEach((t, index) => {
+            const p = state.get(t.id);
+            if (!p || dragRef.current?.initialPositions.has(t.id)) return;
+
+            const targetX = baseX;
+            // Stack offset: centered but spread downwards
+            const targetY = baseY - (Math.min(groupThoughts.length, 5) - 1) * 10 + (index * 20);
+            
+            if (snapNextFrame.current) {
+              p.x = targetX; p.y = targetY; p.scale = uniformScale;
+            } else {
+              p.x += (targetX - p.x) * 0.2;
+              p.y += (targetY - p.y) * 0.2;
+              p.scale += (uniformScale - p.scale) * 0.1;
+            }
+            p.vx = 0; p.vy = 0;
+          });
+        } else {
+          groupThoughts.forEach(t => {
+            const p = state.get(t.id);
+            if (!p || dragRef.current?.initialPositions.has(t.id)) return;
+            p.x = window.innerWidth / 2; p.y = window.innerHeight + 500; p.scale = 0;
+          });
+        }
+      });
+
       const contentRect = sbContent?.getBoundingClientRect();
       let currentSB_Y = contentRect ? contentRect.top + 20 : 200; 
       const scrollTop = sbContent?.scrollTop || 0;
@@ -556,10 +588,22 @@ export const usePhysics = (
             el.style.visibility = opacity === 0 ? 'hidden' : 'visible';
             el.style.pointerEvents = opacity < 0.1 ? 'none' : 'auto';
             el.style.zIndex = (20 + prioLevel).toString();
+        } else if (mode === 'calendar') {
+            el.style.clipPath = 'none';
+            el.style.opacity = '1'; el.style.visibility = 'visible'; el.style.pointerEvents = 'auto';
+            if (dragRef.current?.initialPositions.has(id)) {
+              el.style.zIndex = '1000';
+            } else {
+              el.style.zIndex = (30 + (t?.order || 0)).toString();
+            }
         } else {
             el.style.clipPath = 'none';
             el.style.opacity = '1'; el.style.visibility = 'visible'; el.style.pointerEvents = 'auto';
-            if (dragRef.current?.initialPositions.has(id)) el.style.zIndex = '1000'; else el.style.zIndex = (20 + prioLevel).toString();
+            if (dragRef.current?.initialPositions.has(id)) {
+              el.style.zIndex = '1000';
+            } else {
+              el.style.zIndex = (20 + prioLevel).toString();
+            }
         }
       }
     });
