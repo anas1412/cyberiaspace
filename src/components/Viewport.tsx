@@ -147,11 +147,12 @@ const Viewport: React.FC = () => {
 
     const handleClick = (e: MouseEvent) => {
       const target = e.target as HTMLElement;
-      if (!target.closest('.thought-bulb, #inspector, .ui-layer, .glass, .expand-img, button, input, textarea, #cal-sidebar-content, .cal-grid, #chat-overlay')) {
+      // We want to unselect if the user clicks the "background" of the workspace, 
+      // including the calendar grid and sidebar, but NOT if they click a thought or specific UI panels.
+      if (!target.closest('.thought-bulb, #inspector, .ui-layer, .expand-img, button, input, textarea, #chat-overlay, .modal-content')) {
         setInspectorOpen(false);
-        if (selectedThoughtIds.length === 0) {
-          setSelectedThoughtId(null);
-        }
+        clearSelection();
+        setSelectedThoughtId(null);
       }
     };
 

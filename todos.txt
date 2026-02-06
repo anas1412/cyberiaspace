@@ -10,7 +10,7 @@
 
 - add support to instagram/facebook/reddit/twitter/spotify and popular plateforms embed support
 
-- unselect the thought when clicking elsewhere whther in kanban and calendar just like spatial
+- unselect the thought when clicking elsewhere in kanban and unselect the thought/hide its thought editor too  when clicking elsewhere on calendar
 
 - maybe change ai chat on the right
 
