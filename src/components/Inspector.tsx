@@ -385,31 +385,44 @@ const Inspector: React.FC = () => {
                     </button>
                   </div>
                 ) : (
-                  <div className="relative group">
-                    <input
-                      type="text"
-                      placeholder="Create or Join Stack..."
-                      list="existing-stacks"
-                      onKeyDown={async (e) => {
-                        if (e.key === 'Enter' && e.currentTarget.value.trim()) {
-                          const name = e.currentTarget.value.trim();
-                          const existingStack = stacks.find(s => s.name.toLowerCase() === name.toLowerCase());
-                          
-                          if (existingStack) {
-                            updateThought(thought.id, { stackId: existingStack.id });
-                          } else {
-                            createStack(name, thought.id);
+                  <div className="space-y-3">
+                    <div className="relative group">
+                      <input
+                        type="text"
+                        placeholder="Type to create or join..."
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter' && e.currentTarget.value.trim()) {
+                            const name = e.currentTarget.value.trim();
+                            const existingStack = stacks.find(s => s.name.toLowerCase() === name.toLowerCase());
+                            if (existingStack) {
+                              updateThought(thought.id, { stackId: existingStack.id });
+                            } else {
+                              createStack(name, thought.id);
+                            }
+                            e.currentTarget.value = '';
                           }
-                          e.currentTarget.value = '';
-                        }
-                      }}
-                      className="w-full bg-[var(--bg-page)]/20 border border-white/10 rounded-xl p-3 text-xs outline-none focus:border-[var(--accent)] text-[var(--text-primary)] placeholder:text-slate-500 transition-all"
-                    />
-                    <datalist id="existing-stacks">
-                      {stacks.map(s => (
-                        <option key={s.id} value={s.name} />
-                      ))}
-                    </datalist>
+                        }}
+                        className="w-full bg-[var(--bg-page)]/20 border border-white/10 rounded-xl p-3 text-xs outline-none focus:border-[var(--accent)] text-[var(--text-primary)] placeholder:text-slate-500 transition-all"
+                      />
+                    </div>
+                    
+                    {stacks.length > 0 && (
+                      <div className="space-y-1.5">
+                        <label className="text-[7px] uppercase font-black tracking-[0.2em] text-slate-600 ml-1">Existing Stacks</label>
+                        <div className="flex flex-col gap-1 max-h-[160px] overflow-y-auto custom-scroll pr-1">
+                          {stacks.map(s => (
+                            <button
+                              key={s.id}
+                              onClick={() => updateThought(thought.id, { stackId: s.id })}
+                              className="flex items-center gap-3 p-2.5 rounded-xl bg-white/[0.02] hover:bg-white/[0.05] border border-transparent hover:border-white/5 transition-all group/s"
+                            >
+                              <div className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: s.color, boxShadow: `0 0 8px ${s.color}44` }} />
+                              <span className="text-[9px] font-bold uppercase tracking-widest text-slate-400 group-hover/s:text-white transition-colors">{s.name}</span>
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    )}
                   </div>
                 )}
               </div>
