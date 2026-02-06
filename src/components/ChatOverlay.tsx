@@ -20,13 +20,13 @@ interface Message {
 }
 
 const formatModelName = (name: string) => {
-  if (name.includes('gemini-3-flash')) return 'Flash';
-  if (name.includes('gemini-3-pro')) return 'Pro';
-  if (name.includes('gemini-2.5-pro')) return '2.5 Pro';
+  if (name.includes('gemini-3-flash')) return 'Flash Model';
+  if (name.includes('gemini-3-pro')) return 'Pro Model';
+/*   if (name.includes('gemini-2.5-pro')) return '2.5 Pro';
   if (name.includes('gemini-flash-lite-latest')) return '2.5 Flash Lite Latest';
   if (name.includes('gemini-flash-latest')) return '2.5 Flash Latest';
   if (name.includes('gemini-2.5-flash-lite')) return '2.5 Flash Lite';
-  if (name.includes('gemini-2.5-flash')) return '2.5 Flash';
+  if (name.includes('gemini-2.5-flash')) return '2.5 Flash'; */
   return name;
 };
 
@@ -68,9 +68,9 @@ const ChatOverlay: React.FC = () => {
     try {
       let imageBase64: string | undefined;
 
-      // Vision Capture: Only capture if it's the first message or if specifically requested
-      // We do this to prevent the chat session from becoming bloated with multiple screenshots
-      if (includeVision && history.length === 0) {
+      // Vision Capture: Always capture a fresh screenshot if vision is enabled
+      // This ensures the Oracle sees your most recent changes
+      if (includeVision) {
         const viewport = document.getElementById('viewport');
         if (viewport) {
            try {
@@ -99,6 +99,12 @@ ${workspaceContext}
 ${userMsg.text}
 `;
 
+      // Format history for Gemini (Text-only)
+      const geminiHistory = history.map(m => ({
+        role: m.role,
+        parts: [{ text: m.text }]
+      }));
+
       // Streaming setup: Add an empty model message that we will update
       setHistory(prev => [...prev, { role: 'model', text: '' }]);
       
@@ -112,7 +118,8 @@ ${userMsg.text}
           });
         },
         (newStatus) => setStatus(newStatus),
-        imageBase64
+        imageBase64,
+        geminiHistory
       );
       
       // Ensure final text is set (though onChunk should have handled it)
@@ -163,7 +170,7 @@ ${userMsg.text}
               </div>
               <div>
                 <h3 className="text-sm font-bold text-white tracking-wide">Cyberia Oracle</h3>
-                <p className="text-[10px] text-[var(--accent)] font-mono uppercase tracking-wider">{formatModelName(activeModel)} Active</p>
+                <p className="text-[10px] text-[var(--accent)] font-mono uppercase tracking-wider">{formatModelName(activeModel)} is Active</p>
               </div>
             </div>
             <button 

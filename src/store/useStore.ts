@@ -202,7 +202,7 @@ export const useStore = create<CyberiaState>((set, get) => ({
   activeModel: localStorage.getItem('cyberia-active-model') || DEFAULT_MODEL,
   oracleMode: localStorage.getItem('cyberia-oracle-mode') === 'true',
   isChatOpen: false,
-  thinkingMode: true,
+  thinkingMode: false,
 
   openLightbox: (image) => set({ isLightboxOpen: true, lightboxImage: image }),
   closeLightbox: () => set({ isLightboxOpen: false, lightboxImage: null }),

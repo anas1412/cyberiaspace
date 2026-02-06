@@ -236,29 +236,28 @@ export const aiService = {
     return chatSession;
   },
 
-  sendMessage: async (message: string, imageBase64?: string) => {
+  sendMessage: async (message: string, imageBase64?: string, history: any[] = []) => {
     const store = useStore.getState();
     const isPro = store.activeModel.includes('-pro');
     const isThinkingEnabled = store.thinkingMode || isPro;
 
-    if (!chatSession) {
-      if (!model) throw new Error('AI Service not initialized. Please provide an API Key.');
-      
-      const generationConfig: any = {
-        maxOutputTokens: 2000,
+    if (!model) throw new Error('AI Service not initialized. Please provide an API Key.');
+    
+    const generationConfig: any = {
+      maxOutputTokens: 2000,
+    };
+
+    if (isThinkingEnabled) {
+      generationConfig.thinkingConfig = {
+        includeThoughts: false
       };
-
-      if (isThinkingEnabled) {
-        generationConfig.thinkingConfig = {
-          includeThoughts: false
-        };
-      }
-
-      chatSession = model.startChat({
-        generationConfig,
-        history: [],
-      });
     }
+
+    // Always start a fresh session with historical text context
+    const chatSession = model.startChat({
+      generationConfig,
+      history: history,
+    });
 
     try {
       const parts: Part[] = [{ text: message }];
@@ -302,34 +301,32 @@ export const aiService = {
       return response.text();
     } catch (error) {
       console.error('Gemini API Error:', error);
-      chatSession = null;
       throw error;
     }
   },
 
-  sendMessageStream: async (message: string, onChunk: (text: string) => void, onStatus?: (status: string) => void, imageBase64?: string) => {
+  sendMessageStream: async (message: string, onChunk: (text: string) => void, onStatus?: (status: string) => void, imageBase64?: string, history: any[] = []) => {
     const store = useStore.getState();
     const isPro = store.activeModel.includes('-pro');
     const isThinkingEnabled = store.thinkingMode || isPro;
 
-    if (!chatSession) {
-      if (!model) throw new Error('AI Service not initialized. Please provide an API Key.');
-      
-      const generationConfig: any = {
-        maxOutputTokens: 2000,
+    if (!model) throw new Error('AI Service not initialized. Please provide an API Key.');
+    
+    const generationConfig: any = {
+      maxOutputTokens: 2000,
+    };
+
+    if (isThinkingEnabled) {
+      generationConfig.thinkingConfig = {
+        includeThoughts: false
       };
-
-      if (isThinkingEnabled) {
-        generationConfig.thinkingConfig = {
-          includeThoughts: false
-        };
-      }
-
-      chatSession = model.startChat({
-        generationConfig,
-        history: [],
-      });
     }
+
+    // Always start a fresh session with historical text context
+    const chatSession = model.startChat({
+      generationConfig,
+      history: history,
+    });
 
     try {
       const parts: Part[] = [{ text: message }];
@@ -351,8 +348,7 @@ export const aiService = {
             onChunk(fullText);
           }
         } catch (e) {
-          // This happens if the chunk is a function call rather than text
-          console.log("[Oracle] Received non-text chunk (likely tool call)");
+          // Non-text chunk (tool call)
         }
       }
 
@@ -374,6 +370,8 @@ export const aiService = {
               if (call.name === 'create_thought') onStatus("Creating a new thought...");
               else if (call.name === 'update_thought') onStatus("Organizing your workspace...");
               else if (call.name === 'delete_thought') onStatus("Removing a thought...");
+              else if (call.name === 'link_thoughts') onStatus("Linking thoughts...");
+              else if (call.name === 'unlink_thought') onStatus("Unlinking thought...");
             }
 
             const apiResponse = await executeTool(call.name, call.args as Record<string, unknown>);
@@ -388,8 +386,6 @@ export const aiService = {
         
         // Send tool results back to the model
         if (functionResponses.length > 0) {
-          // IMPORTANT: Disable thinkingConfig for the follow-up turn to prevent API conflicts
-          // Tool result turns are highly structural; deep reasoning can cause 400 errors here.
           const toolResult = await chatSession.sendMessageStream(functionResponses, {
             thinkingConfig: { includeThoughts: false }
           } as any);
@@ -404,9 +400,7 @@ export const aiService = {
                 fullText += chunkText;
                 onChunk(fullText);
               }
-            } catch (e) {
-              // Non-text chunk
-            }
+            } catch (e) { }
           }
           response = await toolResult.response;
         }
@@ -415,7 +409,6 @@ export const aiService = {
       return fullText;
     } catch (error) {
       console.error('Gemini API Error:', error);
-      chatSession = null;
       throw error;
     }
   },
