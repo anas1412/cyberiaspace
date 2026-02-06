@@ -203,12 +203,17 @@ export const usePhysics = (
              });
           } else if (mode === 'calendar') {
              const sidebarWidth = 260; const gap = 20; const padding = 40; const topPadding = 190; const mainLeft = padding + sidebarWidth + gap;
+             
              if (lastMouseX < mainLeft) {
-                 updateThought(id, { date: '' });
+                 // Unassign all selected thoughts
+                 dragRef.current.initialPositions.forEach((_, draggedId) => {
+                   updateThought(draggedId, { date: '' });
+                 });
              } else {
                  const mainWidth = window.innerWidth - mainLeft - padding;
                  const cellWidth = mainWidth / 7; const cellHeight = (window.innerHeight - topPadding - padding) / 5;
                  const gridX = lastMouseX - mainLeft; const gridY = lastMouseY - topPadding;
+                 
                  if (gridX >= 0 && gridY >= 0) {
                      const col = Math.floor(gridX / cellWidth); const row = Math.floor(gridY / cellHeight);
                      if (col >= 0 && col < 7 && row >= 0 && row < 6) {
@@ -216,9 +221,13 @@ export const usePhysics = (
                          const firstDay = new Date(year, month, 1).getDay() || 7;
                          const startOffset = firstDay - 1; const dayIndex = row * 7 + col - startOffset;
                          const newDate = new Date(year, month, dayIndex + 1);
+                         
                          if (newDate.getMonth() === month) {
                              const dateStr = newDate.toLocaleDateString('en-CA');
-                             updateThought(id, { date: dateStr });
+                             // Assign all selected thoughts to this date
+                             dragRef.current.initialPositions.forEach((_, draggedId) => {
+                               updateThought(draggedId, { date: dateStr });
+                             });
                          }
                      }
                  }
