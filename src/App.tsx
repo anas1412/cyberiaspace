@@ -21,6 +21,8 @@ import EmbedFocusEditor from './components/EmbedFocusEditor';
 import ChatOverlay from './components/ChatOverlay';
 import MobileNotSupported from './components/MobileNotSupported';
 
+import { fetchYouTubeMeta, getYouTubeVideoId } from './utils/youtube';
+
 function App() {
   const init = useStore((state) => state.init);
   const setDeferredPrompt = useStore((state) => state.setDeferredPrompt);
@@ -191,10 +193,7 @@ function App() {
         e.preventDefault();
         
         const cleanText = text.trim();
-        // Extract YouTube ID to create a clean oEmbed URL
-        const ytRegex = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|&v=)([^#&?]*).*/;
-        const ytMatch = cleanText.match(ytRegex);
-        const videoId = (ytMatch && ytMatch[2].length === 11) ? ytMatch[2] : null;
+        const videoId = getYouTubeVideoId(cleanText);
         
         if (videoId) {
           const id = await addThought({ 
@@ -208,26 +207,7 @@ function App() {
             setSelectedThoughtId(id);
             setInspectorOpen(true);
             
-            const oEmbedUrl = `https://www.youtube.com/oembed?url=https://www.youtube.com/watch?v=${videoId}&format=json`;
-            
-            const fetchMetadata = async () => {
-              // Strategy 1: AllOrigins (Current)
-              try {
-                const res = await fetch(`https://api.allorigins.win/get?url=${encodeURIComponent(oEmbedUrl)}`);
-                const data = await res.json();
-                return JSON.parse(data.contents);
-              } catch (_) {
-                // Strategy 2: CorsProxy.io (Fallback)
-                try {
-                  const res = await fetch(`https://corsproxy.io/?${encodeURIComponent(oEmbedUrl)}`);
-                  return await res.json();
-                } catch (_) {
-                  throw new Error("All proxies failed");
-                }
-              }
-            };
-
-            fetchMetadata()
+            fetchYouTubeMeta(cleanText)
               .then(metadata => {
                 if (metadata && metadata.title) {
                   useStore.getState().updateThought(id, {
@@ -237,7 +217,7 @@ function App() {
                 }
               })
               .catch(err => {
-                console.warn("YouTube metadata fetch failed after all attempts:", err);
+                console.warn("YouTube metadata fetch failed:", err);
                 useStore.getState().updateThought(id, { text: "YouTube Video" });
               });
           }

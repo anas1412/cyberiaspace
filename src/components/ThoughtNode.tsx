@@ -5,6 +5,7 @@ import { Maximize2, Palette, Link as LinkIcon, Link2Off } from 'lucide-react';
 import { marked } from 'marked';
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
+import { getYouTubeVideoId } from '../utils/youtube';
 
 function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -306,9 +307,7 @@ const ThoughtNode: React.FC<ThoughtNodeProps> = React.memo(({ thought, registerE
         );
       }
       case 'embed': {
-        const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|&v=)([^#&?]*).*/;
-        const match = thought.content.match(regExp);
-        const videoId = (match && match[2].length === 11) ? match[2] : null;
+        const videoId = getYouTubeVideoId(thought.content);
         
         return (
           <div data-trigger="embed" className="mt-2 relative group prevent-drag cursor-pointer overflow-hidden rounded-xl border border-white/10 bg-black/50 aspect-video flex items-center justify-center">

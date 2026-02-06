@@ -1,6 +1,7 @@
 import { GoogleGenerativeAI, HarmCategory, HarmBlockThreshold, type ChatSession, type GenerativeModel, type Part, SchemaType } from '@google/generative-ai';
 import { useStore } from '../store/useStore';
 import { DEFAULT_MODEL } from '../constants';
+import { fetchYouTubeMeta } from '../utils/youtube';
 
 // Configuration
 // Removed static MODEL_NAME to support dynamic switching via store.
@@ -25,6 +26,7 @@ Key Traits:
 - Proactive: Don't just talk; use tools to create, update, or move thoughts when helpful.
 - Organized: ALWAYS provide descriptive names when linking thoughts or creating stacks. Never leave a stack unnamed.
 - Media Savvy: When the user asks for music or videos, use 'type: "embed"'. ALWAYS provide a valid, full YouTube URL (e.g., https://www.youtube.com/watch?v=...) in the 'content' field for embeds. Do NOT leave content empty for embeds.
+- NO HALLUCINATIONS: Do NOT hallucinate YouTube video IDs. If you are not 100% certain of a working video URL, create a 'text' thought instead with the title of the media and explain that the user can paste a link later.
 - Stacking Strategy: When creating multiple related thoughts, prefer creating them first and then using 'link_thoughts' to group them all at once into a named stack. This is more reliable than using 'stackName' on individual creations.
 
 Tools Usage:
@@ -174,6 +176,22 @@ async function executeTool(name: string, args: Record<string, unknown>) {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const { stackName, ...thoughtArgs } = args as any;
 
+        // YouTube Validation for Embeds
+        if (thoughtArgs.type === 'embed' && thoughtArgs.content) {
+          try {
+            const meta = await fetchYouTubeMeta(thoughtArgs.content);
+            if (meta) {
+              // Automatically use the real title and uploader if the AI's title is generic
+              if (!thoughtArgs.text || thoughtArgs.text.toLowerCase().includes('video') || thoughtArgs.text.toLowerCase().includes('music')) {
+                thoughtArgs.text = meta.title;
+              }
+              thoughtArgs.description = meta.author_name;
+            }
+          } catch (err) {
+            return { error: `Invalid YouTube URL: "${thoughtArgs.content}". Please provide a valid, working YouTube link.` };
+          }
+        }
+
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const id = await store.addThought(thoughtArgs as any);
 
@@ -195,6 +213,22 @@ async function executeTool(name: string, args: Record<string, unknown>) {
       case 'update_thought': {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const { id: updateId, stackName, ...updates } = args as any;
+
+        // YouTube Validation for Embeds
+        const currentThought = store.thoughts.find(t => t.id === updateId);
+        const targetType = updates.type || currentThought?.type;
+
+        if (targetType === 'embed' && updates.content) {
+          try {
+            const meta = await fetchYouTubeMeta(updates.content);
+            if (meta) {
+              if (!updates.text) updates.text = meta.title;
+              updates.description = meta.author_name;
+            }
+          } catch (err) {
+            return { error: `Invalid YouTube URL: "${updates.content}". Update failed.` };
+          }
+        }
         
         if (stackName) {
           const name = stackName as string;
