@@ -13,13 +13,8 @@ function cn(...inputs: ClassValue[]) {
 }
 
 const formatModelName = (name: string) => {
-  if (name.includes('gemini-3-pro')) return 'Gemini 3 Pro';
-  if (name.includes('gemini-3-flash')) return 'Gemini 3 Flash';
-  if (name.includes('gemini-2.5-pro')) return 'Gemini 2.5 Pro';
-  if (name.includes('gemini-2.5-flash-lite')) return 'Gemini 2.5 Flash Lite';
-  if (name.includes('gemini-2.5-flash')) return 'Gemini 2.5 Flash';
-  if (name.includes('flash-lite')) return 'Flash Lite';
-  if (name.includes('flash')) return 'Flash';
+  if (name.includes('gemini-3-pro')) return 'Pro (Smart but Slower)';
+  if (name.includes('gemini-3-flash')) return 'Flash (Faster but Less Accurate)';
   return name;
 };
 
@@ -867,7 +862,7 @@ const Toolbar: React.FC = () => {
             
             <div className="mt-6 pt-6 border-t border-white/5 text-center">
               <p className="text-[9px] text-slate-600 uppercase font-bold tracking-widest">
-                Powered by Google {formatModelName(activeModel)}
+                Powered by Google
               </p>
             </div>
           </div>

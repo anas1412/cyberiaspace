@@ -3,10 +3,16 @@ import { useStore } from '../store/useStore';
 import { aiService } from '../services/ai';
 import { serializeWorkspace } from '../utils/contextBuilder';
 import { parseAIError } from '../utils/errorParser';
-import { X, Send, Eye, Shield, Loader2, Bot } from 'lucide-react';
+import { X, Send, Eye, Shield, Loader2, Bot, BrainCircuit } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { toPng } from 'html-to-image';
 import ReactMarkdown from 'react-markdown';
+import { clsx, type ClassValue } from 'clsx';
+import { twMerge } from 'tailwind-merge';
+
+function cn(...inputs: ClassValue[]) {
+  return twMerge(clsx(inputs));
+}
 
 interface Message {
   role: 'user' | 'model';
@@ -14,8 +20,8 @@ interface Message {
 }
 
 const formatModelName = (name: string) => {
-  if (name.includes('gemini-3-flash')) return '3 Flash';
-  if (name.includes('gemini-3-pro')) return '3 Pro';
+  if (name.includes('gemini-3-flash')) return 'Flash';
+  if (name.includes('gemini-3-pro')) return 'Pro';
   if (name.includes('gemini-2.5-pro')) return '2.5 Pro';
   if (name.includes('gemini-flash-lite-latest')) return '2.5 Flash Lite Latest';
   if (name.includes('gemini-flash-latest')) return '2.5 Flash Latest';
@@ -30,6 +36,8 @@ const ChatOverlay: React.FC = () => {
   const oracleMode = useStore((state) => state.oracleMode);
   const apiKey = useStore((state) => state.apiKey);
   const activeModel = useStore((state) => state.activeModel);
+  const thinkingMode = useStore((state) => state.thinkingMode);
+  const setThinkingMode = useStore((state) => state.setThinkingMode);
   
   const [input, setInput] = useState('');
   const [history, setHistory] = useState<Message[]>([]);
@@ -37,6 +45,8 @@ const ChatOverlay: React.FC = () => {
   const [includeVision, setIncludeVision] = useState(true);
   
   const scrollRef = useRef<HTMLDivElement>(null);
+
+  const isProModel = activeModel.includes('-pro');
 
   // Auto-scroll
   useEffect(() => {
@@ -195,26 +205,52 @@ ${userMsg.text}
               </button>
             </div>
             
-            <div className="mt-2 flex items-center justify-between px-1 overflow-hidden">
-              <label 
-                className="flex items-center gap-2 cursor-pointer group flex-shrink-0"
-                onClick={() => setIncludeVision(!includeVision)}
-              >
-                <div 
-                  className={`w-4 h-4 rounded border flex items-center justify-center transition-colors ${includeVision ? 'bg-[var(--accent)] border-[var(--accent)]' : 'border-slate-600 group-hover:border-slate-500'}`}
+            <div className="mt-2 flex flex-col gap-1.5 px-1 overflow-hidden">
+              <div className="flex items-center gap-4">
+                <label 
+                  className="flex items-center gap-2 cursor-pointer group flex-shrink-0"
+                  onClick={() => setIncludeVision(!includeVision)}
                 >
-                  {includeVision && <Eye className="w-2.5 h-2.5 text-white" />}
-                </div>
-                <span className="text-[10px] uppercase font-bold tracking-wider text-slate-500 group-hover:text-slate-400 select-none whitespace-nowrap">
-                  Vision
-                </span>
-              </label>
+                  <div 
+                    className={`w-4 h-4 rounded border flex items-center justify-center transition-colors ${includeVision ? 'bg-[var(--accent)] border-[var(--accent)]' : 'border-slate-600 group-hover:border-slate-500'}`}
+                  >
+                    {includeVision && <Eye className="w-2.5 h-2.5 text-white" />}
+                  </div>
+                  <span className="text-[10px] uppercase font-bold tracking-wider text-slate-500 group-hover:text-slate-400 select-none whitespace-nowrap">
+                    Vision
+                  </span>
+                </label>
 
-              <div className="flex items-center gap-1.5 text-[9px] font-medium text-slate-500 italic select-none overflow-hidden">
-                <span className="text-slate-400 truncate block whitespace-nowrap">
+                <label 
+                  className={cn(
+                    "flex items-center gap-2 flex-shrink-0 group",
+                    isProModel ? "cursor-not-allowed opacity-50" : "cursor-pointer"
+                  )}
+                  onClick={() => !isProModel && setThinkingMode(!thinkingMode)}
+                >
+                  <div 
+                    className={cn(
+                      "w-4 h-4 rounded border flex items-center justify-center transition-colors",
+                      (thinkingMode || isProModel) ? "bg-purple-500 border-purple-500" : "border-slate-600 group-hover:border-slate-500"
+                    )}
+                  >
+                    {(thinkingMode || isProModel) && <BrainCircuit className="w-2.5 h-2.5 text-white" />}
+                  </div>
+                  <span className="text-[10px] uppercase font-bold tracking-wider text-slate-500 group-hover:text-slate-400 select-none whitespace-nowrap">
+                    Thinking
+                  </span>
+                </label>
+              </div>
+
+              <div className="flex justify-end text-[9px] font-medium text-slate-500 italic select-none overflow-hidden w-full">
+                <span className="text-slate-400 whitespace-nowrap text-right">
                   {includeVision 
-                    ? "Oracle sees your workspace to help you organize." 
-                    : "Oracle is blind. Text-only mode active."}
+                    ? "Oracle sees your workspace." 
+                    : "Oracle is blind."}
+                  {" "}
+                  {thinkingMode || isProModel
+                    ? "Deep reasoning active."
+                    : "Fast mode active."}
                 </span>
               </div>
             </div>

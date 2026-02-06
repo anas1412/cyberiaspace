@@ -174,6 +174,7 @@ async function executeTool(name: string, args: Record<string, unknown>) {
 export const aiService = {
   initialize: (apiKey: string, modelName: string = DEFAULT_MODEL) => {
     if (!apiKey) return;
+    
     ACTIVE_MODEL_NAME = modelName;
     genAI = new GoogleGenerativeAI(apiKey);
 
@@ -202,8 +203,27 @@ export const aiService = {
   },
 
   sendMessage: async (message: string, imageBase64?: string) => {
-    if (!chatSession) await aiService.startChat();
-    if (!chatSession) throw new Error('Failed to start chat session');
+    const store = useStore.getState();
+    const isPro = store.activeModel.includes('-pro');
+    const isThinkingEnabled = store.thinkingMode || isPro;
+
+    if (!chatSession) {
+      if (!model) throw new Error('AI Service not initialized. Please provide an API Key.');
+      
+      const generationConfig: any = {
+        maxOutputTokens: 2000,
+      };
+
+      if (isThinkingEnabled) {
+        generationConfig.thinkingConfig = {
+          includeThoughts: true
+        };
+      }
+
+      chatSession = model.startChat({
+        generationConfig,
+      });
+    }
 
     try {
       const parts: Part[] = [{ text: message }];

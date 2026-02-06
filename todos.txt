@@ -14,7 +14,7 @@
 
 - maybe change ai chat on the right
 
-- in the + button add a tooltip when hovered on it says that it new thought and "space" aka u can create a new thought by pressing space
+
 
 - ini calendar mode make all thought same size and add stacking effect when placed on the calendar it should have a good and intuitive user experience
 

@@ -24,6 +24,7 @@ interface CyberiaState {
   activeModel: string;
   oracleMode: boolean; // True = AI Enabled
   isChatOpen: boolean;
+  thinkingMode: boolean;
   
   // Initialization
   init: () => Promise<void>;
@@ -39,6 +40,7 @@ interface CyberiaState {
   removeApiKey: () => void;
   toggleOracleMode: () => void;
   setChatOpen: (isOpen: boolean) => void;
+  setThinkingMode: (enabled: boolean) => void;
   
   // Space Actions
   setActiveSpace: (id: string) => void;
@@ -192,6 +194,7 @@ export const useStore = create<CyberiaState>((set, get) => ({
   activeModel: localStorage.getItem('cyberia-active-model') || DEFAULT_MODEL,
   oracleMode: localStorage.getItem('cyberia-oracle-mode') === 'true',
   isChatOpen: false,
+  thinkingMode: true,
 
   openLightbox: (image) => set({ isLightboxOpen: true, lightboxImage: image }),
   closeLightbox: () => set({ isLightboxOpen: false, lightboxImage: null }),
@@ -215,7 +218,7 @@ export const useStore = create<CyberiaState>((set, get) => ({
   setActiveModel: (model) => {
     set({ activeModel: model });
     localStorage.setItem('cyberia-active-model', model);
-    const { apiKey } = get();
+    const { apiKey, thinkingMode } = get();
     if (apiKey) {
       aiService.initialize(apiKey, model);
     }
@@ -234,6 +237,13 @@ export const useStore = create<CyberiaState>((set, get) => ({
   },
 
   setChatOpen: (isOpen) => set({ isChatOpen: isOpen }),
+  setThinkingMode: (enabled) => {
+    set({ thinkingMode: enabled });
+    const { apiKey, activeModel } = get();
+    if (apiKey) {
+      aiService.initialize(apiKey, activeModel);
+    }
+  },
 
   init: async () => {
     set({ isSpaceLoading: true });
