@@ -76,6 +76,7 @@ interface CyberiaState {
   // Data Lifecycle
   exportData: () => Promise<void>;
   importData: (file: File) => Promise<void>;
+  resetData: () => Promise<void>;
   
   // Lightbox
   isLightboxOpen: boolean;
@@ -886,28 +887,82 @@ export const useStore = create<CyberiaState>((set, get) => ({
     URL.revokeObjectURL(url);
   },
 
-  importData: async (file) => {
-    const reader = new FileReader();
-    reader.onload = async (e) => {
+    importData: async (file) => {
+
+      const reader = new FileReader();
+
+      reader.onload = async (e) => {
+
+        try {
+
+          const data = JSON.parse(e.target?.result as string);
+
+          if (!data.spaces || !data.thoughts) throw new Error('Invalid backup file');
+
+          
+
+          await db.transaction('rw', db.spaces, db.thoughts, db.stacks, async () => {
+
+            await db.spaces.clear();
+
+            await db.thoughts.clear();
+
+            await db.stacks.clear();
+
+            await db.spaces.bulkAdd(data.spaces);
+
+            await db.thoughts.bulkAdd(data.thoughts);
+
+            if (data.stacks) await db.stacks.bulkAdd(data.stacks);
+
+          });
+
+          
+
+          window.location.reload();
+
+        } catch (err) {
+
+          console.error('Import failed:', err);
+
+          alert('Import failed. Please make sure the file is a valid Cyberia backup.');
+
+        }
+
+      };
+
+      reader.readAsText(file);
+
+    },
+
+  
+
+    resetData: async () => {
+
       try {
-        const data = JSON.parse(e.target?.result as string);
-        if (!data.spaces || !data.thoughts) throw new Error('Invalid backup file');
-        
+
         await db.transaction('rw', db.spaces, db.thoughts, db.stacks, async () => {
+
           await db.spaces.clear();
+
           await db.thoughts.clear();
+
           await db.stacks.clear();
-          await db.spaces.bulkAdd(data.spaces);
-          await db.thoughts.bulkAdd(data.thoughts);
-          if (data.stacks) await db.stacks.bulkAdd(data.stacks);
+
         });
-        
+
+        localStorage.clear();
+
         window.location.reload();
+
       } catch (err) {
-        console.error('Import failed:', err);
-        alert('Import failed. Please make sure the file is a valid Cyberia backup.');
+
+        console.error('Reset failed:', err);
+
       }
-    };
-    reader.readAsText(file);
-  }
-}));
+
+    }
+
+  }));
+
+  

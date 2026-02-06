@@ -4,14 +4,10 @@
 
 - add a vercel api route to enable oracle external api for built-in vercel key / add limiters
 
--improve onboarding by adding a youtube link a gif images and a drawing explaining how does the app works, mroe stacks and thoughts in details the better
-
 - add support to instagram/facebook/reddit/twitter/spotify and popular plateforms embed support
 
 
-- small thing, when only two in a stack and unlink one of them the other one should unlink as well and remove the stack no?
 
-- the link/unlink icon is overlapped with progress bar on thoughts with type tasks when its not linked
 
 - maybe change ai chat on the right
 

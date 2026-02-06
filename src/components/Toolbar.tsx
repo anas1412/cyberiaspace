@@ -42,6 +42,7 @@ const Toolbar: React.FC = () => {
   const setInspectorOpen = useStore((state) => state.setInspectorOpen);
   const exportData = useStore((state) => state.exportData);
   const importData = useStore((state) => state.importData);
+  const resetData = useStore((state) => state.resetData);
   const theme = useStore((state) => state.theme);
   const setTheme = useStore((state) => state.setTheme);
   const deferredPrompt = useStore((state) => state.deferredPrompt);
@@ -527,6 +528,21 @@ const Toolbar: React.FC = () => {
             <Camera className="w-3.5 h-3.5 md:w-4 md:h-4" /> {isCapturing ? 'Saving...' : 'Screenshot'}
           </button>
           <div className="h-[1px] bg-white/5 my-1 mx-2"></div>
+          <button 
+            onClick={() => {
+              openModal({
+                title: 'Reset Everything?',
+                description: 'This will permanently delete all your spaces, thoughts, and settings. This cannot be undone.',
+                type: 'reset_confirm',
+                confirmText: 'Reset App',
+                onConfirm: resetData
+              });
+              setIsSystemMenuOpen(false);
+            }} 
+            className="flex items-center gap-3 px-3 md:px-4 py-2.5 md:py-3 rounded-xl hover:bg-red-500/10 text-[9px] md:text-[10px] font-bold uppercase tracking-widest text-red-400 transition-colors"
+          >
+            <RotateCcw className="w-3.5 h-3.5 md:w-4 md:h-4" /> Reset App
+          </button>
           <button 
             onClick={() => {
               setIsKeyModalOpen(true);
