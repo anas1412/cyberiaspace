@@ -16,7 +16,7 @@ export interface AuthState {
   cloudUsage: number;
   isOnline: boolean;
   
-  signIn: () => Promise<void>;
+  setAuthenticatedUser: (user: User) => void;
   signOut: () => Promise<void>;
   syncData: () => Promise<void>;
   setAutoSync: (enabled: boolean) => void;
@@ -56,27 +56,13 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     set({ cloudUsage: percentage });
   },
 
-  signIn: async () => {
-    if (!navigator.onLine) {
-      alert("Internet connection required to sign in with Google.");
-      return;
-    }
-    set({ status: 'loading' });
-    await new Promise(resolve => setTimeout(resolve, 1500));
-    
-    const dummyUser: User = {
-      id: 'g-12345',
-      name: 'Cyber Runner',
-      email: 'runner@cyberia.io',
-      avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=CyberRunner'
-    };
-
-    localStorage.setItem('cyberia-user', JSON.stringify(dummyUser));
+  setAuthenticatedUser: (user: User) => {
+    localStorage.setItem('cyberia-user', JSON.stringify(user));
     const now = new Date();
     localStorage.setItem('cyberia-last-sync', now.toISOString());
 
     set({ 
-      user: dummyUser, 
+      user, 
       status: 'authenticated', 
       syncStatus: 'synced',
       lastSync: now
@@ -85,7 +71,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 
   signOut: async () => {
     set({ status: 'loading' });
-    await new Promise(resolve => setTimeout(resolve, 800));
+    await new Promise(resolve => setTimeout(resolve, 300));
     localStorage.removeItem('cyberia-user');
     localStorage.removeItem('cyberia-last-sync');
     set({ user: null, status: 'unauthenticated', syncStatus: 'offline', lastSync: null });

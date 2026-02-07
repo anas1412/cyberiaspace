@@ -1,6 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useAuthStore } from '../store/useAuthStore';
 import { useStore } from '../store/useStore';
+import { useModalStore } from '../store/useModalStore';
+import { useGoogleLogin } from '@react-oauth/google';
 import { User, LogOut, Cloud, CloudOff, RefreshCw, ChevronDown, ShieldCheck, Trash2, Power, Database, WifiOff } from 'lucide-react';
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
@@ -12,14 +14,40 @@ function cn(...inputs: ClassValue[]) {
 const AccountMenu: React.FC = () => {
   const store = useAuthStore();
   const { 
-    user, status, signIn, signOut, syncStatus, lastSync, 
+    user, status, signOut, syncStatus, lastSync, 
     syncData, autoSync, setAutoSync, deleteCloudData, 
-    cloudUsage, calculateUsage, isOnline 
+    cloudUsage, calculateUsage, isOnline, setAuthenticatedUser
   } = store;
   
   const totalThoughtCount = useStore((state) => state.totalThoughtCount);
+  const { openModal } = useModalStore();
   const [isOpen, setIsOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
+
+  const googleLogin = useGoogleLogin({
+    onSuccess: async (tokenResponse) => {
+      try {
+        // Fetch user info using the access token
+        const res = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
+          headers: { Authorization: `Bearer ${tokenResponse.access_token}` },
+        });
+        const data = await res.json();
+        
+        const googleUser = {
+          id: data.sub,
+          name: data.name,
+          email: data.email,
+          avatar: data.picture
+        };
+
+        setAuthenticatedUser(googleUser);
+
+      } catch (error) {
+        console.error('Failed to fetch user info:', error);
+      }
+    },
+    onError: (error) => console.error('Login Failed:', error),
+  });
 
   useEffect(() => {
     if (typeof calculateUsage === 'function') {
@@ -44,15 +72,22 @@ const AccountMenu: React.FC = () => {
   };
 
   const handleDeleteCloudData = async () => {
-    if (window.confirm('Delete all data from the cloud? Local data will remain intact.')) {
-      await deleteCloudData();
-    }
+    openModal({
+      title: 'Delete Cloud Data?',
+      description: 'Are you sure? This will remove all your data from the cloud. Your local workspace will remain intact.',
+      type: 'delete_confirm',
+      confirmText: 'Delete Cloud Data',
+      onConfirm: async () => {
+        await deleteCloudData();
+        setIsOpen(false);
+      }
+    });
   };
 
   if (status === 'unauthenticated' || !user) {
     return (
       <button
-        onClick={() => signIn()}
+        onClick={() => googleLogin()}
         disabled={status === 'loading'}
         className="h-[48px] px-6 glass rounded-2xl border border-white/5 shadow-2xl transition-all hover:bg-white/10 active:scale-95 flex items-center gap-3 group pointer-events-auto"
       >
@@ -78,6 +113,7 @@ const AccountMenu: React.FC = () => {
           <img 
             src={user.avatar} 
             alt={user.name} 
+            referrerPolicy="no-referrer"
             className="w-8 h-8 rounded-xl border border-white/10 shadow-lg"
           />
           <div className={cn(
@@ -98,6 +134,7 @@ const AccountMenu: React.FC = () => {
             <img 
               src={user.avatar} 
               alt={user.name} 
+              referrerPolicy="no-referrer"
               className="w-12 h-12 rounded-2xl border border-white/10 shadow-xl"
             />
             <div>
