@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { db, type Space, type Thought, type Stack } from '../db';
 import { aiService } from '../services/ai';
+import { useAuthStore } from './useAuthStore';
 import { DEFAULT_MODEL } from '../constants';
 
 interface CyberiaState {
@@ -102,6 +103,8 @@ interface CyberiaState {
   refreshThoughts: (spaceId?: string) => Promise<void>;
   refreshSpaces: () => Promise<void>;
   refreshStacks: (spaceId?: string) => Promise<void>;
+  refreshTotalThoughtCount: () => Promise<void>;
+  totalThoughtCount: number;
 }
 
 export const useStore = create<CyberiaState>((set, get) => ({
@@ -109,6 +112,7 @@ export const useStore = create<CyberiaState>((set, get) => ({
   spaces: [],
   thoughts: [],
   stacks: [],
+  totalThoughtCount: 0,
   selectedThoughtId: null,
   selectedThoughtIds: [],
   isInspectorOpen: false,
@@ -257,6 +261,9 @@ export const useStore = create<CyberiaState>((set, get) => ({
 
   init: async () => {
     set({ isSpaceLoading: true });
+    // Initialize Auth
+    useAuthStore.getState().initAuth();
+    
     // Apply theme on init
     const savedTheme = localStorage.getItem('cyberia-theme') || 'cyberia';
     document.body.setAttribute('data-theme', savedTheme);
@@ -269,6 +276,7 @@ export const useStore = create<CyberiaState>((set, get) => ({
     }
 
     await get().refreshSpaces();
+    await get().refreshTotalThoughtCount();
     const { spaces } = get();
     
     if (spaces.length === 0) {
@@ -436,11 +444,17 @@ export const useStore = create<CyberiaState>((set, get) => ({
     set({ spaces });
   },
 
+  refreshTotalThoughtCount: async () => {
+    const count = await db.thoughts.count();
+    set({ totalThoughtCount: count });
+  },
+
   refreshThoughts: async (spaceId?: string) => {
     const targetId = spaceId || get().activeSpaceId;
     if (!targetId) return;
     const thoughts = await db.thoughts.where('spaceId').equals(targetId).toArray();
     set({ thoughts, isSpaceLoading: false });
+    get().refreshTotalThoughtCount();
     if (get().history.length === 0) {
       set({ history: [JSON.parse(JSON.stringify(thoughts))], historyIndex: 0 });
     }
@@ -611,6 +625,7 @@ export const useStore = create<CyberiaState>((set, get) => ({
 
     if (result !== -1) {
       await get().refreshThoughts(targetSpaceId);
+      await get().refreshTotalThoughtCount();
       get().pushHistory();
     }
     
@@ -647,6 +662,7 @@ export const useStore = create<CyberiaState>((set, get) => ({
 
     await db.thoughts.delete(id);
     await get().refreshThoughts();
+    await get().refreshTotalThoughtCount();
     
     if (affectedStackId) {
       await get().cleanupStacks();

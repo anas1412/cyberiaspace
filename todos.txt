@@ -11,8 +11,6 @@
 
 - maybe change ai chat on the right
 
-- add verification of the oracle key
-
 
 
 
