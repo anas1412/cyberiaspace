@@ -35,6 +35,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       const data = req.body;
       if (!data) return res.status(400).json({ error: 'No data provided' });
       
+      // Limit payload size to ~1MB to prevent abuse
+      const size = JSON.stringify(data).length;
+      if (size > 1024 * 1024) {
+        return res.status(413).json({ error: 'Payload too large' });
+      }
+      
       // Use a stringified version to ensure KV compatibility
       await kv.set(storageKey, data);
       return res.status(200).json({ success: true });

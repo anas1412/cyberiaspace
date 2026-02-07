@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import { LIMITS } from '../constants';
 
 export interface User {
   id: string;
@@ -27,8 +28,6 @@ export interface AuthState {
   initAuth: () => void;
 }
 
-export const MAX_CLOUD_THOUGHTS = 240;
-
 export const useAuthStore = create<AuthState>((set, get) => ({
   user: JSON.parse(localStorage.getItem('cyberia-user') || 'null'),
   accessToken: localStorage.getItem('cyberia-token'),
@@ -55,7 +54,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   },
 
   calculateUsage: (thoughtCount: number) => {
-    const percentage = Math.min(Math.round((thoughtCount / MAX_CLOUD_THOUGHTS) * 100), 100);
+    const percentage = Math.min(Math.round((thoughtCount / LIMITS.MAX_CLOUD_THOUGHTS) * 100), 100);
     set({ cloudUsage: percentage });
   },
 
