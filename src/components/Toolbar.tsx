@@ -183,7 +183,7 @@ const Toolbar: React.FC = () => {
         },
         width: Math.floor(width * scaleFactor),
         height: Math.floor(height * scaleFactor),
-        filter: (node: any) => {
+        filter: (node: HTMLElement) => {
           const isUI = node.classList?.contains('ui-layer') || 
                        node.id === 'connection-canvas' ||
                        (node.tagName === 'BUTTON' && !node.closest?.('.thought-bulb'));
@@ -892,7 +892,7 @@ const Toolbar: React.FC = () => {
                           setTempKey('');
                           setIsKeyModalOpen(false);
                           if (!oracleMode) toggleOracleMode();
-                        } catch (err: any) {
+                        } catch {
                           setValidationError("Invalid API Key. Please check and try again.");
                         } finally {
                           setIsValidating(false);

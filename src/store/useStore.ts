@@ -74,7 +74,7 @@ interface CyberiaState {
   
   // Data Lifecycle
   exportData: () => Promise<void>;
-  importData: (file: File) => Promise<void>;
+  importData: (data: File | unknown) => Promise<void>;
   resetData: () => Promise<void>;
   
   // Lightbox
@@ -903,6 +903,7 @@ export const useStore = create<CyberiaState>((set, get) => ({
       spaces: allSpaces,
       thoughts: allThoughts,
       stacks: allStacks,
+      activeSpaceId: get().activeSpaceId,
       version: 2,
       timestamp: Date.now()
     };
@@ -915,53 +916,54 @@ export const useStore = create<CyberiaState>((set, get) => ({
     URL.revokeObjectURL(url);
   },
 
-    importData: async (file) => {
+  importData: async (input) => {
+    const processData = async (data: any) => {
+      if (!data || typeof data !== 'object' || !('spaces' in data) || !('thoughts' in data)) {
+        throw new Error('Invalid backup file');
+      }
+      const backup = data as { spaces: Space[], thoughts: Thought[], stacks?: Stack[], activeSpaceId?: string, settings?: { theme?: string } };
 
+      await db.transaction('rw', db.spaces, db.thoughts, db.stacks, async () => {
+        await db.spaces.clear();
+        await db.thoughts.clear();
+        await db.stacks.clear();
+        await db.spaces.bulkAdd(backup.spaces);
+        await db.thoughts.bulkAdd(backup.thoughts);
+        if (backup.stacks) await db.stacks.bulkAdd(backup.stacks);
+      });
+
+      if (backup.activeSpaceId) {
+        localStorage.setItem('cyberia-active-space-id', backup.activeSpaceId);
+      }
+
+      if (backup.settings?.theme) {
+        localStorage.setItem('cyberia-theme', backup.settings.theme);
+      }
+
+      window.location.reload();
+    };
+
+    if (input instanceof File) {
       const reader = new FileReader();
-
       reader.onload = async (e) => {
-
         try {
-
           const data = JSON.parse(e.target?.result as string);
-
-          if (!data.spaces || !data.thoughts) throw new Error('Invalid backup file');
-
-          
-
-          await db.transaction('rw', db.spaces, db.thoughts, db.stacks, async () => {
-
-            await db.spaces.clear();
-
-            await db.thoughts.clear();
-
-            await db.stacks.clear();
-
-            await db.spaces.bulkAdd(data.spaces);
-
-            await db.thoughts.bulkAdd(data.thoughts);
-
-            if (data.stacks) await db.stacks.bulkAdd(data.stacks);
-
-          });
-
-          
-
-          window.location.reload();
-
+          await processData(data);
         } catch (err) {
-
           console.error('Import failed:', err);
-
           alert('Import failed. Please make sure the file is a valid Cyberia backup.');
-
         }
-
       };
-
-      reader.readAsText(file);
-
-    },
+      reader.readAsText(input);
+    } else {
+      try {
+        await processData(input);
+      } catch (err) {
+        console.error('Import failed:', err);
+        alert('Import failed. Please make sure the data is a valid Cyberia backup.');
+      }
+    }
+  },
 
   
 

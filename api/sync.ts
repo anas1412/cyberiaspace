@@ -1,8 +1,5 @@
 import { VercelRequest, VercelResponse } from '@vercel/node';
 import { kv } from '@vercel/kv';
-import { OAuth2Client } from 'google-auth-library';
-
-const client = new OAuth2Client();
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   const authHeader = req.headers.authorization;
@@ -35,9 +32,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       const data = req.body;
       if (!data) return res.status(400).json({ error: 'No data provided' });
       
-      // Limit payload size to ~1MB to prevent abuse
+      // Limit payload size to ~10MB to prevent abuse
       const size = JSON.stringify(data).length;
-      if (size > 1024 * 1024) {
+      if (size > 10 * 1024 * 1024) {
         return res.status(413).json({ error: 'Payload too large' });
       }
       

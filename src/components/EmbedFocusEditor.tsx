@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo, useRef } from 'react';
+import React, { useEffect, useMemo, useRef } from 'react';
 import { useStore } from '../store/useStore';
 import { Youtube, X, ExternalLink } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -16,7 +16,7 @@ const EmbedFocusEditor: React.FC = () => {
   const stack = stacks.find((s) => s.id === thought?.stackId);
   const isVisible = focusType === 'embed' && !!thought;
 
-  const [videoId, setVideoId] = useState<string | null>(null);
+  const videoId = useMemo(() => getYouTubeVideoId(thought?.content || ''), [thought?.content]);
   const scrollerRef = useRef<HTMLDivElement>(null);
 
   // Find other items in the same stack (Videos Only)
@@ -25,11 +25,7 @@ const EmbedFocusEditor: React.FC = () => {
     return thoughts
       .filter(t => t.stackId === thought.stackId && t.id !== thought.id)
       .filter(t => t.type === 'embed');
-  }, [thoughts, thought?.stackId, thought?.id]);
-
-  useEffect(() => {
-    setVideoId(getYouTubeVideoId(thought?.content || ''));
-  }, [thought?.content]);
+  }, [thoughts, thought]);
 
   // Handle horizontal scroll with mouse wheel
   useEffect(() => {

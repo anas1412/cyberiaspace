@@ -1,4 +1,5 @@
 import React from 'react';
+/** CalendarOverlay component provides a temporal view of thoughts */
 import { useStore } from '../store/useStore';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { clsx, type ClassValue } from 'clsx';
