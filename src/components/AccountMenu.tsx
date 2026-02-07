@@ -27,6 +27,7 @@ const AccountMenu: React.FC = () => {
   const menuRef = useRef<HTMLDivElement>(null);
 
   const googleLogin = useGoogleLogin({
+    use_fedcm_for_prompt: true,
     onSuccess: async (tokenResponse) => {
       try {
         const res = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
