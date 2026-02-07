@@ -16,10 +16,12 @@ const AccountMenu: React.FC = () => {
   const { 
     user, status, signOut, syncStatus, lastSync, 
     syncData, autoSync, setAutoSync, deleteCloudData, 
-    cloudUsage, calculateUsage, isOnline, setAuthenticatedUser
+    cloudUsage, calculateUsage, isOnline, setAuthenticatedUser,
+    importCloudData
   } = store;
   
   const totalThoughtCount = useStore((state) => state.totalThoughtCount);
+  const importDataManual = useStore((state) => state.importData);
   const { openModal } = useModalStore();
   const [isOpen, setIsOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
@@ -27,7 +29,6 @@ const AccountMenu: React.FC = () => {
   const googleLogin = useGoogleLogin({
     onSuccess: async (tokenResponse) => {
       try {
-        // Fetch user info using the access token
         const res = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
           headers: { Authorization: `Bearer ${tokenResponse.access_token}` },
         });
@@ -40,7 +41,23 @@ const AccountMenu: React.FC = () => {
           avatar: data.picture
         };
 
-        setAuthenticatedUser(googleUser);
+        await setAuthenticatedUser(googleUser, tokenResponse.access_token);
+
+        // After setting user, check if we should prompt for restore
+        const cloudData = await importCloudData();
+        if (cloudData) {
+          openModal({
+            title: 'Cloud Data Found',
+            description: 'We found a workspace backup in the cloud. Would you like to restore it? This will overwrite your current local data.',
+            type: 'import_confirm',
+            confirmText: 'Restore from Cloud',
+            onConfirm: () => {
+              const blob = new Blob([JSON.stringify(cloudData)], { type: 'application/json' });
+              const file = new File([blob], 'cloud_backup.json', { type: 'application/json' });
+              importDataManual(file);
+            }
+          });
+        }
 
       } catch (error) {
         console.error('Failed to fetch user info:', error);
@@ -69,6 +86,25 @@ const AccountMenu: React.FC = () => {
     e.stopPropagation();
     if (syncStatus === 'syncing' || !isOnline) return;
     await syncData();
+  };
+
+  const handleRestore = async () => {
+    const cloudData = await importCloudData();
+    if (cloudData) {
+      openModal({
+        title: 'Restore from Cloud?',
+        description: 'This will replace your current local workspace with the cloud backup. This cannot be undone.',
+        type: 'import_confirm',
+        confirmText: 'Restore Now',
+        onConfirm: () => {
+          const blob = new Blob([JSON.stringify(cloudData)], { type: 'application/json' });
+          const file = new File([blob], 'cloud_backup.json', { type: 'application/json' });
+          importDataManual(file);
+        }
+      });
+    } else {
+      alert("No cloud backup found.");
+    }
   };
 
   const handleDeleteCloudData = async () => {
@@ -178,6 +214,18 @@ const AccountMenu: React.FC = () => {
                 <RefreshCw className="w-3.5 h-3.5 text-slate-400" />
               </button>
             </div>
+
+            <button 
+              onClick={handleRestore}
+              disabled={!isOnline || syncStatus === 'syncing'}
+              className="w-full flex items-center gap-3 p-3 rounded-2xl hover:bg-white/5 transition-colors group"
+            >
+              <Cloud className="w-4 h-4 text-blue-400" />
+              <div className="text-left">
+                <p className="text-[9px] font-black uppercase tracking-widest text-white">Restore Cloud</p>
+                <p className="text-[7px] font-bold text-slate-500 uppercase tracking-widest">Download backup</p>
+              </div>
+            </button>
 
             <button 
               onClick={() => setAutoSync(!autoSync)}

@@ -9,6 +9,7 @@ export interface User {
 
 export interface AuthState {
   user: User | null;
+  accessToken: string | null;
   status: 'idle' | 'loading' | 'authenticated' | 'unauthenticated';
   syncStatus: 'synced' | 'syncing' | 'error' | 'offline';
   lastSync: Date | null;
@@ -16,9 +17,10 @@ export interface AuthState {
   cloudUsage: number;
   isOnline: boolean;
   
-  setAuthenticatedUser: (user: User) => void;
+  setAuthenticatedUser: (user: User, token: string) => void;
   signOut: () => Promise<void>;
   syncData: () => Promise<void>;
+  importCloudData: () => Promise<any | null>;
   setAutoSync: (enabled: boolean) => void;
   deleteCloudData: () => Promise<void>;
   calculateUsage: (thoughtCount: number) => void;
@@ -29,6 +31,7 @@ export const MAX_CLOUD_THOUGHTS = 240;
 
 export const useAuthStore = create<AuthState>((set, get) => ({
   user: JSON.parse(localStorage.getItem('cyberia-user') || 'null'),
+  accessToken: localStorage.getItem('cyberia-token'),
   status: localStorage.getItem('cyberia-user') ? 'authenticated' : 'unauthenticated',
   syncStatus: navigator.onLine ? (localStorage.getItem('cyberia-user') ? 'synced' : 'offline') : 'offline',
   lastSync: localStorage.getItem('cyberia-last-sync') ? new Date(localStorage.getItem('cyberia-last-sync')!) : null,
@@ -56,44 +59,59 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     set({ cloudUsage: percentage });
   },
 
-  setAuthenticatedUser: (user: User) => {
+  setAuthenticatedUser: async (user: User, token: string) => {
     localStorage.setItem('cyberia-user', JSON.stringify(user));
-    const now = new Date();
-    localStorage.setItem('cyberia-last-sync', now.toISOString());
-
+    localStorage.setItem('cyberia-token', token);
+    
     set({ 
       user, 
+      accessToken: token,
       status: 'authenticated', 
-      syncStatus: 'synced',
-      lastSync: now
+      syncStatus: 'syncing'
     });
+
+    // Check if cloud data exists
+    try {
+      const response = await fetch('/api/sync', {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      const result = await response.json();
+      
+      if (result.data) {
+        set({ syncStatus: 'synced', lastSync: new Date() });
+      } else {
+        set({ syncStatus: 'offline', lastSync: null });
+      }
+    } catch (e) {
+      set({ syncStatus: 'error' });
+    }
   },
 
   signOut: async () => {
     set({ status: 'loading' });
     await new Promise(resolve => setTimeout(resolve, 300));
     localStorage.removeItem('cyberia-user');
+    localStorage.removeItem('cyberia-token');
     localStorage.removeItem('cyberia-last-sync');
-    set({ user: null, status: 'unauthenticated', syncStatus: 'offline', lastSync: null });
+    set({ user: null, accessToken: null, status: 'unauthenticated', syncStatus: 'offline', lastSync: null });
   },
 
-  syncData: async () => {
-    if (get().status !== 'authenticated') return;
-    if (!navigator.onLine) {
-      set({ syncStatus: 'offline' });
-      return;
-    }
-    
+  importCloudData: async () => {
+    const { accessToken, isOnline } = get();
+    if (!accessToken || !isOnline) return null;
+
     set({ syncStatus: 'syncing' });
-    await new Promise(resolve => setTimeout(resolve, 2000));
-    
-    const now = new Date();
-    localStorage.setItem('cyberia-last-sync', now.toISOString());
-    
-    set({ 
-      syncStatus: 'synced',
-      lastSync: now
-    });
+    try {
+      const response = await fetch('/api/sync', {
+        headers: { 'Authorization': `Bearer ${accessToken}` }
+      });
+      const result = await response.json();
+      set({ syncStatus: 'synced' });
+      return result.data;
+    } catch (error) {
+      set({ syncStatus: 'error' });
+      return null;
+    }
   },
 
   setAutoSync: (enabled: boolean) => {
@@ -102,13 +120,29 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   },
 
   deleteCloudData: async () => {
+    const { accessToken, isOnline } = get();
+    if (!accessToken || !isOnline) return;
+
     set({ syncStatus: 'syncing' });
-    await new Promise(resolve => setTimeout(resolve, 1500));
     
-    localStorage.removeItem('cyberia-last-sync');
-    set({ 
-      syncStatus: 'offline',
-      lastSync: null
-    });
+    try {
+      const response = await fetch('/api/sync', {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${accessToken}`
+        }
+      });
+
+      if (!response.ok) throw new Error('Delete failed');
+
+      localStorage.removeItem('cyberia-last-sync');
+      set({ 
+        syncStatus: 'offline',
+        lastSync: null
+      });
+    } catch (error) {
+      console.error('Delete error:', error);
+      set({ syncStatus: 'error' });
+    }
   }
 }));
