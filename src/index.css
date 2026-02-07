@@ -102,17 +102,20 @@
 }
 
   body {
-    overflow: hidden;
     background-color: var(--bg-page);
     background-image: 
       var(--bg-nebula),
       radial-gradient(circle at 50% 50%, var(--bg-main) 0%, var(--bg-page) 100%);
     color: var(--text-primary);
     font-family: 'Plus Jakarta Sans', sans-serif;
-    width: 100vw;
-    height: 100vh;
     position: relative;
     transition: background 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .app-body {
+    overflow: hidden;
+    width: 100vw;
+    height: 100vh;
     touch-action: none;
     overscroll-behavior: none;
   }

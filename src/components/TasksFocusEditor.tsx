@@ -52,7 +52,7 @@ const TasksFocusEditor: React.FC = () => {
     const newTasks = [...localTasks, newTask];
     setLocalTasks(newTasks);
     // Remove IDs before saving to store to keep data clean
-    const tasksToSave = newTasks.map(({ id: _unusedId, ...rest }) => rest);
+    const tasksToSave = newTasks.map(({ id: _, ...rest }) => rest);
     updateThought(thought.id, { tasks: tasksToSave });
   };
 
@@ -60,7 +60,7 @@ const TasksFocusEditor: React.FC = () => {
     if (!thought) return;
     const newTasks = localTasks.map(t => t.id === id ? { ...t, ...updates } : t);
     setLocalTasks(newTasks);
-    const tasksToSave = newTasks.map(({ id: _unusedId, ...rest }) => rest);
+    const tasksToSave = newTasks.map(({ id: _, ...rest }) => rest);
     updateThought(thought.id, { tasks: tasksToSave });
   };
 
@@ -68,7 +68,7 @@ const TasksFocusEditor: React.FC = () => {
     if (!thought) return;
     const newTasks = localTasks.filter(t => t.id !== id);
     setLocalTasks(newTasks);
-    const tasksToSave = newTasks.map(({ id: _unusedId, ...rest }) => rest);
+    const tasksToSave = newTasks.map(({ id: _, ...rest }) => rest);
     updateThought(thought.id, { tasks: tasksToSave });
   };
 
@@ -76,7 +76,7 @@ const TasksFocusEditor: React.FC = () => {
     if (!thought) return;
     setLocalTasks(newTasks);
     // Debounce the store update or only save when the order actually changes
-    const tasksToSave = newTasks.map(({ id: _unusedId, ...rest }) => rest);
+    const tasksToSave = newTasks.map(({ id: _, ...rest }) => rest);
     updateThought(thought.id, { tasks: tasksToSave });
   };
 

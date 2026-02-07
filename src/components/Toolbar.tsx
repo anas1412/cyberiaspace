@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
 import { useStore } from '../store/useStore';
 import { useModalStore } from '../store/useModalStore';
+import { useAuthStore } from '../store/useAuthStore';
 import { aiService } from '../services/ai';
 import { LIMITS, AVAILABLE_MODELS } from '../constants';
-import { Plus, Zap, Download, Upload, ChevronLeft, ChevronRight, Trash2, Edit3, Camera, MoreVertical, Keyboard, MousePointer2, Orbit, Columns3, CalendarDays, Shield, MonitorSmartphone, BotMessageSquare, Key, ChevronDown, ZoomIn, ZoomOut, RotateCcw, Undo2, Redo2, Settings } from 'lucide-react';
+import { Plus, Zap, Download, Upload, ChevronLeft, ChevronRight, Trash2, Edit3, Camera, MoreVertical, Keyboard, MousePointer2, Orbit, Columns3, CalendarDays, Shield, MonitorSmartphone, BotMessageSquare, Key, ChevronDown, ZoomIn, ZoomOut, RotateCcw, Undo2, Redo2, Settings, CircleHelp, MessageSquare, Send, Loader2, CheckCircle } from 'lucide-react';
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 /* import { toPng, toCanvas } from 'html-to-image'; */
@@ -71,7 +72,49 @@ const Toolbar: React.FC = () => {
   const [isSpaceMenuOpen, setIsSpaceMenuOpen] = useState(false);
   const [isSystemMenuOpen, setIsSystemMenuOpen] = useState(false);
   const [isShortcutsOpen, setIsShortcutsOpen] = useState(false);
+  const [isHelpOpen, setIsHelpOpen] = useState(false);
+  const [activeHelpTab, setActiveHelpTab] = useState<'about' | 'issue' | 'contact'>('about');
   const [isKeyModalOpen, setIsKeyModalOpen] = useState(false);
+
+  // Quick Feedback State
+  const [quickMessage, setQuickMessage] = useState('');
+  const [quickType, setQuickType] = useState<'issue' | 'feedback' | 'feature'>('issue');
+  const [isQuickSubmitting, setIsQuickSubmitting] = useState(false);
+  const [quickSubmitStatus, setQuickSubmitStatus] = useState<'idle' | 'success' | 'error'>('idle');
+  const { user } = useAuthStore();
+
+  const handleQuickSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!quickMessage.trim() || isQuickSubmitting) return;
+
+    setIsQuickSubmitting(true);
+    setQuickSubmitStatus('idle');
+
+    try {
+      const res = await fetch('/api/feedback', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          message: quickMessage, 
+          email: user?.email || 'anonymous', 
+          type: quickType 
+        })
+      });
+
+      if (res.ok) {
+        setQuickSubmitStatus('success');
+        setQuickMessage('');
+        setTimeout(() => setQuickSubmitStatus('idle'), 3000);
+      } else {
+        setQuickSubmitStatus('error');
+      }
+    } catch {
+      setQuickSubmitStatus('error');
+    } finally {
+      setIsQuickSubmitting(false);
+    }
+  };
+
   const [tempKey, setTempKey] = useState('');
   const [isValidating, setIsValidating] = useState(false);
   const [validationError, setValidationError] = useState<string | null>(null);
@@ -497,13 +540,13 @@ const Toolbar: React.FC = () => {
       {/* SYSTEM TRAY */}
       <div className="fixed bottom-4 md:bottom-8 right-4 md:right-8 z-[9999] flex flex-col items-end gap-3 pointer-events-none system-tray-container">
         <div className={cn(
-          "glass p-2 rounded-2xl flex flex-col gap-1 transition-all pointer-events-auto w-52 md:w-64",
+          "glass p-4 rounded-[2.5rem] flex flex-col gap-2 transition-all pointer-events-auto w-64 md:w-80",
           isSystemMenuOpen ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4 pointer-events-none"
         )}>
           {/* Theme Selector */}
-          <div className="px-3 md:px-4 py-3 border-b border-white/5 mb-1">
-            <p className="text-[8px] font-black uppercase tracking-[0.2em] text-slate-500 mb-3">Workspace Theme</p>
-            <div className="grid grid-cols-3 gap-2">
+          <div className="px-3 md:px-4 py-4 border-b border-white/5 mb-1">
+            <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500 mb-4">Workspace Theme</p>
+            <div className="grid grid-cols-3 gap-3">
               {[
                 { id: 'cyberia', label: 'Cyber', color: '#6366f1' },
                 { id: 'sakura', label: 'Sakura', color: '#fdb9c8' },
@@ -513,15 +556,15 @@ const Toolbar: React.FC = () => {
                   key={t.id}
                   onClick={() => setTheme(t.id as 'cyberia' | 'sakura' | 'neon')}
                   className={cn(
-                    "flex flex-col items-center gap-2 p-2 rounded-xl border transition-all",
+                    "flex flex-col items-center gap-3 p-3 rounded-2xl border transition-all",
                     theme === t.id 
                       ? "bg-white/10 border-white/20 shadow-lg" 
                       : "border-transparent hover:bg-white/5"
                   )}
                 >
-                  <div className="w-3.5 h-3.5 md:w-4 md:h-4 rounded-full shadow-lg" style={{ backgroundColor: t.color }} />
+                  <div className="w-5 h-5 rounded-full shadow-lg" style={{ backgroundColor: t.color }} />
                   <span className={cn(
-                    "text-[7px] md:text-[8px] font-bold uppercase tracking-widest",
+                    "text-[9px] md:text-[10px] font-bold uppercase tracking-widest",
                     theme === t.id ? "text-white" : "text-slate-500"
                   )}>{t.label}</span>
                 </button>
@@ -530,22 +573,22 @@ const Toolbar: React.FC = () => {
           </div>
 
           {deferredPrompt && (
-            <button onClick={handleInstall} className="flex items-center gap-3 px-3 md:px-4 py-2.5 md:py-3 rounded-xl bg-[var(--accent)]/10 hover:bg-[var(--accent)]/20 text-[9px] md:text-[10px] font-black uppercase tracking-[0.2em] text-[var(--accent-secondary)] transition-all mb-1 border border-[var(--accent)]/20">
-              <MonitorSmartphone className="w-3.5 h-3.5 md:w-4 md:h-4" /> Install App
+            <button onClick={handleInstall} className="flex items-center gap-4 px-4 md:px-5 py-3 md:py-4 rounded-2xl bg-[var(--accent)]/10 hover:bg-[var(--accent)]/20 text-[9px] md:text-[10px] font-black uppercase tracking-[0.2em] text-[var(--accent-secondary)] transition-all mb-1 border border-[var(--accent)]/20">
+              <MonitorSmartphone className="w-4 h-4 md:w-5 md:h-5" /> Install App
             </button>
           )}
 
-          <button onClick={handleExport} className="flex items-center gap-3 px-3 md:px-4 py-2.5 md:py-3 rounded-xl hover:bg-white/5 text-[9px] md:text-[10px] font-bold uppercase tracking-widest text-slate-300 transition-colors">
-            <Download className="w-3.5 h-3.5 md:w-4 md:h-4" /> Export Data
+          <button onClick={handleExport} className="flex items-center gap-4 px-4 md:px-5 py-3 md:py-4 rounded-2xl hover:bg-white/5 text-[9px] md:text-[10px] font-bold uppercase tracking-widest text-slate-300 transition-colors">
+            <Download className="w-4 h-4 md:w-5 md:h-5" /> Export Data
           </button>
-          <label className="flex items-center gap-3 px-3 md:px-4 py-2.5 md:py-3 rounded-xl hover:bg-white/5 text-[9px] md:text-[10px] font-bold uppercase tracking-widest text-slate-300 transition-colors cursor-pointer">
-            <Upload className="w-3.5 h-3.5 md:w-4 md:h-4" /> Import Data
+          <label className="flex items-center gap-4 px-4 md:px-5 py-3 md:py-4 rounded-2xl hover:bg-white/5 text-[9px] md:text-[10px] font-bold uppercase tracking-widest text-slate-300 transition-colors cursor-pointer">
+            <Upload className="w-4 h-4 md:w-5 md:h-5" /> Import Data
             <input type="file" className="hidden" accept=".json" onChange={handleImport} />
           </label>
-          <button onClick={handleScreenshot} disabled={isCapturing} className="flex items-center gap-3 px-3 md:px-4 py-2.5 md:py-3 rounded-xl hover:bg-white/5 text-[9px] md:text-[10px] font-bold uppercase tracking-widest text-slate-300 transition-colors">
-            <Camera className="w-3.5 h-3.5 md:w-4 md:h-4" /> {isCapturing ? 'Saving...' : 'Screenshot'}
+          <button onClick={handleScreenshot} disabled={isCapturing} className="flex items-center gap-4 px-4 md:px-5 py-3 md:py-4 rounded-2xl hover:bg-white/5 text-[9px] md:text-[10px] font-bold uppercase tracking-widest text-slate-300 transition-colors">
+            <Camera className="w-4 h-4 md:w-5 md:h-5" /> {isCapturing ? 'Saving...' : 'Screenshot'}
           </button>
-          <div className="h-[1px] bg-white/5 my-1 mx-2"></div>
+          <div className="h-[1px] bg-white/5 my-1 mx-3"></div>
           <button 
             onClick={() => {
               openModal({
@@ -557,18 +600,18 @@ const Toolbar: React.FC = () => {
               });
               setIsSystemMenuOpen(false);
             }} 
-            className="flex items-center gap-3 px-3 md:px-4 py-2.5 md:py-3 rounded-xl hover:bg-red-500/10 text-[9px] md:text-[10px] font-bold uppercase tracking-widest text-red-400 transition-colors"
+            className="flex items-center gap-4 px-4 md:px-5 py-3 md:py-4 rounded-2xl hover:bg-red-500/10 text-[9px] md:text-[10px] font-bold uppercase tracking-widest text-red-400 transition-colors"
           >
-            <RotateCcw className="w-3.5 h-3.5 md:w-4 md:h-4" /> Reset App
+            <RotateCcw className="w-4 h-4 md:w-5 md:h-5" /> Reset App
           </button>
           <button 
             onClick={() => {
               setIsKeyModalOpen(true);
               setIsSystemMenuOpen(false);
             }} 
-            className="flex items-center gap-3 px-3 md:px-4 py-2.5 md:py-3 rounded-xl hover:bg-purple-500/10 text-[9px] md:text-[10px] font-bold uppercase tracking-widest text-purple-400 transition-colors"
+            className="flex items-center gap-4 px-4 md:px-5 py-3 md:py-4 rounded-2xl hover:bg-purple-500/10 text-[9px] md:text-[10px] font-bold uppercase tracking-widest text-purple-400 transition-colors"
           >
-            <Key className="w-3.5 h-3.5 md:w-4 md:h-4" /> Oracle Settings
+            <Key className="w-4 h-4 md:w-5 md:h-5" /> Oracle Settings
           </button>
         </div>
         
@@ -644,6 +687,21 @@ const Toolbar: React.FC = () => {
               </div>
             </div>
             <Keyboard className="w-5 h-5" />
+          </button>
+          <button 
+            onClick={() => setIsHelpOpen(!isHelpOpen)}
+            className={cn(
+              "group relative glass w-10 h-10 md:w-12 md:h-12 flex items-center justify-center rounded-2xl transition-all border border-white/5",
+              isHelpOpen ? "bg-[var(--accent)] text-white" : "text-slate-400 hover:text-white"
+            )}
+          >
+            {/* Tooltip */}
+            <div className="absolute bottom-full mb-4 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-all duration-300 translate-y-2 group-hover:translate-y-0 pointer-events-none whitespace-nowrap z-[10001]">
+              <div className="glass px-3 py-1.5 rounded-xl border border-white/10 flex items-center gap-2 shadow-2xl bg-[var(--bg-main)]/90 backdrop-blur-xl">
+                <span className="text-[10px] font-black uppercase tracking-widest text-white/80">Help</span>
+              </div>
+            </div>
+            <CircleHelp className="w-4 h-4 md:w-5 md:h-5" />
           </button>
           <button 
             onClick={() => setIsSystemMenuOpen(!isSystemMenuOpen)}
@@ -960,6 +1018,143 @@ const Toolbar: React.FC = () => {
               </div>
               <p className="text-[9px] uppercase font-bold tracking-widest text-slate-500 leading-relaxed">
                 Middle-click or Alt+Drag to move around the infinite workspace.
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* HELP MODAL */}
+      {isHelpOpen && (
+        <div className="fixed inset-0 z-[10001] bg-black/60 backdrop-blur-md flex items-center justify-center p-10 pointer-events-auto" onClick={() => setIsHelpOpen(false)}>
+          <div className="glass max-w-lg w-full p-10 rounded-[3rem] border border-white/10" onClick={e => e.stopPropagation()}>
+            <div className="flex justify-between items-center mb-8">
+              <h3 className="text-sm font-black uppercase tracking-[0.2em] text-[var(--accent-secondary)]">System Help</h3>
+              <button onClick={() => setIsHelpOpen(false)} className="text-slate-500 hover:text-white transition-colors">
+                <Plus className="w-6 h-6 rotate-45" />
+              </button>
+            </div>
+
+            {/* Tabs */}
+            <div className="flex gap-2 mb-8 bg-white/5 p-2 rounded-2xl border border-white/5">
+              {[
+                { id: 'about', label: 'About Us' },
+                { id: 'issue', label: 'Found an Issue?' },
+                { id: 'contact', label: 'Contact Us' }
+              ].map((tab) => (
+                <button
+                  key={tab.id}
+                  onClick={() => setActiveHelpTab(tab.id as 'about' | 'issue' | 'contact')}
+                  className={cn(
+                    "flex-1 py-3 rounded-xl text-[9px] md:text-[10px] font-black uppercase tracking-widest transition-all",
+                    activeHelpTab === tab.id 
+                      ? "bg-[var(--accent)] text-white shadow-lg shadow-[var(--accent-glow)]" 
+                      : "text-slate-500 hover:text-white hover:bg-white/5"
+                  )}
+                >
+                  {tab.label}
+                </button>
+              ))}
+            </div>
+
+            {/* Content */}
+            <div className="min-h-[200px] animate-in fade-in slide-in-from-bottom-2 duration-300">
+              {activeHelpTab === 'about' && (
+                <div className="space-y-5">
+                  <h4 className="text-[11px] font-black text-white uppercase tracking-widest">About Cyberia</h4>
+                  <p className="text-xs text-slate-400 leading-relaxed italic">
+                    Cyberia is a spatial workspace designed for fluid information management. We treat data as physical objects to help you visualize connections and organize your thoughts naturally.
+                  </p>
+                  <p className="text-xs text-slate-500 leading-relaxed">
+                    Designed for non-linear thinkers, visionaries, and digital architects. We believe productivity shouldn't feel like a spreadsheet. It should feel like a world.
+                  </p>
+                </div>
+              )}
+
+              {activeHelpTab === 'issue' && (
+                <div className="space-y-5">
+                  <h4 className="text-[11px] font-black text-white uppercase tracking-widest">Report an Issue</h4>
+                  
+                  {quickSubmitStatus === 'success' ? (
+                    <div className="py-6 text-center space-y-3 bg-green-500/5 border border-green-500/10 rounded-2xl animate-in zoom-in-95 duration-300">
+                      <CheckCircle className="w-8 h-8 text-green-400 mx-auto" />
+                      <p className="text-[10px] font-black uppercase tracking-widest text-green-400">Report Transmitted</p>
+                    </div>
+                  ) : (
+                    <form onSubmit={handleQuickSubmit} className="space-y-3">
+                      <div className="flex gap-1.5 p-1 bg-black/40 border border-white/5 rounded-xl">
+                        {(['issue', 'feedback', 'feature'] as const).map((t) => (
+                          <button
+                            key={t}
+                            type="button"
+                            onClick={() => setQuickType(t)}
+                            className={cn(
+                              "flex-1 py-1.5 rounded-lg text-[8px] font-black uppercase tracking-widest transition-all",
+                              quickType === t 
+                                ? "bg-white/10 text-white shadow-md border border-white/10" 
+                                : "text-slate-600 hover:text-slate-400"
+                            )}
+                          >
+                            {t}
+                          </button>
+                        ))}
+                      </div>
+                      <textarea 
+                        required
+                        value={quickMessage}
+                        onChange={(e) => setQuickMessage(e.target.value)}
+                        placeholder="Quick report... (System logs will be attached)"
+                        className="w-full h-24 bg-black/40 border border-white/5 rounded-xl p-3 text-xs text-white outline-none focus:border-[var(--accent)]/50 transition-all resize-none"
+                      />
+                      <button 
+                        type="submit"
+                        disabled={isQuickSubmitting || !quickMessage.trim()}
+                        className="w-full h-10 bg-[var(--accent)] hover:bg-[var(--accent)]/90 disabled:opacity-50 text-white rounded-xl font-black uppercase text-[9px] tracking-widest transition-all flex items-center justify-center gap-2"
+                      >
+                        {isQuickSubmitting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <><Send className="w-3 h-3" /> Send Quick Report</>}
+                      </button>
+                    </form>
+                  )}
+
+                  <div className="relative flex items-center py-2">
+                    <div className="flex-grow border-t border-white/5"></div>
+                    <span className="flex-shrink mx-4 text-[8px] font-black uppercase tracking-widest text-slate-700">OR</span>
+                    <div className="flex-grow border-t border-white/5"></div>
+                  </div>
+
+                  <div className="pt-1">
+                    <button 
+                      onClick={() => window.open('/feedback', '_blank')}
+                      className="w-full px-6 py-4 rounded-xl bg-white/5 border border-white/10 text-[9px] font-black uppercase tracking-widest text-slate-300 hover:bg-white/10 transition-all flex items-center justify-center gap-2 group"
+                    >
+                      <MessageSquare className="w-3.5 h-3.5" /> Open Feedback Portal
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {activeHelpTab === 'contact' && (
+                <div className="space-y-5">
+                  <h4 className="text-[11px] font-black text-white uppercase tracking-widest">Support</h4>
+                  <p className="text-xs text-slate-400 leading-relaxed">
+                    For direct inquiries, partnerships, or technical support, please contact us via email.
+                  </p>
+                  <div className="flex flex-col gap-3 pt-2">
+                    <div className="flex items-center gap-4 p-4 rounded-xl bg-white/[0.03] border border-white/5">
+                      <span className="text-[9px] font-black text-slate-500 uppercase tracking-widest">Email:</span>
+                      <span className="text-[9px] font-bold text-[var(--accent-secondary)]">hello@cyberia.app</span>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            <div className="mt-10 pt-8 border-t border-white/5 flex items-center gap-4">
+              <div className="w-10 h-10 rounded-xl bg-indigo-500/10 flex items-center justify-center text-indigo-400">
+                <CircleHelp className="w-5 h-5" />
+              </div>
+              <p className="text-[9px] uppercase font-bold tracking-widest text-slate-500 leading-relaxed">
+                Version 1.0.4 <br /> Stable release.
               </p>
             </div>
           </div>
