@@ -28,7 +28,7 @@ const AccountMenu: React.FC = () => {
 
   const googleLogin = useGoogleLogin({
     use_fedcm_for_prompt: true,
-    onSuccess: async (tokenResponse) => {
+    onSuccess: async (tokenResponse: any) => {
       try {
         const res = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
           headers: { Authorization: `Bearer ${tokenResponse.access_token}` },
@@ -64,8 +64,8 @@ const AccountMenu: React.FC = () => {
         console.error('Failed to fetch user info:', error);
       }
     },
-    onError: (error) => console.error('Login Failed:', error),
-  });
+    onError: (error: any) => console.error('Login Failed:', error),
+  } as any);
 
   useEffect(() => {
     if (typeof calculateUsage === 'function') {
