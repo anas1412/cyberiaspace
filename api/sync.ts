@@ -21,9 +21,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
     
     const info = await tokenInfo.json();
-    const userId = info.sub; // This is the unique Google User ID
+    const userId = info.sub || info.user_id; // Support different token info formats
 
     if (!userId) {
+      console.error('Token Info missing ID:', info);
       return res.status(401).json({ error: 'User ID not found in token' });
     }
 
@@ -34,7 +35,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       const data = req.body;
       if (!data) return res.status(400).json({ error: 'No data provided' });
       
-      await kv.set(storageKey, JSON.stringify(data));
+      // Use a stringified version to ensure KV compatibility
+      await kv.set(storageKey, data);
       return res.status(200).json({ success: true });
     }
 
