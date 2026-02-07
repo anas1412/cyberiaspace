@@ -15,8 +15,13 @@ function cn(...inputs: ClassValue[]) {
 }
 
 const formatModelName = (name: string) => {
-  if (name.includes('gemini-3-pro')) return 'Pro (Smart but Slower)';
-  if (name.includes('gemini-3-flash')) return 'Flash (Faster but Less Accurate)';
+  if (name.includes('gemini-2.0-flash-lite')) return 'Flash Lite Model';
+  if (name.includes('-3-flash')) return '3 Flash Model';
+  if (name.includes('-3-pro')) return '3 Pro Model';
+  if (name.includes('-2.5-pro')) return '2.5 Model';
+  if (name.includes('-2.5-flash')) return '2.5 Flash Model';
+  if (name.includes('-2.5-flash-lite')) return '2.5 Flash Lite Model';
+  
   return name;
 };
 

@@ -16,7 +16,13 @@
 
 - make accounts / data sync 
 
+- implement langchain/z or any ai tool for AI 
+
 - use ytb-dl backend to fetch/manage/verify youtube links
+
+
+YOUTUBE_API_KEY="AIzaSyCWdVmdBcShumV6-08YZ3eJuMVV4ThGvO0"
+VITE_GOOGLE_CLIENT_ID="191881102656-ma6udst6nnn64ujslt866l45ff5ak4d4.apps.googleusercontent.com"
 
   
 

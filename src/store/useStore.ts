@@ -26,7 +26,6 @@ interface CyberiaState {
   activeModel: string;
   oracleMode: boolean; // True = AI Enabled
   isChatOpen: boolean;
-  thinkingMode: boolean;
   
   // Initialization
   init: () => Promise<void>;
@@ -42,7 +41,6 @@ interface CyberiaState {
   removeApiKey: () => void;
   toggleOracleMode: () => void;
   setChatOpen: (isOpen: boolean) => void;
-  setThinkingMode: (enabled: boolean) => void;
   
   // Space Actions
   setActiveSpace: (id: string) => void;
@@ -208,7 +206,6 @@ export const useStore = create<CyberiaState>((set, get) => ({
   activeModel: localStorage.getItem('cyberia-active-model') || DEFAULT_MODEL,
   oracleMode: localStorage.getItem('cyberia-oracle-mode') === 'true',
   isChatOpen: false,
-  thinkingMode: false,
 
   openLightbox: (image) => set({ isLightboxOpen: true, lightboxImage: image }),
   closeLightbox: () => set({ isLightboxOpen: false, lightboxImage: null }),
@@ -251,13 +248,6 @@ export const useStore = create<CyberiaState>((set, get) => ({
   },
 
   setChatOpen: (isOpen) => set({ isChatOpen: isOpen }),
-  setThinkingMode: (enabled) => {
-    set({ thinkingMode: enabled });
-    const { apiKey, activeModel } = get();
-    if (apiKey) {
-      aiService.initialize(apiKey, activeModel);
-    }
-  },
 
   init: async () => {
     set({ isSpaceLoading: true });
@@ -355,7 +345,7 @@ export const useStore = create<CyberiaState>((set, get) => ({
         type: 'embed',
         content: 'https://youtu.be/P6kS_CD9H6I',
         description: 'Cyberia supports full YouTube integration. Experience the Wired. Click to open the video, or drag the node to reposition it in your mental landscape.',
-        x: cx + 400, y: cy - 250, priority: 'urgent', stackId: mediaId,
+        x: cx + 400, y: cy - 250, priority: 'low', stackId: mediaId,
         status: 'doing',
         spaceId: onboardingId
       });
@@ -382,8 +372,8 @@ export const useStore = create<CyberiaState>((set, get) => ({
 
       await get().addThought({
         text: 'README',
-        content: '# Cyberia: The Kinetic Mind\n\nCyberia is a **spatial operating system** for your thoughts. In a world of flat lists and rigid folders, Cyberia treats information as **physical matter**.\n\n### 1. Kinetic Architecture\nIdeas here have mass, velocity, and gravity. Using our custom physics engine, your thoughts form natural clusters—**Stacks**—based on your internal logic. It moves with you, resisting the static nature of traditional apps.\n\n### 2. Dimensional Morphing\nInformation is fluid. Switch between **Spatial**, **Kanban**, and **Calendar** modes to see your data transform. What was a free-form brainstorm becomes a structured workflow, then a temporal roadmap, all without losing context.\n\n### 3. The Oracle (AI)\nPowered by Gemini, the **Oracle** is your spatial assistant. With **Vision**, it sees what you see. With **Thinking Mode**, it reasons deeply about your architecture. It doesn\'t just chat; it organizes, moves, and links your ideas into a coherent neural layer.\n\n### 4. Local & Secure\nYour mind belongs to you. All data is stored locally in your browser. Cyberia is a private sanctuary for non-linear thinking.\n\n---\n*Welcome to the Wired.*',
-        x: cx + 650, y: cy + 150, priority: 'medium', stackId: mediaId,
+        content: '# Cyberia: The Kinetic Mind\n\nCyberia is a **spatial operating system** for your thoughts. In a world of flat lists and rigid folders, Cyberia treats information as **physical matter**.\n\n### 1. Kinetic Architecture\nIdeas here have mass, velocity, and gravity. Using our custom physics engine, your thoughts form natural clusters—**Stacks**—based on your internal logic. It moves with you, resisting the static nature of traditional apps.\n\n### 2. Dimensional Morphing\nInformation is fluid. Switch between **Spatial**, **Kanban**, and **Calendar** modes to see your data transform. What was a free-form brainstorm becomes a structured workflow, then a temporal roadmap, all without losing context.\n\n### 3. The Oracle (AI)\nPowered by Gemini, the **Oracle** is your spatial assistant. It doesn\'t just chat; it can research the Wired for you, create new thoughts, and help you bridge connections by organizing your mental landscape into Stacks.\n\n### 4. Local & Secure\nYour mind belongs to you. All data is stored locally in your browser. Cyberia is a private sanctuary for non-linear thinking.\n\n---\n*Welcome to the Wired.*',
+        x: cx + 650, y: cy + 150, priority: 'urgent', stackId: mediaId,
         status: 'done',
         spaceId: onboardingId
       });
