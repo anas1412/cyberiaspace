@@ -52,7 +52,7 @@ const AccountMenu: React.FC = () => {
           title: 'Cloud Data Found',
           description: 'We found a workspace backup in the cloud. Would you like to restore it? This will overwrite your local changes.',
           type: 'import_confirm',
-          confirmText: 'Restore',
+          confirmText: 'Restore from Cloud',
           onConfirm: () => {
             const blob = new Blob([JSON.stringify(cloudData)], { type: 'application/json' });
             const file = new File([blob], 'cloud_backup.json', { type: 'application/json' });
@@ -65,29 +65,15 @@ const AccountMenu: React.FC = () => {
     }
   }, [setAuthenticatedUser, importCloudData, openModal, importDataManual]);
 
-  // Handle Redirect Flow response (URL hash)
-  useEffect(() => {
-    const hash = window.location.hash;
-    if (hash && hash.includes('access_token=')) {
-      const params = new URLSearchParams(hash.substring(1));
-      const token = params.get('access_token');
-      if (token && status === 'unauthenticated') {
-        window.history.replaceState({}, document.title, window.location.pathname);
-        handleLoginSuccess(token);
-      }
-    }
-  }, [status, handleLoginSuccess]);
-
   const googleLogin = useGoogleLogin({
-    ux_mode: 'redirect',
-    flow: 'implicit',
-    // fallback for popup browsers
     onSuccess: (response: any) => {
       if (response.access_token) {
         handleLoginSuccess(response.access_token);
       }
     },
     onError: (error: any) => console.error('Login Failed:', error),
+    // Use FedCM to avoid the legacy third-party cookie prompt
+    use_fedcm_for_prompt: true,
   } as any);
 
   useEffect(() => {
