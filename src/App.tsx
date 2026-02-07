@@ -20,6 +20,7 @@ import TasksFocusEditor from './components/TasksFocusEditor';
 import EmbedFocusEditor from './components/EmbedFocusEditor';
 import ChatOverlay from './components/ChatOverlay';
 import MobileNotSupported from './components/MobileNotSupported';
+import FeedbackPage from './components/FeedbackPage';
 
 import { fetchYouTubeMeta, getYouTubeVideoId } from './utils/youtube';
 
@@ -37,7 +38,23 @@ function App() {
   const mouseWorldPos = useRef({ x: 0, y: 0 });
   const mouseScreenPos = useRef({ x: 0, y: 0 });
 
+  const [path, setPath] = React.useState(window.location.pathname);
   const [isMobile, setIsMobile] = React.useState(typeof window !== 'undefined' ? window.innerWidth < 1024 : false);
+
+  useEffect(() => {
+    if (path === '/') {
+      document.body.classList.add('app-body');
+    } else {
+      document.body.classList.remove('app-body');
+    }
+    return () => document.body.classList.remove('app-body');
+  }, [path]);
+
+  useEffect(() => {
+    const handlePopState = () => setPath(window.location.pathname);
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, []);
 
   useEffect(() => {
     const handleResize = () => setIsMobile(window.innerWidth < 1024);
@@ -91,7 +108,10 @@ function App() {
   };
 
   useEffect(() => {
-    init();
+    // Only init DB if we are not on the feedback page
+    if (path === '/') {
+      init();
+    }
 
     const handleBeforeInstallPrompt = (e: Event) => {
       e.preventDefault();
@@ -103,11 +123,12 @@ function App() {
     return () => {
       window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
     };
-  }, [init, setDeferredPrompt]);
+  }, [init, setDeferredPrompt, path]);
 
 
   useEffect(() => {
     const handlePaste = async (e: ClipboardEvent) => {
+      if (path !== '/') return;
       const target = e.target as HTMLElement;
       if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA') return;
 
@@ -239,7 +260,16 @@ function App() {
 
     window.addEventListener('paste', handlePaste);
     return () => window.removeEventListener('paste', handlePaste);
-  }, [addThought, setSelectedThoughtId, setInspectorOpen, thoughts.length, openModal]);
+  }, [addThought, setSelectedThoughtId, setInspectorOpen, thoughts.length, openModal, path]);
+
+  if (path === '/feedback') {
+    return (
+      <>
+        <FeedbackPage />
+        <Modal />
+      </>
+    );
+  }
 
   return (
     <div className="w-full h-full relative overflow-hidden bg-black">
