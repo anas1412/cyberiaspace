@@ -1,6 +1,6 @@
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
-import { GoogleOAuthProvider } from '@react-oauth/google'
+import { GoogleOAuthProvider as Provider } from '@react-oauth/google'
 import './index.css'
 import App from './App.tsx'
 import { registerSW } from 'virtual:pwa-register'
@@ -21,8 +21,8 @@ const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID;
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
-    <GoogleOAuthProvider clientId={GOOGLE_CLIENT_ID}>
+    <Provider clientId={GOOGLE_CLIENT_ID} {...({ useFedCM: true } as any)}>
       <App />
-    </GoogleOAuthProvider>
+    </Provider>
   </StrictMode>,
 )
