@@ -617,6 +617,12 @@ export const useStore = create<CyberiaState>((set, get) => ({
       await get().refreshThoughts(targetSpaceId);
       await get().refreshTotalThoughtCount();
       get().pushHistory();
+
+      // Trigger Cloud Sync
+      const authStore = (await import('./useAuthStore')).useAuthStore.getState();
+      if (authStore.autoSync && authStore.status === 'authenticated') {
+        authStore.syncData();
+      }
     }
     
     return result as number;
@@ -641,7 +647,17 @@ export const useStore = create<CyberiaState>((set, get) => ({
       await db.thoughts.update(id, updates);
       delete saveTimers[id];
       get().pushHistory(); // Push history after debounce
-    }, 500); // 500ms debounce
+
+      // 3. Trigger Cloud Sync if Auto-Sync is ON
+      const authStore = (await import('./useAuthStore')).useAuthStore.getState();
+      if (authStore.autoSync && authStore.status === 'authenticated') {
+        // Debounce cloud sync separately to avoid spamming the API
+        if ((window as any)._cyberia_cloud_timer) clearTimeout((window as any)._cyberia_cloud_timer);
+        (window as any)._cyberia_cloud_timer = setTimeout(() => {
+          authStore.syncData();
+        }, 2000); // Wait 2 seconds of inactivity before pushing to cloud
+      }
+    }, 500); // 500ms local debounce
 
     (window as any)._cyberia_save_timers = saveTimers;
   },
@@ -666,6 +682,12 @@ export const useStore = create<CyberiaState>((set, get) => ({
       set({ selectedThoughtIds: newIds });
     }
     get().pushHistory();
+
+    // Trigger Cloud Sync
+    const authStore = (await import('./useAuthStore')).useAuthStore.getState();
+    if (authStore.autoSync && authStore.status === 'authenticated') {
+      authStore.syncData();
+    }
   },
 
   setSelectedThoughtId: (id) => {

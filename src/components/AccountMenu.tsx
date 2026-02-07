@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useAuthStore } from '../store/useAuthStore';
 import { useStore } from '../store/useStore';
 import { useModalStore } from '../store/useModalStore';
@@ -26,42 +26,65 @@ const AccountMenu: React.FC = () => {
   const [isOpen, setIsOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
 
-  const googleLogin = useGoogleLogin({
-    use_fedcm_for_prompt: true,
-    onSuccess: async (tokenResponse: any) => {
-      try {
-        const res = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
-          headers: { Authorization: `Bearer ${tokenResponse.access_token}` },
+  const handleLoginSuccess = useCallback(async (token: string) => {
+    try {
+      const res = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      
+      if (!res.ok) throw new Error('Failed to fetch profile');
+      
+      const data = await res.json();
+      
+      const googleUser = {
+        id: data.sub,
+        name: data.name,
+        email: data.email,
+        avatar: data.picture
+      };
+
+      await setAuthenticatedUser(googleUser, token);
+
+      // Check for cloud data
+      const cloudData = await importCloudData();
+      if (cloudData) {
+        openModal({
+          title: 'Cloud Data Found',
+          description: 'We found a workspace backup in the cloud. Would you like to restore it? This will overwrite your local changes.',
+          type: 'import_confirm',
+          confirmText: 'Restore',
+          onConfirm: () => {
+            const blob = new Blob([JSON.stringify(cloudData)], { type: 'application/json' });
+            const file = new File([blob], 'cloud_backup.json', { type: 'application/json' });
+            importDataManual(file);
+          }
         });
-        const data = await res.json();
-        
-        const googleUser = {
-          id: data.sub,
-          name: data.name,
-          email: data.email,
-          avatar: data.picture
-        };
+      }
+    } catch (error) {
+      console.error('Login processing error:', error);
+    }
+  }, [setAuthenticatedUser, importCloudData, openModal, importDataManual]);
 
-        await setAuthenticatedUser(googleUser, tokenResponse.access_token);
+  // Handle Redirect Flow response (URL hash)
+  useEffect(() => {
+    const hash = window.location.hash;
+    if (hash && hash.includes('access_token=')) {
+      const params = new URLSearchParams(hash.substring(1));
+      const token = params.get('access_token');
+      if (token && status === 'unauthenticated') {
+        window.history.replaceState({}, document.title, window.location.pathname);
+        handleLoginSuccess(token);
+      }
+    }
+  }, [status, handleLoginSuccess]);
 
-        // After setting user, check if we should prompt for restore
-        const cloudData = await importCloudData();
-        if (cloudData) {
-          openModal({
-            title: 'Cloud Data Found',
-            description: 'We found a workspace backup in the cloud. Would you like to restore it? This will overwrite your current local data.',
-            type: 'import_confirm',
-            confirmText: 'Restore from Cloud',
-            onConfirm: () => {
-              const blob = new Blob([JSON.stringify(cloudData)], { type: 'application/json' });
-              const file = new File([blob], 'cloud_backup.json', { type: 'application/json' });
-              importDataManual(file);
-            }
-          });
-        }
-
-      } catch (error) {
-        console.error('Failed to fetch user info:', error);
+  const googleLogin = useGoogleLogin({
+    ux_mode: 'redirect',
+    flow: 'implicit',
+    // fallback for popup browsers
+    onSuccess: (response: any) => {
+      if (response.access_token) {
+        handleLoginSuccess(response.access_token);
       }
     },
     onError: (error: any) => console.error('Login Failed:', error),
@@ -181,7 +204,6 @@ const AccountMenu: React.FC = () => {
           </div>
 
           <div className="space-y-1 mb-6">
-            {/* Sync Status Section */}
             <div className={cn(
               "flex items-center justify-between p-3 rounded-2xl border transition-all",
               !isOnline ? "bg-red-500/5 border-red-500/10" : "bg-white/[0.03] border-white/[0.05]"
