@@ -21,7 +21,7 @@ export interface AuthState {
   setAuthenticatedUser: (user: User, token: string) => Promise<void>;
   signOut: () => Promise<void>;
   syncData: () => Promise<void>;
-  importCloudData: () => Promise<any | null>;
+  importCloudData: () => Promise<unknown | null>;
   setAutoSync: (enabled: boolean) => void;
   deleteCloudData: () => Promise<void>;
   calculateUsage: (thoughtCount: number) => void;
@@ -81,7 +81,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       } else {
         set({ syncStatus: 'offline', lastSync: null });
       }
-    } catch (e) {
+    } catch {
       set({ syncStatus: 'error' });
     }
   },
@@ -107,7 +107,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       const result = await response.json();
       set({ syncStatus: 'synced' });
       return result.data;
-    } catch (error) {
+    } catch {
       set({ syncStatus: 'error' });
       return null;
     }
@@ -133,6 +133,11 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         spaces: allSpaces,
         thoughts: allThoughts,
         stacks: allStacks,
+        activeSpaceId: localStorage.getItem('cyberia-active-space-id'),
+        settings: {
+          theme: localStorage.getItem('cyberia-theme')
+        },
+        version: 2,
         timestamp: Date.now()
       };
 
@@ -154,8 +159,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         syncStatus: 'synced',
         lastSync: now
       });
-    } catch (error) {
-      console.error('Sync error:', error);
+    } catch {
       set({ syncStatus: 'error' });
     }
   },

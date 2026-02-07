@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
+/** AccountMenu component handles user authentication and cloud synchronization */
 import { useAuthStore } from '../store/useAuthStore';
 import { useStore } from '../store/useStore';
 import { useModalStore } from '../store/useModalStore';
@@ -52,11 +53,9 @@ const AccountMenu: React.FC = () => {
           title: 'Cloud Data Found',
           description: 'We found a workspace backup in the cloud. Would you like to restore it? This will overwrite your local changes.',
           type: 'import_confirm',
-          confirmText: 'Restore from Cloud',
+          confirmText: 'Restore',
           onConfirm: () => {
-            const blob = new Blob([JSON.stringify(cloudData)], { type: 'application/json' });
-            const file = new File([blob], 'cloud_backup.json', { type: 'application/json' });
-            importDataManual(file);
+            importDataManual(cloudData);
           }
         });
       }
@@ -107,13 +106,16 @@ const AccountMenu: React.FC = () => {
         type: 'import_confirm',
         confirmText: 'Restore Now',
         onConfirm: () => {
-          const blob = new Blob([JSON.stringify(cloudData)], { type: 'application/json' });
-          const file = new File([blob], 'cloud_backup.json', { type: 'application/json' });
-          importDataManual(file);
+          importDataManual(cloudData);
         }
       });
     } else {
-      alert("No cloud backup found.");
+      openModal({
+        title: 'No Cloud Data',
+        description: 'No workspace backup was found in the cloud for this account.',
+        type: 'alert',
+        confirmText: 'Got it'
+      });
     }
   };
 

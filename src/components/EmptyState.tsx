@@ -18,6 +18,27 @@ const ChalkArrow = ({ d, className }: { d: string, className?: string }) => (
   </svg>
 );
 
+const PHRASES = [
+  "WHERE IDEAS BEGIN",
+  "READY WHEN YOU ARE",
+  "MAP YOUR THOUGHTS",
+  "ORGANIZE YOUR WORLD",
+  "THINK IN 3D",
+  "FREE YOUR THOUGHTS",
+  "DROP A THOUGHT",
+  "CREATE SOMETHING NEW",
+  "THE CANVAS IS YOURS",
+  "DESIGN THE FLOW",
+  "BUILD YOUR BRAIN",
+  "A SPACE FOR FOCUS",
+  "NEURAL DRAFT ACTIVE",
+  "START THE CONSTRUCT",
+  "YOUR MIND, SPATIALIZED",
+  "PLANT A SEED",
+  "VOID READY FOR INPUT",
+  "ZEN MODE INITIALIZED"
+];
+
 const EmptyState: React.FC = () => {
   const thoughts = useStore((state) => state.thoughts);
   const isSpaceLoading = useStore((state) => state.isSpaceLoading);
@@ -26,28 +47,11 @@ const EmptyState: React.FC = () => {
   const activeSpace = spaces.find((s) => s.id === activeSpaceId);
   const { user } = useAuthStore();
 
-  const PHRASES = [
-    "WHERE IDEAS BEGIN",
-    "READY WHEN YOU ARE",
-    "MAP YOUR THOUGHTS",
-    "ORGANIZE YOUR WORLD",
-    "THINK IN 3D",
-    "FREE YOUR THOUGHTS",
-    "DROP A THOUGHT",
-    "CREATE SOMETHING NEW",
-    "THE CANVAS IS YOURS",
-    "DESIGN THE FLOW",
-    "BUILD YOUR BRAIN",
-    "A SPACE FOR FOCUS",
-    "NEURAL DRAFT ACTIVE",
-    "START THE CONSTRUCT",
-    "YOUR MIND, SPATIALIZED",
-    "PLANT A SEED",
-    "VOID READY FOR INPUT",
-    "ZEN MODE INITIALIZED"
-  ];
+  const [randomPhrase, setRandomPhrase] = React.useState("");
 
-  const randomPhrase = React.useMemo(() => PHRASES[Math.floor(Math.random() * PHRASES.length)], [activeSpaceId, thoughts.length === 0]);
+  React.useEffect(() => {
+    setRandomPhrase(PHRASES[Math.floor(Math.random() * PHRASES.length)]);
+  }, [activeSpaceId]);
 
   const isMobile = typeof window !== 'undefined' ? window.innerWidth < 768 : false;
 
