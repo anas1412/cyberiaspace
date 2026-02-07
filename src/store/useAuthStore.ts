@@ -17,7 +17,7 @@ export interface AuthState {
   cloudUsage: number;
   isOnline: boolean;
   
-  setAuthenticatedUser: (user: User, token: string) => void;
+  setAuthenticatedUser: (user: User, token: string) => Promise<void>;
   signOut: () => Promise<void>;
   syncData: () => Promise<void>;
   importCloudData: () => Promise<any | null>;
@@ -111,6 +111,53 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     } catch (error) {
       set({ syncStatus: 'error' });
       return null;
+    }
+  },
+
+  syncData: async () => {
+    const { status, accessToken, isOnline } = get();
+    if (status !== 'authenticated' || !accessToken) return;
+    if (!isOnline) {
+      set({ syncStatus: 'offline' });
+      return;
+    }
+    
+    set({ syncStatus: 'syncing' });
+    
+    try {
+      const { db } = await import('../db');
+      const allSpaces = await db.spaces.toArray();
+      const allThoughts = await db.thoughts.toArray();
+      const allStacks = await db.stacks.toArray();
+      
+      const payload = {
+        spaces: allSpaces,
+        thoughts: allThoughts,
+        stacks: allStacks,
+        timestamp: Date.now()
+      };
+
+      const response = await fetch('/api/sync', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${accessToken}`
+        },
+        body: JSON.stringify(payload)
+      });
+
+      if (!response.ok) throw new Error('Sync failed');
+
+      const now = new Date();
+      localStorage.setItem('cyberia-last-sync', now.toISOString());
+      
+      set({ 
+        syncStatus: 'synced',
+        lastSync: now
+      });
+    } catch (error) {
+      console.error('Sync error:', error);
+      set({ syncStatus: 'error' });
     }
   },
 

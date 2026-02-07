@@ -111,7 +111,7 @@ const AccountMenu: React.FC = () => {
     openModal({
       title: 'Delete Cloud Data?',
       description: 'Are you sure? This will remove all your data from the cloud. Your local workspace will remain intact.',
-      type: 'delete_confirm',
+      type: 'delete_thought',
       confirmText: 'Delete Cloud Data',
       onConfirm: async () => {
         await deleteCloudData();
