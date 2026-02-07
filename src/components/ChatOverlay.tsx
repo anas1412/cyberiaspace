@@ -3,16 +3,10 @@ import { useStore } from '../store/useStore';
 import { aiService } from '../services/ai';
 import { serializeWorkspace } from '../utils/contextBuilder';
 import { parseAIError } from '../utils/errorParser';
-import { X, Send, Eye, Shield, Loader2, Bot, BrainCircuit } from 'lucide-react';
+import { X, Send, Shield, Loader2, Bot, History } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { toPng } from 'html-to-image';
 import ReactMarkdown from 'react-markdown';
-import { clsx, type ClassValue } from 'clsx';
-import { twMerge } from 'tailwind-merge';
-
-function cn(...inputs: ClassValue[]) {
-  return twMerge(clsx(inputs));
-}
+import type { Content } from '@google/generative-ai';
 
 interface Message {
   role: 'user' | 'model';
@@ -20,13 +14,13 @@ interface Message {
 }
 
 const formatModelName = (name: string) => {
-  if (name.includes('gemini-3-flash')) return 'Flash Model';
-  if (name.includes('gemini-3-pro')) return 'Pro Model';
-/*   if (name.includes('gemini-2.5-pro')) return '2.5 Pro';
-  if (name.includes('gemini-flash-lite-latest')) return '2.5 Flash Lite Latest';
-  if (name.includes('gemini-flash-latest')) return '2.5 Flash Latest';
-  if (name.includes('gemini-2.5-flash-lite')) return '2.5 Flash Lite';
-  if (name.includes('gemini-2.5-flash')) return '2.5 Flash'; */
+  if (name.includes('gemini-2.0-flash-lite')) return 'Flash Lite Model';
+  if (name.includes('-3-flash')) return '3 Flash Model';
+  if (name.includes('-3-pro')) return '3 Pro Model';
+  if (name.includes('-2.5-pro')) return '2.5 Model';
+  if (name.includes('-2.5-flash')) return '2.5 Flash Model';
+  if (name.includes('-2.5-flash-lite')) return '2.5 Flash Lite Model';
+  
   return name;
 };
 
@@ -36,112 +30,76 @@ const ChatOverlay: React.FC = () => {
   const oracleMode = useStore((state) => state.oracleMode);
   const apiKey = useStore((state) => state.apiKey);
   const activeModel = useStore((state) => state.activeModel);
-  const thinkingMode = useStore((state) => state.thinkingMode);
-  const setThinkingMode = useStore((state) => state.setThinkingMode);
   
   const [input, setInput] = useState('');
-  const [history, setHistory] = useState<Message[]>([]);
+  const [history, setHistory] = useState<Content[]>([]);
+  const [displayMessages, setDisplayMessages] = useState<Message[]>([]);
   const [loading, setLoading] = useState(false);
   const [status, setStatus] = useState('Oracle is processing...');
-  const [includeVision, setIncludeVision] = useState(true);
   
   const scrollRef = useRef<HTMLDivElement>(null);
 
-  const isProModel = activeModel.includes('-pro');
-
-  // Auto-scroll
   useEffect(() => {
     if (scrollRef.current) {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }
-  }, [history, isChatOpen, loading, status]);
+  }, [displayMessages, isChatOpen, loading, status]);
 
   const handleSend = async () => {
     if (!input.trim() || !apiKey || loading) return;
 
-    const userMsg: Message = { role: 'user', text: input };
-    setHistory(prev => [...prev, userMsg]);
+    const userText = input;
+    setDisplayMessages(prev => [...prev, { role: 'user', text: userText }]);
     setInput('');
     setLoading(true);
     setStatus('Oracle is processing...');
 
     try {
-      let imageBase64: string | undefined;
-
-      // Vision Capture: Always capture a fresh screenshot if vision is enabled
-      // This ensures the Oracle sees your most recent changes
-      if (includeVision) {
-        const viewport = document.getElementById('viewport');
-        if (viewport) {
-           try {
-             // Basic settings for speed
-             imageBase64 = await toPng(viewport, { 
-               pixelRatio: 0.5,
-               cacheBust: true,
-               skipAutoScale: true
-             });
-           } catch (e) {
-             console.error("Vision capture failed", e);
-           }
-        }
-      }
-
-      // Build Context
       const { activeSpaceId, thoughts, spaces, stacks } = useStore.getState();
       const workspaceContext = serializeWorkspace(activeSpaceId, thoughts, spaces, stacks);
+      const prompt = `[SYSTEM CONTEXT]\nCurrent Workspace State (JSON):\n${workspaceContext}\n[/SYSTEM CONTEXT]\n\n${userText}`;
+
+      setDisplayMessages(prev => [...prev, { role: 'model', text: '' }]);
       
-      const prompt = `
-[SYSTEM CONTEXT]
-Current Workspace State (JSON):
-${workspaceContext}
-[/SYSTEM CONTEXT]
-
-${userMsg.text}
-`;
-
-      // Format history for Gemini (Text-only)
-      const geminiHistory = history.map(m => ({
-        role: m.role,
-        parts: [{ text: m.text }]
-      }));
-
-      // Streaming setup: Add an empty model message that we will update
-      setHistory(prev => [...prev, { role: 'model', text: '' }]);
-      
-      const response = await aiService.sendMessageStream(
+      const result = await aiService.sendMessageStream(
         prompt, 
-        (fullText) => {
-          setHistory(prev => {
-            const newHistory = [...prev];
-            newHistory[newHistory.length - 1] = { role: 'model', text: fullText };
-            return newHistory;
+        history, // New stateless history position
+        (chunkText: string) => {
+          setDisplayMessages(prev => {
+            const newMsgs = [...prev];
+            newMsgs[newMsgs.length - 1] = { role: 'model', text: chunkText };
+            return newMsgs;
           });
         },
-        (newStatus) => setStatus(newStatus),
-        imageBase64,
-        geminiHistory
+        (newStatus: string) => setStatus(newStatus)
       );
       
-      // Ensure final text is set (though onChunk should have handled it)
-      setHistory(prev => {
-        const newHistory = [...prev];
-        newHistory[newHistory.length - 1] = { role: 'model', text: response };
-        return newHistory;
+      setHistory(result.history);
+      setDisplayMessages(prev => {
+        const newMsgs = [...prev];
+        newMsgs[newMsgs.length - 1] = { role: 'model', text: result.text || "Workspace updated." };
+        return newMsgs;
       });
     } catch (err: any) {
       const friendlyError = parseAIError(err);
-      // Remove the empty streaming message if it failed at the start
-      setHistory(prev => {
-        const newHistory = [...prev];
-        if (newHistory[newHistory.length - 1]?.text === '') {
-          newHistory.pop();
+      if (err.message?.includes('400') || err.message?.includes('turn')) {
+        setHistory([]);
+      }
+      setDisplayMessages(prev => {
+        const newMsgs = [...prev];
+        if (newMsgs[newMsgs.length - 1]?.text === '') {
+          newMsgs.pop();
         }
-        return [...newHistory, { role: 'model', text: `**Oracle Error:** ${friendlyError}` }];
+        return [...newMsgs, { role: 'model', text: `**Oracle Error:** ${friendlyError}` }];
       });
-      console.error("[Oracle Debug]", err);
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleClear = () => {
+    setHistory([]);
+    setDisplayMessages([]);
   };
 
   if (!oracleMode) return null;
@@ -157,12 +115,10 @@ ${userMsg.text}
           transition={{ type: 'spring', damping: 25, stiffness: 200 }}
           className="fixed inset-0 md:inset-auto md:bottom-24 md:right-8 w-full md:w-96 h-full md:h-[600px] glass md:rounded-[2rem] shadow-2xl flex flex-col overflow-hidden z-[9999]"
         >
-          {/* Mobile Close Handle */}
           <div className="md:hidden flex justify-center pt-4 pb-2" onClick={() => setChatOpen(false)}>
             <div className="w-12 h-1.5 bg-white/10 rounded-full" />
           </div>
 
-          {/* Header */}
           <div className="flex items-center justify-between p-4 md:p-6 border-b border-white/5 bg-white/5">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-full bg-[var(--accent)]/20 flex items-center justify-center border border-[var(--accent)]/50">
@@ -173,25 +129,35 @@ ${userMsg.text}
                 <p className="text-[10px] text-[var(--accent)] font-mono uppercase tracking-wider">{formatModelName(activeModel)} is Active</p>
               </div>
             </div>
-            <button 
-              onClick={() => setChatOpen(false)}
-              className="p-2 hover:bg-white/10 rounded-full transition-colors text-slate-400 hover:text-white"
-            >
-              <X className="w-5 h-5" />
-            </button>
+            <div className="flex items-center gap-1">
+              {displayMessages.length > 0 && (
+                <button 
+                  onClick={handleClear}
+                  className="p-2 hover:bg-white/10 rounded-full transition-colors text-slate-500 hover:text-white"
+                  title="Clear Conversation"
+                >
+                  <History className="w-4 h-4" />
+                </button>
+              )}
+              <button 
+                onClick={() => setChatOpen(false)}
+                className="p-2 hover:bg-white/10 rounded-full transition-colors text-slate-400 hover:text-white"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
           </div>
 
-          {/* Chat Area */}
           <div className="flex-1 overflow-y-auto p-4 md:p-6 space-y-4 custom-scroll" ref={scrollRef}>
-            {history.length === 0 && (
+            {displayMessages.length === 0 && (
               <div className="text-center text-slate-500 mt-10 md:mt-20">
                 <Shield className="w-10 h-10 md:w-12 md:h-12 mx-auto mb-4 opacity-20" />
                 <p className="text-sm">Oracle Mode Enabled</p>
-                <p className="text-xs mt-2 opacity-60 px-10">I can see your workspace and help you organize.</p>
+                <p className="text-xs mt-2 opacity-60 px-10">I can help you organize your workspace.</p>
               </div>
             )}
             
-            {history.map((msg, i) => {
+            {displayMessages.map((msg, i) => {
               if (!msg.text && msg.role === 'model') return null;
               return (
                 <div key={i} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
@@ -219,7 +185,6 @@ ${userMsg.text}
             )}
           </div>
 
-          {/* Input Area */}
           <div className="p-4 pb-8 md:pb-4 border-t border-white/5 bg-black/20">
             <div className="relative">
               <textarea
@@ -241,56 +206,6 @@ ${userMsg.text}
               >
                 <Send className="w-4 h-4" />
               </button>
-            </div>
-            
-            <div className="mt-2 flex flex-col gap-1.5 px-1 overflow-hidden">
-              <div className="flex items-center gap-4">
-                <label 
-                  className="flex items-center gap-2 cursor-pointer group flex-shrink-0"
-                  onClick={() => setIncludeVision(!includeVision)}
-                >
-                  <div 
-                    className={`w-4 h-4 rounded border flex items-center justify-center transition-colors ${includeVision ? 'bg-[var(--accent)] border-[var(--accent)]' : 'border-slate-600 group-hover:border-slate-500'}`}
-                  >
-                    {includeVision && <Eye className="w-2.5 h-2.5 text-white" />}
-                  </div>
-                  <span className="text-[10px] uppercase font-bold tracking-wider text-slate-500 group-hover:text-slate-400 select-none whitespace-nowrap">
-                    Vision
-                  </span>
-                </label>
-
-                <label 
-                  className={cn(
-                    "flex items-center gap-2 flex-shrink-0 group",
-                    isProModel ? "cursor-not-allowed opacity-50" : "cursor-pointer"
-                  )}
-                  onClick={() => !isProModel && setThinkingMode(!thinkingMode)}
-                >
-                  <div 
-                    className={cn(
-                      "w-4 h-4 rounded border flex items-center justify-center transition-colors",
-                      (thinkingMode || isProModel) ? "bg-purple-500 border-purple-500" : "border-slate-600 group-hover:border-slate-500"
-                    )}
-                  >
-                    {(thinkingMode || isProModel) && <BrainCircuit className="w-2.5 h-2.5 text-white" />}
-                  </div>
-                  <span className="text-[10px] uppercase font-bold tracking-wider text-slate-500 group-hover:text-slate-400 select-none whitespace-nowrap">
-                    Thinking
-                  </span>
-                </label>
-              </div>
-
-              <div className="flex justify-end text-[9px] font-medium text-slate-500 italic select-none overflow-hidden w-full">
-                <span className="text-slate-400 whitespace-nowrap text-right">
-                  {includeVision 
-                    ? "Oracle sees your workspace." 
-                    : "Oracle is blind."}
-                  {" "}
-                  {thinkingMode || isProModel
-                    ? "Deep reasoning active."
-                    : "Fast mode active."}
-                </span>
-              </div>
             </div>
           </div>
         </motion.div>

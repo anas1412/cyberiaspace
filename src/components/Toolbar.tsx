@@ -8,14 +8,20 @@ import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 /* import { toPng, toCanvas } from 'html-to-image'; */
 import { toCanvas } from 'html-to-image';
+import AccountMenu from './AccountMenu';
 
 function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
 
 const formatModelName = (name: string) => {
-  if (name.includes('gemini-3-pro')) return 'Pro (Smart but Slower)';
-  if (name.includes('gemini-3-flash')) return 'Flash (Faster but Less Accurate)';
+  if (name.includes('gemini-2.0-flash-lite')) return 'Flash Lite Model';
+  if (name.includes('-3-flash')) return '3 Flash Model';
+  if (name.includes('-3-pro')) return '3 Pro Model';
+  if (name.includes('-2.5-pro')) return '2.5 Model';
+  if (name.includes('-2.5-flash')) return '2.5 Flash Model';
+  if (name.includes('-2.5-flash-lite')) return '2.5 Flash Lite Model';
+  
   return name;
 };
 
@@ -429,39 +435,42 @@ const Toolbar: React.FC = () => {
         </div>
 
         {/* RIGHT SIDE: View Switcher - Moved to bottom on mobile, kept at top-right on desktop */}
-        <div className="hidden md:flex items-center h-[48px] p-1.5 glass rounded-2xl shadow-2xl transition-all pointer-events-auto border border-white/5">
-          {[
-            { id: 'spatial', icon: Orbit, color: 'bg-[var(--accent)]' },
-            { id: 'kanban', icon: Columns3, color: 'bg-purple-500' },
-            { id: 'calendar', icon: CalendarDays, color: 'bg-amber-500' }
-          ].map((mode) => {
-            const isActive = activeSpace?.mode === mode.id;
-            const Icon = mode.icon;
-            return (
-              <button
-                key={mode.id}
-                onClick={() => setViewMode(mode.id as 'spatial' | 'kanban' | 'calendar')}
-                className={cn(
-                  "px-4 h-full rounded-xl transition-all duration-300 flex items-center gap-3 group/mode",
-                  isActive 
-                    ? "bg-white/10 text-white shadow-xl" 
-                    : "text-slate-500 hover:text-slate-300 hover:bg-white/[0.03]"
-                )}
-              >
-                <div className={cn(
-                  "w-1.5 h-1.5 rounded-full transition-all",
-                  isActive ? mode.color : "bg-white/10 group-hover/mode:bg-white/30"
-                )} />
-                <Icon className={cn("w-4 h-4 transition-transform", isActive ? "scale-110" : "scale-90")} />
-                <span className={cn(
-                  "text-[9px] font-black uppercase tracking-widest transition-all overflow-hidden whitespace-nowrap",
-                  isActive ? "w-14 opacity-100" : "w-0 opacity-0"
-                )}>
-                  {mode.id}
-                </span>
-              </button>
-            );
-          })}
+        <div className="hidden md:flex items-center gap-3 pointer-events-none">
+          <div className="flex items-center h-[48px] p-1.5 glass rounded-2xl shadow-2xl transition-all pointer-events-auto border border-white/5">
+            {[
+              { id: 'spatial', icon: Orbit, color: 'bg-[var(--accent)]' },
+              { id: 'kanban', icon: Columns3, color: 'bg-purple-500' },
+              { id: 'calendar', icon: CalendarDays, color: 'bg-amber-500' }
+            ].map((mode) => {
+              const isActive = activeSpace?.mode === mode.id;
+              const Icon = mode.icon;
+              return (
+                <button
+                  key={mode.id}
+                  onClick={() => setViewMode(mode.id as 'spatial' | 'kanban' | 'calendar')}
+                  className={cn(
+                    "px-4 h-full rounded-xl transition-all duration-300 flex items-center gap-3 group/mode",
+                    isActive 
+                      ? "bg-white/10 text-white shadow-xl" 
+                      : "text-slate-500 hover:text-slate-300 hover:bg-white/[0.03]"
+                  )}
+                >
+                  <div className={cn(
+                    "w-1.5 h-1.5 rounded-full transition-all",
+                    isActive ? mode.color : "bg-white/10 group-hover/mode:bg-white/30"
+                  )} />
+                  <Icon className={cn("w-4 h-4 transition-transform", isActive ? "scale-110" : "scale-90")} />
+                  <span className={cn(
+                    "text-[9px] font-black uppercase tracking-widest transition-all overflow-hidden whitespace-nowrap",
+                    isActive ? "w-14 opacity-100" : "w-0 opacity-0"
+                  )}>
+                    {mode.id}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+          <AccountMenu />
         </div>
       </div>
 

@@ -1,5 +1,6 @@
 import React from 'react';
 import { useStore } from '../store/useStore';
+import { useAuthStore } from '../store/useAuthStore';
 import { motion } from 'framer-motion';
 
 const ChalkArrow = ({ d, className }: { d: string, className?: string }) => (
@@ -23,6 +24,7 @@ const EmptyState: React.FC = () => {
   const activeSpaceId = useStore((state) => state.activeSpaceId);
   const spaces = useStore((state) => state.spaces);
   const activeSpace = spaces.find((s) => s.id === activeSpaceId);
+  const { user } = useAuthStore();
 
   const PHRASES = [
     "WHERE IDEAS BEGIN",
@@ -66,14 +68,20 @@ const EmptyState: React.FC = () => {
         <ChalkArrow d="M 30 10 Q 30 40 30 70 M 15 50 L 30 70 L 45 50" />
       </div>
 
-      {/* 3. Perspective (Top Right) - Hidden on Mobile */}
-      <div className="hidden md:flex absolute top-[110px] right-[50px] -rotate-[5deg] text-center flex-col items-center">
+      {/* 3. Perspective (Top Right) - Points to View Switcher */}
+      <div className="hidden md:flex absolute top-[110px] right-[280px] -rotate-[12deg] text-center flex flex-col items-center">
         <ChalkArrow d="M 30 70 Q 30 40 30 10 M 15 30 L 30 10 L 45 30" />
         <p className="font-['CyberiaBlueprint',_cursive,_sans-serif] text-white/30 text-[12px] mt-2">Change Perspective</p>
       </div>
 
-      {/* 4. Tools (Bottom Right) - Hidden on Mobile */}
-      <div className="hidden md:flex absolute bottom-[140px] right-[100px] -rotate-[10deg] text-center flex-col items-center">
+      {/* 4. Identity & Sync (Top Right) - Points to AccountMenu */}
+      <div className="hidden md:flex absolute top-[110px] right-[40px] rotate-[8deg] text-center flex flex-col items-center">
+        <ChalkArrow d="M 30 70 Q 30 40 30 10 M 15 30 L 30 10 L 45 30" />
+        <p className="font-['CyberiaBlueprint',_cursive,_sans-serif] text-white/30 text-[12px] mt-2">{user ? 'Manage Account' : 'Identity & Sync'}</p>
+      </div>
+
+      {/* 5. Tools (Bottom Right) - Hidden on Mobile */}
+      <div className="hidden md:flex absolute bottom-[140px] right-[100px] -rotate-[10deg] text-center flex flex-col items-center">
         <p className="font-['CyberiaBlueprint',_cursive,_sans-serif] text-white/30 text-[12px] mb-2">Systems & Tools</p>
         <ChalkArrow d="M 30 10 Q 30 40 30 70 M 15 50 L 30 70 L 45 50" />
       </div>

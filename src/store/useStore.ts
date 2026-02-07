@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { db, type Space, type Thought, type Stack } from '../db';
 import { aiService } from '../services/ai';
+import { useAuthStore } from './useAuthStore';
 import { DEFAULT_MODEL } from '../constants';
 
 interface CyberiaState {
@@ -25,7 +26,6 @@ interface CyberiaState {
   activeModel: string;
   oracleMode: boolean; // True = AI Enabled
   isChatOpen: boolean;
-  thinkingMode: boolean;
   
   // Initialization
   init: () => Promise<void>;
@@ -41,7 +41,6 @@ interface CyberiaState {
   removeApiKey: () => void;
   toggleOracleMode: () => void;
   setChatOpen: (isOpen: boolean) => void;
-  setThinkingMode: (enabled: boolean) => void;
   
   // Space Actions
   setActiveSpace: (id: string) => void;
@@ -102,6 +101,8 @@ interface CyberiaState {
   refreshThoughts: (spaceId?: string) => Promise<void>;
   refreshSpaces: () => Promise<void>;
   refreshStacks: (spaceId?: string) => Promise<void>;
+  refreshTotalThoughtCount: () => Promise<void>;
+  totalThoughtCount: number;
 }
 
 export const useStore = create<CyberiaState>((set, get) => ({
@@ -109,6 +110,7 @@ export const useStore = create<CyberiaState>((set, get) => ({
   spaces: [],
   thoughts: [],
   stacks: [],
+  totalThoughtCount: 0,
   selectedThoughtId: null,
   selectedThoughtIds: [],
   isInspectorOpen: false,
@@ -204,7 +206,6 @@ export const useStore = create<CyberiaState>((set, get) => ({
   activeModel: localStorage.getItem('cyberia-active-model') || DEFAULT_MODEL,
   oracleMode: localStorage.getItem('cyberia-oracle-mode') === 'true',
   isChatOpen: false,
-  thinkingMode: false,
 
   openLightbox: (image) => set({ isLightboxOpen: true, lightboxImage: image }),
   closeLightbox: () => set({ isLightboxOpen: false, lightboxImage: null }),
@@ -247,16 +248,12 @@ export const useStore = create<CyberiaState>((set, get) => ({
   },
 
   setChatOpen: (isOpen) => set({ isChatOpen: isOpen }),
-  setThinkingMode: (enabled) => {
-    set({ thinkingMode: enabled });
-    const { apiKey, activeModel } = get();
-    if (apiKey) {
-      aiService.initialize(apiKey, activeModel);
-    }
-  },
 
   init: async () => {
     set({ isSpaceLoading: true });
+    // Initialize Auth
+    useAuthStore.getState().initAuth();
+    
     // Apply theme on init
     const savedTheme = localStorage.getItem('cyberia-theme') || 'cyberia';
     document.body.setAttribute('data-theme', savedTheme);
@@ -269,6 +266,7 @@ export const useStore = create<CyberiaState>((set, get) => ({
     }
 
     await get().refreshSpaces();
+    await get().refreshTotalThoughtCount();
     const { spaces } = get();
     
     if (spaces.length === 0) {
@@ -347,7 +345,7 @@ export const useStore = create<CyberiaState>((set, get) => ({
         type: 'embed',
         content: 'https://youtu.be/P6kS_CD9H6I',
         description: 'Cyberia supports full YouTube integration. Experience the Wired. Click to open the video, or drag the node to reposition it in your mental landscape.',
-        x: cx + 400, y: cy - 250, priority: 'urgent', stackId: mediaId,
+        x: cx + 400, y: cy - 250, priority: 'low', stackId: mediaId,
         status: 'doing',
         spaceId: onboardingId
       });
@@ -374,8 +372,8 @@ export const useStore = create<CyberiaState>((set, get) => ({
 
       await get().addThought({
         text: 'README',
-        content: '# Cyberia: The Kinetic Mind\n\nCyberia is a **spatial operating system** for your thoughts. In a world of flat lists and rigid folders, Cyberia treats information as **physical matter**.\n\n### 1. Kinetic Architecture\nIdeas here have mass, velocity, and gravity. Using our custom physics engine, your thoughts form natural clusters—**Stacks**—based on your internal logic. It moves with you, resisting the static nature of traditional apps.\n\n### 2. Dimensional Morphing\nInformation is fluid. Switch between **Spatial**, **Kanban**, and **Calendar** modes to see your data transform. What was a free-form brainstorm becomes a structured workflow, then a temporal roadmap, all without losing context.\n\n### 3. The Oracle (AI)\nPowered by Gemini, the **Oracle** is your spatial assistant. With **Vision**, it sees what you see. With **Thinking Mode**, it reasons deeply about your architecture. It doesn\'t just chat; it organizes, moves, and links your ideas into a coherent neural layer.\n\n### 4. Local & Secure\nYour mind belongs to you. All data is stored locally in your browser. Cyberia is a private sanctuary for non-linear thinking.\n\n---\n*Welcome to the Wired.*',
-        x: cx + 650, y: cy + 150, priority: 'medium', stackId: mediaId,
+        content: '# Cyberia: The Kinetic Mind\n\nCyberia is a **spatial operating system** for your thoughts. In a world of flat lists and rigid folders, Cyberia treats information as **physical matter**.\n\n### 1. Kinetic Architecture\nIdeas here have mass, velocity, and gravity. Using our custom physics engine, your thoughts form natural clusters—**Stacks**—based on your internal logic. It moves with you, resisting the static nature of traditional apps.\n\n### 2. Dimensional Morphing\nInformation is fluid. Switch between **Spatial**, **Kanban**, and **Calendar** modes to see your data transform. What was a free-form brainstorm becomes a structured workflow, then a temporal roadmap, all without losing context.\n\n### 3. The Oracle (AI)\nPowered by Gemini, the **Oracle** is your spatial assistant. It doesn\'t just chat; it can research the Wired for you, create new thoughts, and help you bridge connections by organizing your mental landscape into Stacks.\n\n### 4. Local & Secure\nYour mind belongs to you. All data is stored locally in your browser. Cyberia is a private sanctuary for non-linear thinking.\n\n---\n*Welcome to the Wired.*',
+        x: cx + 650, y: cy + 150, priority: 'urgent', stackId: mediaId,
         status: 'done',
         spaceId: onboardingId
       });
@@ -436,11 +434,17 @@ export const useStore = create<CyberiaState>((set, get) => ({
     set({ spaces });
   },
 
+  refreshTotalThoughtCount: async () => {
+    const count = await db.thoughts.count();
+    set({ totalThoughtCount: count });
+  },
+
   refreshThoughts: async (spaceId?: string) => {
     const targetId = spaceId || get().activeSpaceId;
     if (!targetId) return;
     const thoughts = await db.thoughts.where('spaceId').equals(targetId).toArray();
     set({ thoughts, isSpaceLoading: false });
+    get().refreshTotalThoughtCount();
     if (get().history.length === 0) {
       set({ history: [JSON.parse(JSON.stringify(thoughts))], historyIndex: 0 });
     }
@@ -611,7 +615,14 @@ export const useStore = create<CyberiaState>((set, get) => ({
 
     if (result !== -1) {
       await get().refreshThoughts(targetSpaceId);
+      await get().refreshTotalThoughtCount();
       get().pushHistory();
+
+      // Trigger Cloud Sync
+      const authStore = (await import('./useAuthStore')).useAuthStore.getState();
+      if (authStore.autoSync && authStore.status === 'authenticated') {
+        authStore.syncData();
+      }
     }
     
     return result as number;
@@ -636,7 +647,17 @@ export const useStore = create<CyberiaState>((set, get) => ({
       await db.thoughts.update(id, updates);
       delete saveTimers[id];
       get().pushHistory(); // Push history after debounce
-    }, 500); // 500ms debounce
+
+      // 3. Trigger Cloud Sync if Auto-Sync is ON
+      const authStore = (await import('./useAuthStore')).useAuthStore.getState();
+      if (authStore.autoSync && authStore.status === 'authenticated') {
+        // Debounce cloud sync separately to avoid spamming the API
+        if ((window as any)._cyberia_cloud_timer) clearTimeout((window as any)._cyberia_cloud_timer);
+        (window as any)._cyberia_cloud_timer = setTimeout(() => {
+          authStore.syncData();
+        }, 2000); // Wait 2 seconds of inactivity before pushing to cloud
+      }
+    }, 500); // 500ms local debounce
 
     (window as any)._cyberia_save_timers = saveTimers;
   },
@@ -647,6 +668,7 @@ export const useStore = create<CyberiaState>((set, get) => ({
 
     await db.thoughts.delete(id);
     await get().refreshThoughts();
+    await get().refreshTotalThoughtCount();
     
     if (affectedStackId) {
       await get().cleanupStacks();
@@ -660,6 +682,12 @@ export const useStore = create<CyberiaState>((set, get) => ({
       set({ selectedThoughtIds: newIds });
     }
     get().pushHistory();
+
+    // Trigger Cloud Sync
+    const authStore = (await import('./useAuthStore')).useAuthStore.getState();
+    if (authStore.autoSync && authStore.status === 'authenticated') {
+      authStore.syncData();
+    }
   },
 
   setSelectedThoughtId: (id) => {

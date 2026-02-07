@@ -11,14 +11,22 @@
 
 - maybe change ai chat on the right
 
-- add verification of the oracle key
-
 
 
 
 - make accounts / data sync 
 
+- implement langchain/z or any ai tool for AI 
+
 - use ytb-dl backend to fetch/manage/verify youtube links
 
+
+YOUTUBE_API_KEY="AIzaSyCWdVmdBcShumV6-08YZ3eJuMVV4ThGvO0"
+VITE_GOOGLE_CLIENT_ID="191881102656-ma6udst6nnn64ujslt866l45ff5ak4d4.apps.googleusercontent.com"
+KV_REST_API_READ_ONLY_TOKEN="AsBFAAIgcDI8Q5YpL3irF8zYizgUBv5ToZoxY8KfLzjRNO_Cs96mpA"
+KV_REST_API_TOKEN="AcBFAAIncDIwMTM1M2YyMzg3YWQ0NjQzYWM1ZmU1MjJhZGFjOWU3ZnAyNDkyMjE"
+KV_REST_API_URL="https://rested-tarpon-49221.upstash.io"
+KV_URL="rediss://default:AcBFAAIncDIwMTM1M2YyMzg3YWQ0NjQzYWM1ZmU1MjJhZGFjOWU3ZnAyNDkyMjE@rested-tarpon-49221.upstash.io:6379"
+REDIS_URL="rediss://default:AcBFAAIncDIwMTM1M2YyMzg3YWQ0NjQzYWM1ZmU1MjJhZGFjOWU3ZnAyNDkyMjE@rested-tarpon-49221.upstash.io:6379"
   
 
