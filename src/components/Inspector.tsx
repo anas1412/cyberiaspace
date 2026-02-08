@@ -89,7 +89,7 @@ const Inspector: React.FC = () => {
           className="ui-layer focus-box fixed top-[120px] right-8 w-80 glass rounded-[2.5rem] shadow-2xl pointer-events-auto transition-shadow overflow-hidden flex flex-col"
         >
           {/* HEADER AREA */}
-          <div className="px-8 pt-8 pb-4 bg-white/[0.02]">
+          <div className="px-8 pt-8 pb-4">
             <div className="flex justify-between items-center">
               <h3 className="text-[10px] font-black uppercase tracking-widest text-[var(--text-primary)] select-none">Thought Editor</h3>
               <button onClick={() => setInspectorOpen(false)} className="text-slate-500 hover:text-white relative z-10">
