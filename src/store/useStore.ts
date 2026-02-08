@@ -75,7 +75,7 @@ interface CyberiaState {
   // Data Lifecycle
   exportData: () => Promise<void>;
   importData: (data: File | unknown) => Promise<void>;
-  resetData: () => Promise<void>;
+  clearWorkspace: () => Promise<void>;
   
   // Lightbox
   isLightboxOpen: boolean;
@@ -967,32 +967,22 @@ export const useStore = create<CyberiaState>((set, get) => ({
 
   
 
-    resetData: async () => {
-
+    clearWorkspace: async () => {
       try {
-
         await db.transaction('rw', db.spaces, db.thoughts, db.stacks, async () => {
-
           await db.spaces.clear();
-
           await db.thoughts.clear();
-
           await db.stacks.clear();
-
         });
 
-        localStorage.clear();
-
+        // Preserve auth and settings, clear only workspace state
+        localStorage.removeItem('cyberia-active-space-id');
+        
         window.location.reload();
-
       } catch (err) {
-
-        console.error('Reset failed:', err);
-
+        console.error('Clear failed:', err);
       }
-
     }
-
   }));
 
   

@@ -50,7 +50,7 @@ const Toolbar: React.FC = () => {
   const setInspectorOpen = useStore((state) => state.setInspectorOpen);
   const exportData = useStore((state) => state.exportData);
   const importData = useStore((state) => state.importData);
-  const resetData = useStore((state) => state.resetData);
+  const clearWorkspace = useStore((state) => state.clearWorkspace);
   const theme = useStore((state) => state.theme);
   const setTheme = useStore((state) => state.setTheme);
   const deferredPrompt = useStore((state) => state.deferredPrompt);
@@ -587,13 +587,13 @@ const Toolbar: React.FC = () => {
       {/* SYSTEM TRAY */}
       <div className="fixed bottom-4 md:bottom-8 right-4 md:right-8 z-[9999] flex flex-col items-end gap-3 pointer-events-none system-tray-container">
         <div className={cn(
-          "glass p-4 rounded-[2.5rem] flex flex-col gap-2 transition-all pointer-events-auto w-64 md:w-80",
+          "glass p-4 md:p-5 rounded-[1.5rem] md:rounded-[2rem] border border-white/10 shadow-2xl flex flex-col gap-1 transition-all pointer-events-auto w-64 md:w-72 animate-in fade-in duration-300",
           isSystemMenuOpen ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4 pointer-events-none"
         )}>
           {/* Theme Selector */}
-          <div className="px-3 md:px-4 py-4 border-b border-white/5 mb-1">
-            <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500 mb-4">Workspace Theme</p>
-            <div className="grid grid-cols-3 gap-3">
+          <div className="px-1 md:px-2 py-3 border-b border-white/5 mb-2">
+            <p className="text-[9px] md:text-[10px] font-black uppercase tracking-[0.2em] text-slate-500 mb-4">Workspace Theme</p>
+            <div className="grid grid-cols-3 gap-2">
               {[
                 { id: 'cyberia', label: 'Cyber', color: '#6366f1' },
                 { id: 'sakura', label: 'Sakura', color: '#fdb9c8' },
@@ -603,15 +603,15 @@ const Toolbar: React.FC = () => {
                   key={t.id}
                   onClick={() => setTheme(t.id as 'cyberia' | 'sakura' | 'neon')}
                   className={cn(
-                    "flex flex-col items-center gap-3 p-3 rounded-2xl border transition-all",
+                    "flex flex-col items-center gap-2.5 p-2.5 rounded-xl border transition-all",
                     theme === t.id 
                       ? "bg-white/10 border-white/20 shadow-lg" 
                       : "border-transparent hover:bg-white/5"
                   )}
                 >
-                  <div className="w-5 h-5 rounded-full shadow-lg" style={{ backgroundColor: t.color }} />
+                  <div className="w-4 h-4 rounded-full shadow-lg" style={{ backgroundColor: t.color }} />
                   <span className={cn(
-                    "text-[9px] md:text-[10px] font-bold uppercase tracking-widest",
+                    "text-[8px] md:text-[9px] font-bold uppercase tracking-widest",
                     theme === t.id ? "text-white" : "text-slate-500"
                   )}>{t.label}</span>
                 </button>
@@ -620,46 +620,50 @@ const Toolbar: React.FC = () => {
           </div>
 
           {deferredPrompt && (
-            <button onClick={handleInstall} className="flex items-center gap-4 px-4 md:px-5 py-3 md:py-4 rounded-2xl bg-[var(--accent)]/10 hover:bg-[var(--accent)]/20 text-[9px] md:text-[10px] font-black uppercase tracking-[0.2em] text-[var(--accent-secondary)] transition-all mb-1 border border-[var(--accent)]/20">
-              <MonitorSmartphone className="w-4 h-4 md:w-5 md:h-5" /> Install App
+            <button onClick={handleInstall} className="flex items-center gap-3 px-3 py-2.5 rounded-xl md:rounded-2xl bg-[var(--accent)]/10 hover:bg-[var(--accent)]/20 text-[9px] md:text-[10px] font-black uppercase tracking-[0.2em] text-[var(--accent-secondary)] transition-all mb-1 border border-[var(--accent)]/20">
+              <MonitorSmartphone className="w-3.5 h-3.5" /> Install App
             </button>
           )}
 
-          <button onClick={handleExport} className="flex items-center gap-4 px-4 md:px-5 py-3 md:py-4 rounded-2xl hover:bg-white/5 text-[9px] md:text-[10px] font-bold uppercase tracking-widest text-slate-300 transition-colors">
-            <Download className="w-4 h-4 md:w-5 md:h-5" /> Export Data
+          <button onClick={handleExport} className="flex items-center gap-3 px-3 py-2.5 rounded-xl md:rounded-2xl hover:bg-white/5 text-[9px] md:text-[10px] font-bold uppercase tracking-widest text-slate-300 transition-colors">
+            <Download className="w-3.5 h-3.5" /> Export Data
           </button>
-          <label className="flex items-center gap-4 px-4 md:px-5 py-3 md:py-4 rounded-2xl hover:bg-white/5 text-[9px] md:text-[10px] font-bold uppercase tracking-widest text-slate-300 transition-colors cursor-pointer">
-            <Upload className="w-4 h-4 md:w-5 md:h-5" /> Import Data
+          <label className="flex items-center gap-3 px-3 py-2.5 rounded-xl md:rounded-2xl hover:bg-white/5 text-[9px] md:text-[10px] font-bold uppercase tracking-widest text-slate-300 transition-colors cursor-pointer">
+            <Upload className="w-3.5 h-3.5" /> Import Data
             <input type="file" className="hidden" accept=".json" onChange={handleImport} />
           </label>
-          <button onClick={handleScreenshot} disabled={isCapturing} className="flex items-center gap-4 px-4 md:px-5 py-3 md:py-4 rounded-2xl hover:bg-white/5 text-[9px] md:text-[10px] font-bold uppercase tracking-widest text-slate-300 transition-colors">
-            <Camera className="w-4 h-4 md:w-5 md:h-5" /> {isCapturing ? 'Saving...' : 'Screenshot'}
+          <button onClick={handleScreenshot} disabled={isCapturing} className="flex items-center gap-3 px-3 py-2.5 rounded-xl md:rounded-2xl hover:bg-white/5 text-[9px] md:text-[10px] font-bold uppercase tracking-widest text-slate-300 transition-colors">
+            <Camera className="w-3.5 h-3.5" /> {isCapturing ? 'Saving...' : 'Screenshot'}
           </button>
-          <div className="h-[1px] bg-white/5 my-1 mx-3"></div>
-          <button 
-            onClick={() => {
-              openModal({
-                title: 'Reset Everything?',
-                description: 'This will permanently delete all your spaces, thoughts, and settings. This cannot be undone.',
-                type: 'reset_confirm',
-                confirmText: 'Reset App',
-                onConfirm: resetData
-              });
-              setIsSystemMenuOpen(false);
-            }} 
-            className="flex items-center gap-4 px-4 md:px-5 py-3 md:py-4 rounded-2xl hover:bg-red-500/10 text-[9px] md:text-[10px] font-bold uppercase tracking-widest text-red-400 transition-colors"
-          >
-            <RotateCcw className="w-4 h-4 md:w-5 md:h-5" /> Reset App
-          </button>
-          <button 
-            onClick={() => {
-              setIsKeyModalOpen(true);
-              setIsSystemMenuOpen(false);
-            }} 
-            className="flex items-center gap-4 px-4 md:px-5 py-3 md:py-4 rounded-2xl hover:bg-purple-500/10 text-[9px] md:text-[10px] font-bold uppercase tracking-widest text-purple-400 transition-colors"
-          >
-            <Key className="w-4 h-4 md:w-5 md:h-5" /> Oracle Settings
-          </button>
+          
+          <div className="h-[1px] bg-white/5 my-2 mx-1"></div>
+
+          <div className="grid grid-cols-2 gap-2">
+            <button 
+              onClick={() => {
+                openModal({
+                  title: 'Clear Workspace?',
+                  description: 'This will permanently delete all your spaces, thoughts, and stacks. This cannot be undone.',
+                  type: 'reset_confirm',
+                  confirmText: 'Clear All',
+                  onConfirm: clearWorkspace
+                });
+                setIsSystemMenuOpen(false);
+              }} 
+              className="flex items-center justify-center gap-2 py-2.5 rounded-xl hover:bg-red-500/10 text-[8px] md:text-[9px] font-bold uppercase tracking-widest text-red-400 transition-colors border border-transparent hover:border-red-500/10"
+            >
+              <Trash2 className="w-3 h-3" /> Clear
+            </button>
+            <button 
+              onClick={() => {
+                setIsKeyModalOpen(true);
+                setIsSystemMenuOpen(false);
+              }} 
+              className="flex items-center justify-center gap-2 py-2.5 rounded-xl bg-white/5 hover:bg-purple-500/10 text-[8px] md:text-[9px] font-bold uppercase tracking-widest text-purple-400 transition-colors border border-white/10 hover:border-purple-500/20"
+            >
+              <Key className="w-3 h-3" /> Oracle
+            </button>
+          </div>
         </div>
         
         <div className="flex gap-2 pointer-events-auto">

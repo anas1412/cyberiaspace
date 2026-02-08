@@ -177,35 +177,35 @@ const AccountMenu: React.FC = () => {
 
       {/* Dropdown Menu */}
       {isOpen && (
-        <div className="absolute top-full mt-2 right-0 w-72 glass rounded-[2rem] border border-white/10 shadow-2xl p-6 animate-in fade-in slide-in-from-top-2 duration-300 z-[10000]">
-          <div className="flex items-center gap-4 mb-6">
+        <div className="absolute top-full mt-2 right-0 w-64 md:w-72 glass rounded-[1.5rem] md:rounded-[2rem] border border-white/10 shadow-2xl p-4 md:p-5 animate-in fade-in slide-in-from-top-2 duration-300 z-[10000]">
+          <div className="flex items-center gap-3 mb-4">
             <img 
               src={user.avatar} 
               alt={user.name} 
               referrerPolicy="no-referrer"
-              className="w-12 h-12 rounded-2xl border border-white/10 shadow-xl"
+              className="w-10 h-10 rounded-xl border border-white/10 shadow-xl"
             />
             <div>
-              <h4 className="text-[11px] font-black uppercase tracking-widest text-white">{user.name}</h4>
-              <p className="text-[9px] font-medium text-slate-500 truncate w-40">{user.email}</p>
+              <h4 className="text-[10px] md:text-[11px] font-black uppercase tracking-widest text-white">{user.name}</h4>
+              <p className="text-[8px] md:text-[9px] font-medium text-slate-500 truncate w-32 md:w-40">{user.email}</p>
             </div>
           </div>
 
-          <div className="space-y-1 mb-6">
+          <div className="space-y-1 mb-4">
             <div className={cn(
-              "flex items-center justify-between p-3 rounded-2xl border transition-all",
+              "flex items-center justify-between p-2.5 rounded-xl md:rounded-2xl border transition-all",
               !isOnline ? "bg-red-500/5 border-red-500/10" : "bg-white/[0.03] border-white/[0.05]"
             )}>
-              <div className="flex items-center gap-3">
+              <div className="flex items-center gap-2.5">
                 {!isOnline ? (
-                  <WifiOff className="w-4 h-4 text-red-400" />
+                  <WifiOff className="w-3.5 h-3.5 text-red-400" />
                 ) : syncStatus === 'synced' ? (
-                  <Cloud className="w-4 h-4 text-green-400" />
+                  <Cloud className="w-3.5 h-3.5 text-green-400" />
                 ) : (
-                  <CloudOff className="w-4 h-4 text-slate-400" />
+                  <CloudOff className="w-3.5 h-3.5 text-slate-400" />
                 )}
                 <div>
-                  <p className="text-[9px] font-black uppercase tracking-widest text-white">
+                  <p className="text-[8px] md:text-[9px] font-black uppercase tracking-widest text-white">
                     {!isOnline ? 'Network Offline' : 'Cloud Sync'}
                   </p>
                   <p className="text-[7px] font-bold text-slate-500 uppercase tracking-widest">
@@ -217,63 +217,63 @@ const AccountMenu: React.FC = () => {
                 onClick={handleSync}
                 disabled={!isOnline || syncStatus === 'syncing'}
                 className={cn(
-                  "p-2 hover:bg-white/10 rounded-xl transition-all disabled:opacity-20",
+                  "p-1.5 hover:bg-white/10 rounded-lg transition-all disabled:opacity-20",
                   syncStatus === 'syncing' && "animate-spin"
                 )}
                 title={isOnline ? "Sync Now" : "Connect to internet to sync"}
               >
-                <RefreshCw className="w-3.5 h-3.5 text-slate-400" />
+                <RefreshCw className="w-3 h-3 text-slate-400" />
               </button>
             </div>
 
             <button 
               onClick={handleRestore}
               disabled={!isOnline || syncStatus === 'syncing'}
-              className="w-full flex items-center gap-3 p-3 rounded-2xl hover:bg-white/5 transition-colors group"
+              className="w-full flex items-center gap-2.5 p-2.5 rounded-xl md:rounded-2xl hover:bg-white/5 transition-colors group"
             >
-              <Cloud className="w-4 h-4 text-blue-400" />
+              <Cloud className="w-3.5 h-3.5 text-blue-400" />
               <div className="text-left">
-                <p className="text-[9px] font-black uppercase tracking-widest text-white">Restore Cloud</p>
+                <p className="text-[8px] md:text-[9px] font-black uppercase tracking-widest text-white">Restore Cloud</p>
                 <p className="text-[7px] font-bold text-slate-500 uppercase tracking-widest">Download backup</p>
               </div>
             </button>
 
             <button 
               onClick={() => setAutoSync(!autoSync)}
-              className="w-full flex items-center justify-between p-3 rounded-2xl hover:bg-white/5 transition-colors group"
+              className="w-full flex items-center justify-between p-2.5 rounded-xl md:rounded-2xl hover:bg-white/5 transition-colors group"
             >
-              <div className="flex items-center gap-3">
-                <Power className={cn("w-4 h-4 transition-colors", autoSync ? "text-blue-400" : "text-slate-500")} />
+              <div className="flex items-center gap-2.5">
+                <Power className={cn("w-3.5 h-3.5 transition-colors", autoSync ? "text-blue-400" : "text-slate-500")} />
                 <div className="text-left">
-                  <p className="text-[9px] font-black uppercase tracking-widest text-white">Auto-Sync</p>
+                  <p className="text-[8px] md:text-[9px] font-black uppercase tracking-widest text-white">Auto-Sync</p>
                   <p className="text-[7px] font-bold text-slate-500 uppercase tracking-widest">{autoSync ? 'Always active' : 'Manual only'}</p>
                 </div>
               </div>
               <div className={cn(
-                "w-8 h-4 rounded-full p-1 transition-colors relative",
+                "w-7 h-3.5 rounded-full p-1 transition-colors relative",
                 autoSync ? "bg-blue-500" : "bg-slate-700"
               )}>
                 <div className={cn(
-                  "w-2 h-2 rounded-full bg-white transition-transform",
-                  autoSync ? "translate-x-4" : "translate-x-0"
+                  "w-1.5 h-1.5 rounded-full bg-white transition-transform",
+                  autoSync ? "translate-x-3.5" : "translate-x-0"
                 )} />
               </div>
             </button>
             
-            <div className="flex items-center gap-3 p-3 rounded-2xl hover:bg-white/5 transition-colors cursor-default">
-              <ShieldCheck className="w-4 h-4 text-purple-400" />
+            <div className="flex items-center gap-2.5 p-2.5 rounded-xl md:rounded-2xl hover:bg-white/5 transition-colors cursor-default">
+              <ShieldCheck className="w-3.5 h-3.5 text-purple-400" />
               <div>
-                <p className="text-[9px] font-black uppercase tracking-widest text-white">Cloud Storage</p>
+                <p className="text-[8px] md:text-[9px] font-black uppercase tracking-widest text-white">Cloud Storage</p>
                 <p className="text-[7px] font-bold text-slate-500 uppercase tracking-widest">Secure Data Backup</p>
               </div>
             </div>
           </div>
 
           {/* Cloud Capacity */}
-          <div className="px-3 mb-6">
-            <div className="flex justify-between items-center mb-2">
+          <div className="px-2.5 mb-4">
+            <div className="flex justify-between items-center mb-1.5">
               <div className="flex items-center gap-2">
-                <Database className="w-3 h-3 text-slate-500" />
+                <Database className="w-2.5 h-2.5 text-slate-500" />
                 <span className="text-[8px] font-black uppercase tracking-widest text-slate-400">Cloud Capacity</span>
               </div>
               <span className={cn(
@@ -281,7 +281,7 @@ const AccountMenu: React.FC = () => {
                 cloudUsage > 90 ? "text-red-400" : "text-slate-500"
               )}>{cloudUsage}%</span>
             </div>
-            <div className="h-1.5 w-full bg-white/5 rounded-full overflow-hidden border border-white/5">
+            <div className="h-1 w-full bg-white/5 rounded-full overflow-hidden border border-white/5">
               <div 
                 className={cn(
                   "h-full transition-all duration-500 rounded-full",
@@ -296,20 +296,20 @@ const AccountMenu: React.FC = () => {
             <button
               onClick={handleDeleteCloudData}
               disabled={syncStatus === 'syncing' || !lastSync || !isOnline}
-              className="flex items-center justify-center gap-2 py-3 rounded-xl hover:bg-red-500/10 text-red-500/60 hover:text-red-400 text-[9px] font-black uppercase tracking-widest transition-all border border-transparent hover:border-red-500/10 disabled:opacity-30"
+              className="flex items-center justify-center gap-1.5 py-2.5 rounded-lg md:rounded-xl hover:bg-red-500/10 text-red-500/60 hover:text-red-400 text-[8px] md:text-[9px] font-black uppercase tracking-widest transition-all border border-transparent hover:border-red-500/10 disabled:opacity-30"
               title="Delete cloud data only"
             >
-              <Trash2 className="w-3.5 h-3.5" />
-              Clear Cloud
+              <Trash2 className="w-3 h-3" />
+              Clear
             </button>
             <button
               onClick={() => {
                 signOut();
                 setIsOpen(false);
               }}
-              className="flex items-center justify-center gap-2 py-3 rounded-xl bg-white/5 hover:bg-white/10 text-white text-[9px] font-black uppercase tracking-widest transition-all border border-white/10"
+              className="flex items-center justify-center gap-1.5 py-2.5 rounded-lg md:rounded-xl bg-white/5 hover:bg-white/10 text-white text-[8px] md:text-[9px] font-black uppercase tracking-widest transition-all border border-white/10"
             >
-              <LogOut className="w-3.5 h-3.5" />
+              <LogOut className="w-3 h-3" />
               Sign Out
             </button>
           </div>

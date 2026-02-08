@@ -69,26 +69,26 @@ const MultiSelectionMenu: React.FC = () => {
           : { opacity: 1, x: 0 }}
         exit={isMobile ? { y: '100%' } : { opacity: 0, x: 20 }}
         className={cn(
-          "ui-layer focus-box fixed bottom-0 left-0 right-0 md:bottom-auto md:left-auto md:top-[120px] md:right-8 w-full md:w-80 glass rounded-t-[2.5rem] md:rounded-[2.5rem] p-6 md:p-8 shadow-2xl pointer-events-auto",
+          "ui-layer focus-box fixed bottom-0 left-0 right-0 md:bottom-auto md:left-auto md:top-[120px] md:right-8 w-full md:w-72 glass rounded-t-[2rem] md:rounded-[2rem] p-5 md:p-6 shadow-2xl pointer-events-auto",
           isMobile && (isInspectorOpen || isChatOpen) && "pointer-events-none"
         )}
       >
-        <div className="flex justify-between items-center mb-6">
+        <div className="flex justify-between items-center mb-5">
           <div className="flex flex-col">
             <h3 className="text-[10px] font-black uppercase tracking-widest text-[var(--text-primary)]">Bulk Actions</h3>
             <span className="text-[9px] text-slate-500 font-bold uppercase tracking-wider">{selectedThoughtIds.length} items selected</span>
           </div>
           <button onClick={clearSelection} className="text-slate-500 hover:text-white">
-            <X className="w-5 h-5" />
+            <X className="w-4 h-4" />
           </button>
         </div>
 
-        <div className="space-y-4">
-          <div className="space-y-2">
-            <label className="text-[9px] uppercase font-bold tracking-widest text-slate-500 ml-1">
+        <div className="space-y-3">
+          <div className="space-y-1.5">
+            <label className="text-[8px] uppercase font-bold tracking-widest text-slate-500 ml-1">
               {areLinked ? "Stack Name" : "Create Named Stack"}
             </label>
-            <div className="p-3 bg-[var(--bg-page)]/20 border border-white/10 rounded-xl flex items-center gap-2">
+            <div className="p-2.5 bg-[var(--bg-page)]/20 border border-white/10 rounded-xl flex items-center gap-2">
               <div 
                 className="w-2 h-2 rounded-full shadow-[0_0_10px_currentColor]" 
                 style={{ 
@@ -110,20 +110,12 @@ const MultiSelectionMenu: React.FC = () => {
                     if (areLinked && sharedStack) {
                       updateStack(sharedStack.id, { name: localStackName.trim() });
                     } else {
-                      // Link with a specific name: 
-                      // We'll call link then rename for simplicity
-                      linkSelectedThoughts().then(() => {
-                        // The link logic creates a stack, we need to find the new stackId 
-                        // from the updated thoughts to rename it. 
-                        // But store.linkSelectedThoughts is async.
-                        // For a better UX, we'll implement a 'linkWithTitle' action in the store later if needed.
-                        // For now, standard link then rename if they are linked.
-                      });
+                      linkSelectedThoughts();
                     }
                   }
                 }}
-                placeholder={areLinked ? "Rename Stack..." : "Name your new stack..."}
-                className="bg-transparent text-[10px] font-black uppercase tracking-widest text-white outline-none flex-1"
+                placeholder={areLinked ? "Rename Stack..." : "Name your stack..."}
+                className="bg-transparent text-[9px] font-black uppercase tracking-widest text-white outline-none flex-1"
               />
             </div>
           </div>
@@ -131,18 +123,16 @@ const MultiSelectionMenu: React.FC = () => {
           {areLinked ? (
             <button 
               onClick={unlinkSelectedThoughts}
-              className="w-full bg-orange-500/10 hover:bg-orange-500/20 border border-orange-500/30 text-orange-400 py-4 rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] transition-all flex items-center justify-center gap-3"
+              className="w-full bg-orange-500/10 hover:bg-orange-500/20 border border-orange-500/30 text-orange-400 py-3 rounded-xl text-[9px] font-black uppercase tracking-[0.2em] transition-all flex items-center justify-center gap-2.5"
             >
-              <Link className="w-4 h-4 rotate-45" />
+              <Link className="w-3.5 h-3.5 rotate-45" />
               Remove from Stack
             </button>
           ) : (
             <button 
               onClick={async () => {
                 await linkSelectedThoughts();
-                // If a name was typed, we find the new stack and rename it
                 if (localStackName.trim()) {
-                  // Small delay to ensure DB sync before find
                   setTimeout(async () => {
                     const latestThoughts = useStore.getState().thoughts;
                     const firstSelected = latestThoughts.find(t => selectedThoughtIds.includes(t.id));
@@ -152,19 +142,19 @@ const MultiSelectionMenu: React.FC = () => {
                   }, 100);
                 }
               }}
-              className="w-full bg-[var(--accent)]/10 hover:bg-[var(--accent)]/20 border border-[var(--accent)]/30 text-[var(--accent-secondary)] py-4 rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] transition-all flex items-center justify-center gap-3"
+              className="w-full bg-[var(--accent)]/10 hover:bg-[var(--accent)]/20 border border-[var(--accent)]/30 text-[var(--accent-secondary)] py-3 rounded-xl text-[9px] font-black uppercase tracking-[0.2em] transition-all flex items-center justify-center gap-2.5"
             >
-              <Link className="w-4 h-4" />
+              <Link className="w-3.5 h-3.5" />
               Link into Stack
             </button>
           )}
 
-          <div className="pt-4 border-t border-white/5">
+          <div className="pt-3 border-t border-white/5">
             <button 
               onClick={handleDeleteAll}
-              className="w-full bg-red-500/10 hover:bg-red-500/20 text-red-400 py-4 rounded-2xl text-[10px] font-bold uppercase tracking-widest transition-colors flex items-center justify-center gap-3"
+              className="w-full bg-red-500/10 hover:bg-red-500/20 text-red-400 py-3 rounded-xl text-[9px] font-bold uppercase tracking-widest transition-colors flex items-center justify-center gap-2.5"
             >
-              <Trash2 className="w-4 h-4" />
+              <Trash2 className="w-3.5 h-3.5" />
               Delete All
             </button>
           </div>
