@@ -1,7 +1,7 @@
 import React, { useRef, useEffect, useState, useMemo } from 'react';
 import { type Thought } from '../db';
 import { useStore } from '../store/useStore';
-import { Maximize2, Palette, Link as LinkIcon, Link2Off, Image as ImageIcon, Table, ListTodo } from 'lucide-react';
+import { Maximize2, Palette, Link as LinkIcon, Link2Off, Image as ImageIcon, Table, ListTodo, Type } from 'lucide-react';
 import { marked } from 'marked';
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
@@ -141,11 +141,16 @@ const ThoughtNode: React.FC<ThoughtNodeProps> = React.memo(({ thought, registerE
         return (
           <div data-trigger="text" className="relative group/text overflow-hidden rounded-xl prevent-drag cursor-pointer pt-1">
             <div className={cn("overflow-hidden relative", hasContent && "max-h-[140px]")}>
-              {hasContent && (
+              {hasContent ? (
                 <div 
                   className="markdown-body text-[11px] leading-relaxed text-slate-300/90"
                   dangerouslySetInnerHTML={{ __html: parsedContent as string }}
                 />
+              ) : (
+                <div className="opacity-0 group-hover/text:opacity-100 transition-all duration-500 flex items-center gap-2 py-1.5 px-3 rounded-xl bg-white/5 border border-white/5 w-fit">
+                  <Type className="w-3.5 h-3.5 text-slate-500" />
+                  <span className="text-[8px] font-black uppercase tracking-widest text-slate-500">Write Note...</span>
+                </div>
               )}
               {hasContent && thought.content.length > 150 && (
                 <div className="absolute bottom-0 left-0 right-0 h-16 bg-gradient-to-t from-[var(--bg-main)] via-[var(--bg-main)]/80 to-transparent pointer-events-none" />
@@ -157,14 +162,6 @@ const ThoughtNode: React.FC<ThoughtNodeProps> = React.memo(({ thought, registerE
                 <span className="text-[8px] font-black uppercase tracking-[0.2em] text-white/40">Open Note</span>
               </div>
             )}
-            <div className="absolute inset-0 bg-[var(--accent)]/5 opacity-0 group-hover/text:opacity-100 transition-opacity rounded-xl flex items-center justify-center pointer-events-none">
-              <button 
-                onClick={(e) => { e.stopPropagation(); setActiveFocus(thought.id, 'text'); }}
-                className="pointer-events-auto bg-[var(--accent)] text-white p-2.5 rounded-xl shadow-2xl transform scale-90 group-hover/text:scale-100 transition-all hover:scale-110 active:scale-95"
-              >
-                <Maximize2 className="w-4 h-4" />
-              </button>
-            </div>
           </div>
         );
       }
