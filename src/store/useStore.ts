@@ -331,11 +331,11 @@ export const useStore = create<CyberiaState>((set, get) => ({
         spaceId: onboardingId
       });
 
-      // STACK 2: THE wired SYSTEM (PURPLE)
+      // STACK 2: MEDIA & COLLECTIONS (PURPLE)
       const mediaId = 'st-media';
       await db.stacks.add({
         id: mediaId,
-        name: 'The Wired',
+        name: 'Media & Collections',
         color: 'hsla(280, 80%, 65%, 1)',
         spaceId: onboardingId
       });
@@ -344,27 +344,27 @@ export const useStore = create<CyberiaState>((set, get) => ({
         text: 'Cyberia - An Epic Ambient Cyberpunk Journey',
         type: 'embed',
         content: 'https://youtu.be/P6kS_CD9H6I',
-        description: 'Cyberia supports full YouTube integration. Experience the Wired. Click to open the video, or drag the node to reposition it in your mental landscape.',
+        description: 'Cyberia supports full YouTube integration. Click to watch the video, or drag the node to move it around your workspace.',
         x: cx + 400, y: cy - 250, priority: 'low', stackId: mediaId,
         status: 'doing',
         spaceId: onboardingId
       });
 
       await get().addThought({
-        text: 'Protocol 7',
+        text: 'Visual Ideas',
         type: 'image',
         image: 'https://media.tenor.com/v-d5E2Xnv_sAAAAM/lain-serial-experiments-lain.gif',
-        description: 'Visualizing non-linear thought patterns. Cyberia’s spatial canvas allows you to break free from hierarchical constraints and explore ideas in a truly multidimensional way.',
+        description: 'Use images and GIFs to visualize your ideas. Cyberia’s spatial canvas helps you organize and explore thoughts in a multidimensional way.',
         x: cx + 400, y: cy + 50, priority: 'medium', stackId: mediaId,
         status: 'done',
         spaceId: onboardingId
       });
 
       await get().addThought({
-        text: 'System Security',
+        text: 'Private & Secure',
         type: 'image',
         image: 'https://media.tenor.com/40W5BiKcSBEAAAAM/serial-experiments-lain-police.gif',
-        description: 'Managing the boundaries of the digital self. All your data are hosted locally in your browser, and never leaves it without your explicit action.',
+        description: 'Your privacy is our priority. All your data is stored locally in your browser and never leaves your device without your permission.',
         x: cx + 650, y: cy - 100, priority: 'low', stackId: mediaId,
         status: 'todo',
         spaceId: onboardingId
@@ -372,7 +372,7 @@ export const useStore = create<CyberiaState>((set, get) => ({
 
       await get().addThought({
         text: 'README',
-        content: '# Cyberia: The Kinetic Mind\n\nCyberia is a **spatial operating system** for your thoughts. In a world of flat lists and rigid folders, Cyberia treats information as **physical matter**.\n\n### 1. Kinetic Architecture\nIdeas here have mass, velocity, and gravity. Using our custom physics engine, your thoughts form natural clusters—**Stacks**—based on your internal logic. It moves with you, resisting the static nature of traditional apps.\n\n### 2. Dimensional Morphing\nInformation is fluid. Switch between **Spatial**, **Kanban**, and **Calendar** modes to see your data transform. What was a free-form brainstorm becomes a structured workflow, then a temporal roadmap, all without losing context.\n\n### 3. The Oracle (AI)\nPowered by Gemini, the **Oracle** is your spatial assistant. It doesn\'t just chat; it can research the Wired for you, create new thoughts, and help you bridge connections by organizing your mental landscape into Stacks.\n\n### 4. Local & Secure\nYour mind belongs to you. All data is stored locally in your browser. Cyberia is a private sanctuary for non-linear thinking.\n\n---\n*Welcome to the Wired.*',
+        content: '# Cyberia: The Kinetic Mind\n\nDesigned for non-linear thinkers, visionaries, and digital architects. We believe productivity shouldn\'t feel like a spreadsheet. It should feel like a world.\n\n### 1. Kinetic Architecture\nIdeas here have mass, velocity, and gravity. Using our custom physics engine, your thoughts form natural clusters—**Stacks**—based on your internal logic. It moves with you, resisting the static nature of traditional apps.\n\n### 2. Multi-Dimensional Views\nInformation is fluid. Switch between **Spatial**, **Kanban**, and **Calendar** modes. What starts as a free-form brainstorm becomes a structured workflow, then a temporal roadmap, all without losing context.\n\n### 3. Rich Media & Tools\nCyberia supports more than just text. Create **Task Lists**, **Structured Tables**, **Freehand Drawings**, and **Image Bulbs**. You can even **Embed YouTube** videos directly into your workspace.\n\n### 4. The Oracle (AI)\nPowered by Gemini, the **Oracle** is your spatial assistant. It can research the Wired, generate new ideas, and help you organize your mental landscape into coherent Stacks.\n\n### 5. Cloud Sync & Security\nYour mind is private by default, stored locally in your browser. However, you can **Connect your Google Account** to host your data in the Cloud for free. Sync across devices and never lose a thought again.\n\n### 6. Power User Features\nTake control with **Multi-selection**, **History (Undo/Redo)**, and **Universal Search**. Customize your experience with **Themes** (Cyberia, Sakura, Neon) and use **Import/Export** for full data ownership.\n\n---\n*Welcome to the Wired.*',
         x: cx + 650, y: cy + 150, priority: 'urgent', stackId: mediaId,
         status: 'done',
         spaceId: onboardingId
