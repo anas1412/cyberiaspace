@@ -141,7 +141,7 @@ const TextFocusEditor: React.FC = () => {
                   </span>
                 )}
               </div>
-              <p className="text-[8px] md:text-[10px] uppercase font-black tracking-widest text-slate-600">Auto-saving to IndexedDB</p>
+              <p className="text-[8px] md:text-[10px] uppercase font-black tracking-widest text-slate-600">Markdown Rendering Supported</p>
             </div>
           </motion.div>
         </motion.div>
