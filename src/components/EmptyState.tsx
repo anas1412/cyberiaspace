@@ -100,13 +100,29 @@ const EmptyState: React.FC = () => {
           {randomPhrase}
         </motion.h2>
         
-        {/* Paste Hint - Hidden on Mobile */}
+        {/* Unified Hint - Hidden on Mobile */}
         {!isMobile && (
-          <div className="mt-8 px-6 py-3 bg-white/[0.02] border border-dashed border-white/[0.05] rounded-[24px] inline-block">
-            <p className="font-['CyberiaBlueprint',_cursive,_sans-serif] text-white/30 text-[12px] tracking-[1px] uppercase">
-              <span className="bg-white/10 px-2 py-1 rounded-[6px] mr-2 text-white/60">Ctrl + V</span> 
-              Paste Text, Images, or YouTube links
-            </p>
+          <div className="mt-10 flex items-center justify-center">
+            <div className="px-8 py-4 bg-white/[0.02] border border-white/0.05 rounded-[32px] flex items-center gap-6 backdrop-blur-sm shadow-2xl">
+              <div className="flex items-center gap-3">
+                <kbd className="bg-white/10 px-2.5 py-1 rounded-[8px] text-[10px] text-white/60 font-mono border border-white/5 shadow-inner">SPACE</kbd>
+                <p className="font-['CyberiaBlueprint',_cursive,_sans-serif] text-white/30 text-[12px] tracking-[1px] uppercase">New Thought</p>
+              </div>
+
+              <span className="text-[9px] font-black text-white/5 uppercase tracking-widest">•</span>
+
+              <div className="flex items-center gap-3">
+                <kbd className="bg-white/10 px-2.5 py-1 rounded-[8px] text-[10px] text-white/60 font-mono border border-white/5 shadow-inner">CTRL+V</kbd>
+                <p className="font-['CyberiaBlueprint',_cursive,_sans-serif] text-white/30 text-[12px] tracking-[1px] uppercase">Images & Links</p>
+              </div>
+              
+              <span className="text-[9px] font-black text-white/5 uppercase tracking-widest">•</span>
+
+              <div className="flex items-center gap-3">
+                <kbd className="bg-white/10 px-2.5 py-1 rounded-[8px] text-[10px] text-white/60 font-mono border border-white/5 shadow-inner">DRAG</kbd>
+                <p className="font-['CyberiaBlueprint',_cursive,_sans-serif] text-white/30 text-[12px] tracking-[1px] uppercase">Images, TXT, CSV</p>
+              </div>
+            </div>
           </div>
         )}
       </div>

@@ -572,10 +572,13 @@ const Toolbar: React.FC = () => {
         >
           {/* Tooltip */}
           <div className="absolute bottom-full mb-4 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-all duration-300 translate-y-2 group-hover:translate-y-0 pointer-events-none whitespace-nowrap">
-            <div className="glass px-3 py-1.5 rounded-xl border border-white/10 flex items-center gap-2 shadow-2xl bg-[var(--bg-main)]/90 backdrop-blur-xl">
-              <span className="text-[10px] font-black uppercase tracking-widest text-white/80">New Thought</span>
-              <div className="w-[1px] h-2 bg-white/10 mx-0.5" />
-              <kbd className="bg-white/5 border border-white/10 px-1.5 py-0.5 rounded text-[8px] font-black text-[var(--accent-secondary)]">SPACE</kbd>
+            <div className="glass px-3 py-1.5 rounded-xl border border-white/10 flex flex-col items-center gap-1 shadow-2xl bg-[var(--bg-main)]/90 backdrop-blur-xl">
+              <div className="flex items-center gap-2">
+                <span className="text-[10px] font-black uppercase tracking-widest text-white/80">New Thought</span>
+                <div className="w-[1px] h-2 bg-white/10 mx-0.5" />
+                <kbd className="bg-white/5 border border-white/10 px-1.5 py-0.5 rounded text-[8px] font-black text-[var(--accent-secondary)]">SPACE</kbd>
+              </div>
+              <span className="text-[7px] font-black uppercase tracking-[0.2em] text-white/30 italic">or drag files to import</span>
             </div>
           </div>
 
@@ -1047,6 +1050,7 @@ const Toolbar: React.FC = () => {
                 { keys: ['Space'], label: 'Create New Thought' },
                 { keys: ['Del', 'Backspace'], label: 'Delete Selected' },
                 { keys: ['Ctrl', 'V'], label: 'Paste (Text, Image, YT)' },
+                { keys: ['Drag'], label: 'Import (Images, TXT, CSV)' },
                 { keys: ['L-Click', 'Drag'], label: 'Select Thoughts' },
                 { keys: ['Ctrl', 'L-Click'], label: 'Multi-Select' },
                 { keys: ['Enter'], label: 'Confirm Modal / Open Editor' },
