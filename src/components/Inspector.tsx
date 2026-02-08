@@ -1,7 +1,7 @@
 import React from 'react';
 import { useStore } from '../store/useStore';
 import { useModalStore } from '../store/useModalStore';
-import { X, Maximize2, Image as ImageIcon, Link, Trash2, Youtube } from 'lucide-react';
+import { X, Maximize2, Image as ImageIcon, Link, Trash2, Youtube, Type, ListTodo, Palette, Table } from 'lucide-react';
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -10,6 +10,15 @@ import { fetchYouTubeMeta, getYouTubeVideoId } from '../utils/youtube';
 function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
+
+const typeIcons = {
+  text: Type,
+  tasks: ListTodo,
+  paint: Palette,
+  table: Table,
+  image: ImageIcon,
+  embed: Youtube,
+};
 
 const Inspector: React.FC = () => {
   const isInspectorOpen = useStore((state) => state.isInspectorOpen);
@@ -80,7 +89,7 @@ const Inspector: React.FC = () => {
           className="ui-layer focus-box fixed top-[120px] right-8 w-80 glass rounded-[2.5rem] shadow-2xl pointer-events-auto transition-shadow overflow-hidden flex flex-col"
         >
           {/* HEADER AREA */}
-          <div className="px-8 pt-8 pb-4 bg-white/[0.02]">
+          <div className="px-8 pt-8 pb-4">
             <div className="flex justify-between items-center">
               <h3 className="text-[10px] font-black uppercase tracking-widest text-[var(--text-primary)] select-none">Thought Editor</h3>
               <button onClick={() => setInspectorOpen(false)} className="text-slate-500 hover:text-white relative z-10">
@@ -92,18 +101,25 @@ const Inspector: React.FC = () => {
           {/* SCROLLABLE CONTENT AREA */}
           <div className="flex-1 overflow-y-auto custom-scroll px-8 pb-8 max-h-[70vh]">
             <div className="grid grid-cols-6 gap-1 mb-6">
-              {(['text', 'tasks', 'paint', 'table', 'image', 'embed'] as const).map((type) => (
-                <button
-                  key={type}
-                  onClick={() => handleTypeChange(type)}
-                  className={cn(
-                    "p-2 rounded-xl text-[8px] font-800 uppercase bg-white/[0.03] border border-transparent transition-all",
-                    thought.type === type ? "bg-[var(--accent)]/10 border-[var(--accent)] text-white" : "text-slate-500"
-                  )}
-                >
-                  {type}
-                </button>
-              ))}
+              {(['text', 'tasks', 'paint', 'table', 'image', 'embed'] as const).map((type) => {
+                const Icon = typeIcons[type];
+                return (
+                  <button
+                    key={type}
+                    onClick={() => handleTypeChange(type)}
+                    className={cn(
+                      "p-2.5 rounded-xl flex flex-col items-center justify-center gap-1 transition-all border",
+                      thought.type === type 
+                        ? "bg-[var(--accent)]/10 border-[var(--accent)] text-white shadow-[0_0_15px_rgba(99,102,241,0.2)]" 
+                        : "bg-white/[0.03] border-transparent text-slate-500 hover:bg-white/[0.06] hover:text-slate-300"
+                    )}
+                    title={type.charAt(0).toUpperCase() + type.slice(1)}
+                  >
+                    <Icon className="w-4 h-4" />
+                    <span className="text-[7px] font-black uppercase tracking-tighter">{type === 'tasks' ? 'Task' : type}</span>
+                  </button>
+                );
+              })}
             </div>
 
             <div className="space-y-5">
