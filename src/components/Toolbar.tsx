@@ -587,12 +587,12 @@ const Toolbar: React.FC = () => {
       {/* SYSTEM TRAY */}
       <div className="fixed bottom-4 md:bottom-8 right-4 md:right-8 z-[9999] flex flex-col items-end gap-3 pointer-events-none system-tray-container">
         <div className={cn(
-          "glass p-4 md:p-5 rounded-[1.5rem] md:rounded-[2rem] border border-white/10 shadow-2xl flex flex-col gap-1 transition-all pointer-events-auto w-64 md:w-72 animate-in fade-in duration-300",
+          "glass p-4 md:p-5 rounded-[1.5rem] md:rounded-[2rem] border border-white/10 shadow-2xl flex flex-col gap-1 transition-all pointer-events-auto w-64 md:w-72 animate-in fade-in slide-in-from-bottom-2 duration-300",
           isSystemMenuOpen ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4 pointer-events-none"
         )}>
           {/* Theme Selector */}
-          <div className="px-1 md:px-2 py-3 border-b border-white/5 mb-2">
-            <p className="text-[9px] md:text-[10px] font-black uppercase tracking-[0.2em] text-slate-500 mb-4">Workspace Theme</p>
+          <div className="px-1 md:px-2 py-3 border-b border-white/5 mb-3">
+            <p className="text-[10px] md:text-[11px] font-black uppercase tracking-[0.2em] text-slate-500 mb-4">Workspace Theme</p>
             <div className="grid grid-cols-3 gap-2">
               {[
                 { id: 'cyberia', label: 'Cyber', color: '#6366f1' },
@@ -620,23 +620,23 @@ const Toolbar: React.FC = () => {
           </div>
 
           {deferredPrompt && (
-            <button onClick={handleInstall} className="flex items-center gap-3 px-3 py-2.5 rounded-xl md:rounded-2xl bg-[var(--accent)]/10 hover:bg-[var(--accent)]/20 text-[9px] md:text-[10px] font-black uppercase tracking-[0.2em] text-[var(--accent-secondary)] transition-all mb-1 border border-[var(--accent)]/20">
+            <button onClick={handleInstall} className="flex items-center gap-3 px-3 py-3 rounded-xl md:rounded-2xl bg-[var(--accent)]/10 hover:bg-[var(--accent)]/20 text-[9px] md:text-[10px] font-black uppercase tracking-widest text-[var(--accent-secondary)] transition-all mb-1 border border-[var(--accent)]/20">
               <MonitorSmartphone className="w-3.5 h-3.5" /> Install App
             </button>
           )}
 
-          <button onClick={handleExport} className="flex items-center gap-3 px-3 py-2.5 rounded-xl md:rounded-2xl hover:bg-white/5 text-[9px] md:text-[10px] font-bold uppercase tracking-widest text-slate-300 transition-colors">
+          <button onClick={handleExport} className="flex items-center gap-3 px-3 py-3 rounded-xl md:rounded-2xl hover:bg-white/5 text-[9px] md:text-[10px] font-black uppercase tracking-widest text-slate-300 transition-colors">
             <Download className="w-3.5 h-3.5" /> Export Data
           </button>
-          <label className="flex items-center gap-3 px-3 py-2.5 rounded-xl md:rounded-2xl hover:bg-white/5 text-[9px] md:text-[10px] font-bold uppercase tracking-widest text-slate-300 transition-colors cursor-pointer">
+          <label className="flex items-center gap-3 px-3 py-3 rounded-xl md:rounded-2xl hover:bg-white/5 text-[9px] md:text-[10px] font-black uppercase tracking-widest text-slate-300 transition-colors cursor-pointer">
             <Upload className="w-3.5 h-3.5" /> Import Data
             <input type="file" className="hidden" accept=".json" onChange={handleImport} />
           </label>
-          <button onClick={handleScreenshot} disabled={isCapturing} className="flex items-center gap-3 px-3 py-2.5 rounded-xl md:rounded-2xl hover:bg-white/5 text-[9px] md:text-[10px] font-bold uppercase tracking-widest text-slate-300 transition-colors">
+          <button onClick={handleScreenshot} disabled={isCapturing} className="flex items-center gap-3 px-3 py-3 rounded-xl md:rounded-2xl hover:bg-white/5 text-[9px] md:text-[10px] font-black uppercase tracking-widest text-slate-300 transition-colors">
             <Camera className="w-3.5 h-3.5" /> {isCapturing ? 'Saving...' : 'Screenshot'}
           </button>
           
-          <div className="h-[1px] bg-white/5 my-2 mx-1"></div>
+          <div className="h-[1px] bg-white/5 my-3 mx-1"></div>
 
           <div className="grid grid-cols-2 gap-2">
             <button 
@@ -650,7 +650,7 @@ const Toolbar: React.FC = () => {
                 });
                 setIsSystemMenuOpen(false);
               }} 
-              className="flex items-center justify-center gap-2 py-2.5 rounded-xl hover:bg-red-500/10 text-[8px] md:text-[9px] font-bold uppercase tracking-widest text-red-400 transition-colors border border-transparent hover:border-red-500/10"
+              className="flex items-center justify-center gap-2 py-3 rounded-xl hover:bg-red-500/10 text-[9px] md:text-[10px] font-black uppercase tracking-widest text-red-400 transition-colors border border-transparent hover:border-red-500/10"
             >
               <Trash2 className="w-3 h-3" /> Clear
             </button>
@@ -659,7 +659,7 @@ const Toolbar: React.FC = () => {
                 setIsKeyModalOpen(true);
                 setIsSystemMenuOpen(false);
               }} 
-              className="flex items-center justify-center gap-2 py-2.5 rounded-xl bg-white/5 hover:bg-purple-500/10 text-[8px] md:text-[9px] font-bold uppercase tracking-widest text-purple-400 transition-colors border border-white/10 hover:border-purple-500/20"
+              className="flex items-center justify-center gap-2 py-3 rounded-xl bg-white/5 hover:bg-purple-500/10 text-[9px] md:text-[10px] font-black uppercase tracking-widest text-purple-400 transition-colors border border-white/10 hover:border-purple-500/20"
             >
               <Key className="w-3 h-3" /> Oracle
             </button>
