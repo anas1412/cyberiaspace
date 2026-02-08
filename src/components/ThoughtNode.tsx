@@ -1,7 +1,7 @@
 import React, { useRef, useEffect, useState, useMemo } from 'react';
 import { type Thought } from '../db';
 import { useStore } from '../store/useStore';
-import { Maximize2, Palette, Link as LinkIcon, Link2Off } from 'lucide-react';
+import { Maximize2, Palette, Link as LinkIcon, Link2Off, Image as ImageIcon, Table, ListTodo } from 'lucide-react';
 import { marked } from 'marked';
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
@@ -169,21 +169,30 @@ const ThoughtNode: React.FC<ThoughtNodeProps> = React.memo(({ thought, registerE
         );
       }
       case 'tasks': {
-        if (!thought.tasks.length) return (
-          <div data-trigger="tasks" className="p-3 bg-black/20 rounded-xl border border-white/5 mt-1 cursor-pointer hover:bg-white/[0.05] transition-colors group/tasks relative pr-10">
-            <div className="flex items-center gap-2 text-slate-600">
-              <Maximize2 className="w-3 h-3" />
-              <span className="text-[10px] font-bold uppercase tracking-widest">No tasks yet</span>
-            </div>
-          </div>
-        );
         const done = thought.tasks.filter((t) => t.done).length;
         const progress = (done / thought.tasks.length) * 100;
         const previewTasks = thought.tasks.slice(0, 3);
 
+        if (thought.tasks.length === 0) {
+          return (
+            <div data-trigger="tasks" className="mt-1 flex flex-col items-center gap-2 py-4 bg-black/20 rounded-xl border border-white/5 group/tasks relative cursor-pointer prevent-drag transition-colors hover:bg-white/[0.05]">
+              <ListTodo className="w-6 h-6 text-white/20" />
+              <span className="text-[10px] text-white/20 font-bold uppercase tracking-widest">Create Tasks</span>
+              <div className="absolute inset-0 bg-[var(--accent)]/10 opacity-0 group-hover/tasks:opacity-100 transition-opacity rounded-xl flex items-center justify-center pointer-events-none">
+                <button 
+                  onClick={(e) => { e.stopPropagation(); setActiveFocus(thought.id, 'tasks'); }}
+                  className="pointer-events-auto bg-[var(--accent)] text-white p-2 rounded-lg shadow-xl transform scale-90 group-hover/tasks:scale-100 transition-all hover:scale-110 active:scale-95"
+                >
+                  <Maximize2 className="w-4 h-4" />
+                </button>
+              </div>
+            </div>
+          );
+        }
+
         return (
-          <div data-trigger="tasks" className="mt-1 space-y-2 group/tasks relative cursor-pointer prevent-drag pr-10">
-            <div className="space-y-1.5">
+          <div data-trigger="tasks" className="mt-1 space-y-2 group/tasks relative cursor-pointer prevent-drag min-h-[60px] flex flex-col justify-center">
+            <div className="space-y-1.5 pr-10">
               {previewTasks.map((task, i) => (
                 <div key={i} className="flex items-center gap-2 min-w-0">
                   <div className={cn(
@@ -244,6 +253,25 @@ const ThoughtNode: React.FC<ThoughtNodeProps> = React.memo(({ thought, registerE
         );
       }
       case 'table': {
+        const isTableEmpty = !thought.table || thought.table.every(row => row.every(cell => !cell || !cell.trim()));
+        
+        if (isTableEmpty) {
+          return (
+            <div data-trigger="table" className="mt-1 flex flex-col items-center gap-2 py-4 bg-black/20 rounded-xl border border-white/5 group/table relative cursor-pointer prevent-drag transition-colors hover:bg-white/[0.05]">
+              <Table className="w-6 h-6 text-white/20" />
+              <span className="text-[10px] text-white/20 font-bold uppercase tracking-widest">Build Table</span>
+              <div className="absolute inset-0 bg-[var(--accent)]/10 opacity-0 group-hover/table:opacity-100 transition-opacity rounded-xl flex items-center justify-center pointer-events-none">
+                <button 
+                  onClick={(e) => { e.stopPropagation(); setActiveFocus(thought.id, 'table'); }}
+                  className="pointer-events-auto bg-[var(--accent)] text-white p-2 rounded-lg shadow-xl transform scale-90 group-hover/table:scale-100 transition-all hover:scale-110 active:scale-95"
+                >
+                  <Maximize2 className="w-4 h-4" />
+                </button>
+              </div>
+            </div>
+          );
+        }
+
         const maxCols = 3;
         const maxRows = 4;
         const hasMoreRows = thought.table.length > maxRows;
@@ -251,7 +279,7 @@ const ThoughtNode: React.FC<ThoughtNodeProps> = React.memo(({ thought, registerE
         const visibleRows = thought.table.slice(0, maxRows);
 
         return (
-          <div data-trigger="table" className="relative group/table overflow-hidden rounded-xl prevent-drag cursor-pointer">
+          <div data-trigger="table" className="relative group/table overflow-hidden rounded-xl prevent-drag cursor-pointer min-h-[60px] flex flex-col justify-center">
             <div className="overflow-x-auto custom-scroll pb-1">
               <table className="thought-table mt-1 border-collapse w-full text-[10px]">
                 <tbody>
@@ -287,7 +315,22 @@ const ThoughtNode: React.FC<ThoughtNodeProps> = React.memo(({ thought, registerE
         );
       }
       case 'image': {
-        if (!thought.image) return null;
+        if (!thought.image) {
+          return (
+            <div data-trigger="image" className="mt-1 flex flex-col items-center gap-2 py-6 bg-black/20 rounded-xl border border-white/5 group/image relative cursor-pointer prevent-drag transition-colors hover:bg-white/[0.05]">
+              <ImageIcon className="w-6 h-6 text-white/20" />
+              <span className="text-[10px] text-white/20 font-bold uppercase tracking-widest">Add Image</span>
+              <div className="absolute inset-0 bg-[var(--accent)]/10 opacity-0 group-hover/image:opacity-100 transition-opacity rounded-xl flex items-center justify-center pointer-events-none">
+                <button 
+                  onClick={(e) => { e.stopPropagation(); setSelectedThoughtId(thought.id); setInspectorOpen(true); }}
+                  className="pointer-events-auto bg-[var(--accent)] text-white p-2 rounded-lg shadow-xl transform scale-90 group-hover/image:scale-100 transition-all hover:scale-110 active:scale-95"
+                >
+                  <Maximize2 className="w-4 h-4" />
+                </button>
+              </div>
+            </div>
+          );
+        }
         return (
           <div data-trigger="image" className="mt-2 relative group prevent-drag cursor-pointer">
             <img 
@@ -299,7 +342,7 @@ const ThoughtNode: React.FC<ThoughtNodeProps> = React.memo(({ thought, registerE
             />
             <button 
               onClick={(e) => { e.stopPropagation(); if (thought.image) openLightbox(thought.image); }}
-              className="expand-img absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-white"
+              className="expand-img absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-white rounded-xl"
             >
               <Maximize2 />
             </button>
