@@ -24,9 +24,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   const { password } = req.body;
   const adminPassword = process.env.FEEDBACK_ADMIN_PASSWORD;
 
-  console.log('--- AUTH ATTEMPT ---');
-  console.log('Admin password configured:', adminPassword ? 'YES' : 'NO');
-
   if (!adminPassword) {
     return res.status(500).json({ error: 'Admin system not configured' });
   }

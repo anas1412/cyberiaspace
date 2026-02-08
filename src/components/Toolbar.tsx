@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useStore } from '../store/useStore';
 import { useModalStore } from '../store/useModalStore';
 import { useAuthStore } from '../store/useAuthStore';
@@ -81,7 +81,54 @@ const Toolbar: React.FC = () => {
   const [quickType, setQuickType] = useState<'issue' | 'feedback' | 'feature'>('issue');
   const [isQuickSubmitting, setIsQuickSubmitting] = useState(false);
   const [quickSubmitStatus, setQuickSubmitStatus] = useState<'idle' | 'success' | 'error'>('idle');
+  
+  // Contact Form State
+  const [contactName, setContactName] = useState('');
+  const [contactEmail, setContactEmail] = useState('');
+  const [contactMessage, setContactMessage] = useState('');
+  const [isContactSubmitting, setIsContactSubmitting] = useState(false);
+  const [contactSubmitStatus, setContactSubmitStatus] = useState<'idle' | 'success' | 'error'>('idle');
+
   const { user } = useAuthStore();
+
+  useEffect(() => {
+    if (user?.email && !contactEmail) {
+      setContactEmail(user.email);
+      setContactName(user.name);
+    }
+  }, [user, contactEmail]);
+
+  const handleContactSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!contactMessage.trim() || isContactSubmitting) return;
+
+    setIsContactSubmitting(true);
+    setContactSubmitStatus('idle');
+
+    try {
+      const res = await fetch('/api/contact', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          name: contactName,
+          email: contactEmail,
+          message: contactMessage
+        })
+      });
+
+      if (res.ok) {
+        setContactSubmitStatus('success');
+        setContactMessage('');
+        setTimeout(() => setContactSubmitStatus('idle'), 5000);
+      } else {
+        setContactSubmitStatus('error');
+      }
+    } catch {
+      setContactSubmitStatus('error');
+    } finally {
+      setIsContactSubmitting(false);
+    }
+  };
 
   const handleQuickSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -1135,14 +1182,76 @@ const Toolbar: React.FC = () => {
 
               {activeHelpTab === 'contact' && (
                 <div className="space-y-5">
-                  <h4 className="text-[11px] font-black text-white uppercase tracking-widest">Support</h4>
-                  <p className="text-xs text-slate-400 leading-relaxed">
-                    For direct inquiries, partnerships, or technical support, please contact us via email.
-                  </p>
-                  <div className="flex flex-col gap-3 pt-2">
-                    <div className="flex items-center gap-4 p-4 rounded-xl bg-white/[0.03] border border-white/5">
-                      <span className="text-[9px] font-black text-slate-500 uppercase tracking-widest">Email:</span>
-                      <span className="text-[9px] font-bold text-[var(--accent-secondary)]">hello@cyberia.app</span>
+                  <h4 className="text-[11px] font-black text-white uppercase tracking-widest">Contact Support</h4>
+                  
+                  {contactSubmitStatus === 'success' ? (
+                    <div className="py-10 text-center space-y-4 bg-green-500/5 border border-green-500/10 rounded-2xl animate-in zoom-in-95 duration-300">
+                      <CheckCircle className="w-10 h-10 text-green-400 mx-auto" />
+                      <div>
+                        <p className="text-[10px] font-black uppercase tracking-widest text-green-400">Message Sent</p>
+                        <p className="text-[9px] font-bold text-slate-500 uppercase tracking-widest mt-1">We will get back to you shortly.</p>
+                      </div>
+                    </div>
+                  ) : (
+                    <form onSubmit={handleContactSubmit} className="space-y-3">
+                      <div className="grid grid-cols-2 gap-3">
+                        <div className="space-y-1.5">
+                          <label className="text-[8px] font-black uppercase tracking-widest text-slate-600 ml-1">Name</label>
+                          <input 
+                            type="text"
+                            placeholder="Your Name"
+                            value={contactName}
+                            onChange={(e) => setContactName(e.target.value)}
+                            className="w-full h-10 bg-black/40 border border-white/5 rounded-xl px-4 text-xs text-white outline-none focus:border-[var(--accent)]/50 transition-all"
+                          />
+                        </div>
+                        <div className="space-y-1.5">
+                          <label className="text-[8px] font-black uppercase tracking-widest text-slate-600 ml-1">Email</label>
+                          <input 
+                            type="email"
+                            required
+                            placeholder="your@email.com"
+                            value={contactEmail}
+                            onChange={(e) => setContactEmail(e.target.value)}
+                            className="w-full h-10 bg-black/40 border border-white/5 rounded-xl px-4 text-xs text-white outline-none focus:border-[var(--accent)]/50 transition-all"
+                          />
+                        </div>
+                      </div>
+                      <div className="space-y-1.5">
+                        <label className="text-[8px] font-black uppercase tracking-widest text-slate-600 ml-1">Message</label>
+                        <textarea 
+                          required
+                          value={contactMessage}
+                          onChange={(e) => setContactMessage(e.target.value)}
+                          placeholder="How can we help?"
+                          className="w-full h-24 bg-black/40 border border-white/5 rounded-xl p-4 text-xs text-white outline-none focus:border-[var(--accent)]/50 transition-all resize-none"
+                        />
+                      </div>
+                      
+                      {contactSubmitStatus === 'error' && (
+                        <div className="p-3 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 text-[8px] font-black uppercase tracking-widest text-center">
+                          Failed to send message. Please try again.
+                        </div>
+                      )}
+
+                      <button 
+                        type="submit"
+                        disabled={isContactSubmitting || !contactMessage.trim()}
+                        className="w-full h-12 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white rounded-xl font-black uppercase text-[10px] tracking-[0.1em] transition-all flex items-center justify-center gap-2 shadow-lg shadow-indigo-500/10"
+                      >
+                        {isContactSubmitting ? <Loader2 className="w-4 h-4 animate-spin" /> : <><Send className="w-3.5 h-3.5" /> Send Message</>}
+                      </button>
+                    </form>
+                  )}
+
+                  <div className="pt-2 border-t border-white/5 flex items-center justify-between">
+                    <div className="flex flex-col">
+                      <span className="text-[8px] font-black text-slate-600 uppercase tracking-widest">Support Email</span>
+                      <span className="text-[9px] font-bold text-[var(--accent-secondary)]">{import.meta.env.VITE_CONTACT_EMAIL || 'anasbassoumi@gmail.com'}</span>
+                    </div>
+                    <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-white/5 border border-white/5">
+                      <div className="w-1.5 h-1.5 rounded-full bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.5)]" />
+                      <span className="text-[8px] font-black uppercase tracking-widest text-slate-400">System Online</span>
                     </div>
                   </div>
                 </div>
@@ -1154,7 +1263,7 @@ const Toolbar: React.FC = () => {
                 <CircleHelp className="w-5 h-5" />
               </div>
               <p className="text-[9px] uppercase font-bold tracking-widest text-slate-500 leading-relaxed">
-                Version 1.0.4 <br /> Stable release.
+                Version {import.meta.env.VITE_APP_VERSION || '10.0.4'} <br /> Stable release.
               </p>
             </div>
           </div>
