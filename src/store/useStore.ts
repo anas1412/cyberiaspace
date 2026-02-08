@@ -655,7 +655,7 @@ export const useStore = create<CyberiaState>((set, get) => ({
         if ((window as any)._cyberia_cloud_timer) clearTimeout((window as any)._cyberia_cloud_timer);
         (window as any)._cyberia_cloud_timer = setTimeout(() => {
           authStore.syncData();
-        }, 2000); // Wait 2 seconds of inactivity before pushing to cloud
+        }, 5000); // Increased to 5 seconds of inactivity before pushing to cloud
       }
     }, 500); // 500ms local debounce
 
