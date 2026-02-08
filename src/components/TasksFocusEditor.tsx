@@ -60,8 +60,22 @@ const TasksFocusEditor: React.FC = () => {
     if (!thought) return;
     const newTasks = localTasks.map(t => t.id === id ? { ...t, ...updates } : t);
     setLocalTasks(newTasks);
-    const tasksToSave = newTasks.map(({ id: _, ...rest }) => rest);
-    updateThought(thought.id, { tasks: tasksToSave });
+
+    // If it's a checkbox toggle, update immediately. 
+    // If it's text, debounce the global store update to prevent lag.
+    if (updates.done !== undefined) {
+      const tasksToSave = newTasks.map(({ id: _, ...rest }) => rest);
+      updateThought(thought.id, { tasks: tasksToSave });
+    } else {
+      const timerKey = `task-save-${thought.id}`;
+      if ((window as any)[timerKey]) clearTimeout((window as any)[timerKey]);
+      
+      (window as any)[timerKey] = setTimeout(() => {
+        const tasksToSave = newTasks.map(({ id: _, ...rest }) => rest);
+        updateThought(thought.id, { tasks: tasksToSave });
+        delete (window as any)[timerKey];
+      }, 1000); // Wait 1 second of inactivity before updating global state
+    }
   };
 
   const handleDeleteTask = (id: string) => {
