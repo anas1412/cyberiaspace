@@ -6,6 +6,7 @@ import { twMerge } from 'tailwind-merge';
 import World from './World';
 import { usePhysics } from '../hooks/usePhysics';
 import { motion, AnimatePresence } from 'framer-motion';
+import { Upload } from 'lucide-react';
 
 function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -32,6 +33,7 @@ const Viewport: React.FC = () => {
   
   const { openModal } = useModalStore();
   const [isGrabbing, setIsGrabbing] = useState(false);
+  const [isDraggingFile, setIsDraggingFile] = useState(false);
   const [selectionRect, setSelectionRect] = useState<{ x: number, y: number, w: number, h: number } | null>(null);
   
   const lastMousePos = useRef({ x: 0, y: 0 });
@@ -276,6 +278,130 @@ const Viewport: React.FC = () => {
       }
     };
 
+    const handleDragEnter = (e: DragEvent) => {
+      e.preventDefault();
+      e.stopPropagation();
+      if (e.dataTransfer?.types.includes('Files')) {
+        setIsDraggingFile(true);
+      }
+    };
+
+    const handleDragOver = (e: DragEvent) => {
+      e.preventDefault();
+      e.stopPropagation();
+      if (e.dataTransfer?.types.includes('Files')) {
+        setIsDraggingFile(true);
+      }
+    };
+
+    const handleDragLeave = (e: DragEvent) => {
+      e.preventDefault();
+      e.stopPropagation();
+      // Only set to false if we're actually leaving the viewport
+      const target = e.relatedTarget as HTMLElement;
+      if (!target || !target.closest('#viewport')) {
+        setIsDraggingFile(false);
+      }
+    };
+
+    const handleDrop = async (e: DragEvent) => {
+      e.preventDefault();
+      e.stopPropagation();
+      setIsDraggingFile(false);
+
+      const files = Array.from(e.dataTransfer?.files || []);
+      if (files.length === 0) return;
+
+      const dropX = (e.clientX - transform.x) / transform.scale;
+      const dropY = (e.clientY - transform.y) / transform.scale;
+
+      for (const file of files) {
+        const reader = new FileReader();
+        
+        if (file.type.startsWith('image/')) {
+          reader.onload = async (ev) => {
+            await addThought({
+              type: 'image',
+              image: ev.target?.result as string,
+              x: dropX + (Math.random() * 20 - 10),
+              y: dropY + (Math.random() * 20 - 10),
+              text: file.name
+            });
+          };
+          reader.readAsDataURL(file);
+        } 
+        else if (file.name.endsWith('.txt') || file.type === 'text/plain') {
+          reader.onload = async (ev) => {
+            await addThought({
+              type: 'text',
+              content: ev.target?.result as string,
+              x: dropX + (Math.random() * 20 - 10),
+              y: dropY + (Math.random() * 20 - 10),
+              text: file.name.replace('.txt', '')
+            });
+          };
+          reader.readAsText(file);
+        }
+        else if (file.name.endsWith('.csv') || file.type === 'text/csv') {
+          reader.onload = async (ev) => {
+            const csvText = ev.target?.result as string;
+            // Basic CSV parser
+            const rows = csvText.split(/\r?\n/).filter(line => line.trim()).map(line => {
+              const cells: string[] = [];
+              let current = '';
+              let inQuotes = false;
+              for (let i = 0; i < line.length; i++) {
+                const char = line[i];
+                if (char === '"') inQuotes = !inQuotes;
+                else if (char === ',' && !inQuotes) {
+                  cells.push(current.trim());
+                  current = '';
+                } else {
+                  current += char;
+                }
+              }
+              cells.push(current.trim());
+              return cells;
+            });
+
+            if (rows.length > 0) {
+              await addThought({
+                type: 'table',
+                table: rows,
+                x: dropX + (Math.random() * 20 - 10),
+                y: dropY + (Math.random() * 20 - 10),
+                text: file.name.replace('.csv', '')
+              });
+            }
+          };
+          reader.readAsText(file);
+        }
+      }
+    };
+
+    const handlePaste = async (e: ClipboardEvent) => {
+      const items = Array.from(e.clipboardData?.items || []);
+      const imageItem = items.find(item => item.type.startsWith('image/'));
+
+      if (imageItem) {
+        const file = imageItem.getAsFile();
+        if (file) {
+          const reader = new FileReader();
+          reader.onload = async (ev) => {
+            const dataUrl = ev.target?.result as string;
+            await addThought({
+              type: 'image',
+              image: dataUrl,
+              x: mouseWorldPos.current.x,
+              y: mouseWorldPos.current.y,
+              text: 'Pasted Image'
+            });
+          };
+          reader.readAsDataURL(file);
+        }
+      }
+    };
+
     window.addEventListener('mousedown', handleMouseDownLocal);
     window.addEventListener('mousemove', handleMouseMove);
     window.addEventListener('mouseup', handleMouseUp);
@@ -283,6 +409,11 @@ const Viewport: React.FC = () => {
     window.addEventListener('click', handleClick);
     window.addEventListener('wheel', handleWheel, { passive: false });
     window.addEventListener('keydown', handleKeyDown);
+    window.addEventListener('dragenter', handleDragEnter);
+    window.addEventListener('dragover', handleDragOver);
+    window.addEventListener('dragleave', handleDragLeave);
+    window.addEventListener('drop', handleDrop);
+    window.addEventListener('paste', handlePaste);
 
     return () => {
       window.removeEventListener('mousedown', handleMouseDownLocal);
@@ -292,6 +423,11 @@ const Viewport: React.FC = () => {
       window.removeEventListener('click', handleClick);
       window.removeEventListener('wheel', handleWheel);
       window.removeEventListener('keydown', handleKeyDown);
+      window.removeEventListener('dragenter', handleDragEnter);
+      window.removeEventListener('dragover', handleDragOver);
+      window.removeEventListener('dragleave', handleDragLeave);
+      window.removeEventListener('drop', handleDrop);
+      window.removeEventListener('paste', handlePaste);
     };
   }, [activeSpace, setInspectorOpen, isGrabbing, selectedThoughtId, selectedThoughtIds, openModal, deleteThought, deleteSelectedThoughts, thoughts, addThought, setSelectedThoughtId, setSelectedThoughtIds, clearSelection, transform]);
 
@@ -332,6 +468,32 @@ const Viewport: React.FC = () => {
         canvasRef={canvasRef}
         physicsResults={{ registerElement, registerWorld, handleMouseDown, isDragging }}
       />
+
+      {/* DROP ZONE OVERLAY */}
+      <AnimatePresence>
+        {isDraggingFile && (
+          <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[10006] bg-indigo-500/10 backdrop-blur-md flex flex-col items-center justify-center pointer-events-none border-[4px] border-dashed border-indigo-500/30 m-4 rounded-[3rem]"
+          >
+            <motion.div 
+              initial={{ scale: 0.9, y: 20 }}
+              animate={{ scale: 1, y: 0 }}
+              className="flex flex-col items-center gap-6"
+            >
+              <div className="w-24 h-24 bg-indigo-500/20 rounded-full flex items-center justify-center border border-indigo-500/30 shadow-[0_0_50px_rgba(99,102,241,0.2)]">
+                <Upload className="w-10 h-10 text-indigo-400 animate-bounce" />
+              </div>
+              <div className="text-center">
+                <h2 className="text-white text-xl font-black uppercase tracking-[0.3em] mb-2">Import Files</h2>
+                <p className="text-indigo-300/60 text-xs font-bold uppercase tracking-widest">Drop images, text, or CSV files here</p>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Loading Overlay */}
       <AnimatePresence>

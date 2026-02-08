@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useStore } from '../store/useStore';
-import { FileText, X } from 'lucide-react';
+import { FileText, X, Download } from 'lucide-react';
 import { marked } from 'marked';
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
@@ -35,6 +35,17 @@ const TextFocusEditor: React.FC = () => {
       setLocalContent(thought.content);
     }
   }, [activeFocusId]);
+
+  const exportTXT = () => {
+    if (!thought) return;
+    const blob = new Blob([thought.content], { type: 'text/plain' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${thought.text || 'note'}.txt`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
 
   return (
     <AnimatePresence>
@@ -141,7 +152,12 @@ const TextFocusEditor: React.FC = () => {
                   </span>
                 )}
               </div>
-              <p className="text-[8px] md:text-[10px] uppercase font-black tracking-widest text-slate-600">Markdown Rendering Supported</p>
+              <div className="flex items-center gap-6">
+                <p className="text-[8px] md:text-[10px] uppercase font-black tracking-widest text-slate-600">Markdown Rendering Supported</p>
+                <button onClick={exportTXT} className="text-[8px] md:text-[10px] uppercase font-black tracking-widest text-slate-400 hover:text-white transition-colors flex items-center gap-2">
+                  <Download className="w-3.5 h-3.5" /> TXT
+                </button>
+              </div>
             </div>
           </motion.div>
         </motion.div>
