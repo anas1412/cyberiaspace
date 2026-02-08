@@ -74,6 +74,12 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       const response = await fetch('/api/sync', {
         headers: { 'Authorization': `Bearer ${token}` }
       });
+      
+      if (response.status === 401) {
+        get().signOut();
+        return;
+      }
+
       const result = await response.json();
       
       if (result.data) {
@@ -104,6 +110,12 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       const response = await fetch('/api/sync', {
         headers: { 'Authorization': `Bearer ${accessToken}` }
       });
+
+      if (response.status === 401) {
+        get().signOut();
+        return null;
+      }
+
       const result = await response.json();
       set({ syncStatus: 'synced' });
       return result.data;
@@ -114,12 +126,9 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   },
 
   syncData: async () => {
-    const { status, accessToken, isOnline } = get();
+    const { status, accessToken, isOnline, syncStatus } = get();
     if (status !== 'authenticated' || !accessToken) return;
-    if (!isOnline) {
-      set({ syncStatus: 'offline' });
-      return;
-    }
+    if (!isOnline || syncStatus === 'syncing') return;
     
     set({ syncStatus: 'syncing' });
     
@@ -149,6 +158,12 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         },
         body: JSON.stringify(payload)
       });
+
+      if (response.status === 401) {
+        // Token expired
+        get().signOut();
+        return;
+      }
 
       if (!response.ok) throw new Error('Sync failed');
 
