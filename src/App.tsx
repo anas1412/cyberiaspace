@@ -4,7 +4,7 @@ import { SpeedInsights } from '@vercel/speed-insights/react';
 import { useStore } from './store/useStore';
 import { useModalStore } from './store/useModalStore';
 import { useAuthStore } from './store/useAuthStore';
-import { PLAN_CONFIG } from './constants';
+import { PLAN_CONFIG, type SubscriptionPlan } from './constants';
 import Viewport from './components/Viewport';                                                                                            
 import Toolbar from './components/Toolbar';                                                                                              
 import Inspector from './components/Inspector';                                                                                          
@@ -39,7 +39,7 @@ function App() {
   
   const { openModal, isPricingOpen, closePricing, openPricing } = useModalStore();
   const { user } = useAuthStore();
-  const limits = PLAN_CONFIG[user?.plan as SubscriptionPlan] || PLAN_CONFIG.free;
+  const limits = (user?.plan && user.plan in PLAN_CONFIG) ? PLAN_CONFIG[user.plan as SubscriptionPlan] : PLAN_CONFIG.free;
   const mouseWorldPos = useRef({ x: 0, y: 0 });
   const mouseScreenPos = useRef({ x: 0, y: 0 });
 

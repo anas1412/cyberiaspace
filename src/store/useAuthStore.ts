@@ -32,6 +32,7 @@ export interface AuthState {
   initAuth: () => void;
   upgradePlan: (plan: SubscriptionPlan, period?: AccessPeriod) => void; 
   checkExpiry: () => void;
+  cancelSubscription: () => void;
 }
 
 export const useAuthStore = create<AuthState>((set, get) => ({
@@ -103,6 +104,19 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       localStorage.setItem('cyberia-user', JSON.stringify(updatedUser));
       set({ user: updatedUser });
     }
+  },
+
+  cancelSubscription: () => {
+    const { user } = get();
+    if (!user || user.plan === 'free') return;
+    
+    const updatedUser: User = { 
+      ...user, 
+      subscriptionStatus: 'expired' // Or just clear it, let's use 'expired' for simplicity in mock
+    };
+    
+    localStorage.setItem('cyberia-user', JSON.stringify(updatedUser));
+    set({ user: updatedUser });
   },
 
   setAuthenticatedUser: async (user: User, token: string) => {

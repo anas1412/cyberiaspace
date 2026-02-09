@@ -1,7 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAuthStore } from '../store/useAuthStore';
 import { useModalStore } from '../store/useModalStore';
-import { PLAN_CONFIG } from '../constants';
+import { PLAN_CONFIG, type AccessPeriod } from '../constants';
 import { Zap, Check, Star, X } from 'lucide-react';
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
@@ -17,8 +17,34 @@ interface PricingModalProps {
 
 const PricingModal: React.FC<PricingModalProps> = ({ isOpen, onClose }) => {
   const [billingCycle, setBillingCycle] = useState<AccessPeriod>('monthly');
+  const [location, setLocation] = useState<{ country: string; currency: string; isLocalPricing: boolean } | null>(null);
   const { upgradePlan } = useAuthStore();
   const { openModal } = useModalStore();
+
+  useEffect(() => {
+    if (isOpen) {
+      // Local fallback logic for development
+      const userTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+      const userLanguage = navigator.language;
+      const isTunisiaLikely = userTimezone === 'Africa/Tunis' || userLanguage.includes('ar-TN') || userLanguage.includes('fr-TN');
+
+      fetch('/api/pricing')
+        .then(res => res.json())
+        .then(data => {
+          // If server says US (default) but browser is definitely TN, trust the browser
+          if (data.country === 'US' && isTunisiaLikely) {
+            setLocation({ country: 'TN', currency: 'DT', isLocalPricing: true });
+          } else {
+            setLocation(data);
+          }
+        })
+        .catch(() => setLocation({ 
+          country: isTunisiaLikely ? 'TN' : 'US', 
+          currency: isTunisiaLikely ? 'DT' : 'USD', 
+          isLocalPricing: isTunisiaLikely 
+        }));
+    }
+  }, [isOpen]);
 
   if (!isOpen) return null;
 
@@ -99,16 +125,27 @@ const PricingModal: React.FC<PricingModalProps> = ({ isOpen, onClose }) => {
             </div>
 
             <div className="mb-2">
-              <div className="flex items-baseline justify-center gap-2">
-                <span className="text-5xl font-black text-white">${currentPrice.usd}</span>
-                <span className="text-xl font-bold text-slate-500">/ {currentPrice.tnd} DT</span>
-              </div>
+              {location?.isLocalPricing ? (
+                <div className="flex flex-col items-center gap-1">
+                  <div className="flex items-center gap-2 mb-1">
+                    <span className="text-[8px] font-black uppercase tracking-widest bg-green-500/20 text-green-400 px-2 py-0.5 rounded-full border border-green-500/20 shadow-lg shadow-green-500/10">Local Pricing Detected</span>
+                  </div>
+                  <div className="flex items-baseline justify-center">
+                    <span className="text-5xl font-black text-white">{currentPrice.tnd} DT</span>
+                  </div>
+                  <span className="text-[8px] font-bold text-slate-600 uppercase tracking-widest mt-1">Normal Price: ${currentPrice.usd} USD</span>
+                </div>
+              ) : (
+                <div className="flex items-baseline justify-center">
+                  <span className="text-5xl font-black text-white">${currentPrice.usd}</span>
+                </div>
+              )}
               <span className="text-slate-500 font-bold uppercase tracking-widest text-[10px] block mt-2">
                 For 1 {billingCycle === 'monthly' ? 'Month' : 'Year'} of Access
               </span>
             </div>
             <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest px-4">
-              {billingCycle === 'yearly' ? `One-time payment of $${proPrice.yearly.usd} per year` : 'Manual renewal. No automatic charges.'}
+              {billingCycle === 'yearly' ? `One-time payment of ${location?.isLocalPricing ? currentPrice.tnd + ' DT' : '$' + proPrice.yearly.usd} per year` : 'Manual renewal. No automatic charges.'}
             </p>
           </div>
 

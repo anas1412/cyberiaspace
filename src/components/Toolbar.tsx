@@ -3,8 +3,8 @@ import { useStore } from '../store/useStore';
 import { useModalStore } from '../store/useModalStore';
 import { useAuthStore } from '../store/useAuthStore';
 import { aiService } from '../services/ai';
-import { PLAN_CONFIG, AVAILABLE_MODELS } from '../constants';
-import { Plus, Zap, Download, Upload, ChevronLeft, ChevronRight, Trash2, Edit3, Camera, MoreVertical, Keyboard, MousePointer2, Orbit, Columns3, CalendarDays, Shield, MonitorSmartphone, BotMessageSquare, Key, ChevronDown, ZoomIn, ZoomOut, RotateCcw, Undo2, Redo2, Settings, CircleHelp, MessageSquare, Send, Loader2, CheckCircle } from 'lucide-react';
+import { PLAN_CONFIG, AVAILABLE_MODELS, type SubscriptionPlan } from '../constants';
+import { Plus, Zap, Download, Upload, ChevronLeft, ChevronRight, Trash2, Edit3, Camera, MoreVertical, Keyboard, MousePointer2, Orbit, Columns3, CalendarDays, MonitorSmartphone, Key, ChevronDown, ZoomIn, ZoomOut, RotateCcw, Undo2, Redo2, Settings, CircleHelp, MessageSquare, Send, Loader2, CheckCircle } from 'lucide-react';
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 /* import { toPng, toCanvas } from 'html-to-image'; */
@@ -90,7 +90,7 @@ const Toolbar: React.FC = () => {
   const [contactSubmitStatus, setContactSubmitStatus] = useState<'idle' | 'success' | 'error'>('idle');
 
   const { user } = useAuthStore();
-  const limits = PLAN_CONFIG[user?.plan as SubscriptionPlan] || PLAN_CONFIG.free;
+  const limits = (user?.plan && user.plan in PLAN_CONFIG) ? PLAN_CONFIG[user.plan as SubscriptionPlan] : PLAN_CONFIG.free;
 
   useEffect(() => {
     if (user?.email && !contactEmail) {

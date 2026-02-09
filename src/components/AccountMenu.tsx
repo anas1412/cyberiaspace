@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 /** AccountMenu component handles user authentication and cloud synchronization */
-import { useAuthStore } from '../store/useAuthStore';
+import { useAuthStore, type User as UserType } from '../store/useAuthStore';
 import { useStore } from '../store/useStore';
 import { useModalStore } from '../store/useModalStore';
 import { useGoogleLogin } from '@react-oauth/google';
@@ -18,7 +18,7 @@ const AccountMenu: React.FC = () => {
     user, status, signOut, syncStatus, lastSync, 
     syncData, autoSync, setAutoSync, deleteCloudData, 
     cloudUsage, calculateUsage, isOnline, setAuthenticatedUser,
-    importCloudData, upgradePlan, cancelSubscription
+    importCloudData
   } = store;
   
   const totalThoughtCount = useStore((state) => state.totalThoughtCount);
@@ -37,11 +37,12 @@ const AccountMenu: React.FC = () => {
       
       const data = await res.json();
       
-      const googleUser = {
+      const googleUser: UserType = {
         id: data.sub,
         name: data.name,
         email: data.email,
-        avatar: data.picture
+        avatar: data.picture,
+        plan: 'free' // Default to free on initial login
       };
 
       await setAuthenticatedUser(googleUser, token);
