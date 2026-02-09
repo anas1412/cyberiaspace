@@ -316,6 +316,16 @@ const Viewport: React.FC = () => {
       const dropY = (e.clientY - transform.y) / transform.scale;
 
       for (const file of files) {
+        if (file.size > 2 * 1024 * 1024) {
+          openModal({
+            title: 'File too Large',
+            description: `The file "${file.name}" is larger than 2MB. Please use smaller files.`,
+            type: 'alert',
+            confirmText: 'Okay'
+          });
+          continue;
+        }
+
         const reader = new FileReader();
         
         if (file.type.startsWith('image/')) {

@@ -2,7 +2,8 @@ import { create } from 'zustand';
 import { db, type Space, type Thought, type Stack } from '../db';
 import { aiService } from '../services/ai';
 import { useAuthStore } from './useAuthStore';
-import { DEFAULT_MODEL } from '../constants';
+import { useModalStore } from './useModalStore';
+import { DEFAULT_MODEL, PLAN_CONFIG, type SubscriptionPlan } from '../constants';
 
 interface CyberiaState {
   activeSpaceId: string | null;
@@ -20,6 +21,9 @@ interface CyberiaState {
   isSpaceLoading: boolean;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   deferredPrompt: any;
+
+  // Plan Helper
+  getLimits: () => typeof PLAN_CONFIG['free'];
 
   // God Mode (AI) State
   apiKey: string | null;
@@ -99,7 +103,7 @@ interface CyberiaState {
 
   // Refresh data
   refreshThoughts: (spaceId?: string) => Promise<void>;
-  refreshSpaces: () => Promise<void>;
+  refreshSpaces: (spaceId?: string) => Promise<void>;
   refreshStacks: (spaceId?: string) => Promise<void>;
   refreshTotalThoughtCount: () => Promise<void>;
   totalThoughtCount: number;
@@ -123,6 +127,11 @@ export const useStore = create<CyberiaState>((set, get) => ({
   theme: (localStorage.getItem('cyberia-theme') as 'cyberia' | 'sakura' | 'neon') || 'cyberia',
   isSpaceLoading: true,
   deferredPrompt: null,
+
+  getLimits: () => {
+    const plan = useAuthStore.getState().user?.plan as SubscriptionPlan;
+    return PLAN_CONFIG[plan] || PLAN_CONFIG.free;
+  },
   
   transform: { x: 0, y: 0, scale: 1 },
   history: [],
@@ -242,6 +251,17 @@ export const useStore = create<CyberiaState>((set, get) => ({
   },
 
   toggleOracleMode: () => {
+    const limits = get().getLimits();
+    if (!limits.AI_ENABLED) {
+      useModalStore.getState().openModal({
+        title: 'Pro Feature',
+        description: 'The Oracle AI is only available on the Pro plan. Upgrade to start using AI features.',
+        type: 'alert',
+        confirmText: 'View Plans',
+        onConfirm: () => useModalStore.getState().openPricing()
+      });
+      return;
+    }
     const newMode = !get().oracleMode;
     set({ oracleMode: newMode });
     localStorage.setItem('cyberia-oracle-mode', String(newMode));
@@ -372,7 +392,7 @@ export const useStore = create<CyberiaState>((set, get) => ({
 
       await get().addThought({
         text: 'README',
-        content: '# Cyberia: The Kinetic Mind\n\nDesigned for non-linear thinkers, visionaries, and digital architects. We believe productivity shouldn\'t feel like a spreadsheet. It should feel like a world.\n\n### 1. Kinetic Architecture\nIdeas here have mass, velocity, and gravity. Using our custom physics engine, your thoughts form natural clusters—**Stacks**—based on your internal logic. It moves with you, resisting the static nature of traditional apps.\n\n### 2. Multi-Dimensional Views\nInformation is fluid. Switch between **Spatial**, **Kanban**, and **Calendar** modes. What starts as a free-form brainstorm becomes a structured workflow, then a temporal roadmap, all without losing context.\n\n### 3. Rich Media & Tools\nCyberia supports more than just text. Create **Task Lists**, **Structured Tables**, **Freehand Drawings**, and **Image Bulbs**. You can even **Embed YouTube** videos directly into your workspace.\n\n### 4. The Oracle (AI)\nPowered by Gemini, the **Oracle** is your spatial assistant. It can research the Wired, generate new ideas, and help you organize your mental landscape into coherent Stacks.\n\n### 5. Cloud Sync & Security\nYour mind is private by default, stored locally in your browser. However, you can **Connect your Google Account** to host your data in the Cloud for free. Sync across devices and never lose a thought again.\n\n### 6. Power User Features\nTake control with **Multi-selection**, **History (Undo/Redo)**, and **Universal Search**. Customize your experience with **Themes** (Cyberia, Sakura, Neon) and use **Import/Export** for full data ownership.\n\n---\n*Welcome to the Wired.*',
+        content: '# Cyberia: The Kinetic Mind\n\nDesigned for non-linear thinkers, visionaries, and digital architects. We believe productivity shouldn\'t feel like a spreadsheet. It should feel like a world.\n\n### 1. Kinetic Architecture\nIdeas here have mass, velocity, and gravity. Using our custom physics engine, your thoughts form natural clusters—**Stacks**—based on your internal logic.\n\n### 2. Multi-Dimensional Views\nInformation is fluid. Switch between **Spatial**, **Kanban**, and **Calendar** modes without losing context.\n\n### 3. Rich Media & Tools\nCreate **Task Lists**, **Structured Tables**, **Freehand Drawings**, and **Image Bulbs**. You can even **Embed YouTube** videos directly.\n\n### 4. The Oracle (AI)\nPowered by Gemini, the **Oracle** is your Pro spatial assistant. It can research the web, generate ideas, and help you organize your mental landscape.\n\n### 5. Cloud Sync & Security\nYour mind is private by default. However, you can **Connect your Google Account** to sync your data across devices securely.\n\n### 6. Power User Features\nTake control with **Multi-selection**, **History (Undo/Redo)**, and **Universal Search**. Customize your experience with **Themes** and use **Import/Export** for full data ownership.\n\n---\n*Welcome to the Wired.*',
         x: cx + 650, y: cy + 150, priority: 'urgent', stackId: mediaId,
         status: 'done',
         spaceId: onboardingId
@@ -482,8 +502,22 @@ export const useStore = create<CyberiaState>((set, get) => ({
   },
 
   addSpace: async (name) => {
+    const { spaces } = get();
+    const limits = get().getLimits();
+    
+    if (spaces.length >= limits.MAX_SPACES) {
+      useModalStore.getState().openModal({
+        title: 'Limit Reached',
+        description: `You can only have ${limits.MAX_SPACES} spaces on the Free plan. Upgrade to Pro for more.`,
+        type: 'limit_space',
+        confirmText: 'Upgrade Now',
+        onConfirm: () => useModalStore.getState().openPricing()
+      });
+      return;
+    }
+
     const id = 's' + Date.now();
-    const order = get().spaces.length;
+    const order = spaces.length;
     await db.spaces.add({
       id,
       name,
@@ -557,32 +591,42 @@ export const useStore = create<CyberiaState>((set, get) => ({
     const targetSpaceId = partialThought.spaceId || activeSpaceId;
     if (!targetSpaceId) throw new Error('No active space');
 
+    const limits = get().getLimits();
+
+    // 1. Size Validation (2MB Limit)
+    const payloadSize = JSON.stringify(partialThought).length;
+    if (payloadSize > 2 * 1024 * 1024) {
+      useModalStore.getState().openModal({
+        title: 'Buffer Overflow',
+        description: 'Initial payload exceeds 2MB limit. Attempting to spawn an object too large for current neural architecture.',
+        type: 'alert',
+        confirmText: 'Acknowledged'
+      });
+      return -1;
+    }
+
     const QUIRKY_TITLES = [
-      "Still Thinking About It",
-      "Name Pending",
-      "This Will Make Sense Later",
-      "I’ll Rename This, I Promise",
-      "Untitled but Trying Its Best",
-      "Just Go With It",
-      "Something Is Happening Here",
-      "Please Ignore the Title",
-      "This Seemed Like a Good Idea",
-      "We’ll Call It This for Now",
-      "Don’t Worry About the Name",
-      "Almost Had a Title",
-      "This Exists",
-      "Title in Progress",
-      "No Name, Just Vibes",
-      "I Panicked and Picked This",
-      "It’s Not What It Looks Like",
-      "Temporary, Probably",
-      "Let’s Pretend This Is Clever",
+      "Still Thinking About It", "Name Pending", "This Will Make Sense Later",
+      "I’ll Rename This, I Promise", "Untitled but Trying Its Best", "Just Go With It",
+      "Something Is Happening Here", "Please Ignore the Title", "This Seemed Like a Good Idea",
+      "We’ll Call It This for Now", "Don’t Worry About the Name", "Almost Had a Title",
+      "This Exists", "Title in Progress", "No Name, Just Vibes", "I Panicked and Picked This",
+      "It’s Not What It Looks Like", "Temporary, Probably", "Let’s Pretend This Is Clever",
       "Trust the Process"
     ];
 
     const result = await db.transaction('rw', db.thoughts, async () => {
       const currentCount = await db.thoughts.where('spaceId').equals(targetSpaceId).count();
-      if (currentCount >= 40) return -1;
+      if (currentCount >= limits.MAX_THOUGHTS_PER_SPACE) {
+        useModalStore.getState().openModal({
+          title: 'Space is Full',
+          description: `You've reached the limit of ${limits.MAX_THOUGHTS_PER_SPACE} thoughts per space. Upgrade to Pro for more capacity.`,
+          type: 'limit_thought',
+          confirmText: 'Go Pro',
+          onConfirm: () => useModalStore.getState().openPricing()
+        });
+        return -1;
+      }
 
       const randomTitle = QUIRKY_TITLES[Math.floor(Math.random() * QUIRKY_TITLES.length)];
 
@@ -630,7 +674,20 @@ export const useStore = create<CyberiaState>((set, get) => ({
 
   // Centralized Debounced Save Logic
   updateThought: async (id, updates) => {
-    // 1. Optimistic Update (Instant UI feedback)
+    // 1. Size Validation (2MB Limit)
+    // Approximate size calculation for Base64 and large text
+    const payloadSize = JSON.stringify(updates).length;
+    if (payloadSize > 2 * 1024 * 1024) {
+      useModalStore.getState().openModal({
+        title: 'Payload Reached',
+        description: 'This thought has exceeded the 2MB kinetic buffer. Reduce image resolution or text volume to synchronize.',
+        type: 'alert',
+        confirmText: 'Understood'
+      });
+      return;
+    }
+
+    // 2. Optimistic Update (Instant UI feedback)
     const { thoughts } = get();
     const index = thoughts.findIndex(t => t.id === id);
     if (index !== -1) {
@@ -639,7 +696,7 @@ export const useStore = create<CyberiaState>((set, get) => ({
       set({ thoughts: newThoughts });
     }
 
-    // 2. Debounced Database Persistence
+    // 3. Debounced Database Persistence
     const saveTimers = (window as any)._cyberia_save_timers || {};
     if (saveTimers[id]) clearTimeout(saveTimers[id]);
 
@@ -951,7 +1008,12 @@ export const useStore = create<CyberiaState>((set, get) => ({
           await processData(data);
         } catch (err) {
           console.error('Import failed:', err);
-          alert('Import failed. Please make sure the file is a valid Cyberia backup.');
+          useModalStore.getState().openModal({
+            title: 'Import Failed',
+            description: 'This file is corrupted or not a valid Cyberia backup. Please try a different file.',
+            type: 'alert',
+            confirmText: 'Okay'
+          });
         }
       };
       reader.readAsText(input);
@@ -960,29 +1022,30 @@ export const useStore = create<CyberiaState>((set, get) => ({
         await processData(input);
       } catch (err) {
         console.error('Import failed:', err);
-        alert('Import failed. Please make sure the data is a valid Cyberia backup.');
+        useModalStore.getState().openModal({
+          title: 'Import Failed',
+          description: 'This data is invalid. Please make sure you are using a real Cyberia backup file.',
+          type: 'alert',
+          confirmText: 'Okay'
+        });
       }
     }
   },
 
-  
+  clearWorkspace: async () => {
+    try {
+      await db.transaction('rw', db.spaces, db.thoughts, db.stacks, async () => {
+        await db.spaces.clear();
+        await db.thoughts.clear();
+        await db.stacks.clear();
+      });
 
-    clearWorkspace: async () => {
-      try {
-        await db.transaction('rw', db.spaces, db.thoughts, db.stacks, async () => {
-          await db.spaces.clear();
-          await db.thoughts.clear();
-          await db.stacks.clear();
-        });
-
-        // Preserve auth and settings, clear only workspace state
-        localStorage.removeItem('cyberia-active-space-id');
-        
-        window.location.reload();
-      } catch (err) {
-        console.error('Clear failed:', err);
-      }
+      // Preserve auth and settings, clear only workspace state
+      localStorage.removeItem('cyberia-active-space-id');
+      
+      window.location.reload();
+    } catch (err) {
+      console.error('Clear failed:', err);
     }
-  }));
-
-  
+  }
+}));

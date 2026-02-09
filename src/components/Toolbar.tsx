@@ -3,7 +3,7 @@ import { useStore } from '../store/useStore';
 import { useModalStore } from '../store/useModalStore';
 import { useAuthStore } from '../store/useAuthStore';
 import { aiService } from '../services/ai';
-import { LIMITS, AVAILABLE_MODELS } from '../constants';
+import { PLAN_CONFIG, AVAILABLE_MODELS } from '../constants';
 import { Plus, Zap, Download, Upload, ChevronLeft, ChevronRight, Trash2, Edit3, Camera, MoreVertical, Keyboard, MousePointer2, Orbit, Columns3, CalendarDays, Shield, MonitorSmartphone, BotMessageSquare, Key, ChevronDown, ZoomIn, ZoomOut, RotateCcw, Undo2, Redo2, Settings, CircleHelp, MessageSquare, Send, Loader2, CheckCircle } from 'lucide-react';
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
@@ -64,7 +64,7 @@ const Toolbar: React.FC = () => {
   const history = useStore((state) => state.history);
   const historyIndex = useStore((state) => state.historyIndex);
   
-  const { openModal } = useModalStore();
+  const { openModal, openPricing } = useModalStore();
   
   const setTransform = useStore((state) => state.setTransform);
   
@@ -90,6 +90,7 @@ const Toolbar: React.FC = () => {
   const [contactSubmitStatus, setContactSubmitStatus] = useState<'idle' | 'success' | 'error'>('idle');
 
   const { user } = useAuthStore();
+  const limits = PLAN_CONFIG[user?.plan as SubscriptionPlan] || PLAN_CONFIG.free;
 
   useEffect(() => {
     if (user?.email && !contactEmail) {
@@ -296,7 +297,12 @@ const Toolbar: React.FC = () => {
       }, 100);
     } catch (error) {
       console.error('Screenshot failed:', error);
-      alert("Screenshot failed. Try zooming in more or reducing the number of large images in your space.");
+      openModal({
+        title: 'Screenshot Failed',
+        description: 'The workspace might be too large or your device is out of memory. Try reducing items.',
+        type: 'alert',
+        confirmText: 'Okay'
+      });
     } finally {
       setIsCapturing(false);
     }
@@ -313,12 +319,16 @@ const Toolbar: React.FC = () => {
   };
 
   const handleAddThought = async () => {
-    if (thoughts.length >= LIMITS.MAX_THOUGHTS_PER_SPACE) {
+    if (thoughts.length >= limits.MAX_THOUGHTS_PER_SPACE) {
+      const isPro = user?.plan === 'pro';
       openModal({
-        title: 'Limit Reached',
-        description: `You have reached the maximum of ${LIMITS.MAX_THOUGHTS_PER_SPACE} thoughts per space.`,
+        title: 'Space is Full',
+        description: isPro 
+          ? `This space has reached its maximum capacity of ${limits.MAX_THOUGHTS_PER_SPACE} thoughts.`
+          : `You've reached the Free limit of ${limits.MAX_THOUGHTS_PER_SPACE} thoughts per space. Upgrade to Pro for more capacity.`,
         type: 'limit_thought',
-        confirmText: 'Okay'
+        confirmText: isPro ? 'Okay' : 'Upgrade Now',
+        onConfirm: isPro ? undefined : () => openPricing()
       });
       return;
     }
@@ -369,12 +379,16 @@ const Toolbar: React.FC = () => {
   };
 
   const handleCreateSpace = () => {
-    if (spaces.length >= LIMITS.MAX_SPACES) {
+    if (spaces.length >= limits.MAX_SPACES) {
+      const isPro = user?.plan === 'pro';
       openModal({
         title: 'Limit Reached',
-        description: `You can only have up to ${LIMITS.MAX_SPACES} spaces.`,
+        description: isPro
+          ? `You've reached the maximum limit of ${limits.MAX_SPACES} spaces.`
+          : `You can only have up to ${limits.MAX_SPACES} spaces on the Free plan. Upgrade to Pro for more.`,
         type: 'limit_space',
-        confirmText: 'Okay'
+        confirmText: isPro ? 'Okay' : 'Upgrade Now',
+        onConfirm: isPro ? undefined : () => openPricing()
       });
       return;
     }
@@ -390,10 +404,10 @@ const Toolbar: React.FC = () => {
 
   const handleDeleteSpace = () => {
     if (!activeSpace) return;
-    if (spaces.length <= LIMITS.MIN_SPACES) {
+    if (spaces.length <= 1) {
       openModal({
         title: 'Cannot Delete',
-        description: `You must have at least ${LIMITS.MIN_SPACES} active space.`,
+        description: `You must have at least 1 active space.`,
         type: 'alert',
         confirmText: 'Okay'
       });
@@ -473,13 +487,19 @@ const Toolbar: React.FC = () => {
                   </button>
                 );
               })}
-              <div className="w-[1px] h-3 bg-white/10 mx-2"></div>
-              <button 
-                onClick={handleCreateSpace}
-                className="w-9 h-9 rounded-full text-slate-600 hover:text-white hover:bg-white/10 transition-all flex-shrink-0 flex items-center justify-center border border-white/10 border-dashed"
-              >
-                <Plus className="w-3.5 h-3.5" />
-              </button>
+              
+              {/* Only show add button if user hasn't reached the absolute Pro limit, or is on Free and can upgrade */}
+              {(user?.plan === 'free' || spaces.length < limits.MAX_SPACES) && (
+                <>
+                  <div className="w-[1px] h-3 bg-white/10 mx-2"></div>
+                  <button 
+                    onClick={handleCreateSpace}
+                    className="w-9 h-9 rounded-full text-slate-600 hover:text-white hover:bg-white/10 transition-all flex-shrink-0 flex items-center justify-center border border-white/10 border-dashed"
+                  >
+                    <Plus className="w-3.5 h-3.5" />
+                  </button>
+                </>
+              )}
             </div>
           </div>
 
@@ -711,6 +731,10 @@ const Toolbar: React.FC = () => {
             </div>
             <button 
               onClick={() => {
+                if (!limits.AI_ENABLED) {
+                  openPricing();
+                  return;
+                }
                 if (apiKey) {
                   toggleOracleMode();
                 } else {
@@ -719,12 +743,13 @@ const Toolbar: React.FC = () => {
               }}
               className={cn(
                 "glass w-10 h-10 md:w-12 md:h-12 flex items-center justify-center rounded-2xl border border-white/5 transition-all",
+                !limits.AI_ENABLED ? "opacity-40 grayscale" :
                 oracleMode 
                   ? "text-purple-400 border-purple-500/20 bg-purple-500/10 shadow-[0_0_15px_rgba(168,85,247,0.2)]" 
                   : "text-slate-500 hover:text-green-400 hover:border-green-500/20"
               )}
             >
-              <Shield className="w-4 h-4 md:w-5 md:h-5" />
+              {!limits.AI_ENABLED ? <Zap className="w-4 h-4 md:w-5 md:h-5 text-indigo-400" /> : <Shield className="w-4 h-4 md:w-5 md:h-5" />}
             </button>
           </div>
           <button 
@@ -784,14 +809,20 @@ const Toolbar: React.FC = () => {
               <div className="glass px-3 py-1.5 rounded-xl border border-white/10 flex items-center gap-2 shadow-2xl bg-[var(--bg-main)]/90 backdrop-blur-xl">
                 <span className="text-[10px] font-black uppercase tracking-widest text-white/80">Capacity</span>
                 <div className="w-[1px] h-2 bg-white/10 mx-0.5" />
-                <span className="text-[10px] font-black text-[var(--accent-secondary)]">{LIMITS.MAX_THOUGHTS_PER_SPACE} Max</span>
+                <span className="text-[10px] font-black text-[var(--accent-secondary)]">{limits.MAX_THOUGHTS_PER_SPACE} Max</span>
               </div>
             </div>
 
-            <span className="w-1.5 h-1.5 rounded-full bg-green-500 shadow-[0_0_10px_#22c55e] flex-shrink-0"></span> 
-            <span className="text-[9px] md:text-[10px] uppercase font-black tracking-widest text-white/80 whitespace-nowrap">
+            <span className={cn(
+              "w-1.5 h-1.5 rounded-full flex-shrink-0 transition-all shadow-[0_0_10px_currentColor]",
+              thoughts.length > limits.MAX_THOUGHTS_PER_SPACE ? "bg-red-500 text-red-500" : "bg-green-500 text-green-500"
+            )}></span> 
+            <span className={cn(
+              "text-[9px] md:text-[10px] uppercase font-black tracking-widest transition-colors",
+              thoughts.length > limits.MAX_THOUGHTS_PER_SPACE ? "text-red-400" : "text-white/80"
+            )}>
               <span>{thoughts.length}</span>
-              <span className="hidden sm:inline">/{LIMITS.MAX_THOUGHTS_PER_SPACE} Thoughts</span>
+              <span className="hidden sm:inline">/{limits.MAX_THOUGHTS_PER_SPACE} {thoughts.length > limits.MAX_THOUGHTS_PER_SPACE ? 'Overflow' : 'Thoughts'}</span>
             </span>
           </div>
 

@@ -1,0 +1,144 @@
+import React, { useState } from 'react';
+import { useAuthStore } from '../store/useAuthStore';
+import { useModalStore } from '../store/useModalStore';
+import { PLAN_CONFIG } from '../constants';
+import { Zap, Check, Star, X } from 'lucide-react';
+import { clsx, type ClassValue } from 'clsx';
+import { twMerge } from 'tailwind-merge';
+
+function cn(...inputs: ClassValue[]) {
+  return twMerge(clsx(inputs));
+}
+
+interface PricingModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+}
+
+const PricingModal: React.FC<PricingModalProps> = ({ isOpen, onClose }) => {
+  const [billingCycle, setBillingCycle] = useState<AccessPeriod>('monthly');
+  const { upgradePlan } = useAuthStore();
+  const { openModal } = useModalStore();
+
+  if (!isOpen) return null;
+
+  const proPrice = PLAN_CONFIG.pro.PRICE!;
+  const currentPrice = billingCycle === 'monthly' ? proPrice.monthly : proPrice.yearly;
+  const savings = Math.round((proPrice.monthly.usd * 12 - proPrice.yearly.usd));
+
+  const handleUpgrade = () => {
+    upgradePlan('pro', billingCycle);
+    onClose();
+  };
+
+  return (
+    <div className="fixed inset-0 z-[10005] bg-black/90 backdrop-blur-xl flex items-center justify-center p-4 md:p-10 animate-in fade-in duration-300 overflow-y-auto">
+      <div className="glass w-full max-w-4xl rounded-[3rem] border border-white/10 overflow-hidden relative flex flex-col md:flex-row my-auto">
+        <button onClick={onClose} className="absolute top-8 right-8 text-slate-500 hover:text-white transition-colors z-10">
+          <X className="w-6 h-6" />
+        </button>
+
+        {/* LEFT: Benefits */}
+        <div className="flex-1 p-8 md:p-12 border-b md:border-b-0 md:border-r border-white/5">
+          <div className="flex items-center gap-3 mb-8">
+            <div className="w-12 h-12 rounded-2xl bg-indigo-500/20 flex items-center justify-center text-indigo-400">
+              <Zap className="w-6 h-6 animate-pulse" />
+            </div>
+            <div>
+              <h2 className="text-xl font-black uppercase tracking-widest text-white">Go Pro</h2>
+              <p className="text-[10px] font-bold text-slate-500 uppercase tracking-[0.2em]">Unlock God Mode & More Space</p>
+            </div>
+          </div>
+
+          <div className="space-y-6">
+            {[
+              { title: 'The Oracle (AI)', desc: 'Ask AI to help you research and organize your ideas.' },
+              { title: 'More Workspaces', desc: 'Create up to 8 different worlds (Free only has 3).' },
+              { title: 'Bigger Capacity', desc: 'Add up to 50 thoughts in every single space.' },
+              { title: '400 Cloud Thoughts', desc: 'High-capacity sync for power users (Free is 60).' },
+              { title: 'Priority Support', desc: 'Get help directly from the Cyberia development team.' }
+            ].map((feature, i) => (
+              <div key={i} className="flex gap-4 group">
+                <div className="w-5 h-5 rounded-full bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center text-indigo-400 shrink-0 mt-0.5 group-hover:scale-110 transition-transform">
+                  <Check className="w-3 h-3" />
+                </div>
+                <div>
+                  <h4 className="text-[11px] font-black uppercase tracking-widest text-white group-hover:text-indigo-400 transition-colors">{feature.title}</h4>
+                  <p className="text-[10px] font-medium text-slate-500">{feature.desc}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* RIGHT: Pricing */}
+        <div className="w-full md:w-[380px] p-8 md:p-12 bg-white/[0.02] flex flex-col justify-center">
+          <div className="flex flex-col items-center text-center mb-8">
+            <div className="flex p-1 bg-black/40 border border-white/5 rounded-2xl mb-8">
+              <button 
+                onClick={() => setBillingCycle('monthly')}
+                className={cn(
+                  "px-6 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all",
+                  billingCycle === 'monthly' ? "bg-white/10 text-white shadow-lg" : "text-slate-500 hover:text-slate-300"
+                )}
+              >
+                Monthly
+              </button>
+              <button 
+                onClick={() => setBillingCycle('yearly')}
+                className={cn(
+                  "px-6 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all relative",
+                  billingCycle === 'yearly' ? "bg-white/10 text-white shadow-lg" : "text-slate-500 hover:text-slate-300"
+                )}
+              >
+                Yearly
+                {billingCycle !== 'yearly' && (
+                  <span className="absolute -top-3 -right-2 bg-green-500 text-black text-[9px] font-black px-2 py-0.5 rounded-full uppercase tracking-tighter shadow-lg shadow-green-500/20">Save ${savings}</span>
+                )}
+              </button>
+            </div>
+
+            <div className="mb-2">
+              <div className="flex items-baseline justify-center gap-2">
+                <span className="text-5xl font-black text-white">${currentPrice.usd}</span>
+                <span className="text-xl font-bold text-slate-500">/ {currentPrice.tnd} DT</span>
+              </div>
+              <span className="text-slate-500 font-bold uppercase tracking-widest text-[10px] block mt-2">
+                For 1 {billingCycle === 'monthly' ? 'Month' : 'Year'} of Access
+              </span>
+            </div>
+            <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest px-4">
+              {billingCycle === 'yearly' ? `One-time payment of $${proPrice.yearly.usd} per year` : 'Manual renewal. No automatic charges.'}
+            </p>
+          </div>
+
+          <button 
+            onClick={handleUpgrade}
+            className="w-full py-5 rounded-[2rem] bg-indigo-500 hover:bg-indigo-400 text-white text-[11px] font-black uppercase tracking-[0.2em] transition-all shadow-2xl shadow-indigo-500/20 hover:scale-[1.02] active:scale-95 flex items-center justify-center gap-3 mb-6"
+          >
+            <Star className="w-4 h-4 fill-white" />
+            Get Pro Access
+          </button>
+
+          <div className="text-center space-y-3">
+            <p className="text-[9px] text-slate-600 font-medium leading-relaxed">
+              Secure checkout powered by a mock processor. <br /> No real charges will be made.
+            </p>
+            <button 
+              onClick={() => openModal({
+                title: 'Terms of Service',
+                type: 'terms',
+                confirmText: 'Acknowledged'
+              })}
+              className="text-[8px] font-black uppercase tracking-widest text-slate-500 hover:text-indigo-400 transition-colors pointer-events-auto"
+            >
+              View Terms of Service
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default PricingModal;

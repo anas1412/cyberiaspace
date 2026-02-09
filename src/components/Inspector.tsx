@@ -484,6 +484,15 @@ const Inspector: React.FC = () => {
                         onChange={(e) => {
                           const file = e.target.files?.[0];
                           if (file) {
+                            if (file.size > 2 * 1024 * 1024) {
+                              useModalStore.getState().openModal({
+                                title: 'Incompatible Mass',
+                                description: 'This file exceeds the 2MB transmission limit. Compress your assets before uploading to neural storage.',
+                                type: 'alert',
+                                confirmText: 'Understood'
+                              });
+                              return;
+                            }
                             const reader = new FileReader();
                             reader.onload = (ev) => updateThought(thought.id, { image: ev.target?.result as string });
                             reader.readAsDataURL(file);
