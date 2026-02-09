@@ -27,7 +27,7 @@ const formatModelName = (name: string) => {
 const ChatOverlay: React.FC = () => {
   const isChatOpen = useStore((state) => state.isChatOpen);
   const setChatOpen = useStore((state) => state.setChatOpen);
-  const oracleMode = useStore((state) => state.oracleMode);
+  const mariMode = useStore((state) => state.mariMode);
   const apiKey = useStore((state) => state.apiKey);
   const activeModel = useStore((state) => state.activeModel);
   
@@ -35,7 +35,7 @@ const ChatOverlay: React.FC = () => {
   const [history, setHistory] = useState<Content[]>([]);
   const [displayMessages, setDisplayMessages] = useState<Message[]>([]);
   const [loading, setLoading] = useState(false);
-  const [status, setStatus] = useState('Oracle is processing...');
+  const [status, setStatus] = useState('MARI is processing...');
   
   const scrollRef = useRef<HTMLDivElement>(null);
 
@@ -52,7 +52,7 @@ const ChatOverlay: React.FC = () => {
     setDisplayMessages(prev => [...prev, { role: 'user', text: userText }]);
     setInput('');
     setLoading(true);
-    setStatus('Oracle is processing...');
+    setStatus('MARI is processing...');
 
     try {
       const { activeSpaceId, thoughts, spaces, stacks } = useStore.getState();
@@ -90,7 +90,7 @@ const ChatOverlay: React.FC = () => {
         if (newMsgs[newMsgs.length - 1]?.text === '') {
           newMsgs.pop();
         }
-        return [...newMsgs, { role: 'model', text: `**Oracle Error:** ${friendlyError}` }];
+        return [...newMsgs, { role: 'model', text: `**MARI Error:** ${friendlyError}` }];
       });
     } finally {
       setLoading(false);
@@ -102,7 +102,7 @@ const ChatOverlay: React.FC = () => {
     setDisplayMessages([]);
   };
 
-  if (!oracleMode) return null;
+  if (!mariMode) return null;
 
   return (
     <AnimatePresence>
@@ -125,7 +125,7 @@ const ChatOverlay: React.FC = () => {
                 <Bot className="w-5 h-5 text-[var(--accent)]" />
               </div>
               <div>
-                <h3 className="text-sm font-bold text-white tracking-wide">Cyberia Oracle</h3>
+                <h3 className="text-sm font-bold text-white tracking-wide">Cyberia MARI</h3>
                 <p className="text-[10px] text-[var(--accent)] font-mono uppercase tracking-wider">{formatModelName(activeModel)} is Active</p>
               </div>
             </div>
@@ -152,7 +152,7 @@ const ChatOverlay: React.FC = () => {
             {displayMessages.length === 0 && (
               <div className="text-center text-slate-500 mt-10 md:mt-20">
                 <Shield className="w-10 h-10 md:w-12 md:h-12 mx-auto mb-4 opacity-20" />
-                <p className="text-sm">Oracle Mode Enabled</p>
+                <p className="text-sm">MARI Enabled</p>
                 <p className="text-xs mt-2 opacity-60 px-10">I can help you organize your workspace.</p>
               </div>
             )}
@@ -196,7 +196,7 @@ const ChatOverlay: React.FC = () => {
                     handleSend();
                   }
                 }}
-                placeholder="Ask Oracle..."
+                placeholder="Ask MARI..."
                 className="w-full bg-white/5 border border-white/10 rounded-xl py-3 pl-4 pr-12 text-sm text-white outline-none focus:border-[var(--accent)]/50 resize-none h-14 custom-scroll md:h-14"
               />
               <button 

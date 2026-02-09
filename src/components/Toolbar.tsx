@@ -28,8 +28,8 @@ const formatModelName = (name: string) => {
 
 const Toolbar: React.FC = () => {
   const activeSpaceId = useStore((state) => state.activeSpaceId);
-  const oracleMode = useStore((state) => state.oracleMode);
-  const toggleOracleMode = useStore((state) => state.toggleOracleMode);
+  const mariMode = useStore((state) => state.mariMode);
+  const toggleMariMode = useStore((state) => state.toggleMariMode);
   const setApiKey = useStore((state) => state.setApiKey);
   const removeApiKey = useStore((state) => state.removeApiKey);
   const apiKey = useStore((state) => state.apiKey);
@@ -684,74 +684,62 @@ const Toolbar: React.FC = () => {
               }} 
               className="flex items-center justify-center gap-2 py-3 rounded-xl bg-white/5 hover:bg-purple-500/10 text-[9px] md:text-[10px] font-black uppercase tracking-widest text-purple-400 transition-colors border border-white/10 hover:border-purple-500/20"
             >
-              <Key className="w-3 h-3" /> Oracle
+              <Key className="w-3 h-3" /> MARI
             </button>
           </div>
         </div>
         
         <div className="flex gap-2 pointer-events-auto">
-          {oracleMode && (
-            <button 
-              onClick={() => setChatOpen(!isChatOpen)}
-              className={cn(
-                "group relative glass w-10 h-10 md:w-12 md:h-12 flex items-center justify-center rounded-2xl border border-white/5 transition-all",
-                isChatOpen ? "bg-[var(--accent)] text-white shadow-[0_0_20px_var(--accent-glow)]" : "text-[var(--accent)] hover:bg-[var(--accent)]/10"
-              )}
-            >
-              {/* Tooltip */}
-              <div className="absolute bottom-full mb-4 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-all duration-300 translate-y-2 group-hover:translate-y-0 pointer-events-none whitespace-nowrap z-[10001]">
-                <div className="glass px-3 py-1.5 rounded-xl border border-white/10 flex items-center gap-2 shadow-2xl bg-[var(--bg-main)]/90 backdrop-blur-xl">
-                  <span className="text-[10px] font-black uppercase tracking-widest text-white/80">Oracle Chat</span>
-                </div>
-              </div>
-              <BotMessageSquare className="w-4 h-4 md:w-5 md:h-5" />
-            </button>
-          )}
-
           <div className="relative group">
+            {/* Tooltip / Info Box */}
             <div className={cn(
               "absolute bottom-full right-0 mb-4 transition-all duration-300 pointer-events-none w-52 md:w-64 translate-y-2",
               "opacity-0 group-hover:opacity-100 group-hover:translate-y-0"
             )}>
               <div className="glass p-5 md:p-6 rounded-[2rem] border-white/10 shadow-2xl bg-[var(--bg-main)]/95">
                 <div className="flex items-center gap-3 mb-2">
-                  <div className={cn("w-1.5 h-1.5 rounded-full shadow-[0_0_8px_currentColor]", oracleMode ? "bg-purple-500 text-purple-500" : "bg-green-500 text-green-500")} />
+                  <div className={cn(
+                    "w-1.5 h-1.5 rounded-full shadow-[0_0_8px_currentColor]", 
+                    (mariMode && limits.AI_ENABLED) ? "bg-purple-500 text-purple-500" : "bg-slate-500 text-slate-500"
+                  )} />
                   <p className="text-[9px] md:text-[10px] font-black uppercase tracking-widest text-white">
-                    {oracleMode ? 'Oracle Online' : 'Local & Secure'}
+                    {(mariMode && limits.AI_ENABLED) ? 'MARI Online' : 'MARI Locked'}
                   </p>
                 </div>
                 <p className="text-[9px] md:text-[10px] leading-relaxed text-slate-400">
-                  {oracleMode 
-                    ? 'AI assistant is active. Data is sent to Gemini only when you chat.'
-                    : apiKey 
-                      ? 'AI assistant is idle. Click to enable Oracle mode.'
-                      : 'Oracle is disabled. Add an API Key in System Menu to enable.'}
+                  {(mariMode && limits.AI_ENABLED) 
+                    ? 'MARI is active and ready to help you organize your mind.'
+                    : !user 
+                      ? 'Sign in to your account to start using MARI AI features.'
+                      : 'Upgrade to the Pro plan to unlock MARI AI.'}
                 </p>
               </div>
             </div>
+
             <button 
               onClick={() => {
                 if (!limits.AI_ENABLED) {
                   openPricing();
                   return;
                 }
-                if (apiKey) {
-                  toggleOracleMode();
-                } else {
+                if (!apiKey) {
                   setIsKeyModalOpen(true);
+                  return;
                 }
+                setChatOpen(!isChatOpen);
               }}
               className={cn(
                 "glass w-10 h-10 md:w-12 md:h-12 flex items-center justify-center rounded-2xl border border-white/5 transition-all",
-                !limits.AI_ENABLED ? "opacity-40 grayscale" :
-                oracleMode 
-                  ? "text-purple-400 border-purple-500/20 bg-purple-500/10 shadow-[0_0_15px_rgba(168,85,247,0.2)]" 
-                  : "text-slate-500 hover:text-green-400 hover:border-green-500/20"
+                !limits.AI_ENABLED ? "opacity-40 grayscale hover:opacity-100 transition-opacity" :
+                isChatOpen 
+                  ? "bg-[var(--accent)] text-white shadow-[0_0_20px_var(--accent-glow)]" 
+                  : "text-[var(--accent)] hover:bg-[var(--accent)]/10"
               )}
             >
-              {!limits.AI_ENABLED ? <Zap className="w-4 h-4 md:w-5 md:h-5 text-indigo-400" /> : <Shield className="w-4 h-4 md:w-5 md:h-5" />}
+              <Zap className="w-4 h-4 md:w-5 md:h-5" />
             </button>
           </div>
+
           <button 
             onClick={() => setIsShortcutsOpen(!isShortcutsOpen)}
             className={cn(
@@ -947,7 +935,7 @@ const Toolbar: React.FC = () => {
                   <Key className="w-5 h-5" />
                 </div>
                 <div>
-                  <h3 className="text-sm font-black uppercase tracking-[0.2em] text-white">Oracle Access</h3>
+                  <h3 className="text-sm font-black uppercase tracking-[0.2em] text-white">MARI Access</h3>
                   <p className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Gemini API Configuration</p>
                 </div>
               </div>
@@ -955,7 +943,7 @@ const Toolbar: React.FC = () => {
             </div>
 
             <p className="text-xs text-slate-400 leading-relaxed mb-6">
-              To enable God Mode, you need a Google Gemini API Key. 
+              To enable MARI, you need a Google Gemini API Key. 
               The key is stored locally in your browser and sent directly to Google.
             </p>
 
@@ -1034,7 +1022,7 @@ const Toolbar: React.FC = () => {
                           setApiKey(tempKey.trim());
                           setTempKey('');
                           setIsKeyModalOpen(false);
-                          if (!oracleMode) toggleOracleMode();
+                          if (!mariMode) toggleMariMode();
                         } catch {
                           setValidationError("Invalid API Key. Please check and try again.");
                         } finally {
@@ -1052,7 +1040,7 @@ const Toolbar: React.FC = () => {
                         <RotateCcw className="w-3.5 h-3.5 animate-spin" /> Verifying...
                       </>
                     ) : (
-                      apiKey ? 'Save Changes' : 'Activate Oracle'
+                      apiKey ? 'Save Changes' : 'Activate MARI'
                     )}
                   </button>
                 </div>

@@ -13,9 +13,9 @@ Transform Cyberia from a passive tool into an active collaborator by integrating
 - [ ] **Service Layer (`src/services/ai.ts`):**
     - Initialize `GoogleGenerativeAI` client.
     - **Model Selection:** Default to `gemini-1.5-flash` for low latency and high throughput, or `gemini-1.5-pro` for complex reasoning.
-    - Implement the "Shield" toggle state in `useStore` (Offline vs. Oracle Mode).
+    - Implement the "Shield" toggle state in `useStore` (Offline vs. God Mode).
 
-## Phase 2: User Interface (The "Oracle")
+## Phase 2: User Interface (The "God Mode")
 - [ ] **Chat Interface (`src/components/ChatOverlay.tsx`):**
     - Create a floating, glassmorphism-styled chat panel.
     - Implement message history state (User vs. AI).

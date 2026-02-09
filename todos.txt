@@ -2,7 +2,7 @@
 
 
 
-- add a vercel api route to enable oracle external api for built-in vercel key / add limiters
+- add a vercel api route to enable MARI external api for built-in vercel key / add limiters
 
 - add support to instagram/facebook/reddit/twitter/spotify and popular plateforms embed support
 

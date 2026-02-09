@@ -4,7 +4,7 @@ import type { VercelRequest, VercelResponse } from '@vercel/node';
  * api/youtube-search.ts
  * 
  * This route fetches real video data from the YouTube Data API v3.
- * It is optimized for the Gemini 3 "Cyberia Oracle" logic.
+ * It is optimized for the Gemini 3 "Cyberia MARI" logic.
  */
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   const query = req.query.q as string;

@@ -2,7 +2,7 @@ That is a "God Mode" level idea for a spatial workspace. Integrating Gemini woul
 
   Here is a breakdown of how that would work and the potential "Magic Moments" it would create:
 
-  1. The "Oracle" Architecture
+  1. The "God Mode" Architecture
    * Context (The Data): Since you already have everything in a clean JSON format via IndexedDB, sending the state is easy. Gemini would have "Total Recall"—it would
      remember a task you wrote in a different space three weeks ago.
    * Vision (The Screenshot): By sending a screenshot (using the toPng logic we already have), Gemini wouldn't just see data; it would see layout. It could say, "I noticed
@@ -33,6 +33,6 @@ That is a "God Mode" level idea for a spatial workspace. Integrating Gemini woul
   The only conflict is your (excellent) focus on privacy. Sending data to Gemini means it leaves the local machine.
    * Solution: We could put a "Brain" toggle inside that Shield Icon.
        * Offline Mode (Shield Green): 100% local, AI disabled.
-       * Oracle Mode (Shield Purple): AI enabled, data sent to Gemini API for processing.
+       * God Mode (Shield Purple): AI enabled, data sent to Gemini API for processing.
 
   Verdict: It would make Cyberia the most advanced spatial note-taker on the market. It moves the app from a "canvas for your thoughts" to a "living mind."

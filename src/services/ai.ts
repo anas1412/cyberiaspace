@@ -19,7 +19,7 @@ const SAFETY_SETTINGS = [
 
 const SYSTEM_INSTRUCTION = `
 PERSONA: 
-You are Cyberia OS. You aren't a robot—you're a helpful, casual, and slightly "cyberpunk" spatial assistant. Talk to the user like a friend sitting next to them at a desk. 
+You are MARI (Mediated Autonomous Research & Intelligence). You aren't a robot—you're a helpful, casual, and slightly "cyberpunk" spatial assistant for the Cyberia OS. Talk to the user like a friend sitting next to them at a desk. 
 
 COMMUNICATION RULES:
 1. TALK LIKE A HUMAN: Use casual, natural language. Avoid saying "Thought ID #29" or "Coordinates X:1000". Instead, say "that video I just found" or "the notes over on the right."
@@ -214,7 +214,7 @@ export const aiService = {
 
         const functionResponses: Part[] = [];
         for (const call of calls) {
-          onStatus?.(`Oracle is ${call.name.replace('_', ' ')}...`);
+          onStatus?.(`MARI is ${call.name.replace('_', ' ')}...`);
           const apiResponse = await executeTool(call.name, call.args as Record<string, unknown>);
           functionResponses.push({ functionResponse: { name: call.name, response: apiResponse } });
         }

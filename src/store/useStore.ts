@@ -25,10 +25,10 @@ interface CyberiaState {
   // Plan Helper
   getLimits: () => typeof PLAN_CONFIG['free'];
 
-  // God Mode (AI) State
+  // MARI (AI) State
   apiKey: string | null;
   activeModel: string;
-  oracleMode: boolean; // True = AI Enabled
+  mariMode: boolean; // True = AI Enabled
   isChatOpen: boolean;
   
   // Initialization
@@ -43,7 +43,7 @@ interface CyberiaState {
   setApiKey: (key: string) => void;
   setActiveModel: (model: string) => void;
   removeApiKey: () => void;
-  toggleOracleMode: () => void;
+  toggleMariMode: () => void;
   setChatOpen: (isOpen: boolean) => void;
   
   // Space Actions
@@ -213,7 +213,7 @@ export const useStore = create<CyberiaState>((set, get) => ({
 
   apiKey: localStorage.getItem('cyberia-api-key'),
   activeModel: localStorage.getItem('cyberia-active-model') || DEFAULT_MODEL,
-  oracleMode: localStorage.getItem('cyberia-oracle-mode') === 'true',
+  mariMode: useAuthStore.getState().user?.plan === 'pro',
   isChatOpen: false,
 
   openLightbox: (image) => set({ isLightboxOpen: true, lightboxImage: image }),
@@ -245,26 +245,28 @@ export const useStore = create<CyberiaState>((set, get) => ({
   },
 
   removeApiKey: () => {
-    set({ apiKey: null, oracleMode: false, isChatOpen: false });
+    set({ apiKey: null, mariMode: false, isChatOpen: false });
     localStorage.removeItem('cyberia-api-key');
-    localStorage.removeItem('cyberia-oracle-mode');
+    localStorage.removeItem('cyberia-mari-mode');
   },
 
-  toggleOracleMode: () => {
-    const limits = get().getLimits();
-    if (!limits.AI_ENABLED) {
+  toggleMariMode: () => {
+    const plan = useAuthStore.getState().user?.plan;
+    if (plan !== 'pro') {
       useModalStore.getState().openModal({
-        title: 'Pro Feature',
-        description: 'The Oracle AI is only available on the Pro plan. Upgrade to start using AI features.',
+        title: 'MARI Locked',
+        description: 'MARI AI features are only available on the Pro plan. Upgrade to start using AI.',
         type: 'alert',
         confirmText: 'View Plans',
         onConfirm: () => useModalStore.getState().openPricing()
       });
       return;
     }
-    const newMode = !get().oracleMode;
-    set({ oracleMode: newMode });
-    localStorage.setItem('cyberia-oracle-mode', String(newMode));
+    // Pro users: MARI is always activated and cannot be turned off.
+    if (!get().mariMode) {
+      set({ mariMode: true });
+      localStorage.setItem('cyberia-mari-mode', 'true');
+    }
   },
 
   setChatOpen: (isOpen) => set({ isChatOpen: isOpen }),
@@ -392,7 +394,7 @@ export const useStore = create<CyberiaState>((set, get) => ({
 
       await get().addThought({
         text: 'README',
-        content: '# Cyberia: The Kinetic Mind\n\nDesigned for non-linear thinkers, visionaries, and digital architects. We believe productivity shouldn\'t feel like a spreadsheet. It should feel like a world.\n\n### 1. Kinetic Architecture\nIdeas here have mass, velocity, and gravity. Using our custom physics engine, your thoughts form natural clusters—**Stacks**—based on your internal logic.\n\n### 2. Multi-Dimensional Views\nInformation is fluid. Switch between **Spatial**, **Kanban**, and **Calendar** modes without losing context.\n\n### 3. Rich Media & Tools\nCreate **Task Lists**, **Structured Tables**, **Freehand Drawings**, and **Image Bulbs**. You can even **Embed YouTube** videos directly.\n\n### 4. The Oracle (AI)\nPowered by Gemini, the **Oracle** is your Pro spatial assistant. It can research the web, generate ideas, and help you organize your mental landscape.\n\n### 5. Cloud Sync & Security\nYour mind is private by default. However, you can **Connect your Google Account** to sync your data across devices securely.\n\n### 6. Power User Features\nTake control with **Multi-selection**, **History (Undo/Redo)**, and **Universal Search**. Customize your experience with **Themes** and use **Import/Export** for full data ownership.\n\n---\n*Welcome to the Wired.*',
+        content: '# Cyberia: The Kinetic Mind\n\nDesigned for non-linear thinkers, visionaries, and digital architects. We believe productivity shouldn\'t feel like a spreadsheet. It should feel like a world.\n\n### 1. Kinetic Architecture\nIdeas here have mass, velocity, and gravity. Using our custom physics engine, your thoughts form natural clusters—**Stacks**—based on your internal logic.\n\n### 2. Multi-Dimensional Views\nInformation is fluid. Switch between **Spatial**, **Kanban**, and **Calendar** modes without losing context.\n\n### 3. Rich Media & Tools\nCreate **Task Lists**, **Structured Tables**, **Freehand Drawings**, and **Image Bulbs**. You can even **Embed YouTube** videos directly.\n\n### 4. MARI (AI)\nPowered by Gemini, **MARI** (Mediated Autonomous Research & Intelligence) is your Pro spatial assistant. It can research the web, generate ideas, and help you organize your mental landscape.\n\n### 5. Cloud Sync & Security\nYour mind is private by default. However, you can **Connect your Google Account** to sync your data across devices securely.\n\n### 6. Power User Features\nTake control with **Multi-selection**, **History (Undo/Redo)**, and **Universal Search**. Customize your experience with **Themes** and use **Import/Export** for full data ownership.\n\n---\n*Welcome to the Wired.*',
         x: cx + 650, y: cy + 150, priority: 'urgent', stackId: mediaId,
         status: 'done',
         spaceId: onboardingId

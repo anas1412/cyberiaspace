@@ -46,13 +46,13 @@ const PricingModal: React.FC<PricingModalProps> = ({ isOpen, onClose }) => {
             </div>
             <div>
               <h2 className="text-xl font-black uppercase tracking-widest text-white">Go Pro</h2>
-              <p className="text-[10px] font-bold text-slate-500 uppercase tracking-[0.2em]">Unlock God Mode & More Space</p>
+              <p className="text-[10px] font-bold text-slate-500 uppercase tracking-[0.2em]">Unlock MARI & More Space</p>
             </div>
           </div>
 
           <div className="space-y-6">
             {[
-              { title: 'The Oracle (AI)', desc: 'Ask AI to help you research and organize your ideas.' },
+              { title: 'MARI (AI)', desc: 'Ask MARI to help you research and organize your ideas.' },
               { title: 'More Workspaces', desc: 'Create up to 8 different worlds (Free only has 3).' },
               { title: 'Bigger Capacity', desc: 'Add up to 50 thoughts in every single space.' },
               { title: '400 Cloud Thoughts', desc: 'High-capacity sync for power users (Free is 60).' },
