@@ -2,31 +2,87 @@
 
 
 
-- add a vercel api route to enable MARI external api for built-in vercel key / add limiters
+- add a vercel api route to enable oracle external api for built-in vercel key / add limiters
 
-- add support to instagram/facebook/reddit/twitter/spotify and popular plateforms embed support
+- on small detail, when there is a text thought and have "open note" it should open when i also click the the text not specifically 'open note' its small to clock on
 
-
-
-
-- maybe change ai chat on the right
+- add support to instagram/facebook/reddit/twitter/spotify and popular plateforms embed support / links preview
 
 
+- maybe change ai chat on the left
+
+- when ai fetchs a youtube video, the title should be in title and the uploader in description investigate that and if its done by oembed or not
 
 
-- make accounts / data sync 
+- small thing when i have multiple thoughts in a stack sometimes when i try to link the thick linking line sometimes not visible under the thoughts
 
-- implement langchain/z or any ai tool for AI 
+- implement Vercel AI SDK for multi models
 
-- use ytb-dl backend to fetch/manage/verify youtube links
+- add the ability to bring your own key or use cyberia AI key
+
+- add payement system
+
+- make a backend system to manage users, their plan, check how many active thoughts/spaces and cloud storage and refund button.
+
+- add banner or some alert system to notify users
+
+- Shareable links (export to a readonly link you can share with others).
 
 
-YOUTUBE_API_KEY="AIzaSyCWdVmdBcShumV6-08YZ3eJuMVV4ThGvO0"
-VITE_GOOGLE_CLIENT_ID="191881102656-ma6udst6nnn64ujslt866l45ff5ak4d4.apps.googleusercontent.com"
+Cyberia is where physics meets productivity. It’s a kinetic workspace that treats ideas as physical objects. Powered by The Oracle (Gemini AI), Cyberia can
+  autonomously research, curate, and organize your thoughts into Kinetic Stacks. Switch instantly between freeform spatial clusters, structured Kanban, and
+  temporal Calendars. It’s not a spreadsheet; it’s a world. Local-first, cloud-synced, and AI-driven.
+
+
+Cyberia is a spatial OS for your mind, where thoughts aren't just data—they're physical objects with mass, velocity, and gravity.
+At its heart is The Oracle, an AI-powered spatial assistant that can research the web, curate content, and autonomously organize your workspace. Whether you're embedding YouTube videos, sketching ideas, or managing deep-data tables, Cyberia uses real-time physics to form Kinetic Stacks—natural clusters that
+stick together and move as one. It's a living, breathing landscape that evolves with your thinking.
+
+ 1. Read-Only Shareable Links (The "Gallery" Feature)
+  Verdict: High Priority / Best Practice
+   * Why: Productivity tools thrive on "Proof of Work." If I build a beautiful mind-map of a project, I want to send a link to my boss or client to show
+     them—without giving them the keys to edit it.
+   * Monetization Idea:
+       * Free: Can share 1 active space at a time.
+       * Pro: Unlimited shareable links + Password protection for links.
+   * The Cyberia Twist: Call them "Published Sectors." The link opens a web-view where the physics still works (you can play with the nodes), but you can't
+     delete or add anything.
+
+
+ 2. Live Collaboration (The "Multiplayer" Mode)
+  Verdict: The "Game Changer" / High Complexity
+   * Why: This moves Cyberia from a "Personal Journal" to a "Team Whiteboard" (Miro/FigJam competitor). It's the #1 reason people pay for Pro software.
+   * The Physics Challenge: Syncing physics in real-time is hard. If I pull a node left and you pull it right at the same time, the "spring forces" need to
+     resolve smoothly across both screens.
+   * Pro Feature Only: Definitely. This requires high-bandwidth server usage (WebSockets).
+   * Brainstorm Idea: Imagine seeing your teammate's cursor as a small "spark" or "drone" flying around the workspace moving objects with you.
+
+3. Version History (The "Time Machine")
+  Verdict: Professional Standard
+   * Why: If a user accidentally deletes a complex stack or mess up their layout, they need a way to go back.
+   * Monetization Idea:
+       * Free: 24-hour undo history.
+       * Pro: 30-day "Snapshot" history.
+
+
+
+# Created by Vercel CLI
+CONTACT_EMAIL="anasbassoumi@gmail.com"
+FEEDBACK_ADMIN_PASSWORD="1412"
 KV_REST_API_READ_ONLY_TOKEN="AsBFAAIgcDI8Q5YpL3irF8zYizgUBv5ToZoxY8KfLzjRNO_Cs96mpA"
 KV_REST_API_TOKEN="AcBFAAIncDIwMTM1M2YyMzg3YWQ0NjQzYWM1ZmU1MjJhZGFjOWU3ZnAyNDkyMjE"
 KV_REST_API_URL="https://rested-tarpon-49221.upstash.io"
 KV_URL="rediss://default:AcBFAAIncDIwMTM1M2YyMzg3YWQ0NjQzYWM1ZmU1MjJhZGFjOWU3ZnAyNDkyMjE@rested-tarpon-49221.upstash.io:6379"
 REDIS_URL="rediss://default:AcBFAAIncDIwMTM1M2YyMzg3YWQ0NjQzYWM1ZmU1MjJhZGFjOWU3ZnAyNDkyMjE@rested-tarpon-49221.upstash.io:6379"
-  
+RESEND_API_KEY="re_eYpdJyoh_DPKKee9pz3wmzxVCF7WUMstW"
+VERCEL_OIDC_TOKEN="eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCIsImtpZCI6Im1yay00MzAyZWMxYjY3MGY0OGE5OGFkNjFkYWRlNGEyM2JlNyJ9.eyJpc3MiOiJodHRwczovL29pZGMudmVyY2VsLmNvbS9hbmFzMTQxMnMtcHJvamVjdHMiLCJzdWIiOiJvd25lcjphbmFzMTQxMnMtcHJvamVjdHM6cHJvamVjdDpjeWJlcmlhOmVudmlyb25tZW50OmRldmVsb3BtZW50Iiwic2NvcGUiOiJvd25lcjphbmFzMTQxMnMtcHJvamVjdHM6cHJvamVjdDpjeWJlcmlhOmVudmlyb25tZW50OmRldmVsb3BtZW50IiwiYXVkIjoiaHR0cHM6Ly92ZXJjZWwuY29tL2FuYXMxNDEycy1wcm9qZWN0cyIsIm93bmVyIjoiYW5hczE0MTJzLXByb2plY3RzIiwib3duZXJfaWQiOiJ0ZWFtX3lLYWJaZmYyVHRPY0tOUWlxU0ZIQ0FjNyIsInByb2plY3QiOiJjeWJlcmlhIiwicHJvamVjdF9pZCI6InByal9CRXRzeU1nNHp1bmdxSFBMTHg5MVc2Y1FtQ2VVIiwiZW52aXJvbm1lbnQiOiJkZXZlbG9wbWVudCIsInBsYW4iOiJob2JieSIsInVzZXJfaWQiOiJaSDVmOUZ2ZmhXaXJBbUptRUF2dW9xOXoiLCJuYmYiOjE3NzA1NDUyNDksImlhdCI6MTc3MDU0NTI0OSwiZXhwIjoxNzcwNTg4NDQ5fQ.E9VlzY0H9klfDyKygymNIKCXwCtycr88WZr3XNRskGGKQcQmALWurQYrbRXCX5C8O0CX5VBoQfpVz4gI_MhD9ClSqkWuaBjQDBlf6icwXWYgMnyXHTdFj1KOanU96K72ya9HElSluhHrgicrcqdhPKkGA_-LNAl80ctE_7u3hXfggsdlQ4BZtkr5UFPs3ZFjHHGbtFxJBMY6DLlqsW77KsGJRDlPSNdUhXdCiRuvRGZevR26GeRx0M3DEYoEDvWYtqPj433t9J-8y__PtfrXHV17UAIULDbI4hck8uDg7_aI3qc6YBEyFsK1SUdbciCL0Xf0j5fLSYBvWP0Oeqs5ug"
+VITE_APP_VERSION="0.1.0"
+VITE_CONTACT_EMAIL="anasbassoumi@gmail.com"
+VITE_GOOGLE_CLIENT_ID="191881102656-ma6udst6nnn64ujslt866l45ff5ak4d4.apps.googleusercontent.com"
+YOUTUBE_API_KEY="AIzaSyCWdVmdBcShumV6-08YZ3eJuMVV4ThGvO0"
+GOOGLE_GENERATIVE_AI_API_KEY="AIzaSyDBrPbxgoC215xxZkUPTlw4Nl5no9rJr-4"
+GOOGLE_AI_MODEL="gemini-2.5"
+
+For the IT Consulting, look for codes related to "Conseil en informatique" or "Services numériques".
+For the SaaS, you can add it as a secondary activity under "Vente de services en ligne".
 

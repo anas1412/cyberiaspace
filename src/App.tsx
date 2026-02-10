@@ -5,27 +5,27 @@ import { useStore } from './store/useStore';
 import { useModalStore } from './store/useModalStore';
 import { useAuthStore } from './store/useAuthStore';
 import { PLAN_CONFIG, type SubscriptionPlan } from './constants';
-import Viewport from './components/Viewport';                                                                                            
-import Toolbar from './components/Toolbar';                                                                                              
-import Inspector from './components/Inspector';                                                                                          
+import Viewport from './components/Viewport';
+import Toolbar from './components/Toolbar';
+import Inspector from './components/Inspector';
 import MultiSelectionMenu from './components/MultiSelectionMenu';
-import EmptyState from './components/EmptyState';                                                                                        
-import KanbanOverlay from './components/KanbanOverlay';                                                                                  
-import CalendarOverlay from './components/CalendarOverlay';                                                                              
-import Modal from './components/Modal';                                                                                                  
+import EmptyState from './components/EmptyState';
+import KanbanOverlay from './components/KanbanOverlay';
+import CalendarOverlay from './components/CalendarOverlay';
+import Modal from './components/Modal';
 import PricingModal from './components/PricingModal';
 import Lightbox from './components/Lightbox';
-                                                                                            
-import TextFocusEditor from './components/TextFocusEditor';                                                                              
-import TableFocusEditor from './components/TableFocusEditor';                                                                            
-import PaintFocusEditor from './components/PaintFocusEditor';                                                                            
-import TasksFocusEditor from './components/TasksFocusEditor';                                                                            
+
+import TextFocusEditor from './components/TextFocusEditor';
+import TableFocusEditor from './components/TableFocusEditor';
+import PaintFocusEditor from './components/PaintFocusEditor';
+import TasksFocusEditor from './components/TasksFocusEditor';
 import EmbedFocusEditor from './components/EmbedFocusEditor';
 import ChatOverlay from './components/ChatOverlay';
 import MobileNotSupported from './components/MobileNotSupported';
 import FeedbackPage from './components/FeedbackPage';
 
-import { fetchYouTubeMeta, getYouTubeVideoId } from './utils/youtube';
+import { fetchEmbedMeta } from './utils/embeds';
 
 function App() {
   const init = useStore((state) => state.init);
@@ -36,7 +36,7 @@ function App() {
   const setInspectorOpen = useStore((state) => state.setInspectorOpen);
   const activeSpaceId = useStore((state) => state.activeSpaceId);
   const spaces = useStore((state) => state.spaces);
-  
+
   const { openModal, isPricingOpen, closePricing, openPricing } = useModalStore();
   const { user } = useAuthStore();
   const limits = (user?.plan && user.plan in PLAN_CONFIG) ? PLAN_CONFIG[user.plan as SubscriptionPlan] : PLAN_CONFIG.free;
@@ -71,7 +71,7 @@ function App() {
     const handleMouseMove = (e: MouseEvent) => {
       mouseScreenPos.current = { x: e.clientX, y: e.clientY };
       const activeSpace = useStore.getState().spaces.find(s => s.id === useStore.getState().activeSpaceId);
-      
+
       if (activeSpace?.mode === 'spatial') {
         const tx = activeSpace.transformX ?? 0;
         const ty = activeSpace.transformY ?? 0;
@@ -161,26 +161,26 @@ function App() {
         const doc = parser.parseFromString(html, 'text/html');
         const img = doc.querySelector('img');
         const src = img?.getAttribute('src');
-        
+
         if (src) {
           // More robust GIF detection (handles hex encoding like Wattpad's 2e676966, query params, and anchors)
-          const isGif = /\.(gif|2e676966)($|\?|#|&)/i.test(src) || 
-                        src.includes('image/gif') || 
-                        src.includes('giphy.com') || 
-                        src.includes('tenor.com') ||
-                        src.toLowerCase().includes('/gif');
-          
-          const isImage = src.startsWith('data:image/') || 
-                          /\.(jpg|jpeg|png|webp|avif|svg)($|\?|#|&)/i.test(src) ||
-                          /2e(6a7067|706e67|77656270)/i.test(src); // Support hex for jpg, png, webp
-          
+          const isGif = /\.(gif|2e676966)($|\?|#|&)/i.test(src) ||
+            src.includes('image/gif') ||
+            src.includes('giphy.com') ||
+            src.includes('tenor.com') ||
+            src.toLowerCase().includes('/gif');
+
+          const isImage = src.startsWith('data:image/') ||
+            /\.(jpg|jpeg|png|webp|avif|svg)($|\?|#|&)/i.test(src) ||
+            /2e(6a7067|706e67|77656270)/i.test(src); // Support hex for jpg, png, webp
+
           if (isGif || isImage) {
             e.preventDefault();
-            const id = await addThought({ 
+            const id = await addThought({
               ...getPlacementProps(),
-              type: 'image', 
-              image: src, 
-              text: "Image" 
+              type: 'image',
+              image: src,
+              text: "Image"
             });
             if (id !== -1) {
               setSelectedThoughtId(id);
@@ -209,11 +209,11 @@ function App() {
           }
           const reader = new FileReader();
           reader.onload = async (event) => {
-            const id = await addThought({ 
+            const id = await addThought({
               ...getPlacementProps(),
-              type: 'image', 
-              image: event.target?.result as string, 
-              text: "Image" 
+              type: 'image',
+              image: event.target?.result as string,
+              text: "Image"
             });
             if (id !== -1) {
               setSelectedThoughtId(id);
@@ -229,49 +229,51 @@ function App() {
       // Priority 3: Text
       const text = clipboardData.getData('text');
       if (text && text.trim()) {
-        e.preventDefault();
-        
         const cleanText = text.trim();
-        const videoId = getYouTubeVideoId(cleanText);
-        
-        if (videoId) {
-          const id = await addThought({ 
+        const isUrl = /^https?:\/\/[^\s]+$/i.test(cleanText);
+
+        if (isUrl) {
+          e.preventDefault();
+
+          const id = await addThought({
             ...getPlacementProps(),
-            type: 'embed', 
-            text: "Loading Title...", 
-            content: cleanText 
+            type: 'embed',
+            text: "Loading Link...",
+            content: cleanText
           });
-          
+
           if (id !== -1) {
             setSelectedThoughtId(id);
-            // We specifically don't open the inspector for YouTube pastes 
-            // to keep the flow uninterrupted.
-            
-            fetchYouTubeMeta(cleanText)
+
+            fetchEmbedMeta(cleanText)
               .then(metadata => {
-                if (metadata && metadata.title) {
+                if (metadata) {
                   useStore.getState().updateThought(id, {
-                    text: metadata.title,
-                    description: metadata.author_name || ""
+                    text: metadata.title || "Link",
+                    description: metadata.author_name || metadata.provider_name || "",
+                    image: metadata.thumbnail_url || null,
+                    meta: metadata
                   });
                 }
               })
               .catch(err => {
-                console.warn("YouTube metadata fetch failed:", err);
-                useStore.getState().updateThought(id, { text: "YouTube Video" });
+                console.warn("Embed metadata fetch failed:", err);
+                useStore.getState().updateThought(id, { text: "Link" });
               });
           }
-        } else {
-          const id = await addThought({ 
-            ...getPlacementProps(),
-            type: 'text', 
-            text: "Note", 
-            content: cleanText 
-          });
-          if (id !== -1) {
-            setSelectedThoughtId(id);
-            setInspectorOpen(true);
-          }
+          return;
+        }
+
+        e.preventDefault();
+        const id = await addThought({
+          ...getPlacementProps(),
+          type: 'text',
+          text: "Note",
+          content: cleanText
+        });
+        if (id !== -1) {
+          setSelectedThoughtId(id);
+          setInspectorOpen(true);
         }
       }
     };
@@ -301,7 +303,7 @@ function App() {
           <div className="stars-layer stars-twinkle" />
           <div className="nebula-cloud" />
           <div className="grain" />
-          
+
           <Viewport />
           <EmptyState />
           <KanbanOverlay />

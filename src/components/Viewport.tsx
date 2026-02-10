@@ -389,29 +389,6 @@ const Viewport: React.FC = () => {
       }
     };
 
-    const handlePaste = async (e: ClipboardEvent) => {
-      const items = Array.from(e.clipboardData?.items || []);
-      const imageItem = items.find(item => item.type.startsWith('image/'));
-
-      if (imageItem) {
-        const file = imageItem.getAsFile();
-        if (file) {
-          const reader = new FileReader();
-          reader.onload = async (ev) => {
-            const dataUrl = ev.target?.result as string;
-            await addThought({
-              type: 'image',
-              image: dataUrl,
-              x: mouseWorldPos.current.x,
-              y: mouseWorldPos.current.y,
-              text: 'Pasted Image'
-            });
-          };
-          reader.readAsDataURL(file);
-        }
-      }
-    };
-
     window.addEventListener('mousedown', handleMouseDownLocal);
     window.addEventListener('mousemove', handleMouseMove);
     window.addEventListener('mouseup', handleMouseUp);
@@ -423,7 +400,6 @@ const Viewport: React.FC = () => {
     window.addEventListener('dragover', handleDragOver);
     window.addEventListener('dragleave', handleDragLeave);
     window.addEventListener('drop', handleDrop);
-    window.addEventListener('paste', handlePaste);
 
     return () => {
       window.removeEventListener('mousedown', handleMouseDownLocal);
@@ -437,7 +413,6 @@ const Viewport: React.FC = () => {
       window.removeEventListener('dragover', handleDragOver);
       window.removeEventListener('dragleave', handleDragLeave);
       window.removeEventListener('drop', handleDrop);
-      window.removeEventListener('paste', handlePaste);
     };
   }, [activeSpace, setInspectorOpen, isGrabbing, selectedThoughtId, selectedThoughtIds, openModal, deleteThought, deleteSelectedThoughts, thoughts, addThought, setSelectedThoughtId, setSelectedThoughtIds, clearSelection, transform]);
 

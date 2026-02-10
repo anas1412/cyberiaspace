@@ -1,11 +1,11 @@
 import React from 'react';
 import { useStore } from '../store/useStore';
 import { useModalStore } from '../store/useModalStore';
-import { X, Maximize2, Image as ImageIcon, Link, Trash2, Youtube, Type, ListTodo, Palette, Table, Calendar, ChevronLeft, ChevronRight, Layers, ArrowDown } from 'lucide-react';
+import { X, Maximize2, Image as ImageIcon, Link, Trash2, Youtube, Type, ListTodo, Palette, Table, Calendar, ChevronLeft, ChevronRight, Layers, ArrowDown, Share2 } from 'lucide-react';
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 import { motion, AnimatePresence } from 'framer-motion';
-import { fetchYouTubeMeta, getYouTubeVideoId } from '../utils/youtube';
+import { fetchEmbedMeta } from '../utils/embeds';
 
 function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -108,8 +108,8 @@ const DatePicker: React.FC<{ value: string; onChange: (val: string) => void }> =
                     onClick={() => selectDate(day)}
                     className={cn(
                       "w-full aspect-square rounded-lg text-[9px] font-bold transition-all flex items-center justify-center border",
-                      isSelected(day) 
-                        ? "bg-[var(--accent)] border-[var(--accent)] text-white shadow-[0_0_10px_var(--accent-glow)]" 
+                      isSelected(day)
+                        ? "bg-[var(--accent)] border-[var(--accent)] text-white shadow-[0_0_10px_var(--accent-glow)]"
                         : isToday(day)
                           ? "bg-white/10 border-white/20 text-white"
                           : "bg-transparent border-transparent text-slate-400 hover:bg-white/5 hover:text-white"
@@ -122,13 +122,13 @@ const DatePicker: React.FC<{ value: string; onChange: (val: string) => void }> =
             </div>
 
             <div className="mt-4 pt-3 border-t border-white/5 flex justify-between gap-2">
-              <button 
+              <button
                 onClick={() => { onChange(""); setIsOpen(false); }}
                 className="flex-1 py-1.5 rounded-lg bg-white/5 hover:bg-white/10 text-[8px] font-black uppercase tracking-widest text-slate-500 hover:text-white transition-all"
               >
                 Clear
               </button>
-              <button 
+              <button
                 onClick={() => { selectDate(new Date().getDate()); setViewDate(new Date()); }}
                 className="flex-1 py-1.5 rounded-lg bg-[var(--accent)]/20 hover:bg-[var(--accent)]/30 text-[8px] font-black uppercase tracking-widest text-[var(--accent-secondary)] transition-all"
               >
@@ -156,7 +156,7 @@ const Inspector: React.FC = () => {
   const setActiveFocus = useStore((state) => state.setActiveFocus);
   const bringToFront = useStore((state) => state.bringToFront);
   const sendToBack = useStore((state) => state.sendToBack);
-  
+
   const { openModal } = useModalStore();
 
   const thought = thoughts.find((t) => t.id === selectedThoughtId);
@@ -204,8 +204,8 @@ const Inspector: React.FC = () => {
   return (
     <AnimatePresence>
       {isInspectorOpen && thought && (
-        <motion.div 
-          id="inspector" 
+        <motion.div
+          id="inspector"
           initial={{ opacity: 0, x: 20 }}
           animate={{ opacity: 1, x: 0 }}
           exit={{ opacity: 0, x: 20 }}
@@ -233,8 +233,8 @@ const Inspector: React.FC = () => {
                     onClick={() => handleTypeChange(type)}
                     className={cn(
                       "p-2.5 rounded-xl flex flex-col items-center justify-center gap-1 transition-all border",
-                      thought.type === type 
-                        ? "bg-[var(--accent)]/10 border-[var(--accent)] text-white shadow-[0_0_15px_rgba(99,102,241,0.2)]" 
+                      thought.type === type
+                        ? "bg-[var(--accent)]/10 border-[var(--accent)] text-white shadow-[0_0_15px_rgba(99,102,241,0.2)]"
                         : "bg-white/[0.03] border-transparent text-slate-500 hover:bg-white/[0.06] hover:text-slate-300"
                     )}
                     title={type.charAt(0).toUpperCase() + type.slice(1)}
@@ -269,13 +269,13 @@ const Inspector: React.FC = () => {
                 className="w-full bg-[var(--bg-page)]/20 border border-white/10 rounded-xl p-3 text-xs outline-none focus:border-[var(--accent)] text-[var(--text-primary)] placeholder:text-slate-500"
                 placeholder="Description"
               />
-              
-              <DatePicker 
-                value={localDate} 
+
+              <DatePicker
+                value={localDate}
                 onChange={(val) => {
                   setLocalDate(val);
                   updateThought(thought.id, { date: val });
-                }} 
+                }}
               />
 
               <div className="space-y-2">
@@ -287,13 +287,13 @@ const Inspector: React.FC = () => {
                       onClick={() => updateThought(thought.id, { status: s })}
                       className={cn(
                         "border rounded-lg py-2 text-[8px] font-bold uppercase transition-colors",
-                        thought.status === s 
+                        thought.status === s
                           ? {
-                              'none': 'bg-white/10 border-white/30 text-white',
-                              'todo': 'bg-[var(--status-todo)]/30 border-[var(--status-todo)] text-white',
-                              'doing': 'bg-[var(--status-doing)]/30 border-[var(--status-doing)] text-white',
-                              'done': 'bg-[var(--status-done)]/30 border-[var(--status-done)] text-white',
-                            }[s]
+                            'none': 'bg-white/10 border-white/30 text-white',
+                            'todo': 'bg-[var(--status-todo)]/30 border-[var(--status-todo)] text-white',
+                            'doing': 'bg-[var(--status-doing)]/30 border-[var(--status-doing)] text-white',
+                            'done': 'bg-[var(--status-done)]/30 border-[var(--status-done)] text-white',
+                          }[s]
                           : "bg-white/5 border-white/10 text-slate-400 hover:bg-white/10"
                       )}
                     >
@@ -312,14 +312,14 @@ const Inspector: React.FC = () => {
                       onClick={() => handlePriorityChange(p)}
                       className={cn(
                         "border rounded-lg py-2 text-[8px] font-bold uppercase transition-colors",
-                        thought.priority === p 
+                        thought.priority === p
                           ? {
-                              'none': 'bg-white/10 border-white/30 text-white',
-                              'low': 'bg-[var(--prio-low)]/30 border-[var(--prio-low)] text-white',
-                              'medium': 'bg-[var(--prio-medium)]/30 border-[var(--prio-medium)] text-white',
-                              'high': 'bg-[var(--prio-high)]/30 border-[var(--prio-high)] text-white',
-                              'urgent': 'bg-[var(--prio-urgent)]/30 border-[var(--prio-urgent)] text-white',
-                            }[p]
+                            'none': 'bg-white/10 border-white/30 text-white',
+                            'low': 'bg-[var(--prio-low)]/30 border-[var(--prio-low)] text-white',
+                            'medium': 'bg-[var(--prio-medium)]/30 border-[var(--prio-medium)] text-white',
+                            'high': 'bg-[var(--prio-high)]/30 border-[var(--prio-high)] text-white',
+                            'urgent': 'bg-[var(--prio-urgent)]/30 border-[var(--prio-urgent)] text-white',
+                          }[p]
                           : "bg-white/5 border-white/10 text-slate-400 hover:bg-white/10"
                       )}
                     >
@@ -347,7 +347,7 @@ const Inspector: React.FC = () => {
 
               <div className="pt-4 border-t border-white/5">
                 {thought.type === 'text' && (
-                  <button 
+                  <button
                     onClick={() => setActiveFocus(thought.id, 'text')}
                     className="w-full bg-[var(--accent)]/10 hover:bg-[var(--accent)]/20 border border-[var(--accent)]/30 text-[var(--accent-secondary)] py-6 rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] transition-all flex flex-col items-center gap-3"
                   >
@@ -355,22 +355,22 @@ const Inspector: React.FC = () => {
                     Open Full-Screen Editor
                   </button>
                 )}
-                
+
                 {thought.type === 'tasks' && (
                   <div className="space-y-4">
-                    <button 
+                    <button
                       onClick={() => setActiveFocus(thought.id, 'tasks')}
                       className="w-full bg-[var(--accent)]/10 hover:bg-[var(--accent)]/20 border border-[var(--accent)]/30 text-[var(--accent-secondary)] py-6 rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] transition-all flex flex-col items-center gap-3"
                     >
                       <Maximize2 className="w-5 h-5" />
                       Open Task Manager
                     </button>
-                    
+
                     <div className="space-y-3">
                       <div className="space-y-2">
                         {thought.tasks.map((task, i) => (
                           <div key={i} className="flex items-center gap-3">
-                            <div 
+                            <div
                               className={cn("checkbox w-[18px] h-[18px] border-2 border-white/10 rounded-[6px] flex-shrink-0 cursor-pointer transition-all", task.done && "bg-[var(--status-todo)] border-[var(--status-todo)]")}
                               onClick={() => {
                                 const newTasks = [...thought.tasks];
@@ -390,7 +390,7 @@ const Inspector: React.FC = () => {
                               }}
                               className="flex-1 bg-black/20 border border-white/5 rounded-xl p-2 text-xs outline-none text-white focus:border-[var(--accent)]"
                             />
-                            <button 
+                            <button
                               onClick={() => {
                                 const newTasks = [...thought.tasks];
                                 newTasks.splice(i, 1);
@@ -403,7 +403,7 @@ const Inspector: React.FC = () => {
                           </div>
                         ))}
                       </div>
-                      <button 
+                      <button
                         onClick={() => updateThought(thought.id, { tasks: [...thought.tasks, { text: 'Task', done: false }] })}
                         className="w-full py-2 border border-dashed border-white/10 rounded-xl text-[10px] uppercase font-bold text-slate-500 hover:text-white"
                       >
@@ -414,7 +414,7 @@ const Inspector: React.FC = () => {
                 )}
 
                 {thought.type === 'table' && (
-                  <button 
+                  <button
                     onClick={() => setActiveFocus(thought.id, 'table')}
                     className="w-full bg-[var(--accent)]/10 hover:bg-[var(--accent)]/20 border border-[var(--accent)]/30 text-[var(--accent-secondary)] py-6 rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] transition-all flex flex-col items-center gap-3"
                   >
@@ -424,7 +424,7 @@ const Inspector: React.FC = () => {
                 )}
 
                 {thought.type === 'paint' && (
-                  <button 
+                  <button
                     onClick={() => setActiveFocus(thought.id, 'paint')}
                     className="w-full bg-[var(--accent)]/10 hover:bg-[var(--accent)]/20 border border-[var(--accent)]/30 text-[var(--accent-secondary)] py-6 rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] transition-all flex flex-col items-center gap-3"
                   >
@@ -435,42 +435,41 @@ const Inspector: React.FC = () => {
 
                 {thought.type === 'embed' && (
                   <div className="space-y-4">
-                    <button 
+                    <button
                       onClick={() => setActiveFocus(thought.id, 'embed')}
-                      className="w-full bg-red-500/10 hover:bg-red-500/20 border border-red-500/30 text-red-400 py-6 rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] transition-all flex flex-col items-center gap-3"
+                      className="w-full bg-indigo-500/10 hover:bg-indigo-500/20 border border-indigo-500/30 text-[var(--accent-secondary)] py-6 rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] transition-all flex flex-col items-center gap-3"
                     >
-                      <Youtube className="w-5 h-5" />
-                      Open Video Player
+                      <Share2 className="w-5 h-5" />
+                      Open Interaction Layer
                     </button>
-                    
+
                     <div className="space-y-2">
-                      <label className="text-[9px] uppercase font-bold tracking-widest text-slate-500 ml-1">YouTube URL</label>
-                      <input 
-                        type="text" 
+                      <label className="text-[9px] uppercase font-bold tracking-widest text-slate-500 ml-1">Universal URL</label>
+                      <input
+                        type="text"
                         value={thought.content}
                         onChange={(e) => {
                           const newUrl = e.target.value;
                           updateThought(thought.id, { content: newUrl });
-                          
-                          const videoId = getYouTubeVideoId(newUrl);
-                          if (videoId) {
-                            // Fetch metadata for the new URL
-                            fetchYouTubeMeta(newUrl)
+
+                          if (newUrl.startsWith('http')) {
+                            // Fetch metadata for the new URL (Spotify, YT, etc)
+                            fetchEmbedMeta(newUrl)
                               .then(metadata => {
                                 if (metadata && metadata.title) {
-                                  updateThought(thought.id, { 
+                                  updateThought(thought.id, {
                                     text: metadata.title,
-                                    description: metadata.author_name || "" 
+                                    description: metadata.author_name || metadata.provider_name || ""
                                   });
                                 }
                               })
                               .catch(err => {
-                                console.warn("YouTube metadata fetch failed:", err);
+                                console.warn("Embed metadata fetch failed:", err);
                               });
                           }
                         }}
-                        placeholder="https://www.youtube.com/watch?v=..."
-                        className="w-full bg-black/40 border border-white/10 rounded-xl p-3 text-xs outline-none focus:border-red-500 text-white"
+                        placeholder="Paste Spotify, YouTube, X, or Reddit link..."
+                        className="w-full bg-black/40 border border-white/10 rounded-xl p-3 text-xs outline-none focus:border-[var(--accent)] text-white"
                       />
                     </div>
                   </div>
@@ -479,9 +478,9 @@ const Inspector: React.FC = () => {
                 {thought.type === 'image' && (
                   <div className="space-y-3">
                     <div className="border border-dashed border-white/10 rounded-xl p-4 text-center hover:bg-white/5 transition-colors cursor-pointer relative">
-                      <input 
-                        type="file" 
-                        accept="image/*" 
+                      <input
+                        type="file"
+                        accept="image/*"
                         className="absolute inset-0 opacity-0 cursor-pointer"
                         onChange={(e) => {
                           const file = e.target.files?.[0];
@@ -505,9 +504,9 @@ const Inspector: React.FC = () => {
                       <p className="text-[9px] text-slate-400 uppercase font-bold tracking-widest">Upload or Drag Image</p>
                     </div>
                     <div className="flex gap-2">
-                      <input 
-                        type="text" 
-                        placeholder="Or paste image URL..." 
+                      <input
+                        type="text"
+                        placeholder="Or paste image URL..."
                         className="flex-1 bg-black/40 border border-white/10 rounded-xl p-2 text-xs outline-none focus:border-[var(--accent)] text-white"
                         onKeyDown={(e) => {
                           if (e.key === 'Enter') {
@@ -530,7 +529,7 @@ const Inspector: React.FC = () => {
 
               <div className="space-y-3 pt-4 border-t border-white/5">
                 <label className="text-[9px] uppercase font-bold tracking-widest text-slate-500 ml-1">Stack</label>
-                
+
                 {stack ? (
                   <div className="p-4 bg-[var(--bg-page)]/20 border border-white/10 rounded-2xl space-y-4">
                     <div className="flex items-center gap-3">
@@ -546,7 +545,7 @@ const Inspector: React.FC = () => {
                         placeholder="Stack Name"
                       />
                     </div>
-                    <button 
+                    <button
                       onClick={() => unlinkSelectedThoughts()}
                       className="w-full py-2 bg-white/5 hover:bg-red-500/10 text-slate-400 hover:text-red-400 border border-white/5 rounded-xl text-[8px] font-black uppercase tracking-widest transition-all"
                     >
@@ -574,7 +573,7 @@ const Inspector: React.FC = () => {
                         className="w-full bg-[var(--bg-page)]/20 border border-white/10 rounded-xl p-3 text-xs outline-none focus:border-[var(--accent)] text-[var(--text-primary)] placeholder:text-slate-500 transition-all"
                       />
                     </div>
-                    
+
                     {stacks.length > 0 && (
                       <div className="space-y-1.5">
                         <label className="text-[7px] uppercase font-black tracking-[0.2em] text-slate-600 ml-1">Existing Stacks</label>
@@ -614,7 +613,7 @@ const Inspector: React.FC = () => {
                 </div>
               </div>
 
-              <button 
+              <button
                 onClick={handleDeleteThought}
                 className="w-full bg-red-500/10 hover:bg-red-500/20 text-red-400 py-4 rounded-2xl text-[10px] font-bold uppercase tracking-widest transition-colors"
               >
