@@ -104,13 +104,6 @@ const Viewport: React.FC = () => {
       }
     };
 
-    const getGlobalScale = () => {
-      const body = document.querySelector('.app-body') || document.body;
-      const style = window.getComputedStyle(body);
-      const m = new DOMMatrix(style.transform);
-      return m.a || 1;
-    };
-
     const handleMouseMove = (e: MouseEvent) => {
       const s = getGlobalScale();
       const lx = e.clientX / s;
@@ -162,7 +155,7 @@ const Viewport: React.FC = () => {
       lastMousePos.current = { x: lx, y: ly, rawX: e.clientX, rawY: e.clientY };
     };
 
-    const handleMouseUp = (e: MouseEvent) => {
+    const handleMouseUp = () => {
       isPanningRef.current = false;
       isSelectingRef.current = false;
       setIsGrabbing(false);
@@ -205,11 +198,15 @@ const Viewport: React.FC = () => {
         }
       }
 
+      const s = getGlobalScale();
+      const lx = e.clientX / s;
+      const ly = e.clientY / s;
+
       if (activeSpace?.mode === 'kanban') {
         let newY = transform.y - e.deltaY;
         if (newY > 0) newY = 0;
 
-        const viewHeight = window.innerHeight;
+        const viewHeight = window.innerHeight / s;
         const contentHeight = kanbanHeight.current + 100;
         const limit = Math.min(0, viewHeight - contentHeight);
 
@@ -221,11 +218,11 @@ const Viewport: React.FC = () => {
       } else {
         const delta = -e.deltaY;
         const newScale = Math.min(Math.max(0.1, transform.scale + delta * 0.001), 2);
-        const wx = (e.clientX - transform.x) / transform.scale;
-        const wy = (e.clientY - transform.y) / transform.scale;
+        const wx = (lx - transform.x) / transform.scale;
+        const wy = (ly - transform.y) / transform.scale;
         setTransform({
-          x: e.clientX - wx * newScale,
-          y: e.clientY - wy * newScale,
+          x: lx - wx * newScale,
+          y: ly - wy * newScale,
           scale: newScale,
         });
       }
@@ -278,14 +275,16 @@ const Viewport: React.FC = () => {
 
         // Mode-specific logic
         if (activeSpace?.mode === 'kanban') {
-          const x = lastMousePos.current.x; // screen x
-          const width = window.innerWidth;
-          if (x < width * 0.25) newThoughtProps.status = 'none';
-          else if (x < width * 0.50) newThoughtProps.status = 'todo';
-          else if (x < width * 0.75) newThoughtProps.status = 'doing';
+          const s = getGlobalScale();
+          const lx = lastMousePos.current.x;
+          const width = window.innerWidth / s;
+          if (lx < width * 0.25) newThoughtProps.status = 'none';
+          else if (lx < width * 0.50) newThoughtProps.status = 'todo';
+          else if (lx < width * 0.75) newThoughtProps.status = 'doing';
           else newThoughtProps.status = 'done';
         } else if (activeSpace?.mode === 'calendar') {
-          const elements = document.elementsFromPoint(lastMousePos.current.x, lastMousePos.current.y);
+          // elementsFromPoint needs raw screen coordinates
+          const elements = document.elementsFromPoint(lastMousePos.current.rawX, lastMousePos.current.rawY);
           const cell = elements.find(el => (el as HTMLElement).classList.contains('cal-cell'));
           if (cell) {
             newThoughtProps.date = (cell as HTMLElement).dataset.date;
