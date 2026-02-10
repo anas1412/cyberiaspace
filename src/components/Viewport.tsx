@@ -169,7 +169,7 @@ const Viewport: React.FC = () => {
 
     const handleWheel = (e: WheelEvent) => {
       const target = e.target as HTMLElement;
-      if (target.closest('#inspector, #text-focus-overlay, #table-focus-overlay, #chat-overlay, .focus-box')) return;
+      if (target.closest('#inspector, #text-focus-overlay, #table-focus-overlay, #chat-overlay, .focus-box, #space-switcher-list')) return;
 
       const isUnscheduledNode = target.closest('[data-unscheduled="true"]');
       const isSidebar = target.closest('#cal-sidebar-content');

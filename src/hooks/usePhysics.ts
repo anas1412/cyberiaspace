@@ -262,6 +262,15 @@ export const usePhysics = (
     const physicsEnabled = activeSpace?.physics ?? true;
     const currentSpaceId = activeSpaceId || null;
 
+    // Use Logical Dimensions to account for CSS Scaling
+    const logicalWidth = worldRef.current?.clientWidth || window.innerWidth;
+    const logicalHeight = worldRef.current?.clientHeight || window.innerHeight;
+
+    // Detect Global Scale (from index.css rule)
+    const bodyStyle = window.getComputedStyle(document.querySelector('.app-body') || document.body);
+    const matrix = new DOMMatrix(bodyStyle.transform);
+    const globalScale = matrix.a || 1; // matrix.a is the horizontal scale
+
     // --- CRITICAL: Frame-Accurate Space Snapping ---
     if (currentSpaceId !== lastLoopSpaceId.current) {
         lastLoopSpaceId.current = currentSpaceId;
@@ -302,7 +311,7 @@ export const usePhysics = (
              const p = state.get(t.id); if (!p) return; 
              const isDraggingThis = dragRef.current?.initialPositions.has(t.id);
              
-             const colWidth = window.innerWidth / 4; 
+             const colWidth = logicalWidth / 4; 
              const targetX = (colWidth * colIdx) + (colWidth / 2);
              const el = elements.current.get(t.id); const height = el?.offsetHeight || 120; const targetY = currentY + height / 2; 
              
@@ -325,7 +334,7 @@ export const usePhysics = (
     } else if (mode === 'calendar') {
       const year = calendarViewDate.getFullYear(); const month = calendarViewDate.getMonth(); const firstDay = new Date(year, month, 1).getDay() || 7;
       const sidebarWidth = 260; const gap = 20; const padding = 40; const topPadding = 190; const mainLeft = padding + sidebarWidth + gap;
-      const mainWidth = window.innerWidth - mainLeft - padding; const cellWidth = mainWidth / 7; const cellHeight = (window.innerHeight - topPadding - padding) / 5;
+      const mainWidth = logicalWidth - mainLeft - padding; const cellWidth = mainWidth / 7; const cellHeight = (logicalHeight - topPadding - padding) / 5;
       const allThoughts = Array.from(thoughtMap.current.values());
       const scheduled = allThoughts.filter(t => !!t.date); 
       const unscheduled = allThoughts.filter(t => !t.date).sort((a,b) => a.order - b.order);
@@ -380,9 +389,9 @@ export const usePhysics = (
             const h = el?.offsetHeight || 120;
             const nodeHeight = h * uniformScale;
 
-            // Fixed Top-Left Anchoring (Higher up to match design)
-            const startX = cellX + 10;
-            const startY = cellY + 10;
+            // Refined Top-Left Anchoring: NEVER CHANGE THIS - it is the basis of all our positioning logic in calendar mode
+            const startX = cellX + 8;
+            const startY = cellY + -7;
 
             const targetX = startX + (index * hSpread) + cardWidth / 2;
             const targetY = startY + (index * vSpread) + nodeHeight / 2;
@@ -401,13 +410,13 @@ export const usePhysics = (
           groupThoughts.forEach(t => {
             const p = state.get(t.id);
             if (!p || dragRef.current?.initialPositions.has(t.id)) return;
-            p.x = window.innerWidth / 2; p.y = window.innerHeight + 500; p.scale = 0;
+            p.x = logicalWidth / 2; p.y = logicalHeight + 500; p.scale = 0;
           });
         }
       });
 
       const contentRect = sbContent?.getBoundingClientRect();
-      let currentSB_Y = contentRect ? contentRect.top + 20 : 200; 
+      let currentSB_Y = contentRect ? (contentRect.top / globalScale) + 20 : 200; 
       const scrollTop = sbContent?.scrollTop || 0;
       unscheduled.forEach((t) => {
         const stateP = state.get(t.id); if (!stateP) return; 
@@ -475,7 +484,7 @@ export const usePhysics = (
         const prioLevel = PRIORITY_WEIGHT[t.priority] || 0; 
         const gravityMultiplier = 1 + prioLevel * 0.5; 
         const targetScale = (1 + prioLevel * 0.05) * (t.size || 1);
-        p.vx += (window.innerWidth / 2 - p.x) * (GRAVITY * gravityMultiplier); p.vy += (window.innerHeight / 2 - p.y) * (GRAVITY * gravityMultiplier);
+        p.vx += (logicalWidth / 2 - p.x) * (GRAVITY * gravityMultiplier); p.vy += (logicalHeight / 2 - p.y) * (GRAVITY * gravityMultiplier);
         
         const el = elements.current.get(id); 
         const nHeight = el?.offsetHeight || 120; 
@@ -593,9 +602,15 @@ export const usePhysics = (
         if (mode === 'calendar' && t && !t.date && sbRect && !isDraggingThis) {
             // Precision Clipping using the actual scrollable content rect
             const contentEl = document.getElementById('cal-sidebar-content');
-            const cRect = contentEl?.getBoundingClientRect();
+            const cRectRaw = contentEl?.getBoundingClientRect();
             
-            if (cRect) {
+            if (cRectRaw) {
+                // Normalize physical rect to logical units
+                const cRect = {
+                    top: cRectRaw.top / globalScale,
+                    bottom: cRectRaw.bottom / globalScale
+                };
+
                 const nodeHeight = (offsetHeight * p.scale) * vT.scale;
                 // Calculate percentage to hide from top and bottom
                 const topDiff = cRect.top - cardTop;

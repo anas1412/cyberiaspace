@@ -63,7 +63,7 @@ const CalendarOverlay: React.FC = () => {
   }
 
   return (
-    <div className="calendar-overlay fixed inset-0 flex flex-col md:flex-row pointer-events-none p-4 md:p-10 pt-[100px] md:pt-[100px] gap-4 md:gap-5 opacity-100 transition-opacity duration-400 z-0 overflow-y-auto md:overflow-hidden">
+    <div className="calendar-overlay fixed inset-0 flex flex-col md:flex-row pointer-events-none p-4 md:p-10 pb-[100px] md:pb-[120px] pt-[100px] md:pt-[100px] gap-4 md:gap-5 opacity-100 transition-opacity duration-400 z-0 overflow-y-auto md:overflow-hidden">
       {/* Sidebar */}
       <div className="cal-sidebar w-full md:w-[260px] min-h-[200px] md:min-h-0 glass rounded-3xl flex flex-col overflow-hidden pointer-events-auto z-[30] relative border border-white/10 shadow-2xl">
         <div className="cal-sidebar-header p-4 md:p-5 border-b border-white/[0.05] text-[9px] md:text-[10px] font-900 tracking-[0.2em] uppercase text-[var(--accent-secondary)] bg-[var(--bg-main)] z-[40] sticky top-0 shadow-lg">

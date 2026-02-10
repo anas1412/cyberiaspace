@@ -412,20 +412,20 @@ const Toolbar: React.FC = () => {
   return (
     <>
       {/* TOP UI */}
-      <div className="fixed top-4 md:top-8 left-4 md:left-8 right-4 md:right-8 z-[9999] flex flex-col md:flex-row items-center justify-between pointer-events-none gap-4">
+      <div className="fixed top-4 md:top-6 left-4 md:left-6 right-4 md:right-6 z-[9999] flex items-center justify-between pointer-events-none">
         {/* LEFT SIDE: Logo */}
-        <div className="hidden md:flex pointer-events-auto items-center h-[48px]">
+        <div className="hidden lg:flex pointer-events-auto items-center h-[48px] flex-shrink-0">
           <a 
             href="/" 
-            className="text-3xl font-bold tracking-tighter text-[var(--text-primary)] hover:opacity-70 transition-opacity"
+            className="text-2xl font-bold tracking-tighter text-[var(--text-primary)] hover:opacity-70 transition-opacity"
           >
             CYBERIA
           </a>
         </div>
 
-        {/* CENTER: Space Switcher */}
-        <div className="md:absolute md:left-1/2 md:-translate-x-1/2 flex flex-col items-center gap-2 pointer-events-none">
-          <div className="flex items-center h-[48px] glass rounded-full shadow-2xl transition-all pointer-events-auto overflow-x-auto no-scrollbar px-2 border border-white/5">
+        {/* CENTER: Space Switcher - STRICT CENTERING */}
+        <div className="md:absolute md:left-1/2 md:-translate-x-1/2 flex flex-col items-center gap-2 pointer-events-none z-10 w-full md:w-auto px-4 md:px-0">
+          <div className="max-w-full flex items-center h-[52px] glass rounded-full shadow-2xl transition-all pointer-events-auto border border-white/5 px-2">
             <div className="flex items-center gap-1 h-full min-w-max">
               <button 
                 onClick={() => setIsSpaceMenuOpen(!isSpaceMenuOpen)}
@@ -439,31 +439,41 @@ const Toolbar: React.FC = () => {
               >
                 <Settings className={cn("w-3.5 h-3.5", isSpaceMenuOpen && "animate-spin-slow")} />
               </button>
-              <div className="w-[1px] h-3 bg-white/10 mx-2"></div>
+              <div className="w-[1px] h-3 bg-white/10 mx-1"></div>
               
-              {spaces.map((space) => {
-                const isActive = space.id === activeSpaceId;
-                return (
-                  <button
-                    key={space.id}
-                    onClick={() => setActiveSpace(space.id)}
-                    className={cn(
-                      "px-5 h-9 rounded-full text-[10px] uppercase font-black tracking-widest flex-shrink-0 transition-all duration-500 flex items-center justify-center gap-2",
-                      isActive 
-                        ? "bg-white/10 text-white border border-white/10 shadow-[0_0_20px_rgba(255,255,255,0.05)]" 
-                        : "text-slate-500 hover:text-slate-300 hover:bg-white/[0.03] border border-transparent"
-                    )}
-                  >
-                    {isActive && <div className="w-1 h-1 rounded-full bg-[var(--accent-secondary)] shadow-[0_0_8px_var(--accent)]" />}
-                    {space.name}
-                  </button>
-                );
-              })}
+              {/* Space Tabs with visible custom scrollbar - UI VISIBILITY ONLY CAPPED (4 items on most screens, 6 on 1080p+) */}
+              <div 
+                id="space-switcher-list"
+                className="flex items-center gap-1 overflow-x-auto custom-scroll pb-1 max-w-[450px] 2xl:max-w-[750px] pointer-events-auto"
+                onWheel={(e) => {
+                  e.stopPropagation();
+                  e.currentTarget.scrollLeft += e.deltaY;
+                }}
+              >
+                {spaces.map((space) => {
+                  const isActive = space.id === activeSpaceId;
+                  return (
+                    <button
+                      key={space.id}
+                      onClick={() => setActiveSpace(space.id)}
+                      className={cn(
+                        "px-3 h-9 w-[110px] md:w-[120px] rounded-full text-[10px] uppercase font-black tracking-widest flex-shrink-0 transition-all duration-500 flex items-center justify-center gap-2",
+                        isActive 
+                          ? "bg-white/10 text-white border border-white/10 shadow-[0_0_20px_rgba(255,255,255,0.05)]" 
+                          : "text-slate-500 hover:text-slate-300 hover:bg-white/[0.03] border border-transparent"
+                      )}
+                    >
+                      {isActive && <div className="w-1 h-1 rounded-full bg-[var(--accent-secondary)] shadow-[0_0_8px_var(--accent)]" />}
+                      <span className="truncate">{space.name}</span>
+                    </button>
+                  );
+                })}
+              </div>
               
-              {/* Only show add button if user hasn't reached the absolute Pro limit, or is on Free and can upgrade */}
-              {(user?.plan === 'free' || spaces.length < limits.MAX_SPACES) && (
+              {/* Add Space Button: Correctly tied to User Plan Limits (Free vs Pro) */}
+              {spaces.length < limits.MAX_SPACES && (
                 <>
-                  <div className="w-[1px] h-3 bg-white/10 mx-2"></div>
+                  <div className="w-[1px] h-3 bg-white/10 mx-1"></div>
                   <button 
                     onClick={handleCreateSpace}
                     className="w-9 h-9 rounded-full text-slate-600 hover:text-white hover:bg-white/10 transition-all flex-shrink-0 flex items-center justify-center border border-white/10 border-dashed"
@@ -485,7 +495,7 @@ const Toolbar: React.FC = () => {
                   title="Rename Space"
                 >
                   <Edit3 className="w-3.5 h-3.5 group-hover:scale-110 transition-transform" />
-                  <span className="text-[8px] font-black uppercase tracking-widest">Rename</span>
+                  <span className="text-[8px] font-black uppercase tracking-widest hidden sm:inline">Rename</span>
                 </button>
                 <div className="w-px h-3 bg-white/5 mx-1" />
                 <button 
@@ -509,15 +519,15 @@ const Toolbar: React.FC = () => {
                   title="Delete Space"
                 >
                   <Trash2 className="w-3.5 h-3.5 group-hover:scale-110 transition-transform" />
-                  <span className="text-[8px] font-black uppercase tracking-widest">Delete</span>
+                  <span className="text-[8px] font-black uppercase tracking-widest hidden sm:inline">Delete</span>
                 </button>
               </div>
             </div>
           )}
         </div>
 
-        {/* RIGHT SIDE: View Switcher - Moved to bottom on mobile, kept at top-right on desktop */}
-        <div className="hidden md:flex items-center gap-3 pointer-events-none">
+        {/* RIGHT SIDE: View Switcher */}
+        <div className="flex items-center gap-2 flex-shrink-0 pointer-events-none z-20">
           <div className="flex items-center h-[48px] p-1.5 glass rounded-2xl shadow-2xl transition-all pointer-events-auto border border-white/5">
             {[
               { id: 'spatial', icon: Orbit, color: 'bg-[var(--accent)]' },
@@ -531,19 +541,19 @@ const Toolbar: React.FC = () => {
                   key={mode.id}
                   onClick={() => setViewMode(mode.id as 'spatial' | 'kanban' | 'calendar')}
                   className={cn(
-                    "px-4 h-full rounded-xl transition-all duration-300 flex items-center gap-3 group/mode",
+                    "px-3 md:px-4 h-full rounded-xl transition-all duration-300 flex items-center gap-2 group/mode",
                     isActive 
                       ? "bg-white/10 text-white shadow-xl" 
                       : "text-slate-500 hover:text-slate-300 hover:bg-white/[0.03]"
                   )}
                 >
                   <div className={cn(
-                    "w-1.5 h-1.5 rounded-full transition-all",
+                    "w-1 h-1 md:w-1.5 md:h-1.5 rounded-full transition-all",
                     isActive ? mode.color : "bg-white/10 group-hover/mode:bg-white/30"
                   )} />
-                  <Icon className={cn("w-4 h-4 transition-transform", isActive ? "scale-110" : "scale-90")} />
+                  <Icon className={cn("w-3.5 h-3.5 md:w-4 md:h-4 transition-transform", isActive ? "scale-110" : "scale-90")} />
                   <span className={cn(
-                    "text-[9px] font-black uppercase tracking-widest transition-all overflow-hidden whitespace-nowrap",
+                    "text-[9px] font-black uppercase tracking-widest transition-all overflow-hidden whitespace-nowrap hidden 2xl:inline",
                     isActive ? "w-14 opacity-100" : "w-0 opacity-0"
                   )}>
                     {mode.id}
@@ -552,7 +562,9 @@ const Toolbar: React.FC = () => {
               );
             })}
           </div>
-          <AccountMenu />
+          <div className="pointer-events-auto">
+            <AccountMenu />
+          </div>
         </div>
       </div>
 

@@ -120,6 +120,16 @@
     overscroll-behavior: none;
   }
 
+  /* Global Scaling for smaller screens */
+  @media (max-width: 1366px), (max-height: 800px) {
+    .app-body {
+      width: 117.64vw; /* 100 / 0.85 */
+      height: 117.64vh;
+      transform: scale(0.85);
+      transform-origin: 0 0;
+    }
+  }
+
   /* Deep Space Star Layers */
   .stars-layer {
     position: fixed;
