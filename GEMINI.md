@@ -93,8 +93,29 @@ Cyberia supports three core aesthetic modes:
     - `9999`: UI Toolbar/Overlays
     - `10001`: Focus Editors (Highest)
 
-## 8. Development Standards
+### 7.3. Thought Node Architecture (V12)
+- **Universal Compactness**: 
+    - Padding reduced from `p-6` to `p-4.5`.
+    - Gaps reduced to `gap-2`.
+    - Border radius tightened to `rounded-3xl` (24px).
+- **Embedded Actions**: Link/Unlink button moved to corner `bottom-2.5 right-2.5` with `p-1.5` for zero-footer feel.
+
+### 7.4. Type-Specific Behaviors
+- **Text Notes**:
+    - **Dynamic Prompt**: "Write Note..." logic depends on connectivity:
+        - **Unlinked**: Always visible to encourage capture.
+        - **Linked (Stack)**: Hidden by default (`h-0`, `opacity-0`, `overflow-hidden`), revealed on card hover (`group-hover:h-8 group-hover:opacity-100`) via 500ms transition.
+    - **Tactile Feedback**: `motion.div` from `framer-motion` provides scale-up (1.05) on hover and scale-down (0.95) on tap.
+    - **Compact Logic**: Nodes only maintain `min-h-[80px]` if unlinked OR containing content. Linked empty nodes collapse to absolute labels.
+
+## 8. Precision & Scaling (Coordinate System)
+- **Visual Scaling**: Global `0.85` scale applied to `.app-body` for responsive laptop views.
+- **Normalization Rule**: All canvas, marquee, and mouse transforms must include a `getGlobalScale()` factor (retrieved from `DOMMatrix` of `.app-body`) to ensure cursor-to-thought alignment. 
+- **World Space Compliance**: Spawning and dragging must divide client coordinates by the global scale before applying world-space translation.
+
+## 9. Development Standards
 1. **Atomic Components:** Keep components focused (e.g., `ThoughtNode.tsx`).
 2. **Logic Isolation:** Physics and math reside in `usePhysics.ts`.
 3. **Tailwind First:** Use utility classes; avoid inline styles except for transform math.
 4. **Local First:** Always prioritize Dexie/IndexedDB over cloud sync.
+5. **Layout Flow**: Avoid `absolute` positioning for elements that clash with status badges; use flex-row clusters for adaptive height.
