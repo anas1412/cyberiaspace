@@ -5,7 +5,7 @@ import { Maximize2, Palette, Link as LinkIcon, Link2Off, Image as ImageIcon, Tab
 import { marked } from 'marked';
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
-import { getEmbedInfo, type EmbedProvider } from '../utils/embeds';
+import { getEmbedInfo } from '../utils/embeds';
 
 function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -50,7 +50,7 @@ const ThoughtNode: React.FC<ThoughtNodeProps> = React.memo(({ thought, registerE
   const isSelected = selectedThoughtId === thought.id || selectedThoughtIds.includes(thought.id);
   const isInspectorOpen = useStore((state) => state.isInspectorOpen);
   const layerActionTrigger = useStore((state) => state.layerActionTrigger);
-  
+
   const setSelectedThoughtId = useStore((state) => state.setSelectedThoughtId);
   const setInspectorOpen = useStore((state) => state.setInspectorOpen);
   const setActiveFocus = useStore((state) => state.setActiveFocus);
@@ -58,9 +58,9 @@ const ThoughtNode: React.FC<ThoughtNodeProps> = React.memo(({ thought, registerE
   const linkingSourceId = useStore((state) => state.linkingSourceId);
   const setLinkingSourceId = useStore((state) => state.setLinkingSourceId);
   const stacks = useStore((state) => state.stacks);
-  
+
   const stack = useMemo(() => stacks.find(s => s.id === thought.stackId), [stacks, thought.stackId]);
-  
+
   const [startPos, setStartPos] = useState({ x: 0, y: 0 });
   const [showPing, setShowPing] = useState(false);
 
@@ -76,18 +76,18 @@ const ThoughtNode: React.FC<ThoughtNodeProps> = React.memo(({ thought, registerE
   // Altitude Math: Use the layer value to calculate relative "height"
   const altitudeStyles = useMemo(() => {
     if (!thought.layer) return {};
-    
+
     // Normalize layer values into a manageable depth range
     // Higher layer = larger shadow, slight scale up
     const shadowSize = isDragging ? 60 : Math.min(50, (thought.layer % 100) + 10);
     const altitudeScale = 1 + (Math.min(10, (thought.layer % 10)) / 200);
 
     return {
-      boxShadow: `0 ${shadowSize/2}px ${shadowSize}px rgba(0,0,0,0.6)`,
+      boxShadow: `0 ${shadowSize / 2}px ${shadowSize}px rgba(0,0,0,0.6)`,
       transform: `scale(${altitudeScale})`,
     };
   }, [thought.layer, isDragging]);
-  
+
   const parsedContent = useMemo(() => {
     return thought.content ? marked.parse(thought.content) : '';
   }, [thought.content]);
@@ -107,7 +107,7 @@ const ThoughtNode: React.FC<ThoughtNodeProps> = React.memo(({ thought, registerE
 
   const handleLinkAction = (e: React.MouseEvent) => {
     e.stopPropagation();
-    
+
     if (thought.stackId) {
       // If already in a stack, this button unlinks it
       const store = useStore.getState();
@@ -148,7 +148,7 @@ const ThoughtNode: React.FC<ThoughtNodeProps> = React.memo(({ thought, registerE
 
     const target = e.target as HTMLElement;
     if (target.closest('.checkbox')) return;
-    
+
     const textTrigger = target.closest('[data-trigger="text"]');
     const tableTrigger = target.closest('[data-trigger="table"]');
     const tasksTrigger = target.closest('[data-trigger="tasks"]');
@@ -157,20 +157,20 @@ const ThoughtNode: React.FC<ThoughtNodeProps> = React.memo(({ thought, registerE
     const embedTrigger = target.closest('[data-trigger="embed"]');
 
     if (textTrigger) {
-        setActiveFocus(thought.id, 'text');
+      setActiveFocus(thought.id, 'text');
     } else if (tableTrigger) {
-        setActiveFocus(thought.id, 'table');
+      setActiveFocus(thought.id, 'table');
     } else if (tasksTrigger) {
-        setActiveFocus(thought.id, 'tasks');
+      setActiveFocus(thought.id, 'tasks');
     } else if (paintTrigger) {
-        setActiveFocus(thought.id, 'paint');
+      setActiveFocus(thought.id, 'paint');
     } else if (embedTrigger) {
-        setActiveFocus(thought.id, 'embed');
+      setActiveFocus(thought.id, 'embed');
     } else if (imageTrigger) {
-        if (thought.image) openLightbox(thought.image);
+      if (thought.image) openLightbox(thought.image);
     } else {
-        setSelectedThoughtId(thought.id);
-        setInspectorOpen(true);
+      setSelectedThoughtId(thought.id);
+      setInspectorOpen(true);
     }
   };
 
@@ -182,7 +182,7 @@ const ThoughtNode: React.FC<ThoughtNodeProps> = React.memo(({ thought, registerE
           <div data-trigger="text" className="relative group/text overflow-hidden rounded-xl prevent-drag cursor-pointer pt-1">
             <div className={cn("overflow-hidden relative", hasContent && "max-h-[140px]")}>
               {hasContent ? (
-                <div 
+                <div
                   className="markdown-body text-[11px] leading-relaxed text-slate-300/90"
                   dangerouslySetInnerHTML={{ __html: parsedContent as string }}
                 />
@@ -216,7 +216,7 @@ const ThoughtNode: React.FC<ThoughtNodeProps> = React.memo(({ thought, registerE
               <ListTodo className="w-6 h-6 text-white/20" />
               <span className="text-[10px] text-white/20 font-bold uppercase tracking-widest">Create Tasks</span>
               <div className="absolute inset-0 bg-[var(--accent)]/10 opacity-0 group-hover/tasks:opacity-100 transition-opacity rounded-xl flex items-center justify-center pointer-events-none">
-                <button 
+                <button
                   onClick={(e) => { e.stopPropagation(); setActiveFocus(thought.id, 'tasks'); }}
                   className="pointer-events-auto bg-[var(--accent)] text-white p-2 rounded-lg shadow-xl transform scale-90 group-hover/tasks:scale-100 transition-all hover:scale-110 active:scale-95"
                 >
@@ -251,13 +251,13 @@ const ThoughtNode: React.FC<ThoughtNodeProps> = React.memo(({ thought, registerE
               )}
             </div>
             <div className="h-1.5 w-full bg-white/5 rounded-full overflow-hidden mt-3">
-              <div 
-                className="h-full bg-[var(--accent)] transition-all duration-500 shadow-[0_0_10px_var(--accent-glow)]" 
-                style={{ width: `${progress}%` }} 
+              <div
+                className="h-full bg-[var(--accent)] transition-all duration-500 shadow-[0_0_10px_var(--accent-glow)]"
+                style={{ width: `${progress}%` }}
               />
             </div>
             <div className="absolute inset-0 bg-[var(--accent)]/10 opacity-0 group-hover/tasks:opacity-100 transition-opacity rounded-xl flex items-center justify-center pointer-events-none">
-              <button 
+              <button
                 onClick={(e) => { e.stopPropagation(); setActiveFocus(thought.id, 'tasks'); }}
                 className="pointer-events-auto bg-[var(--accent)] text-white p-2 rounded-lg shadow-xl transform scale-90 group-hover/tasks:scale-100 transition-all hover:scale-110 active:scale-95"
               >
@@ -279,7 +279,7 @@ const ThoughtNode: React.FC<ThoughtNodeProps> = React.memo(({ thought, registerE
               </div>
             )}
             <div className="absolute inset-0 bg-[var(--accent)]/10 opacity-0 group-hover/paint:opacity-100 transition-opacity flex items-center justify-center pointer-events-none">
-              <button 
+              <button
                 onClick={(e) => { e.stopPropagation(); setActiveFocus(thought.id, 'paint'); }}
                 className="pointer-events-auto bg-[var(--accent)] text-white p-2 rounded-lg shadow-xl transform scale-90 group-hover/paint:scale-100 transition-all hover:scale-110 active:scale-95"
               >
@@ -291,14 +291,14 @@ const ThoughtNode: React.FC<ThoughtNodeProps> = React.memo(({ thought, registerE
       }
       case 'table': {
         const isTableEmpty = !thought.table || thought.table.every(row => row.every(cell => !cell || !cell.trim()));
-        
+
         if (isTableEmpty) {
           return (
             <div data-trigger="table" className="mt-1 flex flex-col items-center gap-2 py-4 bg-black/20 rounded-xl border border-white/5 group/table relative cursor-pointer prevent-drag transition-colors hover:bg-white/[0.05]">
               <Table className="w-6 h-6 text-white/20" />
               <span className="text-[10px] text-white/20 font-bold uppercase tracking-widest">Build Table</span>
               <div className="absolute inset-0 bg-[var(--accent)]/10 opacity-0 group-hover/table:opacity-100 transition-opacity rounded-xl flex items-center justify-center pointer-events-none">
-                <button 
+                <button
                   onClick={(e) => { e.stopPropagation(); setActiveFocus(thought.id, 'table'); }}
                   className="pointer-events-auto bg-[var(--accent)] text-white p-2 rounded-lg shadow-xl transform scale-90 group-hover/table:scale-100 transition-all hover:scale-110 active:scale-95"
                 >
@@ -341,7 +341,7 @@ const ThoughtNode: React.FC<ThoughtNodeProps> = React.memo(({ thought, registerE
               </table>
             </div>
             <div className="absolute inset-0 bg-[var(--accent)]/10 opacity-0 group-hover/table:opacity-100 transition-opacity rounded-xl flex items-center justify-center pointer-events-none">
-              <button 
+              <button
                 onClick={(e) => { e.stopPropagation(); setActiveFocus(thought.id, 'table'); }}
                 className="pointer-events-auto bg-[var(--accent)] text-white p-2 rounded-lg shadow-xl transform scale-90 group-hover/table:scale-100 transition-all hover:scale-110 active:scale-95"
               >
@@ -358,7 +358,7 @@ const ThoughtNode: React.FC<ThoughtNodeProps> = React.memo(({ thought, registerE
               <ImageIcon className="w-6 h-6 text-white/20" />
               <span className="text-[10px] text-white/20 font-bold uppercase tracking-widest">Add Image</span>
               <div className="absolute inset-0 bg-[var(--accent)]/10 opacity-0 group-hover/image:opacity-100 transition-opacity rounded-xl flex items-center justify-center pointer-events-none">
-                <button 
+                <button
                   onClick={(e) => { e.stopPropagation(); setSelectedThoughtId(thought.id); setInspectorOpen(true); }}
                   className="pointer-events-auto bg-[var(--accent)] text-white p-2 rounded-lg shadow-xl transform scale-90 group-hover/image:scale-100 transition-all hover:scale-110 active:scale-95"
                 >
@@ -370,14 +370,14 @@ const ThoughtNode: React.FC<ThoughtNodeProps> = React.memo(({ thought, registerE
         }
         return (
           <div data-trigger="image" className="mt-2 relative group prevent-drag cursor-pointer">
-            <img 
-              src={thought.image} 
+            <img
+              src={thought.image}
               draggable="false"
               onClick={(e) => { e.stopPropagation(); if (thought.image) openLightbox(thought.image); }}
-              className="w-full rounded-xl border border-white/10 max-h-[160px] object-cover bg-black/50 cursor-zoom-in" 
-              alt="Thought" 
+              className="w-full rounded-xl border border-white/10 max-h-[160px] object-cover bg-black/50 cursor-zoom-in"
+              alt="Thought"
             />
-            <button 
+            <button
               onClick={(e) => { e.stopPropagation(); if (thought.image) openLightbox(thought.image); }}
               className="expand-img absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-white rounded-xl"
             >
@@ -386,22 +386,22 @@ const ThoughtNode: React.FC<ThoughtNodeProps> = React.memo(({ thought, registerE
           </div>
         );
       }
-// ... inside ThoughtNode ...
+      // ... inside ThoughtNode ...
 
       case 'embed': {
         const { provider, id } = getEmbedInfo(thought.content);
         const config = PROVIDER_CONFIG[provider as string] || PROVIDER_CONFIG.unknown;
         const Icon = config.icon;
-        
+
         return (
           <div data-trigger="embed" className="mt-2 relative group prevent-drag cursor-pointer overflow-hidden rounded-xl border border-white/10 bg-black/50 aspect-video flex items-center justify-center">
             {thought.image ? (
               <>
-                <img 
-                  src={thought.image} 
+                <img
+                  src={thought.image}
                   draggable="false"
                   className="w-full h-full object-cover opacity-60 group-hover:opacity-100 transition-opacity"
-                  alt="Preview" 
+                  alt="Preview"
                 />
                 <div className="absolute inset-0 flex items-center justify-center">
                   <div className={cn("w-12 h-12 rounded-full flex items-center justify-center shadow-2xl transform group-hover:scale-110 transition-transform text-white", provider === 'youtube' ? "bg-red-600" : "bg-black/60 backdrop-blur-md")}>
@@ -411,11 +411,11 @@ const ThoughtNode: React.FC<ThoughtNodeProps> = React.memo(({ thought, registerE
               </>
             ) : provider === 'youtube' && id ? (
               <>
-                <img 
-                  src={`https://img.youtube.com/vi/${id}/mqdefault.jpg`} 
+                <img
+                  src={`https://img.youtube.com/vi/${id}/mqdefault.jpg`}
                   draggable="false"
                   className="w-full h-full object-cover opacity-60 group-hover:opacity-100 transition-opacity"
-                  alt="YouTube Preview" 
+                  alt="YouTube Preview"
                 />
                 <div className="absolute inset-0 flex items-center justify-center">
                   <div className="w-12 h-12 bg-red-600 rounded-full flex items-center justify-center shadow-2xl transform group-hover:scale-110 transition-transform text-white">
@@ -466,11 +466,11 @@ const ThoughtNode: React.FC<ThoughtNodeProps> = React.memo(({ thought, registerE
         <div className="absolute inset-0 rounded-[32px] border-2 border-[var(--accent)] animate-sonar pointer-events-none z-0" />
       )}
 
-      <div 
+      <div
         className={cn(
           "thought-bulb-content backdrop-blur-[20px] border p-6 rounded-[32px] flex flex-col gap-3 relative transition-all duration-300",
-          isSelected 
-            ? "border-[var(--accent)]/50 shadow-[0_0_40px_var(--accent-glow)] bg-[var(--node-bg)]/80" 
+          isSelected
+            ? "border-[var(--accent)]/50 shadow-[0_0_40px_var(--accent-glow)] bg-[var(--node-bg)]/80"
             : "border-[var(--glass-border)] shadow-[0_10px_40px_rgba(0,0,0,0.5)] bg-[var(--node-bg)]/60",
           linkingSourceId === thought.id && "ring-2 ring-[var(--accent)] ring-offset-4 ring-offset-[var(--bg-page)]",
           linkingSourceId && linkingSourceId !== thought.id && "hover:scale-105 hover:border-[var(--accent)]/50 cursor-pointer",
@@ -478,21 +478,21 @@ const ThoughtNode: React.FC<ThoughtNodeProps> = React.memo(({ thought, registerE
         )}
         style={altitudeStyles}
       >
-        
+
         {/* Header Area: Title + Priority + Badges */}
         <div className="flex items-start justify-between gap-4 min-h-[24px]">
           <div className="flex items-start gap-2.5 flex-1 min-w-0">
             {thought.priority !== 'none' && (
-              <div 
+              <div
                 className="w-1.5 h-1.5 rounded-full mt-[7px] flex-shrink-0"
-                style={{ 
+                style={{
                   backgroundColor: PRIO_COLORS[thought.priority as keyof typeof PRIO_COLORS],
                   boxShadow: `0 0 10px ${PRIO_COLORS[thought.priority as keyof typeof PRIO_COLORS]}, 0 0 8px rgba(0,0,0,0.5)`
                 }}
               />
             )}
             <p className={cn(
-              "text-[13px] font-bold leading-tight break-all", 
+              "text-[13px] font-bold leading-tight break-all",
               thought.text ? "text-[var(--text-primary)]" : "text-slate-600 italic"
             )}>
               {thought.text || thought.placeholder || "Untitled"}
@@ -501,9 +501,9 @@ const ThoughtNode: React.FC<ThoughtNodeProps> = React.memo(({ thought, registerE
 
           <div className="flex items-center gap-1.5 flex-shrink-0 mt-0.5">
             {thought.status !== 'none' && (
-              <div 
+              <div
                 className="text-[7px] font-black uppercase tracking-widest px-1.5 py-0.5 rounded-full border border-white/10 shadow-sm"
-                style={{ 
+                style={{
                   color: 'white',
                   backgroundColor: STATUS_COLORS[thought.status as keyof typeof STATUS_COLORS],
                 }}
@@ -523,13 +523,13 @@ const ThoughtNode: React.FC<ThoughtNodeProps> = React.memo(({ thought, registerE
           <p className="text-[10px] text-[var(--text-dimmed)] italic pr-10">{thought.description}</p>
         )}
         {renderContent()}
-        
+
         {stack && (
           <div className="flex items-center gap-2 mt-1">
-            <div 
+            <div
               className="px-2 py-0.5 rounded-md text-[8px] font-black uppercase tracking-wider border border-white/10"
-              style={{ 
-                backgroundColor: stack.color ? stack.color.replace('1)', '0.15)') : 'rgba(255,255,255,0.1)', 
+              style={{
+                backgroundColor: stack.color ? stack.color.replace('1)', '0.15)') : 'rgba(255,255,255,0.1)',
                 color: stack.color || '#fff',
                 borderColor: stack.color ? stack.color.replace('1)', '0.3)') : 'rgba(255,255,255,0.2)'
               }}
@@ -540,12 +540,12 @@ const ThoughtNode: React.FC<ThoughtNodeProps> = React.memo(({ thought, registerE
         )}
 
         {/* Bottom Right Action Button (Link or Unlink) */}
-        <button 
+        <button
           onClick={handleLinkAction}
           className={cn(
             "absolute bottom-4 right-4 p-2 rounded-xl transition-all z-10",
-            linkingSourceId === thought.id 
-              ? "bg-[var(--accent)] text-white shadow-[0_0_20px_var(--accent-glow)]" 
+            linkingSourceId === thought.id
+              ? "bg-[var(--accent)] text-white shadow-[0_0_20px_var(--accent-glow)]"
               : "bg-white/5 text-slate-500 hover:text-white hover:bg-white/10 border border-white/5",
             thought.stackId && "hover:text-red-400 hover:bg-red-500/10"
           )}
