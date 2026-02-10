@@ -66,14 +66,14 @@ export const getEmbedInfo = (url: string): EmbedInfo => {
   }
 
   // Facebook
-  const fbRegex = /https?:\/\/(?:www\.)?facebook\.com\/(?:[a-zA-Z0-9.]+\/posts\/|permalink\.php\?story_fbid=)(\d+)/;
+  const fbRegex = /https?:\/\/(?:www\.)?(?:facebook\.com|fb\.watch)\/(?:[^/]+\/(?:posts|videos|reels)\/|permalink\.php\?story_fbid=|watch\/?\?v=|share\/(?:v|p)\/|groups\/[^/]+\/permalink\/|groups\/\d+\/posts\/|reel\/)([a-zA-Z0-9_.-]+)/;
   const fbMatch = url.match(fbRegex);
   if (fbMatch) {
     return { provider: 'facebook', id: fbMatch[1], url };
   }
 
   // Instagram
-  const igRegex = /https?:\/\/(?:www\.)?instagram\.com\/(?:p|reels|tv)\/([a-zA-Z0-9_-]+)/;
+  const igRegex = /https?:\/\/(?:www\.)?instagram\.com\/(?:p|reels|tv|share\/p|reel)\/([a-zA-Z0-9_-]+)/;
   const igMatch = url.match(igRegex);
   if (igMatch) {
     return { provider: 'instagram', id: igMatch[1], url };
@@ -99,7 +99,7 @@ export const fetchEmbedMeta = async (url: string): Promise<EmbedMeta> => {
   } else if (provider === 'reddit') {
     oEmbedUrl = `https://www.reddit.com/oembed?url=${encodeURIComponent(url)}&theme=dark`;
   } else if (provider === 'instagram') {
-    oEmbedUrl = `https://api.instagram.com/oembed?url=${encodeURIComponent(url)}&theme=dark`;
+    oEmbedUrl = `https://www.instagram.com/oembed?url=${encodeURIComponent(url)}&theme=dark`;
   } else if (provider === 'facebook') {
     oEmbedUrl = `https://www.facebook.com/plugins/post/oembed.json/?url=${encodeURIComponent(url)}`;
   } else if (provider === 'tiktok') {
@@ -121,10 +121,17 @@ export const fetchEmbedMeta = async (url: string): Promise<EmbedMeta> => {
         const res = await fetch(proxy(oEmbedUrl));
         if (!res.ok) continue;
         let result = await res.json();
-        if (result.contents) result = JSON.parse(result.contents);
+        if (result.contents) {
+          try {
+            result = JSON.parse(result.contents);
+          } catch (e) {
+            // Not JSON (e.g. error message from proxy)
+            continue;
+          }
+        }
         return result;
       } catch (err) {
-        console.warn(`[Embed Utils] oEmbed proxy failed:`, err);
+        // Keep iterating if one proxy fails
       }
     }
     return null;
@@ -201,12 +208,35 @@ export const fetchEmbedMeta = async (url: string): Promise<EmbedMeta> => {
     return null;
   };
 
+  // 4. Instagram-specific high-fidelity extraction (bypasses login wall)
+  const fetchInstagramMeta = async (): Promise<Partial<EmbedMeta> | null> => {
+    if (provider !== 'instagram') return null;
+    try {
+      // Use ddinstagram as a scraper source (it always serves public meta tags)
+      const ddUrl = url.replace('instagram.com', 'ddinstagram.com');
+      const res = await fetch(`/api/metadata?url=${encodeURIComponent(ddUrl)}`);
+      if (res.ok) {
+        const data = await res.json();
+        return {
+          title: data.title || "",
+          author_name: data.author || "",
+          thumbnail_url: data.image || null,
+          description: data.description || ""
+        };
+      }
+    } catch (err) {
+      console.warn(`[Embed Utils] Instagram DD fetch failed:`, err);
+    }
+    return null;
+  };
+
   // Run in parallel for speed
-  const [oData, mlData, ytSearchData, twData] = await Promise.all([
+  const [oData, mlData, ytSearchData, twData, igData] = await Promise.all([
     fetchOEmbed(),
     fetchInternalMetadata(),
     fetchYouTubeSearch(),
-    fetchTwitterMeta()
+    fetchTwitterMeta(),
+    fetchInstagramMeta()
   ]);
 
   // Refined author selection
@@ -224,15 +254,16 @@ export const fetchEmbedMeta = async (url: string): Promise<EmbedMeta> => {
   if (provider === 'spotify') {
     authorName = oData?.author_name || "";
   } else {
-    authorName = getCleanAuthor(twData?.author_name) ||
+    authorName = getCleanAuthor(igData?.author_name) ||
+      getCleanAuthor(twData?.author_name) ||
       getCleanAuthor(oData?.author_name) ||
       getCleanAuthor(ytSearchData?.author_name) ||
       getCleanAuthor(mlData?.author_name) ||
       "";
   }
 
-  let description = twData?.description || oData?.description || ytSearchData?.description || mlData?.description || "";
-  let title = twData?.title || oData?.title || mlData?.title || "";
+  let description = igData?.description || twData?.description || oData?.description || ytSearchData?.description || mlData?.description || "";
+  let title = igData?.title || twData?.title || oData?.title || mlData?.title || "";
 
   // Twitter/X Specific: If title is missing, try to construct from handle
   if (provider === 'twitter' && !title) {
@@ -248,9 +279,9 @@ export const fetchEmbedMeta = async (url: string): Promise<EmbedMeta> => {
     ...oData,
     title,
     author_name: authorName,
-    thumbnail_url: twData?.thumbnail_url || oData?.thumbnail_url || mlData?.thumbnail_url || undefined,
-    // Fix: Include 'twitter' in video-capable providers
-    video_url: (oData?.video_url || (['youtube', 'tiktok', 'twitter'].includes(provider) ? mlData?.video_url : undefined)) || undefined,
+    thumbnail_url: igData?.thumbnail_url || twData?.thumbnail_url || oData?.thumbnail_url || mlData?.thumbnail_url || undefined,
+    // Fix: Include 'twitter' and 'instagram' in video-capable providers
+    video_url: (oData?.video_url || (['youtube', 'tiktok', 'twitter', 'instagram'].includes(provider) ? mlData?.video_url : undefined)) || undefined,
     provider_name: oData?.provider_name || mlData?.provider_name || "",
     description: description,
     html: oData?.html || undefined
