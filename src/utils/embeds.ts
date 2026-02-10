@@ -3,7 +3,7 @@
  * Supports YouTube, Spotify, Twitter, Reddit, and more.
  */
 
-export type EmbedProvider = 'youtube' | 'spotify' | 'twitter' | 'reddit' | 'facebook' | 'instagram' | 'unknown';
+export type EmbedProvider = 'youtube' | 'spotify' | 'twitter' | 'reddit' | 'facebook' | 'instagram' | 'tiktok' | 'unknown';
 
 export interface EmbedInfo {
   provider: EmbedProvider;
@@ -50,10 +50,17 @@ export const getEmbedInfo = (url: string): EmbedInfo => {
   }
 
   // Reddit
-  const redditRegex = /https?:\/\/(?:www\.)?reddit\.com\/r\/([a-zA-Z0-9_]+)\/comments\/([a-zA-Z0-9_]+)/;
+  const redditRegex = /https?:\/\/(?:www\.)?(?:reddit\.com\/r\/[a-zA-Z0-9_]+\/comments\/|v\.redd\.it\/)([a-zA-Z0-9_]+)/;
   const redditMatch = url.match(redditRegex);
   if (redditMatch) {
-    return { provider: 'reddit', id: redditMatch[2], url };
+    return { provider: 'reddit', id: redditMatch[1], url };
+  }
+
+  // TikTok
+  const tiktokRegex = /https?:\/\/(?:www\.)?(?:tiktok\.com\/.*\/video\/|vm\.tiktok\.com\/|vt\.tiktok\.com\/)([a-zA-Z0-9]+)/;
+  const tiktokMatch = url.match(tiktokRegex);
+  if (tiktokMatch) {
+    return { provider: 'tiktok', id: tiktokMatch[1], url };
   }
 
   // Facebook
@@ -78,7 +85,7 @@ export const getEmbedInfo = (url: string): EmbedInfo => {
  */
 export const fetchEmbedMeta = async (url: string): Promise<EmbedMeta> => {
   const { provider } = getEmbedInfo(url);
-  
+
   let oEmbedUrl = '';
   if (provider === 'youtube') {
     oEmbedUrl = `https://www.youtube.com/oembed?url=${encodeURIComponent(url)}&format=json`;
@@ -92,56 +99,72 @@ export const fetchEmbedMeta = async (url: string): Promise<EmbedMeta> => {
     oEmbedUrl = `https://api.instagram.com/oembed?url=${encodeURIComponent(url)}`;
   } else if (provider === 'facebook') {
     oEmbedUrl = `https://www.facebook.com/plugins/post/oembed.json/?url=${encodeURIComponent(url)}`;
+  } else if (provider === 'tiktok') {
+    oEmbedUrl = `https://www.tiktok.com/oembed?url=${encodeURIComponent(url)}`;
   }
 
-  let data: EmbedMeta | null = null;
-
-  if (oEmbedUrl) {
-    // Try multiple proxies for high reliability
+  // 1. Fetch oEmbed data
+  const fetchOEmbed = async (): Promise<EmbedMeta | null> => {
+    if (!oEmbedUrl) return null;
     const proxies = [
-      (u: string) => u, // Direct
+      (u: string) => `/api/oembed?url=${encodeURIComponent(u)}`,
       (u: string) => `https://api.allorigins.win/get?url=${encodeURIComponent(u)}`,
-      (u: string) => `https://corsproxy.io/?${encodeURIComponent(u)}`
+      (u: string) => `https://corsproxy.io/?${encodeURIComponent(u)}`,
+      (u: string) => u,
     ];
 
     for (const proxy of proxies) {
       try {
         const res = await fetch(proxy(oEmbedUrl));
         if (!res.ok) continue;
-        
         let result = await res.json();
-        if (result.contents) result = JSON.parse(result.contents); // For AllOrigins
-        
-        data = result;
-        break;
+        if (result.contents) result = JSON.parse(result.contents);
+        return result;
       } catch (err) {
-        console.warn(`[Embed Utils] Proxy failed:`, err);
+        console.warn(`[Embed Utils] oEmbed proxy failed:`, err);
       }
     }
-  }
+    return null;
+  };
 
-  // Fallback to Microlink API if oEmbed fails or is not available
-  if (!data || !data.thumbnail_url) {
+  // 2. Fetch Microlink data (usually better for direct video/image URLs)
+  const fetchMicrolink = async (): Promise<EmbedMeta | null> => {
     try {
       const res = await fetch(`https://api.microlink.io?url=${encodeURIComponent(url)}`);
       if (res.ok) {
         const result = await res.json();
         if (result.status === 'success' && result.data) {
           const ml = result.data;
-          data = {
-            ...data,
-            title: data?.title || ml.title || url,
-            author_name: data?.author_name || ml.author || ml.publisher || "",
+          return {
+            title: ml.title || "",
+            author_name: ml.author || ml.publisher || "",
             thumbnail_url: ml.image?.url || ml.logo?.url || null,
             video_url: ml.video?.url || null,
-            provider_name: data?.provider_name || ml.publisher || ""
+            provider_name: ml.publisher || ""
           };
         }
       }
     } catch (err) {
-      console.warn(`[Embed Utils] Microlink fallback failed:`, err);
+      console.warn(`[Embed Utils] Microlink failed:`, err);
     }
-  }
+    return null;
+  };
 
-  return data || { title: url };
+  // Run in parallel for speed
+  const [oData, mlData] = await Promise.all([fetchOEmbed(), fetchMicrolink()]);
+
+  // Deep merged result
+  const finalData: EmbedMeta = {
+    ...oData,
+    title: oData?.title || mlData?.title || url,
+    author_name: oData?.author_name || mlData?.author_name || "",
+    thumbnail_url: oData?.thumbnail_url || mlData?.thumbnail_url || undefined,
+    // Only trust video_url if oEmbed explicitly provides it, 
+    // or if we are on a known video platform (YouTube/TikTok)
+    video_url: (oData?.video_url || (['youtube', 'tiktok'].includes(provider) ? mlData?.video_url : undefined)) || undefined,
+    provider_name: oData?.provider_name || mlData?.provider_name || "",
+    html: oData?.html || undefined
+  };
+
+  return finalData;
 };

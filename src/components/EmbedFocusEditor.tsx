@@ -2,7 +2,7 @@ import React, { useEffect, useMemo, useRef } from 'react';
 import { useStore } from '../store/useStore';
 import { Youtube, X, ExternalLink, Music, MessageCircle, Share2, Link as LinkIcon } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { getEmbedInfo, type EmbedProvider } from '../utils/embeds';
+import { getEmbedInfo } from '../utils/embeds';
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 
@@ -17,6 +17,7 @@ const PROVIDER_CONFIG: Record<string, { icon: any, color: string, label: string,
   reddit: { icon: MessageCircle, color: 'text-[#ff4500]', themeColor: 'bg-[#ff4500]/10', label: 'Reddit' },
   facebook: { icon: Share2, color: 'text-[#1877f2]', themeColor: 'bg-[#1877f2]/10', label: 'Facebook' },
   instagram: { icon: Share2, color: 'text-[#e1306c]', themeColor: 'bg-[#e1306c]/10', label: 'Instagram' },
+  tiktok: { icon: Share2, color: 'text-[#ff0050]', themeColor: 'bg-[#ff0050]/10', label: 'TikTok' },
   unknown: { icon: LinkIcon, color: 'text-slate-400', themeColor: 'bg-white/10', label: 'Link' }
 };
 
@@ -37,6 +38,7 @@ const EmbedFocusEditor: React.FC = () => {
   const Icon = config.icon;
 
   const scrollerRef = useRef<HTMLDivElement>(null);
+  const [isHydrated, setIsHydrated] = React.useState(false);
 
   // Find other items in the same stack (Embeds Only)
   const stackItems = useMemo(() => {
@@ -61,23 +63,52 @@ const EmbedFocusEditor: React.FC = () => {
     return () => el.removeEventListener('wheel', onWheel);
   }, [isVisible, stackItems.length]);
 
-  // Re-run scripts when HTML content changes (important for Twitter/Instagram widgets)
+  // Robust widget hydration logic
   useEffect(() => {
     if (isVisible && thought?.meta?.html) {
-      // Re-scan for Twitter widgets
-      if (thought.content.includes('twitter.com') || thought.content.includes('x.com')) {
-        (window as any).twttr?.widgets?.load();
-      }
-      // Re-scan for Instagram
-      if (thought.content.includes('instagram.com')) {
-        (window as any).instgrm?.Embeds?.process();
-      }
+      setIsHydrated(false);
+
+      const trigger = () => {
+        const content = (thought.content || "").toLowerCase();
+        if (content.includes('twitter.com') || content.includes('x.com')) (window as any).twttr?.widgets?.load();
+        if (content.includes('instagram.com')) (window as any).instgrm?.Embeds?.process();
+        if (content.includes('tiktok.com')) {
+          (window as any).tiktok?.widgets?.load();
+          if ((window as any).tiktokEmbed?.lib?.render) (window as any).tiktokEmbed.lib.render();
+        }
+        setIsHydrated(true);
+      };
+
+      trigger();
+      const t = setTimeout(trigger, 1500);
+      return () => clearTimeout(t);
     }
-  }, [isVisible, thought?.meta?.html, thought?.content]);
+  }, [isVisible, thought?.id, thought?.meta?.html]);
 
   const renderPlayer = () => {
-    const { provider, id, url } = embedInfo;
+    const { provider, id } = embedInfo;
 
+    // Priority 1: High-Quality Video URL (Only for designated video platforms or if no HTML)
+    // We EXCLUDE Reddit/Twitter/Instagram from auto-video unless no HTML is found,
+    // because their "video_url" is often just a preview or metadata link.
+    const isVideoPlatform = provider === 'youtube' || provider === 'tiktok';
+    const hasHtml = !!thought?.meta?.html;
+
+    if (thought?.meta?.video_url && (isVideoPlatform || !hasHtml)) {
+      const proxyUrl = `/api/proxy-video?url=${encodeURIComponent(thought.meta.video_url)}`;
+      return (
+        <div className="w-full h-full flex items-center justify-center bg-black">
+          <video
+            src={proxyUrl}
+            controls
+            autoPlay
+            className="max-w-full max-h-full shadow-2xl"
+          />
+        </div>
+      );
+    }
+
+    // Priority 2: Standard Video Providers (Iframe Players)
     if (provider === 'youtube' && id) {
       return (
         <iframe
@@ -105,27 +136,26 @@ const EmbedFocusEditor: React.FC = () => {
       );
     }
 
-    // If we have oEmbed HTML (Twitter, Instagram, TikTok, etc.)
+    // Priority 3: Rich HTML Embeds (Twitter/Instagram/Reddit/TikTok)
     if (thought?.meta?.html) {
+      const isReddit = thought.content.includes('reddit.com');
       return (
-        <div className="w-full h-full overflow-auto flex items-start justify-center p-4 md:p-8 custom-scroll bg-black">
-           <div 
-             className="w-full max-w-[550px] bg-white rounded-2xl overflow-hidden shadow-2xl"
-             dangerouslySetInnerHTML={{ __html: thought.meta.html }} 
-           />
-        </div>
-      );
-    }
-
-    // If we have a direct video URL (captured from Microlink)
-    if (thought?.meta?.video_url) {
-      return (
-        <div className="w-full h-full flex items-center justify-center bg-black">
-          <video 
-            src={thought.meta.video_url} 
-            controls 
-            autoPlay 
-            className="max-w-full max-h-full shadow-2xl"
+        <div className="w-full h-full overflow-auto flex flex-col items-center justify-start p-4 md:p-8 custom-scroll bg-black">
+          {!isHydrated && (
+            <div className="flex flex-col items-center gap-4 text-slate-500 my-10 animate-pulse">
+              <div className="w-8 h-8 rounded-full border-2 border-current border-t-transparent animate-spin" />
+              <span className="text-[10px] font-black uppercase tracking-widest">Hydrating...</span>
+            </div>
+          )}
+          <div
+            id={`embed-${thought.id}`}
+            className={cn(
+              "w-full max-w-[550px] rounded-2xl overflow-hidden shadow-2xl",
+              isReddit ? "bg-[#1a1a1b] p-1" : "bg-white",
+              isHydrated ? "opacity-100" : "opacity-60"
+            )}
+            style={isReddit ? { colorScheme: 'dark' } : {}}
+            dangerouslySetInnerHTML={{ __html: thought.meta.html }}
           />
         </div>
       );
@@ -136,11 +166,11 @@ const EmbedFocusEditor: React.FC = () => {
       <div className="absolute inset-0 flex flex-col items-center justify-center bg-black overflow-hidden">
         {thought?.image ? (
           <div className="w-full h-full flex items-center justify-center p-4">
-             <img 
-               src={thought.image} 
-               alt="Content" 
-               className="max-w-full max-h-full object-contain rounded-xl shadow-2xl border border-white/5" 
-             />
+            <img
+              src={thought.image}
+              alt="Content"
+              className="max-w-full max-h-full object-contain rounded-xl shadow-2xl border border-white/5"
+            />
           </div>
         ) : (
           <div className="flex flex-col items-center justify-center text-center p-10">
@@ -158,13 +188,13 @@ const EmbedFocusEditor: React.FC = () => {
   return (
     <AnimatePresence>
       {isVisible && thought && (
-        <motion.div 
+        <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
           className="fixed inset-0 z-[10001] bg-[var(--bg-main)]/70 backdrop-blur-[40px] flex items-center justify-center p-4 md:p-10"
         >
-          <motion.div 
+          <motion.div
             initial={{ scale: 0.95, opacity: 0, y: 20 }}
             animate={{ scale: 1, opacity: 1, y: 0 }}
             exit={{ scale: 0.95, opacity: 0, y: 20 }}
@@ -178,31 +208,31 @@ const EmbedFocusEditor: React.FC = () => {
                   <Icon className={cn("w-5 h-5 md:w-6 md:h-6", config.color)} />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <input 
+                  <input
                     type="text"
                     value={thought.text}
                     onChange={(e) => updateThought(thought.id, { text: e.target.value })}
-                    className="bg-transparent text-xl md:text-2xl font-bold text-white outline-none border-none p-0 w-full truncate" 
+                    className="bg-transparent text-xl md:text-2xl font-bold text-white outline-none border-none p-0 w-full truncate"
                     placeholder="Link Title"
                   />
                   <div className="flex items-center gap-2 mt-1 overflow-hidden">
                     {thought.description && (
-                       <span className={cn("text-[9px] font-black uppercase tracking-widest px-2 py-0.5 rounded-md border whitespace-nowrap", config.color, config.themeColor, "border-current/20")}>{thought.description}</span>
+                      <span className={cn("text-[9px] font-black uppercase tracking-widest px-2 py-0.5 rounded-md border whitespace-nowrap", config.color, config.themeColor, "border-current/20")}>{thought.description}</span>
                     )}
                     <p className="text-[9px] text-slate-500 uppercase font-black tracking-widest truncate opacity-60">{thought.content}</p>
                   </div>
                 </div>
               </div>
               <div className="flex items-center gap-3 w-full md:w-auto justify-end flex-shrink-0">
-                <a 
-                  href={thought.content} 
-                  target="_blank" 
+                <a
+                  href={thought.content}
+                  target="_blank"
                   rel="noopener noreferrer"
                   className="p-3 md:p-4 hover:bg-white/5 rounded-xl md:rounded-2xl text-slate-400 hover:text-white transition-all"
                 >
                   <ExternalLink className="w-5 h-5 md:w-6 md:h-6" />
                 </a>
-                <button 
+                <button
                   onClick={() => setActiveFocus(null, null)}
                   className="p-3 md:p-4 hover:bg-red-500/10 rounded-xl md:rounded-2xl text-slate-400 hover:text-red-400 transition-all"
                 >
@@ -210,7 +240,7 @@ const EmbedFocusEditor: React.FC = () => {
                 </button>
               </div>
             </div>
-            
+
             {/* Player Area */}
             <div className="flex-1 bg-black relative min-h-0">
               {renderPlayer()}
@@ -219,7 +249,7 @@ const EmbedFocusEditor: React.FC = () => {
             {/* Stack Scroller */}
             <AnimatePresence>
               {stackItems.length > 0 && (
-                <motion.div 
+                <motion.div
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
                   className="bg-black/40 backdrop-blur-md border-t border-white/5 p-4 md:p-6"
@@ -228,15 +258,15 @@ const EmbedFocusEditor: React.FC = () => {
                     <span className="text-[9px] font-black uppercase tracking-[0.2em] text-slate-500">Collection: {stack?.name}</span>
                     <span className="text-[8px] font-bold text-slate-600 uppercase tracking-widest">{stackItems.length + 1} items total</span>
                   </div>
-                  
+
                   <div className="flex gap-3 overflow-x-auto custom-scroll pb-2 w-full snap-x" ref={scrollerRef}>
                     {stackItems.map((item) => {
                       const itemInfo = getEmbedInfo(item.content);
                       const itemConfig = PROVIDER_CONFIG[itemInfo.provider] || PROVIDER_CONFIG.unknown;
                       const ItemIcon = itemConfig.icon;
-                      
-                      const thumb = itemInfo.provider === 'youtube' && itemInfo.id 
-                        ? `https://img.youtube.com/vi/${itemInfo.id}/mqdefault.jpg` 
+
+                      const thumb = itemInfo.provider === 'youtube' && itemInfo.id
+                        ? `https://img.youtube.com/vi/${itemInfo.id}/mqdefault.jpg`
                         : item.image;
 
                       return (
@@ -262,13 +292,13 @@ const EmbedFocusEditor: React.FC = () => {
                 </motion.div>
               )}
             </AnimatePresence>
-            
+
             {/* Footer */}
             <div className="p-4 md:p-6 border-t border-white/5 flex flex-col md:flex-row justify-between items-center gap-4 md:gap-0">
               <div className="flex flex-wrap justify-center md:justify-start gap-2">
                 {stack && (
-                  <span 
-                    className="tag-pill text-[8px] md:text-[9px] font-700 px-2 md:px-2.5 py-1 rounded-lg border border-white/10" 
+                  <span
+                    className="tag-pill text-[8px] md:text-[9px] font-700 px-2 md:px-2.5 py-1 rounded-lg border border-white/10"
                     style={{
                       backgroundColor: stack.color.replace('1)', '0.15)'),
                       color: stack.color,
