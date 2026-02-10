@@ -360,15 +360,15 @@ export const usePhysics = (
             const el = elements.current.get(t.id);
             const h = el?.offsetHeight || 120;
 
-            // Clean vertical stack, no horizontal spray
-            const targetX = baseX;
-            // Spread out: when hovered, increase the vertical spread significantly
-            // We use a larger spread for hovered to show more content, but keeping it as a "deck"
-            const spread = isHovered ? 80 : 35; 
+            const isHovered = hoveredCalDate === dateStr;
+            const hSpread = isHovered ? 20 : 8;
+            const vSpread = isHovered ? 60 : 25; 
+
+            // Diagonal Deck Spray: Offset both X and Y
+            const targetX = baseX - (groupThoughts.length > 1 ? (groupThoughts.length * hSpread) / 2 : 0) + (index * hSpread);
             
             // targetY such that top of the card is at: baseY + (index * spread)
-            // Since transform uses p.y - h/2, we offset by h/2 here.
-            const targetY = baseY + (index * spread) + (h * uniformScale) / 2;
+            const targetY = baseY + (index * vSpread) + (h * uniformScale) / 2;
             const targetScale = isHovered ? uniformScale * 1.05 : uniformScale;
             
             if (snapNextFrame.current) {
