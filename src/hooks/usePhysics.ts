@@ -352,8 +352,8 @@ export const usePhysics = (
           const uniformScale = Math.min((cellWidth - 20) / 280, 0.45);
           const isHovered = hoveredCalDate === dateStr;
 
-          // Sort group by order to keep stack stable
-          groupThoughts.sort((a, b) => a.order - b.order).forEach((t, index) => {
+          // Sort group by layer to keep stack stable and reactive to layering actions
+          groupThoughts.sort((a, b) => (a.layer || 0) - (b.layer || 0)).forEach((t, index) => {
             const p = state.get(t.id);
             if (!p || dragRef.current?.initialPositions.has(t.id)) return;
 
@@ -367,7 +367,7 @@ export const usePhysics = (
             // Diagonal Deck Spray: Offset both X and Y
             const targetX = baseX - (groupThoughts.length > 1 ? (groupThoughts.length * hSpread) / 2 : 0) + (index * hSpread);
             
-            // targetY such that top of the card is at: baseY + (index * spread)
+            // targetY such that top of the card is at: baseY + (index * vSpread) + (h * uniformScale) / 2
             const targetY = baseY + (index * vSpread) + (h * uniformScale) / 2;
             const targetScale = isHovered ? uniformScale * 1.05 : uniformScale;
             
@@ -616,7 +616,7 @@ export const usePhysics = (
                 // Determine if this is the top card of its stack
                 const dateThoughts = Array.from(thoughtMap.current.values())
                     .filter(th => th.date === t.date)
-                    .sort((a, b) => (a.order || 0) - (b.order || 0));
+                    .sort((a, b) => (a.layer || 0) - (b.layer || 0));
                 const isTopCard = dateThoughts.length > 0 && dateThoughts[dateThoughts.length - 1].id === t.id;
 
                 if (isHovered || isTopCard) {
@@ -628,7 +628,7 @@ export const usePhysics = (
                 }
                 
                 // Add a slight "deck" rotation for tactile feel
-                const rot = ((t.order || 0) % 2 === 0 ? 0.8 : -0.8);
+                const rot = ((t.layer || 0) % 2 === 0 ? 0.8 : -0.8);
                 el.style.transform += ` rotate(${rot}deg)`;
             } else {
                 el.style.clipPath = 'none';
@@ -638,7 +638,8 @@ export const usePhysics = (
             if (isDraggingThis) {
               el.style.zIndex = '1000';
             } else {
-              el.style.zIndex = (30 + (t?.order || 0)).toString();
+              // Use global layer for zIndex
+              el.style.zIndex = (30 + (t?.layer || 0)).toString();
             }
         } else {
             el.style.clipPath = 'none';
