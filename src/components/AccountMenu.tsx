@@ -240,7 +240,7 @@ const AccountMenu: React.FC = () => {
                 <Zap className="w-4 h-4 text-indigo-400 animate-pulse" />
                 <div className="text-left">
                   <p className="text-[9px] font-black uppercase tracking-widest text-white">Upgrade to Pro</p>
-                  <p className="text-[7px] font-bold text-indigo-400/70 uppercase tracking-widest">Unlock MARI & More Spaces</p>
+                  <p className="text-[7px] font-bold text-indigo-400/70 uppercase tracking-widest">Unlock Oracle & More Spaces</p>
                 </div>
               </div>
               <Star className="w-3.5 h-3.5 text-indigo-400 fill-indigo-400" />

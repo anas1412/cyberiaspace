@@ -1,9 +1,8 @@
 import { create } from 'zustand';
 import { db, type Space, type Thought, type Stack } from '../db';
-import { aiService } from '../services/ai';
 import { useAuthStore } from './useAuthStore';
 import { useModalStore } from './useModalStore';
-import { DEFAULT_MODEL, PLAN_CONFIG, type SubscriptionPlan } from '../constants';
+import { PLAN_CONFIG, type SubscriptionPlan } from '../constants';
 
 interface CyberiaState {
   activeSpaceId: string | null;
@@ -25,10 +24,8 @@ interface CyberiaState {
   // Plan Helper
   getLimits: () => typeof PLAN_CONFIG['free'];
 
-  // MARI (AI) State
-  apiKey: string | null;
-  activeModel: string;
-  mariMode: boolean; // True = AI Enabled
+  // Oracle (AI) State
+  oracleMode: boolean; // True = AI Enabled
   isChatOpen: boolean;
   
   // Initialization
@@ -40,10 +37,7 @@ interface CyberiaState {
   setDeferredPrompt: (prompt: any) => void;
 
   // AI Actions
-  setApiKey: (key: string) => void;
-  setActiveModel: (model: string) => void;
-  removeApiKey: () => void;
-  toggleMariMode: () => void;
+  toggleOracleMode: () => void;
   setChatOpen: (isOpen: boolean) => void;
   
   // Space Actions
@@ -59,6 +53,7 @@ interface CyberiaState {
   addThought: (thought: Partial<Thought>) => Promise<number>;
   updateThought: (id: number, updates: Partial<Thought>) => Promise<void>;
   deleteThought: (id: number) => Promise<void>;
+  deleteThoughts: (ids: number[]) => Promise<void>;
   setSelectedThoughtId: (id: number | null) => void;
   setSelectedThoughtIds: (ids: number[]) => void;
   toggleThoughtSelection: (id: number) => void;
@@ -211,9 +206,7 @@ export const useStore = create<CyberiaState>((set, get) => ({
     set({ thoughts: nextThoughts, historyIndex: newIndex });
   },
 
-  apiKey: localStorage.getItem('cyberia-api-key'),
-  activeModel: localStorage.getItem('cyberia-active-model') || DEFAULT_MODEL,
-  mariMode: useAuthStore.getState().user?.plan === 'pro',
+  oracleMode: useAuthStore.getState().user?.plan === 'pro',
   isChatOpen: false,
 
   openLightbox: (image) => set({ isLightboxOpen: true, lightboxImage: image }),
@@ -227,46 +220,20 @@ export const useStore = create<CyberiaState>((set, get) => ({
 
   setDeferredPrompt: (prompt) => set({ deferredPrompt: prompt }),
 
-  setApiKey: (key) => {
-    set({ apiKey: key });
-    localStorage.setItem('cyberia-api-key', key);
-    if (key) {
-      aiService.initialize(key, get().activeModel);
-    }
-  },
-
-  setActiveModel: (model) => {
-    set({ activeModel: model });
-    localStorage.setItem('cyberia-active-model', model);
-    const { apiKey } = get();
-    if (apiKey) {
-      aiService.initialize(apiKey, model);
-    }
-  },
-
-  removeApiKey: () => {
-    set({ apiKey: null, mariMode: false, isChatOpen: false });
-    localStorage.removeItem('cyberia-api-key');
-    localStorage.removeItem('cyberia-mari-mode');
-  },
-
-  toggleMariMode: () => {
+  toggleOracleMode: () => {
     const plan = useAuthStore.getState().user?.plan;
     if (plan !== 'pro') {
       useModalStore.getState().openModal({
-        title: 'MARI Locked',
-        description: 'MARI AI features are only available on the Pro plan. Upgrade to start using AI.',
+        title: 'Oracle Locked',
+        description: 'Oracle AI features are only available on the Pro plan. Upgrade to start using AI.',
         type: 'alert',
         confirmText: 'View Plans',
         onConfirm: () => useModalStore.getState().openPricing()
       });
       return;
     }
-    // Pro users: MARI is always activated and cannot be turned off.
-    if (!get().mariMode) {
-      set({ mariMode: true });
-      localStorage.setItem('cyberia-mari-mode', 'true');
-    }
+    // Pro users: Oracle is always activated.
+    set({ oracleMode: true });
   },
 
   setChatOpen: (isOpen) => set({ isChatOpen: isOpen }),
@@ -279,13 +246,6 @@ export const useStore = create<CyberiaState>((set, get) => ({
     // Apply theme on init
     const savedTheme = localStorage.getItem('cyberia-theme') || 'cyberia';
     document.body.setAttribute('data-theme', savedTheme);
-
-    // Initialize AI if key exists
-    const savedKey = localStorage.getItem('cyberia-api-key');
-    const savedModel = localStorage.getItem('cyberia-active-model') || DEFAULT_MODEL;
-    if (savedKey) {
-      aiService.initialize(savedKey, savedModel);
-    }
 
     await get().refreshSpaces();
     await get().refreshTotalThoughtCount();
@@ -394,7 +354,7 @@ export const useStore = create<CyberiaState>((set, get) => ({
 
       await get().addThought({
         text: 'README',
-        content: '# Cyberia: The Kinetic Mind\n\nDesigned for non-linear thinkers, visionaries, and digital architects. We believe productivity shouldn\'t feel like a spreadsheet. It should feel like a world.\n\n### 1. Kinetic Architecture\nIdeas here have mass, velocity, and gravity. Using our custom physics engine, your thoughts form natural clusters—**Stacks**—based on your internal logic.\n\n### 2. Multi-Dimensional Views\nInformation is fluid. Switch between **Spatial**, **Kanban**, and **Calendar** modes without losing context.\n\n### 3. Rich Media & Tools\nCreate **Task Lists**, **Structured Tables**, **Freehand Drawings**, and **Image Bulbs**. You can even **Embed YouTube** videos directly.\n\n### 4. MARI (AI)\nPowered by Gemini, **MARI** (Mediated Autonomous Research & Intelligence) is your Pro spatial assistant. It can research the web, generate ideas, and help you organize your mental landscape.\n\n### 5. Cloud Sync & Security\nYour mind is private by default. However, you can **Connect your Google Account** to sync your data across devices securely.\n\n### 6. Power User Features\nTake control with **Multi-selection**, **History (Undo/Redo)**, and **Universal Search**. Customize your experience with **Themes** and use **Import/Export** for full data ownership.\n\n---\n*Welcome to the Wired.*',
+        content: `# Cyberia: The Kinetic Mind\n\nDesigned for non-linear thinkers, visionaries, and digital architects. We believe productivity shouldn't feel like a spreadsheet. It should feel like a world.\n\n### 1. Kinetic Architecture\nIdeas here have mass, velocity, and gravity. Using our custom physics engine, your thoughts form natural clusters—**Stacks**—based on your internal logic.\n\n### 2. Multi-Dimensional Views\nInformation is fluid. Switch between **Spatial**, **Kanban**, and **Calendar** modes without losing context.\n\n### 3. Rich Media & Tools\nCreate **Task Lists**, **Structured Tables**, **Freehand Drawings**, and **Image Bulbs**. You can even **Embed YouTube** videos directly.\n\n### 4. Oracle (AI)\nPowered by Gemini, **Oracle** (${DEFAULT_MODEL}) is your Pro spatial assistant. It can research the web, generate ideas, and help you organize your mental landscape.\n\n### 5. Cloud Sync & Security\nYour mind is private by default. However, you can **Connect your Google Account** to sync your data across devices securely.\n\n### 6. Power User Features\nTake control with **Multi-selection**, **History (Undo/Redo)**, and **Universal Search**. Customize your experience with **Themes** and use **Import/Export** for full data ownership.\n\n---\n*Welcome to the Wired.*`,
         x: cx + 650, y: cy + 150, priority: 'urgent', stackId: mediaId,
         status: 'done',
         spaceId: onboardingId
@@ -743,6 +703,37 @@ export const useStore = create<CyberiaState>((set, get) => ({
     get().pushHistory();
 
     // Trigger Cloud Sync
+    const authStore = (await import('./useAuthStore')).useAuthStore.getState();
+    if (authStore.autoSync && authStore.status === 'authenticated') {
+      authStore.syncData();
+    }
+  },
+
+  deleteThoughts: async (ids) => {
+    if (!ids || ids.length === 0) return;
+    const { thoughts, selectedThoughtId, selectedThoughtIds } = get();
+    
+    const affectedStackIds = Array.from(new Set(
+      thoughts.filter(t => ids.includes(t.id)).map(t => t.stackId).filter(Boolean)
+    )) as string[];
+
+    await db.thoughts.bulkDelete(ids);
+    await get().refreshThoughts();
+    await get().refreshTotalThoughtCount();
+    
+    if (affectedStackIds.length > 0) {
+      await get().cleanupStacks();
+    }
+
+    // Clean up selection state
+    if (selectedThoughtId && ids.includes(selectedThoughtId)) {
+      set({ selectedThoughtId: null, isInspectorOpen: false });
+    }
+    const newSelectedIds = selectedThoughtIds.filter(tid => !ids.includes(tid));
+    set({ selectedThoughtIds: newSelectedIds });
+
+    get().pushHistory();
+
     const authStore = (await import('./useAuthStore')).useAuthStore.getState();
     if (authStore.autoSync && authStore.status === 'authenticated') {
       authStore.syncData();

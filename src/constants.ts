@@ -34,7 +34,7 @@ export const PLAN_CONFIG: Record<SubscriptionPlan, PlanLimits> = {
   },
 };
 
-export const DEFAULT_MODEL = 'gemini-2.0-flash-lite';
+export const DEFAULT_MODEL = import.meta.env.VITE_GOOGLE_AI_MODEL || 'gemini-2.5-flash';
 
 export const AVAILABLE_MODELS = [
 /*   'gemini-3-pro-preview',
@@ -47,5 +47,6 @@ export const AVAILABLE_MODELS = [
 ];
 
 export const VERIFICATION_MODEL = [
-  'gemma-3-27b-it'
+/*   'gemma-3-27b-it', */
+  'gemma-3-12b-it',
 ];

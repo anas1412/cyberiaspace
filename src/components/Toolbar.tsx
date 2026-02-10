@@ -2,9 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { useStore } from '../store/useStore';
 import { useModalStore } from '../store/useModalStore';
 import { useAuthStore } from '../store/useAuthStore';
-import { aiService } from '../services/ai';
-import { PLAN_CONFIG, AVAILABLE_MODELS, type SubscriptionPlan } from '../constants';
-import { Plus, Zap, Download, Upload, ChevronLeft, ChevronRight, Trash2, Edit3, Camera, MoreVertical, Keyboard, MousePointer2, Orbit, Columns3, CalendarDays, MonitorSmartphone, Key, ChevronDown, ZoomIn, ZoomOut, RotateCcw, Undo2, Redo2, Settings, CircleHelp, MessageSquare, Send, Loader2, CheckCircle } from 'lucide-react';
+import { PLAN_CONFIG, type SubscriptionPlan } from '../constants';
+import { Plus, Zap, Download, Upload, ChevronLeft, ChevronRight, Trash2, Edit3, Camera, MoreVertical, Keyboard, MousePointer2, Orbit, Columns3, CalendarDays, MonitorSmartphone, BotMessageSquare, Eye, EyeOff, EyeClosed, ZoomIn, ZoomOut, RotateCcw, Undo2, Redo2, Settings, CircleHelp, MessageSquare, Send, Loader2, CheckCircle, Shield } from 'lucide-react';
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 /* import { toPng, toCanvas } from 'html-to-image'; */
@@ -15,26 +14,9 @@ function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
 
-const formatModelName = (name: string) => {
-  if (name.includes('gemini-2.0-flash-lite')) return 'Flash Lite Model';
-  if (name.includes('-3-flash')) return '3 Flash Model';
-  if (name.includes('-3-pro')) return '3 Pro Model';
-  if (name.includes('-2.5-pro')) return '2.5 Model';
-  if (name.includes('-2.5-flash')) return '2.5 Flash Model';
-  if (name.includes('-2.5-flash-lite')) return '2.5 Flash Lite Model';
-  
-  return name;
-};
-
 const Toolbar: React.FC = () => {
   const activeSpaceId = useStore((state) => state.activeSpaceId);
-  const mariMode = useStore((state) => state.mariMode);
-  const toggleMariMode = useStore((state) => state.toggleMariMode);
-  const setApiKey = useStore((state) => state.setApiKey);
-  const removeApiKey = useStore((state) => state.removeApiKey);
-  const apiKey = useStore((state) => state.apiKey);
-  const activeModel = useStore((state) => state.activeModel);
-  const setActiveModel = useStore((state) => state.setActiveModel);
+  const oracleMode = useStore((state) => state.oracleMode);
   const setChatOpen = useStore((state) => state.setChatOpen);
   const isChatOpen = useStore((state) => state.isChatOpen);
   
@@ -74,7 +56,6 @@ const Toolbar: React.FC = () => {
   const [isShortcutsOpen, setIsShortcutsOpen] = useState(false);
   const [isHelpOpen, setIsHelpOpen] = useState(false);
   const [activeHelpTab, setActiveHelpTab] = useState<'about' | 'issue' | 'contact'>('about');
-  const [isKeyModalOpen, setIsKeyModalOpen] = useState(false);
 
   // Quick Feedback State
   const [quickMessage, setQuickMessage] = useState('');
@@ -163,18 +144,9 @@ const Toolbar: React.FC = () => {
     }
   };
 
-  const [tempKey, setTempKey] = useState('');
-  const [isValidating, setIsValidating] = useState(false);
-  const [validationError, setValidationError] = useState<string | null>(null);
   const [isCapturing, setIsCapturing] = useState(false);
 
   // Close menus on click elsewhere
-  React.useEffect(() => {
-    if (isKeyModalOpen) {
-      setTempKey('');
-      setValidationError(null);
-    }
-  }, [isKeyModalOpen]);
   React.useEffect(() => {
     const handleGlobalClick = (e: MouseEvent) => {
       const target = e.target as HTMLElement;
@@ -658,6 +630,20 @@ const Toolbar: React.FC = () => {
           <button onClick={handleScreenshot} disabled={isCapturing} className="flex items-center gap-3 px-3 py-3 rounded-xl md:rounded-2xl hover:bg-white/5 text-[9px] md:text-[10px] font-black uppercase tracking-widest text-slate-300 transition-colors">
             <Camera className="w-3.5 h-3.5" /> {isCapturing ? 'Saving...' : 'Screenshot'}
           </button>
+
+          <button 
+            onClick={() => {
+              openModal({
+                title: 'Terms of Service',
+                type: 'terms',
+                confirmText: 'Acknowledged'
+              });
+              setIsSystemMenuOpen(false);
+            }} 
+            className="flex items-center gap-3 px-3 py-3 rounded-xl md:rounded-2xl hover:bg-white/5 text-[9px] md:text-[10px] font-black uppercase tracking-widest text-slate-500 hover:text-indigo-400 transition-colors"
+          >
+            <Shield className="w-3.5 h-3.5" /> Terms of Service
+          </button>
           
           <div className="h-[1px] bg-white/5 my-3 mx-1"></div>
 
@@ -673,46 +659,19 @@ const Toolbar: React.FC = () => {
                 });
                 setIsSystemMenuOpen(false);
               }} 
-              className="flex items-center justify-center gap-2 py-3 rounded-xl hover:bg-red-500/10 text-[9px] md:text-[10px] font-black uppercase tracking-widest text-red-400 transition-colors border border-transparent hover:border-red-500/10"
+              className="w-full flex items-center justify-center gap-2 py-3 rounded-xl hover:bg-red-500/10 text-[9px] md:text-[10px] font-black uppercase tracking-widest text-red-400 transition-colors border border-transparent hover:border-red-500/10"
             >
               <Trash2 className="w-3 h-3" /> Clear
-            </button>
-            <button 
-              onClick={() => {
-                setIsKeyModalOpen(true);
-                setIsSystemMenuOpen(false);
-              }} 
-              className="flex items-center justify-center gap-2 py-3 rounded-xl bg-white/5 hover:bg-purple-500/10 text-[9px] md:text-[10px] font-black uppercase tracking-widest text-purple-400 transition-colors border border-white/10 hover:border-purple-500/20"
-            >
-              <Key className="w-3 h-3" /> MARI
             </button>
           </div>
         </div>
         
         <div className="flex gap-2 pointer-events-auto">
           <div className="relative group">
-            {/* Tooltip / Info Box */}
-            <div className={cn(
-              "absolute bottom-full right-0 mb-4 transition-all duration-300 pointer-events-none w-52 md:w-64 translate-y-2",
-              "opacity-0 group-hover:opacity-100 group-hover:translate-y-0"
-            )}>
-              <div className="glass p-5 md:p-6 rounded-[2rem] border-white/10 shadow-2xl bg-[var(--bg-main)]/95">
-                <div className="flex items-center gap-3 mb-2">
-                  <div className={cn(
-                    "w-1.5 h-1.5 rounded-full shadow-[0_0_8px_currentColor]", 
-                    (mariMode && limits.AI_ENABLED) ? "bg-purple-500 text-purple-500" : "bg-slate-500 text-slate-500"
-                  )} />
-                  <p className="text-[9px] md:text-[10px] font-black uppercase tracking-widest text-white">
-                    {(mariMode && limits.AI_ENABLED) ? 'MARI Online' : 'MARI Locked'}
-                  </p>
-                </div>
-                <p className="text-[9px] md:text-[10px] leading-relaxed text-slate-400">
-                  {(mariMode && limits.AI_ENABLED) 
-                    ? 'MARI is active and ready to help you organize your mind.'
-                    : !user 
-                      ? 'Sign in to your account to start using MARI AI features.'
-                      : 'Upgrade to the Pro plan to unlock MARI AI.'}
-                </p>
+            {/* Tooltip */}
+            <div className="absolute bottom-full mb-4 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-all duration-300 translate-y-2 group-hover:translate-y-0 pointer-events-none whitespace-nowrap z-[10001]">
+              <div className="glass px-3 py-1.5 rounded-xl border border-white/10 flex items-center gap-2 shadow-2xl bg-[var(--bg-main)]/90 backdrop-blur-xl">
+                <span className="text-[10px] font-black uppercase tracking-widest text-white/80">Ask Oracle</span>
               </div>
             </div>
 
@@ -720,10 +679,6 @@ const Toolbar: React.FC = () => {
               onClick={() => {
                 if (!limits.AI_ENABLED) {
                   openPricing();
-                  return;
-                }
-                if (!apiKey) {
-                  setIsKeyModalOpen(true);
                   return;
                 }
                 setChatOpen(!isChatOpen);
@@ -736,7 +691,13 @@ const Toolbar: React.FC = () => {
                   : "text-[var(--accent)] hover:bg-[var(--accent)]/10"
               )}
             >
-              <Zap className="w-4 h-4 md:w-5 md:h-5" />
+              {!limits.AI_ENABLED ? (
+                <EyeOff className="w-4 h-4 md:w-5 md:h-5" />
+              ) : isChatOpen ? (
+                <Eye className="w-4 h-4 md:w-5 md:h-5" />
+              ) : (
+                <EyeClosed className="w-4 h-4 md:w-5 md:h-5" />
+              )}
             </button>
           </div>
 
@@ -925,137 +886,6 @@ const Toolbar: React.FC = () => {
         </div>
       </div>
 
-      {/* API KEY MODAL */}
-      {isKeyModalOpen && (
-        <div className="fixed inset-0 z-[10002] bg-black/60 backdrop-blur-md flex items-center justify-center p-10 pointer-events-auto" onClick={() => setIsKeyModalOpen(false)}>
-          <div className="glass max-w-md w-full p-10 rounded-[3rem] border border-white/10 relative overflow-hidden" onClick={e => e.stopPropagation()}>
-            <div className="flex justify-between items-center mb-6">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-purple-500/20 flex items-center justify-center text-purple-400">
-                  <Key className="w-5 h-5" />
-                </div>
-                <div>
-                  <h3 className="text-sm font-black uppercase tracking-[0.2em] text-white">MARI Access</h3>
-                  <p className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Gemini API Configuration</p>
-                </div>
-              </div>
-              <button onClick={() => setIsKeyModalOpen(false)} className="text-slate-500 hover:text-white"><Plus className="w-6 h-6 rotate-45" /></button>
-            </div>
-
-            <p className="text-xs text-slate-400 leading-relaxed mb-6">
-              To enable MARI, you need a Google Gemini API Key. 
-              The key is stored locally in your browser and sent directly to Google.
-            </p>
-
-            {validationError && (
-              <div className="mb-6 p-3 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 text-[10px] font-bold uppercase tracking-widest animate-in fade-in slide-in-from-top-1">
-                {validationError}
-              </div>
-            )}
-
-            <div className="space-y-6">
-              <div className="space-y-2">
-                <label className="text-[9px] uppercase font-bold tracking-widest text-slate-500 ml-1">Intelligence Model</label>
-                <div className="relative">
-                  <select
-                    value={activeModel}
-                    onChange={(e) => setActiveModel(e.target.value)}
-                    className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-[10px] font-bold uppercase tracking-widest text-white outline-none focus:border-purple-500 appearance-none cursor-pointer transition-all hover:bg-white/[0.03]"
-                  >
-                    {AVAILABLE_MODELS.map((m) => (
-                      <option key={m} value={m} className="bg-[#0f172a] text-white">
-                        {formatModelName(m)}
-                      </option>
-                    ))}
-                  </select>
-                  <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-slate-500">
-                    <ChevronDown className="w-3.5 h-3.5" />
-                  </div>
-                </div>
-              </div>
-
-              <div className="space-y-4 pt-2 border-t border-white/5">
-                <label className="text-[9px] uppercase font-bold tracking-widest text-slate-500 ml-1">API Credentials</label>
-                <div className="relative">
-                  <input
-                    type="password"
-                    value={tempKey}
-                    onChange={(e) => setTempKey(e.target.value)}
-                    placeholder={apiKey ? "••••••••••••••••" : "sk-..."}
-                    className="w-full bg-black/40 border border-white/10 rounded-xl p-4 text-xs text-white outline-none focus:border-purple-500 font-mono"
-                  />
-                  {apiKey && (
-                    <div className="absolute right-4 top-1/2 -translate-y-1/2 flex items-center gap-2">
-                      <span className="text-[8px] font-black text-green-500 uppercase tracking-widest bg-green-500/10 px-2 py-1 rounded-md border border-green-500/20">Active</span>
-                    </div>
-                  )}
-                </div>
-                
-                <div className="flex gap-2">
-                  {apiKey ? (
-                    <button 
-                      onClick={() => {
-                        removeApiKey();
-                        setTempKey('');
-                        setValidationError(null);
-                      }}
-                      className="flex-1 py-3 rounded-xl border border-red-500/30 hover:bg-red-500/10 text-[10px] font-bold uppercase tracking-widest text-red-400 transition-colors flex items-center justify-center gap-2"
-                    >
-                      <Trash2 className="w-3.5 h-3.5" /> Remove
-                    </button>
-                  ) : (
-                    <button 
-                      onClick={() => window.open('https://aistudio.google.com/app/apikey', '_blank')}
-                      className="flex-1 py-3 rounded-xl border border-white/10 hover:bg-white/5 text-[10px] font-bold uppercase tracking-widest text-slate-400 transition-colors"
-                    >
-                      Get Key
-                    </button>
-                  )}
-                  
-                  <button 
-                    onClick={async () => {
-                      if (tempKey.trim()) {
-                        setIsValidating(true);
-                        setValidationError(null);
-                        try {
-                          await aiService.validateKey(tempKey.trim());
-                          setApiKey(tempKey.trim());
-                          setTempKey('');
-                          setIsKeyModalOpen(false);
-                          if (!mariMode) toggleMariMode();
-                        } catch {
-                          setValidationError("Invalid API Key. Please check and try again.");
-                        } finally {
-                          setIsValidating(false);
-                        }
-                      } else if (apiKey) {
-                        setIsKeyModalOpen(false);
-                      }
-                    }}
-                    disabled={isValidating || (!tempKey.trim() && !apiKey)}
-                    className="flex-[2] py-3 rounded-xl bg-purple-500 hover:bg-purple-400 disabled:opacity-50 disabled:cursor-not-allowed text-[10px] font-black uppercase tracking-widest text-white transition-colors flex items-center justify-center gap-2"
-                  >
-                    {isValidating ? (
-                      <>
-                        <RotateCcw className="w-3.5 h-3.5 animate-spin" /> Verifying...
-                      </>
-                    ) : (
-                      apiKey ? 'Save Changes' : 'Activate MARI'
-                    )}
-                  </button>
-                </div>
-              </div>
-            </div>
-            
-            <div className="mt-6 pt-6 border-t border-white/5 text-center">
-              <p className="text-[9px] text-slate-600 uppercase font-bold tracking-widest">
-                Powered by Google
-              </p>
-            </div>
-          </div>
-        </div>
-      )}
-
       {/* SHORTCUTS MODAL */}
       {isShortcutsOpen && (
         <div className="fixed inset-0 z-[10001] bg-black/60 backdrop-blur-md flex items-center justify-center p-10 pointer-events-auto" onClick={() => setIsShortcutsOpen(false)}>
@@ -1142,6 +972,18 @@ const Toolbar: React.FC = () => {
                   <p className="text-xs text-slate-500 leading-relaxed">
                     Designed for non-linear thinkers, visionaries, and digital architects. We believe productivity shouldn't feel like a spreadsheet. It should feel like a world.
                   </p>
+                  <button 
+                    onClick={() => {
+                      openModal({
+                        title: 'Terms of Service',
+                        type: 'terms',
+                        confirmText: 'Acknowledged'
+                      });
+                    }}
+                    className="text-[10px] font-black uppercase tracking-widest text-slate-600 hover:text-indigo-400 transition-colors flex items-center gap-2 mt-4"
+                  >
+                    <Shield className="w-3 h-3" /> View Terms of Service
+                  </button>
                 </div>
               )}
 

@@ -72,13 +72,13 @@ const PricingModal: React.FC<PricingModalProps> = ({ isOpen, onClose }) => {
             </div>
             <div>
               <h2 className="text-xl font-black uppercase tracking-widest text-white">Go Pro</h2>
-              <p className="text-[10px] font-bold text-slate-500 uppercase tracking-[0.2em]">Unlock MARI & More Space</p>
+              <p className="text-[10px] font-bold text-slate-500 uppercase tracking-[0.2em]">Unlock Oracle & More Space</p>
             </div>
           </div>
 
           <div className="space-y-6">
             {[
-              { title: 'MARI (AI)', desc: 'Ask MARI to help you research and organize your ideas.' },
+              { title: 'Oracle (AI)', desc: 'Ask Oracle to help you research and organize your ideas.' },
               { title: 'More Workspaces', desc: 'Create up to 8 different worlds (Free only has 3).' },
               { title: 'Bigger Capacity', desc: 'Add up to 50 thoughts in every single space.' },
               { title: '400 Cloud Thoughts', desc: 'High-capacity sync for power users (Free is 60).' },
@@ -150,26 +150,26 @@ const PricingModal: React.FC<PricingModalProps> = ({ isOpen, onClose }) => {
           </div>
 
           <button 
-            onClick={handleUpgrade}
-            className="w-full py-5 rounded-[2rem] bg-indigo-500 hover:bg-indigo-400 text-white text-[11px] font-black uppercase tracking-[0.2em] transition-all shadow-2xl shadow-indigo-500/20 hover:scale-[1.02] active:scale-95 flex items-center justify-center gap-3 mb-6"
+            disabled
+            className="w-full py-5 rounded-[2rem] bg-slate-800 text-slate-500 text-[11px] font-black uppercase tracking-[0.2em] transition-all cursor-not-allowed flex items-center justify-center gap-3 mb-6"
           >
-            <Star className="w-4 h-4 fill-white" />
-            Get Pro Access
+            <Star className="w-4 h-4 fill-slate-500" />
+            Coming Soon
           </button>
 
           <div className="text-center space-y-3">
             <p className="text-[9px] text-slate-600 font-medium leading-relaxed">
-              Secure checkout powered by a mock processor. <br /> No real charges will be made.
+              Secure 256-bit encrypted transactions. <br /> We never store your card details on our servers.
             </p>
             <button 
               onClick={() => openModal({
-                title: 'Terms of Service',
+                title: 'Privacy & Security',
                 type: 'terms',
                 confirmText: 'Acknowledged'
               })}
               className="text-[8px] font-black uppercase tracking-widest text-slate-500 hover:text-indigo-400 transition-colors pointer-events-auto"
             >
-              View Terms of Service
+              Privacy Policy & Terms
             </button>
           </div>
         </div>
