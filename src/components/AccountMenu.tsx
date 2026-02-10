@@ -187,16 +187,16 @@ const AccountMenu: React.FC = () => {
               className="w-10 h-10 rounded-xl border border-white/10 shadow-xl"
             />
             <div className="flex-1 overflow-hidden">
-              <h4 className="text-[10px] md:text-[11px] font-black uppercase tracking-widest text-white">{user.name}</h4>
-              <div className="flex items-center gap-2">
-                <p className="text-[8px] md:text-[9px] font-medium text-slate-500 truncate w-20 md:w-28">{user.email}</p>
+              <div className="flex items-center gap-2 mb-0.5">
+                <h4 className="text-[10px] md:text-[11px] font-black uppercase tracking-widest text-white truncate">{user.name}</h4>
                 <div className={cn(
-                  "px-1.5 py-0.5 rounded-md text-[9px] font-black uppercase tracking-widest border shrink-0",
+                  "px-1.5 py-0.5 rounded-md text-[8px] font-black uppercase tracking-widest border shrink-0",
                   user.plan === 'pro' ? "bg-indigo-500/20 border-indigo-500/30 text-indigo-400" : "bg-slate-500/20 border-slate-500/30 text-slate-400"
                 )}>
                   {user.plan === 'pro' ? 'PRO' : 'FREE'}
                 </div>
               </div>
+              <p className="text-[8px] md:text-[9px] font-medium text-slate-500 truncate w-full">{user.email}</p>
             </div>
           </div>
 
