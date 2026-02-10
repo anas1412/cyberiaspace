@@ -5,11 +5,15 @@ export const parseAIError = (error: any): string => {
   const message = error?.message || "";
   
   // 1. Quota / Rate Limit (429)
-  if (message.includes("429") || message.toLowerCase().includes("quota exceeded")) {
+  if (message.includes("429") || message.toLowerCase().includes("quota exceeded") || message.includes("Failed after 3 attempts")) {
     // Try to extract retry time if available
     const retryMatch = message.match(/retry in ([\d.]+)s/);
     const retrySeconds = retryMatch ? ` Please retry in ${Math.ceil(parseFloat(retryMatch[1]))}s.` : "";
-    return `Oracle is resting. Rate limit exceeded.${retrySeconds}`;
+    
+    if (message.toLowerCase().includes("quota")) {
+      return `Oracle is resting. Rate limit exceeded.${retrySeconds}`;
+    }
+    return `Oracle is having trouble connecting to the neural network. Please check your internet or try again later.`;
   }
 
   // 2. Authentication (401)

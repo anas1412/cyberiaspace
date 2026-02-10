@@ -27,6 +27,7 @@ export const usePhysics = (
     const activeSpace = spaces.find((s) => s.id === activeSpaceId);
     const updateThought = useStore((state) => state.updateThought);
     const calendarViewDate = useStore((state) => state.calendarViewDate);
+    const hoveredCalDate = useStore((state) => state.hoveredCalDate);
     const linkingSourceId = useStore((state) => state.linkingSourceId);
   
     const physicsState = useRef<Map<number, { x: number; y: number; vx: number; vy: number; scale: number }>>(new Map());
@@ -58,7 +59,11 @@ export const usePhysics = (
 
   useEffect(() => {
     const handleMouseGlobal = (e: MouseEvent) => {
-      mousePosRef.current = { x: e.clientX, y: e.clientY };
+      const body = document.querySelector('.app-body') || document.body;
+      const style = window.getComputedStyle(body);
+      const m = new DOMMatrix(style.transform);
+      const s = m.a || 1;
+      mousePosRef.current = { x: e.clientX / s, y: e.clientY / s };
     };
     window.addEventListener('mousemove', handleMouseGlobal);
     return () => window.removeEventListener('mousemove', handleMouseGlobal);
@@ -139,13 +144,24 @@ export const usePhysics = (
   }, [activeSpace?.mode, activeSpaceId, thoughts, transform]);
 
   useEffect(() => {
+    const getGlobalScale = () => {
+      const body = document.querySelector('.app-body') || document.body;
+      const style = window.getComputedStyle(body);
+      const m = new DOMMatrix(style.transform);
+      return m.a || 1;
+    };
+
     const handleMove = (clientX: number, clientY: number) => {
       if (!dragRef.current) return;
+      const s = getGlobalScale();
+      const logicalX = clientX / s;
+      const logicalY = clientY / s;
+
       const { startX, startY, initialPositions } = dragRef.current;
-      const dx = (clientX - startX) / transform.scale;
-      const dy = (clientY - startY) / transform.scale;
+      const dx = (logicalX - startX) / transform.scale;
+      const dy = (logicalY - startY) / transform.scale;
       
-      if (Math.abs(clientX - startX) > 5 || Math.abs(clientY - startY) > 5) {
+      if (Math.abs(logicalX - startX) > 5 || Math.abs(logicalY - startY) > 5) {
         dragRef.current.moved = true;
       }
 
@@ -164,8 +180,15 @@ export const usePhysics = (
 
     const handleMouseMove = (e: MouseEvent) => handleMove(e.clientX, e.clientY);
 
-    const handleUp = (lastMouseX: number, lastMouseY: number, e: MouseEvent) => {
+    const logicalWidth = worldRef.current?.clientWidth || window.innerWidth;
+    const logicalHeight = worldRef.current?.clientHeight || window.innerHeight;
+
+    const handleUp = (rawMouseX: number, rawMouseY: number, e: MouseEvent) => {
       if (dragRef.current) {
+        const s = getGlobalScale();
+        const lastMouseX = rawMouseX / s;
+        const lastMouseY = rawMouseY / s;
+
         const { id, moved, startX, startY } = dragRef.current;
         const dist = Math.sqrt(Math.pow(lastMouseX - startX, 2) + Math.pow(lastMouseY - startY, 2));
         
@@ -182,7 +205,7 @@ export const usePhysics = (
           // It was a drag, finalize positions
           const mode = activeSpace?.mode || 'spatial';
           if (mode === 'kanban') {
-             const colWidth = window.innerWidth / 4;
+             const colWidth = logicalWidth / 4;
              let status: 'none' | 'todo' | 'doing' | 'done' = 'none';
              if (lastMouseX > colWidth && lastMouseX < colWidth * 2) status = 'todo';
              else if (lastMouseX >= colWidth * 2 && lastMouseX < colWidth * 3) status = 'doing';
@@ -210,13 +233,19 @@ export const usePhysics = (
                    updateThought(draggedId, { date: '' });
                  });
              } else {
-                 const mainWidth = window.innerWidth - mainLeft - padding;
-                 const cellWidth = mainWidth / 7; const cellHeight = (window.innerHeight - topPadding - padding) / 5;
-                 const gridX = lastMouseX - mainLeft; const gridY = lastMouseY - topPadding;
+                 const mainWidth = logicalWidth - mainLeft - padding;
+                 const mainHeight = logicalHeight - topPadding - 120; // Match the 120px bottom padding
+                 const cellWidth = mainWidth / 7; 
+                 const cellHeight = mainHeight / 5;
+                 
+                 const gridX = lastMouseX - mainLeft; 
+                 const gridY = lastMouseY - topPadding;
                  
                  if (gridX >= 0 && gridY >= 0) {
-                     const col = Math.floor(gridX / cellWidth); const row = Math.floor(gridY / cellHeight);
-                     if (col >= 0 && col < 7 && row >= 0 && row < 6) {
+                     const col = Math.floor(gridX / cellWidth); 
+                     const row = Math.floor(gridY / cellHeight);
+                     
+                     if (col >= 0 && col < 7 && row >= 0 && row < 5) {
                          const year = calendarViewDate.getFullYear(); const month = calendarViewDate.getMonth();
                          const firstDay = new Date(year, month, 1).getDay() || 7;
                          const startOffset = firstDay - 1; const dayIndex = row * 7 + col - startOffset;
@@ -261,6 +290,15 @@ export const usePhysics = (
     const physicsEnabled = activeSpace?.physics ?? true;
     const currentSpaceId = activeSpaceId || null;
 
+    // Use Logical Dimensions to account for CSS Scaling
+    const logicalWidth = worldRef.current?.clientWidth || window.innerWidth;
+    const logicalHeight = worldRef.current?.clientHeight || window.innerHeight;
+
+    // Detect Global Scale (from index.css rule)
+    const bodyStyle = window.getComputedStyle(document.querySelector('.app-body') || document.body);
+    const matrix = new DOMMatrix(bodyStyle.transform);
+    const globalScale = matrix.a || 1; // matrix.a is the horizontal scale
+
     // --- CRITICAL: Frame-Accurate Space Snapping ---
     if (currentSpaceId !== lastLoopSpaceId.current) {
         lastLoopSpaceId.current = currentSpaceId;
@@ -301,7 +339,7 @@ export const usePhysics = (
              const p = state.get(t.id); if (!p) return; 
              const isDraggingThis = dragRef.current?.initialPositions.has(t.id);
              
-             const colWidth = window.innerWidth / 4; 
+             const colWidth = logicalWidth / 4; 
              const targetX = (colWidth * colIdx) + (colWidth / 2);
              const el = elements.current.get(t.id); const height = el?.offsetHeight || 120; const targetY = currentY + height / 2; 
              
@@ -324,7 +362,7 @@ export const usePhysics = (
     } else if (mode === 'calendar') {
       const year = calendarViewDate.getFullYear(); const month = calendarViewDate.getMonth(); const firstDay = new Date(year, month, 1).getDay() || 7;
       const sidebarWidth = 260; const gap = 20; const padding = 40; const topPadding = 190; const mainLeft = padding + sidebarWidth + gap;
-      const mainWidth = window.innerWidth - mainLeft - padding; const cellWidth = mainWidth / 7; const cellHeight = (window.innerHeight - topPadding - padding) / 5;
+      const mainWidth = logicalWidth - mainLeft - padding; const cellWidth = mainWidth / 7; const cellHeight = (logicalHeight - topPadding - 120) / 5;
       const allThoughts = Array.from(thoughtMap.current.values());
       const scheduled = allThoughts.filter(t => !!t.date); 
       const unscheduled = allThoughts.filter(t => !t.date).sort((a,b) => a.order - b.order);
@@ -345,25 +383,54 @@ export const usePhysics = (
           const col = cellIndex % 7;
           const row = Math.floor(cellIndex / 7);
           
-          const baseX = mainLeft + col * cellWidth + cellWidth / 2;
-          const baseY = topPadding + row * cellHeight + cellHeight / 2;
-          const uniformScale = Math.min((cellWidth - 20) / 280, 0.45);
+          const cellX = mainLeft + col * cellWidth;
+          const cellY = topPadding + row * cellHeight;
+          
+          const isHovered = hoveredCalDate === dateStr;
 
-          // Sort group by order to keep stack stable
-          groupThoughts.sort((a, b) => a.order - b.order).forEach((t, index) => {
+          // Dynamic Spacing & Scaling Logic to prevent overflow
+          const count = groupThoughts.length;
+          const maxHSpace = cellWidth * 0.4; 
+          const maxVSpace = cellHeight * 0.4; // Tighter vertical space for fanning
+          
+          // Fit scale to both width and a conservative height
+          const widthScale = (cellWidth - 20) / 280;
+          const heightScale = (cellHeight - 60) / 250; // Assume 250px as a "tall" thought baseline
+          const uniformScale = Math.min(widthScale, heightScale, 0.45);
+          
+          let hSpread = isHovered ? 20 : 8;
+          let vSpread = isHovered ? 60 : 25;
+
+          if (count > 1) {
+            hSpread = Math.min(hSpread, maxHSpace / (count - 1));
+            vSpread = Math.min(vSpread, maxVSpace / (count - 1));
+          }
+
+          const sortedGroup = groupThoughts.sort((a, b) => (a.layer || 0) - (b.layer || 0));
+          
+          sortedGroup.forEach((t, index) => {
             const p = state.get(t.id);
             if (!p || dragRef.current?.initialPositions.has(t.id)) return;
 
-            const targetX = baseX;
-            // Stack offset: centered but spread downwards
-            const targetY = baseY - (Math.min(groupThoughts.length, 5) - 1) * 10 + (index * 20);
+            const el = elements.current.get(t.id);
+            const h = el?.offsetHeight || 120;
+
+            // Refined Top-Left Anchoring: space on left, very tight on top
+            const startX = cellX + 10;
+            const startY = cellY + 2;
+
+            // targetX/Y are centers in the physics engine.
+            // Logical center = desired top-left + (visual size / 2)
+            const targetScale = isHovered ? uniformScale * 1.05 : uniformScale;
+            const targetX = startX + (index * hSpread) + (280 * targetScale) / 2;
+            const targetY = startY + (index * vSpread) + (h * targetScale) / 2;
             
             if (snapNextFrame.current) {
-              p.x = targetX; p.y = targetY; p.scale = uniformScale;
+              p.x = targetX; p.y = targetY; p.scale = targetScale;
             } else {
               p.x += (targetX - p.x) * 0.2;
               p.y += (targetY - p.y) * 0.2;
-              p.scale += (uniformScale - p.scale) * 0.1;
+              p.scale += (targetScale - p.scale) * 0.1;
             }
             p.vx = 0; p.vy = 0;
           });
@@ -371,13 +438,13 @@ export const usePhysics = (
           groupThoughts.forEach(t => {
             const p = state.get(t.id);
             if (!p || dragRef.current?.initialPositions.has(t.id)) return;
-            p.x = window.innerWidth / 2; p.y = window.innerHeight + 500; p.scale = 0;
+            p.x = logicalWidth / 2; p.y = logicalHeight + 500; p.scale = 0;
           });
         }
       });
 
       const contentRect = sbContent?.getBoundingClientRect();
-      let currentSB_Y = contentRect ? contentRect.top + 20 : 200; 
+      let currentSB_Y = contentRect ? (contentRect.top / globalScale) + 20 : 200; 
       const scrollTop = sbContent?.scrollTop || 0;
       unscheduled.forEach((t) => {
         const stateP = state.get(t.id); if (!stateP) return; 
@@ -445,7 +512,7 @@ export const usePhysics = (
         const prioLevel = PRIORITY_WEIGHT[t.priority] || 0; 
         const gravityMultiplier = 1 + prioLevel * 0.5; 
         const targetScale = (1 + prioLevel * 0.05) * (t.size || 1);
-        p.vx += (window.innerWidth / 2 - p.x) * (GRAVITY * gravityMultiplier); p.vy += (window.innerHeight / 2 - p.y) * (GRAVITY * gravityMultiplier);
+        p.vx += (logicalWidth / 2 - p.x) * (GRAVITY * gravityMultiplier); p.vy += (logicalHeight / 2 - p.y) * (GRAVITY * gravityMultiplier);
         
         const el = elements.current.get(id); 
         const nHeight = el?.offsetHeight || 120; 
@@ -563,9 +630,15 @@ export const usePhysics = (
         if (mode === 'calendar' && t && !t.date && sbRect && !isDraggingThis) {
             // Precision Clipping using the actual scrollable content rect
             const contentEl = document.getElementById('cal-sidebar-content');
-            const cRect = contentEl?.getBoundingClientRect();
+            const cRectRaw = contentEl?.getBoundingClientRect();
             
-            if (cRect) {
+            if (cRectRaw) {
+                // Normalize physical rect to logical units
+                const cRect = {
+                    top: cRectRaw.top / globalScale,
+                    bottom: cRectRaw.bottom / globalScale
+                };
+
                 const nodeHeight = (offsetHeight * p.scale) * vT.scale;
                 // Calculate percentage to hide from top and bottom
                 const topDiff = cRect.top - cardTop;
@@ -596,12 +669,37 @@ export const usePhysics = (
             el.style.pointerEvents = opacity < 0.1 ? 'none' : 'auto';
             el.style.zIndex = (20 + prioLevel).toString();
         } else if (mode === 'calendar') {
-            el.style.clipPath = 'none';
+            const isHovered = t?.date === hoveredCalDate;
+            const isDraggingThis = dragRef.current?.initialPositions.has(id);
+            
+            if (t?.date && !isDraggingThis) {
+                // Determine if this is the top card of its stack
+                const dateThoughts = Array.from(thoughtMap.current.values())
+                    .filter(th => th.date === t.date)
+                    .sort((a, b) => (a.layer || 0) - (b.layer || 0));
+                const isTopCard = dateThoughts.length > 0 && dateThoughts[dateThoughts.length - 1].id === t.id;
+
+                if (isHovered || isTopCard) {
+                    el.style.clipPath = 'none';
+                } else {
+                    // Fixed header height clip for the "Filing Cabinet" tab look
+                    // Shows exactly 70px of the card's top regardless of its total height
+                    el.style.clipPath = 'inset(0px 0px calc(100% - 70px) 0px)';
+                }
+                
+                // Add a slight "deck" rotation for tactile feel
+                const rot = ((t.layer || 0) % 2 === 0 ? 0.8 : -0.8);
+                el.style.transform += ` rotate(${rot}deg)`;
+            } else {
+                el.style.clipPath = 'none';
+            }
+
             el.style.opacity = '1'; el.style.visibility = 'visible'; el.style.pointerEvents = 'auto';
-            if (dragRef.current?.initialPositions.has(id)) {
+            if (isDraggingThis) {
               el.style.zIndex = '1000';
             } else {
-              el.style.zIndex = (30 + (t?.order || 0)).toString();
+              // Use global layer for zIndex
+              el.style.zIndex = (30 + (t?.layer || 0)).toString();
             }
         } else {
             el.style.clipPath = 'none';
@@ -609,7 +707,9 @@ export const usePhysics = (
             if (dragRef.current?.initialPositions.has(id)) {
               el.style.zIndex = '1000';
             } else {
-              el.style.zIndex = (20 + prioLevel).toString();
+              // Strict Ordinal Layering
+              // layer 1 = bottom, layer N = top
+              el.style.zIndex = (20 + (t?.layer || 0)).toString();
             }
         }
       }
@@ -633,8 +733,13 @@ export const usePhysics = (
       if (e.button !== 0) return; 
       if ((e.target as HTMLElement).closest('.prevent-drag')) return;
       
-      const clientX = e.clientX;
-      const clientY = e.clientY;
+      const body = document.querySelector('.app-body') || document.body;
+      const style = window.getComputedStyle(body);
+      const m = new DOMMatrix(style.transform);
+      const s = m.a || 1;
+
+      const clientX = e.clientX / s;
+      const clientY = e.clientY / s;
   
       const store = useStore.getState();
       const currentSelectedIds = store.selectedThoughtIds;

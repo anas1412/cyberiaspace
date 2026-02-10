@@ -2,9 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { useStore } from '../store/useStore';
 import { useModalStore } from '../store/useModalStore';
 import { useAuthStore } from '../store/useAuthStore';
-import { aiService } from '../services/ai';
-import { LIMITS, AVAILABLE_MODELS } from '../constants';
-import { Plus, Zap, Download, Upload, ChevronLeft, ChevronRight, Trash2, Edit3, Camera, MoreVertical, Keyboard, MousePointer2, Orbit, Columns3, CalendarDays, Shield, MonitorSmartphone, BotMessageSquare, Key, ChevronDown, ZoomIn, ZoomOut, RotateCcw, Undo2, Redo2, Settings, CircleHelp, MessageSquare, Send, Loader2, CheckCircle } from 'lucide-react';
+import { PLAN_CONFIG, type SubscriptionPlan } from '../constants';
+import { Plus, Zap, Download, Upload, ChevronLeft, ChevronRight, Trash2, Edit3, Camera, MoreVertical, Keyboard, MousePointer2, Orbit, Columns3, CalendarDays, MonitorSmartphone, Eye, EyeOff, EyeClosed, ZoomIn, ZoomOut, RotateCcw, Undo2, Redo2, Settings, CircleHelp, MessageSquare, Send, Loader2, CheckCircle, Shield } from 'lucide-react';
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 /* import { toPng, toCanvas } from 'html-to-image'; */
@@ -15,26 +14,8 @@ function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
 
-const formatModelName = (name: string) => {
-  if (name.includes('gemini-2.0-flash-lite')) return 'Flash Lite Model';
-  if (name.includes('-3-flash')) return '3 Flash Model';
-  if (name.includes('-3-pro')) return '3 Pro Model';
-  if (name.includes('-2.5-pro')) return '2.5 Model';
-  if (name.includes('-2.5-flash')) return '2.5 Flash Model';
-  if (name.includes('-2.5-flash-lite')) return '2.5 Flash Lite Model';
-  
-  return name;
-};
-
 const Toolbar: React.FC = () => {
   const activeSpaceId = useStore((state) => state.activeSpaceId);
-  const oracleMode = useStore((state) => state.oracleMode);
-  const toggleOracleMode = useStore((state) => state.toggleOracleMode);
-  const setApiKey = useStore((state) => state.setApiKey);
-  const removeApiKey = useStore((state) => state.removeApiKey);
-  const apiKey = useStore((state) => state.apiKey);
-  const activeModel = useStore((state) => state.activeModel);
-  const setActiveModel = useStore((state) => state.setActiveModel);
   const setChatOpen = useStore((state) => state.setChatOpen);
   const isChatOpen = useStore((state) => state.isChatOpen);
   
@@ -64,7 +45,7 @@ const Toolbar: React.FC = () => {
   const history = useStore((state) => state.history);
   const historyIndex = useStore((state) => state.historyIndex);
   
-  const { openModal } = useModalStore();
+  const { openModal, openPricing } = useModalStore();
   
   const setTransform = useStore((state) => state.setTransform);
   
@@ -74,7 +55,6 @@ const Toolbar: React.FC = () => {
   const [isShortcutsOpen, setIsShortcutsOpen] = useState(false);
   const [isHelpOpen, setIsHelpOpen] = useState(false);
   const [activeHelpTab, setActiveHelpTab] = useState<'about' | 'issue' | 'contact'>('about');
-  const [isKeyModalOpen, setIsKeyModalOpen] = useState(false);
 
   // Quick Feedback State
   const [quickMessage, setQuickMessage] = useState('');
@@ -90,6 +70,7 @@ const Toolbar: React.FC = () => {
   const [contactSubmitStatus, setContactSubmitStatus] = useState<'idle' | 'success' | 'error'>('idle');
 
   const { user } = useAuthStore();
+  const limits = (user?.plan && user.plan in PLAN_CONFIG) ? PLAN_CONFIG[user.plan as SubscriptionPlan] : PLAN_CONFIG.free;
 
   useEffect(() => {
     if (user?.email && !contactEmail) {
@@ -162,18 +143,9 @@ const Toolbar: React.FC = () => {
     }
   };
 
-  const [tempKey, setTempKey] = useState('');
-  const [isValidating, setIsValidating] = useState(false);
-  const [validationError, setValidationError] = useState<string | null>(null);
   const [isCapturing, setIsCapturing] = useState(false);
 
   // Close menus on click elsewhere
-  React.useEffect(() => {
-    if (isKeyModalOpen) {
-      setTempKey('');
-      setValidationError(null);
-    }
-  }, [isKeyModalOpen]);
   React.useEffect(() => {
     const handleGlobalClick = (e: MouseEvent) => {
       const target = e.target as HTMLElement;
@@ -296,7 +268,12 @@ const Toolbar: React.FC = () => {
       }, 100);
     } catch (error) {
       console.error('Screenshot failed:', error);
-      alert("Screenshot failed. Try zooming in more or reducing the number of large images in your space.");
+      openModal({
+        title: 'Screenshot Failed',
+        description: 'The workspace might be too large or your device is out of memory. Try reducing items.',
+        type: 'alert',
+        confirmText: 'Okay'
+      });
     } finally {
       setIsCapturing(false);
     }
@@ -313,12 +290,16 @@ const Toolbar: React.FC = () => {
   };
 
   const handleAddThought = async () => {
-    if (thoughts.length >= LIMITS.MAX_THOUGHTS_PER_SPACE) {
+    if (thoughts.length >= limits.MAX_THOUGHTS_PER_SPACE) {
+      const isPro = user?.plan === 'pro';
       openModal({
-        title: 'Limit Reached',
-        description: `You have reached the maximum of ${LIMITS.MAX_THOUGHTS_PER_SPACE} thoughts per space.`,
+        title: 'Space is Full',
+        description: isPro 
+          ? `This space has reached its maximum capacity of ${limits.MAX_THOUGHTS_PER_SPACE} thoughts.`
+          : `You've reached the Free limit of ${limits.MAX_THOUGHTS_PER_SPACE} thoughts per space. Upgrade to Pro for more capacity.`,
         type: 'limit_thought',
-        confirmText: 'Okay'
+        confirmText: isPro ? 'Okay' : 'Upgrade Now',
+        onConfirm: isPro ? undefined : () => openPricing()
       });
       return;
     }
@@ -369,12 +350,16 @@ const Toolbar: React.FC = () => {
   };
 
   const handleCreateSpace = () => {
-    if (spaces.length >= LIMITS.MAX_SPACES) {
+    if (spaces.length >= limits.MAX_SPACES) {
+      const isPro = user?.plan === 'pro';
       openModal({
         title: 'Limit Reached',
-        description: `You can only have up to ${LIMITS.MAX_SPACES} spaces.`,
+        description: isPro
+          ? `You've reached the maximum limit of ${limits.MAX_SPACES} spaces.`
+          : `You can only have up to ${limits.MAX_SPACES} spaces on the Free plan. Upgrade to Pro for more.`,
         type: 'limit_space',
-        confirmText: 'Okay'
+        confirmText: isPro ? 'Okay' : 'Upgrade Now',
+        onConfirm: isPro ? undefined : () => openPricing()
       });
       return;
     }
@@ -390,10 +375,10 @@ const Toolbar: React.FC = () => {
 
   const handleDeleteSpace = () => {
     if (!activeSpace) return;
-    if (spaces.length <= LIMITS.MIN_SPACES) {
+    if (spaces.length <= 1) {
       openModal({
         title: 'Cannot Delete',
-        description: `You must have at least ${LIMITS.MIN_SPACES} active space.`,
+        description: `You must have at least 1 active space.`,
         type: 'alert',
         confirmText: 'Okay'
       });
@@ -426,20 +411,20 @@ const Toolbar: React.FC = () => {
   return (
     <>
       {/* TOP UI */}
-      <div className="fixed top-4 md:top-8 left-4 md:left-8 right-4 md:right-8 z-[9999] flex flex-col md:flex-row items-center justify-between pointer-events-none gap-4">
+      <div className="fixed top-4 md:top-6 left-4 md:left-6 right-4 md:right-6 z-[9999] flex items-center justify-between pointer-events-none">
         {/* LEFT SIDE: Logo */}
-        <div className="hidden md:flex pointer-events-auto items-center h-[48px]">
+        <div className="hidden lg:flex pointer-events-auto items-center h-[48px] flex-shrink-0">
           <a 
             href="/" 
-            className="text-3xl font-bold tracking-tighter text-[var(--text-primary)] hover:opacity-70 transition-opacity"
+            className="text-2xl font-bold tracking-tighter text-[var(--text-primary)] hover:opacity-70 transition-opacity"
           >
             CYBERIA
           </a>
         </div>
 
-        {/* CENTER: Space Switcher */}
-        <div className="md:absolute md:left-1/2 md:-translate-x-1/2 flex flex-col items-center gap-2 pointer-events-none">
-          <div className="flex items-center h-[48px] glass rounded-full shadow-2xl transition-all pointer-events-auto overflow-x-auto no-scrollbar px-2 border border-white/5">
+        {/* CENTER: Space Switcher - STRICT CENTERING */}
+        <div className="md:absolute md:left-1/2 md:-translate-x-1/2 flex flex-col items-center gap-2 pointer-events-none z-10 w-full md:w-auto px-4 md:px-0">
+          <div className="max-w-full flex items-center h-[52px] glass rounded-full shadow-2xl transition-all pointer-events-auto border border-white/5 px-2">
             <div className="flex items-center gap-1 h-full min-w-max">
               <button 
                 onClick={() => setIsSpaceMenuOpen(!isSpaceMenuOpen)}
@@ -453,33 +438,49 @@ const Toolbar: React.FC = () => {
               >
                 <Settings className={cn("w-3.5 h-3.5", isSpaceMenuOpen && "animate-spin-slow")} />
               </button>
-              <div className="w-[1px] h-3 bg-white/10 mx-2"></div>
+              <div className="w-[1px] h-3 bg-white/10 mx-1"></div>
               
-              {spaces.map((space) => {
-                const isActive = space.id === activeSpaceId;
-                return (
-                  <button
-                    key={space.id}
-                    onClick={() => setActiveSpace(space.id)}
-                    className={cn(
-                      "px-5 h-9 rounded-full text-[10px] uppercase font-black tracking-widest flex-shrink-0 transition-all duration-500 flex items-center justify-center gap-2",
-                      isActive 
-                        ? "bg-white/10 text-white border border-white/10 shadow-[0_0_20px_rgba(255,255,255,0.05)]" 
-                        : "text-slate-500 hover:text-slate-300 hover:bg-white/[0.03] border border-transparent"
-                    )}
-                  >
-                    {isActive && <div className="w-1 h-1 rounded-full bg-[var(--accent-secondary)] shadow-[0_0_8px_var(--accent)]" />}
-                    {space.name}
-                  </button>
-                );
-              })}
-              <div className="w-[1px] h-3 bg-white/10 mx-2"></div>
-              <button 
-                onClick={handleCreateSpace}
-                className="w-9 h-9 rounded-full text-slate-600 hover:text-white hover:bg-white/10 transition-all flex-shrink-0 flex items-center justify-center border border-white/10 border-dashed"
+              {/* Space Tabs with visible custom scrollbar - UI VISIBILITY ONLY CAPPED (4 items on most screens, 6 on 1080p+) */}
+              <div 
+                id="space-switcher-list"
+                className="flex items-center gap-1 overflow-x-auto custom-scroll pb-1 max-w-[450px] 2xl:max-w-[750px] pointer-events-auto"
+                onWheel={(e) => {
+                  e.stopPropagation();
+                  e.currentTarget.scrollLeft += e.deltaY;
+                }}
               >
-                <Plus className="w-3.5 h-3.5" />
-              </button>
+                {spaces.map((space) => {
+                  const isActive = space.id === activeSpaceId;
+                  return (
+                    <button
+                      key={space.id}
+                      onClick={() => setActiveSpace(space.id)}
+                      className={cn(
+                        "px-3 h-9 w-[110px] md:w-[120px] rounded-full text-[10px] uppercase font-black tracking-widest flex-shrink-0 transition-all duration-500 flex items-center justify-center gap-2",
+                        isActive 
+                          ? "bg-white/10 text-white border border-white/10 shadow-[0_0_20px_rgba(255,255,255,0.05)]" 
+                          : "text-slate-500 hover:text-slate-300 hover:bg-white/[0.03] border border-transparent"
+                      )}
+                    >
+                      {isActive && <div className="w-1 h-1 rounded-full bg-[var(--accent-secondary)] shadow-[0_0_8px_var(--accent)]" />}
+                      <span className="truncate">{space.name}</span>
+                    </button>
+                  );
+                })}
+              </div>
+              
+              {/* Add Space Button: Correctly tied to User Plan Limits (Free vs Pro) */}
+              {spaces.length < limits.MAX_SPACES && (
+                <>
+                  <div className="w-[1px] h-3 bg-white/10 mx-1"></div>
+                  <button 
+                    onClick={handleCreateSpace}
+                    className="w-9 h-9 rounded-full text-slate-600 hover:text-white hover:bg-white/10 transition-all flex-shrink-0 flex items-center justify-center border border-white/10 border-dashed"
+                  >
+                    <Plus className="w-3.5 h-3.5" />
+                  </button>
+                </>
+              )}
             </div>
           </div>
 
@@ -493,7 +494,7 @@ const Toolbar: React.FC = () => {
                   title="Rename Space"
                 >
                   <Edit3 className="w-3.5 h-3.5 group-hover:scale-110 transition-transform" />
-                  <span className="text-[8px] font-black uppercase tracking-widest">Rename</span>
+                  <span className="text-[8px] font-black uppercase tracking-widest hidden sm:inline">Rename</span>
                 </button>
                 <div className="w-px h-3 bg-white/5 mx-1" />
                 <button 
@@ -517,15 +518,15 @@ const Toolbar: React.FC = () => {
                   title="Delete Space"
                 >
                   <Trash2 className="w-3.5 h-3.5 group-hover:scale-110 transition-transform" />
-                  <span className="text-[8px] font-black uppercase tracking-widest">Delete</span>
+                  <span className="text-[8px] font-black uppercase tracking-widest hidden sm:inline">Delete</span>
                 </button>
               </div>
             </div>
           )}
         </div>
 
-        {/* RIGHT SIDE: View Switcher - Moved to bottom on mobile, kept at top-right on desktop */}
-        <div className="hidden md:flex items-center gap-3 pointer-events-none">
+        {/* RIGHT SIDE: View Switcher */}
+        <div className="flex items-center gap-2 flex-shrink-0 pointer-events-none z-20">
           <div className="flex items-center h-[48px] p-1.5 glass rounded-2xl shadow-2xl transition-all pointer-events-auto border border-white/5">
             {[
               { id: 'spatial', icon: Orbit, color: 'bg-[var(--accent)]' },
@@ -539,19 +540,19 @@ const Toolbar: React.FC = () => {
                   key={mode.id}
                   onClick={() => setViewMode(mode.id as 'spatial' | 'kanban' | 'calendar')}
                   className={cn(
-                    "px-4 h-full rounded-xl transition-all duration-300 flex items-center gap-3 group/mode",
+                    "px-3 md:px-4 h-full rounded-xl transition-all duration-300 flex items-center gap-2 group/mode",
                     isActive 
                       ? "bg-white/10 text-white shadow-xl" 
                       : "text-slate-500 hover:text-slate-300 hover:bg-white/[0.03]"
                   )}
                 >
                   <div className={cn(
-                    "w-1.5 h-1.5 rounded-full transition-all",
+                    "w-1 h-1 md:w-1.5 md:h-1.5 rounded-full transition-all",
                     isActive ? mode.color : "bg-white/10 group-hover/mode:bg-white/30"
                   )} />
-                  <Icon className={cn("w-4 h-4 transition-transform", isActive ? "scale-110" : "scale-90")} />
+                  <Icon className={cn("w-3.5 h-3.5 md:w-4 md:h-4 transition-transform", isActive ? "scale-110" : "scale-90")} />
                   <span className={cn(
-                    "text-[9px] font-black uppercase tracking-widest transition-all overflow-hidden whitespace-nowrap",
+                    "text-[9px] font-black uppercase tracking-widest transition-all overflow-hidden whitespace-nowrap hidden 2xl:inline",
                     isActive ? "w-14 opacity-100" : "w-0 opacity-0"
                   )}>
                     {mode.id}
@@ -560,7 +561,9 @@ const Toolbar: React.FC = () => {
               );
             })}
           </div>
-          <AccountMenu />
+          <div className="pointer-events-auto">
+            <AccountMenu />
+          </div>
         </div>
       </div>
 
@@ -638,6 +641,20 @@ const Toolbar: React.FC = () => {
           <button onClick={handleScreenshot} disabled={isCapturing} className="flex items-center gap-3 px-3 py-3 rounded-xl md:rounded-2xl hover:bg-white/5 text-[9px] md:text-[10px] font-black uppercase tracking-widest text-slate-300 transition-colors">
             <Camera className="w-3.5 h-3.5" /> {isCapturing ? 'Saving...' : 'Screenshot'}
           </button>
+
+          <button 
+            onClick={() => {
+              openModal({
+                title: 'Terms of Service',
+                type: 'terms',
+                confirmText: 'Acknowledged'
+              });
+              setIsSystemMenuOpen(false);
+            }} 
+            className="flex items-center gap-3 px-3 py-3 rounded-xl md:rounded-2xl hover:bg-white/5 text-[9px] md:text-[10px] font-black uppercase tracking-widest text-slate-500 hover:text-indigo-400 transition-colors"
+          >
+            <Shield className="w-3.5 h-3.5" /> Terms of Service
+          </button>
           
           <div className="h-[1px] bg-white/5 my-3 mx-1"></div>
 
@@ -653,80 +670,48 @@ const Toolbar: React.FC = () => {
                 });
                 setIsSystemMenuOpen(false);
               }} 
-              className="flex items-center justify-center gap-2 py-3 rounded-xl hover:bg-red-500/10 text-[9px] md:text-[10px] font-black uppercase tracking-widest text-red-400 transition-colors border border-transparent hover:border-red-500/10"
+              className="w-full flex items-center justify-center gap-2 py-3 rounded-xl hover:bg-red-500/10 text-[9px] md:text-[10px] font-black uppercase tracking-widest text-red-400 transition-colors border border-transparent hover:border-red-500/10"
             >
               <Trash2 className="w-3 h-3" /> Clear
-            </button>
-            <button 
-              onClick={() => {
-                setIsKeyModalOpen(true);
-                setIsSystemMenuOpen(false);
-              }} 
-              className="flex items-center justify-center gap-2 py-3 rounded-xl bg-white/5 hover:bg-purple-500/10 text-[9px] md:text-[10px] font-black uppercase tracking-widest text-purple-400 transition-colors border border-white/10 hover:border-purple-500/20"
-            >
-              <Key className="w-3 h-3" /> Oracle
             </button>
           </div>
         </div>
         
         <div className="flex gap-2 pointer-events-auto">
-          {oracleMode && (
-            <button 
-              onClick={() => setChatOpen(!isChatOpen)}
-              className={cn(
-                "group relative glass w-10 h-10 md:w-12 md:h-12 flex items-center justify-center rounded-2xl border border-white/5 transition-all",
-                isChatOpen ? "bg-[var(--accent)] text-white shadow-[0_0_20px_var(--accent-glow)]" : "text-[var(--accent)] hover:bg-[var(--accent)]/10"
-              )}
-            >
-              {/* Tooltip */}
-              <div className="absolute bottom-full mb-4 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-all duration-300 translate-y-2 group-hover:translate-y-0 pointer-events-none whitespace-nowrap z-[10001]">
-                <div className="glass px-3 py-1.5 rounded-xl border border-white/10 flex items-center gap-2 shadow-2xl bg-[var(--bg-main)]/90 backdrop-blur-xl">
-                  <span className="text-[10px] font-black uppercase tracking-widest text-white/80">Oracle Chat</span>
-                </div>
-              </div>
-              <BotMessageSquare className="w-4 h-4 md:w-5 md:h-5" />
-            </button>
-          )}
-
           <div className="relative group">
-            <div className={cn(
-              "absolute bottom-full right-0 mb-4 transition-all duration-300 pointer-events-none w-52 md:w-64 translate-y-2",
-              "opacity-0 group-hover:opacity-100 group-hover:translate-y-0"
-            )}>
-              <div className="glass p-5 md:p-6 rounded-[2rem] border-white/10 shadow-2xl bg-[var(--bg-main)]/95">
-                <div className="flex items-center gap-3 mb-2">
-                  <div className={cn("w-1.5 h-1.5 rounded-full shadow-[0_0_8px_currentColor]", oracleMode ? "bg-purple-500 text-purple-500" : "bg-green-500 text-green-500")} />
-                  <p className="text-[9px] md:text-[10px] font-black uppercase tracking-widest text-white">
-                    {oracleMode ? 'Oracle Online' : 'Local & Secure'}
-                  </p>
-                </div>
-                <p className="text-[9px] md:text-[10px] leading-relaxed text-slate-400">
-                  {oracleMode 
-                    ? 'AI assistant is active. Data is sent to Gemini only when you chat.'
-                    : apiKey 
-                      ? 'AI assistant is idle. Click to enable Oracle mode.'
-                      : 'Oracle is disabled. Add an API Key in System Menu to enable.'}
-                </p>
+            {/* Tooltip */}
+            <div className="absolute bottom-full mb-4 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-all duration-300 translate-y-2 group-hover:translate-y-0 pointer-events-none whitespace-nowrap z-[10001]">
+              <div className="glass px-3 py-1.5 rounded-xl border border-white/10 flex items-center gap-2 shadow-2xl bg-[var(--bg-main)]/90 backdrop-blur-xl">
+                <span className="text-[10px] font-black uppercase tracking-widest text-white/80">Ask Oracle</span>
               </div>
             </div>
+
             <button 
               onClick={() => {
-                if (apiKey) {
-                  toggleOracleMode();
-                } else {
-                  setIsKeyModalOpen(true);
+                if (!limits.AI_ENABLED) {
+                  openPricing();
+                  return;
                 }
+                setChatOpen(!isChatOpen);
               }}
               className={cn(
                 "glass w-10 h-10 md:w-12 md:h-12 flex items-center justify-center rounded-2xl border border-white/5 transition-all",
-                oracleMode 
-                  ? "text-purple-400 border-purple-500/20 bg-purple-500/10 shadow-[0_0_15px_rgba(168,85,247,0.2)]" 
-                  : "text-slate-500 hover:text-green-400 hover:border-green-500/20"
+                !limits.AI_ENABLED ? "opacity-40 grayscale hover:opacity-100 transition-opacity" :
+                isChatOpen 
+                  ? "bg-[var(--accent)] text-white shadow-[0_0_20px_var(--accent-glow)]" 
+                  : "text-[var(--accent)] hover:bg-[var(--accent)]/10"
               )}
             >
-              <Shield className="w-4 h-4 md:w-5 md:h-5" />
+              {!limits.AI_ENABLED ? (
+                <EyeOff className="w-4 h-4 md:w-5 md:h-5" />
+              ) : isChatOpen ? (
+                <Eye className="w-4 h-4 md:w-5 md:h-5" />
+              ) : (
+                <EyeClosed className="w-4 h-4 md:w-5 md:h-5" />
+              )}
             </button>
           </div>
+
           <button 
             onClick={() => setIsShortcutsOpen(!isShortcutsOpen)}
             className={cn(
@@ -784,14 +769,20 @@ const Toolbar: React.FC = () => {
               <div className="glass px-3 py-1.5 rounded-xl border border-white/10 flex items-center gap-2 shadow-2xl bg-[var(--bg-main)]/90 backdrop-blur-xl">
                 <span className="text-[10px] font-black uppercase tracking-widest text-white/80">Capacity</span>
                 <div className="w-[1px] h-2 bg-white/10 mx-0.5" />
-                <span className="text-[10px] font-black text-[var(--accent-secondary)]">{LIMITS.MAX_THOUGHTS_PER_SPACE} Max</span>
+                <span className="text-[10px] font-black text-[var(--accent-secondary)]">{limits.MAX_THOUGHTS_PER_SPACE} Max</span>
               </div>
             </div>
 
-            <span className="w-1.5 h-1.5 rounded-full bg-green-500 shadow-[0_0_10px_#22c55e] flex-shrink-0"></span> 
-            <span className="text-[9px] md:text-[10px] uppercase font-black tracking-widest text-white/80 whitespace-nowrap">
+            <span className={cn(
+              "w-1.5 h-1.5 rounded-full flex-shrink-0 transition-all shadow-[0_0_10px_currentColor]",
+              thoughts.length > limits.MAX_THOUGHTS_PER_SPACE ? "bg-red-500 text-red-500" : "bg-green-500 text-green-500"
+            )}></span> 
+            <span className={cn(
+              "text-[9px] md:text-[10px] uppercase font-black tracking-widest transition-colors",
+              thoughts.length > limits.MAX_THOUGHTS_PER_SPACE ? "text-red-400" : "text-white/80"
+            )}>
               <span>{thoughts.length}</span>
-              <span className="hidden sm:inline">/{LIMITS.MAX_THOUGHTS_PER_SPACE} Thoughts</span>
+              <span className="hidden sm:inline">/{limits.MAX_THOUGHTS_PER_SPACE} {thoughts.length > limits.MAX_THOUGHTS_PER_SPACE ? 'Overflow' : 'Thoughts'}</span>
             </span>
           </div>
 
@@ -906,137 +897,6 @@ const Toolbar: React.FC = () => {
         </div>
       </div>
 
-      {/* API KEY MODAL */}
-      {isKeyModalOpen && (
-        <div className="fixed inset-0 z-[10002] bg-black/60 backdrop-blur-md flex items-center justify-center p-10 pointer-events-auto" onClick={() => setIsKeyModalOpen(false)}>
-          <div className="glass max-w-md w-full p-10 rounded-[3rem] border border-white/10 relative overflow-hidden" onClick={e => e.stopPropagation()}>
-            <div className="flex justify-between items-center mb-6">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-purple-500/20 flex items-center justify-center text-purple-400">
-                  <Key className="w-5 h-5" />
-                </div>
-                <div>
-                  <h3 className="text-sm font-black uppercase tracking-[0.2em] text-white">Oracle Access</h3>
-                  <p className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Gemini API Configuration</p>
-                </div>
-              </div>
-              <button onClick={() => setIsKeyModalOpen(false)} className="text-slate-500 hover:text-white"><Plus className="w-6 h-6 rotate-45" /></button>
-            </div>
-
-            <p className="text-xs text-slate-400 leading-relaxed mb-6">
-              To enable God Mode, you need a Google Gemini API Key. 
-              The key is stored locally in your browser and sent directly to Google.
-            </p>
-
-            {validationError && (
-              <div className="mb-6 p-3 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 text-[10px] font-bold uppercase tracking-widest animate-in fade-in slide-in-from-top-1">
-                {validationError}
-              </div>
-            )}
-
-            <div className="space-y-6">
-              <div className="space-y-2">
-                <label className="text-[9px] uppercase font-bold tracking-widest text-slate-500 ml-1">Intelligence Model</label>
-                <div className="relative">
-                  <select
-                    value={activeModel}
-                    onChange={(e) => setActiveModel(e.target.value)}
-                    className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-[10px] font-bold uppercase tracking-widest text-white outline-none focus:border-purple-500 appearance-none cursor-pointer transition-all hover:bg-white/[0.03]"
-                  >
-                    {AVAILABLE_MODELS.map((m) => (
-                      <option key={m} value={m} className="bg-[#0f172a] text-white">
-                        {formatModelName(m)}
-                      </option>
-                    ))}
-                  </select>
-                  <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-slate-500">
-                    <ChevronDown className="w-3.5 h-3.5" />
-                  </div>
-                </div>
-              </div>
-
-              <div className="space-y-4 pt-2 border-t border-white/5">
-                <label className="text-[9px] uppercase font-bold tracking-widest text-slate-500 ml-1">API Credentials</label>
-                <div className="relative">
-                  <input
-                    type="password"
-                    value={tempKey}
-                    onChange={(e) => setTempKey(e.target.value)}
-                    placeholder={apiKey ? "••••••••••••••••" : "sk-..."}
-                    className="w-full bg-black/40 border border-white/10 rounded-xl p-4 text-xs text-white outline-none focus:border-purple-500 font-mono"
-                  />
-                  {apiKey && (
-                    <div className="absolute right-4 top-1/2 -translate-y-1/2 flex items-center gap-2">
-                      <span className="text-[8px] font-black text-green-500 uppercase tracking-widest bg-green-500/10 px-2 py-1 rounded-md border border-green-500/20">Active</span>
-                    </div>
-                  )}
-                </div>
-                
-                <div className="flex gap-2">
-                  {apiKey ? (
-                    <button 
-                      onClick={() => {
-                        removeApiKey();
-                        setTempKey('');
-                        setValidationError(null);
-                      }}
-                      className="flex-1 py-3 rounded-xl border border-red-500/30 hover:bg-red-500/10 text-[10px] font-bold uppercase tracking-widest text-red-400 transition-colors flex items-center justify-center gap-2"
-                    >
-                      <Trash2 className="w-3.5 h-3.5" /> Remove
-                    </button>
-                  ) : (
-                    <button 
-                      onClick={() => window.open('https://aistudio.google.com/app/apikey', '_blank')}
-                      className="flex-1 py-3 rounded-xl border border-white/10 hover:bg-white/5 text-[10px] font-bold uppercase tracking-widest text-slate-400 transition-colors"
-                    >
-                      Get Key
-                    </button>
-                  )}
-                  
-                  <button 
-                    onClick={async () => {
-                      if (tempKey.trim()) {
-                        setIsValidating(true);
-                        setValidationError(null);
-                        try {
-                          await aiService.validateKey(tempKey.trim());
-                          setApiKey(tempKey.trim());
-                          setTempKey('');
-                          setIsKeyModalOpen(false);
-                          if (!oracleMode) toggleOracleMode();
-                        } catch {
-                          setValidationError("Invalid API Key. Please check and try again.");
-                        } finally {
-                          setIsValidating(false);
-                        }
-                      } else if (apiKey) {
-                        setIsKeyModalOpen(false);
-                      }
-                    }}
-                    disabled={isValidating || (!tempKey.trim() && !apiKey)}
-                    className="flex-[2] py-3 rounded-xl bg-purple-500 hover:bg-purple-400 disabled:opacity-50 disabled:cursor-not-allowed text-[10px] font-black uppercase tracking-widest text-white transition-colors flex items-center justify-center gap-2"
-                  >
-                    {isValidating ? (
-                      <>
-                        <RotateCcw className="w-3.5 h-3.5 animate-spin" /> Verifying...
-                      </>
-                    ) : (
-                      apiKey ? 'Save Changes' : 'Activate Oracle'
-                    )}
-                  </button>
-                </div>
-              </div>
-            </div>
-            
-            <div className="mt-6 pt-6 border-t border-white/5 text-center">
-              <p className="text-[9px] text-slate-600 uppercase font-bold tracking-widest">
-                Powered by Google
-              </p>
-            </div>
-          </div>
-        </div>
-      )}
-
       {/* SHORTCUTS MODAL */}
       {isShortcutsOpen && (
         <div className="fixed inset-0 z-[10001] bg-black/60 backdrop-blur-md flex items-center justify-center p-10 pointer-events-auto" onClick={() => setIsShortcutsOpen(false)}>
@@ -1123,6 +983,18 @@ const Toolbar: React.FC = () => {
                   <p className="text-xs text-slate-500 leading-relaxed">
                     Designed for non-linear thinkers, visionaries, and digital architects. We believe productivity shouldn't feel like a spreadsheet. It should feel like a world.
                   </p>
+                  <button 
+                    onClick={() => {
+                      openModal({
+                        title: 'Terms of Service',
+                        type: 'terms',
+                        confirmText: 'Acknowledged'
+                      });
+                    }}
+                    className="text-[10px] font-black uppercase tracking-widest text-slate-600 hover:text-indigo-400 transition-colors flex items-center gap-2 mt-4"
+                  >
+                    <Shield className="w-3 h-3" /> View Terms of Service
+                  </button>
                 </div>
               )}
 

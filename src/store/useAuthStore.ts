@@ -1,11 +1,15 @@
 import { create } from 'zustand';
-import { LIMITS } from '../constants';
+import { PLAN_CONFIG, type SubscriptionPlan, type AccessPeriod } from '../constants';
 
 export interface User {
   id: string;
   name: string;
   email: string;
   avatar: string;
+  plan: SubscriptionPlan;
+  accessPeriod?: AccessPeriod;
+  subscriptionStatus?: 'active' | 'expired';
+  expiryDate?: string;
 }
 
 export interface AuthState {
@@ -26,6 +30,9 @@ export interface AuthState {
   deleteCloudData: () => Promise<void>;
   calculateUsage: (thoughtCount: number) => void;
   initAuth: () => void;
+  upgradePlan: (plan: SubscriptionPlan, period?: AccessPeriod) => void; 
+  checkExpiry: () => void;
+  cancelSubscription: () => void;
 }
 
 export const useAuthStore = create<AuthState>((set, get) => ({
@@ -51,19 +58,74 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 
     window.addEventListener('online', handleOnline);
     window.addEventListener('offline', handleOffline);
+    
+    // Initial expiry check
+    get().checkExpiry();
   },
 
   calculateUsage: (thoughtCount: number) => {
-    const percentage = Math.min(Math.round((thoughtCount / LIMITS.MAX_CLOUD_THOUGHTS) * 100), 100);
+    const { user } = get();
+    const plan = (user?.plan as SubscriptionPlan) || 'free';
+    const limits = PLAN_CONFIG[plan] || PLAN_CONFIG.free;
+    const percentage = Math.round((thoughtCount / limits.MAX_CLOUD_THOUGHTS) * 100);
     set({ cloudUsage: percentage });
   },
 
+  upgradePlan: (plan: SubscriptionPlan, period: AccessPeriod = 'monthly') => {
+    const { user } = get();
+    if (!user) return;
+    
+    const now = new Date();
+    const expiry = new Date();
+    if (period === 'monthly') {
+      expiry.setMonth(now.getMonth() + 1);
+    } else {
+      expiry.setFullYear(now.getFullYear() + 1);
+    }
+
+    const updatedUser: User = { 
+      ...user, 
+      plan, 
+      accessPeriod: period,
+      subscriptionStatus: 'active',
+      expiryDate: expiry.toISOString()
+    };
+    
+    localStorage.setItem('cyberia-user', JSON.stringify(updatedUser));
+    set({ user: updatedUser });
+  },
+
+  checkExpiry: () => {
+    const { user } = get();
+    if (!user || user.plan === 'free' || !user.expiryDate) return;
+
+    if (new Date() > new Date(user.expiryDate)) {
+      const updatedUser: User = { ...user, plan: 'free', subscriptionStatus: 'expired' };
+      localStorage.setItem('cyberia-user', JSON.stringify(updatedUser));
+      set({ user: updatedUser });
+    }
+  },
+
+  cancelSubscription: () => {
+    const { user } = get();
+    if (!user || user.plan === 'free') return;
+    
+    const updatedUser: User = { 
+      ...user, 
+      subscriptionStatus: 'expired' // Or just clear it, let's use 'expired' for simplicity in mock
+    };
+    
+    localStorage.setItem('cyberia-user', JSON.stringify(updatedUser));
+    set({ user: updatedUser });
+  },
+
   setAuthenticatedUser: async (user: User, token: string) => {
-    localStorage.setItem('cyberia-user', JSON.stringify(user));
+    const userWithPlan = { ...user, plan: user.plan || 'free' };
+    localStorage.setItem('cyberia-user', JSON.stringify(userWithPlan));
     localStorage.setItem('cyberia-token', token);
     
     set({ 
-      user, 
+      user: userWithPlan, 
       accessToken: token,
       status: 'authenticated', 
       syncStatus: 'syncing'
@@ -126,7 +188,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   },
 
   syncData: async () => {
-    const { status, accessToken, isOnline, syncStatus } = get();
+    const { status, accessToken, isOnline, syncStatus, user } = get();
     if (status !== 'authenticated' || !accessToken) return;
     if (!isOnline || syncStatus === 'syncing') return;
     
@@ -137,6 +199,22 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       const allSpaces = await db.spaces.toArray();
       const allThoughts = await db.thoughts.toArray();
       const allStacks = await db.stacks.toArray();
+
+      const plan = (user?.plan as SubscriptionPlan) || 'free';
+      const limits = PLAN_CONFIG[plan] || PLAN_CONFIG.free;
+
+      if (allThoughts.length > limits.MAX_CLOUD_THOUGHTS) {
+        const { useModalStore } = await import('./useModalStore');
+        useModalStore.getState().openModal({
+          title: 'Sync Blocked',
+          description: `You have too many thoughts for the Free plan (${allThoughts.length}/${limits.MAX_CLOUD_THOUGHTS}). Upgrade to Pro to sync everything.`,
+          type: 'alert',
+          confirmText: 'View Plans',
+          onConfirm: () => useModalStore.getState().openPricing()
+        });
+        set({ syncStatus: 'error' });
+        return;
+      }
       
       const payload = {
         spaces: allSpaces,

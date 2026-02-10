@@ -1,10 +1,10 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 /** AccountMenu component handles user authentication and cloud synchronization */
-import { useAuthStore } from '../store/useAuthStore';
+import { useAuthStore, type User as UserType } from '../store/useAuthStore';
 import { useStore } from '../store/useStore';
 import { useModalStore } from '../store/useModalStore';
 import { useGoogleLogin } from '@react-oauth/google';
-import { User, LogOut, Cloud, CloudOff, RefreshCw, ChevronDown, ShieldCheck, Trash2, Power, Database, WifiOff } from 'lucide-react';
+import { User, LogOut, Cloud, CloudOff, RefreshCw, ChevronDown, ShieldCheck, Trash2, Power, Database, WifiOff, Zap, Star, CreditCard, Calendar } from 'lucide-react';
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 
@@ -23,7 +23,7 @@ const AccountMenu: React.FC = () => {
   
   const totalThoughtCount = useStore((state) => state.totalThoughtCount);
   const importDataManual = useStore((state) => state.importData);
-  const { openModal } = useModalStore();
+  const { openModal, openPricing } = useModalStore();
   const [isOpen, setIsOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
 
@@ -37,11 +37,12 @@ const AccountMenu: React.FC = () => {
       
       const data = await res.json();
       
-      const googleUser = {
+      const googleUser: UserType = {
         id: data.sub,
         name: data.name,
         email: data.email,
-        avatar: data.picture
+        avatar: data.picture,
+        plan: 'free' // Default to free on initial login
       };
 
       await setAuthenticatedUser(googleUser, token);
@@ -185,11 +186,66 @@ const AccountMenu: React.FC = () => {
               referrerPolicy="no-referrer"
               className="w-10 h-10 rounded-xl border border-white/10 shadow-xl"
             />
-            <div>
-              <h4 className="text-[10px] md:text-[11px] font-black uppercase tracking-widest text-white">{user.name}</h4>
-              <p className="text-[8px] md:text-[9px] font-medium text-slate-500 truncate w-32 md:w-40">{user.email}</p>
+            <div className="flex-1 overflow-hidden">
+              <div className="flex items-center gap-2 mb-0.5">
+                <h4 className="text-[10px] md:text-[11px] font-black uppercase tracking-widest text-white truncate">{user.name}</h4>
+                <div className={cn(
+                  "px-1.5 py-0.5 rounded-md text-[8px] font-black uppercase tracking-widest border shrink-0",
+                  user.plan === 'pro' ? "bg-indigo-500/20 border-indigo-500/30 text-indigo-400" : "bg-slate-500/20 border-slate-500/30 text-slate-400"
+                )}>
+                  {user.plan === 'pro' ? 'PRO' : 'FREE'}
+                </div>
+              </div>
+              <p className="text-[8px] md:text-[9px] font-medium text-slate-500 truncate w-full">{user.email}</p>
             </div>
           </div>
+
+          {user.plan === 'pro' ? (
+            <div className="mb-4 p-3 rounded-2xl bg-indigo-500/5 border border-indigo-500/10">
+              <div className="flex items-center justify-between mb-2">
+                <div className="flex items-center gap-2">
+                  <CreditCard className="w-3 h-3 text-indigo-400" />
+                  <span className="text-[8px] font-black uppercase tracking-widest text-slate-300">Pro Access</span>
+                </div>
+                <span className={cn(
+                  "text-[9px] font-black uppercase px-1.5 py-0.5 rounded-md",
+                  user.subscriptionStatus === 'active' ? "bg-green-500/10 text-green-400" : "bg-red-500/10 text-red-400"
+                )}>{user.subscriptionStatus}</span>
+              </div>
+              <div className="flex items-center gap-2 mb-3">
+                <Calendar className="w-3 h-3 text-slate-500" />
+                <span className="text-[9px] font-bold text-slate-500 uppercase tracking-widest">
+                  Expires: {user.expiryDate ? new Date(user.expiryDate).toLocaleDateString() : 'N/A'}
+                </span>
+              </div>
+              <button 
+                onClick={() => {
+                  openPricing();
+                  setIsOpen(false);
+                }}
+                className="w-full py-2 bg-indigo-500/10 hover:bg-indigo-500/20 text-indigo-400 rounded-xl text-[7px] font-black uppercase tracking-widest transition-all border border-indigo-500/20"
+              >
+                Extend Access
+              </button>
+            </div>
+          ) : (
+            <button 
+              onClick={() => {
+                openPricing();
+                setIsOpen(false);
+              }}
+              className="w-full mb-4 flex items-center justify-between p-3 rounded-2xl bg-indigo-500/10 border border-indigo-500/20 hover:bg-indigo-500/20 transition-all group"
+            >
+              <div className="flex items-center gap-2.5">
+                <Zap className="w-4 h-4 text-indigo-400 animate-pulse" />
+                <div className="text-left">
+                  <p className="text-[9px] font-black uppercase tracking-widest text-white">Upgrade to Pro</p>
+                  <p className="text-[7px] font-bold text-indigo-400/70 uppercase tracking-widest">Unlock Oracle & More Spaces</p>
+                </div>
+              </div>
+              <Star className="w-3.5 h-3.5 text-indigo-400 fill-indigo-400" />
+            </button>
+          )}
 
           <div className="space-y-1 mb-4">
             <div className={cn(
@@ -208,7 +264,7 @@ const AccountMenu: React.FC = () => {
                   <p className="text-[8px] md:text-[9px] font-black uppercase tracking-widest text-white">
                     {!isOnline ? 'Network Offline' : 'Cloud Sync'}
                   </p>
-                  <p className="text-[7px] font-bold text-slate-500 uppercase tracking-widest">
+                  <p className="text-[9px] font-bold text-slate-500 uppercase tracking-widest">
                     {!isOnline ? 'Changes saved locally' : lastSync ? `Last: ${lastSync.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}` : 'Not synced yet'}
                   </p>
                 </div>
@@ -234,7 +290,7 @@ const AccountMenu: React.FC = () => {
               <Cloud className="w-3.5 h-3.5 text-blue-400" />
               <div className="text-left">
                 <p className="text-[8px] md:text-[9px] font-black uppercase tracking-widest text-white">Restore Cloud</p>
-                <p className="text-[7px] font-bold text-slate-500 uppercase tracking-widest">Download backup</p>
+                <p className="text-[9px] font-bold text-slate-500 uppercase tracking-widest">Download backup</p>
               </div>
             </button>
 
@@ -246,7 +302,7 @@ const AccountMenu: React.FC = () => {
                 <Power className={cn("w-3.5 h-3.5 transition-colors", autoSync ? "text-blue-400" : "text-slate-500")} />
                 <div className="text-left">
                   <p className="text-[8px] md:text-[9px] font-black uppercase tracking-widest text-white">Auto-Sync</p>
-                  <p className="text-[7px] font-bold text-slate-500 uppercase tracking-widest">{autoSync ? 'Always active' : 'Manual only'}</p>
+                  <p className="text-[9px] font-bold text-slate-500 uppercase tracking-widest">{autoSync ? 'Always active' : 'Manual only'}</p>
                 </div>
               </div>
               <div className={cn(
@@ -264,7 +320,7 @@ const AccountMenu: React.FC = () => {
               <ShieldCheck className="w-3.5 h-3.5 text-purple-400" />
               <div>
                 <p className="text-[8px] md:text-[9px] font-black uppercase tracking-widest text-white">Cloud Storage</p>
-                <p className="text-[7px] font-bold text-slate-500 uppercase tracking-widest">Secure Data Backup</p>
+                <p className="text-[9px] font-bold text-slate-500 uppercase tracking-widest">Secure Data Backup</p>
               </div>
             </div>
           </div>
@@ -278,8 +334,8 @@ const AccountMenu: React.FC = () => {
               </div>
               <span className={cn(
                 "text-[8px] font-black tracking-widest",
-                cloudUsage > 90 ? "text-red-400" : "text-slate-500"
-              )}>{cloudUsage}%</span>
+                cloudUsage > 100 ? "text-red-400 animate-pulse" : cloudUsage > 90 ? "text-red-400" : "text-slate-500"
+              )}>{cloudUsage}% {cloudUsage > 100 && "(OVERFLOW)"}</span>
             </div>
             <div className="h-1 w-full bg-white/5 rounded-full overflow-hidden border border-white/5">
               <div 
@@ -287,7 +343,7 @@ const AccountMenu: React.FC = () => {
                   "h-full transition-all duration-500 rounded-full",
                   cloudUsage > 90 ? "bg-red-500" : cloudUsage > 70 ? "bg-amber-500" : "bg-[var(--accent)]"
                 )}
-                style={{ width: `${cloudUsage}%` }}
+                style={{ width: `${Math.min(cloudUsage, 100)}%` }}
               />
             </div>
           </div>

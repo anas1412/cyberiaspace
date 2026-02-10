@@ -1,5 +1,11 @@
 import React, { useEffect, useState } from 'react';
 import { useModalStore } from '../store/useModalStore';
+import { clsx, type ClassValue } from 'clsx';
+import { twMerge } from 'tailwind-merge';
+
+function cn(...inputs: ClassValue[]) {
+  return twMerge(clsx(inputs));
+}
 
 const Modal: React.FC = () => {
   const { isOpen, title, description, type, inputValue: initialValue, confirmText, onConfirm, closeModal } = useModalStore();
@@ -30,13 +36,37 @@ const Modal: React.FC = () => {
   if (!isOpen) return null;
 
   const showInput = ['rename', 'new_space'].includes(type);
-  const showCancel = type !== 'limit_space' && type !== 'limit_thought' && type !== 'alert';
+  const showCancel = !['limit_space', 'limit_thought', 'alert', 'terms'].includes(type);
 
   return (
-    <div id="modal-overlay" className="fixed inset-0 bg-black/90 backdrop-blur-[10px] z-[10000] flex items-center justify-center animate-in fade-in duration-200 p-4">
-      <div className="modal-box glass w-full max-w-[420px] p-6 md:p-10 rounded-[2rem] md:rounded-[40px] border border-white/10 text-center">
+    <div id="modal-overlay" className="fixed inset-0 bg-black/90 backdrop-blur-[10px] z-[11000] flex items-center justify-center animate-in fade-in duration-200 p-4">
+      <div className={cn(
+        "modal-box glass w-full p-6 md:p-10 rounded-[2rem] md:rounded-[40px] border border-white/10 text-center",
+        type === 'terms' ? "max-w-[500px]" : "max-w-[420px]"
+      )}>
         <h2 className="text-lg md:text-xl font-bold mb-2 text-white">{title}</h2>
-        {description && <p className="text-[10px] md:text-xs text-slate-400 mb-6 md:mb-8 uppercase tracking-widest leading-relaxed">{description}</p>}
+        
+        {type === 'terms' ? (
+          <div className="text-left space-y-6 my-8 max-h-[60vh] overflow-y-auto pr-4 custom-scroll">
+            {[
+              { title: '1. Data Ownership', desc: 'Everything you create is yours. It stays on your device by default and only goes to the cloud if you sign in.' },
+              { title: '2. Manual Renewal', desc: 'We do not support automatic billing. You choose when to extend your Pro access. No unexpected charges, ever.' },
+              { title: '3. Acceptable Use', desc: "Don't store illegal content or use the AI to cause harm. You are responsible for what happens in your sectors." },
+              { title: '4. Service Uptime', desc: 'We try to stay online 24/7, but technology can be tricky. We suggest using the Export button to keep regular backups.' },
+              { title: '5. No Lock-in', desc: 'We never hold your data hostage. You can always export your entire workspace for free, forever.' },
+              { title: '6. Fair AI Use', desc: 'Pro users get a generous amount of AI access for creative work. To keep the system fast for everyone, we use a fair-use policy to prevent automated abuse.' },
+              { title: '7. Feature Evolution', desc: 'Cyberia is always growing. We might add, change, or remove features as we work to build the best experience.' },
+              { title: '8. Security', desc: 'Your cloud data is only as safe as your Google account. Keep your login secure to protect your neural link.' }
+            ].map((rule, i) => (
+              <div key={i} className="space-y-1">
+                <h4 className="text-[10px] font-black uppercase tracking-widest text-indigo-400">{rule.title}</h4>
+                <p className="text-[11px] text-slate-400 leading-relaxed">{rule.desc}</p>
+              </div>
+            ))}
+          </div>
+        ) : (
+          description && <p className="text-[10px] md:text-xs text-slate-400 mb-6 md:mb-8 uppercase tracking-widest leading-relaxed">{description}</p>
+        )}
         
         {showInput && (
           <input

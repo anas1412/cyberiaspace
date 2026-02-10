@@ -58,7 +58,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       // If not admin, sanitize the data (hide emails)
       const sanitizedList = isAdmin ? list : list.map(({ email: _, ...rest }) => ({ 
         ...rest, 
-        email: 'protected@wired.net' 
+        email: 'protected@cyberia.net'
+         
       }));
 
       return res.status(200).json({ feedback: sanitizedList, isAdmin });

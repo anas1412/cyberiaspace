@@ -515,7 +515,7 @@ const FeedbackPage: React.FC = () => {
                           <label className="text-[9px] font-black uppercase tracking-widest text-slate-500 ml-1">Contact Identity (Optional)</label>
                           <input 
                             type="email" 
-                            placeholder="user@wired.net"
+                            placeholder="user@cyberia.net"
                             value={email}
                             onChange={(e) => setEmail(e.target.value)}
                             className="w-full h-14 bg-black/40 border border-white/5 rounded-2xl px-6 text-sm text-white outline-none focus:border-[var(--accent)]/50 transition-all"

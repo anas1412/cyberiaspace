@@ -3,7 +3,8 @@ import { Analytics } from '@vercel/analytics/react';
 import { SpeedInsights } from '@vercel/speed-insights/react';
 import { useStore } from './store/useStore';
 import { useModalStore } from './store/useModalStore';
-import { LIMITS } from './constants';
+import { useAuthStore } from './store/useAuthStore';
+import { PLAN_CONFIG, type SubscriptionPlan } from './constants';
 import Viewport from './components/Viewport';                                                                                            
 import Toolbar from './components/Toolbar';                                                                                              
 import Inspector from './components/Inspector';                                                                                          
@@ -12,7 +13,9 @@ import EmptyState from './components/EmptyState';
 import KanbanOverlay from './components/KanbanOverlay';                                                                                  
 import CalendarOverlay from './components/CalendarOverlay';                                                                              
 import Modal from './components/Modal';                                                                                                  
-import Lightbox from './components/Lightbox';                                                                                            
+import PricingModal from './components/PricingModal';
+import Lightbox from './components/Lightbox';
+                                                                                            
 import TextFocusEditor from './components/TextFocusEditor';                                                                              
 import TableFocusEditor from './components/TableFocusEditor';                                                                            
 import PaintFocusEditor from './components/PaintFocusEditor';                                                                            
@@ -34,7 +37,9 @@ function App() {
   const activeSpaceId = useStore((state) => state.activeSpaceId);
   const spaces = useStore((state) => state.spaces);
   
-  const { openModal } = useModalStore();
+  const { openModal, isPricingOpen, closePricing, openPricing } = useModalStore();
+  const { user } = useAuthStore();
+  const limits = (user?.plan && user.plan in PLAN_CONFIG) ? PLAN_CONFIG[user.plan as SubscriptionPlan] : PLAN_CONFIG.free;
   const mouseWorldPos = useRef({ x: 0, y: 0 });
   const mouseScreenPos = useRef({ x: 0, y: 0 });
 
@@ -132,12 +137,16 @@ function App() {
       const target = e.target as HTMLElement;
       if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA') return;
 
-      if (thoughts.length >= LIMITS.MAX_THOUGHTS_PER_SPACE) {
+      if (thoughts.length >= limits.MAX_THOUGHTS_PER_SPACE) {
+        const isPro = user?.plan === 'pro';
         openModal({
-          title: 'Limit Reached',
-          description: `You have reached the maximum of ${LIMITS.MAX_THOUGHTS_PER_SPACE} thoughts per space.`,
+          title: 'Space is Full',
+          description: isPro
+            ? `This space has reached its maximum capacity of ${limits.MAX_THOUGHTS_PER_SPACE} thoughts.`
+            : `You've reached the Free limit of ${limits.MAX_THOUGHTS_PER_SPACE} thoughts per space. Upgrade to Pro for more capacity.`,
           type: 'limit_thought',
-          confirmText: 'Okay'
+          confirmText: isPro ? 'Okay' : 'Upgrade Now',
+          onConfirm: isPro ? undefined : () => openPricing()
         });
         return;
       }
@@ -189,6 +198,15 @@ function App() {
       if (imageItem) {
         const blob = imageItem.getAsFile();
         if (blob) {
+          if (blob.size > 2 * 1024 * 1024) {
+            openModal({
+              title: 'File too Large',
+              description: 'This image is larger than 2MB. Please use a smaller image to save space.',
+              type: 'alert',
+              confirmText: 'Okay'
+            });
+            return;
+          }
           const reader = new FileReader();
           reader.onload = async (event) => {
             const id = await addThought({ 
@@ -260,7 +278,7 @@ function App() {
 
     window.addEventListener('paste', handlePaste);
     return () => window.removeEventListener('paste', handlePaste);
-  }, [addThought, setSelectedThoughtId, setInspectorOpen, thoughts.length, openModal, path]);
+  }, [addThought, setSelectedThoughtId, setInspectorOpen, thoughts.length, openModal, path, limits.MAX_THOUGHTS_PER_SPACE]);
 
   if (path === '/feedback') {
     return (
@@ -293,6 +311,7 @@ function App() {
           <MultiSelectionMenu />
           <ChatOverlay />
           <Modal />
+          <PricingModal isOpen={isPricingOpen} onClose={closePricing} />
           <Lightbox />
           <TextFocusEditor />
           <TableFocusEditor />

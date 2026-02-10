@@ -211,3 +211,4 @@ interface Thought {
 2. **Type Safety:** Always define interfaces for props.
 3. **Logic outside JSX:** Keep the physics and math in hooks or helper files.
 4. **Tailwind First:** Avoid custom `<style>` blocks in components; use Tailwind utility classes.
+5. Use youtube API for search and youtube oembed for assigning titles and the video uploader as description
