@@ -1,4 +1,5 @@
 import React, { useRef, useEffect, useState, useMemo } from 'react';
+import { motion } from 'framer-motion';
 import { type Thought } from '../db';
 import { useStore } from '../store/useStore';
 import { Maximize2, Palette, Link as LinkIcon, Link2Off, Image as ImageIcon, Table, ListTodo, Type, Music, MessageCircle, Share2, Youtube, Play } from 'lucide-react';
@@ -186,10 +187,14 @@ const ThoughtNode: React.FC<ThoughtNodeProps> = React.memo(({ thought, registerE
                 dangerouslySetInnerHTML={{ __html: parsedContent as string }}
               />
             ) : (
-              <div className="flex items-center gap-2 px-3 h-8 rounded-xl bg-white/5 border border-white/5 w-fit">
+              <motion.div
+                whileHover={{ scale: 1.05, backgroundColor: 'rgba(255,255,255,0.08)' }}
+                whileTap={{ scale: 0.95 }}
+                className="flex items-center gap-2 px-3 h-8 rounded-xl bg-white/5 border border-white/5 w-fit transition-colors"
+              >
                 <Type className="w-3.5 h-3.5 text-slate-500" />
                 <span className="text-[8px] font-black uppercase tracking-widest text-slate-500">Write Note...</span>
-              </div>
+              </motion.div>
             )}
             {hasContent && thought.content.length > 150 && (
               <div className="absolute bottom-0 left-0 right-0 h-16 bg-gradient-to-t from-[var(--bg-main)] via-[var(--bg-main)]/80 to-transparent pointer-events-none" />
