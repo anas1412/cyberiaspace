@@ -406,7 +406,6 @@ export const usePhysics = (
             vSpread = Math.min(vSpread, maxVSpace / (count - 1));
           }
 
-          const cardWidth = 280 * uniformScale;
           const sortedGroup = groupThoughts.sort((a, b) => (a.layer || 0) - (b.layer || 0));
           
           sortedGroup.forEach((t, index) => {

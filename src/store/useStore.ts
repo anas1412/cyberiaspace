@@ -2,7 +2,7 @@ import { create } from 'zustand';
 import { db, type Space, type Thought, type Stack } from '../db';
 import { useAuthStore } from './useAuthStore';
 import { useModalStore } from './useModalStore';
-import { PLAN_CONFIG, type SubscriptionPlan } from '../constants';
+import { PLAN_CONFIG, DEFAULT_MODEL, type SubscriptionPlan } from '../constants';
 
 interface CyberiaState {
   activeSpaceId: string | null;

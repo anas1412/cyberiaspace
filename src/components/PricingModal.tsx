@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import { useAuthStore } from '../store/useAuthStore';
 import { useModalStore } from '../store/useModalStore';
 import { PLAN_CONFIG, type AccessPeriod } from '../constants';
 import { Zap, Check, Star, X } from 'lucide-react';
@@ -18,7 +17,6 @@ interface PricingModalProps {
 const PricingModal: React.FC<PricingModalProps> = ({ isOpen, onClose }) => {
   const [billingCycle, setBillingCycle] = useState<AccessPeriod>('monthly');
   const [location, setLocation] = useState<{ country: string; currency: string; isLocalPricing: boolean } | null>(null);
-  const { upgradePlan } = useAuthStore();
   const { openModal } = useModalStore();
 
   useEffect(() => {
@@ -51,11 +49,6 @@ const PricingModal: React.FC<PricingModalProps> = ({ isOpen, onClose }) => {
   const proPrice = PLAN_CONFIG.pro.PRICE!;
   const currentPrice = billingCycle === 'monthly' ? proPrice.monthly : proPrice.yearly;
   const savings = Math.round((proPrice.monthly.usd * 12 - proPrice.yearly.usd));
-
-  const handleUpgrade = () => {
-    upgradePlan('pro', billingCycle);
-    onClose();
-  };
 
   return (
     <div className="fixed inset-0 z-[10005] bg-black/90 backdrop-blur-xl flex items-center justify-center p-4 md:p-10 animate-in fade-in duration-300 overflow-y-auto">
