@@ -346,29 +346,46 @@ export const usePhysics = (
           const col = cellIndex % 7;
           const row = Math.floor(cellIndex / 7);
           
-          const baseX = mainLeft + col * cellWidth + cellWidth / 2;
-          // Start from the top of the cell rather than the middle
-          const baseY = topPadding + row * cellHeight + 55; 
-          const uniformScale = Math.min((cellWidth - 20) / 280, 0.45);
+          const cellX = mainLeft + col * cellWidth;
+          const cellY = topPadding + row * cellHeight;
+          
           const isHovered = hoveredCalDate === dateStr;
 
-          // Sort group by layer to keep stack stable and reactive to layering actions
-          groupThoughts.sort((a, b) => (a.layer || 0) - (b.layer || 0)).forEach((t, index) => {
+          // Dynamic Spacing & Scaling Logic to prevent overflow
+          const count = groupThoughts.length;
+          const maxHSpace = cellWidth * 0.4; 
+          const maxVSpace = cellHeight * 0.4; // Tighter vertical space for fanning
+          
+          // Fit scale to both width and a conservative height
+          const widthScale = (cellWidth - 20) / 280;
+          const heightScale = (cellHeight - 60) / 250; // Assume 250px as a "tall" thought baseline
+          const uniformScale = Math.min(widthScale, heightScale, 0.45);
+          
+          let hSpread = isHovered ? 20 : 8;
+          let vSpread = isHovered ? 60 : 25;
+
+          if (count > 1) {
+            hSpread = Math.min(hSpread, maxHSpace / (count - 1));
+            vSpread = Math.min(vSpread, maxVSpace / (count - 1));
+          }
+
+          const cardWidth = 280 * uniformScale;
+          const sortedGroup = groupThoughts.sort((a, b) => (a.layer || 0) - (b.layer || 0));
+          
+          sortedGroup.forEach((t, index) => {
             const p = state.get(t.id);
             if (!p || dragRef.current?.initialPositions.has(t.id)) return;
 
             const el = elements.current.get(t.id);
             const h = el?.offsetHeight || 120;
+            const nodeHeight = h * uniformScale;
 
-            const isHovered = hoveredCalDate === dateStr;
-            const hSpread = isHovered ? 20 : 8;
-            const vSpread = isHovered ? 60 : 25; 
+            // Fixed Top-Left Anchoring (Higher up to match design)
+            const startX = cellX + 10;
+            const startY = cellY + 10;
 
-            // Diagonal Deck Spray: Offset both X and Y
-            const targetX = baseX - (groupThoughts.length > 1 ? (groupThoughts.length * hSpread) / 2 : 0) + (index * hSpread);
-            
-            // targetY such that top of the card is at: baseY + (index * vSpread) + (h * uniformScale) / 2
-            const targetY = baseY + (index * vSpread) + (h * uniformScale) / 2;
+            const targetX = startX + (index * hSpread) + cardWidth / 2;
+            const targetY = startY + (index * vSpread) + nodeHeight / 2;
             const targetScale = isHovered ? uniformScale * 1.05 : uniformScale;
             
             if (snapNextFrame.current) {
