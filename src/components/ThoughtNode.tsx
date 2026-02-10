@@ -190,7 +190,12 @@ const ThoughtNode: React.FC<ThoughtNodeProps> = React.memo(({ thought, registerE
               <motion.div
                 whileHover={{ scale: 1.05, backgroundColor: 'rgba(255,255,255,0.08)' }}
                 whileTap={{ scale: 0.95 }}
-                className="flex items-center gap-2 px-3 h-8 rounded-xl bg-white/5 border border-white/5 w-fit transition-colors"
+                className={cn(
+                  "flex items-center gap-2 px-3 rounded-xl bg-white/5 border border-white/5 w-fit transition-all duration-500",
+                  thought.stackId
+                    ? "h-0 opacity-0 group-hover:h-8 group-hover:opacity-100 overflow-hidden"
+                    : "h-8 opacity-100"
+                )}
               >
                 <Type className="w-3.5 h-3.5 text-slate-500" />
                 <span className="text-[8px] font-black uppercase tracking-widest text-slate-500">Write Note...</span>
@@ -522,7 +527,7 @@ const ThoughtNode: React.FC<ThoughtNodeProps> = React.memo(({ thought, registerE
           className={cn(
             "flex flex-col relative transition-all duration-300",
             thought.type === 'text' && "cursor-pointer rounded-xl overflow-hidden",
-            thought.type === 'text' && (thought.content || thought.description) ? "min-h-0 justify-center gap-2 mt-0.5" : "min-h-0 gap-0"
+            thought.type === 'text' && (thought.content || thought.description || !thought.stackId) ? "min-h-0 justify-center gap-2 mt-0.5" : "min-h-0 gap-0"
           )}
         >
           {thought.description && (
