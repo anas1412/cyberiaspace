@@ -5,11 +5,11 @@ import { motion } from 'framer-motion';
 
 const ChalkArrow = ({ d, className }: { d: string, className?: string }) => (
   <svg width="60" height="80" viewBox="0 0 60 80" className={className}>
-    <motion.path 
-      d={d} 
-      stroke="white" 
-      strokeWidth="2" 
-      fill="none" 
+    <motion.path
+      d={d}
+      stroke="white"
+      strokeWidth="2"
+      fill="none"
       strokeLinecap="round"
       initial={{ pathLength: 0, opacity: 0 }}
       animate={{ pathLength: 1, opacity: 0.3 }}
@@ -60,46 +60,58 @@ const EmptyState: React.FC = () => {
   return (
     <div id="empty-guide" className="fixed inset-0 z-[5] pointer-events-none flex items-center justify-center">
 
-      {/* 1. Switch Spaces (Top Center) */}
-      <div className="absolute top-[80px] md:top-[110px] left-1/2 -translate-x-1/2 -rotate-[2deg] text-center flex flex-col items-center">
-        <ChalkArrow d="M 30 70 Q 30 40 30 10 M 15 30 L 30 10 L 45 30" />
-        <p className="font-['CyberiaBlueprint',_cursive,_sans-serif] text-white/30 text-[10px] md:text-[12px] mt-2">Manage Spaces</p>
+      {/* 1. Switch Spaces (Top Center) - Points to Space Switcher */}
+      <div className="absolute top-[80px] md:top-[95px] left-1/2 -translate-x-1/2 rotate-[1deg] text-center flex flex-col items-center">
+        <ChalkArrow d="M 30 70 L 30 10 M 15 30 L 30 10 L 45 30" />
+        <p className="font-['CyberiaBlueprint',_cursive,_sans-serif] text-white/30 text-[10px] md:text-[12px] mt-2 tracking-widest uppercase">Switch Spaces</p>
       </div>
 
       {/* 2. Create Thought (Bottom Center - The FAB) */}
-      <div className="absolute bottom-[130px] md:bottom-[140px] left-1/2 -translate-x-1/2 rotate-[5deg] text-center flex flex-col items-center">
-        <p className="font-['CyberiaBlueprint',_cursive,_sans-serif] text-white/30 text-[12px] md:text-[14px] mb-2 font-bold tracking-widest uppercase">Start Here</p>
-        <ChalkArrow d="M 30 10 Q 30 40 30 70 M 15 50 L 30 70 L 45 50" />
+      <div className="absolute bottom-[110px] md:bottom-[130px] left-1/2 -translate-x-1/2 -rotate-[2deg] text-center flex flex-col items-center">
+        <p className="font-['CyberiaBlueprint',_cursive,_sans-serif] text-white/30 text-[12px] md:text-[14px] mb-2 font-bold tracking-widest uppercase">New Thought</p>
+        <ChalkArrow d="M 30 10 L 30 70 M 15 50 L 30 70 L 45 50" />
       </div>
 
-      {/* 3. Perspective (Top Right) - Points to View Switcher */}
-      <div className="hidden md:flex absolute top-[110px] right-[280px] -rotate-[12deg] text-center flex flex-col items-center">
-        <ChalkArrow d="M 30 70 Q 30 40 30 10 M 15 30 L 30 10 L 45 30" />
-        <p className="font-['CyberiaBlueprint',_cursive,_sans-serif] text-white/30 text-[12px] mt-2">Change Perspective</p>
+      {/* 3. View Modes (Top Right) - Points to View Switcher (Modes) */}
+      <div className="hidden md:flex absolute top-[95px] right-[240px] -rotate-[3deg] text-center flex flex-col items-center">
+        <ChalkArrow d="M 30 70 L 30 10 M 15 30 L 30 10 L 45 30" />
+        <p className="font-['CyberiaBlueprint',_cursive,_sans-serif] text-white/30 text-[12px] mt-2 tracking-widest uppercase">View Modes</p>
       </div>
 
-      {/* 4. Identity & Sync (Top Right) - Points to AccountMenu */}
-      <div className="hidden md:flex absolute top-[110px] right-[40px] rotate-[8deg] text-center flex flex-col items-center">
-        <ChalkArrow d="M 30 70 Q 30 40 30 10 M 15 30 L 30 10 L 45 30" />
-        <p className="font-['CyberiaBlueprint',_cursive,_sans-serif] text-white/30 text-[12px] mt-2">{user ? 'Manage Account' : 'Identity & Sync'}</p>
+      {/* 4. Account (Top Right) - Points to AccountMenu */}
+      <div className="hidden md:flex absolute top-[95px] right-[35px] rotate-[3deg] text-center flex flex-col items-center">
+        <ChalkArrow d="M 30 70 L 30 10 M 15 30 L 30 10 L 45 30" />
+        <p className="font-['CyberiaBlueprint',_cursive,_sans-serif] text-white/30 text-[12px] mt-2 tracking-widest uppercase">{user ? 'Account' : 'Login / Sync'}</p>
       </div>
 
-      {/* 5. Tools (Bottom Right) - Hidden on Mobile */}
-      <div className="hidden md:flex absolute bottom-[140px] right-[100px] -rotate-[10deg] text-center flex flex-col items-center">
-        <p className="font-['CyberiaBlueprint',_cursive,_sans-serif] text-white/30 text-[12px] mb-2">Systems & Tools</p>
-        <ChalkArrow d="M 30 10 Q 30 40 30 70 M 15 50 L 30 70 L 45 50" />
+      {/* 5. AI Assistant (Bottom Right) - Points to Chat/Oracle button */}
+      <div className="hidden md:flex absolute bottom-[130px] right-[160px] rotate-[5deg] text-center flex flex-col items-center">
+        <p className="font-['CyberiaBlueprint',_cursive,_sans-serif] text-white/30 text-[12px] mb-2 tracking-widest uppercase">AI Assistant</p>
+        <ChalkArrow d="M 30 10 L 30 70 M 15 50 L 30 70 L 45 50" />
+      </div>
+
+      {/* 6. Settings (Bottom Right) - Points to System Menu button */}
+      <div className="hidden md:flex absolute bottom-[130px] right-[35px] -rotate-[3deg] text-center flex flex-col items-center">
+        <p className="font-['CyberiaBlueprint',_cursive,_sans-serif] text-white/30 text-[12px] mb-2 tracking-widest uppercase">Settings</p>
+        <ChalkArrow d="M 30 10 L 30 70 M 15 50 L 30 70 L 45 50" />
+      </div>
+
+      {/* 7. Controls (Bottom Left) - Points to Status/Zoom controls */}
+      <div className="hidden md:flex absolute bottom-[130px] left-[320px] rotate-[3deg] text-center flex flex-col items-center">
+        <p className="font-['CyberiaBlueprint',_cursive,_sans-serif] text-white/30 text-[12px] mb-2 tracking-widest uppercase">Controls</p>
+        <ChalkArrow d="M 30 10 L 30 70 M 15 50 L 30 70 L 45 50" />
       </div>
 
       {/* Center Text */}
       <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-center w-full px-10">
-        <motion.h2 
+        <motion.h2
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 0.15, y: 0 }}
           className="font-['CyberiaBlueprint',_cursive,_sans-serif] text-white text-[32px] md:text-[48px] tracking-[4px] md:tracking-[8px] font-bold"
         >
           {randomPhrase}
         </motion.h2>
-        
+
         {/* Unified Hint - Hidden on Mobile */}
         {!isMobile && (
           <div className="mt-10 flex items-center justify-center">
@@ -115,7 +127,7 @@ const EmptyState: React.FC = () => {
                 <kbd className="bg-white/10 px-2.5 py-1 rounded-[8px] text-[10px] text-white/60 font-mono border border-white/5 shadow-inner">CTRL+V</kbd>
                 <p className="font-['CyberiaBlueprint',_cursive,_sans-serif] text-white/30 text-[12px] tracking-[1px] uppercase">Images & Links</p>
               </div>
-              
+
               <span className="text-[9px] font-black text-white/5 uppercase tracking-widest">•</span>
 
               <div className="flex items-center gap-3">
