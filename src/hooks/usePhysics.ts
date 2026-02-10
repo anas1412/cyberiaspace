@@ -59,7 +59,11 @@ export const usePhysics = (
 
   useEffect(() => {
     const handleMouseGlobal = (e: MouseEvent) => {
-      mousePosRef.current = { x: e.clientX, y: e.clientY };
+      const body = document.querySelector('.app-body') || document.body;
+      const style = window.getComputedStyle(body);
+      const m = new DOMMatrix(style.transform);
+      const s = m.a || 1;
+      mousePosRef.current = { x: e.clientX / s, y: e.clientY / s };
     };
     window.addEventListener('mousemove', handleMouseGlobal);
     return () => window.removeEventListener('mousemove', handleMouseGlobal);
@@ -140,13 +144,24 @@ export const usePhysics = (
   }, [activeSpace?.mode, activeSpaceId, thoughts, transform]);
 
   useEffect(() => {
+    const getGlobalScale = () => {
+      const body = document.querySelector('.app-body') || document.body;
+      const style = window.getComputedStyle(body);
+      const m = new DOMMatrix(style.transform);
+      return m.a || 1;
+    };
+
     const handleMove = (clientX: number, clientY: number) => {
       if (!dragRef.current) return;
+      const s = getGlobalScale();
+      const logicalX = clientX / s;
+      const logicalY = clientY / s;
+
       const { startX, startY, initialPositions } = dragRef.current;
-      const dx = (clientX - startX) / transform.scale;
-      const dy = (clientY - startY) / transform.scale;
+      const dx = (logicalX - startX) / transform.scale;
+      const dy = (logicalY - startY) / transform.scale;
       
-      if (Math.abs(clientX - startX) > 5 || Math.abs(clientY - startY) > 5) {
+      if (Math.abs(logicalX - startX) > 5 || Math.abs(logicalY - startY) > 5) {
         dragRef.current.moved = true;
       }
 
@@ -165,8 +180,15 @@ export const usePhysics = (
 
     const handleMouseMove = (e: MouseEvent) => handleMove(e.clientX, e.clientY);
 
-    const handleUp = (lastMouseX: number, lastMouseY: number, e: MouseEvent) => {
+    const logicalWidth = worldRef.current?.clientWidth || window.innerWidth;
+    const logicalHeight = worldRef.current?.clientHeight || window.innerHeight;
+
+    const handleUp = (rawMouseX: number, rawMouseY: number, e: MouseEvent) => {
       if (dragRef.current) {
+        const s = getGlobalScale();
+        const lastMouseX = rawMouseX / s;
+        const lastMouseY = rawMouseY / s;
+
         const { id, moved, startX, startY } = dragRef.current;
         const dist = Math.sqrt(Math.pow(lastMouseX - startX, 2) + Math.pow(lastMouseY - startY, 2));
         
@@ -183,7 +205,7 @@ export const usePhysics = (
           // It was a drag, finalize positions
           const mode = activeSpace?.mode || 'spatial';
           if (mode === 'kanban') {
-             const colWidth = window.innerWidth / 4;
+             const colWidth = logicalWidth / 4;
              let status: 'none' | 'todo' | 'doing' | 'done' = 'none';
              if (lastMouseX > colWidth && lastMouseX < colWidth * 2) status = 'todo';
              else if (lastMouseX >= colWidth * 2 && lastMouseX < colWidth * 3) status = 'doing';
@@ -211,13 +233,19 @@ export const usePhysics = (
                    updateThought(draggedId, { date: '' });
                  });
              } else {
-                 const mainWidth = window.innerWidth - mainLeft - padding;
-                 const cellWidth = mainWidth / 7; const cellHeight = (window.innerHeight - topPadding - padding) / 5;
-                 const gridX = lastMouseX - mainLeft; const gridY = lastMouseY - topPadding;
+                 const mainWidth = logicalWidth - mainLeft - padding;
+                 const mainHeight = logicalHeight - topPadding - 120; // Match the 120px bottom padding
+                 const cellWidth = mainWidth / 7; 
+                 const cellHeight = mainHeight / 5;
+                 
+                 const gridX = lastMouseX - mainLeft; 
+                 const gridY = lastMouseY - topPadding;
                  
                  if (gridX >= 0 && gridY >= 0) {
-                     const col = Math.floor(gridX / cellWidth); const row = Math.floor(gridY / cellHeight);
-                     if (col >= 0 && col < 7 && row >= 0 && row < 6) {
+                     const col = Math.floor(gridX / cellWidth); 
+                     const row = Math.floor(gridY / cellHeight);
+                     
+                     if (col >= 0 && col < 7 && row >= 0 && row < 5) {
                          const year = calendarViewDate.getFullYear(); const month = calendarViewDate.getMonth();
                          const firstDay = new Date(year, month, 1).getDay() || 7;
                          const startOffset = firstDay - 1; const dayIndex = row * 7 + col - startOffset;
@@ -334,7 +362,7 @@ export const usePhysics = (
     } else if (mode === 'calendar') {
       const year = calendarViewDate.getFullYear(); const month = calendarViewDate.getMonth(); const firstDay = new Date(year, month, 1).getDay() || 7;
       const sidebarWidth = 260; const gap = 20; const padding = 40; const topPadding = 190; const mainLeft = padding + sidebarWidth + gap;
-      const mainWidth = logicalWidth - mainLeft - padding; const cellWidth = mainWidth / 7; const cellHeight = (logicalHeight - topPadding - padding) / 5;
+      const mainWidth = logicalWidth - mainLeft - padding; const cellWidth = mainWidth / 7; const cellHeight = (logicalHeight - topPadding - 120) / 5;
       const allThoughts = Array.from(thoughtMap.current.values());
       const scheduled = allThoughts.filter(t => !!t.date); 
       const unscheduled = allThoughts.filter(t => !t.date).sort((a,b) => a.order - b.order);
@@ -387,15 +415,16 @@ export const usePhysics = (
 
             const el = elements.current.get(t.id);
             const h = el?.offsetHeight || 120;
-            const nodeHeight = h * uniformScale;
 
-            // Refined Top-Left Anchoring: NEVER CHANGE THIS - it is the basis of all our positioning logic in calendar mode
-            const startX = cellX + 8;
-            const startY = cellY + -7;
+            // Refined Top-Left Anchoring: space on left, very tight on top
+            const startX = cellX + 10;
+            const startY = cellY + 2;
 
-            const targetX = startX + (index * hSpread) + cardWidth / 2;
-            const targetY = startY + (index * vSpread) + nodeHeight / 2;
+            // targetX/Y are centers in the physics engine.
+            // Logical center = desired top-left + (visual size / 2)
             const targetScale = isHovered ? uniformScale * 1.05 : uniformScale;
+            const targetX = startX + (index * hSpread) + (280 * targetScale) / 2;
+            const targetY = startY + (index * vSpread) + (h * targetScale) / 2;
             
             if (snapNextFrame.current) {
               p.x = targetX; p.y = targetY; p.scale = targetScale;
@@ -705,8 +734,13 @@ export const usePhysics = (
       if (e.button !== 0) return; 
       if ((e.target as HTMLElement).closest('.prevent-drag')) return;
       
-      const clientX = e.clientX;
-      const clientY = e.clientY;
+      const body = document.querySelector('.app-body') || document.body;
+      const style = window.getComputedStyle(body);
+      const m = new DOMMatrix(style.transform);
+      const s = m.a || 1;
+
+      const clientX = e.clientX / s;
+      const clientY = e.clientY / s;
   
       const store = useStore.getState();
       const currentSelectedIds = store.selectedThoughtIds;
