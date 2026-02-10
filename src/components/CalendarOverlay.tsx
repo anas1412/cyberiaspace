@@ -15,6 +15,7 @@ const CalendarOverlay: React.FC = () => {
   const activeSpace = spaces.find((s) => s.id === activeSpaceId);
   const calDate = useStore((state) => state.calendarViewDate);
   const setCalDate = useStore((state) => state.setCalendarViewDate);
+  const setHoveredDate = useStore((state) => state.setHoveredCalDate);
 
   if (activeSpace?.mode !== 'calendar') return null;
 
@@ -48,6 +49,8 @@ const CalendarOverlay: React.FC = () => {
           isToday && "bg-[var(--accent)]/[0.05]"
         )}
         data-date={dateStr}
+        onMouseEnter={() => setHoveredDate(dateStr)}
+        onMouseLeave={() => setHoveredDate(null)}
       >
         <span className={cn(
           "cal-date-num absolute top-2 right-2 text-[11px] font-600",

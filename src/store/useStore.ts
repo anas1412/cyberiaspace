@@ -15,6 +15,7 @@ interface CyberiaState {
   activeFocusId: number | null;
   focusType: 'text' | 'table' | 'paint' | 'tasks' | 'embed' | null;
   calendarViewDate: Date;
+  hoveredCalDate: string | null;
   linkingSourceId: number | null;
   theme: 'cyberia' | 'sakura' | 'neon';
   isSpaceLoading: boolean;
@@ -66,6 +67,7 @@ interface CyberiaState {
   unlinkSelectedThoughts: () => Promise<void>;
   setInspectorOpen: (open: boolean) => void;
   setActiveFocus: (id: number | null, type: 'text' | 'table' | 'paint' | 'tasks' | 'embed' | null) => void;
+  setHoveredCalDate: (date: string | null) => void;
   setLinkingSourceId: (id: number | null) => void;
 
   // Stack Actions
@@ -119,6 +121,7 @@ export const useStore = create<CyberiaState>((set, get) => ({
   activeFocusId: null,
   focusType: null,
   calendarViewDate: new Date(),
+  hoveredCalDate: null,
   isLightboxOpen: false,
   lightboxImage: null,
   linkingSourceId: null,
@@ -995,6 +998,10 @@ export const useStore = create<CyberiaState>((set, get) => ({
 
   setActiveFocus: (id, type) => {
     set({ activeFocusId: id, focusType: id ? type : null });
+  },
+
+  setHoveredCalDate: (date) => {
+    set({ hoveredCalDate: date });
   },
 
   setLinkingSourceId: (id) => {

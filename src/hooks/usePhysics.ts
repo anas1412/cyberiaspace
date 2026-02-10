@@ -27,6 +27,7 @@ export const usePhysics = (
     const activeSpace = spaces.find((s) => s.id === activeSpaceId);
     const updateThought = useStore((state) => state.updateThought);
     const calendarViewDate = useStore((state) => state.calendarViewDate);
+    const hoveredCalDate = useStore((state) => state.hoveredCalDate);
     const linkingSourceId = useStore((state) => state.linkingSourceId);
   
     const physicsState = useRef<Map<number, { x: number; y: number; vx: number; vy: number; scale: number }>>(new Map());
@@ -346,24 +347,36 @@ export const usePhysics = (
           const row = Math.floor(cellIndex / 7);
           
           const baseX = mainLeft + col * cellWidth + cellWidth / 2;
-          const baseY = topPadding + row * cellHeight + cellHeight / 2;
+          // Start from the top of the cell rather than the middle
+          const baseY = topPadding + row * cellHeight + 55; 
           const uniformScale = Math.min((cellWidth - 20) / 280, 0.45);
+          const isHovered = hoveredCalDate === dateStr;
 
           // Sort group by order to keep stack stable
           groupThoughts.sort((a, b) => a.order - b.order).forEach((t, index) => {
             const p = state.get(t.id);
             if (!p || dragRef.current?.initialPositions.has(t.id)) return;
 
-            const targetX = baseX + (index * 10);
-            // Stack offset: centered but spread downwards
-            const targetY = baseY - (Math.min(groupThoughts.length, 5) - 1) * 10 + (index * 25);
+            const el = elements.current.get(t.id);
+            const h = el?.offsetHeight || 120;
+
+            // Clean vertical stack, no horizontal spray
+            const targetX = baseX;
+            // Spread out: when hovered, increase the vertical spread significantly
+            // We use a larger spread for hovered to show more content, but keeping it as a "deck"
+            const spread = isHovered ? 80 : 35; 
+            
+            // targetY such that top of the card is at: baseY + (index * spread)
+            // Since transform uses p.y - h/2, we offset by h/2 here.
+            const targetY = baseY + (index * spread) + (h * uniformScale) / 2;
+            const targetScale = isHovered ? uniformScale * 1.05 : uniformScale;
             
             if (snapNextFrame.current) {
-              p.x = targetX; p.y = targetY; p.scale = uniformScale;
+              p.x = targetX; p.y = targetY; p.scale = targetScale;
             } else {
               p.x += (targetX - p.x) * 0.2;
               p.y += (targetY - p.y) * 0.2;
-              p.scale += (uniformScale - p.scale) * 0.1;
+              p.scale += (targetScale - p.scale) * 0.1;
             }
             p.vx = 0; p.vy = 0;
           });
@@ -596,9 +609,33 @@ export const usePhysics = (
             el.style.pointerEvents = opacity < 0.1 ? 'none' : 'auto';
             el.style.zIndex = (20 + prioLevel).toString();
         } else if (mode === 'calendar') {
-            el.style.clipPath = 'none';
+            const isHovered = t?.date === hoveredCalDate;
+            const isDraggingThis = dragRef.current?.initialPositions.has(id);
+            
+            if (t?.date && !isDraggingThis) {
+                // Determine if this is the top card of its stack
+                const dateThoughts = Array.from(thoughtMap.current.values())
+                    .filter(th => th.date === t.date)
+                    .sort((a, b) => (a.order || 0) - (b.order || 0));
+                const isTopCard = dateThoughts.length > 0 && dateThoughts[dateThoughts.length - 1].id === t.id;
+
+                if (isHovered || isTopCard) {
+                    el.style.clipPath = 'none';
+                } else {
+                    // Fixed header height clip for the "Filing Cabinet" tab look
+                    // Shows exactly 70px of the card's top regardless of its total height
+                    el.style.clipPath = 'inset(0px 0px calc(100% - 70px) 0px)';
+                }
+                
+                // Add a slight "deck" rotation for tactile feel
+                const rot = ((t.order || 0) % 2 === 0 ? 0.8 : -0.8);
+                el.style.transform += ` rotate(${rot}deg)`;
+            } else {
+                el.style.clipPath = 'none';
+            }
+
             el.style.opacity = '1'; el.style.visibility = 'visible'; el.style.pointerEvents = 'auto';
-            if (dragRef.current?.initialPositions.has(id)) {
+            if (isDraggingThis) {
               el.style.zIndex = '1000';
             } else {
               el.style.zIndex = (30 + (t?.order || 0)).toString();
