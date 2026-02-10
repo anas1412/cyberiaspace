@@ -31,7 +31,8 @@ export const getEmbedInfo = (url: string): EmbedInfo => {
   // YouTube
   const ytRegex = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|&v=)([^#&?]*).*/;
   const ytMatch = url.match(ytRegex);
-  if (ytMatch && ytMatch[2].length === 11) {
+  // Fix: Safe guard for length check
+  if (ytMatch && ytMatch[2] && ytMatch[2].length === 11) {
     return { provider: 'youtube', id: ytMatch[2], url };
   }
 
@@ -58,7 +59,7 @@ export const getEmbedInfo = (url: string): EmbedInfo => {
   }
 
   // TikTok
-  const tiktokRegex = /https?:\/\/(?:www\.)?(?:tiktok\.com\/.*\/video\/|vm\.tiktok\.com\/|vt\.tiktok\.com\/)([a-zA-Z0-9]+)/;
+  const tiktokRegex = /https?:\/\/(?:www\.)?(?:tiktok\.com\/.*\/video\/|vm\.tiktok\.com\/|vt\.tiktok\.com\/|www\.tiktok\.com\/t\/)([a-zA-Z0-9]+)/;
   const tiktokMatch = url.match(tiktokRegex);
   if (tiktokMatch) {
     return { provider: 'tiktok', id: tiktokMatch[1], url };
@@ -91,17 +92,18 @@ export const fetchEmbedMeta = async (url: string): Promise<EmbedMeta> => {
   if (provider === 'youtube') {
     oEmbedUrl = `https://www.youtube.com/oembed?url=${encodeURIComponent(url)}&format=json`;
   } else if (provider === 'spotify') {
-    oEmbedUrl = `https://embed.spotify.com/oembed/?url=${encodeURIComponent(url)}`;
+    // Spotify theme=0 is the dark/black theme
+    oEmbedUrl = `https://embed.spotify.com/oembed/?url=${encodeURIComponent(url)}&theme=0`;
   } else if (provider === 'twitter') {
-    oEmbedUrl = `https://publish.twitter.com/oembed?url=${encodeURIComponent(url)}`;
+    oEmbedUrl = `https://publish.twitter.com/oembed?url=${encodeURIComponent(url)}&theme=dark`;
   } else if (provider === 'reddit') {
-    oEmbedUrl = `https://www.reddit.com/oembed?url=${encodeURIComponent(url)}`;
+    oEmbedUrl = `https://www.reddit.com/oembed?url=${encodeURIComponent(url)}&theme=dark`;
   } else if (provider === 'instagram') {
-    oEmbedUrl = `https://api.instagram.com/oembed?url=${encodeURIComponent(url)}`;
+    oEmbedUrl = `https://api.instagram.com/oembed?url=${encodeURIComponent(url)}&theme=dark`;
   } else if (provider === 'facebook') {
     oEmbedUrl = `https://www.facebook.com/plugins/post/oembed.json/?url=${encodeURIComponent(url)}`;
   } else if (provider === 'tiktok') {
-    oEmbedUrl = `https://www.tiktok.com/oembed?url=${encodeURIComponent(url)}`;
+    oEmbedUrl = `https://www.tiktok.com/oembed?url=${encodeURIComponent(url)}&theme=dark`;
   }
 
   // 1. Fetch oEmbed data

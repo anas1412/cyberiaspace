@@ -69,12 +69,18 @@ const EmbedFocusEditor: React.FC = () => {
       setIsHydrated(false);
 
       const trigger = () => {
-        const content = (thought.content || "").toLowerCase();
-        if (content.includes('twitter.com') || content.includes('x.com')) (window as any).twttr?.widgets?.load();
-        if (content.includes('instagram.com')) (window as any).instgrm?.Embeds?.process();
-        if (content.includes('tiktok.com')) {
-          (window as any).tiktok?.widgets?.load();
-          if ((window as any).tiktokEmbed?.lib?.render) (window as any).tiktokEmbed.lib.render();
+        try {
+          const content = (thought.content || "").toLowerCase();
+          if (content.includes('twitter.com') || content.includes('x.com')) (window as any).twttr?.widgets?.load();
+          if (content.includes('instagram.com')) (window as any).instgrm?.Embeds?.process();
+          if (content.includes('tiktok.com')) {
+            const el = document.getElementById(`embed-${thought.id}`);
+            if (el) {
+              (window as any).tiktok?.widgets?.load();
+            }
+          }
+        } catch (err) {
+          console.warn("[Embed Focus] Hydration failed:", err);
         }
         setIsHydrated(true);
       };
@@ -112,7 +118,7 @@ const EmbedFocusEditor: React.FC = () => {
     if (provider === 'youtube' && id) {
       return (
         <iframe
-          src={`https://www.youtube.com/embed/${id}?autoplay=1`}
+          src={`https://www.youtube.com/embed/${id}?autoplay=1&theme=dark`}
           title="YouTube video player"
           frameBorder="0"
           allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
@@ -136,11 +142,32 @@ const EmbedFocusEditor: React.FC = () => {
       );
     }
 
+    const getCleanHtml = () => {
+      let html = thought?.meta?.html || "";
+      if (!html) return "";
+
+      // 1. Strip scripts to prevent conflicts
+      html = html.replace(/<script\b[^>]*>([\s\S]*?)<\/script>/gim, "");
+
+      // 2. Force Dark Mode
+      if (html.includes('tiktok-embed') && !html.includes('data-theme=')) {
+        html = html.replace('tiktok-embed', 'tiktok-embed" data-theme="dark');
+      }
+      if (html.includes('instagram-media') && !html.includes('data-instgrm-captioned')) {
+        // Just standardizing
+      }
+
+      return html;
+    };
+
     // Priority 3: Rich HTML Embeds (Twitter/Instagram/Reddit/TikTok)
     if (thought?.meta?.html) {
       const isReddit = thought.content.includes('reddit.com');
+      const isTikTok = thought.content.includes('tiktok.com');
+      const isInstagram = thought.content.includes('instagram.com');
+
       return (
-        <div className="w-full h-full overflow-auto flex flex-col items-center justify-start p-4 md:p-8 custom-scroll bg-black">
+        <div className="w-full h-full overflow-auto flex flex-col items-center justify-start p-4 md:p-8 custom-scroll bg-[#020408]">
           {!isHydrated && (
             <div className="flex flex-col items-center gap-4 text-slate-500 my-10 animate-pulse">
               <div className="w-8 h-8 rounded-full border-2 border-current border-t-transparent animate-spin" />
@@ -150,12 +177,12 @@ const EmbedFocusEditor: React.FC = () => {
           <div
             id={`embed-${thought.id}`}
             className={cn(
-              "w-full max-w-[550px] rounded-2xl overflow-hidden shadow-2xl",
-              isReddit ? "bg-[#1a1a1b] p-1" : "bg-white",
-              isHydrated ? "opacity-100" : "opacity-60"
+              "w-full max-w-[550px] rounded-2xl overflow-hidden shadow-2xl transition-all duration-700",
+              isReddit ? "bg-[#1a1a1b] p-1" : (isTikTok || isInstagram) ? "bg-black" : "bg-white",
+              isHydrated ? "opacity-100 scale-100" : "opacity-60 scale-[0.98]"
             )}
             style={isReddit ? { colorScheme: 'dark' } : {}}
-            dangerouslySetInnerHTML={{ __html: thought.meta.html }}
+            dangerouslySetInnerHTML={{ __html: getCleanHtml() }}
           />
         </div>
       );

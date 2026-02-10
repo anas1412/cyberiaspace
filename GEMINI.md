@@ -119,3 +119,4 @@ Cyberia supports three core aesthetic modes:
 3. **Tailwind First:** Use utility classes; avoid inline styles except for transform math.
 4. **Local First:** Always prioritize Dexie/IndexedDB over cloud sync.
 5. **Layout Flow**: Avoid `absolute` positioning for elements that clash with status badges; use flex-row clusters for adaptive height.
+6. **Embeds:** Always try to fetch dark mode versions of embeds.
