@@ -187,24 +187,43 @@ const Toolbar: React.FC = () => {
     setIsCapturing(true);
     
     try {
+      // Detect Global Scale (from index.css rule)
+      const body = document.querySelector('.app-body') || document.body;
+      const bodyStyle = window.getComputedStyle(body);
+      const bodyMatrix = new DOMMatrix(bodyStyle.transform);
+      const globalScale = bodyMatrix.a || 1;
+
       let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
-      const worldRect = worldEl.getBoundingClientRect();
+      const worldRectRaw = worldEl.getBoundingClientRect();
+      const worldRect = {
+        left: worldRectRaw.left / globalScale,
+        top: worldRectRaw.top / globalScale,
+        width: worldRectRaw.width / globalScale,
+        height: worldRectRaw.height / globalScale
+      };
       
-      // Get current scale to normalize measurements
+      // Get current world zoom scale to normalize measurements
       const worldStyle = window.getComputedStyle(worldEl);
       const matrix = new DOMMatrix(worldStyle.transform);
-      const currentScale = matrix.a || 1;
+      const currentZoom = matrix.a || 1;
 
       thoughts.forEach(t => {
         const el = document.querySelector(`.thought-bulb[data-id="${t.id}"]`) as HTMLElement;
         if (!el) return;
         
-        const rect = el.getBoundingClientRect();
+        const rectRaw = el.getBoundingClientRect();
+        const rect = {
+          left: rectRaw.left / globalScale,
+          top: rectRaw.top / globalScale,
+          width: rectRaw.width / globalScale,
+          height: rectRaw.height / globalScale
+        };
+
         // Normalize coordinates relative to world, ignoring current zoom
-        const x = (rect.left - worldRect.left) / currentScale;
-        const y = (rect.top - worldRect.top) / currentScale;
-        const w = rect.width / currentScale;
-        const h = rect.height / currentScale;
+        const x = (rect.left - worldRect.left) / currentZoom;
+        const y = (rect.top - worldRect.top) / currentZoom;
+        const w = rect.width / currentZoom;
+        const h = rect.height / currentZoom;
         
         if (x < minX) minX = x;
         if (y < minY) minY = y;
@@ -214,21 +233,20 @@ const Toolbar: React.FC = () => {
 
       if (minX === Infinity) return;
 
-      const padding = 40;
+      const padding = 60; // More padding for cleaner edges
       const width = (maxX - minX) + (padding * 2);
       const height = (maxY - minY) + (padding * 2);
       const captureX = minX - padding;
       const captureY = minY - padding;
 
       // Extreme Stability: Calculate a safe internal scale
-      // If the workspace is huge, we scale it down internally to prevent memory crash
       const MAX_SAFE_DIMENSION = 4000;
       const scaleFactor = Math.min(1, MAX_SAFE_DIMENSION / Math.max(width, height));
       
       const canvas = await toCanvas(worldEl, {
         backgroundColor: getComputedStyle(document.body).getPropertyValue('--bg-main').trim() || '#020408',
         cacheBust: true,
-        pixelRatio: scaleFactor, // Scale down giant images to fit in memory
+        pixelRatio: scaleFactor * 2, // 2x for higher quality
         skipFonts: true,
         style: {
           transform: `translate(${-captureX}px, ${-captureY}px) scale(1)`,
