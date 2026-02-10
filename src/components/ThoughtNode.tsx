@@ -1,15 +1,25 @@
 import React, { useRef, useEffect, useState, useMemo } from 'react';
 import { type Thought } from '../db';
 import { useStore } from '../store/useStore';
-import { Maximize2, Palette, Link as LinkIcon, Link2Off, Image as ImageIcon, Table, ListTodo, Type } from 'lucide-react';
+import { Maximize2, Palette, Link as LinkIcon, Link2Off, Image as ImageIcon, Table, ListTodo, Type, Music, MessageCircle, Share2, Youtube, Play } from 'lucide-react';
 import { marked } from 'marked';
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
-import { getYouTubeVideoId } from '../utils/youtube';
+import { getEmbedInfo, type EmbedProvider } from '../utils/embeds';
 
 function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
+
+const PROVIDER_CONFIG: Record<string, { icon: any, color: string, label: string }> = {
+  youtube: { icon: Youtube, color: '#ef4444', label: 'YouTube' },
+  spotify: { icon: Music, color: '#1db954', label: 'Spotify' },
+  twitter: { icon: MessageCircle, color: '#1da1f2', label: 'Twitter' },
+  reddit: { icon: MessageCircle, color: '#ff4500', label: 'Reddit' },
+  facebook: { icon: Share2, color: '#1877f2', label: 'Facebook' },
+  instagram: { icon: Share2, color: '#e1306c', label: 'Instagram' },
+  unknown: { icon: LinkIcon, color: '#64748b', label: 'Link' }
+};
 
 interface ThoughtNodeProps {
   thought: Thought;
@@ -144,6 +154,7 @@ const ThoughtNode: React.FC<ThoughtNodeProps> = React.memo(({ thought, registerE
     const tasksTrigger = target.closest('[data-trigger="tasks"]');
     const imageTrigger = target.closest('[data-trigger="image"]');
     const paintTrigger = target.closest('[data-trigger="paint"]');
+    const embedTrigger = target.closest('[data-trigger="embed"]');
 
     if (textTrigger) {
         setActiveFocus(thought.id, 'text');
@@ -153,6 +164,8 @@ const ThoughtNode: React.FC<ThoughtNodeProps> = React.memo(({ thought, registerE
         setActiveFocus(thought.id, 'tasks');
     } else if (paintTrigger) {
         setActiveFocus(thought.id, 'paint');
+    } else if (embedTrigger) {
+        setActiveFocus(thought.id, 'embed');
     } else if (imageTrigger) {
         if (thought.image) openLightbox(thought.image);
     } else {
@@ -373,39 +386,60 @@ const ThoughtNode: React.FC<ThoughtNodeProps> = React.memo(({ thought, registerE
           </div>
         );
       }
+// ... inside ThoughtNode ...
+
       case 'embed': {
-        const videoId = getYouTubeVideoId(thought.content);
+        const { provider, id } = getEmbedInfo(thought.content);
+        const config = PROVIDER_CONFIG[provider as string] || PROVIDER_CONFIG.unknown;
+        const Icon = config.icon;
         
         return (
           <div data-trigger="embed" className="mt-2 relative group prevent-drag cursor-pointer overflow-hidden rounded-xl border border-white/10 bg-black/50 aspect-video flex items-center justify-center">
-            {videoId ? (
+            {thought.image ? (
               <>
                 <img 
-                  src={`https://img.youtube.com/vi/${videoId}/mqdefault.jpg`} 
+                  src={thought.image} 
+                  draggable="false"
+                  className="w-full h-full object-cover opacity-60 group-hover:opacity-100 transition-opacity"
+                  alt="Preview" 
+                />
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <div className={cn("w-12 h-12 rounded-full flex items-center justify-center shadow-2xl transform group-hover:scale-110 transition-transform text-white", provider === 'youtube' ? "bg-red-600" : "bg-black/60 backdrop-blur-md")}>
+                    {provider === 'youtube' ? <Play className="w-6 h-6 fill-white ml-1" /> : <Icon className="w-6 h-6" style={{ color: config.color }} />}
+                  </div>
+                </div>
+              </>
+            ) : provider === 'youtube' && id ? (
+              <>
+                <img 
+                  src={`https://img.youtube.com/vi/${id}/mqdefault.jpg`} 
                   draggable="false"
                   className="w-full h-full object-cover opacity-60 group-hover:opacity-100 transition-opacity"
                   alt="YouTube Preview" 
                 />
                 <div className="absolute inset-0 flex items-center justify-center">
-                  <div className="w-12 h-12 bg-red-600 rounded-full flex items-center justify-center shadow-2xl transform group-hover:scale-110 transition-transform">
-                    <div className="w-0 h-0 border-t-[8px] border-t-transparent border-l-[14px] border-l-white border-b-[8px] border-b-transparent ml-1" />
+                  <div className="w-12 h-12 bg-red-600 rounded-full flex items-center justify-center shadow-2xl transform group-hover:scale-110 transition-transform text-white">
+                    <Play className="w-6 h-6 fill-white ml-1" />
                   </div>
                 </div>
               </>
+            ) : provider === 'spotify' ? (
+              <div className="flex flex-col items-center gap-3 p-6 text-center">
+                <div className="w-16 h-16 rounded-full bg-[#1db954]/20 flex items-center justify-center border border-[#1db954]/40 shadow-[0_0_30px_rgba(29,185,84,0.2)] animate-pulse">
+                  <Music className="w-8 h-8 text-[#1db954]" />
+                </div>
+                <span className="text-[10px] text-[#1db954] font-black uppercase tracking-widest">{thought.text || 'Spotify Track'}</span>
+              </div>
             ) : (
               <div className="flex flex-col items-center gap-2 p-6 text-center">
-                <Maximize2 className="w-6 h-6 text-white/20" />
-                <span className="text-[10px] text-white/20 font-bold uppercase tracking-widest leading-tight">Paste YouTube Link<br/>in Editor</span>
+                <div className={cn("w-12 h-12 rounded-xl flex items-center justify-center border", `bg-[${config.color}]/10 border-[${config.color}]/20`)}>
+                  <Icon className="w-6 h-6" style={{ color: config.color }} />
+                </div>
+                <span className="text-[10px] font-black uppercase tracking-widest leading-tight" style={{ color: config.color }}>
+                  {thought.text || `View on ${config.label}`}
+                </span>
               </div>
             )}
-            <div className="absolute inset-0 bg-[var(--accent)]/10 opacity-0 group-hover/tasks:opacity-100 transition-opacity flex items-center justify-center pointer-events-none">
-              <button 
-                onClick={(e) => { e.stopPropagation(); setActiveFocus(thought.id, 'embed'); }}
-                className="pointer-events-auto bg-[var(--accent)] text-white p-2 rounded-lg shadow-xl transform scale-90 group-hover:scale-100 transition-all hover:scale-110 active:scale-95"
-              >
-                <Maximize2 className="w-4 h-4" />
-              </button>
-            </div>
           </div>
         );
       }

@@ -1,11 +1,11 @@
 import React from 'react';
 import { useStore } from '../store/useStore';
 import { useModalStore } from '../store/useModalStore';
-import { X, Maximize2, Image as ImageIcon, Link, Trash2, Youtube, Type, ListTodo, Palette, Table, Calendar, ChevronLeft, ChevronRight, Layers, ArrowDown } from 'lucide-react';
+import { X, Maximize2, Image as ImageIcon, Link, Trash2, Youtube, Type, ListTodo, Palette, Table, Calendar, ChevronLeft, ChevronRight, Layers, ArrowDown, Share2 } from 'lucide-react';
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 import { motion, AnimatePresence } from 'framer-motion';
-import { fetchYouTubeMeta, getYouTubeVideoId } from '../utils/youtube';
+import { fetchEmbedMeta, getEmbedInfo } from '../utils/embeds';
 
 function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -437,14 +437,14 @@ const Inspector: React.FC = () => {
                   <div className="space-y-4">
                     <button 
                       onClick={() => setActiveFocus(thought.id, 'embed')}
-                      className="w-full bg-red-500/10 hover:bg-red-500/20 border border-red-500/30 text-red-400 py-6 rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] transition-all flex flex-col items-center gap-3"
+                      className="w-full bg-indigo-500/10 hover:bg-indigo-500/20 border border-indigo-500/30 text-[var(--accent-secondary)] py-6 rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] transition-all flex flex-col items-center gap-3"
                     >
-                      <Youtube className="w-5 h-5" />
-                      Open Video Player
+                      <Share2 className="w-5 h-5" />
+                      Open Interaction Layer
                     </button>
                     
                     <div className="space-y-2">
-                      <label className="text-[9px] uppercase font-bold tracking-widest text-slate-500 ml-1">YouTube URL</label>
+                      <label className="text-[9px] uppercase font-bold tracking-widest text-slate-500 ml-1">Universal URL</label>
                       <input 
                         type="text" 
                         value={thought.content}
@@ -452,25 +452,24 @@ const Inspector: React.FC = () => {
                           const newUrl = e.target.value;
                           updateThought(thought.id, { content: newUrl });
                           
-                          const videoId = getYouTubeVideoId(newUrl);
-                          if (videoId) {
-                            // Fetch metadata for the new URL
-                            fetchYouTubeMeta(newUrl)
+                          if (newUrl.startsWith('http')) {
+                            // Fetch metadata for the new URL (Spotify, YT, etc)
+                            fetchEmbedMeta(newUrl)
                               .then(metadata => {
                                 if (metadata && metadata.title) {
                                   updateThought(thought.id, { 
                                     text: metadata.title,
-                                    description: metadata.author_name || "" 
+                                    description: metadata.author_name || metadata.provider_name || "" 
                                   });
                                 }
                               })
                               .catch(err => {
-                                console.warn("YouTube metadata fetch failed:", err);
+                                console.warn("Embed metadata fetch failed:", err);
                               });
                           }
                         }}
-                        placeholder="https://www.youtube.com/watch?v=..."
-                        className="w-full bg-black/40 border border-white/10 rounded-xl p-3 text-xs outline-none focus:border-red-500 text-white"
+                        placeholder="Paste Spotify, YouTube, X, or Reddit link..."
+                        className="w-full bg-black/40 border border-white/10 rounded-xl p-3 text-xs outline-none focus:border-[var(--accent)] text-white"
                       />
                     </div>
                   </div>

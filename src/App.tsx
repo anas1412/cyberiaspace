@@ -25,7 +25,7 @@ import ChatOverlay from './components/ChatOverlay';
 import MobileNotSupported from './components/MobileNotSupported';
 import FeedbackPage from './components/FeedbackPage';
 
-import { fetchYouTubeMeta, getYouTubeVideoId } from './utils/youtube';
+import { getEmbedInfo, fetchEmbedMeta } from './utils/embeds';
 
 function App() {
   const init = useStore((state) => state.init);
@@ -229,49 +229,51 @@ function App() {
       // Priority 3: Text
       const text = clipboardData.getData('text');
       if (text && text.trim()) {
-        e.preventDefault();
-        
         const cleanText = text.trim();
-        const videoId = getYouTubeVideoId(cleanText);
-        
-        if (videoId) {
+        const isUrl = /^https?:\/\/[^\s]+$/i.test(cleanText);
+
+        if (isUrl) {
+          e.preventDefault();
+          
           const id = await addThought({ 
             ...getPlacementProps(),
             type: 'embed', 
-            text: "Loading Title...", 
+            text: "Loading Link...", 
             content: cleanText 
           });
           
           if (id !== -1) {
             setSelectedThoughtId(id);
-            // We specifically don't open the inspector for YouTube pastes 
-            // to keep the flow uninterrupted.
             
-            fetchYouTubeMeta(cleanText)
+            fetchEmbedMeta(cleanText)
               .then(metadata => {
-                if (metadata && metadata.title) {
+                if (metadata) {
                   useStore.getState().updateThought(id, {
-                    text: metadata.title,
-                    description: metadata.author_name || ""
+                    text: metadata.title || "Link",
+                    description: metadata.author_name || metadata.provider_name || "",
+                    image: metadata.thumbnail_url || null,
+                    meta: metadata
                   });
                 }
               })
               .catch(err => {
-                console.warn("YouTube metadata fetch failed:", err);
-                useStore.getState().updateThought(id, { text: "YouTube Video" });
+                console.warn("Embed metadata fetch failed:", err);
+                useStore.getState().updateThought(id, { text: "Link" });
               });
           }
-        } else {
-          const id = await addThought({ 
-            ...getPlacementProps(),
-            type: 'text', 
-            text: "Note", 
-            content: cleanText 
-          });
-          if (id !== -1) {
-            setSelectedThoughtId(id);
-            setInspectorOpen(true);
-          }
+          return;
+        }
+
+        e.preventDefault();
+        const id = await addThought({ 
+          ...getPlacementProps(),
+          type: 'text', 
+          text: "Note", 
+          content: cleanText 
+        });
+        if (id !== -1) {
+          setSelectedThoughtId(id);
+          setInspectorOpen(true);
         }
       }
     };

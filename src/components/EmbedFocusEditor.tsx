@@ -1,8 +1,24 @@
 import React, { useEffect, useMemo, useRef } from 'react';
 import { useStore } from '../store/useStore';
-import { Youtube, X, ExternalLink } from 'lucide-react';
+import { Youtube, X, ExternalLink, Music, MessageCircle, Share2, Link as LinkIcon } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { getYouTubeVideoId } from '../utils/youtube';
+import { getEmbedInfo, type EmbedProvider } from '../utils/embeds';
+import { clsx, type ClassValue } from 'clsx';
+import { twMerge } from 'tailwind-merge';
+
+function cn(...inputs: ClassValue[]) {
+  return twMerge(clsx(inputs));
+}
+
+const PROVIDER_CONFIG: Record<string, { icon: any, color: string, label: string, themeColor: string }> = {
+  youtube: { icon: Youtube, color: 'text-red-500', themeColor: 'bg-red-500/10', label: 'YouTube' },
+  spotify: { icon: Music, color: 'text-[#1db954]', themeColor: 'bg-[#1db954]/10', label: 'Spotify' },
+  twitter: { icon: MessageCircle, color: 'text-[#1da1f2]', themeColor: 'bg-[#1da1f2]/10', label: 'Twitter' },
+  reddit: { icon: MessageCircle, color: 'text-[#ff4500]', themeColor: 'bg-[#ff4500]/10', label: 'Reddit' },
+  facebook: { icon: Share2, color: 'text-[#1877f2]', themeColor: 'bg-[#1877f2]/10', label: 'Facebook' },
+  instagram: { icon: Share2, color: 'text-[#e1306c]', themeColor: 'bg-[#e1306c]/10', label: 'Instagram' },
+  unknown: { icon: LinkIcon, color: 'text-slate-400', themeColor: 'bg-white/10', label: 'Link' }
+};
 
 const EmbedFocusEditor: React.FC = () => {
   const activeFocusId = useStore((state) => state.activeFocusId);
@@ -16,10 +32,13 @@ const EmbedFocusEditor: React.FC = () => {
   const stack = stacks.find((s) => s.id === thought?.stackId);
   const isVisible = focusType === 'embed' && !!thought;
 
-  const videoId = useMemo(() => getYouTubeVideoId(thought?.content || ''), [thought?.content]);
+  const embedInfo = useMemo(() => getEmbedInfo(thought?.content || ''), [thought?.content]);
+  const config = PROVIDER_CONFIG[embedInfo.provider] || PROVIDER_CONFIG.unknown;
+  const Icon = config.icon;
+
   const scrollerRef = useRef<HTMLDivElement>(null);
 
-  // Find other items in the same stack (Videos Only)
+  // Find other items in the same stack (Embeds Only)
   const stackItems = useMemo(() => {
     if (!thought?.stackId) return [];
     return thoughts
@@ -42,6 +61,100 @@ const EmbedFocusEditor: React.FC = () => {
     return () => el.removeEventListener('wheel', onWheel);
   }, [isVisible, stackItems.length]);
 
+  // Re-run scripts when HTML content changes (important for Twitter/Instagram widgets)
+  useEffect(() => {
+    if (isVisible && thought?.meta?.html) {
+      // Re-scan for Twitter widgets
+      if (thought.content.includes('twitter.com') || thought.content.includes('x.com')) {
+        (window as any).twttr?.widgets?.load();
+      }
+      // Re-scan for Instagram
+      if (thought.content.includes('instagram.com')) {
+        (window as any).instgrm?.Embeds?.process();
+      }
+    }
+  }, [isVisible, thought?.meta?.html, thought?.content]);
+
+  const renderPlayer = () => {
+    const { provider, id, url } = embedInfo;
+
+    if (provider === 'youtube' && id) {
+      return (
+        <iframe
+          src={`https://www.youtube.com/embed/${id}?autoplay=1`}
+          title="YouTube video player"
+          frameBorder="0"
+          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+          allowFullScreen
+          className="absolute inset-0 w-full h-full"
+        ></iframe>
+      );
+    }
+
+    if (provider === 'spotify' && id) {
+      return (
+        <iframe
+          src={`https://open.spotify.com/embed/${id}?utm_source=generator&theme=0`}
+          width="100%"
+          height="100%"
+          frameBorder="0"
+          allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"
+          loading="lazy"
+          className="absolute inset-0 w-full h-full"
+        ></iframe>
+      );
+    }
+
+    // If we have oEmbed HTML (Twitter, Instagram, TikTok, etc.)
+    if (thought?.meta?.html) {
+      return (
+        <div className="w-full h-full overflow-auto flex items-start justify-center p-4 md:p-8 custom-scroll bg-black">
+           <div 
+             className="w-full max-w-[550px] bg-white rounded-2xl overflow-hidden shadow-2xl"
+             dangerouslySetInnerHTML={{ __html: thought.meta.html }} 
+           />
+        </div>
+      );
+    }
+
+    // If we have a direct video URL (captured from Microlink)
+    if (thought?.meta?.video_url) {
+      return (
+        <div className="w-full h-full flex items-center justify-center bg-black">
+          <video 
+            src={thought.meta.video_url} 
+            controls 
+            autoPlay 
+            className="max-w-full max-h-full shadow-2xl"
+          />
+        </div>
+      );
+    }
+
+    // Fallback: Full-size Image or Link Card
+    return (
+      <div className="absolute inset-0 flex flex-col items-center justify-center bg-black overflow-hidden">
+        {thought?.image ? (
+          <div className="w-full h-full flex items-center justify-center p-4">
+             <img 
+               src={thought.image} 
+               alt="Content" 
+               className="max-w-full max-h-full object-contain rounded-xl shadow-2xl border border-white/5" 
+             />
+          </div>
+        ) : (
+          <div className="flex flex-col items-center justify-center text-center p-10">
+            <div className={cn("w-24 h-24 rounded-3xl flex items-center justify-center border mb-6", `${config.themeColor} border-white/10 shadow-2xl`)}>
+              <Icon className={cn("w-10 h-10", config.color)} />
+            </div>
+            <h3 className="text-xl md:text-2xl font-bold text-white mb-2">{thought?.text || 'Untitled Link'}</h3>
+            <p className="text-sm text-slate-400 max-w-sm italic opacity-60">"{thought?.description || 'No description available'}"</p>
+          </div>
+        )}
+      </div>
+    );
+  };
+
   return (
     <AnimatePresence>
       {isVisible && thought && (
@@ -61,8 +174,8 @@ const EmbedFocusEditor: React.FC = () => {
             {/* Header */}
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center p-6 md:p-8 border-b border-white/5 bg-black/20 gap-4 md:gap-0">
               <div className="flex items-center gap-4 md:gap-6 w-full md:w-auto overflow-hidden">
-                <div className="w-10 h-10 md:w-12 md:h-12 bg-red-500/10 rounded-xl md:rounded-2xl flex items-center justify-center text-red-500 flex-shrink-0">
-                  <Youtube className="w-5 h-5 md:w-6 md:h-6" />
+                <div className={cn("w-10 h-10 md:w-12 md:h-12 rounded-xl md:rounded-2xl flex items-center justify-center flex-shrink-0 border border-white/5 shadow-xl", config.themeColor)}>
+                  <Icon className={cn("w-5 h-5 md:w-6 md:h-6", config.color)} />
                 </div>
                 <div className="flex-1 min-w-0">
                   <input 
@@ -70,27 +183,25 @@ const EmbedFocusEditor: React.FC = () => {
                     value={thought.text}
                     onChange={(e) => updateThought(thought.id, { text: e.target.value })}
                     className="bg-transparent text-xl md:text-2xl font-bold text-white outline-none border-none p-0 w-full truncate" 
-                    placeholder="Video Title"
+                    placeholder="Link Title"
                   />
                   <div className="flex items-center gap-2 mt-1 overflow-hidden">
                     {thought.description && (
-                       <span className="text-[9px] text-red-400 font-black uppercase tracking-widest px-2 py-0.5 bg-red-500/10 rounded-md border border-red-500/20 whitespace-nowrap">{thought.description}</span>
+                       <span className={cn("text-[9px] font-black uppercase tracking-widest px-2 py-0.5 rounded-md border whitespace-nowrap", config.color, config.themeColor, "border-current/20")}>{thought.description}</span>
                     )}
                     <p className="text-[9px] text-slate-500 uppercase font-black tracking-widest truncate opacity-60">{thought.content}</p>
                   </div>
                 </div>
               </div>
               <div className="flex items-center gap-3 w-full md:w-auto justify-end flex-shrink-0">
-                {videoId && (
-                  <a 
-                    href={`https://www.youtube.com/watch?v=${videoId}`} 
-                    target="_blank" 
-                    rel="noopener noreferrer"
-                    className="p-3 md:p-4 hover:bg-white/5 rounded-xl md:rounded-2xl text-slate-400 hover:text-white transition-all"
-                  >
-                    <ExternalLink className="w-5 h-5 md:w-6 md:h-6" />
-                  </a>
-                )}
+                <a 
+                  href={thought.content} 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="p-3 md:p-4 hover:bg-white/5 rounded-xl md:rounded-2xl text-slate-400 hover:text-white transition-all"
+                >
+                  <ExternalLink className="w-5 h-5 md:w-6 md:h-6" />
+                </a>
                 <button 
                   onClick={() => setActiveFocus(null, null)}
                   className="p-3 md:p-4 hover:bg-red-500/10 rounded-xl md:rounded-2xl text-slate-400 hover:text-red-400 transition-all"
@@ -102,25 +213,10 @@ const EmbedFocusEditor: React.FC = () => {
             
             {/* Player Area */}
             <div className="flex-1 bg-black relative min-h-0">
-              {videoId ? (
-                <iframe
-                  src={`https://www.youtube.com/embed/${videoId}?autoplay=1`}
-                  title="YouTube video player"
-                  frameBorder="0"
-                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-                  allowFullScreen
-                  className="absolute inset-0 w-full h-full"
-                ></iframe>
-              ) : (
-                <div className="absolute inset-0 flex flex-col items-center justify-center text-center p-10">
-                  <Youtube className="w-20 h-20 text-white/5 mb-6" />
-                  <h3 className="text-xl font-bold text-white/40 mb-2">No Video URL Found</h3>
-                  <p className="text-sm text-white/20 max-w-sm">Please paste a valid YouTube link in the thought settings to enable the player.</p>
-                </div>
-              )}
+              {renderPlayer()}
             </div>
 
-            {/* Stack Scroller (Now below video, glassmorphic) */}
+            {/* Stack Scroller */}
             <AnimatePresence>
               {stackItems.length > 0 && (
                 <motion.div 
@@ -130,32 +226,33 @@ const EmbedFocusEditor: React.FC = () => {
                 >
                   <div className="flex items-center justify-between mb-3 px-1">
                     <span className="text-[9px] font-black uppercase tracking-[0.2em] text-slate-500">Collection: {stack?.name}</span>
-                    <span className="text-[8px] font-bold text-slate-600 uppercase tracking-widest">{stackItems.length} items remaining</span>
+                    <span className="text-[8px] font-bold text-slate-600 uppercase tracking-widest">{stackItems.length + 1} items total</span>
                   </div>
                   
-                                    <div className="flex gap-3 overflow-x-auto custom-scroll pb-2 w-full snap-x" ref={scrollerRef}>
-                  
-                  
+                  <div className="flex gap-3 overflow-x-auto custom-scroll pb-2 w-full snap-x" ref={scrollerRef}>
                     {stackItems.map((item) => {
-                      const itemVideoId = item.type === 'embed' ? getYouTubeVideoId(item.content) : null;
-                      const thumb = itemVideoId 
-                        ? `https://img.youtube.com/vi/${itemVideoId}/mqdefault.jpg` 
+                      const itemInfo = getEmbedInfo(item.content);
+                      const itemConfig = PROVIDER_CONFIG[itemInfo.provider] || PROVIDER_CONFIG.unknown;
+                      const ItemIcon = itemConfig.icon;
+                      
+                      const thumb = itemInfo.provider === 'youtube' && itemInfo.id 
+                        ? `https://img.youtube.com/vi/${itemInfo.id}/mqdefault.jpg` 
                         : item.image;
 
                       return (
                         <button
                           key={item.id}
-                          onClick={() => setActiveFocus(item.id, item.type as any)}
+                          onClick={() => setActiveFocus(item.id, 'embed')}
                           className="flex-shrink-0 w-32 md:w-40 aspect-video rounded-xl overflow-hidden border border-white/5 hover:border-[var(--accent)]/50 transition-all group/item snap-start relative bg-white/[0.02]"
                         >
                           {thumb ? (
                             <img src={thumb} alt={item.text} className="w-full h-full object-cover opacity-50 group-hover/item:opacity-100 transition-opacity" />
                           ) : (
                             <div className="w-full h-full flex items-center justify-center">
-                              <Youtube className="w-5 h-5 text-white/10" />
+                              <ItemIcon className={cn("w-5 h-5 opacity-20", itemConfig.color)} />
                             </div>
                           )}
-                          <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent opacity-0 group-hover/item:opacity-100 transition-opacity flex items-end p-2">
+                          <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent opacity-0 group-hover/item:opacity-100 transition-opacity flex items-end p-2 text-left">
                             <p className="text-[8px] font-bold text-white truncate w-full">{item.text || "Untitled"}</p>
                           </div>
                         </button>
@@ -182,7 +279,7 @@ const EmbedFocusEditor: React.FC = () => {
                   </span>
                 )}
               </div>
-              <p className="text-[8px] md:text-[10px] uppercase font-black tracking-widest text-slate-600 italic">Embedded via YouTube Player API</p>
+              <p className="text-[8px] md:text-[10px] uppercase font-black tracking-widest text-slate-600 italic">Embedded via {config.label} Player API</p>
             </div>
           </motion.div>
         </motion.div>

@@ -71,8 +71,8 @@ const PricingModal: React.FC<PricingModalProps> = ({ isOpen, onClose }) => {
 
           <div className="space-y-6">
             {[
-              { title: 'Oracle (AI)', desc: 'Ask Oracle to help you research and organize your ideas.' },
-              { title: 'More Workspaces', desc: 'Create up to 8 different worlds (Free only has 3).' },
+              { title: 'Oracle AI', desc: 'Ask Oracle to help you generate, search and organize your ideas.' },
+              { title: 'More Workspaces', desc: 'Create up to 8 different spaces (Free only has 3).' },
               { title: 'Bigger Capacity', desc: 'Add up to 50 thoughts in every single space.' },
               { title: '400 Cloud Thoughts', desc: 'High-capacity sync for power users (Free is 60).' },
               { title: 'Priority Support', desc: 'Get help directly from the Cyberia development team.' }
