@@ -8,7 +8,7 @@
 
 - add support to instagram/facebook/reddit/twitter/spotify and popular plateforms embed support / links preview
 
-- add author field to the embed type (it contains the uploader in youtube, user in x,tiktok, instagram, artist in spotify etc... ) make all necessary changes
+- add author field to the embed type (it contains the uploader in youtube, user in x,tiktok, instagram, artist if its a song or user if its a playlist in spotify etc... ) make all necessary changes
 
 - maybe change ai chat on the left
 
@@ -27,7 +27,9 @@
 
 - add banner or some alert system to notify users
 
-- Shareable links (export to a readonly link you can share with others).
+- add codes to activate pro for a month single use
+
+- Shareable links for spaces (export to a readonly link you can share with others).
 
 
 Cyberia is where physics meets productivity. It’s a kinetic workspace that treats ideas as physical objects. Powered by The Oracle (Gemini AI), Cyberia can

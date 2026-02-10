@@ -186,7 +186,7 @@ const ThoughtNode: React.FC<ThoughtNodeProps> = React.memo(({ thought, registerE
                 dangerouslySetInnerHTML={{ __html: parsedContent as string }}
               />
             ) : (
-              <div className="h-0 group-hover:h-8 opacity-0 group-hover:opacity-100 transition-all duration-500 overflow-hidden flex items-center gap-2 px-3 rounded-xl bg-white/5 border border-white/5 w-fit">
+              <div className="flex items-center gap-2 px-3 h-8 rounded-xl bg-white/5 border border-white/5 w-fit">
                 <Type className="w-3.5 h-3.5 text-slate-500" />
                 <span className="text-[8px] font-black uppercase tracking-widest text-slate-500">Write Note...</span>
               </div>
@@ -460,7 +460,7 @@ const ThoughtNode: React.FC<ThoughtNodeProps> = React.memo(({ thought, registerE
 
       <div
         className={cn(
-          "thought-bulb-content group backdrop-blur-[20px] border p-6 rounded-[32px] flex flex-col gap-3 relative transition-all duration-300",
+          "thought-bulb-content group backdrop-blur-[20px] border p-4.5 rounded-3xl flex flex-col gap-2 relative transition-all duration-300",
           isSelected
             ? "border-[var(--accent)]/50 shadow-[0_0_40px_var(--accent-glow)] bg-[var(--node-bg)]/80"
             : "border-[var(--glass-border)] shadow-[0_10px_40px_rgba(0,0,0,0.5)] bg-[var(--node-bg)]/60",
@@ -517,7 +517,7 @@ const ThoughtNode: React.FC<ThoughtNodeProps> = React.memo(({ thought, registerE
           className={cn(
             "flex flex-col relative transition-all duration-300",
             thought.type === 'text' && "cursor-pointer rounded-xl overflow-hidden",
-            thought.type === 'text' && (thought.content || thought.description) ? "min-h-[80px] justify-center gap-3 mt-1" : "min-h-0 gap-0"
+            thought.type === 'text' && (thought.content || thought.description) ? "min-h-0 justify-center gap-2 mt-0.5" : "min-h-0 gap-0"
           )}
         >
           {thought.description && (
@@ -557,7 +557,7 @@ const ThoughtNode: React.FC<ThoughtNodeProps> = React.memo(({ thought, registerE
         <button
           onClick={handleLinkAction}
           className={cn(
-            "absolute bottom-4 right-4 p-2 rounded-xl transition-all z-10",
+            "absolute bottom-2.5 right-2.5 p-1.5 rounded-xl transition-all z-10",
             linkingSourceId === thought.id
               ? "bg-[var(--accent)] text-white shadow-[0_0_20px_var(--accent-glow)]"
               : "bg-white/5 text-slate-500 hover:text-white hover:bg-white/10 border border-white/5",

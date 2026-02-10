@@ -174,13 +174,10 @@ const Viewport: React.FC = () => {
     };
 
     const handleClick = (e: MouseEvent) => {
-      const s = getGlobalScale();
-      const lx = e.clientX / s;
-      const ly = e.clientY / s;
       const target = e.target as HTMLElement;
 
       // 5px rule for selection clearing: If they moved more than 5px, they were likely doing a marquee select
-      const dist = Math.sqrt(Math.pow(lx - selectionStartRef.current.x, 2) + Math.pow(ly - selectionStartRef.current.y, 2));
+      const dist = Math.sqrt(Math.pow(e.clientX - selectionStartRef.current.x, 2) + Math.pow(e.clientY - selectionStartRef.current.y, 2));
       if (dist > 5) return;
 
       // We want to unselect if the user clicks the "background" of the workspace, 
@@ -208,15 +205,11 @@ const Viewport: React.FC = () => {
         }
       }
 
-      const s = getGlobalScale();
-      const lx = e.clientX / s;
-      const ly = e.clientY / s;
-
       if (activeSpace?.mode === 'kanban') {
         let newY = transform.y - e.deltaY;
         if (newY > 0) newY = 0;
 
-        const viewHeight = window.innerHeight / s;
+        const viewHeight = window.innerHeight;
         const contentHeight = kanbanHeight.current + 100;
         const limit = Math.min(0, viewHeight - contentHeight);
 
@@ -228,11 +221,11 @@ const Viewport: React.FC = () => {
       } else {
         const delta = -e.deltaY;
         const newScale = Math.min(Math.max(0.1, transform.scale + delta * 0.001), 2);
-        const wx = (lx - transform.x) / transform.scale;
-        const wy = (ly - transform.y) / transform.scale;
+        const wx = (e.clientX - transform.x) / transform.scale;
+        const wy = (e.clientY - transform.y) / transform.scale;
         setTransform({
-          x: lx - wx * newScale,
-          y: ly - wy * newScale,
+          x: e.clientX - wx * newScale,
+          y: e.clientY - wy * newScale,
           scale: newScale,
         });
       }
@@ -283,19 +276,16 @@ const Viewport: React.FC = () => {
           y: mouseWorldPos.current.y
         };
 
-        const s = getGlobalScale();
-        const lx = lastMousePos.current.x;
-
         // Mode-specific logic
         if (activeSpace?.mode === 'kanban') {
-          const x = lx; // use logical x
-          const width = window.innerWidth / s;
+          const x = lastMousePos.current.x; // screen x
+          const width = window.innerWidth;
           if (x < width * 0.25) newThoughtProps.status = 'none';
           else if (x < width * 0.50) newThoughtProps.status = 'todo';
           else if (x < width * 0.75) newThoughtProps.status = 'doing';
           else newThoughtProps.status = 'done';
         } else if (activeSpace?.mode === 'calendar') {
-          const elements = document.elementsFromPoint(lastMousePos.current.rawX, lastMousePos.current.rawY);
+          const elements = document.elementsFromPoint(lastMousePos.current.x, lastMousePos.current.y);
           const cell = elements.find(el => (el as HTMLElement).classList.contains('cal-cell'));
           if (cell) {
             newThoughtProps.date = (cell as HTMLElement).dataset.date;
@@ -345,12 +335,8 @@ const Viewport: React.FC = () => {
       const files = Array.from(e.dataTransfer?.files || []);
       if (files.length === 0) return;
 
-      const s = getGlobalScale();
-      const lx = e.clientX / s;
-      const ly = e.clientY / s;
-
-      const dropX = (lx - transform.x) / transform.scale;
-      const dropY = (ly - transform.y) / transform.scale;
+      const dropX = (e.clientX - transform.x) / transform.scale;
+      const dropY = (e.clientY - transform.y) / transform.scale;
 
       for (const file of files) {
         if (file.size > 2 * 1024 * 1024) {
