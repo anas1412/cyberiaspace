@@ -459,7 +459,7 @@ const Inspector: React.FC = () => {
                                 if (metadata && metadata.title) {
                                   updateThought(thought.id, {
                                     text: metadata.title,
-                                    author: metadata.author_name || metadata.provider_name || "",
+                                    author: metadata.author_name || "",
                                     description: metadata.description || ""
                                   });
                                 }

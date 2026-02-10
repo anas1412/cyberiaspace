@@ -2,7 +2,7 @@ import React, { useRef, useEffect, useState, useMemo } from 'react';
 import { motion } from 'framer-motion';
 import { type Thought } from '../db';
 import { useStore } from '../store/useStore';
-import { Maximize2, Palette, Link as LinkIcon, Link2Off, Image as ImageIcon, Table, ListTodo, Type, Music, MessageCircle, Share2, Youtube, Play } from 'lucide-react';
+import { Maximize2, Palette, Link as LinkIcon, Link2Off, Image as ImageIcon, Table, ListTodo, Type, Music, MessageCircle, Share2, Youtube, Play, Twitter } from 'lucide-react';
 import { marked } from 'marked';
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
@@ -15,7 +15,7 @@ function cn(...inputs: ClassValue[]) {
 const PROVIDER_CONFIG: Record<string, { icon: any, color: string, label: string }> = {
   youtube: { icon: Youtube, color: '#ef4444', label: 'YouTube' },
   spotify: { icon: Music, color: '#1db954', label: 'Spotify' },
-  twitter: { icon: MessageCircle, color: '#1da1f2', label: 'Twitter' },
+  twitter: { icon: Twitter, color: '#1da1f2', label: 'Twitter' },
   reddit: { icon: MessageCircle, color: '#ff4500', label: 'Reddit' },
   facebook: { icon: Share2, color: '#1877f2', label: 'Facebook' },
   instagram: { icon: Share2, color: '#e1306c', label: 'Instagram' },
@@ -434,7 +434,10 @@ const ThoughtNode: React.FC<ThoughtNodeProps> = React.memo(({ thought, registerE
               </div>
             ) : (
               <div className="flex flex-col items-center gap-2 p-6 text-center">
-                <div className={cn("w-12 h-12 rounded-xl flex items-center justify-center border", `bg-[${config.color}]/10 border-[${config.color}]/20`)}>
+                <div
+                  className="w-12 h-12 rounded-xl flex items-center justify-center border"
+                  style={{ backgroundColor: `${config.color}15`, borderColor: `${config.color}30` }}
+                >
                   <Icon className="w-6 h-6" style={{ color: config.color }} />
                 </div>
                 <span className="text-[10px] font-black uppercase tracking-widest leading-tight" style={{ color: config.color }}>

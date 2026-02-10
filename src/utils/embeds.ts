@@ -128,31 +128,57 @@ export const fetchEmbedMeta = async (url: string): Promise<EmbedMeta> => {
     return null;
   };
 
-  // 2. Fetch Microlink data (usually better for direct video/image URLs)
-  const fetchMicrolink = async (): Promise<EmbedMeta | null> => {
+  // 2. Fetch rich metadata using our internal scraper (no rate limits)
+  const fetchInternalMetadata = async (): Promise<EmbedMeta | null> => {
     try {
-      const res = await fetch(`https://api.microlink.io?url=${encodeURIComponent(url)}`);
+      const res = await fetch(`/api/metadata?url=${encodeURIComponent(url)}`);
       if (res.ok) {
-        const result = await res.json();
-        if (result.status === 'success' && result.data) {
-          const ml = result.data;
-          return {
-            title: ml.title || "",
-            author_name: ml.author || ml.publisher || "",
-            thumbnail_url: ml.image?.url || ml.logo?.url || null,
-            video_url: ml.video?.url || null,
-            provider_name: ml.publisher || "",
-            description: ml.description || ""
-          };
-        }
+        const data = await res.json();
+        return {
+          title: data.title || "",
+          author_name: data.author || data.publisher || "",
+          thumbnail_url: data.image || null,
+          provider_name: data.publisher || "",
+          description: data.description || ""
+        };
       }
     } catch (err) {
-      console.warn(`[Embed Utils] Microlink failed:`, err);
+      console.warn(`[Embed Utils] Internal metadata fetch failed:`, err);
     }
     return null;
   };
 
-  // 3. YouTube-specific Search/Data fallback (for Description)
+  // 3. Twitter-specific high-fidelity extraction (bypasses bot protection)
+  const fetchTwitterMeta = async (): Promise<Partial<EmbedMeta> | null> => {
+    if (provider !== 'twitter') return null;
+    try {
+      const vxUrl = url.replace(/(twitter\.com|x\.com)/, 'api.vxtwitter.com');
+      const res = await fetch(vxUrl);
+      if (res.ok) {
+        const data = await res.json();
+        // Hierarchy: 1. Image 2. Video Thumbnail 3. User Profile
+        let mediaUrl = null;
+        if (data.media_extended?.[0]) {
+          const firstMedia = data.media_extended[0];
+          mediaUrl = firstMedia.thumbnail_url || firstMedia.url;
+        } else if (data.media_urls?.[0]) {
+          mediaUrl = data.media_urls[0];
+        }
+
+        return {
+          title: data.text ? (data.text.length > 60 ? data.text.substring(0, 60) + '...' : data.text) : "",
+          author_name: `${data.user_name} (@${data.user_screen_name})`,
+          thumbnail_url: mediaUrl || data.user_profile_image_url || null,
+          description: data.text || ""
+        };
+      }
+    } catch (err) {
+      console.warn(`[Embed Utils] Twitter VX fetch failed:`, err);
+    }
+    return null;
+  };
+
+  // 4. YouTube-specific Search/Data fallback (for Description)
   const fetchYouTubeSearch = async (): Promise<Partial<EmbedMeta> | null> => {
     if (provider !== 'youtube' || !videoId) return null;
     try {
@@ -174,23 +200,57 @@ export const fetchEmbedMeta = async (url: string): Promise<EmbedMeta> => {
   };
 
   // Run in parallel for speed
-  const [oData, mlData, ytSearchData] = await Promise.all([
+  const [oData, mlData, ytSearchData, twData] = await Promise.all([
     fetchOEmbed(),
-    fetchMicrolink(),
-    fetchYouTubeSearch()
+    fetchInternalMetadata(),
+    fetchYouTubeSearch(),
+    fetchTwitterMeta()
   ]);
+
+  // Refined author selection
+  const genericNames = ['spotify', 'youtube', 'twitter', 'x', 'instagram', 'facebook', 'tiktok', 'reddit'];
+
+  const getCleanAuthor = (name?: string) => {
+    if (!name) return "";
+    const clean = name.trim();
+    if (genericNames.includes(clean.toLowerCase())) return "";
+    return clean;
+  };
+
+  // Prioritize non-generic author names from all available sources
+  let authorName = "";
+  if (provider === 'spotify') {
+    authorName = oData?.author_name || "";
+  } else {
+    authorName = getCleanAuthor(twData?.author_name) ||
+      getCleanAuthor(oData?.author_name) ||
+      getCleanAuthor(ytSearchData?.author_name) ||
+      getCleanAuthor(mlData?.author_name) ||
+      "";
+  }
+
+  let description = twData?.description || oData?.description || ytSearchData?.description || mlData?.description || "";
+  let title = twData?.title || oData?.title || mlData?.title || "";
+
+  // Twitter/X Specific: If title is missing, try to construct from handle
+  if (provider === 'twitter' && !title) {
+    const handleMatch = url.match(/(?:twitter\.com|x\.com)\/([a-zA-Z0-9_]+)/);
+    if (handleMatch) title = `@${handleMatch[1]} on X`;
+  }
+
+  // Final fallback for title
+  if (!title) title = url;
 
   // Deep merged result
   const finalData: EmbedMeta = {
     ...oData,
-    title: oData?.title || mlData?.title || url,
-    author_name: oData?.author_name || ytSearchData?.author_name || mlData?.author_name || "",
-    thumbnail_url: oData?.thumbnail_url || mlData?.thumbnail_url || undefined,
-    // Only trust video_url if oEmbed explicitly provides it, 
-    // or if we are on a known video platform (YouTube/TikTok)
-    video_url: (oData?.video_url || (['youtube', 'tiktok'].includes(provider) ? mlData?.video_url : undefined)) || undefined,
+    title,
+    author_name: authorName,
+    thumbnail_url: twData?.thumbnail_url || oData?.thumbnail_url || mlData?.thumbnail_url || undefined,
+    // Fix: Include 'twitter' in video-capable providers
+    video_url: (oData?.video_url || (['youtube', 'tiktok', 'twitter'].includes(provider) ? mlData?.video_url : undefined)) || undefined,
     provider_name: oData?.provider_name || mlData?.provider_name || "",
-    description: oData?.description || ytSearchData?.description || mlData?.description || "",
+    description: description,
     html: oData?.html || undefined
   };
 
