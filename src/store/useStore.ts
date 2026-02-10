@@ -29,10 +29,10 @@ interface CyberiaState {
   // Oracle (AI) State
   oracleMode: boolean; // True = AI Enabled
   isChatOpen: boolean;
-  
+
   // Initialization
   init: () => Promise<void>;
-  
+
   // Actions
   setTheme: (theme: 'cyberia' | 'sakura' | 'neon') => void;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -41,7 +41,7 @@ interface CyberiaState {
   // AI Actions
   toggleOracleMode: () => void;
   setChatOpen: (isOpen: boolean) => void;
-  
+
   // Space Actions
   setActiveSpace: (id: string) => void;
   setCalendarViewDate: (date: Date) => void;
@@ -50,7 +50,7 @@ interface CyberiaState {
   deleteSpace: (id: string) => Promise<void>;
   reorderSpaces: (spaces: Space[]) => Promise<void>;
   saveSpaceTransform: (id: string, transform: { x: number; y: number; scale: number }) => Promise<void>;
-  
+
   // Thought Actions
   addThought: (thought: Partial<Thought>) => Promise<number>;
   updateThought: (id: number, updates: Partial<Thought>) => Promise<void>;
@@ -75,18 +75,18 @@ interface CyberiaState {
   updateStack: (id: string, updates: Partial<Stack>) => Promise<void>;
   deleteStack: (id: string) => Promise<void>;
   cleanupStacks: () => Promise<void>;
-  
+
   // Data Lifecycle
   exportData: () => Promise<void>;
   importData: (data: File | unknown) => Promise<void>;
   clearWorkspace: () => Promise<void>;
-  
+
   // Lightbox
   isLightboxOpen: boolean;
   lightboxImage: string | null;
   openLightbox: (image: string) => void;
   closeLightbox: () => void;
-  
+
   // Transform State (Moved from Viewport)
   transform: { x: number; y: number; scale: number };
   setTransform: (transform: { x: number; y: number; scale: number }) => void;
@@ -134,7 +134,7 @@ export const useStore = create<CyberiaState>((set, get) => ({
     const plan = useAuthStore.getState().user?.plan as SubscriptionPlan;
     return PLAN_CONFIG[plan] || PLAN_CONFIG.free;
   },
-  
+
   transform: { x: 0, y: 0, scale: 1 },
   history: [],
   historyIndex: -1,
@@ -149,11 +149,13 @@ export const useStore = create<CyberiaState>((set, get) => ({
     const centerY = window.innerHeight / 2;
     const wx = (centerX - transform.x) / transform.scale;
     const wy = (centerY - transform.y) / transform.scale;
-    set({ transform: {
-      x: centerX - wx * newScale,
-      y: centerY - wy * newScale,
-      scale: newScale
-    }});
+    set({
+      transform: {
+        x: centerX - wx * newScale,
+        y: centerY - wy * newScale,
+        scale: newScale
+      }
+    });
   },
   zoomOut: () => {
     const { transform } = get();
@@ -162,11 +164,13 @@ export const useStore = create<CyberiaState>((set, get) => ({
     const centerY = window.innerHeight / 2;
     const wx = (centerX - transform.x) / transform.scale;
     const wy = (centerY - transform.y) / transform.scale;
-    set({ transform: {
-      x: centerX - wx * newScale,
-      y: centerY - wy * newScale,
-      scale: newScale
-    }});
+    set({
+      transform: {
+        x: centerX - wx * newScale,
+        y: centerY - wy * newScale,
+        scale: newScale
+      }
+    });
   },
 
   pushHistory: () => {
@@ -175,7 +179,7 @@ export const useStore = create<CyberiaState>((set, get) => ({
     // Only push if different from last
     const last = newHistory[newHistory.length - 1];
     if (last && JSON.stringify(last) === JSON.stringify(thoughts)) return;
-    
+
     newHistory.push(JSON.parse(JSON.stringify(thoughts)));
     if (newHistory.length > 50) newHistory.shift(); // Limit history
     set({ history: newHistory, historyIndex: newHistory.length - 1 });
@@ -184,32 +188,32 @@ export const useStore = create<CyberiaState>((set, get) => ({
   undo: async () => {
     const { history, historyIndex, activeSpaceId } = get();
     if (historyIndex <= 0 || !activeSpaceId) return;
-    
+
     const newIndex = historyIndex - 1;
     const prevThoughts = history[newIndex];
-    
+
     // Sync to DB
     await db.transaction('rw', db.thoughts, async () => {
       await db.thoughts.where('spaceId').equals(activeSpaceId).delete();
       await db.thoughts.bulkAdd(prevThoughts);
     });
-    
+
     set({ thoughts: prevThoughts, historyIndex: newIndex });
   },
 
   redo: async () => {
     const { history, historyIndex, activeSpaceId } = get();
     if (historyIndex >= history.length - 1 || !activeSpaceId) return;
-    
+
     const newIndex = historyIndex + 1;
     const nextThoughts = history[newIndex];
-    
+
     // Sync to DB
     await db.transaction('rw', db.thoughts, async () => {
       await db.thoughts.where('spaceId').equals(activeSpaceId).delete();
       await db.thoughts.bulkAdd(nextThoughts);
     });
-    
+
     set({ thoughts: nextThoughts, historyIndex: newIndex });
   },
 
@@ -249,7 +253,7 @@ export const useStore = create<CyberiaState>((set, get) => ({
     set({ isSpaceLoading: true });
     // Initialize Auth
     useAuthStore.getState().initAuth();
-    
+
     // Apply theme on init
     const savedTheme = localStorage.getItem('cyberia-theme') || 'cyberia';
     document.body.setAttribute('data-theme', savedTheme);
@@ -257,7 +261,7 @@ export const useStore = create<CyberiaState>((set, get) => ({
     await get().refreshSpaces();
     await get().refreshTotalThoughtCount();
     const { spaces } = get();
-    
+
     if (spaces.length === 0) {
       const workspaceId = 's-workspace';
       const onboardingId = 's-onboarding';
@@ -283,7 +287,7 @@ export const useStore = create<CyberiaState>((set, get) => ({
       await get().refreshSpaces();
       set({ activeSpaceId: onboardingId });
       localStorage.setItem('cyberia-active-space-id', onboardingId);
-      
+
       const cx = window.innerWidth / 2;
       const cy = window.innerHeight / 2;
 
@@ -291,59 +295,67 @@ export const useStore = create<CyberiaState>((set, get) => ({
       const basicsId = 'st-basics';
       await db.stacks.add({
         id: basicsId,
-        name: 'Core Concepts',
+        name: 'The Basics',
         color: 'hsla(230, 80%, 60%, 1)',
         spaceId: onboardingId
       });
 
       await get().addThought({
-        text: 'Welcome to Cyberia',
-        content: 'This is a **kinetic spatial workspace**. Thoughts are physical objects that interact with each other. \n\nDrag nodes to move them, or let the physics engine form natural clusters.',
+        text: 'Welcome to Cyberia!',
+        content: 'Think of this as a digital desk. You can move your notes anywhere you like. \n\n**Try it:** Drag this note around!',
         x: cx - 400, y: cy - 200, priority: 'high', stackId: basicsId,
         status: 'done',
         spaceId: onboardingId
       });
 
       await get().addThought({
-        text: 'The Art of Interaction',
-        content: 'Click a node to **Edit**. \n\nGive it a gentle pull to **Move**. Cyberia distinguishes between your intent to refine and your intent to organize automatically.',
+        text: 'Move & Group',
+        content: 'If you move two notes close to each other, they will form a **Stack** (like the one these notes are in). \n\nThis helps you keep related ideas together naturally.',
         x: cx - 400, y: cy, priority: 'medium', stackId: basicsId,
         status: 'doing',
         spaceId: onboardingId
       });
 
       await get().addThought({
-        text: 'Morphing Views',
-        content: 'Switch between views in the top right: \n\n- **Spatial:** Free-form physics playground. \n- **Kanban:** Structured columnar workflow. \n- **Calendar:** Time-based stacking grid. \n\nYour data adapts to the shape you need.',
+        text: 'Click to Edit',
+        content: 'Click any note to open it. You can change the text, add a checklist, or even create a table. \n\nEverything saves automatically.',
         x: cx - 400, y: cy + 200, priority: 'medium', stackId: basicsId,
         status: 'todo',
         spaceId: onboardingId
       });
 
-      // STACK 2: MEDIA & COLLECTIONS (PURPLE)
+      await get().addThought({
+        text: 'Quick Start Guide',
+        content: `# Getting Started\n\n1. **Move Things**: Drag any note to organize your space.\n2. **Change View**: Use the buttons in the top-right to see your work as a Map, a Board, or a Calendar.\n3. **Create**: Double-click anywhere on the empty space to add a new note.\n4. **Organize**: Use the 'Link' button on a note to connect it to another one.\n\nEnjoy your new workspace!`,
+        x: cx + 650, y: cy + 450, priority: 'high', stackId: basicsId,
+        status: 'todo',
+        spaceId: onboardingId
+      });
+
+      // STACK 2: CONTENT (PURPLE)
       const mediaId = 'st-media';
       await db.stacks.add({
         id: mediaId,
-        name: 'Media & Collections',
+        name: 'Adding Content',
         color: 'hsla(280, 80%, 65%, 1)',
         spaceId: onboardingId
       });
 
       await get().addThought({
-        text: 'Cyberia - An Epic Ambient Cyberpunk Journey',
+        text: 'Watch Videos',
         type: 'embed',
         content: 'https://youtu.be/P6kS_CD9H6I',
-        description: 'Cyberia supports full YouTube integration. Click to watch the video, or drag the node to move it around your workspace.',
+        description: 'You can paste links from YouTube, Spotify, and more to see them directly on your board.',
         x: cx + 400, y: cy - 250, priority: 'low', stackId: mediaId,
         status: 'doing',
         spaceId: onboardingId
       });
 
       await get().addThought({
-        text: 'Visual Ideas',
+        text: 'Add Images',
         type: 'image',
         image: 'https://media.tenor.com/v-d5E2Xnv_sAAAAM/lain-serial-experiments-lain.gif',
-        description: 'Use images and GIFs to visualize your ideas. Cyberia’s spatial canvas helps you organize and explore thoughts in a multidimensional way.',
+        description: 'Paste or drag images here to keep your visual ideas organized.',
         x: cx + 400, y: cy + 50, priority: 'medium', stackId: mediaId,
         status: 'done',
         spaceId: onboardingId
@@ -351,9 +363,7 @@ export const useStore = create<CyberiaState>((set, get) => ({
 
       await get().addThought({
         text: 'Private & Secure',
-        type: 'image',
-        image: 'https://media.tenor.com/40W5BiKcSBEAAAAM/serial-experiments-lain-police.gif',
-        description: 'Your privacy is our priority. All your data is stored locally in your browser and never leaves your device without your permission.',
+        content: 'Your notes are private by default. They are stored in your browser and never leave your device unless you choose to sync them.',
         x: cx + 650, y: cy - 100, priority: 'low', stackId: mediaId,
         status: 'todo',
         spaceId: onboardingId
@@ -361,28 +371,28 @@ export const useStore = create<CyberiaState>((set, get) => ({
 
       await get().addThought({
         text: 'README',
-        content: `# Cyberia: The Kinetic Mind\n\nDesigned for non-linear thinkers, visionaries, and digital architects. We believe productivity shouldn't feel like a spreadsheet. It should feel like a world.\n\n### 1. Kinetic Architecture\nIdeas here have mass, velocity, and gravity. Using our custom physics engine, your thoughts form natural clusters—**Stacks**—based on your internal logic.\n\n### 2. Multi-Dimensional Views\nInformation is fluid. Switch between **Spatial**, **Kanban**, and **Calendar** modes without losing context.\n\n### 3. Rich Media & Tools\nCreate **Task Lists**, **Structured Tables**, **Freehand Drawings**, and **Image Bulbs**. You can even **Embed YouTube** videos directly.\n\n### 4. Oracle (AI)\nPowered by Gemini, **Oracle** (${DEFAULT_MODEL}) is your Pro spatial assistant. It can research the web, generate ideas, and help you organize your mental landscape.\n\n### 5. Cloud Sync & Security\nYour mind is private by default. However, you can **Connect your Google Account** to sync your data across devices securely.\n\n### 6. Power User Features\nTake control with **Multi-selection**, **History (Undo/Redo)**, and **Universal Search**. Customize your experience with **Themes** and use **Import/Export** for full data ownership.\n\n---\n*Welcome to the Wired.*`,
+        content: `# Cyberia: The Kinetic Mind\n\nDesigned for non-linear thinkers, visionaries, and digital architects. We believe productivity shouldn't feel like a spreadsheet. It should feel like a world.\n\n### 1. Kinetic Architecture\nIdeas here have mass, velocity, and gravity. Using our custom physics engine, your thoughts form natural clusters—**Stacks**—based on your internal logic.\n\n### 2. Multi-Dimensional Views\nInformation is fluid. Switch between **Spatial**, **Kanban**, and **Calendar** modes without losing context.\n\n### 3. Rich Media & Tools\nCreate **Task Lists**, **Structured Tables**, **Freehand Drawings**, and **Image Bulbs**. You can even **Embed YouTube** videos directly.\n\n### 4. Oracle (AI)\nPowered by Gemini, **Oracle** (gemini-2.5-flash) is your Pro spatial assistant. It can research the web, generate ideas, and help you organize your mental landscape.\n\n### 5. Cloud Sync & Security\nYour mind is private by default. However, you can **Connect your Google Account** to sync your data across devices securely.\n\n### 6. Power User Features\nTake control with **Multi-selection**, **History (Undo/Redo)**, and **Universal Search**. Customize your experience with **Themes** and use **Import/Export** for full data ownership.\n\n---\n*Welcome to the Cyber Space.*`,
         x: cx + 650, y: cy + 150, priority: 'urgent', stackId: mediaId,
         status: 'done',
         spaceId: onboardingId
       });
 
-      // STACK 3: PRODUCTIVITY (AMBER)
+      // STACK 3: TOOLS (AMBER)
       const toolsId = 'st-tools';
       await db.stacks.add({
         id: toolsId,
-        name: 'Deep Tools',
+        name: 'Smart Tools',
         color: 'hsla(40, 90%, 55%, 1)',
         spaceId: onboardingId
       });
 
       await get().addThought({
-        text: 'Task Management',
+        text: 'Task Lists',
         type: 'tasks',
         tasks: [
-          { text: 'Double-click to expand', done: true },
-          { text: 'Drag tasks to reorder', done: false },
-          { text: 'Mark items as done', done: false }
+          { text: 'Try dragging this task', done: true },
+          { text: 'Add a new item', done: false },
+          { text: 'Check it off', done: false }
         ],
         x: cx, y: cy + 300, priority: 'high', stackId: toolsId,
         status: 'todo',
@@ -390,13 +400,12 @@ export const useStore = create<CyberiaState>((set, get) => ({
       });
 
       await get().addThought({
-        text: 'Structured Tables',
+        text: 'Simple Tables',
         type: 'table',
         table: [
-          ['Feature', 'Status'],
-          ['Physics', 'Active'],
-          ['Vision', 'Online'],
-          ['Stacks', 'Unique']
+          ['Item', 'Status'],
+          ['Project A', 'Active'],
+          ['Project B', 'Planning']
         ],
         x: cx + 250, y: cy + 400, priority: 'none', stackId: toolsId,
         status: 'todo',
@@ -409,7 +418,7 @@ export const useStore = create<CyberiaState>((set, get) => ({
     } else {
       const savedSpaceId = localStorage.getItem('cyberia-active-space-id');
       const spaceExists = savedSpaceId ? spaces.find(s => s.id === savedSpaceId) : null;
-      
+
       if (spaceExists) {
         get().setActiveSpace(savedSpaceId!);
       } else {
@@ -450,7 +459,7 @@ export const useStore = create<CyberiaState>((set, get) => ({
     localStorage.setItem('cyberia-active-space-id', id);
     const space = get().spaces.find(s => s.id === id);
     const updates: any = { activeSpaceId: id, thoughts: [], stacks: [], isSpaceLoading: true, history: [], historyIndex: -1 };
-    
+
     if (space && space.mode === 'spatial') {
       updates.transform = {
         x: space.transformX ?? 0,
@@ -473,7 +482,7 @@ export const useStore = create<CyberiaState>((set, get) => ({
   addSpace: async (name) => {
     const { spaces } = get();
     const limits = get().getLimits();
-    
+
     if (spaces.length >= limits.MAX_SPACES) {
       useModalStore.getState().openModal({
         title: 'Limit Reached',
@@ -506,14 +515,14 @@ export const useStore = create<CyberiaState>((set, get) => ({
   deleteSpace: async (id) => {
     const { spaces, activeSpaceId } = get();
     const deleteIndex = spaces.findIndex(s => s.id === id);
-    
+
     await db.spaces.delete(id);
     await db.thoughts.where('spaceId').equals(id).delete();
     await db.stacks.where('spaceId').equals(id).delete();
     await get().refreshSpaces();
-    
+
     const updatedSpaces = get().spaces;
-    
+
     if (updatedSpaces.length > 0) {
       if (id === activeSpaceId) {
         // Find the most logical 'next' space: 
@@ -536,7 +545,7 @@ export const useStore = create<CyberiaState>((set, get) => ({
   saveSpaceTransform: async (id, transform) => {
     const { spaces } = get();
     const space = spaces.find(s => s.id === id);
-    
+
     // SAFETY: Never save the transform if we aren't in spatial mode.
     // This prevents structural view resets from overwriting spatial coordinates.
     if (!space || space.mode !== 'spatial') return;
@@ -639,7 +648,7 @@ export const useStore = create<CyberiaState>((set, get) => ({
         authStore.syncData();
       }
     }
-    
+
     return result as number;
   },
 
@@ -697,7 +706,7 @@ export const useStore = create<CyberiaState>((set, get) => ({
     await db.thoughts.delete(id);
     await get().refreshThoughts();
     await get().refreshTotalThoughtCount();
-    
+
     if (affectedStackId) {
       await get().cleanupStacks();
     }
@@ -721,7 +730,7 @@ export const useStore = create<CyberiaState>((set, get) => ({
   deleteThoughts: async (ids) => {
     if (!ids || ids.length === 0) return;
     const { thoughts, selectedThoughtId, selectedThoughtIds } = get();
-    
+
     const affectedStackIds = Array.from(new Set(
       thoughts.filter(t => ids.includes(t.id)).map(t => t.stackId).filter(Boolean)
     )) as string[];
@@ -729,7 +738,7 @@ export const useStore = create<CyberiaState>((set, get) => ({
     await db.thoughts.bulkDelete(ids);
     await get().refreshThoughts();
     await get().refreshTotalThoughtCount();
-    
+
     if (affectedStackIds.length > 0) {
       await get().cleanupStacks();
     }
@@ -755,7 +764,7 @@ export const useStore = create<CyberiaState>((set, get) => ({
 
     // 1. Get all nodes in current space sorted by current layer
     const sorted = [...thoughts].sort((a, b) => (a.layer || 0) - (b.layer || 0));
-    
+
     // 2. Remove the target node from its current position
     const filtered = sorted.filter(t => t.id !== id);
     const target = thoughts.find(t => t.id === id);
@@ -780,7 +789,7 @@ export const useStore = create<CyberiaState>((set, get) => ({
 
     // 1. Get all nodes in current space sorted by current layer
     const sorted = [...thoughts].sort((a, b) => (a.layer || 0) - (b.layer || 0));
-    
+
     // 2. Remove the target node from its current position
     const filtered = sorted.filter(t => t.id !== id);
     const target = thoughts.find(t => t.id === id);
@@ -800,14 +809,14 @@ export const useStore = create<CyberiaState>((set, get) => ({
   },
 
   setSelectedThoughtId: (id) => {
-    set({ 
-      selectedThoughtId: id, 
-      selectedThoughtIds: id ? [id] : [] 
+    set({
+      selectedThoughtId: id,
+      selectedThoughtIds: id ? [id] : []
     });
   },
 
   setSelectedThoughtIds: (ids) => {
-    set({ 
+    set({
       selectedThoughtIds: ids,
       selectedThoughtId: ids.length === 1 ? ids[0] : null,
       isInspectorOpen: ids.length === 1
@@ -817,7 +826,7 @@ export const useStore = create<CyberiaState>((set, get) => ({
   toggleThoughtSelection: (id) => {
     const { selectedThoughtIds, selectedThoughtId } = get();
     let currentIds = [...selectedThoughtIds];
-    
+
     // If we have a single selectedThoughtId that isn't in selectedThoughtIds yet, add it
     if (selectedThoughtId && !currentIds.includes(selectedThoughtId)) {
       currentIds.push(selectedThoughtId);
@@ -829,8 +838,8 @@ export const useStore = create<CyberiaState>((set, get) => ({
     } else {
       newIds = [...currentIds, id];
     }
-    
-    set({ 
+
+    set({
       selectedThoughtIds: newIds,
       selectedThoughtId: newIds.length === 1 ? newIds[0] : null,
       isInspectorOpen: newIds.length === 1
@@ -844,14 +853,14 @@ export const useStore = create<CyberiaState>((set, get) => ({
   deleteSelectedThoughts: async () => {
     const { selectedThoughtIds, thoughts } = get();
     if (selectedThoughtIds.length === 0) return;
-    
+
     const affectedStackIds = Array.from(new Set(
       thoughts.filter(t => selectedThoughtIds.includes(t.id)).map(t => t.stackId).filter(Boolean)
     )) as string[];
 
     await db.thoughts.bulkDelete(selectedThoughtIds);
     await get().refreshThoughts();
-    
+
     if (affectedStackIds.length > 0) {
       await get().cleanupStacks();
     }
@@ -873,13 +882,13 @@ export const useStore = create<CyberiaState>((set, get) => ({
     if (existingStackIds.length > 0) {
       // MERGE: Move everything to the first stack found
       targetStackId = existingStackIds[0];
-      
+
       // Update all thoughts in the selection to the targetStackId
       // AND update all thoughts that were in the other stacks to the targetStackId
       await db.transaction('rw', db.thoughts, db.stacks, async () => {
         // 1. Update thoughts in selection
         await db.thoughts.where('id').anyOf(selectedThoughtIds).modify({ stackId: targetStackId });
-        
+
         // 2. Update thoughts in other merged stacks
         if (existingStackIds.length > 1) {
           const otherStackIds = existingStackIds.slice(1);
@@ -930,10 +939,10 @@ export const useStore = create<CyberiaState>((set, get) => ({
     await db.transaction('rw', db.thoughts, db.stacks, async () => {
       const allThoughts = await db.thoughts.where('spaceId').equals(activeSpaceId).toArray();
       const allStacks = await db.stacks.where('spaceId').equals(activeSpaceId).toArray();
-      
+
       for (const stack of allStacks) {
         const stackThoughts = allThoughts.filter(t => t.stackId === stack.id);
-        
+
         // If 0 or 1 thoughts remain, the stack is invalid
         if (stackThoughts.length < 2) {
           if (stackThoughts.length === 1) {
@@ -963,7 +972,7 @@ export const useStore = create<CyberiaState>((set, get) => ({
 
     const newStackId = 'st-' + Date.now();
     const randomHue = Math.floor(Math.random() * 360);
-    
+
     await db.stacks.add({
       id: newStackId,
       name: trimmedName,
@@ -1098,7 +1107,7 @@ export const useStore = create<CyberiaState>((set, get) => ({
 
       // Preserve auth and settings, clear only workspace state
       localStorage.removeItem('cyberia-active-space-id');
-      
+
       window.location.reload();
     } catch (err) {
       console.error('Clear failed:', err);

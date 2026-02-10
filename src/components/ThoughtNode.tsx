@@ -179,28 +179,20 @@ const ThoughtNode: React.FC<ThoughtNodeProps> = React.memo(({ thought, registerE
       case 'text': {
         const hasContent = thought.content && thought.content.trim().length > 0;
         return (
-          <div data-trigger="text" className="relative group/text overflow-hidden rounded-xl prevent-drag cursor-pointer pt-1">
-            <div className={cn("overflow-hidden relative", hasContent && "max-h-[140px]")}>
-              {hasContent ? (
-                <div
-                  className="markdown-body text-[11px] leading-relaxed text-slate-300/90"
-                  dangerouslySetInnerHTML={{ __html: parsedContent as string }}
-                />
-              ) : (
-                <div className="opacity-0 group-hover/text:opacity-100 transition-all duration-500 flex items-center gap-2 py-1.5 px-3 rounded-xl bg-white/5 border border-white/5 w-fit">
-                  <Type className="w-3.5 h-3.5 text-slate-500" />
-                  <span className="text-[8px] font-black uppercase tracking-widest text-slate-500">Write Note...</span>
-                </div>
-              )}
-              {hasContent && thought.content.length > 150 && (
-                <div className="absolute bottom-0 left-0 right-0 h-16 bg-gradient-to-t from-[var(--bg-main)] via-[var(--bg-main)]/80 to-transparent pointer-events-none" />
-              )}
-            </div>
-            {hasContent && thought.content.length > 150 && (
-              <div className="absolute bottom-1 left-1/2 -translate-x-1/2 flex flex-col items-center gap-1 opacity-40 group-hover/text:opacity-100 transition-opacity">
-                <div className="w-8 h-0.5 bg-white/10 rounded-full" />
-                <span className="text-[8px] font-black uppercase tracking-[0.2em] text-white/40">Open Note</span>
+          <div className={cn("overflow-hidden relative", hasContent && "max-h-[140px]")}>
+            {hasContent ? (
+              <div
+                className="markdown-body text-[11px] leading-relaxed text-slate-300/90"
+                dangerouslySetInnerHTML={{ __html: parsedContent as string }}
+              />
+            ) : (
+              <div className="h-0 group-hover:h-8 opacity-0 group-hover:opacity-100 transition-all duration-500 overflow-hidden flex items-center gap-2 px-3 rounded-xl bg-white/5 border border-white/5 w-fit">
+                <Type className="w-3.5 h-3.5 text-slate-500" />
+                <span className="text-[8px] font-black uppercase tracking-widest text-slate-500">Write Note...</span>
               </div>
+            )}
+            {hasContent && thought.content.length > 150 && (
+              <div className="absolute bottom-0 left-0 right-0 h-16 bg-gradient-to-t from-[var(--bg-main)] via-[var(--bg-main)]/80 to-transparent pointer-events-none" />
             )}
           </div>
         );
@@ -468,7 +460,7 @@ const ThoughtNode: React.FC<ThoughtNodeProps> = React.memo(({ thought, registerE
 
       <div
         className={cn(
-          "thought-bulb-content backdrop-blur-[20px] border p-6 rounded-[32px] flex flex-col gap-3 relative transition-all duration-300",
+          "thought-bulb-content group backdrop-blur-[20px] border p-6 rounded-[32px] flex flex-col gap-3 relative transition-all duration-300",
           isSelected
             ? "border-[var(--accent)]/50 shadow-[0_0_40px_var(--accent-glow)] bg-[var(--node-bg)]/80"
             : "border-[var(--glass-border)] shadow-[0_10px_40px_rgba(0,0,0,0.5)] bg-[var(--node-bg)]/60",
@@ -519,10 +511,32 @@ const ThoughtNode: React.FC<ThoughtNodeProps> = React.memo(({ thought, registerE
           </div>
         </div>
 
-        {thought.description && (
-          <p className="text-[10px] text-[var(--text-dimmed)] italic pr-10">{thought.description}</p>
-        )}
-        {renderContent()}
+        {/* Content Area: Clickable for text thoughts */}
+        <div
+          data-trigger={thought.type === 'text' ? 'text' : undefined}
+          className={cn(
+            "flex flex-col relative transition-all duration-300",
+            thought.type === 'text' && "cursor-pointer rounded-xl overflow-hidden",
+            thought.type === 'text' && (thought.content || thought.description) ? "min-h-[80px] justify-center gap-3 mt-1" : "min-h-0 gap-0"
+          )}
+        >
+          {thought.description && (
+            <p className="text-[10px] text-[var(--text-dimmed)] italic pr-10">{thought.description}</p>
+          )}
+          {renderContent()}
+
+          {/* Expand Icon Overlay (Only for text thoughts with content) */}
+          {thought.type === 'text' && thought.content && thought.content.trim().length > 0 && (
+            <div className="absolute inset-0 bg-[var(--accent)]/10 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center pointer-events-none">
+              <button
+                onClick={(e) => { e.stopPropagation(); setActiveFocus(thought.id, 'text'); }}
+                className="pointer-events-auto bg-[var(--accent)] text-white p-2 rounded-lg shadow-xl transform scale-90 group-hover:scale-100 transition-all hover:scale-110 active:scale-95"
+              >
+                <Maximize2 className="w-4 h-4" />
+              </button>
+            </div>
+          )}
+        </div>
 
         {stack && (
           <div className="flex items-center gap-2 mt-1">

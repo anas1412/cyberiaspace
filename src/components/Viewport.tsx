@@ -30,13 +30,13 @@ const Viewport: React.FC = () => {
   const transform = useStore((state) => state.transform);
   const setTransform = useStore((state) => state.setTransform);
   const isSpaceLoading = useStore((state) => state.isSpaceLoading);
-  
+
   const { openModal } = useModalStore();
   const [isGrabbing, setIsGrabbing] = useState(false);
   const [isDraggingFile, setIsDraggingFile] = useState(false);
   const [selectionRect, setSelectionRect] = useState<{ x: number, y: number, w: number, h: number } | null>(null);
-  
-  const lastMousePos = useRef({ x: 0, y: 0 });
+
+  const lastMousePos = useRef<{ x: number, y: number, rawX: number, rawY: number }>({ x: 0, y: 0, rawX: 0, rawY: 0 });
   const mouseWorldPos = useRef({ x: 0, y: 0 });
   const isPanningRef = useRef(false);
   const isSelectingRef = useRef(false);
@@ -46,6 +46,14 @@ const Viewport: React.FC = () => {
 
   const { registerElement, registerWorld, registerGrid, handleMouseDown, isDragging, kanbanHeight } = usePhysics(canvasRef, transform);
 
+  // Helper for Responsive Scaling (Global Scale from index.css)
+  const getGlobalScale = () => {
+    const body = document.querySelector('.app-body') || document.body;
+    const style = window.getComputedStyle(body);
+    const m = new DOMMatrix(style.transform);
+    return m.a || 1;
+  };
+
   // Save transform when it changes (Debounced)
   useEffect(() => {
     if (activeSpace?.mode === 'spatial' && activeSpaceId) {
@@ -54,7 +62,7 @@ const Viewport: React.FC = () => {
         saveSpaceTransform(activeSpaceId, transform);
       }, 1000);
     }
-    return () => { 
+    return () => {
       if (saveTimeoutRef.current) {
         window.clearTimeout(saveTimeoutRef.current);
         if (activeSpace?.mode === 'spatial' && activeSpaceId) {
@@ -66,12 +74,16 @@ const Viewport: React.FC = () => {
 
   useEffect(() => {
     const handleMouseDownLocal = (e: MouseEvent) => {
+      const s = getGlobalScale();
+      const lx = e.clientX / s;
+      const ly = e.clientY / s;
+
       const isMiddleClick = e.button === 1;
       const isAltLeftClick = e.button === 0 && e.altKey;
       const isLeftClick = e.button === 0 && !e.altKey;
 
       if (isLeftClick) {
-        selectionStartRef.current = { x: e.clientX, y: e.clientY };
+        selectionStartRef.current = { x: lx, y: ly };
       }
 
       if (
@@ -81,7 +93,7 @@ const Viewport: React.FC = () => {
         if (isMiddleClick || isAltLeftClick) {
           isPanningRef.current = true;
           setIsGrabbing(true);
-          lastMousePos.current = { x: e.clientX, y: e.clientY };
+          lastMousePos.current = { x: lx, y: ly, rawX: e.clientX, rawY: e.clientY };
           e.preventDefault();
         } else if (isLeftClick) {
           isSelectingRef.current = true;
@@ -92,31 +104,42 @@ const Viewport: React.FC = () => {
       }
     };
 
+    const getGlobalScale = () => {
+      const body = document.querySelector('.app-body') || document.body;
+      const style = window.getComputedStyle(body);
+      const m = new DOMMatrix(style.transform);
+      return m.a || 1;
+    };
+
     const handleMouseMove = (e: MouseEvent) => {
+      const s = getGlobalScale();
+      const lx = e.clientX / s;
+      const ly = e.clientY / s;
+
       // Always track world position for spawning
       mouseWorldPos.current = {
-        x: (e.clientX - transform.x) / transform.scale,
-        y: (e.clientY - transform.y) / transform.scale
+        x: (lx - transform.x) / transform.scale,
+        y: (ly - transform.y) / transform.scale
       };
 
       if (isPanningRef.current) {
-        const dx = e.clientX - lastMousePos.current.x;
-        const dy = e.clientY - lastMousePos.current.y;
-        
+        const dx = (e.clientX - lastMousePos.current.rawX) / s;
+        const dy = (e.clientY - lastMousePos.current.rawY) / s;
+
         setTransform({
           ...transform,
           x: transform.x + dx,
           y: transform.y + dy,
         });
       } else if (isSelectingRef.current) {
-        const x = Math.min(e.clientX, selectionStartRef.current.x);
-        const y = Math.min(e.clientY, selectionStartRef.current.y);
-        const w = Math.abs(e.clientX - selectionStartRef.current.x);
-        const h = Math.abs(e.clientY - selectionStartRef.current.y);
-        
+        const x = Math.min(lx, selectionStartRef.current.x);
+        const y = Math.min(ly, selectionStartRef.current.y);
+        const w = Math.abs(lx - selectionStartRef.current.x);
+        const h = Math.abs(ly - selectionStartRef.current.y);
+
         if (w > 5 || h > 5) {
           setSelectionRect({ x, y, w, h });
-          
+
           // Selection Logic
           const rectX = (x - transform.x) / transform.scale;
           const rectY = (y - transform.y) / transform.scale;
@@ -130,16 +153,16 @@ const Viewport: React.FC = () => {
             const tw = 280 / 2;
             const th = 200 / 2;
             return tx + tw > rectX && tx - tw < rectX + rectW &&
-                   ty + th > rectY && ty - th < rectY + rectH;
+              ty + th > rectY && ty - th < rectY + rectH;
           }).map(t => t.id);
-          
+
           setSelectedThoughtIds(selectedIds);
         }
       }
-      lastMousePos.current = { x: e.clientX, y: e.clientY };
+      lastMousePos.current = { x: lx, y: ly, rawX: e.clientX, rawY: e.clientY };
     };
 
-    const handleMouseUp = () => {
+    const handleMouseUp = (e: MouseEvent) => {
       isPanningRef.current = false;
       isSelectingRef.current = false;
       setIsGrabbing(false);
@@ -151,10 +174,13 @@ const Viewport: React.FC = () => {
     };
 
     const handleClick = (e: MouseEvent) => {
+      const s = getGlobalScale();
+      const lx = e.clientX / s;
+      const ly = e.clientY / s;
       const target = e.target as HTMLElement;
-      
+
       // 5px rule for selection clearing: If they moved more than 5px, they were likely doing a marquee select
-      const dist = Math.sqrt(Math.pow(e.clientX - selectionStartRef.current.x, 2) + Math.pow(e.clientY - selectionStartRef.current.y, 2));
+      const dist = Math.sqrt(Math.pow(lx - selectionStartRef.current.x, 2) + Math.pow(ly - selectionStartRef.current.y, 2));
       if (dist > 5) return;
 
       // We want to unselect if the user clicks the "background" of the workspace, 
@@ -182,14 +208,18 @@ const Viewport: React.FC = () => {
         }
       }
 
+      const s = getGlobalScale();
+      const lx = e.clientX / s;
+      const ly = e.clientY / s;
+
       if (activeSpace?.mode === 'kanban') {
         let newY = transform.y - e.deltaY;
         if (newY > 0) newY = 0;
-        
-        const viewHeight = window.innerHeight;
+
+        const viewHeight = window.innerHeight / s;
         const contentHeight = kanbanHeight.current + 100;
         const limit = Math.min(0, viewHeight - contentHeight);
-        
+
         if (newY < limit) newY = limit;
 
         setTransform({ ...transform, x: 0, y: newY, scale: 1 });
@@ -198,11 +228,11 @@ const Viewport: React.FC = () => {
       } else {
         const delta = -e.deltaY;
         const newScale = Math.min(Math.max(0.1, transform.scale + delta * 0.001), 2);
-        const wx = (e.clientX - transform.x) / transform.scale;
-        const wy = (e.clientY - transform.y) / transform.scale;
+        const wx = (lx - transform.x) / transform.scale;
+        const wy = (ly - transform.y) / transform.scale;
         setTransform({
-          x: e.clientX - wx * newScale,
-          y: e.clientY - wy * newScale,
+          x: lx - wx * newScale,
+          y: ly - wy * newScale,
           scale: newScale,
         });
       }
@@ -253,16 +283,19 @@ const Viewport: React.FC = () => {
           y: mouseWorldPos.current.y
         };
 
+        const s = getGlobalScale();
+        const lx = lastMousePos.current.x;
+
         // Mode-specific logic
         if (activeSpace?.mode === 'kanban') {
-          const x = lastMousePos.current.x; // screen x
-          const width = window.innerWidth;
+          const x = lx; // use logical x
+          const width = window.innerWidth / s;
           if (x < width * 0.25) newThoughtProps.status = 'none';
           else if (x < width * 0.50) newThoughtProps.status = 'todo';
           else if (x < width * 0.75) newThoughtProps.status = 'doing';
           else newThoughtProps.status = 'done';
         } else if (activeSpace?.mode === 'calendar') {
-          const elements = document.elementsFromPoint(lastMousePos.current.x, lastMousePos.current.y);
+          const elements = document.elementsFromPoint(lastMousePos.current.rawX, lastMousePos.current.rawY);
           const cell = elements.find(el => (el as HTMLElement).classList.contains('cal-cell'));
           if (cell) {
             newThoughtProps.date = (cell as HTMLElement).dataset.date;
@@ -312,8 +345,12 @@ const Viewport: React.FC = () => {
       const files = Array.from(e.dataTransfer?.files || []);
       if (files.length === 0) return;
 
-      const dropX = (e.clientX - transform.x) / transform.scale;
-      const dropY = (e.clientY - transform.y) / transform.scale;
+      const s = getGlobalScale();
+      const lx = e.clientX / s;
+      const ly = e.clientY / s;
+
+      const dropX = (lx - transform.x) / transform.scale;
+      const dropY = (ly - transform.y) / transform.scale;
 
       for (const file of files) {
         if (file.size > 2 * 1024 * 1024) {
@@ -327,7 +364,7 @@ const Viewport: React.FC = () => {
         }
 
         const reader = new FileReader();
-        
+
         if (file.type.startsWith('image/')) {
           reader.onload = async (ev) => {
             await addThought({
@@ -339,7 +376,7 @@ const Viewport: React.FC = () => {
             });
           };
           reader.readAsDataURL(file);
-        } 
+        }
         else if (file.name.endsWith('.txt') || file.type === 'text/plain') {
           reader.onload = async (ev) => {
             await addThought({
@@ -417,8 +454,8 @@ const Viewport: React.FC = () => {
   }, [activeSpace, setInspectorOpen, isGrabbing, selectedThoughtId, selectedThoughtIds, openModal, deleteThought, deleteSelectedThoughts, thoughts, addThought, setSelectedThoughtId, setSelectedThoughtIds, clearSelection, transform]);
 
   return (
-    <div 
-      id="viewport" 
+    <div
+      id="viewport"
       className={cn(
         "fixed inset-0 z-[20] overflow-hidden",
         isGrabbing ? "pointer-events-auto cursor-grabbing" : "pointer-events-none"
@@ -426,7 +463,7 @@ const Viewport: React.FC = () => {
     >
       {/* Selection Marquee */}
       {selectionRect && (
-        <div 
+        <div
           className="fixed border-2 border-indigo-500/50 bg-indigo-500/10 z-[1001] pointer-events-none"
           style={{
             left: selectionRect.x,
@@ -438,10 +475,10 @@ const Viewport: React.FC = () => {
       )}
 
       {/* Moving Background Grid */}
-      <div 
+      <div
         ref={registerGrid}
         className="absolute inset-0 dot-grid pointer-events-none opacity-[0.03]"
-        style={{ 
+        style={{
           width: '5000px',
           height: '5000px',
           left: '-2500px',
@@ -449,7 +486,7 @@ const Viewport: React.FC = () => {
           transformOrigin: 'center center'
         }}
       />
-      <World 
+      <World
         canvasRef={canvasRef}
         physicsResults={{ registerElement, registerWorld, handleMouseDown, isDragging }}
       />
@@ -457,13 +494,13 @@ const Viewport: React.FC = () => {
       {/* DROP ZONE OVERLAY */}
       <AnimatePresence>
         {isDraggingFile && (
-          <motion.div 
+          <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             className="fixed inset-0 z-[10006] bg-indigo-500/10 backdrop-blur-md flex flex-col items-center justify-center pointer-events-none border-[4px] border-dashed border-indigo-500/30 m-4 rounded-[3rem]"
           >
-            <motion.div 
+            <motion.div
               initial={{ scale: 0.9, y: 20 }}
               animate={{ scale: 1, y: 0 }}
               className="flex flex-col items-center gap-6"
@@ -483,7 +520,7 @@ const Viewport: React.FC = () => {
       {/* Loading Overlay */}
       <AnimatePresence>
         {isSpaceLoading && (
-          <motion.div 
+          <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
@@ -491,16 +528,16 @@ const Viewport: React.FC = () => {
           >
             <div className="relative">
               {/* Pulsing Glow */}
-              <motion.div 
+              <motion.div
                 animate={{ scale: [1, 1.2, 1], opacity: [0.3, 0.6, 0.3] }}
                 transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
                 className="absolute inset-0 bg-indigo-500/20 blur-[60px] rounded-full"
               />
-              
+
               <div className="flex flex-col items-center gap-6 relative z-10">
                 {/* Spinner */}
                 <div className="w-16 h-16 border-2 border-indigo-500/20 border-t-indigo-500 rounded-full animate-spin" />
-                
+
                 <div className="text-center">
                   <h2 className="text-white/80 text-[10px] font-black uppercase tracking-[0.5em] mb-2">Accessing Neural Layer</h2>
                   <div className="flex gap-1 justify-center">

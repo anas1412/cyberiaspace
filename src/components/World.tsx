@@ -15,11 +15,22 @@ interface WorldProps {
 const World: React.FC<WorldProps> = ({ canvasRef, physicsResults }) => {
   const thoughts = useStore((state) => state.thoughts);
   const { registerElement, registerWorld, handleMouseDown, isDragging } = physicsResults;
-  
+
   const [size, setSize] = useState({ w: window.innerWidth, h: window.innerHeight });
 
+  const getGlobalScale = () => {
+    const body = document.querySelector('.app-body') || document.body;
+    const style = window.getComputedStyle(body);
+    const m = new DOMMatrix(style.transform);
+    return m.a || 1;
+  };
+
   useEffect(() => {
-    const handleResize = () => setSize({ w: window.innerWidth, h: window.innerHeight });
+    const handleResize = () => {
+      const s = getGlobalScale();
+      setSize({ w: window.innerWidth / s, h: window.innerHeight / s });
+    };
+    handleResize(); // Initial call
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
   }, []);

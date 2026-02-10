@@ -68,8 +68,19 @@ function App() {
   }, []);
 
   useEffect(() => {
+    const getGlobalScale = () => {
+      const body = document.querySelector('.app-body') || document.body;
+      const style = window.getComputedStyle(body);
+      const m = new DOMMatrix(style.transform);
+      return m.a || 1;
+    };
+
     const handleMouseMove = (e: MouseEvent) => {
-      mouseScreenPos.current = { x: e.clientX, y: e.clientY };
+      const s = getGlobalScale();
+      const lx = e.clientX / s;
+      const ly = e.clientY / s;
+
+      mouseScreenPos.current = { x: lx, y: ly };
       const activeSpace = useStore.getState().spaces.find(s => s.id === useStore.getState().activeSpaceId);
 
       if (activeSpace?.mode === 'spatial') {
@@ -77,11 +88,11 @@ function App() {
         const ty = activeSpace.transformY ?? 0;
         const scale = activeSpace.transformScale ?? 1;
         mouseWorldPos.current = {
-          x: (e.clientX - tx) / scale,
-          y: (e.clientY - ty) / scale
+          x: (lx - tx) / scale,
+          y: (ly - ty) / scale
         };
       } else {
-        mouseWorldPos.current = { x: e.clientX, y: e.clientY };
+        mouseWorldPos.current = { x: lx, y: ly };
       }
     };
     window.addEventListener('mousemove', handleMouseMove);
