@@ -20,6 +20,7 @@ interface CyberiaState {
   isSpaceLoading: boolean;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   deferredPrompt: any;
+  layerActionTrigger: { id: number; time: number } | null;
 
   // Plan Helper
   getLimits: () => typeof PLAN_CONFIG['free'];
@@ -54,6 +55,8 @@ interface CyberiaState {
   updateThought: (id: number, updates: Partial<Thought>) => Promise<void>;
   deleteThought: (id: number) => Promise<void>;
   deleteThoughts: (ids: number[]) => Promise<void>;
+  bringToFront: (id: number) => Promise<void>;
+  sendToBack: (id: number) => Promise<void>;
   setSelectedThoughtId: (id: number | null) => void;
   setSelectedThoughtIds: (ids: number[]) => void;
   toggleThoughtSelection: (id: number) => void;
@@ -122,6 +125,7 @@ export const useStore = create<CyberiaState>((set, get) => ({
   theme: (localStorage.getItem('cyberia-theme') as 'cyberia' | 'sakura' | 'neon') || 'cyberia',
   isSpaceLoading: true,
   deferredPrompt: null,
+  layerActionTrigger: null,
 
   getLimits: () => {
     const plan = useAuthStore.getState().user?.plan as SubscriptionPlan;
@@ -591,6 +595,7 @@ export const useStore = create<CyberiaState>((set, get) => ({
       }
 
       const randomTitle = QUIRKY_TITLES[Math.floor(Math.random() * QUIRKY_TITLES.length)];
+      const maxLayer = await db.thoughts.where('spaceId').equals(targetSpaceId).reverse().sortBy('layer').then(t => t[0]?.layer || 0);
 
       const thought: Thought = {
         spaceId: targetSpaceId,
@@ -613,6 +618,7 @@ export const useStore = create<CyberiaState>((set, get) => ({
         priority: 'none',
         size: 1.0,
         order: currentCount,
+        layer: maxLayer + 1,
         ...partialThought
       } as Thought;
 
@@ -738,6 +744,56 @@ export const useStore = create<CyberiaState>((set, get) => ({
     if (authStore.autoSync && authStore.status === 'authenticated') {
       authStore.syncData();
     }
+  },
+
+  bringToFront: async (id) => {
+    const { thoughts, activeSpaceId } = get();
+    if (!activeSpaceId) return;
+
+    // 1. Get all nodes in current space sorted by current layer
+    const sorted = [...thoughts].sort((a, b) => (a.layer || 0) - (b.layer || 0));
+    
+    // 2. Remove the target node from its current position
+    const filtered = sorted.filter(t => t.id !== id);
+    const target = thoughts.find(t => t.id === id);
+    if (!target) return;
+
+    // 3. Append target to the end (Top)
+    filtered.push(target);
+
+    // 4. Normalize: Re-assign clean 1, 2, 3... layers to everyone
+    await db.transaction('rw', db.thoughts, async () => {
+      const updates = filtered.map((t, i) => db.thoughts.update(t.id, { layer: i + 1 }));
+      await Promise.all(updates);
+    });
+
+    set({ layerActionTrigger: { id, time: Date.now() } });
+    await get().refreshThoughts(activeSpaceId);
+  },
+
+  sendToBack: async (id) => {
+    const { thoughts, activeSpaceId } = get();
+    if (!activeSpaceId) return;
+
+    // 1. Get all nodes in current space sorted by current layer
+    const sorted = [...thoughts].sort((a, b) => (a.layer || 0) - (b.layer || 0));
+    
+    // 2. Remove the target node from its current position
+    const filtered = sorted.filter(t => t.id !== id);
+    const target = thoughts.find(t => t.id === id);
+    if (!target) return;
+
+    // 3. Prepend target to the start (Bottom)
+    filtered.unshift(target);
+
+    // 4. Normalize: Re-assign clean 1, 2, 3... layers to everyone
+    await db.transaction('rw', db.thoughts, async () => {
+      const updates = filtered.map((t, i) => db.thoughts.update(t.id, { layer: i + 1 }));
+      await Promise.all(updates);
+    });
+
+    set({ layerActionTrigger: { id, time: Date.now() } });
+    await get().refreshThoughts(activeSpaceId);
   },
 
   setSelectedThoughtId: (id) => {

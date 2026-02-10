@@ -38,6 +38,8 @@ const ThoughtNode: React.FC<ThoughtNodeProps> = React.memo(({ thought, registerE
   const selectedThoughtId = useStore((state) => state.selectedThoughtId);
   const selectedThoughtIds = useStore((state) => state.selectedThoughtIds);
   const isSelected = selectedThoughtId === thought.id || selectedThoughtIds.includes(thought.id);
+  const isInspectorOpen = useStore((state) => state.isInspectorOpen);
+  const layerActionTrigger = useStore((state) => state.layerActionTrigger);
   
   const setSelectedThoughtId = useStore((state) => state.setSelectedThoughtId);
   const setInspectorOpen = useStore((state) => state.setInspectorOpen);
@@ -50,6 +52,31 @@ const ThoughtNode: React.FC<ThoughtNodeProps> = React.memo(({ thought, registerE
   const stack = useMemo(() => stacks.find(s => s.id === thought.stackId), [stacks, thought.stackId]);
   
   const [startPos, setStartPos] = useState({ x: 0, y: 0 });
+  const [showPing, setShowPing] = useState(false);
+
+  // Trigger ping ONLY when this specific node was the target of a layering action
+  useEffect(() => {
+    if (layerActionTrigger?.id === thought.id) {
+      setShowPing(true);
+      const timer = setTimeout(() => setShowPing(false), 800);
+      return () => clearTimeout(timer);
+    }
+  }, [layerActionTrigger?.id, layerActionTrigger?.time, thought.id]);
+
+  // Altitude Math: Use the layer value to calculate relative "height"
+  const altitudeStyles = useMemo(() => {
+    if (!thought.layer) return {};
+    
+    // Normalize layer values into a manageable depth range
+    // Higher layer = larger shadow, slight scale up
+    const shadowSize = isDragging ? 60 : Math.min(50, (thought.layer % 100) + 10);
+    const altitudeScale = 1 + (Math.min(10, (thought.layer % 10)) / 200);
+
+    return {
+      boxShadow: `0 ${shadowSize/2}px ${shadowSize}px rgba(0,0,0,0.6)`,
+      transform: `scale(${altitudeScale})`,
+    };
+  }, [thought.layer, isDragging]);
   
   const parsedContent = useMemo(() => {
     return thought.content ? marked.parse(thought.content) : '';
@@ -400,14 +427,23 @@ const ThoughtNode: React.FC<ThoughtNodeProps> = React.memo(({ thought, registerE
       onDragStart={(e) => e.preventDefault()}
       onClick={handleClick}
     >
-      <div className={cn(
-        "thought-bulb-content backdrop-blur-[20px] border p-6 rounded-[32px] flex flex-col gap-3 relative transition-all duration-300",
-        isSelected 
-          ? "border-[var(--accent)]/50 shadow-[0_0_40px_var(--accent-glow)] bg-[var(--node-bg)]/80" 
-          : "border-[var(--glass-border)] shadow-[0_10px_40px_rgba(0,0,0,0.5)] bg-[var(--node-bg)]/60",
-        linkingSourceId === thought.id && "ring-2 ring-[var(--accent)] ring-offset-4 ring-offset-[var(--bg-page)]",
-        linkingSourceId && linkingSourceId !== thought.id && "hover:scale-105 hover:border-[var(--accent)]/50 cursor-pointer"
-      )}>
+      {/* Sonar Ping Ring */}
+      {showPing && (
+        <div className="absolute inset-0 rounded-[32px] border-2 border-[var(--accent)] animate-sonar pointer-events-none z-0" />
+      )}
+
+      <div 
+        className={cn(
+          "thought-bulb-content backdrop-blur-[20px] border p-6 rounded-[32px] flex flex-col gap-3 relative transition-all duration-300",
+          isSelected 
+            ? "border-[var(--accent)]/50 shadow-[0_0_40px_var(--accent-glow)] bg-[var(--node-bg)]/80" 
+            : "border-[var(--glass-border)] shadow-[0_10px_40px_rgba(0,0,0,0.5)] bg-[var(--node-bg)]/60",
+          linkingSourceId === thought.id && "ring-2 ring-[var(--accent)] ring-offset-4 ring-offset-[var(--bg-page)]",
+          linkingSourceId && linkingSourceId !== thought.id && "hover:scale-105 hover:border-[var(--accent)]/50 cursor-pointer",
+          isSelected && isInspectorOpen && "animate-breathe"
+        )}
+        style={altitudeStyles}
+      >
         
         {/* Header Area: Title + Priority + Badges */}
         <div className="flex items-start justify-between gap-4 min-h-[24px]">

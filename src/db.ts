@@ -40,6 +40,7 @@ interface Thought {
   priority: 'none' | 'low' | 'medium' | 'high' | 'urgent';
   size: number; // 0.5 to 2.0
   order: number;
+  layer?: number;
 }
 
 const db = new Dexie('CyberiaDB') as Dexie & {

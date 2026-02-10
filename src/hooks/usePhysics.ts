@@ -354,9 +354,9 @@ export const usePhysics = (
             const p = state.get(t.id);
             if (!p || dragRef.current?.initialPositions.has(t.id)) return;
 
-            const targetX = baseX;
+            const targetX = baseX + (index * 10);
             // Stack offset: centered but spread downwards
-            const targetY = baseY - (Math.min(groupThoughts.length, 5) - 1) * 10 + (index * 20);
+            const targetY = baseY - (Math.min(groupThoughts.length, 5) - 1) * 10 + (index * 25);
             
             if (snapNextFrame.current) {
               p.x = targetX; p.y = targetY; p.scale = uniformScale;
@@ -609,7 +609,9 @@ export const usePhysics = (
             if (dragRef.current?.initialPositions.has(id)) {
               el.style.zIndex = '1000';
             } else {
-              el.style.zIndex = (20 + prioLevel).toString();
+              // Strict Ordinal Layering
+              // layer 1 = bottom, layer N = top
+              el.style.zIndex = (20 + (t?.layer || 0)).toString();
             }
         }
       }
