@@ -216,11 +216,18 @@ const EmbedFocusEditor: React.FC = () => {
                     placeholder="Link Title"
                   />
                   <div className="flex items-center gap-2 mt-1 overflow-hidden">
-                    {thought.description && (
-                      <span className={cn("text-[9px] font-black uppercase tracking-widest px-2 py-0.5 rounded-md border whitespace-nowrap", config.color, config.themeColor, "border-current/20")}>{thought.description}</span>
+                    {thought.author && (
+                      <span className={cn("text-[9px] font-black uppercase tracking-widest px-2 py-0.5 rounded-md border whitespace-nowrap", config.color, config.themeColor, "border-current/20")}>{thought.author}</span>
                     )}
                     <p className="text-[9px] text-slate-500 uppercase font-black tracking-widest truncate opacity-60">{thought.content}</p>
                   </div>
+                  {thought.description &&
+                    thought.description !== 'No description available.' &&
+                    thought.description !== thought.text && (
+                      <p className="text-[10px] text-slate-400 mt-2 line-clamp-2 italic opacity-80 max-w-2xl leading-relaxed">
+                        {thought.description}
+                      </p>
+                    )}
                 </div>
               </div>
               <div className="flex items-center gap-3 w-full md:w-auto justify-end flex-shrink-0">

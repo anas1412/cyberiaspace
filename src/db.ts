@@ -41,6 +41,7 @@ interface Thought {
   size: number; // 0.5 to 2.0
   order: number;
   layer?: number;
+  author: string; // Embed author/channel/artist
   meta?: any; // For flexible metadata storage (e.g. oEmbed HTML, author data)
 }
 
@@ -50,9 +51,9 @@ const db = new Dexie('CyberiaDB') as Dexie & {
   stacks: EntityTable<Stack, 'id'>;
 };
 
-db.version(3).stores({
+db.version(4).stores({
   spaces: 'id, name, order',
-  thoughts: '++id, spaceId, stackId, text, status, date, priority, order',
+  thoughts: '++id, spaceId, stackId, text, status, date, priority, order, author',
   stacks: 'id, spaceId, name'
 });
 

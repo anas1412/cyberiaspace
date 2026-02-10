@@ -18,6 +18,7 @@ export interface EmbedMeta {
   thumbnail_url?: string;
   video_url?: string;
   provider_name?: string;
+  description?: string; // New field
   html?: string; // For oEmbed widgets
 }
 
@@ -84,7 +85,7 @@ export const getEmbedInfo = (url: string): EmbedInfo => {
  * Fetches metadata using a generic oEmbed approach with proxy support.
  */
 export const fetchEmbedMeta = async (url: string): Promise<EmbedMeta> => {
-  const { provider } = getEmbedInfo(url);
+  const { provider, id: videoId } = getEmbedInfo(url);
 
   let oEmbedUrl = '';
   if (provider === 'youtube') {
@@ -140,7 +141,8 @@ export const fetchEmbedMeta = async (url: string): Promise<EmbedMeta> => {
             author_name: ml.author || ml.publisher || "",
             thumbnail_url: ml.image?.url || ml.logo?.url || null,
             video_url: ml.video?.url || null,
-            provider_name: ml.publisher || ""
+            provider_name: ml.publisher || "",
+            description: ml.description || ""
           };
         }
       }
@@ -150,19 +152,45 @@ export const fetchEmbedMeta = async (url: string): Promise<EmbedMeta> => {
     return null;
   };
 
+  // 3. YouTube-specific Search/Data fallback (for Description)
+  const fetchYouTubeSearch = async (): Promise<Partial<EmbedMeta> | null> => {
+    if (provider !== 'youtube' || !videoId) return null;
+    try {
+      const res = await fetch(`/api/youtube-search?q=${videoId}`);
+      if (res.ok) {
+        const data = await res.json();
+        const bestResult = data.results?.[0];
+        if (bestResult) {
+          return {
+            author_name: bestResult.author,
+            description: bestResult.description
+          };
+        }
+      }
+    } catch (err) {
+      console.warn(`[Embed Utils] YouTube Search fallback failed:`, err);
+    }
+    return null;
+  };
+
   // Run in parallel for speed
-  const [oData, mlData] = await Promise.all([fetchOEmbed(), fetchMicrolink()]);
+  const [oData, mlData, ytSearchData] = await Promise.all([
+    fetchOEmbed(),
+    fetchMicrolink(),
+    fetchYouTubeSearch()
+  ]);
 
   // Deep merged result
   const finalData: EmbedMeta = {
     ...oData,
     title: oData?.title || mlData?.title || url,
-    author_name: oData?.author_name || mlData?.author_name || "",
+    author_name: oData?.author_name || ytSearchData?.author_name || mlData?.author_name || "",
     thumbnail_url: oData?.thumbnail_url || mlData?.thumbnail_url || undefined,
     // Only trust video_url if oEmbed explicitly provides it, 
     // or if we are on a known video platform (YouTube/TikTok)
     video_url: (oData?.video_url || (['youtube', 'tiktok'].includes(provider) ? mlData?.video_url : undefined)) || undefined,
     provider_name: oData?.provider_name || mlData?.provider_name || "",
+    description: oData?.description || ytSearchData?.description || mlData?.description || "",
     html: oData?.html || undefined
   };
 

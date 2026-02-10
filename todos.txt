@@ -1,14 +1,16 @@
 
-
+- make a better and simpler onboarding thoughts
 
 
 - add a vercel api route to enable oracle external api for built-in vercel key / add limiters
 
-- one small detail, when there is a text thought and have "open note" it should open when i also click the text not specifically 'open note' its small to click on
 
-- add support to instagram/facebook/reddit/twitter/spotify and popular plateforms embed support / links preview
+
 
 - add author field to the embed type (it contains the uploader in youtube, user in x,tiktok, instagram, artist if its a song or user if its a playlist in spotify etc... ) make all necessary changes
+
+- add 2 modes for oracle chat mode and active mode
+
 
 - maybe change ai chat on the left
 
