@@ -110,7 +110,7 @@ export const fetchEmbedMeta = async (url: string): Promise<EmbedMeta> => {
   const fetchOEmbed = async (): Promise<EmbedMeta | null> => {
     if (!oEmbedUrl) return null;
     const proxies = [
-      (u: string) => `/api/oembed?url=${encodeURIComponent(u)}`,
+      (u: string) => `/api/utils?action=oembed&url=${encodeURIComponent(u)}`,
       (u: string) => `https://api.allorigins.win/get?url=${encodeURIComponent(u)}`,
       (u: string) => `https://corsproxy.io/?${encodeURIComponent(u)}`,
       (u: string) => u,
@@ -140,7 +140,7 @@ export const fetchEmbedMeta = async (url: string): Promise<EmbedMeta> => {
   // 2. Fetch rich metadata using our internal scraper (no rate limits)
   const fetchInternalMetadata = async (): Promise<EmbedMeta | null> => {
     try {
-      const res = await fetch(`/api/metadata?url=${encodeURIComponent(url)}`);
+      const res = await fetch(`/api/utils?action=metadata&url=${encodeURIComponent(url)}`);
       if (res.ok) {
         const data = await res.json();
         return {
@@ -191,7 +191,7 @@ export const fetchEmbedMeta = async (url: string): Promise<EmbedMeta> => {
   const fetchYouTubeSearch = async (): Promise<Partial<EmbedMeta> | null> => {
     if (provider !== 'youtube' || !videoId) return null;
     try {
-      const res = await fetch(`/api/youtube-search?q=${videoId}`);
+      const res = await fetch(`/api/utils?action=youtube-search&q=${videoId}`);
       if (res.ok) {
         const data = await res.json();
         const bestResult = data.results?.[0];
@@ -214,7 +214,7 @@ export const fetchEmbedMeta = async (url: string): Promise<EmbedMeta> => {
     try {
       // Use ddinstagram as a scraper source (it always serves public meta tags)
       const ddUrl = url.replace('instagram.com', 'ddinstagram.com');
-      const res = await fetch(`/api/metadata?url=${encodeURIComponent(ddUrl)}`);
+      const res = await fetch(`/api/utils?action=metadata&url=${encodeURIComponent(ddUrl)}`);
       if (res.ok) {
         const data = await res.json();
         return {

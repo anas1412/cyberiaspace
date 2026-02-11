@@ -102,7 +102,7 @@ const EmbedFocusEditor: React.FC = () => {
     const hasHtml = !!thought?.meta?.html;
 
     if (thought?.meta?.video_url && (isVideoPlatform || !hasHtml)) {
-      const proxyUrl = `/api/proxy-video?url=${encodeURIComponent(thought.meta.video_url)}`;
+      const proxyUrl = `/api/utils?action=proxy-video&url=${encodeURIComponent(thought.meta.video_url)}`;
       return (
         <div className="w-full h-full flex items-center justify-center bg-black">
           <video

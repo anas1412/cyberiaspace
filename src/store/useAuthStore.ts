@@ -114,7 +114,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     if (status !== 'authenticated' || !accessToken) return;
 
     try {
-      const response = await fetch('/api/user/status', {
+      const response = await fetch('/api/user?action=status', {
         headers: { 'Authorization': `Bearer ${accessToken}` }
       });
       if (response.ok) {
@@ -163,7 +163,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 
     // Check if cloud data exists
     try {
-      const response = await fetch('/api/sync', {
+      const response = await fetch('/api/user?action=sync', {
         headers: { 'Authorization': `Bearer ${token}` }
       });
 
@@ -202,7 +202,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 
     set({ syncStatus: 'syncing' });
     try {
-      const response = await fetch('/api/sync', {
+      const response = await fetch('/api/user?action=sync', {
         headers: { 'Authorization': `Bearer ${accessToken}` }
       });
 
@@ -261,7 +261,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         timestamp: Date.now()
       };
 
-      const response = await fetch('/api/sync', {
+      const response = await fetch('/api/user?action=sync', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -302,7 +302,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     set({ syncStatus: 'syncing' });
 
     try {
-      const response = await fetch('/api/sync', {
+      const response = await fetch('/api/user?action=sync', {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${accessToken}`
