@@ -48,7 +48,7 @@ const TasksFocusEditor: React.FC = () => {
   }, [thought]);
 
   const handleAddTask = () => {
-    if (!thought) return;
+    if (!thought || isReadOnly) return;
     const newTask = { id: `task-${Date.now()}`, text: '', done: false };
     const newTasks = [...localTasks, newTask];
     setLocalTasks(newTasks);
@@ -58,7 +58,7 @@ const TasksFocusEditor: React.FC = () => {
   };
 
   const handleUpdateTask = (id: string, updates: { text?: string; done?: boolean }) => {
-    if (!thought) return;
+    if (!thought || isReadOnly) return;
     const newTasks = localTasks.map(t => t.id === id ? { ...t, ...updates } : t);
     setLocalTasks(newTasks);
 
@@ -80,7 +80,7 @@ const TasksFocusEditor: React.FC = () => {
   };
 
   const handleDeleteTask = (id: string) => {
-    if (!thought) return;
+    if (!thought || isReadOnly) return;
     const newTasks = localTasks.filter(t => t.id !== id);
     setLocalTasks(newTasks);
     const tasksToSave = newTasks.map(({ id: _, ...rest }) => rest);
@@ -88,7 +88,7 @@ const TasksFocusEditor: React.FC = () => {
   };
 
   const handleReorderTasks = (newTasks: Task[]) => {
-    if (!thought) return;
+    if (!thought || isReadOnly) return;
     setLocalTasks(newTasks);
     // Debounce the store update or only save when the order actually changes
     const tasksToSave = newTasks.map(({ id: _, ...rest }) => rest);
@@ -130,7 +130,7 @@ const TasksFocusEditor: React.FC = () => {
                     value={localTitle}
                     onChange={(e) => {
                       setLocalTitle(e.target.value);
-                      updateThought(thought.id, { text: e.target.value });
+                      if (!isReadOnly) updateThought(thought.id, { text: e.target.value });
                     }}
                     placeholder="Task List Title"
                     readOnly={isReadOnly}

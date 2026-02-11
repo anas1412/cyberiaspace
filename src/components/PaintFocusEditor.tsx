@@ -63,13 +63,13 @@ const PaintFocusEditor: React.FC = () => {
   }, [isVisible, isEditMode, activeFocusId]);
 
   const startPainting = (e: React.MouseEvent | React.TouchEvent) => {
-    if (!isEditMode) return;
+    if (!isEditMode || isReadOnly) return;
     setIsPainting(true);
     paint(e);
   };
 
   const stopPainting = () => {
-    if (!isPainting) return;
+    if (!isPainting || isReadOnly) return;
     setIsPainting(false);
     if (canvasRef.current && activeFocusId) {
       const dataUrl = canvasRef.current.toDataURL();
@@ -121,7 +121,7 @@ const PaintFocusEditor: React.FC = () => {
   };
 
   const clearCanvas = () => {
-    if (canvasRef.current && activeFocusId) {
+    if (canvasRef.current && activeFocusId && !isReadOnly) {
       const ctx = canvasRef.current.getContext('2d');
       ctx?.clearRect(0, 0, canvasRef.current.width, canvasRef.current.height);
       updateThought(activeFocusId, { drawing: null });
@@ -154,7 +154,9 @@ const PaintFocusEditor: React.FC = () => {
                 <input
                   type="text"
                   value={thought.text}
-                  onChange={(e) => updateThought(thought.id, { text: e.target.value })}
+                  onChange={(e) => {
+                    if (!isReadOnly) updateThought(thought.id, { text: e.target.value });
+                  }}
                   placeholder="Untitled Sketch"
                   readOnly={isReadOnly}
                 />

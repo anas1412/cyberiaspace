@@ -25,33 +25,33 @@ const TableFocusEditor: React.FC = () => {
   const isVisible = focusType === 'table' && !!thought;
 
   const handleUpdateCell = (r: number, c: number, val: string) => {
-    if (!thought) return;
+    if (!thought || isReadOnly) return;
     const newTable = [...thought.table.map(row => [...row])];
     newTable[r][c] = val;
     updateThought(thought.id, { table: newTable });
   };
 
   const addRow = () => {
-    if (!thought) return;
+    if (!thought || isReadOnly) return;
     const colCount = thought.table[0]?.length || 2;
     updateThought(thought.id, { table: [...thought.table, new Array(colCount).fill("")] });
   };
 
   const addColumn = () => {
-    if (!thought) return;
+    if (!thought || isReadOnly) return;
     const newTable = thought.table.map(row => [...row, ""]);
     updateThought(thought.id, { table: newTable });
   };
 
   const deleteRow = (idx: number) => {
-    if (!thought || thought.table.length <= 1) return;
+    if (!thought || thought.table.length <= 1 || isReadOnly) return;
     const newTable = [...thought.table];
     newTable.splice(idx, 1);
     updateThought(thought.id, { table: newTable });
   };
 
   const deleteColumn = (idx: number) => {
-    if (!thought || thought.table[0].length <= 1) return;
+    if (!thought || thought.table[0].length <= 1 || isReadOnly) return;
     const newTable = thought.table.map(row => {
       const newRow = [...row];
       newRow.splice(idx, 1);
@@ -99,7 +99,9 @@ const TableFocusEditor: React.FC = () => {
                 </div>
                 <input
                   value={thought.text}
-                  onChange={(e) => updateThought(thought.id, { text: e.target.value })}
+                  onChange={(e) => {
+                    if (!isReadOnly) updateThought(thought.id, { text: e.target.value });
+                  }}
                   placeholder="Untitled Table"
                   readOnly={isReadOnly}
                 />

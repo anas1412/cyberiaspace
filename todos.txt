@@ -31,7 +31,8 @@ Unplanned:
 
 TODO:
 
-- integrate konnect or flouci api
+- integrate konnect api (sandbox)
+api: 698c5bc2a83cf562f6296f41:9IKnH11UlA2Ei7eQF7ZzwOqxCN8reN
 
 
 Cyberia is where physics meets productivity. It’s a kinetic workspace that treats ideas as physical objects. Powered by The Oracle (Gemini AI), Cyberia can

@@ -239,7 +239,9 @@ const EmbedFocusEditor: React.FC = () => {
                   <input
                     type="text"
                     value={thought.text}
-                    onChange={(e) => updateThought(thought.id, { text: e.target.value })}
+                    onChange={(e) => {
+                      if (!isReadOnly) updateThought(thought.id, { text: e.target.value });
+                    }}
                     readOnly={isReadOnly}
                     className="bg-transparent text-xl md:text-2xl font-bold text-white outline-none border-none p-0 w-full truncate"
                     placeholder="Link Title"

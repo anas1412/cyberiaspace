@@ -992,6 +992,7 @@ export const useStore = create<CyberiaState>((set, get) => ({
   },
 
   sendToBack: async (id) => {
+    if (get().isReadOnly) return;
     const { thoughts, activeSpaceId } = get();
     if (!activeSpaceId) return;
 
@@ -1059,6 +1060,7 @@ export const useStore = create<CyberiaState>((set, get) => ({
   },
 
   deleteSelectedThoughts: async () => {
+    if (get().isReadOnly) return;
     const { selectedThoughtIds, thoughts } = get();
     if (selectedThoughtIds.length === 0) return;
 
@@ -1078,6 +1080,7 @@ export const useStore = create<CyberiaState>((set, get) => ({
   },
 
   linkSelectedThoughts: async (name) => {
+    if (get().isReadOnly) return;
     const { selectedThoughtIds, thoughts, activeSpaceId } = get();
     if (selectedThoughtIds.length < 2 || !activeSpaceId) return;
 
@@ -1129,6 +1132,7 @@ export const useStore = create<CyberiaState>((set, get) => ({
   },
 
   unlinkSelectedThoughts: async () => {
+    if (get().isReadOnly) return;
     const { selectedThoughtIds } = get();
     if (selectedThoughtIds.length === 0) return;
 
@@ -1209,6 +1213,7 @@ export const useStore = create<CyberiaState>((set, get) => ({
   },
 
   deleteStack: async (id) => {
+    if (get().isReadOnly) return;
     await db.transaction('rw', db.thoughts, db.stacks, async () => {
       await db.thoughts.where('stackId').equals(id).modify({ stackId: null });
       await db.stacks.delete(id);
@@ -1256,6 +1261,7 @@ export const useStore = create<CyberiaState>((set, get) => ({
   },
 
   importData: async (input) => {
+    if (get().isReadOnly) return;
     const processData = async (data: any) => {
       if (!data || typeof data !== 'object' || !('spaces' in data) || !('thoughts' in data)) {
         throw new Error('Invalid backup file');
@@ -1315,6 +1321,7 @@ export const useStore = create<CyberiaState>((set, get) => ({
   },
 
   clearWorkspace: async () => {
+    if (get().isReadOnly) return;
     try {
       await db.transaction('rw', db.spaces, db.thoughts, db.stacks, async () => {
         await db.spaces.clear();

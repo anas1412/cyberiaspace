@@ -78,7 +78,7 @@ const TextFocusEditor: React.FC = () => {
                   value={localTitle}
                   onChange={(e) => {
                     setLocalTitle(e.target.value);
-                    updateThought(thought.id, { text: e.target.value });
+                    if (!isReadOnly) updateThought(thought.id, { text: e.target.value });
                   }}
                   placeholder="Untitled Thought"
                   readOnly={isReadOnly}
@@ -122,6 +122,7 @@ const TextFocusEditor: React.FC = () => {
                   <textarea
                     value={localContent}
                     onChange={(e) => {
+                      if (isReadOnly) return;
                       setLocalContent(e.target.value);
                       updateThought(thought.id, { content: e.target.value });
                     }}
