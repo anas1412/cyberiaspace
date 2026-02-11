@@ -203,13 +203,12 @@ export const useStore = create<CyberiaState>((set, get) => ({
     const authStore = useAuthStore.getState();
 
     try {
-      const res = await fetch('/api/unpublish', {
-        method: 'POST',
+      const res = await fetch(`/api/publish?id=${space.publishedId}`, {
+        method: 'DELETE',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${authStore.accessToken}`
-        },
-        body: JSON.stringify({ publishedId: space.publishedId })
+        }
       });
 
       if (!res.ok) throw new Error('Unpublish failed');
@@ -356,7 +355,7 @@ export const useStore = create<CyberiaState>((set, get) => ({
       if (sharedId) {
         set({ isSpaceLoading: true, isReadOnly: true });
         try {
-          const res = await fetch(`/api/published?id=${sharedId}`);
+          const res = await fetch(`/api/publish?id=${sharedId}`);
           if (!res.ok) throw new Error('Snapshot not found');
           const data = await res.json();
 

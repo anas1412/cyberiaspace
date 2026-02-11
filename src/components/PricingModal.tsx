@@ -28,7 +28,7 @@ const PricingModal: React.FC<PricingModalProps> = ({ isOpen, onClose }) => {
       const userLanguage = navigator.language;
       const isTunisiaLikely = userTimezone === 'Africa/Tunis' || userLanguage.includes('ar-TN') || userLanguage.includes('fr-TN');
 
-      fetch('/api/pricing')
+      fetch('/api/pay?action=pricing')
         .then(res => res.json())
         .then(data => {
           // If server says US (default) but browser is definitely TN, trust the browser
@@ -64,7 +64,7 @@ const PricingModal: React.FC<PricingModalProps> = ({ isOpen, onClose }) => {
         return;
       }
 
-      const response = await fetch('/api/pay/init', {
+      const response = await fetch('/api/pay?action=init', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
