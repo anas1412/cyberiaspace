@@ -255,7 +255,7 @@ const EmbedFocusEditor: React.FC = () => {
                   {thought.description &&
                     thought.description !== 'No description available.' &&
                     thought.description !== thought.text && (
-                      <p className="text-[10px] text-slate-400 mt-2 line-clamp-2 italic opacity-80 max-w-2xl leading-relaxed">
+                      <p className="text-[10px] text-slate-400 mt-2 italic opacity-80 max-w-2xl leading-relaxed">
                         {thought.description}
                       </p>
                     )}

@@ -567,7 +567,7 @@ const ThoughtNode: React.FC<ThoughtNodeProps> = React.memo(({ thought, registerE
           {thought.description &&
             thought.description !== 'No description available.' &&
             thought.description !== thought.text && (
-              <p className="text-[10px] text-[var(--text-dimmed)] italic pr-10">{thought.description}</p>
+              <p className="text-[10px] text-[var(--text-dimmed)] italic pr-10 line-clamp-2">{thought.description}</p>
             )}
           {renderContent()}
 
