@@ -28,12 +28,15 @@ Unplanned:
 
 - add codes to activate pro for a month single use
 
-okay make a plan to integrate payements in my app use @beautifulMention with best practices 
+- add copy space to my spaces ot smth like that
+- add description & categories to spaces 
+- make spaces catalog
+
+ 
 
 TODO:
 
-- integrate konnect api (sandbox)
-api: 698c5bc2a83cf562f6296f41:9IKnH11UlA2Ei7eQF7ZzwOqxCN8reN
+
 
 
 Cyberia is where physics meets productivity. It’s a kinetic workspace that treats ideas as physical objects. Powered by The Oracle (Gemini AI), Cyberia can

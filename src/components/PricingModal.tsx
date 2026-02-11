@@ -199,20 +199,20 @@ const PricingModal: React.FC<PricingModalProps> = ({ isOpen, onClose }) => {
 
           <button
             onClick={handleUpgrade}
-            disabled={isLoading}
+            disabled={isLoading || import.meta.env.PROD}
             className={cn(
               "w-full py-5 rounded-[2rem] text-[11px] font-black uppercase tracking-[0.2em] transition-all flex items-center justify-center gap-3 mb-6",
-              isLoading
-                ? "bg-slate-800 text-slate-500 cursor-wait"
+              (isLoading || import.meta.env.PROD)
+                ? "bg-slate-800 text-slate-500 cursor-not-allowed opacity-50"
                 : "bg-indigo-600 hover:bg-indigo-500 text-white shadow-xl shadow-indigo-500/20 active:scale-[0.98]"
             )}
           >
             {isLoading ? (
               <div className="w-4 h-4 rounded-full border-2 border-slate-500 border-t-white animate-spin" />
             ) : (
-              <Star className="w-4 h-4 fill-white" />
+              <Star className={cn("w-4 h-4", import.meta.env.PROD ? "fill-slate-500" : "fill-white")} />
             )}
-            {isLoading ? 'Processing...' : 'Upgrade Now'}
+            {import.meta.env.PROD ? 'Coming Soon' : (isLoading ? 'Processing...' : 'Upgrade Now')}
           </button>
 
           <div className="text-center space-y-3">
