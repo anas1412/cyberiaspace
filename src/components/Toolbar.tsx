@@ -3,12 +3,13 @@ import { useStore } from '../store/useStore';
 import { useModalStore } from '../store/useModalStore';
 import { useAuthStore } from '../store/useAuthStore';
 import { PLAN_CONFIG, type SubscriptionPlan } from '../constants';
-import { Plus, Zap, Download, Upload, ChevronLeft, ChevronRight, Trash2, Edit3, Camera, MoreVertical, Keyboard, MousePointer2, Orbit, Columns3, CalendarDays, MonitorSmartphone, Eye, EyeOff, EyeClosed, ZoomIn, ZoomOut, RotateCcw, Undo2, Redo2, Settings, CircleHelp, MessageSquare, Send, Loader2, CheckCircle, Shield } from 'lucide-react';
+import { Plus, Zap, Download, Upload, ChevronLeft, ChevronRight, Trash2, Edit3, Camera, MoreVertical, Keyboard, MousePointer2, Orbit, Columns3, CalendarDays, MonitorSmartphone, Eye, EyeOff, EyeClosed, ZoomIn, ZoomOut, RotateCcw, Undo2, Redo2, Settings, CircleHelp, MessageSquare, Send, Loader2, CheckCircle, Shield, Share2, ArrowLeft } from 'lucide-react';
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 /* import { toPng, toCanvas } from 'html-to-image'; */
 import { toCanvas } from 'html-to-image';
 import AccountMenu from './AccountMenu';
+import ShareDialog from './ShareDialog';
 
 function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -18,7 +19,7 @@ const Toolbar: React.FC = () => {
   const activeSpaceId = useStore((state) => state.activeSpaceId);
   const setChatOpen = useStore((state) => state.setChatOpen);
   const isChatOpen = useStore((state) => state.isChatOpen);
-  
+
   const spaces = useStore((state) => state.spaces);
   const thoughts = useStore((state) => state.thoughts);
   const setActiveSpace = useStore((state) => state.setActiveSpace);
@@ -36,7 +37,7 @@ const Toolbar: React.FC = () => {
   const setTheme = useStore((state) => state.setTheme);
   const deferredPrompt = useStore((state) => state.deferredPrompt);
   const setDeferredPrompt = useStore((state) => state.setDeferredPrompt);
-  
+
   const zoomIn = useStore((state) => state.zoomIn);
   const zoomOut = useStore((state) => state.zoomOut);
   const resetTransform = useStore((state) => state.resetTransform);
@@ -44,11 +45,14 @@ const Toolbar: React.FC = () => {
   const redo = useStore((state) => state.redo);
   const history = useStore((state) => state.history);
   const historyIndex = useStore((state) => state.historyIndex);
-  
+  const isReadOnly = useStore((state) => state.isReadOnly);
+  const creatorName = useStore((state) => state.creatorName);
+  const isSpaceLoading = useStore((state) => state.isSpaceLoading);
+
   const { openModal, openPricing } = useModalStore();
-  
+
   const setTransform = useStore((state) => state.setTransform);
-  
+
   const activeSpace = spaces.find((s) => s.id === activeSpaceId);
   const [isSpaceMenuOpen, setIsSpaceMenuOpen] = useState(false);
   const [isSystemMenuOpen, setIsSystemMenuOpen] = useState(false);
@@ -56,12 +60,26 @@ const Toolbar: React.FC = () => {
   const [isHelpOpen, setIsHelpOpen] = useState(false);
   const [activeHelpTab, setActiveHelpTab] = useState<'about' | 'issue' | 'contact'>('about');
 
+  const getStatusColor = (space: any) => {
+    if (isReadOnly) return 'bg-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.5)]';
+    if (!space.publishedId) return 'bg-blue-500 shadow-[0_0_10px_rgba(59,130,246,0.5)]';
+
+    const lastPub = space.lastPublished ? new Date(space.lastPublished).getTime() : 0;
+    const updatedAt = space.updatedAt ? new Date(space.updatedAt).getTime() : 0;
+
+    if (lastPub >= updatedAt - 1000) { // 1s tolerance
+      return 'bg-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.5)]';
+    } else {
+      return 'bg-amber-500 shadow-[0_0_10px_rgba(245,158,11,0.5)]';
+    }
+  };
+
   // Quick Feedback State
   const [quickMessage, setQuickMessage] = useState('');
   const [quickType, setQuickType] = useState<'issue' | 'feedback' | 'feature'>('issue');
   const [isQuickSubmitting, setIsQuickSubmitting] = useState(false);
   const [quickSubmitStatus, setQuickSubmitStatus] = useState<'idle' | 'success' | 'error'>('idle');
-  
+
   // Contact Form State
   const [contactName, setContactName] = useState('');
   const [contactEmail, setContactEmail] = useState('');
@@ -90,7 +108,7 @@ const Toolbar: React.FC = () => {
       const res = await fetch('/api/contact', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
+        body: JSON.stringify({
           name: contactName,
           email: contactEmail,
           message: contactMessage
@@ -122,10 +140,10 @@ const Toolbar: React.FC = () => {
       const res = await fetch('/api/feedback', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
-          message: quickMessage, 
-          email: user?.email || 'anonymous', 
-          type: quickType 
+        body: JSON.stringify({
+          message: quickMessage,
+          email: user?.email || 'anonymous',
+          type: quickType
         })
       });
 
@@ -141,6 +159,25 @@ const Toolbar: React.FC = () => {
     } finally {
       setIsQuickSubmitting(false);
     }
+  };
+
+  const lastUpdated = useStore((state) => state.lastUpdated);
+
+  const formatLastUpdated = (isoString: string | null) => {
+    if (!isoString) return '';
+    const date = new Date(isoString);
+    const now = new Date();
+    const diffMs = Math.abs(now.getTime() - date.getTime());
+    const diffMins = Math.floor(diffMs / 60000);
+    const diffHours = Math.floor(diffMins / 60);
+    const diffDays = Math.floor(diffHours / 24);
+
+    if (diffMins < 1) return 'Just now';
+    if (diffMins < 60) return `${diffMins}m ago`;
+    if (diffHours < 24) return `${diffHours}h ago`;
+    if (diffDays < 30) return `${diffDays}d ago`;
+
+    return date.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
   };
 
   const [isCapturing, setIsCapturing] = useState(false);
@@ -185,7 +222,7 @@ const Toolbar: React.FC = () => {
     if (!worldEl || thoughts.length === 0) return;
 
     setIsCapturing(true);
-    
+
     try {
       // Detect Global Scale (from index.css rule)
       const body = document.querySelector('.app-body') || document.body;
@@ -201,7 +238,7 @@ const Toolbar: React.FC = () => {
         width: worldRectRaw.width / globalScale,
         height: worldRectRaw.height / globalScale
       };
-      
+
       // Get current world zoom scale to normalize measurements
       const worldStyle = window.getComputedStyle(worldEl);
       const matrix = new DOMMatrix(worldStyle.transform);
@@ -210,7 +247,7 @@ const Toolbar: React.FC = () => {
       thoughts.forEach(t => {
         const el = document.querySelector(`.thought-bulb[data-id="${t.id}"]`) as HTMLElement;
         if (!el) return;
-        
+
         const rectRaw = el.getBoundingClientRect();
         const rect = {
           left: rectRaw.left / globalScale,
@@ -224,7 +261,7 @@ const Toolbar: React.FC = () => {
         const y = (rect.top - worldRect.top) / currentZoom;
         const w = rect.width / currentZoom;
         const h = rect.height / currentZoom;
-        
+
         if (x < minX) minX = x;
         if (y < minY) minY = y;
         if (x + w > maxX) maxX = x + w;
@@ -242,7 +279,7 @@ const Toolbar: React.FC = () => {
       // Extreme Stability: Calculate a safe internal scale
       const MAX_SAFE_DIMENSION = 4000;
       const scaleFactor = Math.min(1, MAX_SAFE_DIMENSION / Math.max(width, height));
-      
+
       const canvas = await toCanvas(worldEl, {
         backgroundColor: getComputedStyle(document.body).getPropertyValue('--bg-main').trim() || '#020408',
         cacheBust: true,
@@ -253,20 +290,20 @@ const Toolbar: React.FC = () => {
           position: 'absolute',
           width: `${width}px`,
           height: `${height}px`,
-          margin: '0', 
-          padding: '0', 
-          left: '0', 
+          margin: '0',
+          padding: '0',
+          left: '0',
           top: '0',
-          filter: 'none', 
-          backdropFilter: 'none', 
+          filter: 'none',
+          backdropFilter: 'none',
           boxShadow: 'none'
         },
         width: Math.floor(width * scaleFactor),
         height: Math.floor(height * scaleFactor),
         filter: (node: HTMLElement) => {
-          const isUI = node.classList?.contains('ui-layer') || 
-                       node.id === 'connection-canvas' ||
-                       (node.tagName === 'BUTTON' && !node.closest?.('.thought-bulb'));
+          const isUI = node.classList?.contains('ui-layer') ||
+            node.id === 'connection-canvas' ||
+            (node.tagName === 'BUTTON' && !node.closest?.('.thought-bulb'));
           return !isUI;
         }
       });
@@ -308,11 +345,12 @@ const Toolbar: React.FC = () => {
   };
 
   const handleAddThought = async () => {
+    if (isReadOnly) return;
     if (thoughts.length >= limits.MAX_THOUGHTS_PER_SPACE) {
       const isPro = user?.plan === 'pro';
       openModal({
         title: 'Space is Full',
-        description: isPro 
+        description: isPro
           ? `This space has reached its maximum capacity of ${limits.MAX_THOUGHTS_PER_SPACE} thoughts.`
           : `You've reached the Free limit of ${limits.MAX_THOUGHTS_PER_SPACE} thoughts per space. Upgrade to Pro for more capacity.`,
         type: 'limit_thought',
@@ -330,7 +368,7 @@ const Toolbar: React.FC = () => {
 
   const setViewMode = (mode: 'spatial' | 'kanban' | 'calendar') => {
     if (!activeSpace) return;
-    
+
     // Only reset transform if switching TO a non-spatial mode
     if (mode !== 'spatial') {
       setTransform({ x: 0, y: 0, scale: 1 });
@@ -418,7 +456,7 @@ const Toolbar: React.FC = () => {
     if (!activeSpace) return;
     const currentIndex = spaces.findIndex(s => s.id === activeSpaceId);
     const newIndex = currentIndex + dir;
-    
+
     if (newIndex >= 0 && newIndex < spaces.length) {
       const newSpaces = [...spaces];
       [newSpaces[currentIndex], newSpaces[newIndex]] = [newSpaces[newIndex], newSpaces[currentIndex]];
@@ -432,8 +470,8 @@ const Toolbar: React.FC = () => {
       <div className="fixed top-4 md:top-6 left-4 md:left-6 right-4 md:right-6 z-[9999] flex items-center justify-between pointer-events-none">
         {/* LEFT SIDE: Logo */}
         <div className="hidden lg:flex pointer-events-auto items-center h-[48px] flex-shrink-0">
-          <a 
-            href="/" 
+          <a
+            href="/"
             className="text-2xl font-bold tracking-tighter text-[var(--text-primary)] hover:opacity-70 transition-opacity"
           >
             CYBERIA
@@ -443,102 +481,153 @@ const Toolbar: React.FC = () => {
         {/* CENTER: Space Switcher - STRICT CENTERING */}
         <div className="md:absolute md:left-1/2 md:-translate-x-1/2 flex flex-col items-center gap-2 pointer-events-none z-10 w-full md:w-auto px-4 md:px-0">
           <div className="max-w-full flex items-center h-[52px] glass rounded-full shadow-2xl transition-all pointer-events-auto border border-white/5 px-2">
-            <div className="flex items-center gap-1 h-full min-w-max">
-              <button 
-                onClick={() => setIsSpaceMenuOpen(!isSpaceMenuOpen)}
-                className={cn(
-                  "w-9 h-9 rounded-full transition-all flex-shrink-0 flex items-center justify-center border",
-                  isSpaceMenuOpen 
-                    ? "bg-[var(--accent)] text-white border-[var(--accent)] shadow-[0_0_15px_var(--accent-glow)]" 
-                    : "text-slate-600 hover:text-white hover:bg-white/10 border-white/10"
+            {isReadOnly ? (
+              <div className="px-6 flex items-center justify-center gap-2">
+                {isSpaceLoading ? (
+                  <div className="flex items-center gap-3 animate-pulse">
+                    <div className="w-2 h-2 rounded-full bg-indigo-500/50" />
+                    <div className="h-2 w-32 bg-white/10 rounded-full" />
+                    <div className="h-5 w-12 bg-white/5 rounded-full border border-white/5" />
+                  </div>
+                ) : (
+                  <>
+                    <div className={cn("w-2 h-2 rounded-full", getStatusColor(activeSpace))} />
+                    <span className="text-[10px] font-black uppercase tracking-[0.2em] text-white/90 truncate max-w-[300px]">
+                      {creatorName}'s {activeSpace?.name || 'Space'}
+                    </span>
+                    <div className="flex items-center justify-center px-2 py-0.5 rounded-full bg-white/5 border border-white/10 ml-2 h-5">
+                      <span className="text-[8px] font-black text-slate-500 uppercase tracking-widest leading-none">Public</span>
+                    </div>
+                    {lastUpdated && (
+                      <div className="flex items-center gap-1.5 ml-3 pl-3 border-l border-white/5 h-4 group/updated">
+                        <div className="w-1 h-1 rounded-full bg-slate-600 group-hover/updated:bg-indigo-400 transition-colors" />
+                        <span className="text-[8px] font-bold text-slate-500 uppercase tracking-[0.15em] whitespace-nowrap">
+                          Updated {formatLastUpdated(lastUpdated)}
+                        </span>
+                      </div>
+                    )}
+                  </>
                 )}
-                title="Space Settings"
-              >
-                <Settings className={cn("w-3.5 h-3.5", isSpaceMenuOpen && "animate-spin-slow")} />
-              </button>
-              <div className="w-[1px] h-3 bg-white/10 mx-1"></div>
-              
-              {/* Space Tabs with visible custom scrollbar - UI VISIBILITY ONLY CAPPED (4 items on most screens, 6 on 1080p+) */}
-              <div 
-                id="space-switcher-list"
-                className="flex items-center gap-1 overflow-x-auto custom-scroll pb-1 max-w-[450px] 2xl:max-w-[750px] pointer-events-auto"
-                onWheel={(e) => {
-                  e.stopPropagation();
-                  e.currentTarget.scrollLeft += e.deltaY;
-                }}
-              >
-                {spaces.map((space) => {
-                  const isActive = space.id === activeSpaceId;
-                  return (
-                    <button
-                      key={space.id}
-                      onClick={() => setActiveSpace(space.id)}
-                      className={cn(
-                        "px-3 h-9 w-[110px] md:w-[120px] rounded-full text-[10px] uppercase font-black tracking-widest flex-shrink-0 transition-all duration-500 flex items-center justify-center gap-2",
-                        isActive 
-                          ? "bg-white/10 text-white border border-white/10 shadow-[0_0_20px_rgba(255,255,255,0.05)]" 
-                          : "text-slate-500 hover:text-slate-300 hover:bg-white/[0.03] border border-transparent"
-                      )}
-                    >
-                      {isActive && <div className="w-1 h-1 rounded-full bg-[var(--accent-secondary)] shadow-[0_0_8px_var(--accent)]" />}
-                      <span className="truncate">{space.name}</span>
-                    </button>
-                  );
-                })}
               </div>
-              
-              {/* Add Space Button: Correctly tied to User Plan Limits (Free vs Pro) */}
-              {spaces.length < limits.MAX_SPACES && (
-                <>
-                  <div className="w-[1px] h-3 bg-white/10 mx-1"></div>
-                  <button 
-                    onClick={handleCreateSpace}
-                    className="w-9 h-9 rounded-full text-slate-600 hover:text-white hover:bg-white/10 transition-all flex-shrink-0 flex items-center justify-center border border-white/10 border-dashed"
-                  >
-                    <Plus className="w-3.5 h-3.5" />
-                  </button>
-                </>
-              )}
-            </div>
+            ) : (
+              <div className="flex items-center gap-1 h-full min-w-max">
+                <button
+                  onClick={() => setIsSpaceMenuOpen(!isSpaceMenuOpen)}
+                  className={cn(
+                    "w-9 h-9 rounded-full transition-all flex-shrink-0 flex items-center justify-center border",
+                    isSpaceMenuOpen
+                      ? "bg-[var(--accent)] text-white border-[var(--accent)] shadow-[0_0_15px_var(--accent-glow)]"
+                      : "text-slate-600 hover:text-white hover:bg-white/10 border-white/10"
+                  )}
+                  title="Space Settings"
+                >
+                  <Settings className={cn("w-3.5 h-3.5", isSpaceMenuOpen && "animate-spin-slow")} />
+                </button>
+                <div className="w-[1px] h-3 bg-white/10 mx-1"></div>
+
+                {/* Space Tabs with visible custom scrollbar - UI VISIBILITY ONLY CAPPED (4 items on most screens, 6 on 1080p+) */}
+                <div
+                  id="space-switcher-list"
+                  className="flex items-center gap-1 overflow-x-auto custom-scroll pb-1 max-w-[450px] 2xl:max-w-[750px] pointer-events-auto"
+                  onWheel={(e) => {
+                    e.stopPropagation();
+                    e.currentTarget.scrollLeft += e.deltaY;
+                  }}
+                >
+                  {spaces.map((space) => {
+                    const isActive = space.id === activeSpaceId;
+                    return (
+                      <button
+                        key={space.id}
+                        onClick={() => setActiveSpace(space.id)}
+                        className={cn(
+                          "px-3 h-9 min-w-[110px] md:min-w-[120px] rounded-full text-[10px] uppercase font-black tracking-widest flex-shrink-0 transition-all duration-500 flex items-center justify-center gap-2",
+                          isActive
+                            ? "bg-white/10 text-white border border-white/10 shadow-[0_0_20px_rgba(255,255,255,0.05)]"
+                            : "text-slate-500 hover:text-slate-300 hover:bg-white/[0.03] border border-transparent"
+                        )}
+                      >
+                        <div className={cn(
+                          "w-1 h-1 rounded-full bg-[var(--accent-secondary)] shadow-[0_0_8px_var(--accent)]",
+                          getStatusColor(space)
+                        )} />
+                        <span className="truncate">{space.name}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+
+                {/* Add Space Button: Correctly tied to User Plan Limits (Free vs Pro) */}
+                {spaces.length < limits.MAX_SPACES && (
+                  <>
+                    <div className="w-[1px] h-3 bg-white/10 mx-1"></div>
+                    <button
+                      onClick={handleCreateSpace}
+                      className="w-9 h-9 rounded-full text-slate-600 hover:text-white hover:bg-white/10 transition-all flex-shrink-0 flex items-center justify-center border border-white/10 border-dashed"
+                    >
+                      <Plus className="w-3.5 h-3.5" />
+                    </button>
+                  </>
+                )}
+              </div>
+            )}
           </div>
 
           {/* WEB SPACE SETTINGS */}
           {activeSpace && isSpaceMenuOpen && (
-            <div className="absolute top-full mt-2 flex items-center gap-1.5 transition-all animate-in fade-in slide-in-from-top-2 duration-300 pointer-events-auto">
-              <div className="glass px-3 py-1.5 rounded-xl border border-white/10 flex items-center gap-1 shadow-2xl">
-                <button 
-                  onClick={handleRenameSpace}
-                  className="p-1.5 hover:bg-white/5 rounded-lg text-slate-400 hover:text-white transition-all flex items-center gap-2 group"
-                  title="Rename Space"
-                >
-                  <Edit3 className="w-3.5 h-3.5 group-hover:scale-110 transition-transform" />
-                  <span className="text-[8px] font-black uppercase tracking-widest hidden sm:inline">Rename</span>
-                </button>
-                <div className="w-px h-3 bg-white/5 mx-1" />
-                <button 
-                  onClick={() => handleMoveSpace(-1)}
-                  className="p-1.5 hover:bg-white/5 rounded-lg text-slate-400 hover:text-white transition-all group"
-                  title="Move Left"
-                >
-                  <ChevronLeft className="w-3.5 h-3.5 group-hover:-translate-x-0.5 transition-transform" />
-                </button>
-                <button 
-                  onClick={() => handleMoveSpace(1)}
-                  className="p-1.5 hover:bg-white/5 rounded-lg text-slate-400 hover:text-white transition-all group"
-                  title="Move Right"
-                >
-                  <ChevronRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" />
-                </button>
-                <div className="w-px h-3 bg-white/10 mx-1" />
-                <button 
-                  onClick={handleDeleteSpace}
-                  className="p-1.5 hover:bg-red-500/10 rounded-lg text-slate-500 hover:text-red-400 transition-all flex items-center gap-2 group"
-                  title="Delete Space"
-                >
-                  <Trash2 className="w-3.5 h-3.5 group-hover:scale-110 transition-transform" />
-                  <span className="text-[8px] font-black uppercase tracking-widest hidden sm:inline">Delete</span>
-                </button>
-              </div>
+            <div className="absolute top-full mt-2 flex flex-col items-center gap-1.5 transition-all animate-in fade-in slide-in-from-top-2 duration-300 pointer-events-auto">
+              {!isReadOnly && (
+                <div className="glass px-3 py-1.5 rounded-xl border border-white/10 flex items-center gap-1 shadow-2xl">
+                  <button
+                    onClick={handleRenameSpace}
+                    className="p-1.5 hover:bg-white/5 rounded-lg text-slate-400 hover:text-white transition-all flex items-center gap-2 group"
+                    title="Rename Space"
+                  >
+                    <Edit3 className="w-3.5 h-3.5 group-hover:scale-110 transition-transform" />
+                    <span className="text-[8px] font-black uppercase tracking-widest hidden sm:inline">Rename</span>
+                  </button>
+                  <div className="w-px h-3 bg-white/5 mx-1" />
+                  <button
+                    onClick={() => {
+                      openModal({
+                        title: 'Share Space',
+                        type: 'custom',
+                        content: <ShareDialog spaceId={activeSpace.id} />
+                      });
+                      setIsSpaceMenuOpen(false);
+                    }}
+                    className="p-1.5 hover:bg-white/5 rounded-lg text-indigo-400 hover:text-indigo-300 transition-all flex items-center gap-2 group"
+                    title="Share Space"
+                  >
+                    <Share2 className="w-3.5 h-3.5 group-hover:scale-110 transition-transform" />
+                    <span className="text-[8px] font-black uppercase tracking-widest hidden sm:inline">Share Link</span>
+                  </button>
+                  <div className="w-px h-3 bg-white/5 mx-1" />
+                  <button
+                    onClick={() => handleMoveSpace(-1)}
+                    className="p-1.5 hover:bg-white/5 rounded-lg text-slate-400 hover:text-white transition-all group"
+                    title="Move Left"
+                  >
+                    <ChevronLeft className="w-3.5 h-3.5 group-hover:-translate-x-0.5 transition-transform" />
+                  </button>
+                  <button
+                    onClick={() => handleMoveSpace(1)}
+                    className="p-1.5 hover:bg-white/5 rounded-lg text-slate-400 hover:text-white transition-all group"
+                    title="Move Right"
+                  >
+                    <ChevronRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" />
+                  </button>
+                  <div className="w-px h-3 bg-white/10 mx-1" />
+                  <button
+                    onClick={handleDeleteSpace}
+                    className="p-1.5 hover:bg-red-500/10 rounded-lg text-slate-500 hover:text-red-400 transition-all flex items-center gap-2 group"
+                    title="Delete Space"
+                  >
+                    <Trash2 className="w-3.5 h-3.5 group-hover:scale-110 transition-transform" />
+                    <span className="text-[8px] font-black uppercase tracking-widest hidden sm:inline">Delete</span>
+                  </button>
+                </div>
+              )}
             </div>
           )}
         </div>
@@ -559,8 +648,8 @@ const Toolbar: React.FC = () => {
                   onClick={() => setViewMode(mode.id as 'spatial' | 'kanban' | 'calendar')}
                   className={cn(
                     "px-3 md:px-4 h-full rounded-xl transition-all duration-300 flex items-center gap-2 group/mode",
-                    isActive 
-                      ? "bg-white/10 text-white shadow-xl" 
+                    isActive
+                      ? "bg-white/10 text-white shadow-xl"
                       : "text-slate-500 hover:text-slate-300 hover:bg-white/[0.03]"
                   )}
                 >
@@ -585,28 +674,48 @@ const Toolbar: React.FC = () => {
         </div>
       </div>
 
-      {/* NEW THOUGHT FAB */}
-      <div className="fixed bottom-10 left-1/2 -translate-x-1/2 z-[10000] pointer-events-none flex flex-col items-center transition-all duration-300">
-        <button 
-          onClick={handleAddThought}
-          className="group relative flex items-center justify-center w-16 h-16 bg-[var(--bg-gradient-to)]/40 backdrop-blur-2xl text-white rounded-full border border-white/10 shadow-[0_0_50px_var(--accent-glow)] transition-all hover:scale-110 active:scale-95 hover:border-[var(--accent)]/40 pointer-events-auto"
-        >
-          {/* Tooltip */}
-          <div className="absolute bottom-full mb-4 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-all duration-300 translate-y-2 group-hover:translate-y-0 pointer-events-none whitespace-nowrap">
-            <div className="glass px-3 py-1.5 rounded-xl border border-white/10 flex flex-col items-center gap-1 shadow-2xl bg-[var(--bg-main)]/90 backdrop-blur-xl">
-              <div className="flex items-center gap-2">
-                <span className="text-[10px] font-black uppercase tracking-widest text-white/80">New Thought</span>
-                <div className="w-[1px] h-2 bg-white/10 mx-0.5" />
-                <kbd className="bg-white/5 border border-white/10 px-1.5 py-0.5 rounded text-[8px] font-black text-[var(--accent-secondary)]">SPACE</kbd>
+      {/* NEW THOUGHT FAB / EXIT BUTTON */}
+      {!isReadOnly ? (
+        <div className="fixed bottom-10 left-1/2 -translate-x-1/2 z-[10000] pointer-events-none flex flex-col items-center transition-all duration-300">
+          <button
+            onClick={handleAddThought}
+            className="group relative flex items-center justify-center w-16 h-16 bg-[var(--bg-gradient-to)]/40 backdrop-blur-2xl text-white rounded-full border border-white/10 shadow-[0_0_50px_var(--accent-glow)] transition-all hover:scale-110 active:scale-95 hover:border-[var(--accent)]/40 pointer-events-auto"
+          >
+            {/* Tooltip */}
+            <div className="absolute bottom-full mb-4 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-all duration-300 translate-y-2 group-hover:translate-y-0 pointer-events-none whitespace-nowrap">
+              <div className="glass px-3 py-1.5 rounded-xl border border-white/10 flex flex-col items-center gap-1 shadow-2xl bg-[var(--bg-main)]/90 backdrop-blur-xl">
+                <div className="flex items-center gap-2">
+                  <span className="text-[10px] font-black uppercase tracking-widest text-white/80">New Thought</span>
+                  <div className="w-[1px] h-2 bg-white/10 mx-0.5" />
+                  <kbd className="bg-white/5 border border-white/10 px-1.5 py-0.5 rounded text-[8px] font-black text-[var(--accent-secondary)]">SPACE</kbd>
+                </div>
+                <span className="text-[7px] font-black uppercase tracking-[0.2em] text-white/30 italic">or drag files to import</span>
               </div>
-              <span className="text-[7px] font-black uppercase tracking-[0.2em] text-white/30 italic">or drag files to import</span>
             </div>
-          </div>
 
-          <div className="absolute inset-0 rounded-full bg-[var(--accent)]/5 opacity-0 group-hover:opacity-100 transition-opacity blur-xl" />
-          <Plus className="w-8 h-8 text-slate-400 group-hover:text-white transition-all group-hover:rotate-90 relative z-10" />
-        </button>
-      </div>
+            <div className="absolute inset-0 rounded-full bg-[var(--accent)]/5 opacity-0 group-hover:opacity-100 transition-opacity blur-xl" />
+            <Plus className="w-8 h-8 text-slate-400 group-hover:text-white transition-all group-hover:rotate-90 relative z-10" />
+          </button>
+        </div>
+      ) : (
+        <div className="fixed bottom-10 left-1/2 -translate-x-1/2 z-[10000] pointer-events-none flex flex-col items-center transition-all duration-300">
+          <button
+            onClick={() => window.location.href = '/'}
+            className="group relative flex items-center gap-3 px-6 py-3 bg-[var(--bg-gradient-to)]/40 backdrop-blur-2xl text-white rounded-full border border-white/10 shadow-[0_0_50px_var(--accent-glow)] transition-all hover:scale-105 active:scale-95 hover:border-[var(--accent)]/40 pointer-events-auto"
+          >
+            {/* Tooltip */}
+            <div className="absolute bottom-full mb-4 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-all duration-300 translate-y-2 group-hover:translate-y-0 pointer-events-none whitespace-nowrap">
+              <div className="glass px-3 py-1.5 rounded-xl border border-white/10 flex items-center gap-2 shadow-2xl bg-[var(--bg-main)]/90 backdrop-blur-xl">
+                <span className="text-[10px] font-black uppercase tracking-widest text-white/80">Return to Your Workspace</span>
+              </div>
+            </div>
+
+            <div className="absolute inset-0 rounded-full bg-[var(--accent)]/5 opacity-0 group-hover:opacity-100 transition-opacity blur-xl" />
+            <ArrowLeft className="w-5 h-5 text-slate-400 group-hover:text-white transition-all relative z-10" />
+            <span className="text-[10px] font-black uppercase tracking-widest text-slate-400 group-hover:text-white transition-all relative z-10">Exit</span>
+          </button>
+        </div>
+      )}
 
       {/* SYSTEM TRAY */}
       <div className="fixed bottom-4 md:bottom-8 right-4 md:right-8 z-[9999] flex flex-col items-end gap-3 pointer-events-none system-tray-container">
@@ -628,8 +737,8 @@ const Toolbar: React.FC = () => {
                   onClick={() => setTheme(t.id as 'cyberia' | 'sakura' | 'neon')}
                   className={cn(
                     "flex flex-col items-center gap-2.5 p-2.5 rounded-xl border transition-all",
-                    theme === t.id 
-                      ? "bg-white/10 border-white/20 shadow-lg" 
+                    theme === t.id
+                      ? "bg-white/10 border-white/20 shadow-lg"
                       : "border-transparent hover:bg-white/5"
                   )}
                 >
@@ -660,7 +769,7 @@ const Toolbar: React.FC = () => {
             <Camera className="w-3.5 h-3.5" /> {isCapturing ? 'Saving...' : 'Screenshot'}
           </button>
 
-          <button 
+          <button
             onClick={() => {
               openModal({
                 title: 'Terms of Service',
@@ -668,16 +777,16 @@ const Toolbar: React.FC = () => {
                 confirmText: 'Acknowledged'
               });
               setIsSystemMenuOpen(false);
-            }} 
+            }}
             className="flex items-center gap-3 px-3 py-3 rounded-xl md:rounded-2xl hover:bg-white/5 text-[9px] md:text-[10px] font-black uppercase tracking-widest text-slate-500 hover:text-indigo-400 transition-colors"
           >
             <Shield className="w-3.5 h-3.5" /> Terms of Service
           </button>
-          
+
           <div className="h-[1px] bg-white/5 my-3 mx-1"></div>
 
           <div className="grid grid-cols-2 gap-2">
-            <button 
+            <button
               onClick={() => {
                 openModal({
                   title: 'Clear Workspace?',
@@ -687,50 +796,52 @@ const Toolbar: React.FC = () => {
                   onConfirm: clearWorkspace
                 });
                 setIsSystemMenuOpen(false);
-              }} 
+              }}
               className="w-full flex items-center justify-center gap-2 py-3 rounded-xl hover:bg-red-500/10 text-[9px] md:text-[10px] font-black uppercase tracking-widest text-red-400 transition-colors border border-transparent hover:border-red-500/10"
             >
               <Trash2 className="w-3 h-3" /> Clear
             </button>
           </div>
         </div>
-        
+
         <div className="flex gap-2 pointer-events-auto">
-          <div className="relative group">
-            {/* Tooltip */}
-            <div className="absolute bottom-full mb-4 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-all duration-300 translate-y-2 group-hover:translate-y-0 pointer-events-none whitespace-nowrap z-[10001]">
-              <div className="glass px-3 py-1.5 rounded-xl border border-white/10 flex items-center gap-2 shadow-2xl bg-[var(--bg-main)]/90 backdrop-blur-xl">
-                <span className="text-[10px] font-black uppercase tracking-widest text-white/80">Ask Oracle</span>
+          {!isReadOnly && user && (
+            <div className="relative group">
+              {/* Tooltip */}
+              <div className="absolute bottom-full mb-4 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-all duration-300 translate-y-2 group-hover:translate-y-0 pointer-events-none whitespace-nowrap z-[10001]">
+                <div className="glass px-3 py-1.5 rounded-xl border border-white/10 flex items-center gap-2 shadow-2xl bg-[var(--bg-main)]/90 backdrop-blur-xl">
+                  <span className="text-[10px] font-black uppercase tracking-widest text-white/80">Ask Oracle</span>
+                </div>
               </div>
+
+              <button
+                onClick={() => {
+                  if (!limits.AI_ENABLED) {
+                    openPricing();
+                    return;
+                  }
+                  setChatOpen(!isChatOpen);
+                }}
+                className={cn(
+                  "glass w-10 h-10 md:w-12 md:h-12 flex items-center justify-center rounded-2xl border border-white/5 transition-all",
+                  !limits.AI_ENABLED ? "opacity-40 grayscale hover:opacity-100 transition-opacity" :
+                    isChatOpen
+                      ? "bg-[var(--accent)] text-white shadow-[0_0_20px_var(--accent-glow)]"
+                      : "text-[var(--accent)] hover:bg-[var(--accent)]/10"
+                )}
+              >
+                {!limits.AI_ENABLED ? (
+                  <EyeOff className="w-4 h-4 md:w-5 md:h-5" />
+                ) : isChatOpen ? (
+                  <Eye className="w-4 h-4 md:w-5 md:h-5" />
+                ) : (
+                  <EyeClosed className="w-4 h-4 md:w-5 md:h-5" />
+                )}
+              </button>
             </div>
+          )}
 
-            <button 
-              onClick={() => {
-                if (!limits.AI_ENABLED) {
-                  openPricing();
-                  return;
-                }
-                setChatOpen(!isChatOpen);
-              }}
-              className={cn(
-                "glass w-10 h-10 md:w-12 md:h-12 flex items-center justify-center rounded-2xl border border-white/5 transition-all",
-                !limits.AI_ENABLED ? "opacity-40 grayscale hover:opacity-100 transition-opacity" :
-                isChatOpen 
-                  ? "bg-[var(--accent)] text-white shadow-[0_0_20px_var(--accent-glow)]" 
-                  : "text-[var(--accent)] hover:bg-[var(--accent)]/10"
-              )}
-            >
-              {!limits.AI_ENABLED ? (
-                <EyeOff className="w-4 h-4 md:w-5 md:h-5" />
-              ) : isChatOpen ? (
-                <Eye className="w-4 h-4 md:w-5 md:h-5" />
-              ) : (
-                <EyeClosed className="w-4 h-4 md:w-5 md:h-5" />
-              )}
-            </button>
-          </div>
-
-          <button 
+          <button
             onClick={() => setIsShortcutsOpen(!isShortcutsOpen)}
             className={cn(
               "group relative hidden md:flex glass w-12 h-12 items-center justify-center rounded-2xl transition-all border border-white/5",
@@ -745,7 +856,7 @@ const Toolbar: React.FC = () => {
             </div>
             <Keyboard className="w-5 h-5" />
           </button>
-          <button 
+          <button
             onClick={() => setIsHelpOpen(!isHelpOpen)}
             className={cn(
               "group relative glass w-10 h-10 md:w-12 md:h-12 flex items-center justify-center rounded-2xl transition-all border border-white/5",
@@ -760,7 +871,7 @@ const Toolbar: React.FC = () => {
             </div>
             <CircleHelp className="w-4 h-4 md:w-5 md:h-5" />
           </button>
-          <button 
+          <button
             onClick={() => setIsSystemMenuOpen(!isSystemMenuOpen)}
             className={cn(
               "group relative glass w-10 h-10 md:w-12 md:h-12 flex items-center justify-center rounded-2xl transition-all border border-white/5",
@@ -794,7 +905,7 @@ const Toolbar: React.FC = () => {
             <span className={cn(
               "w-1.5 h-1.5 rounded-full flex-shrink-0 transition-all shadow-[0_0_10px_currentColor]",
               thoughts.length > limits.MAX_THOUGHTS_PER_SPACE ? "bg-red-500 text-red-500" : "bg-green-500 text-green-500"
-            )}></span> 
+            )}></span>
             <span className={cn(
               "text-[9px] md:text-[10px] uppercase font-black tracking-widest transition-colors",
               thoughts.length > limits.MAX_THOUGHTS_PER_SPACE ? "text-red-400" : "text-white/80"
@@ -807,7 +918,7 @@ const Toolbar: React.FC = () => {
           <div className="h-3 w-[1px] bg-white/10 mx-0.5"></div>
 
           {/* Physics Toggle */}
-          <button 
+          <button
             onClick={handleTogglePhysics}
             className={cn(
               "group relative flex items-center gap-2 transition-all text-[9px] md:text-[10px] font-black uppercase tracking-widest",
@@ -825,14 +936,14 @@ const Toolbar: React.FC = () => {
               </div>
             </div>
 
-            <Zap className="w-3.5 h-3.5 md:w-4 md:h-4" /> 
+            <Zap className="w-3.5 h-3.5 md:w-4 md:h-4" />
             <span className="hidden xl:inline">Physics</span>
           </button>
 
           {/* History Controls */}
           <div className="hidden sm:flex h-3 w-[1px] bg-white/10 mx-0.5"></div>
           <div className="hidden sm:flex items-center gap-1">
-            <button 
+            <button
               onClick={undo}
               disabled={historyIndex <= 0}
               className="group relative p-1.5 md:p-2 hover:bg-white/10 text-slate-400 hover:text-white disabled:opacity-20 disabled:cursor-not-allowed transition-all rounded-lg"
@@ -847,7 +958,7 @@ const Toolbar: React.FC = () => {
               </div>
               <Undo2 className="w-3.5 h-3.5 md:w-4 md:h-4" />
             </button>
-            <button 
+            <button
               onClick={redo}
               disabled={historyIndex >= history.length - 1}
               className="group relative p-1.5 md:p-2 hover:bg-white/10 text-slate-400 hover:text-white disabled:opacity-20 disabled:cursor-not-allowed transition-all rounded-lg"
@@ -869,7 +980,7 @@ const Toolbar: React.FC = () => {
             <>
               <div className="h-3 w-[1px] bg-white/10 mx-0.5"></div>
               <div className="flex items-center gap-1">
-                <button 
+                <button
                   onClick={zoomIn}
                   className="group relative p-2 hover:bg-white/10 text-slate-400 hover:text-white transition-colors rounded-lg"
                 >
@@ -883,7 +994,7 @@ const Toolbar: React.FC = () => {
                   </div>
                   <ZoomIn className="w-4 h-4" />
                 </button>
-                <button 
+                <button
                   onClick={zoomOut}
                   className="group relative p-2 hover:bg-white/10 text-slate-400 hover:text-white transition-colors rounded-lg"
                 >
@@ -897,7 +1008,7 @@ const Toolbar: React.FC = () => {
                   </div>
                   <ZoomOut className="w-4 h-4" />
                 </button>
-                <button 
+                <button
                   onClick={resetTransform}
                   className="group relative p-2 hover:bg-white/10 text-slate-400 hover:text-white transition-colors rounded-lg"
                 >
@@ -980,8 +1091,8 @@ const Toolbar: React.FC = () => {
                   onClick={() => setActiveHelpTab(tab.id as 'about' | 'issue' | 'contact')}
                   className={cn(
                     "flex-1 py-3 rounded-xl text-[9px] md:text-[10px] font-black uppercase tracking-widest transition-all",
-                    activeHelpTab === tab.id 
-                      ? "bg-[var(--accent)] text-white shadow-lg shadow-[var(--accent-glow)]" 
+                    activeHelpTab === tab.id
+                      ? "bg-[var(--accent)] text-white shadow-lg shadow-[var(--accent-glow)]"
                       : "text-slate-500 hover:text-white hover:bg-white/5"
                   )}
                 >
@@ -1001,7 +1112,7 @@ const Toolbar: React.FC = () => {
                   <p className="text-xs text-slate-500 leading-relaxed">
                     Designed for non-linear thinkers, visionaries, and digital architects. We believe productivity shouldn't feel like a spreadsheet. It should feel like a world.
                   </p>
-                  <button 
+                  <button
                     onClick={() => {
                       openModal({
                         title: 'Terms of Service',
@@ -1019,7 +1130,7 @@ const Toolbar: React.FC = () => {
               {activeHelpTab === 'issue' && (
                 <div className="space-y-5">
                   <h4 className="text-[11px] font-black text-white uppercase tracking-widest">Report an Issue</h4>
-                  
+
                   {quickSubmitStatus === 'success' ? (
                     <div className="py-6 text-center space-y-3 bg-green-500/5 border border-green-500/10 rounded-2xl animate-in zoom-in-95 duration-300">
                       <CheckCircle className="w-8 h-8 text-green-400 mx-auto" />
@@ -1035,8 +1146,8 @@ const Toolbar: React.FC = () => {
                             onClick={() => setQuickType(t)}
                             className={cn(
                               "flex-1 py-1.5 rounded-lg text-[8px] font-black uppercase tracking-widest transition-all",
-                              quickType === t 
-                                ? "bg-white/10 text-white shadow-md border border-white/10" 
+                              quickType === t
+                                ? "bg-white/10 text-white shadow-md border border-white/10"
                                 : "text-slate-600 hover:text-slate-400"
                             )}
                           >
@@ -1044,14 +1155,14 @@ const Toolbar: React.FC = () => {
                           </button>
                         ))}
                       </div>
-                      <textarea 
+                      <textarea
                         required
                         value={quickMessage}
                         onChange={(e) => setQuickMessage(e.target.value)}
                         placeholder="Quick report... (System logs will be attached)"
                         className="w-full h-24 bg-black/40 border border-white/5 rounded-xl p-3 text-xs text-white outline-none focus:border-[var(--accent)]/50 transition-all resize-none"
                       />
-                      <button 
+                      <button
                         type="submit"
                         disabled={isQuickSubmitting || !quickMessage.trim()}
                         className="w-full h-10 bg-[var(--accent)] hover:bg-[var(--accent)]/90 disabled:opacity-50 text-white rounded-xl font-black uppercase text-[9px] tracking-widest transition-all flex items-center justify-center gap-2"
@@ -1068,7 +1179,7 @@ const Toolbar: React.FC = () => {
                   </div>
 
                   <div className="pt-1">
-                    <button 
+                    <button
                       onClick={() => window.open('/feedback', '_blank')}
                       className="w-full px-6 py-4 rounded-xl bg-white/5 border border-white/10 text-[9px] font-black uppercase tracking-widest text-slate-300 hover:bg-white/10 transition-all flex items-center justify-center gap-2 group"
                     >
@@ -1081,7 +1192,7 @@ const Toolbar: React.FC = () => {
               {activeHelpTab === 'contact' && (
                 <div className="space-y-5">
                   <h4 className="text-[11px] font-black text-white uppercase tracking-widest">Contact Support</h4>
-                  
+
                   {contactSubmitStatus === 'success' ? (
                     <div className="py-10 text-center space-y-4 bg-green-500/5 border border-green-500/10 rounded-2xl animate-in zoom-in-95 duration-300">
                       <CheckCircle className="w-10 h-10 text-green-400 mx-auto" />
@@ -1095,7 +1206,7 @@ const Toolbar: React.FC = () => {
                       <div className="grid grid-cols-2 gap-3">
                         <div className="space-y-1.5">
                           <label className="text-[8px] font-black uppercase tracking-widest text-slate-600 ml-1">Name</label>
-                          <input 
+                          <input
                             type="text"
                             placeholder="Your Name"
                             value={contactName}
@@ -1105,7 +1216,7 @@ const Toolbar: React.FC = () => {
                         </div>
                         <div className="space-y-1.5">
                           <label className="text-[8px] font-black uppercase tracking-widest text-slate-600 ml-1">Email</label>
-                          <input 
+                          <input
                             type="email"
                             required
                             placeholder="your@email.com"
@@ -1117,7 +1228,7 @@ const Toolbar: React.FC = () => {
                       </div>
                       <div className="space-y-1.5">
                         <label className="text-[8px] font-black uppercase tracking-widest text-slate-600 ml-1">Message</label>
-                        <textarea 
+                        <textarea
                           required
                           value={contactMessage}
                           onChange={(e) => setContactMessage(e.target.value)}
@@ -1125,14 +1236,14 @@ const Toolbar: React.FC = () => {
                           className="w-full h-24 bg-black/40 border border-white/5 rounded-xl p-4 text-xs text-white outline-none focus:border-[var(--accent)]/50 transition-all resize-none"
                         />
                       </div>
-                      
+
                       {contactSubmitStatus === 'error' && (
                         <div className="p-3 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 text-[8px] font-black uppercase tracking-widest text-center">
                           Failed to send message. Please try again.
                         </div>
                       )}
 
-                      <button 
+                      <button
                         type="submit"
                         disabled={isContactSubmitting || !contactMessage.trim()}
                         className="w-full h-12 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white rounded-xl font-black uppercase text-[10px] tracking-[0.1em] transition-all flex items-center justify-center gap-2 shadow-lg shadow-indigo-500/10"

@@ -28,6 +28,7 @@ const EmbedFocusEditor: React.FC = () => {
   const thoughts = useStore((state) => state.thoughts);
   const stacks = useStore((state) => state.stacks);
   const updateThought = useStore((state) => state.updateThought);
+  const isReadOnly = useStore((state) => state.isReadOnly);
 
   const thought = thoughts.find((t) => t.id === activeFocusId);
   const stack = stacks.find((s) => s.id === thought?.stackId);
@@ -239,6 +240,7 @@ const EmbedFocusEditor: React.FC = () => {
                     type="text"
                     value={thought.text}
                     onChange={(e) => updateThought(thought.id, { text: e.target.value })}
+                    readOnly={isReadOnly}
                     className="bg-transparent text-xl md:text-2xl font-bold text-white outline-none border-none p-0 w-full truncate"
                     placeholder="Link Title"
                   />

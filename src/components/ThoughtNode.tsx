@@ -51,6 +51,7 @@ const ThoughtNode: React.FC<ThoughtNodeProps> = React.memo(({ thought, registerE
   const isSelected = selectedThoughtId === thought.id || selectedThoughtIds.includes(thought.id);
   const isInspectorOpen = useStore((state) => state.isInspectorOpen);
   const layerActionTrigger = useStore((state) => state.layerActionTrigger);
+  const isReadOnly = useStore((state) => state.isReadOnly);
 
   const setSelectedThoughtId = useStore((state) => state.setSelectedThoughtId);
   const setInspectorOpen = useStore((state) => state.setInspectorOpen);
@@ -59,6 +60,11 @@ const ThoughtNode: React.FC<ThoughtNodeProps> = React.memo(({ thought, registerE
   const linkingSourceId = useStore((state) => state.linkingSourceId);
   const setLinkingSourceId = useStore((state) => state.setLinkingSourceId);
   const stacks = useStore((state) => state.stacks);
+  const spaces = useStore((state) => state.spaces);
+  const activeSpaceId = useStore((state) => state.activeSpaceId);
+
+  const activeSpace = useMemo(() => spaces.find(s => s.id === activeSpaceId), [spaces, activeSpaceId]);
+  const isSpatial = activeSpace?.mode === 'spatial';
 
   const stack = useMemo(() => stacks.find(s => s.id === thought.stackId), [stacks, thought.stackId]);
 
@@ -166,12 +172,13 @@ const ThoughtNode: React.FC<ThoughtNodeProps> = React.memo(({ thought, registerE
     } else if (paintTrigger) {
       setActiveFocus(thought.id, 'paint');
     } else if (embedTrigger) {
+      // Allow embed viewing in read-only mode
       setActiveFocus(thought.id, 'embed');
     } else if (imageTrigger) {
       if (thought.image) openLightbox(thought.image);
     } else {
       setSelectedThoughtId(thought.id);
-      setInspectorOpen(true);
+      if (!isReadOnly) setInspectorOpen(true);
     }
   };
 
@@ -187,19 +194,21 @@ const ThoughtNode: React.FC<ThoughtNodeProps> = React.memo(({ thought, registerE
                 dangerouslySetInnerHTML={{ __html: parsedContent as string }}
               />
             ) : (
-              <motion.div
-                whileHover={{ scale: 1.05, backgroundColor: 'rgba(255,255,255,0.08)' }}
-                whileTap={{ scale: 0.95 }}
-                className={cn(
-                  "flex items-center gap-2 px-3 rounded-xl bg-white/5 border border-white/5 w-fit transition-all duration-500",
-                  thought.stackId
-                    ? "h-0 opacity-0 group-hover:h-8 group-hover:opacity-100 overflow-hidden"
-                    : "h-8 opacity-100"
-                )}
-              >
-                <Type className="w-3.5 h-3.5 text-slate-500" />
-                <span className="text-[8px] font-black uppercase tracking-widest text-slate-500">Write Note...</span>
-              </motion.div>
+              !isReadOnly && (
+                <motion.div
+                  whileHover={{ scale: 1.05, backgroundColor: 'rgba(255,255,255,0.08)' }}
+                  whileTap={{ scale: 0.95 }}
+                  className={cn(
+                    "flex items-center gap-2 px-3 rounded-xl bg-white/5 border border-white/5 w-fit transition-all duration-500",
+                    thought.stackId
+                      ? "h-0 opacity-0 group-hover:h-8 group-hover:opacity-100 overflow-hidden"
+                      : "h-8 opacity-100"
+                  )}
+                >
+                  <Type className="w-3.5 h-3.5 text-slate-500" />
+                  <span className="text-[8px] font-black uppercase tracking-widest text-slate-500">Write Note...</span>
+                </motion.div>
+              )
             )}
             {hasContent && thought.content.length > 150 && (
               <div className="absolute bottom-0 left-0 right-0 h-16 bg-gradient-to-t from-[var(--bg-main)] via-[var(--bg-main)]/80 to-transparent pointer-events-none" />
@@ -217,14 +226,16 @@ const ThoughtNode: React.FC<ThoughtNodeProps> = React.memo(({ thought, registerE
             <div data-trigger="tasks" className="mt-1 flex flex-col items-center gap-2 py-4 bg-black/20 rounded-xl border border-white/5 group/tasks relative cursor-pointer prevent-drag transition-colors hover:bg-white/[0.05]">
               <ListTodo className="w-6 h-6 text-white/20" />
               <span className="text-[10px] text-white/20 font-bold uppercase tracking-widest">Create Tasks</span>
-              <div className="absolute inset-0 bg-[var(--accent)]/10 opacity-0 group-hover/tasks:opacity-100 transition-opacity rounded-xl flex items-center justify-center pointer-events-none">
-                <button
-                  onClick={(e) => { e.stopPropagation(); setActiveFocus(thought.id, 'tasks'); }}
-                  className="pointer-events-auto bg-[var(--accent)] text-white p-2 rounded-lg shadow-xl transform scale-90 group-hover/tasks:scale-100 transition-all hover:scale-110 active:scale-95"
-                >
-                  <Maximize2 className="w-4 h-4" />
-                </button>
-              </div>
+              {!isReadOnly && (
+                <div className="absolute inset-0 bg-[var(--accent)]/10 opacity-0 group-hover/tasks:opacity-100 transition-opacity rounded-xl flex items-center justify-center pointer-events-none">
+                  <button
+                    onClick={(e) => { e.stopPropagation(); setActiveFocus(thought.id, 'tasks'); }}
+                    className="pointer-events-auto bg-[var(--accent)] text-white p-2 rounded-lg shadow-xl transform scale-90 group-hover/tasks:scale-100 transition-all hover:scale-110 active:scale-95"
+                  >
+                    <Maximize2 className="w-4 h-4" />
+                  </button>
+                </div>
+              )}
             </div>
           );
         }
@@ -258,14 +269,16 @@ const ThoughtNode: React.FC<ThoughtNodeProps> = React.memo(({ thought, registerE
                 style={{ width: `${progress}%` }}
               />
             </div>
-            <div className="absolute inset-0 bg-[var(--accent)]/10 opacity-0 group-hover/tasks:opacity-100 transition-opacity rounded-xl flex items-center justify-center pointer-events-none">
-              <button
-                onClick={(e) => { e.stopPropagation(); setActiveFocus(thought.id, 'tasks'); }}
-                className="pointer-events-auto bg-[var(--accent)] text-white p-2 rounded-lg shadow-xl transform scale-90 group-hover/tasks:scale-100 transition-all hover:scale-110 active:scale-95"
-              >
-                <Maximize2 className="w-4 h-4" />
-              </button>
-            </div>
+            {!isReadOnly && (
+              <div className="absolute inset-0 bg-[var(--accent)]/10 opacity-0 group-hover/tasks:opacity-100 transition-opacity rounded-xl flex items-center justify-center pointer-events-none">
+                <button
+                  onClick={(e) => { e.stopPropagation(); setActiveFocus(thought.id, 'tasks'); }}
+                  className="pointer-events-auto bg-[var(--accent)] text-white p-2 rounded-lg shadow-xl transform scale-90 group-hover/tasks:scale-100 transition-all hover:scale-110 active:scale-95"
+                >
+                  <Maximize2 className="w-4 h-4" />
+                </button>
+              </div>
+            )}
           </div>
         );
       }
@@ -280,14 +293,16 @@ const ThoughtNode: React.FC<ThoughtNodeProps> = React.memo(({ thought, registerE
                 <span className="text-[10px] text-white/20 font-bold uppercase tracking-widest">Start Painting</span>
               </div>
             )}
-            <div className="absolute inset-0 bg-[var(--accent)]/10 opacity-0 group-hover/paint:opacity-100 transition-opacity flex items-center justify-center pointer-events-none">
-              <button
-                onClick={(e) => { e.stopPropagation(); setActiveFocus(thought.id, 'paint'); }}
-                className="pointer-events-auto bg-[var(--accent)] text-white p-2 rounded-lg shadow-xl transform scale-90 group-hover/paint:scale-100 transition-all hover:scale-110 active:scale-95"
-              >
-                <Maximize2 className="w-4 h-4" />
-              </button>
-            </div>
+            {!isReadOnly && (
+              <div className="absolute inset-0 bg-[var(--accent)]/10 opacity-0 group-hover/paint:opacity-100 transition-opacity flex items-center justify-center pointer-events-none">
+                <button
+                  onClick={(e) => { e.stopPropagation(); setActiveFocus(thought.id, 'paint'); }}
+                  className="pointer-events-auto bg-[var(--accent)] text-white p-2 rounded-lg shadow-xl transform scale-90 group-hover/paint:scale-100 transition-all hover:scale-110 active:scale-95"
+                >
+                  <Maximize2 className="w-4 h-4" />
+                </button>
+              </div>
+            )}
           </div>
         );
       }
@@ -299,14 +314,16 @@ const ThoughtNode: React.FC<ThoughtNodeProps> = React.memo(({ thought, registerE
             <div data-trigger="table" className="mt-1 flex flex-col items-center gap-2 py-4 bg-black/20 rounded-xl border border-white/5 group/table relative cursor-pointer prevent-drag transition-colors hover:bg-white/[0.05]">
               <Table className="w-6 h-6 text-white/20" />
               <span className="text-[10px] text-white/20 font-bold uppercase tracking-widest">Build Table</span>
-              <div className="absolute inset-0 bg-[var(--accent)]/10 opacity-0 group-hover/table:opacity-100 transition-opacity rounded-xl flex items-center justify-center pointer-events-none">
-                <button
-                  onClick={(e) => { e.stopPropagation(); setActiveFocus(thought.id, 'table'); }}
-                  className="pointer-events-auto bg-[var(--accent)] text-white p-2 rounded-lg shadow-xl transform scale-90 group-hover/table:scale-100 transition-all hover:scale-110 active:scale-95"
-                >
-                  <Maximize2 className="w-4 h-4" />
-                </button>
-              </div>
+              {!isReadOnly && (
+                <div className="absolute inset-0 bg-[var(--accent)]/10 opacity-0 group-hover/table:opacity-100 transition-opacity rounded-xl flex items-center justify-center pointer-events-none">
+                  <button
+                    onClick={(e) => { e.stopPropagation(); setActiveFocus(thought.id, 'table'); }}
+                    className="pointer-events-auto bg-[var(--accent)] text-white p-2 rounded-lg shadow-xl transform scale-90 group-hover/table:scale-100 transition-all hover:scale-110 active:scale-95"
+                  >
+                    <Maximize2 className="w-4 h-4" />
+                  </button>
+                </div>
+              )}
             </div>
           );
         }
@@ -342,14 +359,16 @@ const ThoughtNode: React.FC<ThoughtNodeProps> = React.memo(({ thought, registerE
                 </tbody>
               </table>
             </div>
-            <div className="absolute inset-0 bg-[var(--accent)]/10 opacity-0 group-hover/table:opacity-100 transition-opacity rounded-xl flex items-center justify-center pointer-events-none">
-              <button
-                onClick={(e) => { e.stopPropagation(); setActiveFocus(thought.id, 'table'); }}
-                className="pointer-events-auto bg-[var(--accent)] text-white p-2 rounded-lg shadow-xl transform scale-90 group-hover/table:scale-100 transition-all hover:scale-110 active:scale-95"
-              >
-                <Maximize2 className="w-4 h-4" />
-              </button>
-            </div>
+            {!isReadOnly && (
+              <div className="absolute inset-0 bg-[var(--accent)]/10 opacity-0 group-hover/table:opacity-100 transition-opacity rounded-xl flex items-center justify-center pointer-events-none">
+                <button
+                  onClick={(e) => { e.stopPropagation(); setActiveFocus(thought.id, 'table'); }}
+                  className="pointer-events-auto bg-[var(--accent)] text-white p-2 rounded-lg shadow-xl transform scale-90 group-hover/table:scale-100 transition-all hover:scale-110 active:scale-95"
+                >
+                  <Maximize2 className="w-4 h-4" />
+                </button>
+              </div>
+            )}
           </div>
         );
       }
@@ -469,7 +488,8 @@ const ThoughtNode: React.FC<ThoughtNodeProps> = React.memo(({ thought, registerE
       data-unscheduled={!thought.date ? "true" : "false"}
       className={cn(
         "thought-bulb absolute select-none touch-none will-change-transform w-[280px] pointer-events-auto",
-        isDragging ? "z-[1000] cursor-grabbing" : "z-20 cursor-grab"
+        isDragging ? "z-[1000] cursor-grabbing" : "z-20 cursor-grab",
+        isReadOnly && !isSpatial && "cursor-default"
       )}
       onMouseDown={handleLocalMouseDown}
       onDragStart={(e) => e.preventDefault()}
@@ -550,7 +570,7 @@ const ThoughtNode: React.FC<ThoughtNodeProps> = React.memo(({ thought, registerE
           {renderContent()}
 
           {/* Expand Icon Overlay (Only for text thoughts with content) */}
-          {thought.type === 'text' && thought.content && thought.content.trim().length > 0 && (
+          {!isReadOnly && thought.type === 'text' && thought.content && thought.content.trim().length > 0 && (
             <div className="absolute inset-0 bg-[var(--accent)]/10 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center pointer-events-none">
               <button
                 onClick={(e) => { e.stopPropagation(); setActiveFocus(thought.id, 'text'); }}
@@ -577,24 +597,25 @@ const ThoughtNode: React.FC<ThoughtNodeProps> = React.memo(({ thought, registerE
           )}
         </div>
 
-        {/* Bottom Right Action Button (Link or Unlink) */}
-        <button
-          onClick={handleLinkAction}
-          className={cn(
-            "absolute bottom-2.5 right-2.5 p-1.5 rounded-xl transition-all z-10",
-            linkingSourceId === thought.id
-              ? "bg-[var(--accent)] text-white shadow-[0_0_20px_var(--accent-glow)]"
-              : "bg-white/5 text-slate-500 hover:text-white hover:bg-white/10 border border-white/5",
-            thought.stackId && "hover:text-red-400 hover:bg-red-500/10"
-          )}
-          title={thought.stackId ? "Remove from stack" : "Link to another thought"}
-        >
-          {thought.stackId ? (
-            <Link2Off className="w-4 h-4" />
-          ) : (
-            <LinkIcon className="w-4 h-4" />
-          )}
-        </button>
+        {!isReadOnly && (
+          <button
+            onClick={handleLinkAction}
+            className={cn(
+              "absolute bottom-2.5 right-2.5 p-1.5 rounded-xl transition-all z-10",
+              linkingSourceId === thought.id
+                ? "bg-[var(--accent)] text-white shadow-[0_0_20px_var(--accent-glow)]"
+                : "bg-white/5 text-slate-500 hover:text-white hover:bg-white/10 border border-white/5",
+              thought.stackId && "hover:text-red-400 hover:bg-red-500/10"
+            )}
+            title={thought.stackId ? "Remove from stack" : "Link to another thought"}
+          >
+            {thought.stackId ? (
+              <Link2Off className="w-4 h-4" />
+            ) : (
+              <LinkIcon className="w-4 h-4" />
+            )}
+          </button>
+        )}
       </div>
     </div>
   );

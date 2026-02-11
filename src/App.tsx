@@ -125,7 +125,7 @@ function App() {
 
   useEffect(() => {
     // Only init DB if we are not on the feedback page
-    if (path === '/') {
+    if (path === '/' || path.startsWith('/s/')) {
       init();
     }
 

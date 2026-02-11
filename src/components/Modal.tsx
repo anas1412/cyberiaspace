@@ -8,7 +8,7 @@ function cn(...inputs: ClassValue[]) {
 }
 
 const Modal: React.FC = () => {
-  const { isOpen, title, description, type, inputValue: initialValue, confirmText, onConfirm, closeModal } = useModalStore();
+  const { isOpen, title, description, type, inputValue: initialValue, confirmText, onConfirm, content, closeModal } = useModalStore();
   const [inputValue, setInputValue] = useState('');
 
   const handleConfirm = React.useCallback(() => {
@@ -41,17 +41,18 @@ const Modal: React.FC = () => {
   return (
     <div id="modal-overlay" className="fixed inset-0 bg-black/90 backdrop-blur-[10px] z-[11000] flex items-center justify-center animate-in fade-in duration-200 p-4">
       <div className={cn(
-        "modal-box glass w-full p-6 md:p-10 rounded-[2rem] md:rounded-[40px] border border-white/10 text-center",
+        "modal-box glass w-full p-6 md:p-10 rounded-[2rem] md:rounded-[40px] border border-white/10",
+        type !== 'custom' && "text-center",
         type === 'terms' ? "max-w-[500px]" : "max-w-[420px]"
       )}>
-        <h2 className="text-lg md:text-xl font-bold mb-2 text-white">{title}</h2>
-        
+        {type !== 'custom' && <h2 className="text-lg md:text-xl font-bold mb-2 text-white">{title}</h2>}
+
         {type === 'terms' ? (
           <div className="text-left space-y-6 my-8 max-h-[60vh] overflow-y-auto pr-4 custom-scroll">
             {[
               { title: '1. Data Ownership', desc: 'Everything you create is yours. It stays on your device by default and only goes to the cloud if you sign in.' },
               { title: '2. Manual Renewal', desc: 'We do not support automatic billing. You choose when to extend your Pro access. No unexpected charges, ever.' },
-              { title: '3. Acceptable Use', desc: "Don't store illegal content or use the AI to cause harm. You are responsible for what happens in your sectors." },
+              { title: '3. Acceptable Use', desc: "Don't store illegal content or use the AI to cause harm. You are responsible for what happens in your spaces." },
               { title: '4. Service Uptime', desc: 'We try to stay online 24/7, but technology can be tricky. We suggest using the Export button to keep regular backups.' },
               { title: '5. No Lock-in', desc: 'We never hold your data hostage. You can always export your entire workspace for free, forever.' },
               { title: '6. Fair AI Use', desc: 'Pro users get a generous amount of AI access for creative work. To keep the system fast for everyone, we use a fair-use policy to prevent automated abuse.' },
@@ -64,10 +65,14 @@ const Modal: React.FC = () => {
               </div>
             ))}
           </div>
+        ) : type === 'custom' ? (
+          <div className="my-4">
+            {content}
+          </div>
         ) : (
           description && <p className="text-[10px] md:text-xs text-slate-400 mb-6 md:mb-8 uppercase tracking-widest leading-relaxed">{description}</p>
         )}
-        
+
         {showInput && (
           <input
             type="text"
@@ -79,22 +84,24 @@ const Modal: React.FC = () => {
           />
         )}
 
-        <div className="flex flex-col md:flex-row gap-3 md:gap-4">
-          <button 
-            onClick={handleConfirm}
-            className="order-1 md:order-2 flex-1 py-3.5 md:py-4 text-[10px] md:text-xs font-bold uppercase tracking-widest bg-[var(--accent)] rounded-xl md:rounded-2xl text-white hover:opacity-90 transition-colors shadow-lg shadow-[var(--accent-glow)]"
-          >
-            {confirmText || 'Confirm'}
-          </button>
-          {showCancel && (
-            <button 
-              onClick={closeModal}
-              className="order-2 md:order-1 flex-1 py-3.5 md:py-4 text-[10px] md:text-xs font-bold uppercase tracking-widest bg-white/5 rounded-xl md:rounded-2xl text-white hover:bg-white/10 transition-colors"
+        {type !== 'custom' && (
+          <div className="flex flex-col md:flex-row gap-3 md:gap-4">
+            <button
+              onClick={handleConfirm}
+              className="order-1 md:order-2 flex-1 py-3.5 md:py-4 text-[10px] md:text-xs font-bold uppercase tracking-widest bg-[var(--accent)] rounded-xl md:rounded-2xl text-white hover:opacity-90 transition-colors shadow-lg shadow-[var(--accent-glow)]"
             >
-              Cancel
+              {confirmText || 'Confirm'}
             </button>
-          )}
-        </div>
+            {showCancel && (
+              <button
+                onClick={closeModal}
+                className="order-2 md:order-1 flex-1 py-3.5 md:py-4 text-[10px] md:text-xs font-bold uppercase tracking-widest bg-white/5 rounded-xl md:rounded-2xl text-white hover:bg-white/10 transition-colors"
+              >
+                Cancel
+              </button>
+            )}
+          </div>
+        )}
       </div>
     </div>
   );

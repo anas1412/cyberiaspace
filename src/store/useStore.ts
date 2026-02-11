@@ -76,6 +76,13 @@ interface CyberiaState {
   deleteStack: (id: string) => Promise<void>;
   cleanupStacks: () => Promise<void>;
 
+  // Share Actions
+  isReadOnly: boolean;
+  creatorName: string | null;
+  lastUpdated: string | null;
+  publishSpace: (id: string) => Promise<string | void>;
+  unpublishSpace: (id: string) => Promise<void>;
+
   // Data Lifecycle
   exportData: () => Promise<void>;
   importData: (data: File | unknown) => Promise<void>;
@@ -129,6 +136,93 @@ export const useStore = create<CyberiaState>((set, get) => ({
   isSpaceLoading: true,
   deferredPrompt: null,
   layerActionTrigger: null,
+  isReadOnly: false,
+  creatorName: null,
+  lastUpdated: null,
+
+  publishSpace: async (spaceId) => {
+    const { spaces, thoughts, stacks } = get();
+    const space = spaces.find(s => s.id === spaceId);
+    if (!space) return;
+
+    const authStore = useAuthStore.getState();
+    const user = authStore.user;
+    if (authStore.status !== 'authenticated' || !user) {
+      useModalStore.getState().openModal({
+        title: 'Authentication Required',
+        description: 'You must be signed in to publish a space.',
+        type: 'alert',
+        confirmText: 'Okay'
+      });
+      return;
+    }
+
+    const creatorName = user.name.split(' ')[0];
+
+    try {
+      const spaceThoughts = thoughts.filter(t => t.spaceId === spaceId);
+      const spaceStacks = stacks.filter(s => s.spaceId === spaceId);
+
+      const res = await fetch('/api/publish', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${authStore.accessToken}`
+        },
+        body: JSON.stringify({
+          space,
+          thoughts: spaceThoughts,
+          stacks: spaceStacks,
+          publishedId: space.publishedId,
+          creatorName
+        })
+      });
+
+      if (!res.ok) throw new Error('Publish failed');
+      const data = await res.json();
+
+      const now = new Date().toISOString();
+      await get().updateSpace(spaceId, {
+        publishedId: data.publishedId,
+        lastPublished: data.lastPublished || now,
+        updatedAt: data.lastPublished || now
+      });
+
+      return data.publishedId;
+    } catch (err) {
+      console.error('Publish error:', err);
+      throw err;
+    }
+  },
+
+  unpublishSpace: async (spaceId) => {
+    const { spaces } = get();
+    const space = spaces.find(s => s.id === spaceId);
+    if (!space || !space.publishedId) return;
+
+    const authStore = useAuthStore.getState();
+
+    try {
+      const res = await fetch('/api/unpublish', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${authStore.accessToken}`
+        },
+        body: JSON.stringify({ publishedId: space.publishedId })
+      });
+
+      if (!res.ok) throw new Error('Unpublish failed');
+
+      await get().updateSpace(spaceId, {
+        publishedId: null,
+        lastPublished: null
+      });
+    } catch (err) {
+      console.error('Unpublish error:', err);
+      throw err;
+    }
+  },
 
   getLimits: () => {
     const plan = useAuthStore.getState().user?.plan as SubscriptionPlan;
@@ -250,6 +344,64 @@ export const useStore = create<CyberiaState>((set, get) => ({
   setChatOpen: (isOpen) => set({ isChatOpen: isOpen }),
 
   init: async () => {
+    // 1. Initialize Auth regardless (needed for UI consistency/Oracle status)
+    useAuthStore.getState().initAuth();
+
+    // 2. Detect if we are in a Shared Space
+    const path = window.location.pathname;
+    if (path.startsWith('/s/')) {
+      const parts = path.split('/s/');
+      const sharedId = parts[1]?.split('/')[0]; // Handle trailing slashes
+
+      if (sharedId) {
+        set({ isSpaceLoading: true, isReadOnly: true });
+        try {
+          const res = await fetch(`/api/published?id=${sharedId}`);
+          if (!res.ok) throw new Error('Snapshot not found');
+          const data = await res.json();
+
+          // Apply Snapshot
+          const creatorName = data.creatorName || 'Anonymous';
+          const space = { ...data.space, id: data.id }; // Sync ID for find() logic
+          set({
+            activeSpaceId: data.id,
+            spaces: [space],
+            thoughts: data.thoughts,
+            stacks: data.stacks,
+            isSpaceLoading: false,
+            creatorName,
+            lastUpdated: data.lastUpdated || null,
+            transform: {
+              x: space.transformX || 0,
+              y: space.transformY || 0,
+              scale: space.transformScale || 1
+            }
+          });
+
+          // Apply theme from snapshot if available, or default
+          const theme = data.space.theme || 'cyberia';
+          document.body.setAttribute('data-theme', theme);
+          set({ theme });
+
+          return; // Exit early for shared spaces
+        } catch (err) {
+          console.error('Shared init failed:', err);
+          useModalStore.getState().openModal({
+            title: 'Space Not Found or Expired',
+            description: 'The link you followed is invalid or has expired after 30 days of inactivity.',
+            type: 'alert',
+            confirmText: 'Go to Cyberia',
+            onConfirm: () => {
+              window.location.href = '/';
+            }
+          });
+          // Also set loading to false so the user isn't stuck behind a skeleton
+          set({ isSpaceLoading: false });
+          return;
+        }
+      }
+    }
+
     set({ isSpaceLoading: true });
     // Initialize Auth
     useAuthStore.getState().initAuth();
@@ -480,6 +632,7 @@ export const useStore = create<CyberiaState>((set, get) => ({
   },
 
   addSpace: async (name) => {
+    if (get().isReadOnly) return;
     const { spaces } = get();
     const limits = get().getLimits();
 
@@ -508,13 +661,35 @@ export const useStore = create<CyberiaState>((set, get) => ({
   },
 
   updateSpace: async (id, updates) => {
+    const { spaces } = get();
+    const index = spaces.findIndex(s => s.id === id);
+    if (index !== -1) {
+      const newSpaces = [...spaces];
+      newSpaces[index] = { ...newSpaces[index], ...updates };
+      set({ spaces: newSpaces });
+    }
+
+    if (get().isReadOnly) return;
     await db.spaces.update(id, updates);
     await get().refreshSpaces();
   },
 
   deleteSpace: async (id) => {
+    if (get().isReadOnly) return;
     const { spaces, activeSpaceId } = get();
+    const space = spaces.find(s => s.id === id);
     const deleteIndex = spaces.findIndex(s => s.id === id);
+
+    // Attempt to unpublish from cloud if it was public
+    if (space?.publishedId) {
+      try {
+        await get().unpublishSpace(id);
+      } catch (err) {
+        // Silently fail if unpublish fails (e.g. no internet/auth), 
+        // as we are deleting the local copy anyway.
+        console.warn('Auto-unpublish on deletion failed:', err);
+      }
+    }
 
     await db.spaces.delete(id);
     await db.thoughts.where('spaceId').equals(id).delete();
@@ -537,6 +712,7 @@ export const useStore = create<CyberiaState>((set, get) => ({
   },
 
   reorderSpaces: async (newSpaces) => {
+    if (get().isReadOnly) return;
     const updates = newSpaces.map((s, i) => db.spaces.update(s.id, { order: i }));
     await Promise.all(updates);
     await get().refreshSpaces();
@@ -565,6 +741,7 @@ export const useStore = create<CyberiaState>((set, get) => ({
   },
 
   addThought: async (partialThought) => {
+    if (get().isReadOnly) return -1;
     const { activeSpaceId } = get();
     const targetSpaceId = partialThought.spaceId || activeSpaceId;
     if (!targetSpaceId) throw new Error('No active space');
@@ -639,6 +816,7 @@ export const useStore = create<CyberiaState>((set, get) => ({
     });
 
     if (result !== -1) {
+      await get().updateSpace(targetSpaceId, { updatedAt: new Date().toISOString() });
       await get().refreshThoughts(targetSpaceId);
       await get().refreshTotalThoughtCount();
       get().pushHistory();
@@ -668,7 +846,7 @@ export const useStore = create<CyberiaState>((set, get) => ({
       return;
     }
 
-    // 2. Optimistic Update (Instant UI feedback)
+    // Optimistic Update (Instant UI feedback) - Runs for everyone
     const { thoughts } = get();
     const index = thoughts.findIndex(t => t.id === id);
     if (index !== -1) {
@@ -677,7 +855,29 @@ export const useStore = create<CyberiaState>((set, get) => ({
       set({ thoughts: newThoughts });
     }
 
-    // 3. Debounced Database Persistence
+    if (get().isReadOnly) {
+      const mode = get().spaces.find(s => s.id === get().activeSpaceId)?.mode || 'spatial';
+      // Only allow optimistic updates for x,y positions in spatial mode
+      const allowedKeys = ['x', 'y', 'vx', 'vy'];
+      const keys = Object.keys(updates);
+      const isPositionUpdate = keys.every(k => allowedKeys.includes(k));
+
+      if (mode === 'spatial' && isPositionUpdate) {
+        const { thoughts } = get();
+        const index = thoughts.findIndex(t => t.id === id);
+        if (index !== -1) {
+          const newThoughts = [...thoughts];
+          newThoughts[index] = { ...newThoughts[index], ...updates };
+          set({ thoughts: newThoughts });
+        }
+      }
+      return;
+    }
+    const activeSpaceId = get().activeSpaceId;
+    if (activeSpaceId) {
+      get().updateSpace(activeSpaceId, { updatedAt: new Date().toISOString() });
+    }
+
     const saveTimers = (window as any)._cyberia_save_timers || {};
     if (saveTimers[id]) clearTimeout(saveTimers[id]);
 
@@ -701,8 +901,13 @@ export const useStore = create<CyberiaState>((set, get) => ({
   },
 
   deleteThought: async (id) => {
+    if (get().isReadOnly) return;
     const thought = get().thoughts.find(t => t.id === id);
     const affectedStackId = thought?.stackId;
+
+    if (thought) {
+      await get().updateSpace(thought.spaceId, { updatedAt: new Date().toISOString() });
+    }
 
     await db.thoughts.delete(id);
     await get().refreshThoughts();
@@ -729,6 +934,7 @@ export const useStore = create<CyberiaState>((set, get) => ({
   },
 
   deleteThoughts: async (ids) => {
+    if (get().isReadOnly) return;
     if (!ids || ids.length === 0) return;
     const { thoughts, selectedThoughtId, selectedThoughtIds } = get();
 
@@ -760,6 +966,7 @@ export const useStore = create<CyberiaState>((set, get) => ({
   },
 
   bringToFront: async (id) => {
+    if (get().isReadOnly) return;
     const { thoughts, activeSpaceId } = get();
     if (!activeSpaceId) return;
 
@@ -820,7 +1027,7 @@ export const useStore = create<CyberiaState>((set, get) => ({
     set({
       selectedThoughtIds: ids,
       selectedThoughtId: ids.length === 1 ? ids[0] : null,
-      isInspectorOpen: ids.length === 1
+      isInspectorOpen: ids.length === 1 && !get().isReadOnly
     });
   },
 
@@ -843,7 +1050,7 @@ export const useStore = create<CyberiaState>((set, get) => ({
     set({
       selectedThoughtIds: newIds,
       selectedThoughtId: newIds.length === 1 ? newIds[0] : null,
-      isInspectorOpen: newIds.length === 1
+      isInspectorOpen: newIds.length === 1 && !get().isReadOnly
     });
   },
 
@@ -988,6 +1195,15 @@ export const useStore = create<CyberiaState>((set, get) => ({
   },
 
   updateStack: async (id, updates) => {
+    const { stacks } = get();
+    const index = stacks.findIndex(s => s.id === id);
+    if (index !== -1) {
+      const newStacks = [...stacks];
+      newStacks[index] = { ...newStacks[index], ...updates };
+      set({ stacks: newStacks });
+    }
+
+    if (get().isReadOnly) return;
     await db.stacks.update(id, updates);
     await get().refreshStacks();
   },

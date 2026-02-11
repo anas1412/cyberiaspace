@@ -12,6 +12,7 @@ function cn(...inputs: ClassValue[]) {
 
 const MultiSelectionMenu: React.FC = () => {
   const selectedThoughtIds = useStore((state) => state.selectedThoughtIds);
+  const isReadOnly = useStore((state) => state.isReadOnly);
   const clearSelection = useStore((state) => state.clearSelection);
   const deleteSelectedThoughts = useStore((state) => state.deleteSelectedThoughts);
   const linkSelectedThoughts = useStore((state) => state.linkSelectedThoughts);
@@ -21,7 +22,7 @@ const MultiSelectionMenu: React.FC = () => {
   const updateStack = useStore((state) => state.updateStack);
   const isInspectorOpen = useStore((state) => state.isInspectorOpen);
   const isChatOpen = useStore((state) => state.isChatOpen);
-  
+
   const { openModal } = useModalStore();
 
   const isMobile = typeof window !== 'undefined' ? window.innerWidth < 768 : false;
@@ -58,14 +59,14 @@ const MultiSelectionMenu: React.FC = () => {
     });
   };
 
-  if (selectedThoughtIds.length < 2) return null;
+  if (selectedThoughtIds.length < 2 || isReadOnly) return null;
 
   return (
     <AnimatePresence>
-      <motion.div 
+      <motion.div
         initial={isMobile ? { y: '100%' } : { opacity: 0, x: 20 }}
-        animate={isMobile 
-          ? (isInspectorOpen || isChatOpen ? { y: '100%', opacity: 0 } : { y: 0, opacity: 1 }) 
+        animate={isMobile
+          ? (isInspectorOpen || isChatOpen ? { y: '100%', opacity: 0 } : { y: 0, opacity: 1 })
           : { opacity: 1, x: 0 }}
         exit={isMobile ? { y: '100%' } : { opacity: 0, x: 20 }}
         className={cn(
@@ -89,12 +90,12 @@ const MultiSelectionMenu: React.FC = () => {
               {areLinked ? "Stack Name" : "Create Named Stack"}
             </label>
             <div className="p-2.5 bg-[var(--bg-page)]/20 border border-white/10 rounded-xl flex items-center gap-2">
-              <div 
-                className="w-2 h-2 rounded-full shadow-[0_0_10px_currentColor]" 
-                style={{ 
-                  backgroundColor: sharedStack?.color || 'var(--accent)', 
-                  color: sharedStack?.color || 'var(--accent)' 
-                }} 
+              <div
+                className="w-2 h-2 rounded-full shadow-[0_0_10px_currentColor]"
+                style={{
+                  backgroundColor: sharedStack?.color || 'var(--accent)',
+                  color: sharedStack?.color || 'var(--accent)'
+                }}
               />
               <input
                 type="text"
@@ -121,7 +122,7 @@ const MultiSelectionMenu: React.FC = () => {
           </div>
 
           {areLinked ? (
-            <button 
+            <button
               onClick={unlinkSelectedThoughts}
               className="w-full bg-orange-500/10 hover:bg-orange-500/20 border border-orange-500/30 text-orange-400 py-3 rounded-xl text-[9px] font-black uppercase tracking-[0.2em] transition-all flex items-center justify-center gap-2.5"
             >
@@ -129,7 +130,7 @@ const MultiSelectionMenu: React.FC = () => {
               Remove from Stack
             </button>
           ) : (
-            <button 
+            <button
               onClick={async () => {
                 await linkSelectedThoughts();
                 if (localStackName.trim()) {
@@ -150,7 +151,7 @@ const MultiSelectionMenu: React.FC = () => {
           )}
 
           <div className="pt-3 border-t border-white/5">
-            <button 
+            <button
               onClick={handleDeleteAll}
               className="w-full bg-red-500/10 hover:bg-red-500/20 text-red-400 py-3 rounded-xl text-[9px] font-bold uppercase tracking-widest transition-colors flex items-center justify-center gap-2.5"
             >
