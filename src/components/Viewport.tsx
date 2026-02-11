@@ -30,6 +30,7 @@ const Viewport: React.FC = () => {
   const transform = useStore((state) => state.transform);
   const setTransform = useStore((state) => state.setTransform);
   const isSpaceLoading = useStore((state) => state.isSpaceLoading);
+  const isReadOnly = useStore((state) => state.isReadOnly);
 
   const { openModal } = useModalStore();
   const [isGrabbing, setIsGrabbing] = useState(false);
@@ -233,6 +234,7 @@ const Viewport: React.FC = () => {
       if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable) return;
 
       if (e.key === 'Delete' || e.key === 'Backspace') {
+        if (isReadOnly) return;
         if (selectedThoughtIds.length > 0) {
           e.preventDefault();
           openModal({
@@ -255,6 +257,7 @@ const Viewport: React.FC = () => {
       }
 
       if (e.key === ' ') {
+        if (isReadOnly) return;
         e.preventDefault();
         if (e.repeat) return; // Stop rapid-fire creation when holding space
 
@@ -327,6 +330,12 @@ const Viewport: React.FC = () => {
     };
 
     const handleDrop = async (e: DragEvent) => {
+      if (isReadOnly) {
+        e.preventDefault();
+        e.stopPropagation();
+        setIsDraggingFile(false);
+        return;
+      }
       e.preventDefault();
       e.stopPropagation();
       setIsDraggingFile(false);
@@ -436,7 +445,7 @@ const Viewport: React.FC = () => {
       window.removeEventListener('dragleave', handleDragLeave);
       window.removeEventListener('drop', handleDrop);
     };
-  }, [activeSpace, setInspectorOpen, isGrabbing, selectedThoughtId, selectedThoughtIds, openModal, deleteThought, deleteSelectedThoughts, thoughts, addThought, setSelectedThoughtId, setSelectedThoughtIds, clearSelection, transform]);
+  }, [activeSpace, setInspectorOpen, isGrabbing, selectedThoughtId, selectedThoughtIds, openModal, deleteThought, deleteSelectedThoughts, thoughts, addThought, setSelectedThoughtId, setSelectedThoughtIds, clearSelection, transform, isReadOnly]);
 
   return (
     <div

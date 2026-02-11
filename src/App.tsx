@@ -125,7 +125,7 @@ function App() {
 
   useEffect(() => {
     // Only init DB if we are not on the feedback page
-    if (path === '/') {
+    if (path === '/' || path.startsWith('/s/')) {
       init();
     }
 
@@ -144,7 +144,7 @@ function App() {
 
   useEffect(() => {
     const handlePaste = async (e: ClipboardEvent) => {
-      if (path !== '/') return;
+      if (path !== '/' || useStore.getState().isReadOnly) return;
       const target = e.target as HTMLElement;
       if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA') return;
 

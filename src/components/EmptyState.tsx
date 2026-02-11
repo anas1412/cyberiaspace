@@ -45,6 +45,7 @@ const EmptyState: React.FC = () => {
   const activeSpaceId = useStore((state) => state.activeSpaceId);
   const spaces = useStore((state) => state.spaces);
   const activeSpace = spaces.find((s) => s.id === activeSpaceId);
+  const isReadOnly = useStore((state) => state.isReadOnly);
   const { user } = useAuthStore();
 
   const [randomPhrase, setRandomPhrase] = React.useState("");
@@ -56,6 +57,42 @@ const EmptyState: React.FC = () => {
   const isMobile = typeof window !== 'undefined' ? window.innerWidth < 768 : false;
 
   if (isSpaceLoading || thoughts.length > 0 || activeSpace?.mode !== 'spatial') return null;
+
+  // Read-only empty state (published space with no thoughts)
+  if (isReadOnly) {
+    return (
+      <div className="fixed inset-0 z-[5] pointer-events-none flex items-center justify-center">
+        <div className="text-center">
+          <motion.div
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 0.2, scale: 1 }}
+            className="mb-6"
+          >
+            <svg width="120" height="120" viewBox="0 0 120 120" className="mx-auto">
+              <circle cx="60" cy="60" r="50" stroke="white" strokeWidth="2" fill="none" opacity="0.1" />
+              <circle cx="60" cy="60" r="30" stroke="white" strokeWidth="2" fill="none" opacity="0.1" />
+              <circle cx="60" cy="60" r="10" stroke="white" strokeWidth="2" fill="none" opacity="0.1" />
+            </svg>
+          </motion.div>
+          <motion.h2
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 0.15, y: 0 }}
+            className="font-['CyberiaBlueprint',_cursive,_sans-serif] text-white text-[32px] md:text-[48px] tracking-[4px] md:tracking-[8px] font-bold"
+          >
+            THIS SPACE IS EMPTY
+          </motion.h2>
+          <motion.p
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 0.1 }}
+            transition={{ delay: 0.3 }}
+            className="font-['CyberiaBlueprint',_cursive,_sans-serif] text-white/40 text-[14px] md:text-[16px] mt-4 tracking-[2px] uppercase"
+          >
+            No thoughts have been published yet
+          </motion.p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div id="empty-guide" className="fixed inset-0 z-[5] pointer-events-none flex items-center justify-center">

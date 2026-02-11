@@ -9,6 +9,9 @@ interface Space {
   transformX?: number;
   transformY?: number;
   transformScale?: number;
+  publishedId?: string | null;
+  lastPublished?: string | null;
+  updatedAt?: string | null;
 }
 
 interface Stack {

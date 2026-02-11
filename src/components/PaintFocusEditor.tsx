@@ -21,6 +21,7 @@ const PaintFocusEditor: React.FC = () => {
   const thoughts = useStore((state) => state.thoughts);
   const updateThought = useStore((state) => state.updateThought);
   const setActiveFocus = useStore((state) => state.setActiveFocus);
+  const isReadOnly = useStore((state) => state.isReadOnly);
 
   const [isEditMode, setIsEditMode] = useState(false);
   const thought = thoughts.find((t) => t.id === activeFocusId);
@@ -39,15 +40,15 @@ const PaintFocusEditor: React.FC = () => {
     if (isVisible && isEditMode && canvasRef.current) {
       const canvas = canvasRef.current;
       const ctx = canvas.getContext('2d');
-      
+
       if (ctx) {
         // Use fixed internal resolution for consistency across devices
         canvas.width = 1920;
         canvas.height = 1080;
-        
+
         ctx.lineCap = 'round';
         ctx.lineJoin = 'round';
-        
+
         // Load existing drawing
         if (thought?.drawing) {
           const img = new Image();
@@ -62,13 +63,13 @@ const PaintFocusEditor: React.FC = () => {
   }, [isVisible, isEditMode, activeFocusId]);
 
   const startPainting = (e: React.MouseEvent | React.TouchEvent) => {
-    if (!isEditMode) return;
+    if (!isEditMode || isReadOnly) return;
     setIsPainting(true);
     paint(e);
   };
 
   const stopPainting = () => {
-    if (!isPainting) return;
+    if (!isPainting || isReadOnly) return;
     setIsPainting(false);
     if (canvasRef.current && activeFocusId) {
       const dataUrl = canvasRef.current.toDataURL();
@@ -98,7 +99,7 @@ const PaintFocusEditor: React.FC = () => {
     }
 
     ctx.lineWidth = brushSize * 2; // Compensate for higher internal resolution
-    
+
     if (tool === 'eraser') {
       ctx.globalCompositeOperation = 'destination-out';
       ctx.shadowBlur = 0;
@@ -120,7 +121,7 @@ const PaintFocusEditor: React.FC = () => {
   };
 
   const clearCanvas = () => {
-    if (canvasRef.current && activeFocusId) {
+    if (canvasRef.current && activeFocusId && !isReadOnly) {
       const ctx = canvasRef.current.getContext('2d');
       ctx?.clearRect(0, 0, canvasRef.current.width, canvasRef.current.height);
       updateThought(activeFocusId, { drawing: null });
@@ -130,14 +131,14 @@ const PaintFocusEditor: React.FC = () => {
   return (
     <AnimatePresence>
       {isVisible && thought && (
-        <motion.div 
+        <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
           className="fixed inset-0 z-[10001] bg-[var(--bg-main)]/70 backdrop-blur-[40px] flex items-center justify-center p-4 md:p-10"
           onClick={() => setActiveFocus(null, null)}
         >
-          <motion.div 
+          <motion.div
             initial={{ scale: 0.95, opacity: 0, y: 20 }}
             animate={{ scale: 1, opacity: 1, y: 0 }}
             exit={{ scale: 0.95, opacity: 0, y: 20 }}
@@ -150,18 +151,20 @@ const PaintFocusEditor: React.FC = () => {
                 <div className="w-10 h-10 md:w-12 md:h-12 bg-[var(--accent)]/10 rounded-xl md:rounded-2xl flex items-center justify-center text-[var(--accent-secondary)] flex-shrink-0">
                   <Palette className="w-5 h-5 md:w-6 md:h-6" />
                 </div>
-                <input 
-                  type="text" 
+                <input
+                  type="text"
                   value={thought.text}
-                  onChange={(e) => updateThought(thought.id, { text: e.target.value })}
-                  className="bg-transparent text-xl md:text-2xl font-bold text-white outline-none border-none p-0 flex-1 md:w-[400px]" 
+                  onChange={(e) => {
+                    if (!isReadOnly) updateThought(thought.id, { text: e.target.value });
+                  }}
                   placeholder="Untitled Sketch"
+                  readOnly={isReadOnly}
                 />
               </div>
 
               <div className="flex items-center justify-between md:justify-end gap-3 w-full md:w-auto">
                 <div className="flex bg-white/5 p-1 rounded-xl md:rounded-2xl border border-white/5">
-                  <button 
+                  <button
                     onClick={() => setIsEditMode(false)}
                     className={cn(
                       "px-4 md:px-6 py-2 md:py-2.5 rounded-lg md:rounded-xl text-[9px] md:text-[10px] font-black uppercase tracking-widest transition-all",
@@ -170,17 +173,19 @@ const PaintFocusEditor: React.FC = () => {
                   >
                     View
                   </button>
-                  <button 
+                  <button
                     onClick={() => setIsEditMode(true)}
+                    disabled={isReadOnly}
                     className={cn(
                       "px-4 md:px-6 py-2 md:py-2.5 rounded-lg md:rounded-xl text-[9px] md:text-[10px] font-black uppercase tracking-widest transition-all",
-                      isEditMode ? "bg-[var(--accent)] text-white shadow-lg shadow-[var(--accent-glow)]" : "text-slate-500 hover:text-white"
+                      isEditMode ? "bg-[var(--accent)] text-white shadow-lg shadow-[var(--accent-glow)]" : "text-slate-500 hover:text-white",
+                      isReadOnly && "opacity-30 cursor-not-allowed"
                     )}
                   >
                     Edit
                   </button>
                 </div>
-                <button 
+                <button
                   onClick={() => setActiveFocus(null, null)}
                   className="p-3 md:p-4 hover:bg-red-500/10 rounded-xl md:rounded-2xl text-slate-400 hover:text-red-400 transition-all"
                 >
@@ -195,7 +200,7 @@ const PaintFocusEditor: React.FC = () => {
                 <>
                   {/* Tools */}
                   <div className="w-full md:w-20 bg-white/5 rounded-xl md:rounded-[2.5rem] border border-white/10 p-2 md:p-4 flex flex-row md:flex-col gap-2 md:gap-4 items-center overflow-x-auto md:overflow-y-auto no-scrollbar custom-scroll h-14 md:h-auto flex-shrink-0">
-                    <button 
+                    <button
                       onClick={() => setTool('brush')}
                       className={cn(
                         "w-10 h-10 md:w-12 md:h-12 rounded-lg md:rounded-2xl flex items-center justify-center transition-all flex-shrink-0",
@@ -204,7 +209,7 @@ const PaintFocusEditor: React.FC = () => {
                     >
                       <MousePointer2 className="w-4 h-4 md:w-5 md:h-5" />
                     </button>
-                    <button 
+                    <button
                       onClick={() => setTool('eraser')}
                       className={cn(
                         "w-10 h-10 md:w-12 md:h-12 rounded-lg md:rounded-2xl flex items-center justify-center transition-all flex-shrink-0",
@@ -218,7 +223,7 @@ const PaintFocusEditor: React.FC = () => {
                     <div className="hidden md:block w-8 h-px bg-white/10 my-2" />
                     {BRUSH_SIZES.map(size => (
                       <button key={size} onClick={() => setBrushSize(size)} className={cn("w-8 h-8 md:w-10 md:h-10 flex items-center justify-center rounded-lg md:rounded-xl transition-all flex-shrink-0", brushSize === size ? "bg-white/10 text-white" : "text-white/20")}>
-                        <div className="rounded-full bg-current" style={{ width: Math.max(2, size/5), height: Math.max(2, size/5) }} />
+                        <div className="rounded-full bg-current" style={{ width: Math.max(2, size / 5), height: Math.max(2, size / 5) }} />
                       </button>
                     ))}
                     <div className="hidden md:flex flex-1" />

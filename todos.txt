@@ -1,13 +1,10 @@
 
-- make a better and simpler onboarding thoughts
+Unplanned:
 
+- make a better and simpler onboarding thoughts
 
 - add a vercel api route to enable oracle external api for built-in vercel key / add limiters
 
-
-
-
-- add author field to the embed type (it contains the uploader in youtube, user in x,tiktok, instagram, artist if its a song or user if its a playlist in spotify etc... ) make all necessary changes
 
 - add 2 modes for oracle chat mode and active mode
 
@@ -31,7 +28,11 @@
 
 - add codes to activate pro for a month single use
 
-- Shareable links for spaces (export to a readonly link you can share with others).
+
+TODO:
+
+- integrate konnect api (sandbox)
+api: 698c5bc2a83cf562f6296f41:9IKnH11UlA2Ei7eQF7ZzwOqxCN8reN
 
 
 Cyberia is where physics meets productivity. It’s a kinetic workspace that treats ideas as physical objects. Powered by The Oracle (Gemini AI), Cyberia can
