@@ -1,0 +1,362 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport"
+        content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Cyberia V12 Native</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap"
+        rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        :root {
+            --glass-surface: rgba(10, 10, 15, 0.65);
+            --glass-border: rgba(255, 255, 255, 0.08);
+            --accent: #6366f1;
+            --deep: #0f172a;
+        }
+
+        body {
+            background-color: var(--deep);
+            background-image:
+                radial-gradient(circle at 50% 0%, #1e1b4b 0%, transparent 50%),
+                radial-gradient(circle at 100% 80%, #312e81 0%, transparent 30%);
+            background-attachment: fixed;
+            color: #f8fafc;
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            overflow: hidden;
+            height: 100dvh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .glass {
+            background: var(--glass-surface);
+            backdrop-filter: blur(24px);
+            -webkit-backdrop-filter: blur(24px);
+            border: 1px solid var(--glass-border);
+        }
+
+        .thought-node {
+            background: var(--glass-surface);
+            border: 1px solid var(--glass-border);
+            border-radius: 24px;
+            /* rounded-3xl */
+            padding: 18px;
+            /* p-4.5 */
+            position: relative;
+            transition: all 0.2s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+        }
+
+        /* Priority Borders */
+        .priority-high {
+            border-color: rgba(244, 63, 94, 0.5);
+            box-shadow: 0 0 15px rgba(244, 63, 94, 0.1);
+        }
+
+        .priority-medium {
+            border-color: rgba(245, 158, 11, 0.5);
+        }
+
+        .type-badge {
+            font-size: 9px;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            color: rgba(255, 255, 255, 0.4);
+            margin-bottom: 8px;
+            display: block;
+        }
+
+        /* Paint Canvas Mockup */
+        .paint-canvas {
+            width: 100%;
+            height: 120px;
+            background: #000;
+            border-radius: 12px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .paint-path {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 100' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M10,50 Q50,5 90,50 T180,50' fill='none' stroke='%236366f1' stroke-width='4'/%3E%3C/svg%3E");
+            background-size: cover;
+            opacity: 0.8;
+        }
+
+        /* Table Grid Mockup */
+        .table-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            overflow: hidden;
+            font-size: 10px;
+        }
+
+        .table-cell {
+            background: rgba(10, 10, 15, 0.8);
+            padding: 6px 8px;
+        }
+
+        /* View Switching Logic */
+        .view-section {
+            display: none;
+            flex: 1;
+            overflow: hidden;
+        }
+
+        .view-section.active {
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Kanban Column Layout */
+        .kanban-container {
+            display: flex;
+            overflow-x: auto;
+            scroll-snap-type: x mandatory;
+            gap: 12px;
+            padding: 0 20px 100px;
+            height: 100%;
+        }
+
+        .kanban-col {
+            min-width: 85vw;
+            /* Mobile Friendly Width */
+            scroll-snap-align: center;
+            background: rgba(255, 255, 255, 0.02);
+            border-radius: 24px;
+            padding: 16px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        /* Linking Lines (SVG Overlay) */
+        .link-layer {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 0;
+        }
+    </style>
+</head>
+
+<body>
+
+    <!-- Header -->
+    <header class="pt-12 pb-2 px-5 z-50 bg-gradient-to-b from-[#0f172a] to-transparent">
+        <div class="flex justify-between items-center mb-4">
+            <h1 class="font-bold text-lg tracking-tight flex items-center gap-2">
+                <span class="w-2 h-2 rounded-full bg-indigo-500 shadow-[0_0_10px_#6366f1]"></span>
+                PROJECT V12
+            </h1>
+            <div class="flex gap-2">
+                <!-- Search -->
+                <button class="w-8 h-8 rounded-full bg-white/5 flex items-center justify-center border border-white/10">
+                    <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                        <circle cx="11" cy="11" r="8" />
+                        <line x1="21" y1="21" x2="16.65" y2="16.65" />
+                    </svg>
+                </button>
+                <!-- Config -->
+                <button class="w-8 h-8 rounded-full bg-white/5 flex items-center justify-center border border-white/10">
+                    <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                        <path d="M12 15a3 3 0 100-6 3 3 0 000 6z" />
+                        <path
+                            d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-2 2 2 2 0 01-2-2v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83 0 2 2 0 010-2.83l.06-.06a1.65 1.65 0 00.33-1.82 1.65 1.65 0 00-1.51-1H3a2 2 0 01-2-2 2 2 0 012-2h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 010-2.83 2 2 0 012.83 0l.06.06a1.65 1.65 0 001.82.33H9a1.65 1.65 0 001-1.51V3a2 2 0 012-2 2 2 0 012 2v.09a1.65 1.65 0 001.51 1H21a2 2 0 012 2 2 2 0 01-2 2h-.09a1.65 1.65 0 00-1.51 1z" />
+                    </svg>
+                </button>
+            </div>
+        </div>
+
+        <div class="glass p-1 rounded-2xl flex gap-1 mb-2">
+            <button onclick="setView('spatial')" id="tab-spatial"
+                class="flex-1 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all bg-indigo-600 text-white shadow-lg">Spatial</button>
+            <button onclick="setView('kanban')" id="tab-kanban"
+                class="flex-1 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all text-slate-500">Kanban</button>
+            <button onclick="setView('calendar')" id="tab-calendar"
+                class="flex-1 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all text-slate-500">Calendar</button>
+        </div>
+    </header>
+
+    <!-- CONTENT AREA -->
+    <main class="flex-1 relative overflow-hidden">
+
+        <!-- 1. SPATIAL VIEW -->
+        <div id="view-spatial" class="view-section active relative w-full h-full">
+            <!-- Background Grid -->
+            <div class="absolute inset-0 opacity-10"
+                style="background-image: radial-gradient(#fff 1px, transparent 1px); background-size: 24px 24px;"></div>
+
+            <!-- SVG Linking Lines -->
+            <svg class="link-layer">
+                <line x1="140" y1="180" x2="240" y2="280" stroke="rgba(99, 102, 241, 0.3)" stroke-width="2" />
+            </svg>
+
+            <!-- Paint Node -->
+            <div class="thought-node absolute top-10 left-4 w-40 glass priority-medium"
+                style="transform: rotate(-2deg);">
+                <span class="type-badge text-amber-500">Paint · Priority: Med</span>
+                <p class="text-sm font-bold mb-2">Wireframe Idea</p>
+                <div class="paint-canvas">
+                    <div class="paint-path"></div>
+                </div>
+            </div>
+
+            <!-- Embed Node -->
+            <div class="thought-node absolute top-40 right-4 w-44 glass border-pink-500/30">
+                <span class="type-badge text-pink-400">Embed (Spotify)</span>
+                <div class="flex items-center gap-3 mb-2">
+                    <div
+                        class="w-8 h-8 bg-green-500 rounded-full flex items-center justify-center text-black text-[10px] font-bold">
+                        SP</div>
+                    <div class="text-xs leading-none">
+                        <div class="font-bold">Deep Focus</div>
+                        <div class="text-[9px] opacity-60">Ambient Playlist</div>
+                    </div>
+                </div>
+                <div class="h-1 bg-white/10 rounded-full overflow-hidden mt-1">
+                    <div class="h-full w-1/3 bg-green-500"></div>
+                </div>
+            </div>
+
+            <!-- Table Node (Linked) -->
+            <div class="thought-node absolute top-72 left-1/2 -translate-x-1/2 w-64 glass">
+                <span class="type-badge text-blue-400">Table Data</span>
+                <p class="text-sm font-bold mb-2">Revenue Q1</p>
+                <div class="table-grid">
+                    <div class="table-cell text-slate-400">Metric</div>
+                    <div class="table-cell text-slate-400">Value</div>
+                    <div class="table-cell">MRR</div>
+                    <div class="table-cell font-mono">$12,400</div>
+                    <div class="table-cell">Churn</div>
+                    <div class="table-cell font-mono text-red-400">2.1%</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 2. KANBAN VIEW -->
+        <div id="view-kanban" class="view-section">
+            <div class="kanban-container">
+                <!-- TODO STACK -->
+                <div class="kanban-col">
+                    <div class="flex justify-between items-center px-1">
+                        <span class="text-[10px] font-black uppercase text-slate-500 tracking-widest">To Do</span>
+                        <span class="bg-white/5 text-[9px] px-2 py-0.5 rounded-full text-slate-400">3</span>
+                    </div>
+
+                    <div class="thought-node">
+                        <span class="type-badge text-white">Tasks</span>
+                        <p class="text-sm font-bold mb-2">Launch Checklist</p>
+                        <div class="space-y-2">
+                            <div class="flex items-center gap-2 opacity-50">
+                                <div class="w-4 h-4 border border-white/30 rounded"></div><span class="text-xs">Final
+                                    QA</span>
+                            </div>
+                            <div class="flex items-center gap-2 opacity-50">
+                                <div class="w-4 h-4 border border-white/30 rounded"></div><span class="text-xs">Update
+                                    DNS</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- DOING STACK -->
+                <div class="kanban-col border border-indigo-500/20 bg-indigo-500/5">
+                    <div class="flex justify-between items-center px-1">
+                        <span class="text-[10px] font-black uppercase text-indigo-400 tracking-widest">In
+                            Progress</span>
+                    </div>
+
+                    <div class="thought-node priority-high">
+                        <span class="type-badge text-red-400">Text · Urgent</span>
+                        <p class="text-sm">Fix Webhook Signature</p>
+                        <p class="text-[10px] text-slate-400 mt-1 leading-relaxed">
+                            Ensure HMAC-SHA256 matches the Konnect payload exactly.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 3. CALENDAR VIEW -->
+        <div id="view-calendar" class="view-section flex-col px-5 overflow-y-auto pb-32">
+            <div class="sticky top-0 bg-deep/90 backdrop-blur z-10 py-2 border-b border-white/5 mb-4">
+                <span class="text-[10px] font-black uppercase text-indigo-500 tracking-widest">Today</span>
+            </div>
+
+            <div class="flex gap-4 mb-6">
+                <div class="w-12 pt-1 text-right text-[10px] font-mono text-slate-500">10:00</div>
+                <div class="flex-1 thought-node py-3 px-4 flex items-center gap-3">
+                    <div class="w-1 h-8 bg-amber-500 rounded-full"></div>
+                    <div>
+                        <span class="type-badge mb-0">Meeting</span>
+                        <p class="text-xs font-bold">Sync with Design Team</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="flex gap-4 mb-6">
+                <div class="w-12 pt-1 text-right text-[10px] font-mono text-slate-500">14:30</div>
+                <div class="flex-1 thought-node py-3 px-4">
+                    <span class="type-badge text-green-400">Embed</span>
+                    <p class="text-xs font-bold">Figma Presentation</p>
+                </div>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- FLOATING ACTION BUTTON (Center) -->
+    <div class="fixed bottom-8 left-1/2 -translate-x-1/2 z-[100]">
+        <button
+            class="w-16 h-16 rounded-full bg-indigo-600 text-white shadow-[0_0_30px_rgba(99,102,241,0.4)] flex items-center justify-center border-4 border-[#0f172a] hover:scale-105 transition-transform">
+            <svg width="28" height="28" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4" />
+            </svg>
+        </button>
+    </div>
+
+    <!-- ORACLE CHAT OVERLAY (Hidden/Peeking) -->
+    <div
+        class="fixed bottom-8 right-5 w-12 h-12 glass rounded-full flex items-center justify-center border-white/20 shadow-lg z-50">
+        <svg width="20" height="20" fill="none" class="text-indigo-400" stroke="currentColor" stroke-width="2"
+            viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round"
+                d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
+        </svg>
+    </div>
+
+    <script>
+        function setView(view) {
+            // Update Buttons
+            ['spatial', 'kanban', 'calendar'].forEach(v => {
+                const btn = document.getElementById('tab-' + v);
+                if (v === view) {
+                    btn.className = "flex-1 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all bg-indigo-600 text-white shadow-lg";
+                } else {
+                    btn.className = "flex-1 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all text-slate-500 hover:text-slate-300";
+                }
+
+                const section = document.getElementById('view-' + v);
+                if (v === view) section.classList.add('active');
+                else section.classList.remove('active');
+            });
+        }
+    </script>
+</body>
+
+</html>
