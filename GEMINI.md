@@ -126,3 +126,17 @@ Cyberia supports three core aesthetic modes:
 - **Instagram High-Fidelity**: Uses `ddinstagram.com` as a metadata source in `embeds.ts` for high-quality public previews without login blocks.
 - **Regex Guard**: Alphanumeric IDs (e.g., `pfbid...`) are supported; do not revert to numeric-only regex.
 
+## 11. Payment Integration (Konnect Network)
+- **Status Management**: Pro status is tied to Google `userId` and managed server-side in Vercel KV (`cyberia_user_meta_${userId}`).
+- **Webhook Flow**: 
+    1. Konnect calls `GET /api/pay/webhook?payment_ref=...`.
+    2. Server verifies `x-konnect-signature` (HMAC-SHA256 of `paymentRef` using `API_KEY`).
+    3. Server fetches final status from Konnect `GET /payments/:id`.
+    4. Upon `completed`, KV is updated with `plan: 'pro'` and expiry.
+- **Local Testing**: 
+    - Use the test script to simulate Konnect's callback:
+      ```powershell
+      node scripts/test-webhook.cjs <payment_ref_from_sandbox_url>
+      ```
+    - The script generates a valid signature and triggers the local webhook endpoint.
+

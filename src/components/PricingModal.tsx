@@ -17,6 +17,8 @@ interface PricingModalProps {
 const PricingModal: React.FC<PricingModalProps> = ({ isOpen, onClose }) => {
   const [billingCycle, setBillingCycle] = useState<AccessPeriod>('monthly');
   const [location, setLocation] = useState<{ country: string; currency: string; isLocalPricing: boolean } | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const { openModal } = useModalStore();
 
   useEffect(() => {
@@ -36,13 +38,60 @@ const PricingModal: React.FC<PricingModalProps> = ({ isOpen, onClose }) => {
             setLocation(data);
           }
         })
-        .catch(() => setLocation({ 
-          country: isTunisiaLikely ? 'TN' : 'US', 
-          currency: isTunisiaLikely ? 'DT' : 'USD', 
-          isLocalPricing: isTunisiaLikely 
+        .catch(() => setLocation({
+          country: isTunisiaLikely ? 'TN' : 'US',
+          currency: isTunisiaLikely ? 'DT' : 'USD',
+          isLocalPricing: isTunisiaLikely
         }));
     }
   }, [isOpen]);
+
+  const handleUpgrade = async () => {
+    setIsLoading(true);
+    setError(null);
+
+    try {
+      const authStore = (await import('../store/useAuthStore')).useAuthStore.getState();
+      if (authStore.status !== 'authenticated') {
+        openModal({
+          title: 'Sign In Required',
+          description: 'Please sign in to your Google account to upgrade to Cyberia Pro.',
+          type: 'alert',
+          confirmText: 'Sign In',
+          onConfirm: () => (window as any)._cyberia_login?.[0]?.()
+        });
+        setIsLoading(false);
+        return;
+      }
+
+      const response = await fetch('/api/pay/init', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${authStore.accessToken}`
+        },
+        body: JSON.stringify({
+          amount: billingCycle === 'monthly' ? currentPrice.tnd : currentPrice.tnd * 12,
+          currency: location?.currency === 'DT' ? 'TND' : 'USD',
+          billingCycle
+        })
+      });
+
+      if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.error || 'Failed to initiate payment');
+      }
+
+      const { payUrl } = await response.json();
+      window.location.href = payUrl;
+
+    } catch (err: any) {
+      console.error('Upgrade Error:', err);
+      setError(err.message || 'Payment system currently unavailable. Please try again later.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   if (!isOpen) return null;
 
@@ -94,7 +143,7 @@ const PricingModal: React.FC<PricingModalProps> = ({ isOpen, onClose }) => {
         <div className="w-full md:w-[380px] p-8 md:p-12 bg-white/[0.02] flex flex-col justify-center">
           <div className="flex flex-col items-center text-center mb-8">
             <div className="flex p-1 bg-black/40 border border-white/5 rounded-2xl mb-8">
-              <button 
+              <button
                 onClick={() => setBillingCycle('monthly')}
                 className={cn(
                   "px-6 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all",
@@ -103,7 +152,7 @@ const PricingModal: React.FC<PricingModalProps> = ({ isOpen, onClose }) => {
               >
                 Monthly
               </button>
-              <button 
+              <button
                 onClick={() => setBillingCycle('yearly')}
                 className={cn(
                   "px-6 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all relative",
@@ -142,19 +191,35 @@ const PricingModal: React.FC<PricingModalProps> = ({ isOpen, onClose }) => {
             </p>
           </div>
 
-          <button 
-            disabled
-            className="w-full py-5 rounded-[2rem] bg-slate-800 text-slate-500 text-[11px] font-black uppercase tracking-[0.2em] transition-all cursor-not-allowed flex items-center justify-center gap-3 mb-6"
+          {error && (
+            <p className="text-[9px] text-red-400 font-bold uppercase tracking-widest text-center mb-4 animate-shake">
+              {error}
+            </p>
+          )}
+
+          <button
+            onClick={handleUpgrade}
+            disabled={isLoading || import.meta.env.PROD}
+            className={cn(
+              "w-full py-5 rounded-[2rem] text-[11px] font-black uppercase tracking-[0.2em] transition-all flex items-center justify-center gap-3 mb-6",
+              (isLoading || import.meta.env.PROD)
+                ? "bg-slate-800 text-slate-500 cursor-not-allowed opacity-50"
+                : "bg-indigo-600 hover:bg-indigo-500 text-white shadow-xl shadow-indigo-500/20 active:scale-[0.98]"
+            )}
           >
-            <Star className="w-4 h-4 fill-slate-500" />
-            Coming Soon
+            {isLoading ? (
+              <div className="w-4 h-4 rounded-full border-2 border-slate-500 border-t-white animate-spin" />
+            ) : (
+              <Star className={cn("w-4 h-4", import.meta.env.PROD ? "fill-slate-500" : "fill-white")} />
+            )}
+            {import.meta.env.PROD ? 'Coming Soon' : (isLoading ? 'Processing...' : 'Upgrade Now')}
           </button>
 
           <div className="text-center space-y-3">
             <p className="text-[9px] text-slate-600 font-medium leading-relaxed">
               Secure 256-bit encrypted transactions. <br /> We never store your card details on our servers.
             </p>
-            <button 
+            <button
               onClick={() => openModal({
                 title: 'Privacy & Security',
                 type: 'terms',

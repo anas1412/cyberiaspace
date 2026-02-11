@@ -21,7 +21,7 @@ export interface AuthState {
   autoSync: boolean;
   cloudUsage: number;
   isOnline: boolean;
-  
+
   setAuthenticatedUser: (user: User, token: string) => Promise<void>;
   signOut: () => Promise<void>;
   syncData: () => Promise<void>;
@@ -30,8 +30,9 @@ export interface AuthState {
   deleteCloudData: () => Promise<void>;
   calculateUsage: (thoughtCount: number) => void;
   initAuth: () => void;
-  upgradePlan: (plan: SubscriptionPlan, period?: AccessPeriod) => void; 
+  upgradePlan: (plan: SubscriptionPlan, period?: AccessPeriod) => void;
   checkExpiry: () => void;
+  refreshProStatus: () => Promise<void>;
   cancelSubscription: () => void;
 }
 
@@ -58,9 +59,11 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 
     window.addEventListener('online', handleOnline);
     window.addEventListener('offline', handleOffline);
-    
+
     // Initial expiry check
     get().checkExpiry();
+    // Reconcile with server status
+    get().refreshProStatus();
   },
 
   calculateUsage: (thoughtCount: number) => {
@@ -74,7 +77,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   upgradePlan: (plan: SubscriptionPlan, period: AccessPeriod = 'monthly') => {
     const { user } = get();
     if (!user) return;
-    
+
     const now = new Date();
     const expiry = new Date();
     if (period === 'monthly') {
@@ -83,14 +86,14 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       expiry.setFullYear(now.getFullYear() + 1);
     }
 
-    const updatedUser: User = { 
-      ...user, 
-      plan, 
+    const updatedUser: User = {
+      ...user,
+      plan,
       accessPeriod: period,
       subscriptionStatus: 'active',
       expiryDate: expiry.toISOString()
     };
-    
+
     localStorage.setItem('cyberia-user', JSON.stringify(updatedUser));
     set({ user: updatedUser });
   },
@@ -106,15 +109,42 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     }
   },
 
+  refreshProStatus: async () => {
+    const { accessToken, status, user } = get();
+    if (status !== 'authenticated' || !accessToken) return;
+
+    try {
+      const response = await fetch('/api/user/status', {
+        headers: { 'Authorization': `Bearer ${accessToken}` }
+      });
+      if (response.ok) {
+        const serverStatus = await response.json();
+        // If server says pro but local says free, OR expiry changed, update local
+        if (serverStatus.plan !== user?.plan || serverStatus.expiryDate !== user?.expiryDate) {
+          const updatedUser: User = {
+            ...(user as User),
+            plan: serverStatus.plan,
+            expiryDate: serverStatus.expiryDate,
+            subscriptionStatus: serverStatus.plan === 'pro' ? 'active' : 'expired'
+          };
+          localStorage.setItem('cyberia-user', JSON.stringify(updatedUser));
+          set({ user: updatedUser });
+        }
+      }
+    } catch (err) {
+      console.error('Failed to refresh pro status:', err);
+    }
+  },
+
   cancelSubscription: () => {
     const { user } = get();
     if (!user || user.plan === 'free') return;
-    
-    const updatedUser: User = { 
-      ...user, 
+
+    const updatedUser: User = {
+      ...user,
       subscriptionStatus: 'expired' // Or just clear it, let's use 'expired' for simplicity in mock
     };
-    
+
     localStorage.setItem('cyberia-user', JSON.stringify(updatedUser));
     set({ user: updatedUser });
   },
@@ -123,11 +153,11 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     const userWithPlan = { ...user, plan: user.plan || 'free' };
     localStorage.setItem('cyberia-user', JSON.stringify(userWithPlan));
     localStorage.setItem('cyberia-token', token);
-    
-    set({ 
-      user: userWithPlan, 
+
+    set({
+      user: userWithPlan,
       accessToken: token,
-      status: 'authenticated', 
+      status: 'authenticated',
       syncStatus: 'syncing'
     });
 
@@ -136,19 +166,22 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       const response = await fetch('/api/sync', {
         headers: { 'Authorization': `Bearer ${token}` }
       });
-      
+
       if (response.status === 401) {
         get().signOut();
         return;
       }
 
       const result = await response.json();
-      
+
       if (result.data) {
         set({ syncStatus: 'synced', lastSync: new Date() });
       } else {
         set({ syncStatus: 'offline', lastSync: null });
       }
+
+      // Reconcile pro status after login
+      get().refreshProStatus();
     } catch {
       set({ syncStatus: 'error' });
     }
@@ -191,9 +224,9 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     const { status, accessToken, isOnline, syncStatus, user } = get();
     if (status !== 'authenticated' || !accessToken) return;
     if (!isOnline || syncStatus === 'syncing') return;
-    
+
     set({ syncStatus: 'syncing' });
-    
+
     try {
       const { db } = await import('../db');
       const allSpaces = await db.spaces.toArray();
@@ -215,7 +248,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         set({ syncStatus: 'error' });
         return;
       }
-      
+
       const payload = {
         spaces: allSpaces,
         thoughts: allThoughts,
@@ -247,8 +280,8 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 
       const now = new Date();
       localStorage.setItem('cyberia-last-sync', now.toISOString());
-      
-      set({ 
+
+      set({
         syncStatus: 'synced',
         lastSync: now
       });
@@ -267,7 +300,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     if (!accessToken || !isOnline) return;
 
     set({ syncStatus: 'syncing' });
-    
+
     try {
       const response = await fetch('/api/sync', {
         method: 'DELETE',
@@ -279,7 +312,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       if (!response.ok) throw new Error('Delete failed');
 
       localStorage.removeItem('cyberia-last-sync');
-      set({ 
+      set({
         syncStatus: 'offline',
         lastSync: null
       });
