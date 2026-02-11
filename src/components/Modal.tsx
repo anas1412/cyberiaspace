@@ -48,22 +48,63 @@ const Modal: React.FC = () => {
         {type !== 'custom' && <h2 className="text-lg md:text-xl font-bold mb-2 text-white">{title}</h2>}
 
         {type === 'terms' ? (
-          <div className="text-left space-y-6 my-8 max-h-[60vh] overflow-y-auto pr-4 custom-scroll">
-            {[
-              { title: '1. Data Ownership', desc: 'Everything you create is yours. It stays on your device by default and only goes to the cloud if you sign in.' },
-              { title: '2. Manual Renewal', desc: 'We do not support automatic billing. You choose when to extend your Pro access. No unexpected charges, ever.' },
-              { title: '3. Acceptable Use', desc: "Don't store illegal content or use the AI to cause harm. You are responsible for what happens in your spaces." },
-              { title: '4. Service Uptime', desc: 'We try to stay online 24/7, but technology can be tricky. We suggest using the Export button to keep regular backups.' },
-              { title: '5. No Lock-in', desc: 'We never hold your data hostage. You can always export your entire workspace for free, forever.' },
-              { title: '6. Fair AI Use', desc: 'Pro users get a generous amount of AI access for creative work. To keep the system fast for everyone, we use a fair-use policy to prevent automated abuse.' },
-              { title: '7. Feature Evolution', desc: 'Cyberia is always growing. We might add, change, or remove features as we work to build the best experience.' },
-              { title: '8. Security', desc: 'Your cloud data is only as safe as your Google account. Keep your login secure to protect your neural link.' }
-            ].map((rule, i) => (
-              <div key={i} className="space-y-1">
-                <h4 className="text-[10px] font-black uppercase tracking-widest text-indigo-400">{rule.title}</h4>
-                <p className="text-[11px] text-slate-400 leading-relaxed">{rule.desc}</p>
-              </div>
-            ))}
+          <div className="text-left space-y-8 my-8 max-h-[70vh] overflow-y-auto pr-4 custom-scroll">
+            {/* 1. Visual Summary Cards */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+              {[
+                { title: 'Local First', icon: '🔒', desc: 'Your data stays on your device by default.' },
+                { title: 'Manual Pay', icon: '💳', desc: 'No auto-billing. You control renewals.' },
+                { title: 'Pure Ownership', icon: '✨', desc: 'We never sell your data or your thoughts.' },
+              ].map((card, i) => (
+                <div key={i} className="bg-white/[0.03] border border-white/5 p-4 rounded-2xl flex flex-col items-center text-center">
+                  <span className="text-xl mb-2">{card.icon}</span>
+                  <h4 className="text-[9px] font-black uppercase tracking-widest text-indigo-400 mb-1">{card.title}</h4>
+                  <p className="text-[10px] text-slate-500 font-medium leading-tight">{card.desc}</p>
+                </div>
+              ))}
+            </div>
+
+            {/* 2. Detailed Protocol */}
+            <div className="space-y-6">
+              {[
+                {
+                  title: 'A. Data Ownership & Governance',
+                  desc: 'Everything you create in Cyberia is your property. We treat your thoughts as private, kinetic assets. We do not license, mine, or metadata-track your workspace content.'
+                },
+                {
+                  title: 'B. Payments & Security (Konnect Network)',
+                  desc: 'We use the Konnect Network for payment processing. Cyberia never touches your sensitive card details. Our system only receives a verification token to activate your Pro tier.'
+                },
+                {
+                  title: 'C. AI Interaction (Google Gemini)',
+                  desc: 'When communicating with The Oracle, relevant snippets of your space are processed by Google Gemini. This data is used only for real-time inference and is not stored permanently or used for global model training.'
+                },
+                {
+                  title: 'D. Cloud Sync Protocol',
+                  desc: 'Sync is a convenience service. Data sent to our cloud (Vercel KV) is encrypted in-transit and isolated to your Google ID. You can wipe your cloud data at any time.'
+                },
+                {
+                  title: 'E. Ephemeral Sharing (30-Day Policy)',
+                  desc: 'Publicly shared snapshots are temporary. They naturally expire and are purged from our servers 30 days after their last update to maintain a clean digital footprint.'
+                },
+                {
+                  title: 'F. Portability Commitment',
+                  desc: "Cyberia will always provide a free, unrestricted way to export your data into standard formats like Markdown or JSON. You are never locked into our ecosystem."
+                }
+              ].map((protocol, i) => (
+                <div key={i} className="space-y-1.5 border-l-2 border-indigo-500/20 pl-4 py-1">
+                  <h4 className="text-[10px] font-black uppercase tracking-widest text-indigo-400/80">{protocol.title}</h4>
+                  <p className="text-[11px] text-slate-400 leading-relaxed font-medium">{protocol.desc}</p>
+                </div>
+              ))}
+            </div>
+
+            {/* 3. Footer Tech Specs */}
+            <div className="pt-4 border-t border-white/5">
+              <p className="text-[9px] font-mono text-slate-600 uppercase tracking-tighter">
+                Architecture: AES-256-GCM • TLS 1.3 • OAuth 2.0 • Local-First PWA
+              </p>
+            </div>
           </div>
         ) : type === 'custom' ? (
           <div className="my-4">

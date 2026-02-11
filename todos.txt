@@ -119,3 +119,19 @@ search_web: tool({
     // Logic to route the request to the correct API key/service
   }
 })
+
+2. Space Portability & "Public Catalog" (From your Todo)
+The Gallery: A Pinterest-like catalog where users can opt-in to list their "Public" spaces. People could browse beautiful information architectures created by others.
+One-Click Forking: If someone sees a public "Project Management" space they like, they click "Copy to my Cyberia" and it clones the entire layout into their workspace (Pro feature?).
+Categories: Dynamic tags like Knowledge Base, Design Moodboard, Daily Log, or AI Research.
+3. Advanced Oracle (Pro Value)
+Make the AI feel like a physical resident of the space.
+
+Auto-Stacking: "Oracle, group all my task-related thoughts into a stack called 'To-Do'." The nodes would physically fly into a stack.
+Space Summarization: Right-click a stack -> "Summarize with Oracle." It generates a new text node sitting on top of the stack with a bulleted summary of everything inside.
+Mind-Map Generation: Ask the Oracle for an idea, and it spawns 5-10 connected nodes in a cluster automatically.
+
+5. Aesthetics & Premium Feel
+Custom Nebulas: Pro users can change the background "Nebula" or "Starfield" parameters (colors, density, speed of the stars).
+Lofi Integration: A tiny physics-based music player widget that floats in the corner, playing focus beats.
+Custom Icons for Stacks: Instead of just colors, let users pick 3D-feeling glass icons for their stacks.
