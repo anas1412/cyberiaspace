@@ -28,6 +28,7 @@ Unplanned:
 
 - add codes to activate pro for a month single use
 
+okay make a plan to integrate payements in my app use @beautifulMention with best practices 
 
 TODO:
 
