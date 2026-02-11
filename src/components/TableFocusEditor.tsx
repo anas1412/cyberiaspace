@@ -106,6 +106,13 @@ const TableFocusEditor: React.FC = () => {
                   readOnly={isReadOnly}
                 />
               </div>
+              {thought.description && thought.description !== 'No description available.' && (
+                <div className="flex-1 min-w-0 md:px-6">
+                  <p className="text-[10px] md:text-[11px] text-slate-500 italic leading-relaxed">
+                    {thought.description}
+                  </p>
+                </div>
+              )}
               <div className="flex items-center justify-between md:justify-end gap-2 md:gap-3 w-full md:w-auto">
                 <div className="flex bg-white/5 p-1 rounded-lg md:rounded-2xl border border-white/5">
                   <button

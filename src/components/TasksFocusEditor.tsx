@@ -135,6 +135,11 @@ const TasksFocusEditor: React.FC = () => {
                     placeholder="Task List Title"
                     readOnly={isReadOnly}
                   />
+                  {thought.description && thought.description !== 'No description available.' && (
+                    <p className="text-[10px] md:text-[11px] text-slate-500 italic leading-relaxed mt-1 line-clamp-2 md:line-clamp-none">
+                      {thought.description}
+                    </p>
+                  )}
                   <div className="flex items-center gap-3 mt-1">
                     <div className="w-20 md:w-32 h-1 bg-white/5 rounded-full overflow-hidden">
                       <motion.div
