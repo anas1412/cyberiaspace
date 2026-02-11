@@ -261,7 +261,8 @@ function App() {
                 if (metadata) {
                   useStore.getState().updateThought(id, {
                     text: metadata.title || "Link",
-                    description: metadata.author_name || metadata.provider_name || "",
+                    author: metadata.author_name || "",
+                    description: metadata.description || "",
                     image: metadata.thumbnail_url || null,
                     meta: metadata
                   });

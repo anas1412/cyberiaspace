@@ -62,7 +62,8 @@ export default async function handler(req: Request) {
                 .map((item: any) => ({
                   title: item.snippet.title,
                   url: `https://www.youtube.com/watch?v=${item.id.videoId}`,
-                  uploader: item.snippet.channelTitle
+                  author: item.snippet.channelTitle,
+                  description: item.snippet.description
                 }));
 
               console.log(`[Oracle API] Found ${results.length} results for "${query}"`);
@@ -82,6 +83,7 @@ export default async function handler(req: Request) {
             y: z.number().optional(),
             content: z.string().optional().describe('The content or URL.'),
             description: z.string().optional().describe('Additional details.'),
+            author: z.string().optional().describe('The author/uploader/artist.'),
             stackName: z.string().optional().describe('Name of a group/stack to add this to.'),
             priority: z.enum(['none', 'low', 'medium', 'high', 'urgent']).optional(),
             status: z.enum(['none', 'todo', 'doing', 'done']).optional(),

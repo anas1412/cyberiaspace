@@ -1,14 +1,16 @@
 
-
+- make a better and simpler onboarding thoughts
 
 
 - add a vercel api route to enable oracle external api for built-in vercel key / add limiters
 
-- one small detail, when there is a text thought and have "open note" it should open when i also click the text not specifically 'open note' its small to click on
 
-- add support to instagram/facebook/reddit/twitter/spotify and popular plateforms embed support / links preview
+
 
 - add author field to the embed type (it contains the uploader in youtube, user in x,tiktok, instagram, artist if its a song or user if its a playlist in spotify etc... ) make all necessary changes
+
+- add 2 modes for oracle chat mode and active mode
+
 
 - maybe change ai chat on the left
 
@@ -89,3 +91,26 @@ GOOGLE_AI_MODEL="gemini-2.5"
 For the IT Consulting, look for codes related to "Conseil en informatique" or "Services numériques".
 For the SaaS, you can add it as a secondary activity under "Vente de services en ligne".
 
+4. Authentication Management
+Right now, you probably just use a YOUTUBE_API_KEY. For these new features, we would need:
+App-level keys: For general searching.
+User-level OAuth (Optional): If you want the AI to be able to do things (e.g., "Add this to my Spotify playlist" or "Follow this person on my X account"), we would need to implement a full authentication flow where users link their social accounts.
+
+3. The "Interaction Layer" (Smart Routing)
+The AI's System Prompt would need to be updated to understand which tool to use based on the user's intent:
+
+"I want to listen to..." $\rightarrow$ Route to search_spotify.
+"Find the CEO of..." $\rightarrow$ Route to search_web with a focus on LinkedIn/X.
+"Show me moodboard ideas for..." $\rightarrow$ Route to search_pinterest or an image search.
+
+// Example of how we would define the new capability
+search_web: tool({
+  description: 'Searches the broader web (Spotify, social media, images) for specific entities.',
+  parameters: z.object({
+    query: z.string(),
+    platform: z.enum(['spotify', 'instagram', 'pinterest', 'x', 'general']),
+  }),
+  execute: async ({ query, platform }) => {
+    // Logic to route the request to the correct API key/service
+  }
+})

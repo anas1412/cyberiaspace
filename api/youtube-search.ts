@@ -21,9 +21,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     // 2. Validate API Key
     if (!apiKey) {
       console.error("YOUTUBE_API_KEY is not defined in your environment variables.");
-      return res.status(500).json({ 
-        error: "Server configuration error", 
-        message: "Missing YouTube API Key on server." 
+      return res.status(500).json({
+        error: "Server configuration error",
+        message: "Missing YouTube API Key on server."
       });
     }
 
@@ -36,8 +36,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     // 4. Handle Google API Errors (like 403 Forbidden or 429 Over Quota)
     if (!response.ok) {
       console.error("YouTube API returned an error:", data);
-      return res.status(response.status).json({ 
-        error: "YouTube API Error", 
+      return res.status(response.status).json({
+        error: "YouTube API Error",
         message: data.error?.message || "Forbidden",
         reason: data.error?.errors?.[0]?.reason || "unknown"
       });
@@ -51,25 +51,26 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       .map((item: any) => ({
         title: item.snippet.title,
         url: `https://www.youtube.com/watch?v=${item.id.videoId}`,
-        description: item.snippet.description 
-          ? item.snippet.description.substring(0, 120) + "..." 
+        author: item.snippet.channelTitle,
+        description: item.snippet.description
+          ? item.snippet.description.substring(0, 160) + "..."
           : "No description available."
       }));
 
     // 6. Return Success
     // We wrap it in a 'results' object to match the executeTool logic in ai.ts
-    return res.status(200).json({ 
+    return res.status(200).json({
       results: cleanedResults,
-      count: cleanedResults.length 
+      count: cleanedResults.length
     });
 
   } catch (err: any) {
     // 7. Prevent Local Node Crash
     // Catching the error here prevents the Windows "Assertion failed" error
     console.error("Internal Script Error in youtube-search.ts:", err);
-    return res.status(500).json({ 
-      error: "Internal Server Error", 
-      message: err.message || "An unexpected error occurred." 
+    return res.status(500).json({
+      error: "Internal Server Error",
+      message: err.message || "An unexpected error occurred."
     });
   }
 }

@@ -629,6 +629,7 @@ export const useStore = create<CyberiaState>((set, get) => ({
         date: '',
         priority: 'none',
         size: 1.0,
+        author: '',
         order: currentCount,
         layer: maxLayer + 1,
         ...partialThought

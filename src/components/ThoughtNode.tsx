@@ -2,7 +2,7 @@ import React, { useRef, useEffect, useState, useMemo } from 'react';
 import { motion } from 'framer-motion';
 import { type Thought } from '../db';
 import { useStore } from '../store/useStore';
-import { Maximize2, Palette, Link as LinkIcon, Link2Off, Image as ImageIcon, Table, ListTodo, Type, Music, MessageCircle, Share2, Youtube, Play } from 'lucide-react';
+import { Maximize2, Palette, Link as LinkIcon, Link2Off, Image as ImageIcon, Table, ListTodo, Type, Music, MessageCircle, Share2, Youtube, Play, Twitter } from 'lucide-react';
 import { marked } from 'marked';
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
@@ -15,7 +15,7 @@ function cn(...inputs: ClassValue[]) {
 const PROVIDER_CONFIG: Record<string, { icon: any, color: string, label: string }> = {
   youtube: { icon: Youtube, color: '#ef4444', label: 'YouTube' },
   spotify: { icon: Music, color: '#1db954', label: 'Spotify' },
-  twitter: { icon: MessageCircle, color: '#1da1f2', label: 'Twitter' },
+  twitter: { icon: Twitter, color: '#1da1f2', label: 'Twitter' },
   reddit: { icon: MessageCircle, color: '#ff4500', label: 'Reddit' },
   facebook: { icon: Share2, color: '#1877f2', label: 'Facebook' },
   instagram: { icon: Share2, color: '#e1306c', label: 'Instagram' },
@@ -434,12 +434,24 @@ const ThoughtNode: React.FC<ThoughtNodeProps> = React.memo(({ thought, registerE
               </div>
             ) : (
               <div className="flex flex-col items-center gap-2 p-6 text-center">
-                <div className={cn("w-12 h-12 rounded-xl flex items-center justify-center border", `bg-[${config.color}]/10 border-[${config.color}]/20`)}>
+                <div
+                  className="w-12 h-12 rounded-xl flex items-center justify-center border"
+                  style={{ backgroundColor: `${config.color}15`, borderColor: `${config.color}30` }}
+                >
                   <Icon className="w-6 h-6" style={{ color: config.color }} />
                 </div>
                 <span className="text-[10px] font-black uppercase tracking-widest leading-tight" style={{ color: config.color }}>
-                  {thought.text || `View on ${config.label}`}
+                  {thought.author || thought.text || `View on ${config.label}`}
                 </span>
+              </div>
+            )}
+
+            {/* Author Overlay for Embeds */}
+            {thought.author && (
+              <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent p-3 pt-8 pointer-events-none transition-opacity group-hover:opacity-100 opacity-60">
+                <p className="text-[10px] text-slate-200 line-clamp-2 leading-tight font-black uppercase tracking-wider italic">
+                  {thought.author}
+                </p>
               </div>
             )}
           </div>
@@ -530,9 +542,11 @@ const ThoughtNode: React.FC<ThoughtNodeProps> = React.memo(({ thought, registerE
             thought.type === 'text' && (thought.content || thought.description || !thought.stackId) ? "min-h-0 justify-center gap-2 mt-0.5" : "min-h-0 gap-0"
           )}
         >
-          {thought.description && (
-            <p className="text-[10px] text-[var(--text-dimmed)] italic pr-10">{thought.description}</p>
-          )}
+          {thought.description &&
+            thought.description !== 'No description available.' &&
+            thought.description !== thought.text && (
+              <p className="text-[10px] text-[var(--text-dimmed)] italic pr-10">{thought.description}</p>
+            )}
           {renderContent()}
 
           {/* Expand Icon Overlay (Only for text thoughts with content) */}
@@ -548,8 +562,8 @@ const ThoughtNode: React.FC<ThoughtNodeProps> = React.memo(({ thought, registerE
           )}
         </div>
 
-        {stack && (
-          <div className="flex items-center gap-2 mt-1">
+        <div className="flex items-center gap-2 mt-1">
+          {stack && (
             <div
               className="px-2 py-0.5 rounded-md text-[8px] font-black uppercase tracking-wider border border-white/10"
               style={{
@@ -560,8 +574,8 @@ const ThoughtNode: React.FC<ThoughtNodeProps> = React.memo(({ thought, registerE
             >
               {stack.name || "Unnamed Stack"}
             </div>
-          </div>
-        )}
+          )}
+        </div>
 
         {/* Bottom Right Action Button (Link or Unlink) */}
         <button
