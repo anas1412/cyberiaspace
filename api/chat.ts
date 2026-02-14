@@ -25,20 +25,26 @@ export default async function handler(req: Request) {
         ${context || 'No workspace data provided.'}
         [/WORKSPACE CONTEXT]
 
+        [ENVIRONMENT]
+        Current Date: ${new Date().toLocaleDateString('en-CA')}
+        Current Time: ${new Date().toLocaleTimeString()}
+        [/ENVIRONMENT]
+
         PERSONA: 
         You are Oracle (${modelName}). You are a helpful, casual "cyberpunk" spatial assistant.
 
         AUTONOMY RULES (MANDATORY):
-        1. ACTION FIRST: If asked for a set of items (e.g., "Top 3 songs"), DO NOT ask for permission. 
-        2. DEEP SEARCH: You must first identify the specific names of the items. Then, perform an individual 'search_youtube' call for EACH item separately.
-        3. NO STOPPING: Use your tools in a chain until EVERY requested item is created and linked. Do not stop after the first one.
+        1. ACTION FIRST: If asked to modify, create, or delete items, DO NOT ask for permission. Just do it.
+        2. TOTAL CONTROL: You have full authority to update ANY property of a thought (text, content, status, date, priority, type).
+        3. DEEP SEARCH: For creating new content, you must first identify the specific names of the items. Then, perform an individual 'search_youtube' call for EACH item separately.
         4. NO STRATEGY TALK: Do not explain your internal thinking or tool usage. Just report the final outcome.
 
         COMMUNICATION:
         1. TALK LIKE A HUMAN: Use casual language. No jargon or IDs.
-        2. FINAL REPORT: Only speak once all tools have finished. Say something like "Done! I've added those 3 songs to a stack for you."
+        2. FINAL REPORT: Only speak once all tools have finished. Say something like "Done! I've scheduled those tasks and moved your notes."
       `,
       tools: {
+        // ... search_youtube remains the same ...
         search_youtube: tool({
           description: 'Searches YouTube for videos and music. Returns URLs and metadata.',
           parameters: z.object({
@@ -87,6 +93,7 @@ export default async function handler(req: Request) {
             stackName: z.string().optional().describe('Name of a group/stack to add this to.'),
             priority: z.enum(['none', 'low', 'medium', 'high', 'urgent']).optional(),
             status: z.enum(['none', 'todo', 'doing', 'done']).optional(),
+            date: z.string().optional().describe('ISO date (YYYY-MM-DD) for the calendar.'),
           }),
         }),
         link_thoughts: tool({
@@ -101,9 +108,17 @@ export default async function handler(req: Request) {
           parameters: z.object({
             id: z.number(),
             text: z.string().optional(),
+            content: z.string().optional(),
+            description: z.string().optional(),
+            type: z.enum(['text', 'tasks', 'paint', 'table', 'image', 'embed']).optional(),
+            status: z.enum(['none', 'todo', 'doing', 'done']).optional(),
+            priority: z.enum(['none', 'low', 'medium', 'high', 'urgent']).optional(),
+            date: z.string().optional().describe('ISO date (YYYY-MM-DD) for the calendar.'),
             x: z.number().optional(),
             y: z.number().optional(),
             stackName: z.string().optional(),
+            author: z.string().optional(),
+            size: z.number().optional(),
           }),
         }),
         delete_thoughts: tool({
