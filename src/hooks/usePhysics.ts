@@ -581,18 +581,20 @@ export const usePhysics = (
       const accentGlow = computedStyle.getPropertyValue('--accent-glow').trim() || 'rgba(99, 102, 241, 0.5)';
 
       // Draw Connections
-      ctx.strokeStyle = accentColor.startsWith('#') ? accentColor + '1F' : accentColor.replace('rgb', 'rgba').replace(')', ', 0.12)');
+      if (mode === 'spatial') {
+        ctx.strokeStyle = accentColor.startsWith('#') ? accentColor + '1F' : accentColor.replace('rgb', 'rgba').replace(')', ', 0.12)');
 
-      ctx.beginPath();
-      for (let i = 0; i < ids.length; i++) {
-        const idA = ids[i]; const tA = thoughtMap.current.get(idA); const pA = state.get(idA); if (!tA || !pA) continue;
-        for (let j = i + 1; j < ids.length; j++) {
-          const idB = ids[j]; const tB = thoughtMap.current.get(idB); const pB = state.get(idB); if (!tB || !pB) continue;
-          const isSameStack = tA.stackId && tA.stackId === tB.stackId;
-          if (isSameStack) { const x1 = pA.x * s + tx; const y1 = pA.y * s + ty; const x2 = pB.x * s + tx; const y2 = pB.y * s + ty; ctx.moveTo(x1, y1); ctx.lineTo(x2, y2); }
+        ctx.beginPath();
+        for (let i = 0; i < ids.length; i++) {
+          const idA = ids[i]; const tA = thoughtMap.current.get(idA); const pA = state.get(idA); if (!tA || !pA) continue;
+          for (let j = i + 1; j < ids.length; j++) {
+            const idB = ids[j]; const tB = thoughtMap.current.get(idB); const pB = state.get(idB); if (!tB || !pB) continue;
+            const isSameStack = tA.stackId && tA.stackId === tB.stackId;
+            if (isSameStack) { const x1 = pA.x * s + tx; const y1 = pA.y * s + ty; const x2 = pB.x * s + tx; const y2 = pB.y * s + ty; ctx.moveTo(x1, y1); ctx.lineTo(x2, y2); }
+          }
         }
+        ctx.stroke();
       }
-      ctx.stroke();
 
       // Draw Linking Thread Preview
       if (linkingSourceId) {
