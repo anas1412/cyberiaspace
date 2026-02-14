@@ -41,24 +41,24 @@ export const calendarStrategy: LayoutStrategist = {
         const index = dateThoughts.findIndex(t => t.id === thought.id);
         const isTopCard = index === count - 1;
 
-        // Scaling & Spacing Math from reference
-        const widthScale = (cellWidth - 20) / 280;
-        const heightScale = (cellHeight - 60) / 250;
-        const uniformScale = Math.min(widthScale, heightScale, 0.45);
+        // Scaling & Spacing Math: Use more of the cell area
+        const widthScale = (cellWidth - 12) / 280;
+        const heightScale = (cellHeight - 20) / 150; 
+        const uniformScale = Math.min(widthScale, heightScale, 0.85);
 
-        let hSpread = isHovered ? 20 : 8;
-        let vSpread = isHovered ? 60 : 25;
+        let hSpread = isHovered ? 25 : 12;
+        let vSpread = isHovered ? 70 : 35;
 
         if (count > 1) {
-          hSpread = Math.min(hSpread, (cellWidth * 0.4) / (count - 1));
-          vSpread = Math.min(vSpread, (cellHeight * 0.4) / (count - 1));
+          hSpread = Math.min(hSpread, (cellWidth * 0.5) / (count - 1));
+          vSpread = Math.min(vSpread, (cellHeight * 0.5) / (count - 1));
         }
 
         const targetScale = isHovered ? uniformScale * 1.05 : uniformScale;
         const h = elementHeights.get(thought.id) || 120;
         
-        const targetX = cellX + 10 + (index * hSpread) + (280 * targetScale) / 2;
-        const targetY = cellY + 2 + (index * vSpread) + (h * targetScale) / 2;
+        const targetX = cellX + 6 + (index * hSpread) + (280 * targetScale) / 2;
+        const targetY = cellY + 4 + (index * vSpread) + (h * targetScale) / 2;
 
         return {
           targetX,
@@ -91,13 +91,13 @@ export const calendarStrategy: LayoutStrategist = {
       const index = unscheduled.findIndex(t => t.id === thought.id);
       
       const h = elementHeights.get(thought.id) || 120;
-      const heightAtScale = h * 0.6;
+      const heightAtScale = h * 0.8;
       
       // Sum previous heights in sidebar
       let yOffset = 0;
       for (let i = 0; i < index; i++) {
         const prevH = elementHeights.get(unscheduled[i].id) || 120;
-        yOffset += (prevH * 0.6) + 20;
+        yOffset += (prevH * 0.8) + 20;
       }
 
       const targetY = 200 - sidebarScrollTop + yOffset + heightAtScale / 2;
@@ -105,7 +105,7 @@ export const calendarStrategy: LayoutStrategist = {
       return {
         targetX: padding + sidebarWidth / 2,
         targetY,
-        targetScale: 0.6,
+        targetScale: 0.8,
         zIndex: '35',
         opacity: 1,
         visibility: 'visible',
