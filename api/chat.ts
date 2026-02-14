@@ -1,5 +1,6 @@
 import { google } from '@ai-sdk/google';
-import { streamText, tool, Output } from 'ai';
+import { GoogleGenerativeAIProviderMetadata } from '@ai-sdk/google';
+import { generateText, streamText, tool, Output } from 'ai';
 import { z } from 'zod';
 
 export const config = {
@@ -16,10 +17,23 @@ export default async function handler(req: Request) {
     const modelName = process.env.GOOGLE_AI_MODEL || 'gemini-2.5-flash';
 
     const result = streamText({
-      model: google(modelName),
+      model: google(modelName, {
+        useSearchGrounding: false,
+      }),
       messages,
       abortSignal: req.signal,
       maxSteps: 15,
+      onStepFinish: (step) => {
+        if (step.toolCalls?.length) {
+          console.log(`[Oracle API] Step Finish - Tool Calls:`, JSON.stringify(step.toolCalls, null, 2));
+        }
+        if (step.toolResults?.length) {
+          console.log(`[Oracle API] Step Finish - Tool Results:`, JSON.stringify(step.toolResults, null, 2));
+        }
+      },
+      onFinish: (event) => {
+        console.log(`[Oracle API] Stream Finished. Usage:`, event.usage);
+      },
       system: `
         [WORKSPACE CONTEXT]
         ${context || 'No workspace data provided.'}
@@ -32,19 +46,59 @@ export default async function handler(req: Request) {
 
         PERSONA: 
         You are Oracle (${modelName}). You are a helpful, casual "cyberpunk" spatial assistant.
+        
+        CRITICAL: You interact with the workspace via JSON TOOLS. Do NOT attempt to write or execute Python/JavaScript code. If you see code snippets in the conversation, IGNORE them as implementation details; they are NOT functions you can call. Use the provided 'create_thought', 'update_thought', etc., via the standard tool-calling interface.
 
         AUTONOMY RULES (MANDATORY):
         1. ACTION FIRST: If asked to modify, create, or delete items, DO NOT ask for permission. Just do it.
         2. TOTAL CONTROL: You have full authority to update ANY property of a thought (text, content, status, date, priority, type).
-        3. DEEP SEARCH: For creating new content, you must first identify the specific names of the items. Then, perform an individual 'search_youtube' call for EACH item separately.
-        4. NO STRATEGY TALK: Do not explain your internal thinking or tool usage. Just report the final outcome.
+        3. VERIFY THEN ACT (ANTI-HALLUCINATION): NEVER guess or hallucinate a URL (especially for Goodreads, Twitter, or Spotify). You MUST use 'web_search' or 'search_youtube' first. Wait for the tool results, then use the verified URL in 'create_thought'.
+        4. SEQUENTIAL EXECUTION: Do not call 'create_thought' with a guessed URL in the same turn as a 'web_search'. Call 'web_search' first, then use the results in the next step.
+        5. EMBED ORIENTED: When you find a valid URL, use 'create_thought' with 'type: embed' and set 'content' to the URL.
+        6. NO STRATEGY TALK: Do not explain your thinking, tool usage, or search process. Do not say "Searching..." or "I'll find that for you". Just execute the tools.
 
         COMMUNICATION:
         1. TALK LIKE A HUMAN: Use casual language. No jargon or IDs.
-        2. FINAL REPORT: Only speak once all tools have finished. Say something like "Done! I've scheduled those tasks and moved your notes."
+        2. TOOL-ONLY PHASE: You are FORBIDDEN from generating any text response while you have tools to call. If a search is successful, your next output MUST be a tool call (e.g., 'create_thought' or 'update_thought') with NO accompanying text.
+        3. FINAL REPORT ONLY: ONLY speak once all tools have finished. Your message must summarize the actions you took (e.g., "Done! I've added that profile to your workspace.").
+        4. NO EMPTY MESSAGES: Always provide a final summary message after performing actions.
       `,
       tools: {
-        // ... search_youtube remains the same ...
+        web_search: tool({
+          description: 'Search the web for real-time information, profiles, and URLs using Tavily.',
+          parameters: z.object({
+            query: z.string().describe('The search query.'),
+          }),
+          execute: async ({ query }) => {
+            console.log(`[Oracle API] Executing web_search: "${query}"`);
+            const apiKey = process.env.TAVILY_API_KEY;
+            if (!apiKey) return { error: 'Tavily API Key missing.' };
+
+            try {
+              const response = await fetch('https://api.tavily.com/search', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  api_key: apiKey,
+                  query,
+                  search_depth: 'fast',
+                  include_images: false,
+                  include_answer: true,
+                  max_results: 5,
+                }),
+              });
+
+              const data = await response.json();
+              if (!response.ok) throw new Error(data.detail || 'Tavily API Error');
+
+              console.log(`[Oracle API] Found ${data.results?.length || 0} results for "${query}"`);
+              return { results: data.results, answer: data.answer };
+            } catch (error: any) {
+              console.error(`[Oracle API] Web search failed: ${error.message}`);
+              return { error: error.message };
+            }
+          },
+        }),
         search_youtube: tool({
           description: 'Searches YouTube for videos and music. Returns URLs and metadata.',
           parameters: z.object({

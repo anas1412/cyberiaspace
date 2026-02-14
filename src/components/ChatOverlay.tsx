@@ -51,16 +51,16 @@ const ChatOverlay: React.FC = () => {
       )
     },
     onToolCall: async ({ toolCall }) => {
-      console.log(`[Oracle] Received Tool Call: ${toolCall.toolName}`, toolCall.args);
+      console.log(`[Oracle] Incoming Tool Call: ${toolCall.toolName}`, toolCall.args);
       
-      // Only log tools handled on the client to reduce noise
       const clientTools = ['create_thought', 'link_thoughts', 'update_thought', 'delete_thoughts'];
       if (!clientTools.includes(toolCall.toolName)) {
-        console.log(`[Oracle] Tool ${toolCall.toolName} is server-side, skipping frontend execution.`);
+        console.log(`[Oracle] Tool "${toolCall.toolName}" is not a client-side tool. Waiting for server...`);
         return;
       }
 
       try {
+        let result: any = { success: false };
         switch (toolCall.toolName) {
           case 'create_thought': {
             const { stackName, ...thoughtArgs } = toolCall.args as any;
@@ -68,47 +68,61 @@ const ChatOverlay: React.FC = () => {
             const y = typeof thoughtArgs.y !== 'undefined' ? Number(thoughtArgs.y) : window.innerHeight / 2;
 
             const id = await store.addThought({ ...thoughtArgs, x, y });
-            if (stackName && id && id !== -1) await store.createStack(stackName, id);
-            
-            console.log(`[Oracle] Thought Created: ID ${id}`);
-            return { success: true, id };
+            if (id === -1) {
+              result = { success: false, error: 'Thought creation limit reached or invalid data' };
+            } else {
+              if (stackName) await store.createStack(stackName, id);
+              result = { success: true, id };
+            }
+            break;
           }
 
           case 'link_thoughts': {
             const { ids, name } = toolCall.args as any;
-            if (!ids?.length) return { success: false, error: 'No IDs provided' };
-            store.setSelectedThoughtIds(ids);
-            await store.linkSelectedThoughts(name);
-            store.clearSelection();
-            console.log(`[Oracle] Linked ${ids.length} thoughts into stack: ${name}`);
-            return { success: true };
+            if (!ids?.length) {
+              result = { success: false, error: 'No IDs provided' };
+            } else {
+              store.setSelectedThoughtIds(ids);
+              await store.linkSelectedThoughts(name);
+              store.clearSelection();
+              result = { success: true };
+            }
+            break;
           }
 
           case 'update_thought': {
             const { id, stackName, ...updates } = toolCall.args as any;
-            if (!id) return { success: false, error: 'Missing ID' };
-            
-            const sanitizedUpdates: any = { ...updates };
-            if (typeof updates.x !== 'undefined') sanitizedUpdates.x = Number(updates.x);
-            if (typeof updates.y !== 'undefined') sanitizedUpdates.y = Number(updates.y);
+            if (!id) {
+              result = { success: false, error: 'Missing ID' };
+            } else {
+              const sanitizedUpdates: any = { ...updates };
+              if (typeof updates.x !== 'undefined') sanitizedUpdates.x = Number(updates.x);
+              if (typeof updates.y !== 'undefined') sanitizedUpdates.y = Number(updates.y);
 
-            await store.updateThought(id, sanitizedUpdates);
-            if (stackName) await store.createStack(stackName, id);
-            console.log(`[Oracle] Updated Thought: ID ${id}`);
-            return { success: true };
+              await store.updateThought(id, sanitizedUpdates);
+              if (stackName) await store.createStack(stackName, id);
+              result = { success: true };
+            }
+            break;
           }
 
           case 'delete_thoughts': {
             const { ids } = toolCall.args as any;
-            if (!ids?.length) return { success: false, error: 'No IDs provided' };
-            await store.deleteThoughts(ids);
-            console.log(`[Oracle] Deleted Thoughts: IDs ${ids.join(', ')}`);
-            return { success: true };
+            if (!ids?.length) {
+              result = { success: false, error: 'No IDs provided' };
+            } else {
+              await store.deleteThoughts(ids);
+              result = { success: true };
+            }
+            break;
           }
         }
-      } catch (error) {
-        console.error('[Oracle] Frontend Tool Execution Error:', error);
-        return { success: false, error: 'Internal client tool error' };
+        
+        console.log(`[Oracle] Client Tool "${toolCall.toolName}" finished with result:`, result);
+        return result;
+      } catch (error: any) {
+        console.error(`[Oracle] Frontend Tool "${toolCall.toolName}" Execution Error:`, error);
+        return { success: false, error: error.message || 'Internal client tool error' };
       }
     },
     onResponse: (response) => {
@@ -188,7 +202,7 @@ const ChatOverlay: React.FC = () => {
             )}
             
             {messages.map((msg) => {
-              if (!msg.content && msg.role === 'assistant') return null;
+              if (!msg.content?.trim() && msg.role === 'assistant') return null;
               return (
                 <div key={msg.id} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
                   <div 
