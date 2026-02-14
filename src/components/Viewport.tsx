@@ -82,6 +82,7 @@ const Viewport: React.FC = () => {
       const isMiddleClick = e.button === 1;
       const isAltLeftClick = e.button === 0 && e.altKey;
       const isLeftClick = e.button === 0 && !e.altKey;
+      const isCtrlLeftClick = isLeftClick && (e.ctrlKey || e.metaKey);
 
       if (isLeftClick) {
         selectionStartRef.current = { x: lx, y: ly };
@@ -91,16 +92,17 @@ const Viewport: React.FC = () => {
         activeSpace?.mode === 'spatial' &&
         !(e.target as HTMLElement).closest('button, input, textarea, .thought-bulb, #inspector, .ui-layer, .expand-img, #chat-overlay, .focus-box')
       ) {
-        if (isMiddleClick || isAltLeftClick) {
+        // PANNING: Left Click Drag (No Ctrl) OR Middle Click OR Alt+Left Click
+        if ((isLeftClick && !isCtrlLeftClick) || isMiddleClick || isAltLeftClick) {
           isPanningRef.current = true;
           setIsGrabbing(true);
           lastMousePos.current = { x: lx, y: ly, rawX: e.clientX, rawY: e.clientY };
-          e.preventDefault();
-        } else if (isLeftClick) {
+          if (isMiddleClick || isAltLeftClick) e.preventDefault();
+        } 
+        // SELECTING: Ctrl + Left Click Drag
+        else if (isCtrlLeftClick) {
           isSelectingRef.current = true;
-          if (!e.ctrlKey && !e.metaKey) {
-            clearSelection();
-          }
+          // Note: Selection clearing handled in handleClick to distinguish from simple clicks
         }
       }
     };

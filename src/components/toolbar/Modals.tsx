@@ -106,10 +106,14 @@ export const ShortcutsModal: React.FC<{ isOpen: boolean; onClose: () => void }> 
         <div className="flex justify-between items-center mb-8"><h3 className="text-sm font-black uppercase tracking-[0.2em] text-[var(--accent-secondary)]">Command Center</h3><button onClick={onClose} className="text-slate-500 hover:text-white"><Plus className="w-6 h-6 rotate-45" /></button></div>
         <div className="space-y-6">
           {[
-            { keys: ['Space'], label: 'Create New Thought' }, { keys: ['Del', 'Backspace'], label: 'Delete Selected' },
-            { keys: ['Ctrl', 'V'], label: 'Paste (Text, Image, YT)' }, { keys: ['Drag'], label: 'Import (Images, TXT, CSV)' },
-            { keys: ['L-Click', 'Drag'], label: 'Select Thoughts' }, { keys: ['Ctrl', 'L-Click'], label: 'Multi-Select' },
-            { keys: ['Enter'], label: 'Confirm Modal / Open Editor' }, { keys: ['Alt', 'L-Click'], label: 'Pan Viewport' }, { keys: ['Wheel'], label: 'Zoom In / Out' },
+            { keys: ['Space'], label: 'Create New Thought' }, 
+            { keys: ['Del', 'Backspace'], label: 'Delete Selected' },
+            { keys: ['Ctrl', 'V'], label: 'Paste (Text, Image, YT)' }, 
+            { keys: ['Drag'], label: 'Import (Images, TXT, CSV)' },
+            { keys: ['L-Click', 'Drag'], label: 'Pan Viewport' }, 
+            { keys: ['Ctrl', 'L-Click'], label: 'Multi-Select (Marquee)' },
+            { keys: ['Enter'], label: 'Confirm Modal / Open Editor' }, 
+            { keys: ['Wheel'], label: 'Zoom In / Out' },
           ].map((s, i) => (
             <div key={i} className="flex justify-between items-center group"><span className="text-[10px] font-bold uppercase tracking-widest text-slate-400 group-hover:text-white transition-colors">{s.label}</span><div className="flex gap-1">{s.keys.map(k => (<kbd key={k} className="bg-white/5 border border-white/10 px-2 py-1 rounded-lg text-[9px] font-black text-[var(--accent-secondary)] min-w-[30px] text-center">{k}</kbd>))}</div></div>
           ))}
