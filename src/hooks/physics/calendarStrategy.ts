@@ -4,8 +4,16 @@ export const calendarStrategy: LayoutStrategist = {
   name: 'calendar',
   
   calculateLayout: (thought, allThoughts, context, elementHeights) => {
-    const { logicalWidth, logicalHeight, calendarViewDate, hoveredCalDate, sidebarScrollTop } = context;
+    const { logicalWidth, logicalHeight, calendarViewDate, hoveredCalDate, sidebarScrollTop, sidebarTop, calendarSearchQuery, calendarStackFilter } = context;
     
+    // Filtering logic
+    const matchesSearch = !calendarSearchQuery || 
+      thought.text.toLowerCase().includes(calendarSearchQuery.toLowerCase()) ||
+      thought.content.toLowerCase().includes(calendarSearchQuery.toLowerCase());
+    
+    const matchesStack = !calendarStackFilter || thought.stackId === calendarStackFilter;
+    const isFilteredOut = !matchesSearch || !matchesStack;
+
     const sidebarWidth = 260;
     const gap = 20;
     const padding = 40;
@@ -35,6 +43,11 @@ export const calendarStrategy: LayoutStrategist = {
         
         const dateThoughts = allThoughts
           .filter(t => t.date === thought.date)
+          .filter(t => {
+            const mS = !calendarSearchQuery || t.text.toLowerCase().includes(calendarSearchQuery.toLowerCase()) || t.content.toLowerCase().includes(calendarSearchQuery.toLowerCase());
+            const mStack = !calendarStackFilter || t.stackId === calendarStackFilter;
+            return mS && mStack;
+          })
           .sort((a, b) => (a.layer || 0) - (b.layer || 0));
         
         const count = dateThoughts.length;
@@ -54,7 +67,7 @@ export const calendarStrategy: LayoutStrategist = {
           vSpread = Math.min(vSpread, (cellHeight * 0.5) / (count - 1));
         }
 
-        const targetScale = isHovered ? uniformScale * 1.05 : uniformScale;
+        const targetScale = isFilteredOut ? 0 : (isHovered ? uniformScale * 1.05 : uniformScale);
         const h = elementHeights.get(thought.id) || 120;
         
         const targetX = cellX + 6 + (index * hSpread) + (280 * targetScale) / 2;
@@ -67,9 +80,9 @@ export const calendarStrategy: LayoutStrategist = {
           zIndex: (30 + (thought.layer || 0)).toString(),
           clipPath: (isHovered || isTopCard) ? 'none' : 'inset(0px 0px calc(100% - 70px) 0px)',
           rotation: (thought.layer || 0) % 2 === 0 ? 0.8 : -0.8,
-          opacity: 1,
-          visibility: 'visible',
-          pointerEvents: 'auto'
+          opacity: isFilteredOut ? 0 : 1,
+          visibility: isFilteredOut ? 'hidden' : 'visible',
+          pointerEvents: isFilteredOut ? 'none' : 'auto'
         };
       } else {
         // Hide thoughts from other months
@@ -86,6 +99,11 @@ export const calendarStrategy: LayoutStrategist = {
       // Unscheduled - Sidebar Logic
       const unscheduled = allThoughts
         .filter(t => !t.date)
+        .filter(t => {
+          const mS = !calendarSearchQuery || t.text.toLowerCase().includes(calendarSearchQuery.toLowerCase()) || t.content.toLowerCase().includes(calendarSearchQuery.toLowerCase());
+          const mStack = !calendarStackFilter || t.stackId === calendarStackFilter;
+          return mS && mStack;
+        })
         .sort((a, b) => a.order - b.order);
       
       const index = unscheduled.findIndex(t => t.id === thought.id);
@@ -100,16 +118,16 @@ export const calendarStrategy: LayoutStrategist = {
         yOffset += (prevH * 0.8) + 20;
       }
 
-      const targetY = 200 - sidebarScrollTop + yOffset + heightAtScale / 2;
+      const targetY = sidebarTop + 20 - sidebarScrollTop + yOffset + heightAtScale / 2;
 
       return {
         targetX: padding + sidebarWidth / 2,
         targetY,
-        targetScale: 0.8,
+        targetScale: isFilteredOut ? 0 : 0.8,
         zIndex: '35',
-        opacity: 1,
-        visibility: 'visible',
-        pointerEvents: 'auto',
+        opacity: isFilteredOut ? 0 : 1,
+        visibility: isFilteredOut ? 'hidden' : 'visible',
+        pointerEvents: isFilteredOut ? 'none' : 'auto',
         isSidebar: true,
         columnHeight: yOffset + heightAtScale + 20
       };

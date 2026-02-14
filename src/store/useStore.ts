@@ -17,6 +17,8 @@ interface CyberiaState {
   calendarViewDate: Date;
   hoveredCalDate: string | null;
   linkingSourceId: number | null;
+  calendarSearchQuery: string;
+  calendarStackFilter: string | null;
   theme: 'cyberia' | 'sakura' | 'neon';
   isSpaceLoading: boolean;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -68,6 +70,8 @@ interface CyberiaState {
   setInspectorOpen: (open: boolean) => void;
   setActiveFocus: (id: number | null, type: 'text' | 'table' | 'paint' | 'tasks' | 'embed' | null) => void;
   setHoveredCalDate: (date: string | null) => void;
+  setCalendarSearchQuery: (query: string) => void;
+  setCalendarStackFilter: (stackId: string | null) => void;
   setLinkingSourceId: (id: number | null) => void;
 
   // Stack Actions
@@ -129,6 +133,8 @@ export const useStore = create<CyberiaState>((set, get) => ({
   focusType: null,
   calendarViewDate: new Date(),
   hoveredCalDate: null,
+  calendarSearchQuery: '',
+  calendarStackFilter: null,
   isLightboxOpen: false,
   lightboxImage: null,
   linkingSourceId: null,
@@ -1238,6 +1244,14 @@ export const useStore = create<CyberiaState>((set, get) => ({
 
   setHoveredCalDate: (date) => {
     set({ hoveredCalDate: date });
+  },
+
+  setCalendarSearchQuery: (query) => {
+    set({ calendarSearchQuery: query });
+  },
+
+  setCalendarStackFilter: (stackId) => {
+    set({ calendarStackFilter: stackId });
   },
 
   setLinkingSourceId: (id) => {

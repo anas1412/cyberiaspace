@@ -12,6 +12,7 @@ interface ThoughtFooterProps {
   thought: Thought;
   stack: any;
   isReadOnly: boolean;
+  isSpatial: boolean;
   linkingSourceId: number | null;
   handleLinkAction: (e: React.MouseEvent) => void;
 }
@@ -20,6 +21,7 @@ export const ThoughtFooter: React.FC<ThoughtFooterProps> = ({
   thought, 
   stack, 
   isReadOnly, 
+  isSpatial,
   linkingSourceId, 
   handleLinkAction 
 }) => {
@@ -40,7 +42,7 @@ export const ThoughtFooter: React.FC<ThoughtFooterProps> = ({
         )}
       </div>
 
-      {!isReadOnly && (
+      {!isReadOnly && isSpatial && (
         <button
           onClick={handleLinkAction}
           className={cn(

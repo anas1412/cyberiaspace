@@ -4,6 +4,7 @@ import { useStore } from '../store/useStore';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
+import { CalendarFilterBar } from './calendar/CalendarFilterBar';
 
 function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -92,6 +93,7 @@ const CalendarOverlay: React.FC = () => {
         <div className="cal-sidebar-header p-4 md:p-5 border-b border-white/[0.05] text-[9px] md:text-[10px] font-900 tracking-[0.2em] uppercase text-[var(--accent-secondary)] bg-[var(--bg-main)] z-[40] sticky top-0 shadow-lg">
           Unscheduled
         </div>
+        <CalendarFilterBar />
         <div id="cal-sidebar-content" className="cal-sidebar-content flex-1 overflow-y-auto overflow-x-hidden relative p-4 md:p-5 custom-scroll">
           <div id="cal-sidebar-spacer" style={{ height: '0px' }} />
         </div>
