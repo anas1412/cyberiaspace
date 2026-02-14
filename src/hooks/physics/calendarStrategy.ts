@@ -90,10 +90,6 @@ export const calendarStrategy: LayoutStrategist = {
       
       const index = unscheduled.findIndex(t => t.id === thought.id);
       
-      // Calculate Y precisely like reference sidebar loop
-      let currentSB_Y = 200; // Starting point if contentRect is null
-      // We'll use a fixed start for the strategy and the orchestrator can adjust if needed
-      
       const h = elementHeights.get(thought.id) || 120;
       const heightAtScale = h * 0.6;
       

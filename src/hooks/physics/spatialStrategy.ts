@@ -1,5 +1,5 @@
 import type { Thought } from '../../db';
-import type { LayoutStrategist, LayoutResult, PhysicsPoint, LayoutContext } from './types';
+import type { LayoutStrategist, LayoutResult } from './types';
 
 const REPULSION = 80000;
 const ATTRACTION = 0.01;

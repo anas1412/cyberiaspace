@@ -23,15 +23,12 @@ const PROVIDER_CONFIG: Record<string, { icon: any, color: string, label: string,
 };
 
 const EditorContent: React.FC<{
-  thought: any;
-  embedInfo: any;
-  isHydrated: boolean;
   renderPlayer: () => React.ReactNode;
   stackItems: any[];
   stack: any;
-  setActiveFocus: (id: number | null, type: string | null) => void;
-  scrollerRef: React.RefObject<HTMLDivElement>;
-}> = ({ thought, embedInfo, isHydrated, renderPlayer, stackItems, stack, setActiveFocus, scrollerRef }) => (
+  setActiveFocus: (id: number | null, type: "text" | "tasks" | "paint" | "table" | "embed" | null) => void;
+  scrollerRef: React.RefObject<HTMLDivElement | null>;
+}> = ({ renderPlayer, stackItems, stack, setActiveFocus, scrollerRef }) => (
   <div className="flex-1 flex flex-col min-h-0 bg-black">
     <div className="flex-1 relative min-h-0">
       {renderPlayer()}
@@ -208,9 +205,6 @@ const EmbedFocusEditor: React.FC = () => {
       }
     >
       <EditorContent 
-        thought={thought}
-        embedInfo={embedInfo}
-        isHydrated={isHydrated}
         renderPlayer={renderPlayer}
         stackItems={stackItems}
         stack={stack}

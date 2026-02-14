@@ -6,7 +6,7 @@ import { useModalStore } from './store/useModalStore';
 import { useAuthStore } from './store/useAuthStore';
 import { PLAN_CONFIG, type SubscriptionPlan } from './constants';
 import Viewport from './components/Viewport';
-import Toolbar from './components/Toolbar';
+import Toolbar from './components/toolbar/Toolbar';
 import Inspector from './components/Inspector';
 import MultiSelectionMenu from './components/MultiSelectionMenu';
 import EmptyState from './components/EmptyState';

@@ -18,8 +18,8 @@ const BRUSH_SIZES = [2, 4, 8, 12, 24, 48];
 const EditorContent: React.FC<{
   isEditMode: boolean;
   thought: any;
-  canvasRef: React.RefObject<HTMLCanvasElement>;
-  containerRef: React.RefObject<HTMLDivElement>;
+  canvasRef: React.RefObject<HTMLCanvasElement | null>;
+  containerRef: React.RefObject<HTMLDivElement | null>;
   startPainting: (e: React.MouseEvent | React.TouchEvent) => void;
   paint: (e: React.MouseEvent | React.TouchEvent) => void;
   stopPainting: () => void;
