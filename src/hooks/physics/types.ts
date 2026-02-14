@@ -14,7 +14,12 @@ export interface LayoutContext {
   globalScale: number;
   calendarViewDate: Date;
   hoveredCalDate: string | null;
+  calendarSearchQuery: string;
+  calendarStackFilter: string | null;
+  kanbanSearchQuery: string;
+  kanbanStackFilter: string | null;
   sidebarScrollTop: number;
+  sidebarTop: number;
   isMobile: boolean;
   isReadOnly: boolean;
 }

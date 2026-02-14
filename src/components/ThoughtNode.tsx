@@ -199,7 +199,14 @@ const ThoughtNode: React.FC<ThoughtNodeProps> = React.memo(({ thought, registerE
           )}
           {renderContent()}
         </div>
-        <ThoughtFooter thought={thought} stack={stack} isReadOnly={isReadOnly} linkingSourceId={linkingSourceId} handleLinkAction={handleLinkAction} />
+        <ThoughtFooter 
+          thought={thought} 
+          stack={stack} 
+          isReadOnly={isReadOnly} 
+          isSpatial={isSpatial}
+          linkingSourceId={linkingSourceId} 
+          handleLinkAction={handleLinkAction} 
+        />
       </div>
     </div>
   );
