@@ -43,19 +43,19 @@ async function handleMetadata(req: VercelRequest, res: VercelResponse) {
 
         const getMeta = (names: string[]) => {
             for (const name of names) {
-                const content = $(`meta[property="${name}"], meta[name="${name}"]`).attr('content');
+                const content = $(`meta[property="${name}"], meta[name="${name}"], meta[itemprop="${name}"]`).attr('content');
                 if (content) return content;
             }
             return null;
         };
 
         const metadata = {
-            title: getMeta(['og:title', 'twitter:title', 'title']) || $('title').text() || url,
-            description: getMeta(['og:description', 'twitter:description', 'description']),
-            image: getMeta(['og:image', 'twitter:image:src', 'twitter:image']),
-            author: getMeta(['article:author', 'og:author', 'twitter:creator', 'author']),
-            publisher: getMeta(['og:site_name', 'twitter:site']),
-            url: getMeta(['og:url']) || url,
+            title: getMeta(['og:title', 'twitter:title', 'title', 'h1']) || $('title').text() || $('h1').first().text() || url,
+            description: getMeta(['og:description', 'twitter:description', 'description', 'abstract']),
+            image: getMeta(['og:image', 'twitter:image:src', 'twitter:image', 'image', 'thumbnailUrl']),
+            author: getMeta(['article:author', 'og:author', 'twitter:creator', 'author', 'book:author']),
+            publisher: getMeta(['og:site_name', 'twitter:site', 'publisher', 'p:domain_verify']),
+            url: getMeta(['og:url', 'canonical']) || url,
         };
 
         return res.status(200).json(metadata);
