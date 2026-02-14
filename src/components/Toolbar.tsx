@@ -6,7 +6,6 @@ import { PLAN_CONFIG, type SubscriptionPlan } from '../constants';
 import { Plus, Zap, Download, Upload, ChevronLeft, ChevronRight, Trash2, Edit3, Camera, MoreVertical, Keyboard, MousePointer2, Orbit, Columns3, CalendarDays, MonitorSmartphone, Eye, EyeOff, EyeClosed, ZoomIn, ZoomOut, RotateCcw, Undo2, Redo2, Settings, CircleHelp, MessageSquare, Send, Loader2, CheckCircle, Shield, Share2, ArrowLeft } from 'lucide-react';
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
-/* import { toPng, toCanvas } from 'html-to-image'; */
 import { toCanvas } from 'html-to-image';
 import AccountMenu from './AccountMenu';
 import ShareDialog from './ShareDialog';
