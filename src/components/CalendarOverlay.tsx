@@ -16,8 +16,15 @@ const CalendarOverlay: React.FC = () => {
   const calDate = useStore((state) => state.calendarViewDate);
   const setCalDate = useStore((state) => state.setCalendarViewDate);
   const setHoveredDate = useStore((state) => state.setHoveredCalDate);
+  const clearSelection = useStore((state) => state.clearSelection);
 
   if (activeSpace?.mode !== 'calendar') return null;
+
+  const handleBackgroundClick = (e: React.MouseEvent) => {
+    if (e.target === e.currentTarget || (e.target as HTMLElement).classList.contains('cal-grid')) {
+      clearSelection();
+    }
+  };
 
   const handleMouseEnter = (date: string) => {
     // Clear any pending leave timers globally
@@ -76,7 +83,10 @@ const CalendarOverlay: React.FC = () => {
   }
 
   return (
-    <div className="calendar-overlay fixed inset-0 flex flex-col md:flex-row pointer-events-none p-4 md:p-10 pb-[100px] md:pb-[120px] pt-[100px] md:pt-[100px] gap-4 md:gap-5 opacity-100 transition-opacity duration-400 z-0 overflow-y-auto md:overflow-hidden">
+    <div 
+      className="calendar-overlay fixed inset-0 flex flex-col md:flex-row pointer-events-none p-4 md:p-10 pb-[100px] md:pb-[120px] pt-[100px] md:pt-[100px] gap-4 md:gap-5 opacity-100 transition-opacity duration-400 z-0 overflow-y-auto md:overflow-hidden"
+      onClick={handleBackgroundClick}
+    >
       {/* Sidebar */}
       <div className="cal-sidebar w-full md:w-[260px] min-h-[200px] md:min-h-0 glass rounded-3xl flex flex-col overflow-hidden pointer-events-auto z-[30] relative border border-white/10 shadow-2xl">
         <div className="cal-sidebar-header p-4 md:p-5 border-b border-white/[0.05] text-[9px] md:text-[10px] font-900 tracking-[0.2em] uppercase text-[var(--accent-secondary)] bg-[var(--bg-main)] z-[40] sticky top-0 shadow-lg">
@@ -99,7 +109,10 @@ const CalendarOverlay: React.FC = () => {
           </button>
         </div>
         
-        <div className="cal-grid grid grid-cols-7 grid-rows-[30px_repeat(5,1fr)] h-full overflow-y-auto custom-scroll min-w-[300px]">
+        <div 
+          className="cal-grid grid grid-cols-7 grid-rows-[30px_repeat(5,1fr)] h-full overflow-y-auto custom-scroll min-w-[300px]"
+          onClick={handleBackgroundClick}
+        >
           {['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map(day => (
             <div key={day} className="cal-day-label flex items-center justify-center text-[9px] font-800 text-white/40 uppercase border-b border-white/[0.05]">
               {day}

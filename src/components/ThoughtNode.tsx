@@ -57,6 +57,7 @@ const ThoughtNode: React.FC<ThoughtNodeProps> = React.memo(({ thought, registerE
   const setInspectorOpen = useStore((state) => state.setInspectorOpen);
   const setActiveFocus = useStore((state) => state.setActiveFocus);
   const openLightbox = useStore((state) => state.openLightbox);
+  const clearSelection = useStore((state) => state.clearSelection);
   const linkingSourceId = useStore((state) => state.linkingSourceId);
   const setLinkingSourceId = useStore((state) => state.setLinkingSourceId);
   const stacks = useStore((state) => state.stacks);
@@ -69,6 +70,7 @@ const ThoughtNode: React.FC<ThoughtNodeProps> = React.memo(({ thought, registerE
   const isSpatial = activeSpace?.mode === 'spatial';
   const isCalendar = activeSpace?.mode === 'calendar';
   const isDateHovered = isCalendar && thought.date === hoveredCalDate;
+  const isExpanded = isDateHovered || (isCalendar && isSelected);
 
   const stack = useMemo(() => stacks.find(s => s.id === thought.stackId), [stacks, thought.stackId]);
 
@@ -137,7 +139,7 @@ const ThoughtNode: React.FC<ThoughtNodeProps> = React.memo(({ thought, registerE
 
   const handleClick = (e: React.MouseEvent) => {
     const dist = Math.sqrt(Math.pow(e.clientX - startPos.x, 2) + Math.pow(e.clientY - startPos.y, 2));
-    if (dist > 5) return;
+    if (dist > 10) return; // Match physics threshold
 
     if (e.ctrlKey || e.metaKey) {
       e.stopPropagation();
@@ -148,7 +150,7 @@ const ThoughtNode: React.FC<ThoughtNodeProps> = React.memo(({ thought, registerE
       const store = useStore.getState();
       store.setSelectedThoughtIds([linkingSourceId, thought.id]);
       store.linkSelectedThoughts();
-      store.setSelectedThoughtIds([thought.id]);
+      store.setSelectedThoughtId(thought.id);
       setLinkingSourceId(null);
       return;
     }
@@ -176,13 +178,9 @@ const ThoughtNode: React.FC<ThoughtNodeProps> = React.memo(({ thought, registerE
     } else if (paintTrigger) {
       setActiveFocus(thought.id, 'paint');
     } else if (embedTrigger) {
-      // Allow embed viewing in read-only mode
       setActiveFocus(thought.id, 'embed');
     } else if (imageTrigger) {
       if (thought.image) openLightbox(thought.image);
-    } else {
-      setSelectedThoughtId(thought.id);
-      if (!isReadOnly) setInspectorOpen(true);
     }
   };
 
@@ -525,7 +523,7 @@ const ThoughtNode: React.FC<ThoughtNodeProps> = React.memo(({ thought, registerE
       <div
         className={cn(
           "thought-bulb-content group backdrop-blur-[20px] border rounded-3xl flex flex-col relative transition-all duration-300",
-          isCalendar && !isDateHovered ? "p-3 gap-0" : "p-4.5 gap-2",
+          isCalendar && !isExpanded ? "p-3 gap-0" : "p-4.5 gap-2",
           isSelected
             ? "border-[var(--accent)]/50 shadow-[0_0_40px_var(--accent-glow)] bg-[var(--node-bg)]/80"
             : "border-[var(--glass-border)] shadow-[0_10px_40px_rgba(0,0,0,0.5)] bg-[var(--node-bg)]/60",
@@ -537,7 +535,7 @@ const ThoughtNode: React.FC<ThoughtNodeProps> = React.memo(({ thought, registerE
       >
 
         {/* Header Area: Title + Priority + Badges */}
-        <div className={cn("flex items-start justify-between gap-4", isCalendar && !isDateHovered ? "min-h-0" : "min-h-[24px]")}>
+        <div className={cn("flex items-start justify-between gap-4", isCalendar && !isExpanded ? "min-h-0" : "min-h-[24px]")}>
           <div className="flex items-start gap-2.5 flex-1 min-w-0">
             {thought.priority !== 'none' && (
               <div
@@ -551,7 +549,7 @@ const ThoughtNode: React.FC<ThoughtNodeProps> = React.memo(({ thought, registerE
             <p className={cn(
               "text-[13px] font-bold leading-tight break-all",
               thought.text ? "text-[var(--text-primary)]" : "text-slate-600 italic",
-              isCalendar && !isDateHovered && "truncate max-w-[180px]"
+              isCalendar && !isExpanded && "truncate max-w-[180px]"
             )}>
               {thought.text || thought.placeholder || "Untitled"}
             </p>
@@ -583,11 +581,11 @@ const ThoughtNode: React.FC<ThoughtNodeProps> = React.memo(({ thought, registerE
           className={cn(
             "flex flex-col relative transition-all duration-300",
             thought.type === 'text' && "cursor-pointer rounded-xl overflow-hidden",
-            (isCalendar && !isDateHovered)
+            (isCalendar && !isExpanded)
               ? "h-0 opacity-0 pointer-events-none" // Completely hide content in stack
               : (thought.type === 'text' && (thought.content || thought.description || !thought.stackId)) 
-                ? "min-h-0 justify-center gap-2 mt-0.5" 
-                : "min-h-0 gap-0"
+                ? "min-h-0 justify-center gap-2 mt-0.5 pointer-events-auto" 
+                : "min-h-0 gap-0 pointer-events-auto"
           )}
         >
           {thought.description &&

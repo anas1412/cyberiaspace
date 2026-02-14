@@ -26,6 +26,7 @@ export const usePhysics = (
   const activeSpaceId = useStore((state) => state.activeSpaceId);
   const activeSpace = spaces.find((s) => s.id === activeSpaceId);
   const updateThought = useStore((state) => state.updateThought);
+  const selectedThoughtId = useStore((state) => state.selectedThoughtId);
   const calendarViewDate = useStore((state) => state.calendarViewDate);
   const hoveredCalDate = useStore((state) => state.hoveredCalDate);
   const linkingSourceId = useStore((state) => state.linkingSourceId);
@@ -57,6 +58,8 @@ export const usePhysics = (
     initialPositions: Map<number, { x: number, y: number }>;
   } | null>(null);
 
+  // --- HELPERS ---
+
   const getGlobalScale = useCallback(() => {
     const body = document.querySelector('.app-body') || document.body;
     return new DOMMatrix(window.getComputedStyle(body).transform).a || 1;
@@ -72,7 +75,7 @@ export const usePhysics = (
       let currentY = 280;
       list.forEach((t) => {
         const p = physicsState.current.get(t.id); if (!p) return;
-        if (dragRef.current?.initialPositions.has(t.id)) return;
+        if (dragRef.current?.initialPositions.has(t.id) && dragRef.current.moved) return;
 
         const colWidth = logicalWidth / 4;
         const targetX = (colWidth * colIdx) + (colWidth / 2);
@@ -115,7 +118,6 @@ export const usePhysics = (
         const heightScale = (cellHeight - 60) / 250;
         const uniformScale = Math.min(widthScale, heightScale, 0.45);
 
-        // Tighten the spread when not hovered for a cleaner tab look
         let hSpread = isHovered ? 20 : 10;
         let vSpread = isHovered ? 60 : 15;
         if (count > 1) {
@@ -126,12 +128,11 @@ export const usePhysics = (
         const sortedGroup = groupThoughts.sort((a, b) => (a.layer || 0) - (b.layer || 0));
         sortedGroup.forEach((t, index) => {
           const p = physicsState.current.get(t.id);
-          if (!p || dragRef.current?.initialPositions.has(t.id)) return;
+          if (!p || (dragRef.current?.initialPositions.has(t.id) && dragRef.current.moved)) return;
           const h = elements.current.get(t.id)?.offsetHeight || 120;
+          
           const targetScale = isHovered ? uniformScale * 1.05 : uniformScale;
           const targetX = cellX + 10 + (index * hSpread) + (280 * targetScale) / 2;
-          
-          // Align by TOP
           const targetY = cellY + 2 + (index * vSpread) + (h * targetScale) / 2;
 
           if (snapNextFrame.current) { p.x = targetX; p.y = targetY; p.scale = targetScale; } 
@@ -152,10 +153,13 @@ export const usePhysics = (
     const scrollTop = sbContent?.scrollTop || 0;
     unscheduled.forEach((t) => {
       const stateP = physicsState.current.get(t.id); if (!stateP) return;
-      if (dragRef.current?.initialPositions.has(t.id)) return;
-      const height = (elements.current.get(t.id)?.offsetHeight || 120) * 0.6;
+      if (dragRef.current?.initialPositions.has(t.id) && dragRef.current.moved) return;
+      
+      const h = elements.current.get(t.id)?.offsetHeight || 120;
+      const height = h * 0.6;
       const target = { x: padding + sidebarWidth / 2, y: currentSB_Y - scrollTop + height / 2, scale: 0.6 };
       currentSB_Y += height + 20;
+
       if (snapNextFrame.current) { stateP.x = target.x; stateP.y = target.y; stateP.scale = target.scale; } 
       else { stateP.x += (target.x - stateP.x) * 0.15; stateP.y += (target.y - stateP.y) * 0.15; stateP.scale += (target.scale - stateP.scale) * 0.1; }
       stateP.vx = 0; stateP.vy = 0;
@@ -167,7 +171,7 @@ export const usePhysics = (
   const applySpatialPhysics = useCallback((logicalWidth: number, logicalHeight: number) => {
     const ids = Array.from(physicsState.current.keys());
     ids.forEach((id) => {
-      if (dragRef.current?.initialPositions.has(id)) return;
+      if (dragRef.current?.initialPositions.has(id) && dragRef.current.moved) return;
       const p = physicsState.current.get(id)!; const t = thoughtMap.current.get(id); if (!t) return;
 
       if (snapNextFrame.current) {
@@ -189,7 +193,8 @@ export const usePhysics = (
         const distSq = dx * dx + dy * dy || 1; const d = Math.sqrt(distSq);
         const otherRadius = Math.max(120, ((elements.current.get(otherId)?.offsetHeight || 120) / 2) * otherP.scale);
         const minDistance = (nRadius + otherRadius);
-        const repulsionMultiplier = 1 + (prioLevel + (PRIORITY_WEIGHT[otherT.priority] || 0)) * 0.1;
+        const combinedPrio = prioLevel + (PRIORITY_WEIGHT[otherT.priority] || 0);
+        const repulsionMultiplier = 1 + combinedPrio * 0.1;
 
         if (d < minDistance) {
           const force = ((minDistance - d) / minDistance) * 12; p.vx += (dx / d) * force; p.vy += (dy / d) * force;
@@ -271,7 +276,7 @@ export const usePhysics = (
       const s = getGlobalScale(); const logicalX = clientX / s; const logicalY = clientY / s;
       const { startX, startY, initialPositions } = dragRef.current;
       const dx = (logicalX - startX) / transform.scale; const dy = (logicalY - startY) / transform.scale;
-      if (Math.abs(logicalX - startX) > 5 || Math.abs(logicalY - startY) > 5) dragRef.current.moved = true;
+      if (Math.abs(logicalX - startX) > 10 || Math.abs(logicalY - startY) > 10) dragRef.current.moved = true;
       if (dragRef.current.moved) initialPositions.forEach((pos, id) => {
         const p = physicsState.current.get(id); if (p) { p.x = pos.x + dx; p.y = pos.y + dy; p.vx = 0; p.vy = 0; }
       });
@@ -279,14 +284,23 @@ export const usePhysics = (
     const handleUp = (rawMouseX: number, rawMouseY: number, e: MouseEvent) => {
       if (!dragRef.current) return;
       const s = getGlobalScale(); const lastMouseX = rawMouseX / s; const lastMouseY = rawMouseY / s;
-      const { id, moved, initialPositions } = dragRef.current;
+      const { id, startX, startY, moved, initialPositions } = dragRef.current;
+      const dist = Math.sqrt(Math.pow(lastMouseX - startX, 2) + Math.pow(lastMouseY - startY, 2));
       const logicalWidth = worldRef.current?.clientWidth || window.innerWidth;
       const logicalHeight = worldRef.current?.clientHeight || window.innerHeight;
-      if (!moved) {
+
+      if (dist <= 10) {
         const store = useStore.getState();
         if (e.ctrlKey || e.metaKey) store.toggleThoughtSelection(id);
-        else { store.setSelectedThoughtId(id); if (!store.isReadOnly) store.setInspectorOpen(true); }
-      } else {
+        else { 
+          if (store.selectedThoughtId === id) {
+            store.clearSelection();
+          } else {
+            store.setSelectedThoughtId(id);
+            if (!store.isReadOnly) store.setInspectorOpen(true);
+          }
+        }
+      } else if (moved) {
         const isReadOnly = useStore.getState().isReadOnly; const mode = activeSpace?.mode || 'spatial';
         if (mode === 'kanban' && !isReadOnly) {
           const colWidth = logicalWidth / 4; let status: 'none' | 'todo' | 'doing' | 'done' = 'none';
@@ -390,8 +404,13 @@ export const usePhysics = (
       const el = elements.current.get(id); const t = thoughtMap.current.get(id); if (!el || !t) return;
       const h = el.offsetHeight || 120;
       el.style.transform = `translate3d(${p.x - 140}px, ${p.y - h / 2}px, 0) scale(${p.scale})`;
+      
+      const isSelected = t.id === selectedThoughtId;
+      const isDraggingThis = dragRef.current?.initialPositions.has(id) && dragRef.current.moved;
+
       el.style.clipPath = 'none'; el.style.opacity = '1'; el.style.visibility = 'visible';
-      el.style.pointerEvents = 'auto'; el.style.zIndex = (20 + (t.layer || 0)).toString();
+      el.style.pointerEvents = 'auto'; 
+      el.style.zIndex = isSelected ? '10001' : (isDraggingThis ? '1000' : (20 + (t.layer || 0)).toString());
 
       if (mode === 'kanban') {
         const cardBottom = (p.y * vT.scale + vT.y) + ((h * p.scale) * vT.scale) / 2;
@@ -401,33 +420,27 @@ export const usePhysics = (
         const isH = t.date === hoveredCalDate;
         const dateThoughts = Array.from(thoughtMap.current.values()).filter(th => th.date === t.date).sort((a, b) => (a.layer || 0) - (b.layer || 0));
         const isTop = dateThoughts[dateThoughts.length - 1]?.id === t.id;
-        if (!isH && !isTop) el.style.clipPath = 'inset(0px 0px calc(100% - 70px) 0px)';
-        el.style.pointerEvents = (isH || isTop) ? 'auto' : 'none';
-        el.style.transform += ` rotate(${(t.layer || 0) % 2 === 0 ? 0.8 : -0.8}deg)`;
-        el.style.zIndex = (30 + (t.layer || 0)).toString();
+        if (!isH && !isTop && !isSelected) el.style.clipPath = 'inset(0px 0px calc(100% - 70px) 0px)';
+        el.style.pointerEvents = (isH || isTop || isSelected) ? 'auto' : 'none';
+        if (!isSelected) el.style.transform += ` rotate(${(t.layer || 0) % 2 === 0 ? 0.8 : -0.8}deg)`;
       } else if (mode === 'calendar' && !t.date) {
-        // Precision Clipping for Sidebar
         const contentEl = document.getElementById('cal-sidebar-content');
         const cRectRaw = contentEl?.getBoundingClientRect();
-        if (cRectRaw && !dragRef.current?.initialPositions.has(id)) {
+        if (cRectRaw && !isDraggingThis && !isSelected) {
           const cRect = { top: cRectRaw.top / globalScale, bottom: cRectRaw.bottom / globalScale };
-          const nodeScreenY = p.y * vT.scale + vT.y;
-          const nodeHeightOnScreen = (h * p.scale) * vT.scale;
-          const cardTop = nodeScreenY - nodeHeightOnScreen / 2;
-          const cardBottom = nodeScreenY + nodeHeightOnScreen / 2;
-
-          const topClip = Math.max(0, ((cRect.top - cardTop) / nodeHeightOnScreen) * 100);
-          const bottomClip = Math.max(0, ((cardBottom - cRect.bottom) / nodeHeightOnScreen) * 100);
-
+          const cardTop = (p.y * vT.scale + vT.y) - ((h * p.scale) * vT.scale) / 2;
+          const cardBottom = (p.y * vT.scale + vT.y) + ((h * p.scale) * vT.scale) / 2;
+          const topClip = Math.max(0, ((cRect.top - cardTop) / ((h * p.scale) * vT.scale)) * 100);
+          const bottomClip = Math.max(0, ((cardBottom - cRect.bottom) / ((h * p.scale) * vT.scale)) * 100);
           el.style.clipPath = `inset(${topClip}% 0% ${bottomClip}% 0%)`;
           el.style.visibility = (topClip > 95 || bottomClip > 95) ? 'hidden' : 'visible';
           el.style.pointerEvents = (topClip > 80 || bottomClip > 80) ? 'none' : 'auto';
         }
-        el.style.zIndex = '35';
+        if (!isSelected && !isDraggingThis) el.style.zIndex = '35';
       }
     });
     if (ids.length > 0) snapNextFrame.current = false;
-  }, [activeSpace, activeSpaceId, calendarViewDate, hoveredCalDate, transform, linkingSourceId, getGlobalScale]);
+  }, [activeSpace, activeSpaceId, calendarViewDate, hoveredCalDate, transform, linkingSourceId, getGlobalScale, applyKanbanLayout, applyCalendarLayout, applyHomeReturn, applySpatialPhysics, selectedThoughtId]);
 
   useEffect(() => {
     const animate = () => { loop(); requestRef.current = requestAnimationFrame(animate); };
