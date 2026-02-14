@@ -310,7 +310,7 @@ export const useStore = create<CyberiaState>((set, get) => ({
     set({ thoughts: nextThoughts, historyIndex: newIndex });
   },
 
-  oracleMode: useAuthStore.getState().user?.plan === 'pro',
+  oracleMode: false,
   isChatOpen: false,
 
   openLightbox: (image) => set({ isLightboxOpen: true, lightboxImage: image }),
@@ -336,7 +336,7 @@ export const useStore = create<CyberiaState>((set, get) => ({
       });
       return;
     }
-    // Pro users: Oracle is always activated.
+    // Pro users: Oracle is always activated if plan is pro.
     set({ oracleMode: true });
   },
 
@@ -345,6 +345,12 @@ export const useStore = create<CyberiaState>((set, get) => ({
   init: async () => {
     // 1. Initialize Auth regardless (needed for UI consistency/Oracle status)
     useAuthStore.getState().initAuth();
+
+    // Reconcile Oracle status immediately from current auth state
+    const currentPlan = useAuthStore.getState().user?.plan;
+    if (currentPlan === 'pro') {
+      set({ oracleMode: true });
+    }
 
     // 2. Detect if we are in a Shared Space
     const path = window.location.pathname;
