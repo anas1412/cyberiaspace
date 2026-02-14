@@ -117,6 +117,13 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       const response = await fetch('/api/user?action=status', {
         headers: { 'Authorization': `Bearer ${accessToken}` }
       });
+      
+      if (response.status === 401) {
+        console.warn('[Auth] Session expired or invalid token. Signing out.');
+        get().signOut();
+        return;
+      }
+
       if (response.ok) {
         const serverStatus = await response.json();
         // If server says pro but local says free, OR expiry changed, update local
