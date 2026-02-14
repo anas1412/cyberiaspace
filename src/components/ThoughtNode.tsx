@@ -62,9 +62,13 @@ const ThoughtNode: React.FC<ThoughtNodeProps> = React.memo(({ thought, registerE
   const stacks = useStore((state) => state.stacks);
   const spaces = useStore((state) => state.spaces);
   const activeSpaceId = useStore((state) => state.activeSpaceId);
+  const setHoveredCalDate = useStore((state) => state.setHoveredCalDate);
+  const hoveredCalDate = useStore((state) => state.hoveredCalDate);
 
   const activeSpace = useMemo(() => spaces.find(s => s.id === activeSpaceId), [spaces, activeSpaceId]);
   const isSpatial = activeSpace?.mode === 'spatial';
+  const isCalendar = activeSpace?.mode === 'calendar';
+  const isDateHovered = isCalendar && thought.date === hoveredCalDate;
 
   const stack = useMemo(() => stacks.find(s => s.id === thought.stackId), [stacks, thought.stackId]);
 
@@ -200,9 +204,11 @@ const ThoughtNode: React.FC<ThoughtNodeProps> = React.memo(({ thought, registerE
                   whileTap={{ scale: 0.95 }}
                   className={cn(
                     "flex items-center gap-2 px-3 rounded-xl bg-white/5 border border-white/5 w-fit transition-all duration-500",
-                    thought.stackId
-                      ? "h-0 opacity-0 group-hover:h-8 group-hover:opacity-100 overflow-hidden"
-                      : "h-8 opacity-100"
+                    isCalendar 
+                      ? "h-0 opacity-0 overflow-hidden" // Permanently hidden in Calendar
+                      : (thought.stackId || !isSpatial)
+                        ? "h-0 opacity-0 group-hover:h-8 group-hover:opacity-100 overflow-hidden"
+                        : "h-8 opacity-100"
                   )}
                 >
                   <Type className="w-3.5 h-3.5 text-slate-500" />
@@ -496,6 +502,20 @@ const ThoughtNode: React.FC<ThoughtNodeProps> = React.memo(({ thought, registerE
       onMouseDown={handleLocalMouseDown}
       onDragStart={(e) => e.preventDefault()}
       onClick={handleClick}
+      onMouseEnter={() => {
+        if (activeSpace?.mode === 'calendar' && thought.date) {
+          if ((window as any)._calLeaveTimer) clearTimeout((window as any)._calLeaveTimer);
+          setHoveredCalDate(thought.date);
+        }
+      }}
+      onMouseLeave={() => {
+        if (activeSpace?.mode === 'calendar' && thought.date) {
+          if ((window as any)._calLeaveTimer) clearTimeout((window as any)._calLeaveTimer);
+          (window as any)._calLeaveTimer = setTimeout(() => {
+            setHoveredCalDate(null);
+          }, 150);
+        }
+      }}
     >
       {/* Sonar Ping Ring */}
       {showPing && (
@@ -504,7 +524,8 @@ const ThoughtNode: React.FC<ThoughtNodeProps> = React.memo(({ thought, registerE
 
       <div
         className={cn(
-          "thought-bulb-content group backdrop-blur-[20px] border p-4.5 rounded-3xl flex flex-col gap-2 relative transition-all duration-300",
+          "thought-bulb-content group backdrop-blur-[20px] border rounded-3xl flex flex-col relative transition-all duration-300",
+          isCalendar && !isDateHovered ? "p-3 gap-0" : "p-4.5 gap-2",
           isSelected
             ? "border-[var(--accent)]/50 shadow-[0_0_40px_var(--accent-glow)] bg-[var(--node-bg)]/80"
             : "border-[var(--glass-border)] shadow-[0_10px_40px_rgba(0,0,0,0.5)] bg-[var(--node-bg)]/60",
@@ -516,7 +537,7 @@ const ThoughtNode: React.FC<ThoughtNodeProps> = React.memo(({ thought, registerE
       >
 
         {/* Header Area: Title + Priority + Badges */}
-        <div className="flex items-start justify-between gap-4 min-h-[24px]">
+        <div className={cn("flex items-start justify-between gap-4", isCalendar && !isDateHovered ? "min-h-0" : "min-h-[24px]")}>
           <div className="flex items-start gap-2.5 flex-1 min-w-0">
             {thought.priority !== 'none' && (
               <div
@@ -529,14 +550,15 @@ const ThoughtNode: React.FC<ThoughtNodeProps> = React.memo(({ thought, registerE
             )}
             <p className={cn(
               "text-[13px] font-bold leading-tight break-all",
-              thought.text ? "text-[var(--text-primary)]" : "text-slate-600 italic"
+              thought.text ? "text-[var(--text-primary)]" : "text-slate-600 italic",
+              isCalendar && !isDateHovered && "truncate max-w-[180px]"
             )}>
               {thought.text || thought.placeholder || "Untitled"}
             </p>
           </div>
 
           <div className="flex items-center gap-1.5 flex-shrink-0 mt-0.5">
-            {thought.status !== 'none' && (
+            {thought.status !== 'none' && !isCalendar && (
               <div
                 className="text-[7px] font-black uppercase tracking-widest px-1.5 py-0.5 rounded-full border border-white/10 shadow-sm"
                 style={{
@@ -561,7 +583,11 @@ const ThoughtNode: React.FC<ThoughtNodeProps> = React.memo(({ thought, registerE
           className={cn(
             "flex flex-col relative transition-all duration-300",
             thought.type === 'text' && "cursor-pointer rounded-xl overflow-hidden",
-            thought.type === 'text' && (thought.content || thought.description || !thought.stackId) ? "min-h-0 justify-center gap-2 mt-0.5" : "min-h-0 gap-0"
+            (isCalendar && !isDateHovered)
+              ? "h-0 opacity-0 pointer-events-none" // Completely hide content in stack
+              : (thought.type === 'text' && (thought.content || thought.description || !thought.stackId)) 
+                ? "min-h-0 justify-center gap-2 mt-0.5" 
+                : "min-h-0 gap-0"
           )}
         >
           {thought.description &&

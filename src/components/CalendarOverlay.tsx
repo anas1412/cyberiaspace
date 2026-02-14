@@ -19,6 +19,19 @@ const CalendarOverlay: React.FC = () => {
 
   if (activeSpace?.mode !== 'calendar') return null;
 
+  const handleMouseEnter = (date: string) => {
+    // Clear any pending leave timers globally
+    if ((window as any)._calLeaveTimer) clearTimeout((window as any)._calLeaveTimer);
+    setHoveredDate(date);
+  };
+
+  const handleMouseLeave = () => {
+    if ((window as any)._calLeaveTimer) clearTimeout((window as any)._calLeaveTimer);
+    (window as any)._calLeaveTimer = setTimeout(() => {
+      setHoveredDate(null);
+    }, 150);
+  };
+
   const changeMonth = (dir: number) => {
     const newDate = new Date(calDate);
     newDate.setMonth(newDate.getMonth() + dir);
@@ -49,8 +62,8 @@ const CalendarOverlay: React.FC = () => {
           isToday && "bg-[var(--accent)]/[0.05]"
         )}
         data-date={dateStr}
-        onMouseEnter={() => setHoveredDate(dateStr)}
-        onMouseLeave={() => setHoveredDate(null)}
+        onMouseEnter={() => handleMouseEnter(dateStr)}
+        onMouseLeave={handleMouseLeave}
       >
         <span className={cn(
           "cal-date-num absolute top-2 right-2 text-[11px] font-600",

@@ -140,3 +140,12 @@ Cyberia supports three core aesthetic modes:
       ```
     - The script generates a valid signature and triggers the local webhook endpoint.
 
+## 12. Architecture & Scalability (The Modular Mandate)
+To prevent "God Files" and ensure system stability, all development must adhere to these standards:
+- **Strategy Pattern for Layouts**: Physics and layout logic must be decoupled. The core physics loop should act as an orchestrator, delegating coordinate and force calculations to isolated "Strategists" (e.g., `SpatialStrategy`, `CalendarStrategy`).
+- **Mode Isolation**: Changes to one view mode (e.g., Calendar) must never side-effect another (e.g., Spatial). Logic "leakage" is a critical failure.
+- **Component Atomicity**: Large components (like `ThoughtNode`) must be decomposed into sub-components using a registry or composition pattern to keep files under 300-400 lines.
+- **Store Slicing**: The global store should be partitioned into logical slices (Auth, UI, Workspace) to prevent state bloat and unnecessary re-renders.
+- **Logic Externalization**: Math, API fetching, and complex regex should reside in the `utils/` or `services/` directories, never inside the component lifecycle unless essential.
+- **Toolbar Modularity**: The central toolbar must be a composition of independent modules (ViewSwitcher, SpaceManager, ActionCluster) to ensure that UI changes in one functional area do not destabilize others.
+
