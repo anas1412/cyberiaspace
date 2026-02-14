@@ -8,11 +8,11 @@ function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
 
-export const CalendarFilterBar: React.FC = () => {
-  const calendarSearchQuery = useStore((state) => state.calendarSearchQuery);
-  const setCalendarSearchQuery = useStore((state) => state.setCalendarSearchQuery);
-  const calendarStackFilter = useStore((state) => state.calendarStackFilter);
-  const setCalendarStackFilter = useStore((state) => state.setCalendarStackFilter);
+export const KanbanFilterBar: React.FC = () => {
+  const kanbanSearchQuery = useStore((state) => state.kanbanSearchQuery);
+  const setKanbanSearchQuery = useStore((state) => state.setKanbanSearchQuery);
+  const kanbanStackFilter = useStore((state) => state.kanbanStackFilter);
+  const setKanbanStackFilter = useStore((state) => state.setKanbanStackFilter);
   const stacks = useStore((state) => state.stacks);
   const activeSpaceId = useStore((state) => state.activeSpaceId);
 
@@ -33,20 +33,20 @@ export const CalendarFilterBar: React.FC = () => {
   }, []);
 
   return (
-    <div className="flex flex-col gap-4 p-4 border-b border-white/5 bg-black/20">
+    <div className="flex items-center gap-4 px-6 h-14 border-b border-white/5 bg-black/40 backdrop-blur-md w-full">
       {/* Search Input */}
-      <div className="relative group">
+      <div className="relative group w-64">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-500 group-focus-within:text-[var(--accent-secondary)] transition-colors" />
         <input
           type="text"
-          value={calendarSearchQuery}
-          onChange={(e) => setCalendarSearchQuery(e.target.value)}
+          value={kanbanSearchQuery}
+          onChange={(e) => setKanbanSearchQuery(e.target.value)}
           placeholder="Search..."
           className="w-full h-9 bg-white/5 border border-white/5 rounded-xl pl-9 pr-9 text-[11px] text-white outline-none focus:border-[var(--accent)]/50 focus:ring-2 focus:ring-[var(--accent)]/10 transition-all placeholder:text-slate-600"
         />
-        {calendarSearchQuery && (
+        {kanbanSearchQuery && (
           <button
-            onClick={() => setCalendarSearchQuery('')}
+            onClick={() => setKanbanSearchQuery('')}
             className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 hover:bg-white/10 rounded-lg text-slate-500 hover:text-white transition-all"
           >
             <X className="w-3 h-3" />
@@ -54,31 +54,24 @@ export const CalendarFilterBar: React.FC = () => {
         )}
       </div>
 
+      <div className="w-px h-6 bg-white/10" />
+
       {/* Stack Reel */}
-      <div className="space-y-2">
-        <div className="flex items-center justify-between px-1">
-          <div className="flex items-center gap-2">
-            <Layers className="w-3 h-3 text-slate-500" />
-            <span className="text-[8px] font-black uppercase tracking-widest text-slate-500">Stacks</span>
-          </div>
-          {calendarStackFilter && (
-            <button
-              onClick={() => setCalendarStackFilter(null)}
-              className="text-[8px] font-bold uppercase tracking-widest text-[var(--accent-secondary)] hover:underline"
-            >
-              Clear
-            </button>
-          )}
+      <div className="flex-1 flex items-center gap-3 overflow-hidden">
+        <div className="flex items-center gap-2 flex-shrink-0">
+          <Layers className="w-3 h-3 text-slate-500" />
+          <span className="text-[8px] font-black uppercase tracking-widest text-slate-500">Stacks</span>
         </div>
+        
         <div 
           ref={reelRef}
-          className="flex gap-1.5 overflow-x-auto custom-scroll pb-2"
+          className="flex gap-1.5 overflow-x-auto no-scrollbar pb-0.5 items-center"
         >
           <button
-            onClick={() => setCalendarStackFilter(null)}
+            onClick={() => setKanbanStackFilter(null)}
             className={cn(
               "flex-shrink-0 px-3 py-1.5 rounded-lg text-[9px] font-bold uppercase tracking-widest border transition-all",
-              !calendarStackFilter
+              !kanbanStackFilter
                 ? "bg-[var(--accent)]/20 border-[var(--accent)] text-white shadow-[0_0_10px_var(--accent-glow)]"
                 : "bg-white/5 border-transparent text-slate-500 hover:text-slate-300"
             )}
@@ -88,14 +81,14 @@ export const CalendarFilterBar: React.FC = () => {
           {activeStacks.map((stack) => (
             <button
               key={stack.id}
-              onClick={() => setCalendarStackFilter(stack.id)}
+              onClick={() => setKanbanStackFilter(stack.id)}
               className={cn(
                 "flex-shrink-0 px-3 py-1.5 rounded-lg text-[9px] font-bold uppercase tracking-widest border transition-all truncate max-w-[120px]",
-                calendarStackFilter === stack.id
+                kanbanStackFilter === stack.id
                   ? "border-current text-white shadow-lg"
                   : "bg-white/5 border-transparent text-slate-500 hover:text-slate-300"
               )}
-              style={calendarStackFilter === stack.id ? { 
+              style={kanbanStackFilter === stack.id ? { 
                 backgroundColor: stack.color.replace('1)', '0.3)'),
                 color: stack.color 
               } : {}}
@@ -105,6 +98,15 @@ export const CalendarFilterBar: React.FC = () => {
           ))}
         </div>
       </div>
+
+      {kanbanStackFilter && (
+        <button
+          onClick={() => setKanbanStackFilter(null)}
+          className="text-[8px] font-bold uppercase tracking-widest text-[var(--accent-secondary)] hover:underline flex-shrink-0"
+        >
+          Clear Stacks
+        </button>
+      )}
     </div>
   );
 };

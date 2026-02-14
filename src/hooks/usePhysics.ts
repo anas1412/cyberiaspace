@@ -28,6 +28,8 @@ export const usePhysics = (
   const hoveredCalDate = useStore((state) => state.hoveredCalDate);
   const calendarSearchQuery = useStore((state) => state.calendarSearchQuery);
   const calendarStackFilter = useStore((state) => state.calendarStackFilter);
+  const kanbanSearchQuery = useStore((state) => state.kanbanSearchQuery);
+  const kanbanStackFilter = useStore((state) => state.kanbanStackFilter);
   const linkingSourceId = useStore((state) => state.linkingSourceId);
 
   const physicsState = useRef<Map<number, PhysicsPoint>>(new Map());
@@ -235,6 +237,8 @@ export const usePhysics = (
       hoveredCalDate,
       calendarSearchQuery,
       calendarStackFilter,
+      kanbanSearchQuery,
+      kanbanStackFilter,
       sidebarScrollTop: sbContent?.scrollTop || 0,
       sidebarTop: sbRect ? (sbRect.top / globalScale) : 320,
       isMobile,
@@ -364,7 +368,7 @@ export const usePhysics = (
       }
     });
     if (ids.length > 0) snapNextFrame.current = false;
-  }, [activeSpace, activeSpaceId, calendarViewDate, hoveredCalDate, calendarSearchQuery, calendarStackFilter, transform, linkingSourceId, getGlobalScale, applyHomeReturn, selectedThoughtId]);
+  }, [activeSpace, activeSpaceId, calendarViewDate, hoveredCalDate, calendarSearchQuery, calendarStackFilter, kanbanSearchQuery, kanbanStackFilter, transform, linkingSourceId, getGlobalScale, applyHomeReturn, selectedThoughtId]);
 
   useEffect(() => {
     const animate = () => { loop(); requestRef.current = requestAnimationFrame(animate); };

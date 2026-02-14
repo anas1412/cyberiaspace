@@ -19,6 +19,8 @@ interface CyberiaState {
   linkingSourceId: number | null;
   calendarSearchQuery: string;
   calendarStackFilter: string | null;
+  kanbanSearchQuery: string;
+  kanbanStackFilter: string | null;
   theme: 'cyberia' | 'sakura' | 'neon';
   isSpaceLoading: boolean;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -72,6 +74,8 @@ interface CyberiaState {
   setHoveredCalDate: (date: string | null) => void;
   setCalendarSearchQuery: (query: string) => void;
   setCalendarStackFilter: (stackId: string | null) => void;
+  setKanbanSearchQuery: (query: string) => void;
+  setKanbanStackFilter: (stackId: string | null) => void;
   setLinkingSourceId: (id: number | null) => void;
 
   // Stack Actions
@@ -135,6 +139,8 @@ export const useStore = create<CyberiaState>((set, get) => ({
   hoveredCalDate: null,
   calendarSearchQuery: '',
   calendarStackFilter: null,
+  kanbanSearchQuery: '',
+  kanbanStackFilter: null,
   isLightboxOpen: false,
   lightboxImage: null,
   linkingSourceId: null,
@@ -1252,6 +1258,14 @@ export const useStore = create<CyberiaState>((set, get) => ({
 
   setCalendarStackFilter: (stackId) => {
     set({ calendarStackFilter: stackId });
+  },
+
+  setKanbanSearchQuery: (query) => {
+    set({ kanbanSearchQuery: query });
+  },
+
+  setKanbanStackFilter: (stackId) => {
+    set({ kanbanStackFilter: stackId });
   },
 
   setLinkingSourceId: (id) => {
