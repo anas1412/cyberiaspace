@@ -181,7 +181,13 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       }
 
       // Reconcile pro status after login
-      get().refreshProStatus();
+      await get().refreshProStatus();
+
+      // Trigger store reconciliation for Oracle
+      const { useStore } = await import('./useStore');
+      if (get().user?.plan === 'pro') {
+        useStore.getState().toggleOracleMode();
+      }
     } catch {
       set({ syncStatus: 'error' });
     }
