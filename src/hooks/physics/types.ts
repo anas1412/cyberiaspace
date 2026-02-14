@@ -16,6 +16,7 @@ export interface LayoutContext {
   hoveredCalDate: string | null;
   sidebarScrollTop: number;
   isMobile: boolean;
+  isReadOnly: boolean;
 }
 
 export interface LayoutResult {
@@ -48,6 +49,7 @@ export interface LayoutStrategist {
     allStates: Map<number, PhysicsPoint>,
     thought: Thought,
     allThoughts: Thought[],
-    context: LayoutContext
+    context: LayoutContext,
+    elementHeights: Map<number, number>
   ) => { vx: number; vy: number };
 }

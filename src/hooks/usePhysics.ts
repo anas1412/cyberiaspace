@@ -1,13 +1,10 @@
 import { useEffect, useRef, useCallback } from 'react';
 import { useStore } from '../store/useStore';
 import { db, type Thought } from '../db';
+import { getStrategist, type LayoutContext, type PhysicsPoint } from './physics';
 
 const DAMPING = 0.8;
-const REPULSION = 80000;
-const ATTRACTION = 0.01;
-const GRAVITY = 0.003;
 const MAX_VELOCITY = 10;
-const COMFORT_ZONE = 200;
 
 const PRIORITY_WEIGHT = {
   urgent: 4,
@@ -31,7 +28,7 @@ export const usePhysics = (
   const hoveredCalDate = useStore((state) => state.hoveredCalDate);
   const linkingSourceId = useStore((state) => state.linkingSourceId);
 
-  const physicsState = useRef<Map<number, { x: number; y: number; vx: number; vy: number; scale: number }>>(new Map());
+  const physicsState = useRef<Map<number, PhysicsPoint>>(new Map());
   const elements = useRef<Map<number, HTMLDivElement>>(new Map());
   const worldRef = useRef<HTMLDivElement | null>(null);
   const gridRef = useRef<HTMLDivElement | null>(null);
@@ -63,156 +60,6 @@ export const usePhysics = (
   const getGlobalScale = useCallback(() => {
     const body = document.querySelector('.app-body') || document.body;
     return new DOMMatrix(window.getComputedStyle(body).transform).a || 1;
-  }, []);
-
-  const applyKanbanLayout = useCallback((logicalWidth: number) => {
-    const allThoughts = Array.from(thoughtMap.current.values());
-    const statuses: ('none' | 'todo' | 'doing' | 'done')[] = ['none', 'todo', 'doing', 'done'];
-    let maxColHeight = 0;
-
-    statuses.forEach((s, colIdx) => {
-      const list = allThoughts.filter(t => t.status === s).sort((a, b) => a.order - b.order);
-      let currentY = 280;
-      list.forEach((t) => {
-        const p = physicsState.current.get(t.id); if (!p) return;
-        if (dragRef.current?.initialPositions.has(t.id) && dragRef.current.moved) return;
-
-        const colWidth = logicalWidth / 4;
-        const targetX = (colWidth * colIdx) + (colWidth / 2);
-        const el = elements.current.get(t.id); 
-        const height = el?.offsetHeight || 120; 
-        const targetY = currentY + height / 2;
-
-        currentY += height + 24;
-
-        if (snapNextFrame.current) { p.x = targetX; p.y = targetY; p.scale = 1; } 
-        else { p.x += (targetX - p.x) * 0.15; p.y += (targetY - p.y) * 0.15; p.scale += (1 - p.scale) * 0.1; }
-        p.vx = 0; p.vy = 0;
-      });
-      if (currentY > maxColHeight) maxColHeight = currentY;
-    });
-    kMaxHeight.current = maxColHeight;
-  }, []);
-
-  const applyCalendarLayout = useCallback((logicalWidth: number, logicalHeight: number, globalScale: number) => {
-    const year = calendarViewDate.getFullYear(); const month = calendarViewDate.getMonth(); const firstDay = new Date(year, month, 1).getDay() || 7;
-    const sidebarWidth = 260; const gap = 20; const padding = 40; const topPadding = 190; const mainLeft = padding + sidebarWidth + gap;
-    const mainWidth = logicalWidth - mainLeft - padding; const cellWidth = mainWidth / 7; const cellHeight = (logicalHeight - topPadding - 120) / 5;
-    const allThoughts = Array.from(thoughtMap.current.values());
-    const scheduled = allThoughts.filter(t => !!t.date);
-    const unscheduled = allThoughts.filter(t => !t.date).sort((a, b) => a.order - b.order);
-
-    const groups = new Map<string, Thought[]>();
-    scheduled.forEach(t => { if (!groups.has(t.date)) groups.set(t.date, []); groups.get(t.date)!.push(t); });
-
-    groups.forEach((groupThoughts, dateStr) => {
-      const tDate = new Date(dateStr + 'T00:00:00');
-      if (tDate.getFullYear() === year && tDate.getMonth() === month) {
-        const day = tDate.getDate(); const startOffset = firstDay - 1; const cellIndex = startOffset + (day - 1);
-        const col = cellIndex % 7; const row = Math.floor(cellIndex / 7);
-        const cellX = mainLeft + col * cellWidth; const cellY = topPadding + row * cellHeight;
-        const isHovered = hoveredCalDate === dateStr;
-
-        const count = groupThoughts.length;
-        const widthScale = (cellWidth - 20) / 280;
-        const heightScale = (cellHeight - 60) / 250;
-        const uniformScale = Math.min(widthScale, heightScale, 0.45);
-
-        let hSpread = isHovered ? 20 : 10;
-        let vSpread = isHovered ? 60 : 15;
-        if (count > 1) {
-          hSpread = Math.min(hSpread, (cellWidth * 0.4) / (count - 1));
-          vSpread = Math.min(vSpread, (cellHeight * 0.4) / (count - 1));
-        }
-
-        const sortedGroup = groupThoughts.sort((a, b) => (a.layer || 0) - (b.layer || 0));
-        sortedGroup.forEach((t, index) => {
-          const p = physicsState.current.get(t.id);
-          if (!p || (dragRef.current?.initialPositions.has(t.id) && dragRef.current.moved)) return;
-          const h = elements.current.get(t.id)?.offsetHeight || 120;
-          
-          const targetScale = isHovered ? uniformScale * 1.05 : uniformScale;
-          const targetX = cellX + 10 + (index * hSpread) + (280 * targetScale) / 2;
-          const targetY = cellY + 2 + (index * vSpread) + (h * targetScale) / 2;
-
-          if (snapNextFrame.current) { p.x = targetX; p.y = targetY; p.scale = targetScale; } 
-          else { p.x += (targetX - p.x) * 0.2; p.y += (targetY - p.y) * 0.2; p.scale += (targetScale - p.scale) * 0.1; }
-          p.vx = 0; p.vy = 0;
-        });
-      } else {
-        groupThoughts.forEach(t => {
-          const p = physicsState.current.get(t.id);
-          if (p && !dragRef.current?.initialPositions.has(t.id)) { p.x = logicalWidth / 2; p.y = logicalHeight + 500; p.scale = 0; }
-        });
-      }
-    });
-
-    const sbContent = document.getElementById('cal-sidebar-content');
-    const contentRect = sbContent?.getBoundingClientRect();
-    let currentSB_Y = contentRect ? (contentRect.top / globalScale) + 20 : 200;
-    const scrollTop = sbContent?.scrollTop || 0;
-    unscheduled.forEach((t) => {
-      const stateP = physicsState.current.get(t.id); if (!stateP) return;
-      if (dragRef.current?.initialPositions.has(t.id) && dragRef.current.moved) return;
-      
-      const h = elements.current.get(t.id)?.offsetHeight || 120;
-      const height = h * 0.6;
-      const target = { x: padding + sidebarWidth / 2, y: currentSB_Y - scrollTop + height / 2, scale: 0.6 };
-      currentSB_Y += height + 20;
-
-      if (snapNextFrame.current) { stateP.x = target.x; stateP.y = target.y; stateP.scale = target.scale; } 
-      else { stateP.x += (target.x - stateP.x) * 0.15; stateP.y += (target.y - stateP.y) * 0.15; stateP.scale += (target.scale - stateP.scale) * 0.1; }
-      stateP.vx = 0; stateP.vy = 0;
-    });
-    sbHeight.current = currentSB_Y - (contentRect?.top || 0);
-    const spacer = document.getElementById('cal-sidebar-spacer'); if (spacer) spacer.style.height = `${sbHeight.current + 40}px`;
-  }, [calendarViewDate, hoveredCalDate]);
-
-  const applySpatialPhysics = useCallback((logicalWidth: number, logicalHeight: number) => {
-    const ids = Array.from(physicsState.current.keys());
-    ids.forEach((id) => {
-      if (dragRef.current?.initialPositions.has(id) && dragRef.current.moved) return;
-      const p = physicsState.current.get(id)!; const t = thoughtMap.current.get(id); if (!t) return;
-
-      if (snapNextFrame.current) {
-        p.x = t.x; p.y = t.y; p.vx = 0; p.vy = 0;
-        p.scale = (1 + (PRIORITY_WEIGHT[t.priority] || 0) * 0.05) * (t.size || 1);
-        return;
-      }
-
-      const prioLevel = PRIORITY_WEIGHT[t.priority] || 0;
-      const targetScale = (1 + prioLevel * 0.05) * (t.size || 1);
-      p.vx += (logicalWidth / 2 - p.x) * (GRAVITY * (1 + prioLevel * 0.5)); 
-      p.vy += (logicalHeight / 2 - p.y) * (GRAVITY * (1 + prioLevel * 0.5));
-
-      const nRadius = Math.max(120, ((elements.current.get(id)?.offsetHeight || 120) / 2) * p.scale);
-
-      ids.forEach((otherId) => {
-        if (id === otherId) return; const otherP = physicsState.current.get(otherId)!; const otherT = thoughtMap.current.get(otherId); if (!otherT) return;
-        const dx = p.x - otherP.x; const dy = p.y - otherP.y;
-        const distSq = dx * dx + dy * dy || 1; const d = Math.sqrt(distSq);
-        const otherRadius = Math.max(120, ((elements.current.get(otherId)?.offsetHeight || 120) / 2) * otherP.scale);
-        const minDistance = (nRadius + otherRadius);
-        const combinedPrio = prioLevel + (PRIORITY_WEIGHT[otherT.priority] || 0);
-        const repulsionMultiplier = 1 + combinedPrio * 0.1;
-
-        if (d < minDistance) {
-          const force = ((minDistance - d) / minDistance) * 12; p.vx += (dx / d) * force; p.vy += (dy / d) * force;
-        } else {
-          const force = Math.min((REPULSION * repulsionMultiplier) / distSq, 8); p.vx += (dx / d) * force; p.vy += (dy / d) * force;
-        }
-
-        if (t.stackId && t.stackId === otherT.stackId && d > COMFORT_ZONE) {
-          const pull = (d - COMFORT_ZONE) * ATTRACTION; p.vx -= (dx / d) * pull; p.vy -= (dy / d) * pull;
-        }
-      });
-
-      p.vx *= DAMPING; p.vy *= DAMPING;
-      const speed = Math.sqrt(p.vx * p.vx + p.vy * p.vy);
-      if (speed > MAX_VELOCITY) { p.vx = (p.vx / speed) * MAX_VELOCITY; p.vy = (p.vy / speed) * MAX_VELOCITY; }
-      p.x += p.vx; p.y += p.vy;
-      p.scale += (targetScale - p.scale) * 0.1;
-    });
   }, []);
 
   const applyHomeReturn = useCallback(() => {
@@ -345,14 +192,19 @@ export const usePhysics = (
   }, [getGlobalScale, transform.scale, updateThought, activeSpace, calendarViewDate]);
 
   const loop = useCallback(() => {
-    const state = physicsState.current; const ids = Array.from(state.keys());
-    const mode = activeSpace?.mode || 'spatial'; const currentSpaceId = activeSpaceId || null;
+    const state = physicsState.current;
+    const ids = Array.from(state.keys());
+    const mode = activeSpace?.mode || 'spatial';
+    const currentSpaceId = activeSpaceId || null;
     const globalScale = getGlobalScale();
     const logicalWidth = worldRef.current?.clientWidth || window.innerWidth;
     const logicalHeight = worldRef.current?.clientHeight || window.innerHeight;
+    const isMobile = window.innerWidth < 768;
 
     if (currentSpaceId !== lastLoopSpaceId.current) {
-      lastLoopSpaceId.current = currentSpaceId; visualTransformRef.current = { ...transform }; snapNextFrame.current = true;
+      lastLoopSpaceId.current = currentSpaceId;
+      visualTransformRef.current = { ...transform };
+      snapNextFrame.current = true;
     }
 
     const lerpFactor = 0.15;
@@ -364,18 +216,87 @@ export const usePhysics = (
     if (worldRef.current) worldRef.current.style.transform = `translate(${vT.x}px, ${vT.y}px) scale(${vT.scale})`;
     if (gridRef.current) gridRef.current.style.transform = `translate(${vT.x}px, ${vT.y}px) scale(${vT.scale})`;
 
-    // Apply Layouts
-    if (mode === 'kanban') applyKanbanLayout(logicalWidth);
-    else if (mode === 'calendar') applyCalendarLayout(logicalWidth, logicalHeight, globalScale);
-    else if (mode === 'spatial' && isReturningHome.current) applyHomeReturn();
-    else if (mode === 'spatial' && (activeSpace?.physics ?? true)) applySpatialPhysics(logicalWidth, logicalHeight);
+    // --- Modular Physics Engine ---
+    const strategist = getStrategist(mode);
+    const allThoughts = Array.from(thoughtMap.current.values());
+    const elementHeights = new Map<number, number>();
+    ids.forEach(id => elementHeights.set(id, elements.current.get(id)?.offsetHeight || 120));
 
-    // Canvas Connections
+    const context: LayoutContext = {
+      logicalWidth,
+      logicalHeight,
+      globalScale,
+      calendarViewDate,
+      hoveredCalDate,
+      sidebarScrollTop: document.getElementById('cal-sidebar-content')?.scrollTop || 0,
+      isMobile,
+      isReadOnly: useStore.getState().isReadOnly
+    };
+
+    let maxColHeight = 0;
+    let sidebarHeight = 0;
+
+    // 1. Calculate Targets & Apply Forces
+    ids.forEach((id) => {
+      const p = state.get(id)!;
+      const t = thoughtMap.current.get(id);
+      if (!t) return;
+
+      const isDragging = dragRef.current?.initialPositions.has(id) && dragRef.current.moved;
+
+      if (mode === 'spatial' && !isDragging && !isReturningHome.current) {
+        if (snapNextFrame.current) {
+          p.x = t.x; p.y = t.y; p.vx = 0; p.vy = 0;
+          p.scale = (1 + (PRIORITY_WEIGHT[t.priority] || 0) * 0.05) * (t.size || 1);
+        } else if (activeSpace?.physics ?? true) {
+          if (strategist.applyForces) {
+            const { vx, vy } = strategist.applyForces(id, p, state, t, allThoughts, context, elementHeights);
+            p.vx += vx; p.vy += vy;
+          }
+          p.vx *= DAMPING; p.vy *= DAMPING;
+          const speed = Math.sqrt(p.vx * p.vx + p.vy * p.vy);
+          if (speed > MAX_VELOCITY) { p.vx = (p.vx / speed) * MAX_VELOCITY; p.vy = (p.vy / speed) * MAX_VELOCITY; }
+          p.x += p.vx; p.y += p.vy;
+          const targetScale = (1 + (PRIORITY_WEIGHT[t.priority] || 0) * 0.05) * (t.size || 1);
+          p.scale += (targetScale - p.scale) * 0.1;
+        }
+      } else if (mode === 'spatial' && isReturningHome.current) {
+        // Handled by applyHomeReturn() below for simplicity, or we could inline it
+      } else if (!isDragging) {
+        // Structured Layouts (Kanban, Calendar)
+        const result = strategist.calculateLayout(t, allThoughts, context, elementHeights);
+        
+        if (snapNextFrame.current) {
+          p.x = result.targetX; p.y = result.targetY; p.scale = result.targetScale;
+        } else {
+          const speed = mode === 'calendar' ? 0.2 : 0.15;
+          p.x += (result.targetX - p.x) * speed;
+          p.y += (result.targetY - p.y) * speed;
+          p.scale += (result.targetScale - p.scale) * 0.1;
+        }
+        p.vx = 0; p.vy = 0;
+
+        // Metadata Tracking
+        if (result.columnHeight && result.columnHeight > maxColHeight) maxColHeight = result.columnHeight;
+        if (result.isSidebar && result.columnHeight && result.columnHeight > sidebarHeight) sidebarHeight = result.columnHeight;
+      }
+    });
+
+    if (mode === 'spatial' && isReturningHome.current) applyHomeReturn();
+
+    // Update global measurements
+    kMaxHeight.current = maxColHeight;
+    sbHeight.current = sidebarHeight;
+    const spacer = document.getElementById('cal-sidebar-spacer');
+    if (spacer) spacer.style.height = `${sidebarHeight + 40}px`;
+
+    // --- Connections & Styles (Unchanged logic) ---
     const ctx = canvasRef?.current?.getContext('2d');
     if (ctx && canvasRef.current) {
       ctx.clearRect(0, 0, canvasRef.current.width, canvasRef.current.height);
       if (mode === 'spatial') {
-        const { x: tx, y: ty, scale: s } = vT; const style = getComputedStyle(document.body);
+        const { x: tx, y: ty, scale: s } = vT;
+        const style = getComputedStyle(document.body);
         const accent = style.getPropertyValue('--accent').trim() || '#6366f1';
         ctx.strokeStyle = accent.startsWith('#') ? accent + '1F' : accent.replace('rgb', 'rgba').replace(')', ', 0.12)');
         ctx.beginPath();
@@ -399,7 +320,6 @@ export const usePhysics = (
       }
     }
 
-    // Apply styles
     state.forEach((p, id) => {
       const el = elements.current.get(id); const t = thoughtMap.current.get(id); if (!el || !t) return;
       const h = el.offsetHeight || 120;
@@ -408,25 +328,22 @@ export const usePhysics = (
       const isSelected = t.id === selectedThoughtId;
       const isDraggingThis = dragRef.current?.initialPositions.has(id) && dragRef.current.moved;
 
-      el.style.clipPath = 'none'; el.style.opacity = '1'; el.style.visibility = 'visible';
-      el.style.pointerEvents = 'auto'; 
-      el.style.zIndex = isSelected ? '10001' : (isDraggingThis ? '1000' : (20 + (t.layer || 0)).toString());
+      // Re-calculate layout results for styling (clipPath, etc)
+      const res = strategist.calculateLayout(t, allThoughts, context, elementHeights);
 
-      if (mode === 'kanban') {
-        const cardBottom = (p.y * vT.scale + vT.y) + ((h * p.scale) * vT.scale) / 2;
-        const opacity = Math.max(0, Math.min(1, (cardBottom - (window.innerWidth < 768 ? 170 : 200)) / 60));
-        el.style.opacity = opacity.toString(); el.style.visibility = opacity === 0 ? 'hidden' : 'visible'; el.style.pointerEvents = opacity < 0.1 ? 'none' : 'auto';
-      } else if (mode === 'calendar' && t.date) {
-        const isH = t.date === hoveredCalDate;
-        const dateThoughts = Array.from(thoughtMap.current.values()).filter(th => th.date === t.date).sort((a, b) => (a.layer || 0) - (b.layer || 0));
-        const isTop = dateThoughts[dateThoughts.length - 1]?.id === t.id;
-        if (!isH && !isTop && !isSelected) el.style.clipPath = 'inset(0px 0px calc(100% - 70px) 0px)';
-        el.style.pointerEvents = (isH || isTop || isSelected) ? 'auto' : 'none';
-        if (!isSelected) el.style.transform += ` rotate(${(t.layer || 0) % 2 === 0 ? 0.8 : -0.8}deg)`;
-      } else if (mode === 'calendar' && !t.date) {
+      el.style.opacity = (res.opacity ?? 1).toString();
+      el.style.visibility = res.visibility ?? 'visible';
+      el.style.pointerEvents = res.pointerEvents ?? 'auto';
+      el.style.clipPath = res.clipPath ?? 'none';
+      el.style.zIndex = isSelected ? '10001' : (isDraggingThis ? '1000' : (res.zIndex || (20 + (t.layer || 0)).toString()));
+
+      if (res.rotation && !isSelected) el.style.transform += ` rotate(${res.rotation}deg)`;
+      
+      // Special Sidebar Clipping override (needs global context)
+      if (mode === 'calendar' && !t.date && !isDraggingThis && !isSelected) {
         const contentEl = document.getElementById('cal-sidebar-content');
         const cRectRaw = contentEl?.getBoundingClientRect();
-        if (cRectRaw && !isDraggingThis && !isSelected) {
+        if (cRectRaw) {
           const cRect = { top: cRectRaw.top / globalScale, bottom: cRectRaw.bottom / globalScale };
           const cardTop = (p.y * vT.scale + vT.y) - ((h * p.scale) * vT.scale) / 2;
           const cardBottom = (p.y * vT.scale + vT.y) + ((h * p.scale) * vT.scale) / 2;
@@ -436,11 +353,10 @@ export const usePhysics = (
           el.style.visibility = (topClip > 95 || bottomClip > 95) ? 'hidden' : 'visible';
           el.style.pointerEvents = (topClip > 80 || bottomClip > 80) ? 'none' : 'auto';
         }
-        if (!isSelected && !isDraggingThis) el.style.zIndex = '35';
       }
     });
     if (ids.length > 0) snapNextFrame.current = false;
-  }, [activeSpace, activeSpaceId, calendarViewDate, hoveredCalDate, transform, linkingSourceId, getGlobalScale, applyKanbanLayout, applyCalendarLayout, applyHomeReturn, applySpatialPhysics, selectedThoughtId]);
+  }, [activeSpace, activeSpaceId, calendarViewDate, hoveredCalDate, transform, linkingSourceId, getGlobalScale, applyHomeReturn, selectedThoughtId]);
 
   useEffect(() => {
     const animate = () => { loop(); requestRef.current = requestAnimationFrame(animate); };

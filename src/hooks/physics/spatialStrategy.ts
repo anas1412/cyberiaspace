@@ -33,7 +33,7 @@ export const spatialStrategy: LayoutStrategist = {
     };
   },
 
-  applyForces: (id, p, allStates, thought, allThoughts, context) => {
+  applyForces: (id, p, allStates, thought, allThoughts, context, elementHeights) => {
     let dvx = 0;
     let dvy = 0;
 
@@ -55,10 +55,11 @@ export const spatialStrategy: LayoutStrategist = {
       const distSq = dx * dx + dy * dy || 1;
       const d = Math.sqrt(distSq);
 
-      // Repulsion
-      const nHeight = 120; // Baseline
+      // Repulsion using actual element heights
+      const nHeight = elementHeights.get(id) || 120;
       const nRadius = Math.max(120, (nHeight / 2) * p.scale);
-      const otherRadius = Math.max(120, (nHeight / 2) * otherP.scale);
+      const otherHeight = elementHeights.get(otherId) || 120;
+      const otherRadius = Math.max(120, (otherHeight / 2) * otherP.scale);
       const minDistance = nRadius + otherRadius;
 
       const otherPrio = PRIORITY_WEIGHT[otherT.priority] || 0;
