@@ -16,11 +16,11 @@ import Modal from './components/Modal';
 import PricingModal from './components/PricingModal';
 import Lightbox from './components/Lightbox';
 
-import TextFocusEditor from './components/TextFocusEditor';
-import TableFocusEditor from './components/TableFocusEditor';
-import PaintFocusEditor from './components/PaintFocusEditor';
-import TasksFocusEditor from './components/TasksFocusEditor';
-import EmbedFocusEditor from './components/EmbedFocusEditor';
+import TextFocusEditor from './components/editors/TextFocusEditor';
+import TableFocusEditor from './components/editors/TableFocusEditor';
+import PaintFocusEditor from './components/editors/PaintFocusEditor';
+import TasksFocusEditor from './components/editors/TasksFocusEditor';
+import EmbedFocusEditor from './components/editors/EmbedFocusEditor';
 import ChatOverlay from './components/ChatOverlay';
 import MobileNotSupported from './components/MobileNotSupported';
 import FeedbackPage from './components/FeedbackPage';
