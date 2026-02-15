@@ -15,7 +15,7 @@ export const config = {
 
 // --- 1. SYSTEM PROMPT MODULE ---
 
-const getSystemPrompt = (modelName: string, context?: string) => `
+export const getSystemPrompt = (modelName: string, context?: string) => `
         [WORKSPACE CONTEXT]
         ${context || 'No workspace data provided.'}
         [/WORKSPACE CONTEXT]
@@ -74,7 +74,7 @@ const updateThoughtParameters = z.object({
   size: z.number().optional(),
 });
 
-const getOracleTools = () => ({
+export const getOracleTools = () => ({
   // --- Information Gathering Tools (Server-Side) ---
   
   web_search: tool({
