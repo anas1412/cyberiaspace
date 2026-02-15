@@ -6,6 +6,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import ReactMarkdown from 'react-markdown';
 import { useChat } from 'ai/react';
 import { DEFAULT_MODEL } from '../constants';
+import { executeOracleTool } from '../services/oracle/executor';
 
 const SUGGESTIONS = [
   "Summarize my recent thoughts...",
@@ -53,77 +54,15 @@ const ChatOverlay: React.FC = () => {
     onToolCall: async ({ toolCall }) => {
       console.log(`[Oracle] Incoming Tool Call: ${toolCall.toolName}`, toolCall.args);
       
-      const clientTools = ['create_thought', 'link_thoughts', 'update_thought', 'delete_thoughts'];
+      const clientTools = ['create_thought', 'create_thoughts', 'link_thoughts', 'update_thought', 'delete_thoughts'];
       if (!clientTools.includes(toolCall.toolName)) {
         console.log(`[Oracle] Tool "${toolCall.toolName}" is not a client-side tool. Waiting for server...`);
         return;
       }
 
-      try {
-        let result: any = { success: false };
-        switch (toolCall.toolName) {
-          case 'create_thought': {
-            const { stackName, ...thoughtArgs } = toolCall.args as any;
-            const x = typeof thoughtArgs.x !== 'undefined' ? Number(thoughtArgs.x) : window.innerWidth / 2;
-            const y = typeof thoughtArgs.y !== 'undefined' ? Number(thoughtArgs.y) : window.innerHeight / 2;
-
-            const id = await store.addThought({ ...thoughtArgs, x, y });
-            if (id === -1) {
-              result = { success: false, error: 'Thought creation limit reached or invalid data' };
-            } else {
-              if (stackName) await store.createStack(stackName, id);
-              result = { success: true, id };
-            }
-            break;
-          }
-
-          case 'link_thoughts': {
-            const { ids, name } = toolCall.args as any;
-            if (!ids?.length) {
-              result = { success: false, error: 'No IDs provided' };
-            } else {
-              store.setSelectedThoughtIds(ids);
-              await store.linkSelectedThoughts(name);
-              store.clearSelection();
-              result = { success: true };
-            }
-            break;
-          }
-
-          case 'update_thought': {
-            const { id, stackName, ...updates } = toolCall.args as any;
-            if (!id) {
-              result = { success: false, error: 'Missing ID' };
-            } else {
-              const sanitizedUpdates: any = { ...updates };
-              if (typeof updates.x !== 'undefined') sanitizedUpdates.x = Number(updates.x);
-              if (typeof updates.y !== 'undefined') sanitizedUpdates.y = Number(updates.y);
-
-              await store.updateThought(id, sanitizedUpdates);
-              if (stackName) await store.createStack(stackName, id);
-              result = { success: true };
-            }
-            break;
-          }
-
-          case 'delete_thoughts': {
-            const { ids } = toolCall.args as any;
-            if (!ids?.length) {
-              result = { success: false, error: 'No IDs provided' };
-            } else {
-              await store.deleteThoughts(ids);
-              result = { success: true };
-            }
-            break;
-          }
-        }
-        
-        console.log(`[Oracle] Client Tool "${toolCall.toolName}" finished with result:`, result);
-        return result;
-      } catch (error: any) {
-        console.error(`[Oracle] Frontend Tool "${toolCall.toolName}" Execution Error:`, error);
-        return { success: false, error: error.message || 'Internal client tool error' };
-      }
+      const result = await executeOracleTool(toolCall, store);
+      console.log(`[Oracle] Client Tool "${toolCall.toolName}" finished with result:`, result);
+      return result;
     },
     onResponse: (response) => {
       console.log('[Oracle] Stream Started - Status:', response.status);
