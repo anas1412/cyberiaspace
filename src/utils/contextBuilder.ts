@@ -12,17 +12,24 @@ export const serializeWorkspace = (activeSpaceId: string | null, thoughts: Thoug
   const simplifiedThoughts = thoughts.map(t => ({
     id: t.id,
     text: t.text,
+    placeholder: t.placeholder,
     description: t.description,
     type: t.type,
     position: { x: Math.round(t.x), y: Math.round(t.y) },
     order: t.order,
-    content: t.content?.substring(0, 500), // Slightly reduced to save tokens
+    layer: t.layer,
+    size: t.size,
+    content: t.content?.substring(0, 500), // Truncated to save tokens
+    author: t.author,
     stack: t.stackId ? { id: t.stackId, name: stackMap.get(t.stackId) || "Unnamed Stack" } : null,
     status: t.status,
     priority: t.priority,
     date: t.date,
     hasImage: !!t.image,
-    hasDrawing: !!t.drawing
+    hasDrawing: !!t.drawing,
+    // Include structured data only if it exists/relevant
+    ...(t.type === 'tasks' && t.tasks?.length ? { tasks: t.tasks } : {}),
+    ...(t.type === 'table' && t.table?.length ? { table: t.table } : {})
   }));
 
   const context = {
@@ -34,9 +41,10 @@ export const serializeWorkspace = (activeSpaceId: string | null, thoughts: Thoug
     currentSpace: {
       id: activeSpace.id,
       name: activeSpace.name,
-      mode: activeSpace.mode
+      mode: activeSpace.mode,
+      physics: activeSpace.physics
     },
-    stacks: stacks.map(s => ({ id: s.id, name: s.name })),
+    stacks: stacks.map(s => ({ id: s.id, name: s.name, color: s.color })),
     thoughts: simplifiedThoughts
   };
 
