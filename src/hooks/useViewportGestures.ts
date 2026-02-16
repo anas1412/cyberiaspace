@@ -1,26 +1,22 @@
-import { useRef, useCallback, useEffect } from 'react';
-import { useStore } from '../store/useStore';
+import { useRef, useCallback } from 'react';
 
 interface GestureConfig {
   activeSpaceMode: string | undefined;
   transform: { x: number; y: number; scale: number };
   setTransform: (t: { x: number; y: number; scale: number }) => void;
   kanbanHeight: number;
-  isGrabbing: boolean;
-  setIsGrabbing: (v: boolean) => void;
-  setSelectionRect: (rect: { x: number, y: number, w: number, h: number } | null) => void;
   getGlobalScale: () => number;
 }
 
 export const useViewportGestures = (config: GestureConfig) => {
   const { 
     activeSpaceMode, transform, setTransform, kanbanHeight, 
-    setIsGrabbing, setSelectionRect, getGlobalScale 
+    getGlobalScale 
   } = config;
 
   const isPanningRef = useRef(false);
   const isSelectingRef = useRef(false);
-  const selectionStartRef = useRef({ x: 0, y: 0 });
+  const selectionStartRef = useRef({ rawX: 0, rawY: 0 });
   const lastMousePos = useRef({ rawX: 0, rawY: 0 });
 
   // Touch state
@@ -77,26 +73,20 @@ export const useViewportGestures = (config: GestureConfig) => {
     let newTransform = { ...transform };
 
     if (activeSpaceMode === 'spatial') {
-      if (e.ctrlKey) {
-        // Pinch-to-zoom (Trackpad) or Ctrl+Wheel
-        const delta = -e.deltaY;
-        const zoomSpeed = 0.002;
-        const newScale = Math.min(Math.max(0.1, transform.scale + delta * zoomSpeed * transform.scale), 2);
-        const wx = (lx - transform.x) / transform.scale;
-        const wy = (ly - transform.y) / transform.scale;
-        newTransform = {
-          x: lx - wx * newScale,
-          y: ly - wy * newScale,
-          scale: newScale,
-        };
-      } else {
-        // Free Panning
-        newTransform = {
-          ...transform,
-          x: transform.x - e.deltaX / s,
-          y: transform.y - e.deltaY / s
-        };
-      }
+      // Spatial Mode: Zoom via Wheel (Standard Cyberia behavior)
+      const delta = -e.deltaY;
+      // Smoother zoom speed: 0.001 for mouse, potentially 0.002 for trackpad pinch (ctrlKey)
+      const zoomSpeed = e.ctrlKey ? 0.002 : 0.001;
+      const newScale = Math.min(Math.max(0.1, transform.scale + delta * zoomSpeed * transform.scale), 2);
+      
+      const wx = (lx - transform.x) / transform.scale;
+      const wy = (ly - transform.y) / transform.scale;
+      
+      newTransform = {
+        x: lx - wx * newScale,
+        y: ly - wy * newScale,
+        scale: newScale,
+      };
     } else if (activeSpaceMode === 'kanban') {
       // Kanban: Vertical Scroll only
       newTransform = {
