@@ -21,7 +21,7 @@ interface CyberiaState {
   calendarStackFilter: string | null;
   kanbanSearchQuery: string;
   kanbanStackFilter: string | null;
-  theme: 'cyberia' | 'sakura' | 'neon';
+  theme: 'cyberia' | 'sea' | 'forest' | 'rain';
   isSpaceLoading: boolean;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   deferredPrompt: any;
@@ -38,7 +38,7 @@ interface CyberiaState {
   init: () => Promise<void>;
 
   // Actions
-  setTheme: (theme: 'cyberia' | 'sakura' | 'neon') => void;
+  setTheme: (theme: 'cyberia' | 'sea' | 'forest' | 'rain') => void;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   setDeferredPrompt: (prompt: any) => void;
 
@@ -144,7 +144,7 @@ export const useStore = create<CyberiaState>((set, get) => ({
   isLightboxOpen: false,
   lightboxImage: null,
   linkingSourceId: null,
-  theme: (localStorage.getItem('cyberia-theme') as 'cyberia' | 'sakura' | 'neon') || 'cyberia',
+  theme: (localStorage.getItem('cyberia-theme') as 'cyberia' | 'sea' | 'forest' | 'rain') || 'cyberia',
   isSpaceLoading: true,
   deferredPrompt: null,
   layerActionTrigger: null,

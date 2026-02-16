@@ -19,14 +19,14 @@ export const PLAN_CONFIG: Record<SubscriptionPlan, PlanLimits> = {
     MAX_THOUGHTS_PER_SPACE: 20,
     MAX_CLOUD_THOUGHTS: 60,
     AI_ENABLED: false,
-    THEMES_ENABLED: ['cyberia', 'sakura', 'neon'],
+    THEMES_ENABLED: ['cyberia', 'sea', 'forest', 'rain'],
   },
   pro: {
     MAX_SPACES: 8,
     MAX_THOUGHTS_PER_SPACE: 50,
     MAX_CLOUD_THOUGHTS: 400,
     AI_ENABLED: true,
-    THEMES_ENABLED: ['cyberia', 'sakura', 'neon'],
+    THEMES_ENABLED: ['cyberia', 'sea', 'forest', 'rain'],
     PRICE: {
       monthly: { usd: 8, tnd: 19 },
       yearly: { usd: 80, tnd: 190 },

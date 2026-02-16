@@ -294,6 +294,8 @@ function App() {
     return () => window.removeEventListener('paste', handlePaste);
   }, [addThought, setSelectedThoughtId, setInspectorOpen, thoughts.length, openModal, path, limits.MAX_THOUGHTS_PER_SPACE]);
 
+  const theme = useStore((state) => state.theme);
+
   if (path === '/feedback') {
     return (
       <>
@@ -309,10 +311,40 @@ function App() {
         <MobileNotSupported />
       ) : (
         <>
-          {/* Deep Space Background Layers */}
-          <div className="stars-layer stars-1" />
-          <div className="stars-layer stars-2" />
-          <div className="stars-layer stars-twinkle" />
+          {/* Theme-Specific Background Layers */}
+          {theme === 'cyberia' && (
+            <>
+              <div className="stars-layer stars-1" />
+              <div className="stars-layer stars-2" />
+              <div className="stars-layer stars-twinkle" />
+            </>
+          )}
+
+          {theme === 'sea' && (
+            <div className="sea-layer">
+              <div className="sea-caustics" />
+              <div className="bubbles-distant" />
+              <div className="bubbles-near" />
+              <div className="sea-silt" />
+            </div>
+          )}
+
+          {theme === 'forest' && (
+            <div className="forest-layer">
+              <div className="forest-canopy" />
+              <div className="god-rays" />
+              <div className="fireflies-distant" />
+              <div className="fireflies-near" />
+            </div>
+          )}
+
+          {theme === 'rain' && (
+            <div className="rain-layer">
+              <div className="rain-drops" />
+              <div className="thunder" />
+            </div>
+          )}
+
           <div className="nebula-cloud" />
           <div className="grain" />
 
