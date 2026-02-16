@@ -96,6 +96,23 @@ export const executeOracleTool = async (toolCall: any, store: any) => {
         }
       }
 
+      case 'update_thoughts': {
+        const { ids, stackName, ...updates } = args;
+        if (!ids?.length) {
+          return { success: false, error: 'No IDs provided' };
+        } else {
+          const sanitizedUpdates: any = { ...updates };
+          if (typeof updates.x !== 'undefined') sanitizedUpdates.x = Number(updates.x);
+          if (typeof updates.y !== 'undefined') sanitizedUpdates.y = Number(updates.y);
+
+          for (const id of ids) {
+            await store.updateThought(id, sanitizedUpdates);
+            if (stackName) await store.createStack(stackName, id);
+          }
+          return { success: true };
+        }
+      }
+
       case 'delete_thoughts': {
         const { ids } = args;
         if (!ids?.length) {

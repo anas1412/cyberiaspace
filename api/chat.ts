@@ -104,6 +104,7 @@ export const tools: any[] = [
           stackName: { type: "string", description: "Name of a stack to add this to." },
           priority: { type: "string", enum: ["none", "low", "medium", "high", "urgent"] },
           status: { type: "string", enum: ["none", "todo", "doing", "done"] },
+          date: { type: "string", description: "The date in YYYY-MM-DD format." },
           x: { anyOf: [{ type: "number" }, { type: "null" }] },
           y: { anyOf: [{ type: "number" }, { type: "null" }] }
         },
@@ -128,7 +129,10 @@ export const tools: any[] = [
                 type: { type: "string", enum: ["text", "tasks", "paint", "table", "image", "embed"] },
                 content: { type: "string", description: "The main content (URL or Markdown)." },
                 description: { type: "string", description: "Short summary." },
-                stackName: { type: "string", description: "Name of a stack to add this to." }
+                stackName: { type: "string", description: "Name of a stack to add this to." },
+                priority: { type: "string", enum: ["none", "low", "medium", "high", "urgent"] },
+                status: { type: "string", enum: ["none", "todo", "doing", "done"] },
+                date: { type: "string", description: "The date in YYYY-MM-DD format." }
               },
               required: ["text", "type", "content"]
             }
@@ -151,9 +155,34 @@ export const tools: any[] = [
           content: { type: "string" },
           status: { type: "string", enum: ["none", "todo", "doing", "done"] },
           priority: { type: "string", enum: ["none", "low", "medium", "high", "urgent"] },
+          date: { type: "string", description: "The date in YYYY-MM-DD format." },
           stackName: { type: "string", description: "Name of a stack to move this thought into." }
         },
         required: ["id"]
+      }
+    }
+  },
+  {
+    type: "function",
+    function: {
+      name: "update_thoughts",
+      description: "Updates multiple existing thoughts with the same set of changes (e.g., move all to a date, change status, or shift position).",
+      parameters: {
+        type: "object",
+        properties: {
+          ids: { type: "array", items: { type: "number" }, description: "Array of thought IDs." },
+          text: { type: "string", description: "Bulk rename thoughts." },
+          content: { type: "string", description: "Bulk update content." },
+          description: { type: "string", description: "Bulk update description." },
+          type: { type: "string", enum: ["text", "tasks", "paint", "table", "image", "embed"] },
+          status: { type: "string", enum: ["none", "todo", "doing", "done"] },
+          priority: { type: "string", enum: ["none", "low", "medium", "high", "urgent"] },
+          date: { type: "string", description: "The date in YYYY-MM-DD format." },
+          stackName: { type: "string", description: "Name of a stack to move these thoughts into." },
+          x: { anyOf: [{ type: "number" }, { type: "null" }] },
+          y: { anyOf: [{ type: "number" }, { type: "null" }] }
+        },
+        required: ["ids"]
       }
     }
   },
