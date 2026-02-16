@@ -16,9 +16,10 @@ export const CalendarFilterBar: React.FC = () => {
   const setCalendarStackFilter = useStore((state) => state.setCalendarStackFilter);
   const stacks = useStore((state) => state.stacks);
   const activeSpaceId = useStore((state) => state.activeSpaceId);
+  const isReadOnly = useStore((state) => state.isReadOnly);
 
   const reelRef = useRef<HTMLDivElement>(null);
-  const activeStacks = stacks.filter(s => s.spaceId === activeSpaceId);
+  const activeStacks = isReadOnly ? stacks : stacks.filter(s => s.spaceId === activeSpaceId);
 
   // Enable horizontal scrolling with mouse wheel
   useEffect(() => {
@@ -91,7 +92,8 @@ export const CalendarFilterBar: React.FC = () => {
               <button
                 onClick={() => setCalendarStackFilter(stack.id)}
                 className={cn(
-                  "px-3 py-1.5 rounded-lg text-[9px] font-bold uppercase tracking-widest border transition-all truncate max-w-[120px] pr-6",
+                  "px-3 py-1.5 rounded-lg text-[9px] font-bold uppercase tracking-widest border transition-all truncate max-w-[120px]",
+                  !isReadOnly && "pr-6",
                   calendarStackFilter === stack.id
                     ? "border-current text-white shadow-lg"
                     : "bg-white/5 border-transparent text-slate-500 hover:text-slate-300"
@@ -103,7 +105,7 @@ export const CalendarFilterBar: React.FC = () => {
               >
                 {stack.name}
               </button>
-              {!useStore.getState().isReadOnly && (
+              {!isReadOnly && (
                 <button
                   onClick={(e) => {
                     e.stopPropagation();
