@@ -1,11 +1,13 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useStore } from '../store/useStore';
+import { useAuthStore } from '../store/useAuthStore';
 import { serializeWorkspace } from '../utils/contextBuilder';
-import { X, Send, Shield, Loader2, Bot, History } from 'lucide-react';
+import { X, Send, Shield, Loader2, Bot, History, Zap } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import ReactMarkdown from 'react-markdown';
-import { useChat } from 'ai/react';
-import { DEFAULT_MODEL } from '../constants';
+import remarkGfm from 'remark-gfm';
+import { PLAN_CONFIG } from '../constants';
+import { executeOracleTool } from '../services/oracle/executor';
 
 const SUGGESTIONS = [
   "Summarize my recent thoughts...",
@@ -20,107 +22,49 @@ const SUGGESTIONS = [
   "Brainstorm 5 features for a new app..."
 ];
 
+interface Message {
+  id: string;
+  role: 'user' | 'assistant';
+  content: string;
+}
+
 const ChatOverlay: React.FC = () => {
   const isChatOpen = useStore((state) => state.isChatOpen);
   const setChatOpen = useStore((state) => state.setChatOpen);
   const oracleMode = useStore((state) => state.oracleMode);
   const store = useStore();
+  const { user } = useAuthStore();
+  const plan = user?.plan || 'free';
+  const limits = PLAN_CONFIG[plan as keyof typeof PLAN_CONFIG];
   
+  const [messages, setMessages] = useState<Message[]>([]);
+  const [input, setInput] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+  const [status, setStatus] = useState<string>('');
+  const [dailyUsage, setDailyUsage] = useState(0);
+
   const scrollRef = useRef<HTMLDivElement>(null);
+
+  // Strict plan-based model selection
+  const activeModel = plan === 'pro' ? 'openai/gpt-oss-120b' : 'openai/gpt-oss-20b';
 
   const suggestion = React.useMemo(() => 
     SUGGESTIONS[Math.floor(Math.random() * SUGGESTIONS.length)], 
   [isChatOpen]);
 
-  const { 
-    messages, 
-    input, 
-    handleInputChange, 
-    handleSubmit, 
-    isLoading, 
-    setMessages,
-    status
-  } = useChat({
-    api: '/api/chat',
-    body: {
-      context: serializeWorkspace(
-        store.activeSpaceId, 
-        store.thoughts, 
-        store.spaces, 
-        store.stacks
-      )
-    },
-    onToolCall: async ({ toolCall }) => {
-      console.log(`[Oracle] Received Tool Call: ${toolCall.toolName}`, toolCall.args);
-      
-      // Only log tools handled on the client to reduce noise
-      const clientTools = ['create_thought', 'link_thoughts', 'update_thought', 'delete_thoughts'];
-      if (!clientTools.includes(toolCall.toolName)) {
-        console.log(`[Oracle] Tool ${toolCall.toolName} is server-side, skipping frontend execution.`);
-        return;
-      }
-
-      try {
-        switch (toolCall.toolName) {
-          case 'create_thought': {
-            const { stackName, ...thoughtArgs } = toolCall.args as any;
-            const x = typeof thoughtArgs.x !== 'undefined' ? Number(thoughtArgs.x) : window.innerWidth / 2;
-            const y = typeof thoughtArgs.y !== 'undefined' ? Number(thoughtArgs.y) : window.innerHeight / 2;
-
-            const id = await store.addThought({ ...thoughtArgs, x, y });
-            if (stackName && id && id !== -1) await store.createStack(stackName, id);
-            
-            console.log(`[Oracle] Thought Created: ID ${id}`);
-            return { success: true, id };
-          }
-
-          case 'link_thoughts': {
-            const { ids, name } = toolCall.args as any;
-            if (!ids?.length) return { success: false, error: 'No IDs provided' };
-            store.setSelectedThoughtIds(ids);
-            await store.linkSelectedThoughts(name);
-            store.clearSelection();
-            console.log(`[Oracle] Linked ${ids.length} thoughts into stack: ${name}`);
-            return { success: true };
-          }
-
-          case 'update_thought': {
-            const { id, stackName, ...updates } = toolCall.args as any;
-            if (!id) return { success: false, error: 'Missing ID' };
-            
-            const sanitizedUpdates: any = { ...updates };
-            if (typeof updates.x !== 'undefined') sanitizedUpdates.x = Number(updates.x);
-            if (typeof updates.y !== 'undefined') sanitizedUpdates.y = Number(updates.y);
-
-            await store.updateThought(id, sanitizedUpdates);
-            if (stackName) await store.createStack(stackName, id);
-            console.log(`[Oracle] Updated Thought: ID ${id}`);
-            return { success: true };
-          }
-
-          case 'delete_thoughts': {
-            const { ids } = toolCall.args as any;
-            if (!ids?.length) return { success: false, error: 'No IDs provided' };
-            await store.deleteThoughts(ids);
-            console.log(`[Oracle] Deleted Thoughts: IDs ${ids.join(', ')}`);
-            return { success: true };
-          }
-        }
-      } catch (error) {
-        console.error('[Oracle] Frontend Tool Execution Error:', error);
-        return { success: false, error: 'Internal client tool error' };
-      }
-    },
-    onResponse: (response) => {
-      console.log('[Oracle] Stream Started - Status:', response.status);
-    },
-    onFinish: (message) => {
-      console.log('[Oracle] Stream Finished - Final Message:', message.content);
-    },
-    onError: (err) => {
-      console.error('[Oracle] Chat Error Context:', err);
+  useEffect(() => {
+    if (isChatOpen && user) {
+      const authStore = useAuthStore.getState();
+      fetch('/api/chat', {
+        headers: { 'Authorization': `Bearer ${authStore.accessToken}` }
+      })
+      .then(res => res.json())
+      .then(data => {
+        if (typeof data.count === 'number') setDailyUsage(data.count);
+      })
+      .catch(err => console.error("[Oracle] Failed to fetch initial usage:", err));
     }
-  });
+  }, [isChatOpen, user]);
 
   useEffect(() => {
     if (scrollRef.current) {
@@ -130,6 +74,108 @@ const ChatOverlay: React.FC = () => {
 
   const handleClear = () => {
     setMessages([]);
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!input.trim() || isLoading) return;
+
+    if (plan === 'free' && dailyUsage >= (limits.AI_DAILY_LIMIT || 0)) {
+      const errorMsg: Message = { 
+        id: Date.now().toString(), 
+        role: 'assistant', 
+        content: "### Limit Reached\nChoom, you've hit your daily data-stream limit for the Free tier. Upgrade to **Pro** for unlimited neural access and premium models!" 
+      };
+      setMessages(prev => [...prev, { id: (Date.now() - 1).toString(), role: 'user', content: input }, errorMsg]);
+      setInput('');
+      return;
+    }
+
+    const userMessage: Message = { id: Date.now().toString(), role: 'user', content: input };
+    setMessages(prev => [...prev, userMessage]);
+    setInput('');
+    setIsLoading(true);
+    setStatus('thinking');
+
+    try {
+      const authStore = useAuthStore.getState();
+      const response = await fetch('/api/chat', {
+        method: 'POST',
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${authStore.accessToken}`
+        },
+        body: JSON.stringify({
+          messages: [...messages, userMessage],
+          model: activeModel,
+          plan: plan,
+          context: serializeWorkspace(
+            store.activeSpaceId, 
+            store.thoughts, 
+            store.spaces, 
+            store.stacks
+          )
+        }),
+      });
+
+      if (response.status === 429) {
+        const errorData = await response.json();
+        const errorMsg: Message = { 
+          id: Date.now().toString(), 
+          role: 'assistant', 
+          content: `### Neural Link Saturated\n${errorData.message}` 
+        };
+        setMessages(prev => [...prev, errorMsg]);
+        setDailyUsage(errorData.usage);
+        return;
+      }
+
+      if (!response.ok) throw new Error('Failed to fetch from Oracle');
+
+      const reader = response.body?.getReader();
+      if (!reader) throw new Error('No reader available');
+
+      const decoder = new TextDecoder();
+      let assistantMessage: Message = { id: (Date.now() + 1).toString(), role: 'assistant', content: '' };
+      setMessages(prev => [...prev, assistantMessage]);
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        const chunk = decoder.decode(value, { stream: true });
+        const lines = chunk.split('\n');
+
+        for (const line of lines) {
+          if (line.startsWith('data: ')) {
+            const dataStr = line.slice(6);
+            if (dataStr === '[DONE]') break;
+
+            try {
+              const data = JSON.parse(dataStr);
+              if (data.type === 'text') {
+                assistantMessage.content += data.content;
+                setMessages(prev => [
+                  ...prev.slice(0, -1),
+                  { ...assistantMessage }
+                ]);
+              } else if (data.type === 'usage') {
+                setDailyUsage(data.count);
+              } else if (data.type === 'tool_call') {
+                setStatus(`Executing ${data.toolCall.toolName}...`);
+                await executeOracleTool(data.toolCall, store);
+              }
+            } catch (e) { }
+          }
+        }
+      }
+
+    } catch (error) {
+      console.error('[Oracle] Error:', error);
+    } finally {
+      setIsLoading(false);
+      setStatus('');
+    }
   };
 
   if (!oracleMode) return null;
@@ -155,11 +201,21 @@ const ChatOverlay: React.FC = () => {
                 <Bot className="w-5 h-5 text-[var(--accent)]" />
               </div>
               <div>
-                <h3 className="text-sm font-bold text-white tracking-wide">Oracle AI</h3>
-                <p className="text-[10px] text-[var(--accent)] font-mono uppercase tracking-wider">{DEFAULT_MODEL}</p>
+                <div className="flex items-center gap-2">
+                  <h3 className="text-sm font-bold text-white tracking-wide">Oracle AI</h3>
+                  {plan === 'pro' && <Zap className="w-3 h-3 text-amber-400 fill-amber-400" />}
+                </div>
+                <p className="text-[10px] text-[var(--accent)] font-mono uppercase tracking-wider">
+                  {activeModel === 'openai/gpt-oss-120b' ? 'ORACLE-PRO 120B' : 'ORACLE-MINI 20B'}
+                </p>
               </div>
             </div>
             <div className="flex items-center gap-1">
+              <div className="px-2 py-1 rounded-lg bg-white/5 border border-white/5 mr-2">
+                <p className="text-[10px] font-black uppercase tracking-tighter text-slate-500">
+                  {plan === 'free' ? `${dailyUsage}/${limits.AI_DAILY_LIMIT} Daily` : 'Unlimited'}
+                </p>
+              </div>
               {messages.length > 0 && (
                 <button 
                   onClick={handleClear}
@@ -184,11 +240,17 @@ const ChatOverlay: React.FC = () => {
                 <Shield className="w-10 h-10 md:w-12 md:h-12 mx-auto mb-4 opacity-20" />
                 <p className="text-sm">Oracle Enabled</p>
                 <p className="text-xs mt-2 opacity-60 px-10">I can help you organize your workspace.</p>
+                {plan === 'free' && (
+                  <div className="mt-6 p-4 rounded-2xl bg-indigo-500/5 border border-indigo-500/10 mx-4">
+                    <p className="text-[10px] uppercase font-bold tracking-widest text-indigo-400 mb-1">Reduced AI Capabilities</p>
+                    <p className="text-[9px] leading-relaxed">You have {limits.AI_DAILY_LIMIT} daily messages. Upgrade to Pro for premium <strong className="text-white">ORACLE-PRO 120B</strong> models and unlimited usage.</p>
+                  </div>
+                )}
               </div>
             )}
             
             {messages.map((msg) => {
-              if (!msg.content && msg.role === 'assistant') return null;
+              if (!msg.content?.trim() && msg.role === 'assistant') return null;
               return (
                 <div key={msg.id} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
                   <div 
@@ -199,7 +261,7 @@ const ChatOverlay: React.FC = () => {
                         : 'bg-white/5 border border-white/10 text-slate-200 rounded-tl-sm'}
                     `}
                   >
-                    <ReactMarkdown>{msg.content}</ReactMarkdown>
+                    <ReactMarkdown remarkPlugins={[remarkGfm]}>{msg.content}</ReactMarkdown>
                   </div>
                 </div>
               );
@@ -210,7 +272,7 @@ const ChatOverlay: React.FC = () => {
                 <div className="bg-white/5 border border-white/10 p-4 rounded-2xl rounded-tl-sm flex items-center gap-2">
                   <Loader2 className="w-4 h-4 text-[var(--accent)] animate-spin" />
                   <span className="text-xs text-slate-400">
-                    {status === 'submitted' ? 'Oracle is thinking...' : 'Oracle is processing...'}
+                    {status || 'Oracle is thinking...'}
                   </span>
                 </div>
               </div>
@@ -224,7 +286,7 @@ const ChatOverlay: React.FC = () => {
             <div className="relative">
               <textarea
                 value={input}
-                onChange={handleInputChange}
+                onChange={(e) => setInput(e.target.value)}
                 onKeyDown={(e) => {
                   if (e.key === 'Enter' && !e.shiftKey) {
                     e.preventDefault();

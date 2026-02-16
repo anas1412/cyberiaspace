@@ -36,6 +36,33 @@ Unplanned:
 
 TODO:
 
+  1. Spatial Teleportation (Navigation)
+  Right now, Oracle can move thoughts, but it can't move you.
+   * Missing Tool: move_view or focus_on.
+   * The Vibe: "Oracle, take me to the trade-brain stack" or "Center my view on the urgent tasks."
+
+
+  2. World-Building (Space & Theme Management)
+  Oracle is a resident of your spaces, but it can't create new worlds or change the "weather."
+   * Missing Tool: manage_space (create/delete/rename spaces) and set_system_config (change themes, toggle physics, toggle nebula).
+   * The Vibe: "Oracle, create a new space for my Japan trip and set the theme to Rain."
+
+
+  3. Chronos Control (Timeline Navigation)
+  It can set dates, but it can't "look" into the future easily.
+   * Missing Tool: view_date.
+   * The Vibe: "What do I have planned for next Friday?" (Currently, it has to scan all thoughts; a dedicated tool to "jump" the calendar view would be cool).
+
+
+  4. The "Oops" Button (Undo)
+  Even gods make mistakes. If Oracle bulk-updates 50 thoughts by accident, the user has to manually fix it.
+   * Missing Tool: undo_last_action.
+   * The Vibe: "Wait, Oracle, undo that bulk rename."
+
+
+  5. Artistic Creation (Paint/Image Generation)
+  It can search YouTube, but it can't "imagine" things.
+   * Missing Tool: generate_image (DALL-E/Flux integration) or create_drawing (it could actually "draw" on the paint canvas by generating coordinate paths).
 
 
 

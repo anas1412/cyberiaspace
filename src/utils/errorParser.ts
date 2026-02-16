@@ -1,5 +1,5 @@
 /**
- * Parses complex Google Generative AI errors into user-friendly messages.
+ * Parses AI API errors into user-friendly messages.
  */
 export const parseAIError = (error: any): string => {
   const message = error?.message || "";
@@ -44,7 +44,7 @@ export const parseAIError = (error: any): string => {
 
   // 6. Server Errors (500, 503)
   if (message.includes("500") || message.includes("503")) {
-    return "Oracle is having trouble on Google's end. Please try again in a moment.";
+    return "Oracle is having trouble on the server end. Please try again in a moment.";
   }
 
   // Fallback for raw messages - clean up if it's a long JSON dump

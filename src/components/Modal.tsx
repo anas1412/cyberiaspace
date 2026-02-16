@@ -76,8 +76,8 @@ const Modal: React.FC = () => {
                   desc: 'We use the Konnect Network for payment processing. Cyberia never touches your sensitive card details. Our system only receives a verification token to activate your Pro tier.'
                 },
                 {
-                  title: 'C. AI Interaction (Google Gemini)',
-                  desc: 'When communicating with The Oracle, relevant snippets of your space are processed by Google Gemini. This data is used only for real-time inference and is not stored permanently or used for global model training.'
+                  title: 'C. AI Interaction (Llama Models)',
+                  desc: 'When communicating with The Oracle, relevant snippets of your space are processed by high-speed Llama models via Groq. This data is used only for real-time inference and is not stored permanently or used for global model training.'
                 },
                 {
                   title: 'D. Cloud Sync Protocol',

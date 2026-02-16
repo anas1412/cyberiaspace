@@ -114,17 +114,17 @@ const PricingModal: React.FC<PricingModalProps> = ({ isOpen, onClose }) => {
             </div>
             <div>
               <h2 className="text-xl font-black uppercase tracking-widest text-white">Go Pro</h2>
-              <p className="text-[10px] font-bold text-slate-500 uppercase tracking-[0.2em]">Unlock Oracle & More Space</p>
+              <p className="text-[10px] font-bold text-slate-500 uppercase tracking-[0.2em]">Unlimited Flow & More Space</p>
             </div>
           </div>
 
           <div className="space-y-6">
             {[
-              { title: 'Oracle AI', desc: 'Ask Oracle to help you generate, search and organize your ideas.' },
               { title: 'More Workspaces', desc: 'Create up to 8 different spaces (Free only has 3).' },
               { title: 'Bigger Capacity', desc: 'Add up to 50 thoughts in every single space.' },
               { title: '400 Cloud Thoughts', desc: 'High-capacity sync for power users (Free is 60).' },
-              { title: 'Priority Support', desc: 'Get help directly from the Cyberia development team.' }
+              { title: 'Priority Support', desc: 'Get help directly from the Cyberia development team.' },
+              { title: 'Custom Themes', desc: 'Exclusive access to future premium visual architectures.' }
             ].map((feature, i) => (
               <div key={i} className="flex gap-4 group">
                 <div className="w-5 h-5 rounded-full bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center text-indigo-400 shrink-0 mt-0.5 group-hover:scale-110 transition-transform">

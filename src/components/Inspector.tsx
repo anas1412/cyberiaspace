@@ -628,14 +628,32 @@ const Inspector: React.FC = () => {
                         <label className="text-[7px] uppercase font-black tracking-[0.2em] text-slate-600 ml-1">Existing Stacks</label>
                         <div className="flex flex-col gap-1 max-h-[160px] overflow-y-auto custom-scroll pr-1">
                           {stacks.map(s => (
-                            <button
-                              key={s.id}
-                              onClick={() => updateThought(thought.id, { stackId: s.id })}
-                              className="flex items-center gap-3 p-2.5 rounded-xl bg-white/[0.02] hover:bg-white/[0.05] border border-transparent hover:border-white/5 transition-all group/s"
-                            >
-                              <div className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: s.color, boxShadow: `0 0 8px ${s.color}44` }} />
-                              <span className="text-[9px] font-bold uppercase tracking-widest text-slate-400 group-hover/s:text-white transition-colors">{s.name}</span>
-                            </button>
+                            <div key={s.id} className="relative group/s">
+                              <button
+                                onClick={() => updateThought(thought.id, { stackId: s.id })}
+                                className="w-full flex items-center gap-3 p-2.5 rounded-xl bg-white/[0.02] hover:bg-white/[0.05] border border-transparent hover:border-white/5 transition-all"
+                              >
+                                <div className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: s.color, boxShadow: `0 0 8px ${s.color}44` }} />
+                                <span className="text-[9px] font-bold uppercase tracking-widest text-slate-400 group-hover/s:text-white transition-colors">{s.name}</span>
+                              </button>
+                              {!isReadOnly && (
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    openModal({
+                                      title: 'Dissolve Stack?',
+                                      description: `This will unlink all thoughts from "${s.name}".`,
+                                      type: 'delete_stack',
+                                      confirmText: 'Dissolve',
+                                      onConfirm: () => useStore.getState().deleteStack(s.id)
+                                    });
+                                  }}
+                                  className="absolute right-2 top-1/2 -translate-y-1/2 p-1 text-slate-600 hover:text-red-400 opacity-0 group-hover/s:opacity-100 transition-all"
+                                >
+                                  <X className="w-3 h-3" />
+                                </button>
+                              )}
+                            </div>
                           ))}
                         </div>
                       </div>

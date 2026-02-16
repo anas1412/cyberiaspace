@@ -1,4 +1,4 @@
-import { VercelRequest, VercelResponse } from '@vercel/node';
+import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { kv } from '@vercel/kv';
 import crypto from 'crypto';
 
@@ -53,7 +53,7 @@ async function handleInit(req: VercelRequest, res: VercelResponse) {
         if (!tokenInfo.ok) {
             return res.status(401).json({ error: 'Invalid Google token' });
         }
-        const info = await tokenInfo.json();
+        const info = await tokenInfo.json() as any;
         const userId = info.sub || info.user_id;
 
         if (!userId) {
@@ -97,7 +97,7 @@ async function handleInit(req: VercelRequest, res: VercelResponse) {
             return res.status(response.status).json({ error: 'Failed to initiate payment', details: errorData });
         }
 
-        const { payUrl, paymentRef } = await response.json();
+        const { payUrl, paymentRef } = await response.json() as any;
 
         // Best Practice: Store expected amount and currency to verify in webhook
         await kv.set(`pay_ref_${paymentRef}`, {
@@ -143,7 +143,7 @@ async function handleWebhook(req: VercelRequest, res: VercelResponse) {
             return res.status(response.status).json({ error: 'Failed to verify payment with Konnect' });
         }
 
-        const { payment } = await response.json();
+        const { payment } = await response.json() as any;
 
         if (payment.status === 'completed') {
             const mappingKey = `pay_ref_${paymentRef}`;

@@ -6,6 +6,7 @@ export interface PlanLimits {
   MAX_THOUGHTS_PER_SPACE: number;
   MAX_CLOUD_THOUGHTS: number;
   AI_ENABLED: boolean;
+  AI_DAILY_LIMIT?: number;
   THEMES_ENABLED: string[];
   PRICE?: {
     monthly: { usd: number; tnd: number };
@@ -18,15 +19,17 @@ export const PLAN_CONFIG: Record<SubscriptionPlan, PlanLimits> = {
     MAX_SPACES: 3,
     MAX_THOUGHTS_PER_SPACE: 20,
     MAX_CLOUD_THOUGHTS: 60,
-    AI_ENABLED: false,
-    THEMES_ENABLED: ['cyberia', 'sakura', 'neon'],
+    AI_ENABLED: true,
+    AI_DAILY_LIMIT: 50,
+    THEMES_ENABLED: ['cyberia', 'sea', 'forest', 'rain'],
   },
   pro: {
     MAX_SPACES: 8,
     MAX_THOUGHTS_PER_SPACE: 50,
     MAX_CLOUD_THOUGHTS: 400,
     AI_ENABLED: true,
-    THEMES_ENABLED: ['cyberia', 'sakura', 'neon'],
+    AI_DAILY_LIMIT: 1000,
+    THEMES_ENABLED: ['cyberia', 'sea', 'forest', 'rain'],
     PRICE: {
       monthly: { usd: 8, tnd: 19 },
       yearly: { usd: 80, tnd: 190 },
@@ -34,16 +37,19 @@ export const PLAN_CONFIG: Record<SubscriptionPlan, PlanLimits> = {
   },
 };
 
-export const DEFAULT_MODEL = import.meta.env.VITE_GOOGLE_AI_MODEL || 'gemini-2.5-flash';
+export const DEFAULT_MODEL = import.meta.env.VITE_GROQ_MODEL || 'openai/gpt-oss-120b';
+
+export const BASIC_MODELS = [
+  'openai/gpt-oss-20b',
+];
+
+export const PREMIUM_MODELS = [
+  'openai/gpt-oss-120b',
+];
 
 export const AVAILABLE_MODELS = [
-  'gemini-3-pro-preview',
-  'gemini-3-flash-preview',
-  'gemini-2.5-pro',
-  'gemini-2.5-flash', 
-  'gemini-2.5-flash-lite',
-  'gemini-2.0-flash', 
-  'gemini-2.0-flash-lite',
+  ...BASIC_MODELS,
+  ...PREMIUM_MODELS,
 ];
 
 export const VERIFICATION_MODEL = [
