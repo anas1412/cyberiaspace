@@ -6,6 +6,7 @@ import { X, Send, Shield, Loader2, Bot, History, Zap } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
+import rehypeRaw from 'rehype-raw';
 import { PLAN_CONFIG } from '../constants';
 import { executeOracleTool } from '../services/oracle/executor';
 
@@ -106,14 +107,16 @@ const ChatOverlay: React.FC = () => {
           'Authorization': `Bearer ${authStore.accessToken}`
         },
         body: JSON.stringify({
-          messages: [...messages, userMessage],
+          // History Sliding Window: Only send last 10 messages
+          messages: [...messages.slice(-10), userMessage],
           model: activeModel,
           plan: plan,
           context: serializeWorkspace(
             store.activeSpaceId, 
             store.thoughts, 
             store.spaces, 
-            store.stacks
+            store.stacks,
+            store.selectedThoughtIds
           )
         }),
       });
@@ -127,6 +130,17 @@ const ChatOverlay: React.FC = () => {
         };
         setMessages(prev => [...prev, errorMsg]);
         setDailyUsage(errorData.usage);
+        return;
+      }
+
+      if (response.status === 401) {
+        const errorMsg: Message = { 
+          id: Date.now().toString(), 
+          role: 'assistant', 
+          content: `### Neural Link Expired\nChoom, your session has timed out. Please sign in again to continue your data stream.\n\n<button onclick="window._cyberia_reauth()" class="px-4 py-2 bg-indigo-500 text-white rounded-xl text-xs font-black uppercase tracking-widest hover:bg-indigo-600 transition-all mt-2">Refresh Link</button>` 
+        };
+        setMessages(prev => [...prev, errorMsg]);
+        useAuthStore.getState().signOut(); // Graceful cleanup
         return;
       }
 
@@ -261,7 +275,7 @@ const ChatOverlay: React.FC = () => {
                         : 'bg-white/5 border border-white/10 text-slate-200 rounded-tl-sm'}
                     `}
                   >
-                    <ReactMarkdown remarkPlugins={[remarkGfm]}>{msg.content}</ReactMarkdown>
+                    <ReactMarkdown remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeRaw]}>{msg.content}</ReactMarkdown>
                   </div>
                 </div>
               );

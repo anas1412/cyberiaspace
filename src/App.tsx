@@ -48,6 +48,20 @@ function App() {
   const [isMobile, setIsMobile] = React.useState(typeof window !== 'undefined' ? window.innerWidth < 1024 : false);
 
   useEffect(() => {
+    // Global Re-auth handler for 401 recovery
+    (window as any)._cyberia_reauth = () => {
+      // @ts-ignore
+      if (window.google) {
+        // @ts-ignore
+        window.google.accounts.id.prompt();
+      } else {
+        // Fallback: Open system menu where sign-in is visible
+        console.warn("Google SDK not ready, cannot trigger prompt.");
+      }
+    };
+  }, []);
+
+  useEffect(() => {
     if (path === '/') {
       document.body.classList.add('app-body');
     } else {
