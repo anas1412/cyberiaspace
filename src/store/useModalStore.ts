@@ -5,7 +5,7 @@ interface ModalState {
   isPricingOpen: boolean;
   title: string;
   description?: string;
-  type: 'rename' | 'delete_space' | 'delete_thought' | 'limit_space' | 'limit_thought' | 'new_space' | 'alert' | 'import_confirm' | 'reset_confirm' | 'confirm_cancel' | 'terms' | 'custom';
+  type: 'rename' | 'delete_space' | 'delete_thought' | 'delete_stack' | 'limit_space' | 'limit_thought' | 'new_space' | 'alert' | 'import_confirm' | 'reset_confirm' | 'confirm_cancel' | 'terms' | 'custom';
   inputValue?: string;
   confirmText?: string;
   onConfirm?: (value?: string) => void;

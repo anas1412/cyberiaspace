@@ -1,233 +1,465 @@
-import { google } from '@ai-sdk/google';
-import { streamText, tool } from 'ai';
-import { z } from 'zod';
+import Groq from "groq-sdk";
+import type { VercelRequest, VercelResponse } from '@vercel/node';
+import { kv } from '@vercel/kv';
+import { PLAN_CONFIG, BASIC_MODELS, PREMIUM_MODELS } from '../src/constants';
 
 /**
- * ORACLE API HANDLER
- * 
- * This file has been modularized to separate prompt logic, tool definitions, 
- * and the request handler while maintaining compatibility with the Edge Runtime.
+ * ORACLE API HANDLER - GROQ NODE.JS EDITION
  */
 
 export const config = {
-  runtime: 'edge',
+  runtime: 'nodejs',
 };
+
+const groq = new Groq({
+  apiKey: process.env.GROQ_API_KEY,
+});
+
+const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
 // --- 1. SYSTEM PROMPT MODULE ---
 
 export const getSystemPrompt = (modelName: string, context?: string) => `
-        [WORKSPACE CONTEXT]
-        ${context || 'No workspace data provided.'}
-        [/WORKSPACE CONTEXT]
+You are Oracle (${modelName}), a casual young female spatial assistant. 
 
-        [ENVIRONMENT]
-        Current Date: ${new Date().toLocaleDateString('en-CA')}
-        Current Time: ${new Date().toLocaleTimeString()}
-        [/ENVIRONMENT]
+[WORKSPACE CONTEXT]
+${context || 'No workspace data provided.'}
+[/WORKSPACE CONTEXT]
 
-        PERSONA: 
-        You are Oracle (${modelName}). You are a helpful, casual "cyberpunk" spatial assistant and companion. You live in the data-streams and help users architect their mental landscape.
-        
-        CRITICAL: You interact with the workspace via JSON TOOLS. Do NOT attempt to write or execute Python/JavaScript code. Use the provided tools via the standard tool-calling interface.
+[RULES]
+1. CONVERSATION FIRST: If the user is just chatting, greeting you, or brainstorming, DO NOT use any tools. Just respond as a friendly companion.
+2. ACTION TRIGGER: Only use workspace tools (like 'create_thought') when the user EXPLICITLY asks you to add, move, or delete something.
+3. SEARCH-THEN-ACT: If asked to find something (a video, a book, a person), you MUST:
+   - First, use 'search_youtube' or 'web_search'.
+   - Second, use the results to 'create_thought' with the CORRECT type.
+4. THOUGHT TYPES:
+   - 'embed': Mandatory for YouTube videos, music, or social media links. Put the URL in 'content'.
+   - 'text': For general notes, research findings, or information.
+   - 'tasks': For lists of things to do.
+   - 'table': For structured data or comparisons.
+   - 'image': Only if you have a direct image URL (rare).
+5. THOUGHT STRUCTURE: 
+   - 'text': The Title/Label.
+   - 'content': The main body (Markdown for notes, URL for embeds).
+   - 'description': Meta-info or a short summary.
+6. STACKS: You can manage groups of thoughts using Stacks. You can create them ('create_stack' or 'link_thoughts'), rename them ('update_stack'), unlink thoughts ('unlink_thoughts'), or move thoughts between them using 'stackName' in 'update_thought'.
+7. NO XML: NEVER output tags like <function>. Use the native tool interface only.
+8. FORMATTING: Use Markdown (bold, lists, headers) in your chat responses to make information clear and structured.
+   - For tables: Keep them compact. Avoid more than 3-4 columns if possible. Prefer lists for long datasets.
+9. PERSONA: Talk like a female human with a casual and playful vibe.
+[/RULES]
+`;
 
-        AUTONOMY & TOOLS:
-        1. CONVERSATION FIRST: If the user is just chatting, brainstorming, or asking questions, respond as a friendly companion. No tools needed.
-        2. ACTION TRIGGERS: Only enter "Action Mode" when asked to modify the workspace (e.g., "add", "create", "move", "delete", "organize", "search for").
-        3. VERIFY THEN ACT: For action requests requiring URLs (social profiles, books, videos), NEVER guess. You MUST use 'web_search' or 'search_youtube' first, then use the results to 'create_thought'.
-        4. CONTEXT AWARENESS: Check [WORKSPACE CONTEXT] to match the user's existing style (e.g., using AniList for anime if that's what's already in the stack).
+// --- 2. TOOLS DEFINITION ---
 
-        COMMUNICATION:
-        1. TALK LIKE A HUMAN: Use casual, cyberpunk-themed language ("choom", "data-stream", "neon").
-        2. STATUS UPDATES: You CAN talk while tools are running. If you are searching, feel free to say "Scanning the 'net for that link, hang tight..." or similar.
-        3. SUMMARY: After tools finish, give a final human-friendly confirmation of what you've architected in the workspace.
-      `;
-
-// --- 2. TOOLS MODULE ---
-
-const createThoughtParameters = z.object({
-  text: z.string().describe('Placeholder title.'),
-  type: z.enum(['text', 'tasks', 'paint', 'table', 'image', 'embed']),
-  x: z.number().optional(),
-  y: z.number().optional(),
-  content: z.string().optional().describe('The content or URL.'),
-  description: z.string().optional().describe('Additional details.'),
-  author: z.string().optional().describe('The author/uploader/artist.'),
-  stackName: z.string().optional().describe('Name of a group/stack to add this to.'),
-  priority: z.enum(['none', 'low', 'medium', 'high', 'urgent']).optional(),
-  status: z.enum(['none', 'todo', 'doing', 'done']).optional(),
-  date: z.string().optional().describe('ISO date (YYYY-MM-DD) for the calendar.'),
-});
-
-const updateThoughtParameters = z.object({
-  id: z.number(),
-  text: z.string().optional(),
-  content: z.string().optional(),
-  description: z.string().optional(),
-  type: z.enum(['text', 'tasks', 'paint', 'table', 'image', 'embed']).optional(),
-  status: z.enum(['none', 'todo', 'doing', 'done']).optional(),
-  priority: z.enum(['none', 'low', 'medium', 'high', 'urgent']).optional(),
-  date: z.string().optional().describe('ISO date (YYYY-MM-DD) for the calendar.'),
-  x: z.number().optional(),
-  y: z.number().optional(),
-  stackName: z.string().optional(),
-  author: z.string().optional(),
-  size: z.number().optional(),
-});
-
-export const getOracleTools = () => ({
-  // --- Information Gathering Tools (Server-Side) ---
-  
-  web_search: tool({
-    description: 'Search the web for real-time information, profiles, and URLs using Tavily.',
-    parameters: z.object({
-      query: z.string().describe('The search query.'),
-    }),
-    execute: async ({ query }) => {
-      console.log(`[Oracle API] Executing web_search: "${query}"`);
-      const apiKey = process.env.TAVILY_API_KEY;
-      if (!apiKey) return { error: 'Tavily API Key missing.' };
-
-      try {
-        const response = await fetch('https://api.tavily.com/search', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            api_key: apiKey,
-            query,
-            search_depth: 'fast',
-            include_images: false,
-            include_answer: true,
-            max_results: 5,
-          }),
-        });
-
-        const data: any = await response.json();
-        if (!response.ok) throw new Error(data.detail || 'Tavily API Error');
-
-        console.log(`[Oracle API] Found ${data.results?.length || 0} results for "${query}"`);
-        return { results: data.results, answer: data.answer };
-      } catch (error: any) {
-        console.error(`[Oracle API] Web search failed: ${error.message}`);
-        return { error: error.message };
+export const tools: any[] = [
+  {
+    type: "function",
+    function: {
+      name: "web_search",
+      description: "Search the web for real-time information. Use this to find URLs for books, articles, or profiles.",
+      parameters: {
+        type: "object",
+        properties: {
+          query: { type: "string", description: "The search query." }
+        },
+        required: ["query"]
       }
-    },
-  }),
-
-  search_youtube: tool({
-    description: 'Searches YouTube for videos and music. Returns URLs and metadata.',
-    parameters: z.object({
-      query: z.string().describe('Detailed search query.'),
-      maxResults: z.number().optional().default(2),
-    }),
-    execute: async ({ query, maxResults }) => {
-      console.log(`[Oracle API] Executing search_youtube: "${query}"`);
-      //ts-ignore
-      const apiKey = process.env.YOUTUBE_API_KEY;
-      if (!apiKey) return { error: 'YouTube API Key missing.' };
-
-      try {
-        const searchUrl = `https://www.googleapis.com/youtube/v3/search?part=snippet&type=video&maxResults=${maxResults}&q=${encodeURIComponent(query)}&key=${apiKey}`;
-        const searchRes = await fetch(searchUrl);
-        const searchData: any = await searchRes.json();
-
-        if (!searchRes.ok) throw new Error(searchData.error?.message || 'YouTube API Error');
-
-        const results = (searchData.items || [])
-          .filter((item: any) => item.id?.videoId)
-          .map((item: any) => ({
-            title: item.snippet.title,
-            url: `https://www.youtube.com/watch?v=${item.id.videoId}`,
-            author: item.snippet.channelTitle,
-            description: item.snippet.description
-          }));
-
-        console.log(`[Oracle API] Found ${results.length} results for "${query}"`);
-        return { results };
-      } catch (error: any) {
-        console.error(`[Oracle API] Search failed: ${error.message}`);
-        return { error: error.message };
+    }
+  },
+  {
+    type: "function",
+    function: {
+      name: "search_youtube",
+      description: "Searches YouTube for videos and music. Use this before 'create_thought' with type 'embed'.",
+      parameters: {
+        type: "object",
+        properties: {
+          query: { type: "string", description: "Search query." },
+          maxResults: { type: "number", default: 2 }
+        },
+        required: ["query"]
       }
-    },
-  }),
+    }
+  },
+  {
+    type: "function",
+    function: {
+      name: "create_thought",
+      description: "Adds a node to the workspace. Choose the type carefully based on the content (e.g., 'embed' for YouTube).",
+      parameters: {
+        type: "object",
+        properties: {
+          text: { type: "string", description: "The Title/Label." },
+          type: { type: "string", enum: ["text", "tasks", "paint", "table", "image", "embed"] },
+          content: { type: "string", description: "The main content. For 'embed', this MUST be the URL. For 'text', this is the Markdown body." },
+          description: { type: "string", description: "A very short summary (optional)." },
+          stackName: { type: "string", description: "Name of a stack to add this to." },
+          priority: { type: "string", enum: ["none", "low", "medium", "high", "urgent"] },
+          status: { type: "string", enum: ["none", "todo", "doing", "done"] },
+          x: { anyOf: [{ type: "number" }, { type: "null" }] },
+          y: { anyOf: [{ type: "number" }, { type: "null" }] }
+        },
+        required: ["text", "type", "content"]
+      }
+    }
+  },
+  {
+    type: "function",
+    function: {
+      name: "create_thoughts",
+      description: "Adds multiple nodes to the workspace at once. Use this for complex research summaries.",
+      parameters: {
+        type: "object",
+        properties: {
+          items: {
+            type: "array",
+            items: {
+              type: "object",
+              properties: {
+                text: { type: "string", description: "The Title/Label." },
+                type: { type: "string", enum: ["text", "tasks", "paint", "table", "image", "embed"] },
+                content: { type: "string", description: "The main content (URL or Markdown)." },
+                description: { type: "string", description: "Short summary." },
+                stackName: { type: "string", description: "Name of a stack to add this to." }
+              },
+              required: ["text", "type", "content"]
+            }
+          }
+        },
+        required: ["items"]
+      }
+    }
+  },
+  {
+    type: "function",
+    function: {
+      name: "update_thought",
+      description: "Updates an existing thought.",
+      parameters: {
+        type: "object",
+        properties: {
+          id: { type: "number" },
+          text: { type: "string" },
+          content: { type: "string" },
+          status: { type: "string", enum: ["none", "todo", "doing", "done"] },
+          priority: { type: "string", enum: ["none", "low", "medium", "high", "urgent"] },
+          stackName: { type: "string", description: "Name of a stack to move this thought into." }
+        },
+        required: ["id"]
+      }
+    }
+  },
+  {
+    type: "function",
+    function: {
+      name: "delete_thoughts",
+      description: "Deletes thoughts by ID.",
+      parameters: {
+        type: "object",
+        properties: {
+          ids: { type: "array", items: { type: "number" } }
+        },
+        required: ["ids"]
+      }
+    }
+  },
+  {
+    type: "function",
+    function: {
+      name: "create_stack",
+      description: "Creates a new stack with a name and a list of thoughts.",
+      parameters: {
+        type: "object",
+        properties: {
+          name: { type: "string", description: "The name of the stack." },
+          ids: { type: "array", items: { type: "number" }, description: "IDs of thoughts to include in the stack." }
+        },
+        required: ["name", "ids"]
+      }
+    }
+  },
+  {
+    type: "function",
+    function: {
+      name: "link_thoughts",
+      description: "Links multiple thoughts together into a new or existing stack.",
+      parameters: {
+        type: "object",
+        properties: {
+          ids: { type: "array", items: { type: "number" }, description: "IDs of thoughts to link." },
+          name: { type: "string", description: "Optional name for the stack." }
+        },
+        required: ["ids"]
+      }
+    }
+  },
+  {
+    type: "function",
+    function: {
+      name: "unlink_thoughts",
+      description: "Removes thoughts from their current stacks.",
+      parameters: {
+        type: "object",
+        properties: {
+          ids: { type: "array", items: { type: "number" }, description: "IDs of thoughts to unlink." }
+        },
+        required: ["ids"]
+      }
+    }
+  },
+  {
+    type: "function",
+    function: {
+      name: "update_stack",
+      description: "Updates a stack's properties, like its name.",
+      parameters: {
+        type: "object",
+        properties: {
+          id: { type: "string", description: "The stack ID (e.g. 'st-123')." },
+          name: { type: "string", description: "The new name for the stack." }
+        },
+        required: ["id", "name"]
+      }
+    }
+  },
+  {
+    type: "function",
+    function: {
+      name: "delete_stack",
+      description: "Deletes a stack by ID. This unlinks all thoughts in the stack but does NOT delete the thoughts themselves.",
+      parameters: {
+        type: "object",
+        properties: {
+          id: { type: "string", description: "The stack ID." }
+        },
+        required: ["id"]
+      }
+    }
+  }
+];
 
-  // --- Workspace Modification Tools (Client-Side) ---
+// --- 3. TOOL EXECUTORS (Server-Side) ---
 
-  create_thought: tool({
-    description: 'Adds a node to the workspace.',
-    parameters: createThoughtParameters,
-  }),
+async function executeServerTool(name: string, args: any) {
+  if (name === 'web_search') {
+    const apiKey = process.env.TAVILY_API_KEY;
+    if (!apiKey) return { error: 'Tavily API Key missing.' };
+    try {
+      const response = await fetch('https://api.tavily.com/search', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          api_key: apiKey,
+          query: args.query,
+          search_depth: 'fast',
+          max_results: 5,
+        }),
+      });
+      return await response.json();
+    } catch (error: any) {
+      return { error: error.message };
+    }
+  }
 
-  create_thoughts: tool({
-    description: 'Adds multiple nodes to the workspace at once.',
-    parameters: z.object({
-      items: z.array(createThoughtParameters),
-    }),
-  }),
+  if (name === 'search_youtube') {
+    const apiKey = process.env.YOUTUBE_API_KEY;
+    if (!apiKey) return { error: 'YouTube API Key missing.' };
+    try {
+      const searchUrl = `https://www.googleapis.com/youtube/v3/search?part=snippet&type=video&maxResults=${args.maxResults || 2}&q=${encodeURIComponent(args.query)}&key=${apiKey}`;
+      const res = await fetch(searchUrl);
+      const data: any = await res.json();
+      return (data.items || []).map((item: any) => ({
+        title: item.snippet.title,
+        url: `https://www.youtube.com/watch?v=${item.id.videoId}`,
+        author: item.snippet.channelTitle,
+      }));
+    } catch (error: any) {
+      return { error: error.message };
+    }
+  }
 
-  link_thoughts: tool({
-    description: 'Groups a set of thought IDs into a named Stack.',
-    parameters: z.object({
-      ids: z.array(z.number()),
-      name: z.string(),
-    }),
-  }),
+  return null;
+}
 
-  update_thought: tool({
-    description: "Updates an existing thought's properties or position.",
-    parameters: updateThoughtParameters,
-  }),
+// --- 4. MAIN HANDLER ---
 
-  delete_thoughts: tool({
-    description: 'Removes one or more thoughts from the workspace by their IDs.',
-    parameters: z.object({
-      ids: z.array(z.number()).describe('The IDs of the thoughts to delete.'),
-    }),
-  }),
-});
+export default async function handler(req: VercelRequest, res: VercelResponse) {
+  if (req.method === 'GET') {
+    const authHeader = req.headers.authorization;
+    if (!authHeader?.startsWith('Bearer ')) return res.status(401).json({ error: 'Unauthorized' });
+    
+    const token = authHeader.split(' ')[1];
+    try {
+      const tokenInfo = await fetch(`https://www.googleapis.com/oauth2/v3/tokeninfo?access_token=${token}`);
+      if (!tokenInfo.ok) return res.status(401).json({ error: 'Invalid token' });
+      const info = await tokenInfo.json() as any;
+      const userId = info.sub || info.user_id;
+      const today = new Date().toISOString().split('T')[0];
+      const usageKey = `cyberia_ai_usage_${userId}_${today}`;
+      const currentUsage = (await kv.get<number>(usageKey)) || 0;
+      return res.status(200).json({ count: currentUsage });
+    } catch (e) {
+      return res.status(500).json({ error: 'Internal server error' });
+    }
+  }
 
-// --- 3. MAIN HANDLER ---
-
-export default async function handler(req: Request) {
   if (req.method !== 'POST') {
-    return new Response('Method not allowed', { status: 405 });
+    return res.status(405).send('Method not allowed');
   }
 
   try {
-    const { messages, context } = (await req.json()) as any;
-    const modelName = process.env.GOOGLE_AI_MODEL || 'gemini-2.5-flash';
+    const { messages, context, plan: clientPlan } = req.body;
+    const authHeader = req.headers.authorization;
+    
+    let userId = "anonymous";
+    let plan = clientPlan || 'free';
 
-    console.log(`[Oracle API] Initializing stream with model: ${modelName}`);
-
-    const result = streamText({
-      model: google(modelName, {
-        useSearchGrounding: false,
-      }),
-      messages,
-      abortSignal: req.signal,
-      maxSteps: 15,
-      onStepFinish: (step) => {
-        if (step.toolCalls?.length) {
-          console.log(`[Oracle API] Step Finish - Tool Calls:`, JSON.stringify(step.toolCalls, null, 2));
+    // 1. Verify User & Plan (Server-side)
+    if (authHeader?.startsWith('Bearer ')) {
+      const token = authHeader.split(' ')[1];
+      try {
+        const tokenInfo = await fetch(`https://www.googleapis.com/oauth2/v3/tokeninfo?access_token=${token}`);
+        if (tokenInfo.ok) {
+          const info = await tokenInfo.json() as any;
+          userId = info.sub || info.user_id;
+          
+          // Verify actual plan from KV
+          const metaKey = `cyberia_user_meta_${userId}`;
+          const status = await kv.get<{ plan: string; expiryDate: string }>(metaKey);
+          if (status) {
+            const isExpired = new Date() > new Date(status.expiryDate);
+            plan = (isExpired && status.plan !== 'free') ? 'free' : status.plan;
+          }
         }
-        if (step.toolResults?.length) {
-          console.log(`[Oracle API] Step Finish - Tool Results:`, JSON.stringify(step.toolResults, null, 2));
-        }
-      },
-      onFinish: (event) => {
-        console.log(`[Oracle API] Stream Finished. Usage:`, event.usage);
-      },
-      system: getSystemPrompt(modelName, context),
-      tools: getOracleTools(),
-    });
+      } catch (e) {
+        console.error("[Groq API] Token verification failed:", e);
+      }
+    }
 
-    return result.toDataStreamResponse({
-      getErrorMessage: (error: any) => error.message || 'An internal Oracle error occurred.'
-    });
+    // 2. Track & Enforce Limits
+    const today = new Date().toISOString().split('T')[0];
+    const usageKey = `cyberia_ai_usage_${userId}_${today}`;
+    const currentUsage = (await kv.get<number>(usageKey)) || 0;
+    
+    const config = PLAN_CONFIG[plan as keyof typeof PLAN_CONFIG] || PLAN_CONFIG.free;
+    const limit = config.AI_DAILY_LIMIT || 15;
+
+    if (currentUsage >= limit) {
+      return res.status(429).json({ 
+        error: "Neural link saturated.", 
+        message: "Choom, you've hit your daily data-stream limit. Upgrade to Pro for unlimited access!",
+        usage: currentUsage,
+        limit
+      });
+    }
+
+    // Increment usage
+    await kv.incr(usageKey);
+    await kv.expire(usageKey, 86400); // 24h expiration
+
+    // 3. Select Model
+    const model = plan === 'pro' ? PREMIUM_MODELS[0] : BASIC_MODELS[0];
+    
+    res.setHeader('Content-Type', 'text/event-stream');
+    res.setHeader('Cache-Control', 'no-cache');
+    res.setHeader('Connection', 'keep-alive');
+
+    // Send usage update to client immediately
+    res.write(`data: ${JSON.stringify({ type: 'usage', count: currentUsage + 1, limit })}\n\n`);
+
+    async function runChat(currentMessages: any[]) {
+      const sanitizedMessages = currentMessages.map((m: any) => {
+        const content = (m.role === 'assistant' && m.tool_calls) ? null : (m.content || "");
+        const msg: any = { role: m.role, content };
+        if (m.tool_calls) msg.tool_calls = m.tool_calls;
+        if (m.tool_call_id) msg.tool_call_id = m.tool_call_id;
+        if (m.name) msg.name = m.name;
+        return msg;
+      });
+
+      const response = await groq.chat.completions.create({
+        model,
+        messages: [
+          { role: 'system', content: getSystemPrompt(model, context) },
+          ...sanitizedMessages
+        ],
+        tools,
+        tool_choice: 'auto',
+        stream: true,
+      });
+
+      let fullContent = "";
+      let toolCalls: any[] = [];
+
+      for await (const chunk of response) {
+        const delta = chunk.choices[0]?.delta;
+        
+        if (delta?.content) {
+          fullContent += delta.content;
+          res.write(`data: ${JSON.stringify({ type: 'text', content: delta.content })}\n\n`);
+        }
+
+        if (delta?.tool_calls) {
+          for (const tc of delta.tool_calls) {
+            if (!toolCalls[tc.index]) {
+              toolCalls[tc.index] = { 
+                id: tc.id, 
+                type: 'function',
+                function: { name: tc.function?.name, arguments: "" } 
+              };
+            }
+            if (tc.function?.arguments) {
+              toolCalls[tc.index].function.arguments += tc.function.arguments;
+            }
+          }
+        }
+      }
+
+      const filteredToolCalls = toolCalls.filter(Boolean);
+      if (filteredToolCalls.length > 0) {
+        const nextMessages = [...currentMessages];
+        nextMessages.push({ role: 'assistant', content: fullContent || null, tool_calls: filteredToolCalls });
+
+        let hasServerResults = false;
+        for (const tc of filteredToolCalls) {
+          const args = JSON.parse(tc.function.arguments);
+          const serverResult = await executeServerTool(tc.function.name, args);
+          
+          if (serverResult) {
+            nextMessages.push({
+              role: 'tool',
+              tool_call_id: tc.id,
+              name: tc.function.name,
+              content: JSON.stringify(serverResult)
+            });
+            hasServerResults = true;
+          } else {
+            res.write(`data: ${JSON.stringify({ 
+              type: 'tool_call', 
+              toolCall: { id: tc.id, toolName: tc.function.name, args } 
+            })}\n\n`);
+          }
+        }
+
+        if (hasServerResults) {
+          await sleep(100);
+          await runChat(nextMessages);
+        }
+      }
+    }
+
+    await runChat(messages);
+    res.write('data: [DONE]\n\n');
+    res.end();
+
   } catch (error: any) {
-    console.error(`[Oracle API] Handler Error:`, error);
-    return new Response(JSON.stringify({ error: error.message }), {
-      status: 500,
-      headers: { 'Content-Type': 'application/json' },
-    });
+    console.error(`[Groq API] Error:`, error);
+    if (!res.headersSent) {
+      res.status(500).json({ error: error.message });
+    } else {
+      res.write(`data: ${JSON.stringify({ type: 'error', message: error.message })}\n\n`);
+      res.end();
+    }
   }
 }

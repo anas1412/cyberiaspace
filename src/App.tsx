@@ -24,6 +24,7 @@ import EmbedFocusEditor from './components/editors/EmbedFocusEditor';
 import ChatOverlay from './components/ChatOverlay';
 import MobileNotSupported from './components/MobileNotSupported';
 import FeedbackPage from './components/FeedbackPage';
+import LoadingOverlay from './components/LoadingOverlay';
 
 import { fetchEmbedMeta } from './utils/embeds';
 
@@ -364,6 +365,7 @@ function App() {
           <PaintFocusEditor />
           <TasksFocusEditor />
           <EmbedFocusEditor />
+          <LoadingOverlay />
         </>
       )}
       <Analytics />

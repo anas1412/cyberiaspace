@@ -23,6 +23,7 @@ interface CyberiaState {
   kanbanStackFilter: string | null;
   theme: 'cyberia' | 'sea' | 'forest' | 'rain';
   isSpaceLoading: boolean;
+  isInitializing: boolean;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   deferredPrompt: any;
   layerActionTrigger: { id: number; time: number } | null;
@@ -146,6 +147,7 @@ export const useStore = create<CyberiaState>((set, get) => ({
   linkingSourceId: null,
   theme: (localStorage.getItem('cyberia-theme') as 'cyberia' | 'sea' | 'forest' | 'rain') || 'cyberia',
   isSpaceLoading: true,
+  isInitializing: true,
   deferredPrompt: null,
   layerActionTrigger: null,
   isReadOnly: false,
@@ -337,18 +339,21 @@ export const useStore = create<CyberiaState>((set, get) => ({
   setDeferredPrompt: (prompt) => set({ deferredPrompt: prompt }),
 
   toggleOracleMode: () => {
-    const plan = useAuthStore.getState().user?.plan;
-    if (plan !== 'pro') {
+    const user = useAuthStore.getState().user;
+    if (!user) {
       useModalStore.getState().openModal({
-        title: 'Oracle Locked',
-        description: 'Oracle AI features are only available on the Pro plan. Upgrade to start using AI.',
+        title: 'Authentication Required',
+        description: 'Oracle AI features require a connected account. Please sign in to activate the spatial assistant.',
         type: 'alert',
-        confirmText: 'View Plans',
-        onConfirm: () => useModalStore.getState().openPricing()
+        confirmText: 'Sign In',
+        onConfirm: () => {
+          // Trigger logic to open account menu or login?
+          // For now just informational since the button is usually in the tray
+        }
       });
       return;
     }
-    // Pro users: Oracle is always activated if plan is pro.
+    // Authenticated users: Oracle is always activated.
     set({ oracleMode: true });
   },
 
@@ -359,8 +364,8 @@ export const useStore = create<CyberiaState>((set, get) => ({
     useAuthStore.getState().initAuth();
 
     // Reconcile Oracle status immediately from current auth state
-    const currentPlan = useAuthStore.getState().user?.plan;
-    if (currentPlan === 'pro') {
+    const user = useAuthStore.getState().user;
+    if (user) {
       set({ oracleMode: true });
     }
 
@@ -388,6 +393,7 @@ export const useStore = create<CyberiaState>((set, get) => ({
             isSpaceLoading: false,
             creatorName,
             lastUpdated: data.lastUpdated || null,
+            isInitializing: false,
             transform: {
               x: space.transformX || 0,
               y: space.transformY || 0,
@@ -413,7 +419,7 @@ export const useStore = create<CyberiaState>((set, get) => ({
             }
           });
           // Also set loading to false so the user isn't stuck behind a skeleton
-          set({ isSpaceLoading: false });
+          set({ isSpaceLoading: false, isInitializing: false });
           return;
         }
       }
@@ -540,7 +546,7 @@ export const useStore = create<CyberiaState>((set, get) => ({
 
       await get().addThought({
         text: 'README',
-        content: `# Cyberia: The Kinetic Mind\n\nDesigned for non-linear thinkers, visionaries, and digital architects. We believe productivity shouldn't feel like a spreadsheet. It should feel like a world.\n\n### 1. Kinetic Architecture\nIdeas here have mass, velocity, and gravity. Using our custom physics engine, your thoughts form natural clusters—**Stacks**—based on your internal logic.\n\n### 2. Multi-Dimensional Views\nInformation is fluid. Switch between **Spatial**, **Kanban**, and **Calendar** modes without losing context.\n\n### 3. Rich Media & Tools\nCreate **Task Lists**, **Structured Tables**, **Freehand Drawings**, and **Image Bulbs**. You can even **Embed YouTube** videos directly.\n\n### 4. Oracle (AI)\nPowered by Gemini, **Oracle** (${DEFAULT_MODEL}) is your Pro spatial assistant. It can research the web, generate ideas, and help you organize your mental landscape.\n\n### 5. Cloud Sync & Security\nYour mind is private by default. However, you can **Connect your Google Account** to sync your data across devices securely.\n\n### 6. Power User Features\nTake control with **Multi-selection**, **History (Undo/Redo)**, and **Universal Search**. Customize your experience with **Themes** and use **Import/Export** for full data ownership.\n\n---\n*Welcome to the Cyber Space.*`,
+        content: `# Cyberia: The Kinetic Mind\n\nDesigned for non-linear thinkers, visionaries, and digital architects. We believe productivity shouldn't feel like a spreadsheet. It should feel like a world.\n\n### 1. Kinetic Architecture\nIdeas here have mass, velocity, and gravity. Using our custom physics engine, your thoughts form natural clusters—**Stacks**—based on your internal logic.\n\n### 2. Multi-Dimensional Views\nInformation is fluid. Switch between **Spatial**, **Kanban**, and **Calendar** modes without losing context.\n\n### 3. Rich Media & Tools\nCreate **Task Lists**, **Structured Tables**, **Freehand Drawings**, and **Image Bulbs**. You can even **Embed YouTube** videos directly.\n\n### 4. Oracle (AI)\nPowered by high-speed Llama models, **Oracle** (${DEFAULT_MODEL}) is your Pro spatial assistant. It can research the web, generate ideas, and help you organize your mental landscape.\n\n### 5. Cloud Sync & Security\nYour mind is private by default. However, you can **Connect your Google Account** to sync your data across devices securely.\n\n### 6. Power User Features\nTake control with **Multi-selection**, **History (Undo/Redo)**, and **Universal Search**. Customize your experience with **Themes** and use **Import/Export** for full data ownership.\n\n---\n*Welcome to the Cyber Space.*`,
         x: cx + 650, y: cy + 150, priority: 'urgent', stackId: mediaId,
         status: 'done',
         spaceId: onboardingId
@@ -583,7 +589,7 @@ export const useStore = create<CyberiaState>((set, get) => ({
 
       await get().refreshThoughts(onboardingId);
       await get().refreshStacks(onboardingId);
-      set({ isSpaceLoading: false });
+      set({ isSpaceLoading: false, isInitializing: false });
     } else {
       const savedSpaceId = localStorage.getItem('cyberia-active-space-id');
       const spaceExists = savedSpaceId ? spaces.find(s => s.id === savedSpaceId) : null;
@@ -593,6 +599,7 @@ export const useStore = create<CyberiaState>((set, get) => ({
       } else {
         get().setActiveSpace(spaces[0].id);
       }
+      set({ isInitializing: false });
     }
   },
 

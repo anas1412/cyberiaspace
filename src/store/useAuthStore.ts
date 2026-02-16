@@ -161,6 +161,9 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     localStorage.setItem('cyberia-user', JSON.stringify(userWithPlan));
     localStorage.setItem('cyberia-token', token);
 
+    const { useStore } = await import('./useStore');
+    useStore.getState().isInitializing = true;
+
     set({
       user: userWithPlan,
       accessToken: token,
@@ -176,6 +179,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 
       if (response.status === 401) {
         get().signOut();
+        useStore.setState({ isInitializing: false });
         return;
       }
 
@@ -191,22 +195,30 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       await get().refreshProStatus();
 
       // Trigger store reconciliation for Oracle
-      const { useStore } = await import('./useStore');
       if (get().user?.plan === 'pro') {
         useStore.getState().toggleOracleMode();
       }
     } catch {
       set({ syncStatus: 'error' });
+    } finally {
+      useStore.setState({ isInitializing: false });
     }
   },
 
   signOut: async () => {
+    const { useStore } = await import('./useStore');
+    useStore.setState({ isInitializing: true });
+    
     set({ status: 'loading' });
-    await new Promise(resolve => setTimeout(resolve, 300));
+    await new Promise(resolve => setTimeout(resolve, 500));
     localStorage.removeItem('cyberia-user');
     localStorage.removeItem('cyberia-token');
     localStorage.removeItem('cyberia-last-sync');
     set({ user: null, accessToken: null, status: 'unauthenticated', syncStatus: 'offline', lastSync: null });
+    
+    // We do NOT reset workspace state here anymore to allow local/offline use
+    
+    useStore.setState({ isInitializing: false });
   },
 
   importCloudData: async () => {

@@ -168,7 +168,7 @@ async function handleYoutubeSearch(req: VercelRequest, res: VercelResponse) {
 
         const url = `https://www.googleapis.com/youtube/v3/search?part=snippet&type=video&maxResults=${maxResults}&q=${encodeURIComponent(query)}&key=${apiKey}`;
         const response = await fetch(url);
-        const data = await response.json();
+        const data = await response.json() as any;
 
         if (!response.ok) {
             console.error("YouTube API returned an error:", data);

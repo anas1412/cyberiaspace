@@ -1,4 +1,4 @@
-import { VercelRequest, VercelResponse } from '@vercel/node';
+import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { kv } from '@vercel/kv';
 import { randomUUID } from 'crypto';
 
@@ -32,7 +32,7 @@ async function handlePublish(req: VercelRequest, res: VercelResponse) {
         if (!tokenInfo.ok) {
             return res.status(401).json({ error: 'Invalid token' });
         }
-        const info = await tokenInfo.json();
+        const info = await tokenInfo.json() as any;
         const userId = info.sub || info.user_id;
 
         if (!userId) {
@@ -128,7 +128,7 @@ async function handleUnpublish(req: VercelRequest, res: VercelResponse) {
         if (!tokenInfo.ok) {
             return res.status(401).json({ error: 'Invalid token' });
         }
-        const info = await tokenInfo.json();
+        const info = await tokenInfo.json() as any;
         const userId = info.sub || info.user_id;
 
         const storageKey = `published_space_${id}`;

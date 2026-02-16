@@ -1,4 +1,4 @@
-import { VercelRequest, VercelResponse } from '@vercel/node';
+import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { kv } from '@vercel/kv';
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
@@ -27,7 +27,7 @@ async function handleStatus(req: VercelRequest, res: VercelResponse) {
             return res.status(401).json({ error: 'Invalid token' });
         }
 
-        const info = await tokenInfo.json();
+        const info = await tokenInfo.json() as any;
         const userId = info.sub || info.user_id;
 
         if (!userId) {
@@ -68,7 +68,7 @@ async function handleSync(req: VercelRequest, res: VercelResponse) {
             return res.status(401).json({ error: 'Invalid token' });
         }
 
-        const info = await tokenInfo.json();
+        const info = await tokenInfo.json() as any;
         const userId = info.sub || info.user_id;
 
         if (!userId) {

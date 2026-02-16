@@ -1,1 +1,1 @@
-export { getOracleTools } from '../../../api/chat';
+export { tools as getOracleTools } from '../../../api/chat';

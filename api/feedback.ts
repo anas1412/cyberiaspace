@@ -1,4 +1,4 @@
-import { VercelRequest, VercelResponse } from '@vercel/node';
+import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { kv } from '@vercel/kv';
 import fs from 'fs';
 import path from 'path';
@@ -152,7 +152,7 @@ async function handleContact(req: VercelRequest, res: VercelResponse) {
     });
 
     if (response.ok) return res.status(200).json({ success: true });
-    const errorData = await response.json();
+    const errorData = await response.json() as any;
     return res.status(response.status).json({ error: errorData.message || 'Failed to send email' });
   } catch {
     return res.status(500).json({ error: 'Internal server error' });

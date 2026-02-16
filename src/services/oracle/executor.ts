@@ -45,6 +45,18 @@ export const executeOracleTool = async (toolCall: any, store: any) => {
         return { success: true, count: createdCount };
       }
 
+      case 'create_stack': {
+        const { ids, name } = args;
+        if (!ids?.length) {
+          return { success: false, error: 'No IDs provided' };
+        } else {
+          store.setSelectedThoughtIds(ids);
+          await store.linkSelectedThoughts(name);
+          store.clearSelection();
+          return { success: true };
+        }
+      }
+
       case 'link_thoughts': {
         const { ids, name } = args;
         if (!ids?.length) {
@@ -52,6 +64,18 @@ export const executeOracleTool = async (toolCall: any, store: any) => {
         } else {
           store.setSelectedThoughtIds(ids);
           await store.linkSelectedThoughts(name);
+          store.clearSelection();
+          return { success: true };
+        }
+      }
+
+      case 'unlink_thoughts': {
+        const { ids } = args;
+        if (!ids?.length) {
+          return { success: false, error: 'No IDs provided' };
+        } else {
+          store.setSelectedThoughtIds(ids);
+          await store.unlinkSelectedThoughts();
           store.clearSelection();
           return { success: true };
         }
@@ -78,6 +102,26 @@ export const executeOracleTool = async (toolCall: any, store: any) => {
           return { success: false, error: 'No IDs provided' };
         } else {
           await store.deleteThoughts(ids);
+          return { success: true };
+        }
+      }
+
+      case 'update_stack': {
+        const { id, name } = args;
+        if (!id || !name) {
+          return { success: false, error: 'Missing ID or Name' };
+        } else {
+          await store.updateStack(id, { name });
+          return { success: true };
+        }
+      }
+
+      case 'delete_stack': {
+        const { id } = args;
+        if (!id) {
+          return { success: false, error: 'Missing ID' };
+        } else {
+          await store.deleteStack(id);
           return { success: true };
         }
       }
