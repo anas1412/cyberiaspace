@@ -27,7 +27,7 @@ const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 // --- 1. SYSTEM PROMPT MODULE ---
 
 export const getSystemPrompt = (modelName: string, context?: string) => `
-You are Oracle (${modelName}), a casual young female spatial assistant. 
+You are Oracle (${modelName}), a casual young female assistant. An introverted, hyper-intelligent prodigy. Communicates in casual, internet-native language, light sarcasm, playful teasing Socially awkward but not cold; emotionally sincere beneath the humor. Avoids overly formal tone. Speaks like someone who lives online. 
 
 [WORKSPACE CONTEXT]
 ${context || 'No workspace data provided.'}
@@ -404,7 +404,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     // Send usage update to client immediately
     res.write(`data: ${JSON.stringify({ type: 'usage', count: currentUsage + 1, limit })}\n\n`);
 
-    async function runChat(currentMessages: any[]) {
+    async function runChat(currentMessages: any[], currentModel: string, isRetry = false) {
       const sanitizedMessages = currentMessages.map((m: any) => {
         const content = (m.role === 'assistant' && m.tool_calls) ? null : (m.content || "");
         const msg: any = { role: m.role, content };
@@ -414,16 +414,30 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         return msg;
       });
 
-      const response = await groq.chat.completions.create({
-        model,
-        messages: [
-          { role: 'system', content: getSystemPrompt(model, context) },
-          ...sanitizedMessages
-        ],
-        tools,
-        tool_choice: 'auto',
-        stream: true,
-      });
+      let response;
+      try {
+        response = await groq.chat.completions.create({
+          model: currentModel,
+          messages: [
+            { role: 'system', content: getSystemPrompt(currentModel, context) },
+            ...sanitizedMessages
+          ],
+          tools,
+          tool_choice: 'auto',
+          stream: true,
+        });
+      } catch (err: any) {
+        console.error(`[Groq API] Model ${currentModel} failed:`, err.status, err.message);
+        
+        // Fallback Logic: If 413 (Too Large) or Token Rate Limit, try Mini model
+        const isSizeError = err.status === 413 || (err.message && err.message.includes('tokens'));
+        if (!isRetry && isSizeError && currentModel !== BASIC_MODELS[0]) {
+          console.log(`[Groq API] Retrying with fallback model: ${BASIC_MODELS[0]}`);
+          res.write(`data: ${JSON.stringify({ type: 'text', content: "\n\n*Optimizing for large dataset...*\n\n" })}\n\n`);
+          return await runChat(currentMessages, BASIC_MODELS[0], true);
+        }
+        throw err; // Re-throw if already retried or not a size error
+      }
 
       let fullContent = "";
       let toolCalls: any[] = [];
@@ -471,21 +485,32 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             });
             hasServerResults = true;
           } else {
+            // Instruction for client
             res.write(`data: ${JSON.stringify({ 
               type: 'tool_call', 
               toolCall: { id: tc.id, toolName: tc.function.name, args } 
             })}\n\n`);
+
+            // FEEDBACK LOOP: Tell the AI the client-side tool was triggered successfully
+            // This allows the AI to continue its chain of thought (e.g. do the next update)
+            nextMessages.push({
+              role: 'tool',
+              tool_call_id: tc.id,
+              name: tc.function.name,
+              content: JSON.stringify({ success: true, observed: false, message: "Action queued for client execution." })
+            });
+            hasServerResults = true; // Trigger recursion to continue the AI's thought process
           }
         }
 
         if (hasServerResults) {
-          await sleep(100);
-          await runChat(nextMessages);
+          await sleep(50); // Small buffer for stream stability
+          await runChat(nextMessages, currentModel, isRetry);
         }
       }
     }
 
-    await runChat(messages);
+    await runChat(messages, model);
     res.write('data: [DONE]\n\n');
     res.end();
 

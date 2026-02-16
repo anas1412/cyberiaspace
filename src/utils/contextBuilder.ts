@@ -1,6 +1,12 @@
 import type { Thought, Space, Stack } from '../db';
 
-export const serializeWorkspace = (activeSpaceId: string | null, thoughts: Thought[], spaces: Space[], stacks: Stack[]) => {
+export const serializeWorkspace = (
+  activeSpaceId: string | null, 
+  thoughts: Thought[], 
+  spaces: Space[], 
+  stacks: Stack[],
+  selectedThoughtIds: number[] = []
+) => {
   const activeSpace = spaces.find(s => s.id === activeSpaceId);
   
   if (!activeSpace) return "No active space selected.";
@@ -9,28 +15,33 @@ export const serializeWorkspace = (activeSpaceId: string | null, thoughts: Thoug
   const stackMap = new Map(stacks.map(s => [s.id, s.name]));
 
   // Simplify thoughts for token efficiency
-  const simplifiedThoughts = thoughts.map(t => ({
-    id: t.id,
-    text: t.text,
-    placeholder: t.placeholder,
-    description: t.description,
-    type: t.type,
-    position: { x: Math.round(t.x), y: Math.round(t.y) },
-    order: t.order,
-    layer: t.layer,
-    size: t.size,
-    content: t.content?.substring(0, 500), // Truncated to save tokens
-    author: t.author,
-    stack: t.stackId ? { id: t.stackId, name: stackMap.get(t.stackId) || "Unnamed Stack" } : null,
-    status: t.status,
-    priority: t.priority,
-    date: t.date,
-    hasImage: !!t.image,
-    hasDrawing: !!t.drawing,
-    // Include structured data only if it exists/relevant
-    ...(t.type === 'tasks' && t.tasks?.length ? { tasks: t.tasks } : {}),
-    ...(t.type === 'table' && t.table?.length ? { table: t.table } : {})
-  }));
+  const simplifiedThoughts = thoughts.map(t => {
+    const isSelected = selectedThoughtIds.includes(t.id);
+    
+    return {
+      id: t.id,
+      text: t.text,
+      placeholder: t.placeholder,
+      description: t.description,
+      type: t.type,
+      order: t.order,
+      layer: t.layer,
+      size: t.size,
+      // God-Like Hybrid Strategy: Full content for selected thoughts, 500 chars for others
+      content: isSelected ? t.content : t.content?.substring(0, 500),
+      isSelected: isSelected || undefined, // Explicitly tell AI what is selected
+      author: t.author,
+      stack: t.stackId ? { id: t.stackId, name: stackMap.get(t.stackId) || "Unnamed Stack" } : null,
+      status: t.status,
+      priority: t.priority,
+      date: t.date,
+      hasImage: !!t.image,
+      hasDrawing: !!t.drawing,
+      // Include structured data only if it exists/relevant
+      ...(t.type === 'tasks' && t.tasks?.length ? { tasks: t.tasks } : {}),
+      ...(t.type === 'table' && t.table?.length ? { table: t.table } : {})
+    };
+  });
 
   const context = {
     currentTime: {

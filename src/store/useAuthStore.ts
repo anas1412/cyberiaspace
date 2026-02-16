@@ -119,8 +119,9 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       });
       
       if (response.status === 401) {
-        console.warn('[Auth] Session expired or invalid token. Signing out.');
-        get().signOut();
+        console.warn('[Auth] Session expired or invalid token. Token cleared.');
+        localStorage.removeItem('cyberia-token');
+        set({ accessToken: null });
         return;
       }
 
