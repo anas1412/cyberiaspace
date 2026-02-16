@@ -67,9 +67,6 @@ const Viewport: React.FC = () => {
     transform,
     setTransform,
     kanbanHeight: kanbanHeight.current,
-    isGrabbing,
-    setIsGrabbing,
-    setSelectionRect,
     getGlobalScale
   });
 
@@ -93,10 +90,6 @@ const Viewport: React.FC = () => {
 
   useEffect(() => {
     const handleMouseDownLocal = (e: MouseEvent) => {
-      const s = getGlobalScale();
-      const lx = e.clientX / s;
-      const ly = e.clientY / s;
-
       const isMiddleClick = e.button === 1;
       const isAltLeftClick = e.button === 0 && e.altKey;
       const isLeftClick = e.button === 0 && !e.altKey;
@@ -145,10 +138,12 @@ const Viewport: React.FC = () => {
           y: transform.y + dy,
         }));
       } else if (isSelectingRef.current) {
-        const x = Math.min(lx, selectionStartRef.current.x);
-        const y = Math.min(ly, selectionStartRef.current.y);
-        const w = Math.abs(lx - selectionStartRef.current.x);
-        const h = Math.abs(ly - selectionStartRef.current.y);
+        const startLX = selectionStartRef.current.rawX / s;
+        const startLY = selectionStartRef.current.rawY / s;
+        const x = Math.min(lx, startLX);
+        const y = Math.min(ly, startLY);
+        const w = Math.abs(lx - startLX);
+        const h = Math.abs(ly - startLY);
 
         if (w > 5 || h > 5) {
           setSelectionRect({ x, y, w, h });
