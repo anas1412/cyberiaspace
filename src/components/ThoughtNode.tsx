@@ -23,10 +23,11 @@ interface ThoughtNodeProps {
   thought: Thought;
   registerElement: (id: number, el: HTMLDivElement | null) => void;
   onMouseDown: (id: number, e: React.MouseEvent) => void;
+  onTouchStart: (id: number, e: React.TouchEvent) => void;
   isDragging: boolean;
 }
 
-const ThoughtNode: React.FC<ThoughtNodeProps> = React.memo(({ thought, registerElement, onMouseDown, isDragging }) => {
+const ThoughtNode: React.FC<ThoughtNodeProps> = React.memo(({ thought, registerElement, onMouseDown, onTouchStart, isDragging }) => {
   const elRef = useRef<HTMLDivElement>(null);
   const selectedThoughtId = useStore((state) => state.selectedThoughtId);
   const selectedThoughtIds = useStore((state) => state.selectedThoughtIds);
@@ -91,6 +92,12 @@ const ThoughtNode: React.FC<ThoughtNodeProps> = React.memo(({ thought, registerE
     onMouseDown(thought.id, e);
   };
 
+  const handleLocalTouchStart = (e: React.TouchEvent) => {
+    const touch = e.touches[0];
+    setStartPos({ x: touch.clientX, y: touch.clientY });
+    onTouchStart(thought.id, e);
+  };
+
   const handleLinkAction = (e: React.MouseEvent) => {
     e.stopPropagation();
     if (thought.stackId) {
@@ -108,6 +115,12 @@ const ThoughtNode: React.FC<ThoughtNodeProps> = React.memo(({ thought, registerE
     const dist = Math.sqrt(Math.pow(e.clientX - startPos.x, 2) + Math.pow(e.clientY - startPos.y, 2));
     if (dist > 10) return;
     if (e.ctrlKey || e.metaKey) { e.stopPropagation(); return; }
+
+    // On mobile, selection happens on touchend (usePhysics).
+    // This click fires after. To avoid opening both inspector and focus editor,
+    // we require the thought to be already selected to open the focus editor on mobile.
+    if (!isSelected && (window.innerWidth < 1024)) return;
+
     if (linkingSourceId && linkingSourceId !== thought.id) {
       const store = useStore.getState();
       store.setSelectedThoughtIds([linkingSourceId, thought.id]);
@@ -154,6 +167,7 @@ const ThoughtNode: React.FC<ThoughtNodeProps> = React.memo(({ thought, registerE
         isReadOnly && !isSpatial && "cursor-default"
       )}
       onMouseDown={handleLocalMouseDown}
+      onTouchStart={handleLocalTouchStart}
       onDragStart={(e) => e.preventDefault()}
       onClick={handleClick}
       onMouseEnter={() => {

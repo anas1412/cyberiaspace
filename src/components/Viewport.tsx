@@ -5,6 +5,7 @@ import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 import World from './World';
 import { usePhysics } from '../hooks/usePhysics';
+import { useViewportGestures } from '../hooks/useViewportGestures';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Upload } from 'lucide-react';
 
@@ -37,15 +38,11 @@ const Viewport: React.FC = () => {
   const [isDraggingFile, setIsDraggingFile] = useState(false);
   const [selectionRect, setSelectionRect] = useState<{ x: number, y: number, w: number, h: number } | null>(null);
 
-  const lastMousePos = useRef<{ x: number, y: number, rawX: number, rawY: number }>({ x: 0, y: 0, rawX: 0, rawY: 0 });
   const mouseWorldPos = useRef({ x: 0, y: 0 });
-  const isPanningRef = useRef(false);
-  const isSelectingRef = useRef(false);
-  const selectionStartRef = useRef({ x: 0, y: 0 });
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const saveTimeoutRef = useRef<number | null>(null);
 
-  const { registerElement, registerWorld, registerGrid, handleMouseDown, isDragging, kanbanHeight } = usePhysics(canvasRef, transform);
+  const { registerElement, registerWorld, registerGrid, handleMouseDown, handleTouchStart, isDragging, kanbanHeight } = usePhysics(canvasRef, transform);
 
   // Helper for Responsive Scaling (Global Scale from index.css)
   const getGlobalScale = () => {
@@ -54,6 +51,27 @@ const Viewport: React.FC = () => {
     const m = new DOMMatrix(style.transform);
     return m.a || 1;
   };
+
+  const {
+    handleWheel,
+    handleTouchStart: handleTouchStartLocal,
+    handleTouchMove,
+    handleTouchEnd,
+    applyConstraints,
+    isPanningRef,
+    isSelectingRef,
+    selectionStartRef,
+    lastMousePos
+  } = useViewportGestures({
+    activeSpaceMode: activeSpace?.mode,
+    transform,
+    setTransform,
+    kanbanHeight: kanbanHeight.current,
+    isGrabbing,
+    setIsGrabbing,
+    setSelectionRect,
+    getGlobalScale
+  });
 
   // Save transform when it changes (Debounced)
   useEffect(() => {
@@ -85,7 +103,7 @@ const Viewport: React.FC = () => {
       const isCtrlLeftClick = isLeftClick && (e.ctrlKey || e.metaKey);
 
       if (isLeftClick) {
-        selectionStartRef.current = { x: lx, y: ly };
+        selectionStartRef.current = { rawX: e.clientX, rawY: e.clientY };
       }
 
       if (
@@ -96,13 +114,12 @@ const Viewport: React.FC = () => {
         if ((isLeftClick && !isCtrlLeftClick) || isMiddleClick || isAltLeftClick) {
           isPanningRef.current = true;
           setIsGrabbing(true);
-          lastMousePos.current = { x: lx, y: ly, rawX: e.clientX, rawY: e.clientY };
+          lastMousePos.current = { rawX: e.clientX, rawY: e.clientY };
           if (isMiddleClick || isAltLeftClick) e.preventDefault();
         } 
-        // SELECTING: Ctrl + Left Click Drag
+        // SELECTING: Ctrl + Left Click Drag (Spatial Mode Only for marquee)
         else if (isCtrlLeftClick) {
           isSelectingRef.current = true;
-          // Note: Selection clearing handled in handleClick to distinguish from simple clicks
         }
       }
     };
@@ -122,11 +139,11 @@ const Viewport: React.FC = () => {
         const dx = (e.clientX - lastMousePos.current.rawX) / s;
         const dy = (e.clientY - lastMousePos.current.rawY) / s;
 
-        setTransform({
+        setTransform(applyConstraints({
           ...transform,
           x: transform.x + dx,
           y: transform.y + dy,
-        });
+        }));
       } else if (isSelectingRef.current) {
         const x = Math.min(lx, selectionStartRef.current.x);
         const y = Math.min(ly, selectionStartRef.current.y);
@@ -155,7 +172,7 @@ const Viewport: React.FC = () => {
           setSelectedThoughtIds(selectedIds);
         }
       }
-      lastMousePos.current = { x: lx, y: ly, rawX: e.clientX, rawY: e.clientY };
+      lastMousePos.current = { rawX: e.clientX, rawY: e.clientY };
     };
 
     const handleMouseUp = () => {
@@ -173,61 +190,15 @@ const Viewport: React.FC = () => {
       const target = e.target as HTMLElement;
 
       // 5px rule for selection clearing: If they moved more than 5px, they were likely doing a marquee select
-      const dist = Math.sqrt(Math.pow(e.clientX - selectionStartRef.current.x, 2) + Math.pow(e.clientY - selectionStartRef.current.y, 2));
+      const dist = Math.sqrt(Math.pow(e.clientX - selectionStartRef.current.rawX, 2) + Math.pow(e.clientY - selectionStartRef.current.rawY, 2));
       if (dist > 5) return;
 
       // We want to unselect if the user clicks the "background" of the workspace, 
       // including the calendar grid and sidebar, but NOT if they click a thought or specific UI panels.
-      // Removed .ui-layer to allow specific UI elements to be defined individually
       if (!target.closest('.thought-bulb, #inspector, .expand-img, button, input, textarea, #chat-overlay, .modal-content, .focus-box')) {
         setInspectorOpen(false);
         clearSelection();
         setSelectedThoughtId(null);
-      }
-    };
-
-    const handleWheel = (e: WheelEvent) => {
-      const target = e.target as HTMLElement;
-      if (target.closest('#inspector, #text-focus-overlay, #table-focus-overlay, #chat-overlay, .focus-box, #space-switcher-list')) return;
-
-      const isUnscheduledNode = target.closest('[data-unscheduled="true"]');
-      const isSidebar = target.closest('#cal-sidebar-content');
-
-      if (activeSpace?.mode === 'calendar' && (isUnscheduledNode || isSidebar)) {
-        const sbContent = document.getElementById('cal-sidebar-content');
-        if (sbContent) {
-          sbContent.scrollTop += e.deltaY;
-          return; // Don't allow transform zoom/pan
-        }
-      }
-
-      const s = getGlobalScale();
-      const lx = e.clientX / s;
-      const ly = e.clientY / s;
-
-      if (activeSpace?.mode === 'kanban') {
-        let newY = transform.y - e.deltaY;
-        if (newY > 0) newY = 0;
-
-        const viewHeight = window.innerHeight / s;
-        const contentHeight = kanbanHeight.current + 100;
-        const limit = Math.min(0, viewHeight - contentHeight);
-
-        if (newY < limit) newY = limit;
-
-        setTransform({ ...transform, x: 0, y: newY, scale: 1 });
-      } else if (activeSpace?.mode === 'calendar') {
-        setTransform({ x: 0, y: 0, scale: 1 });
-      } else {
-        const delta = -e.deltaY;
-        const newScale = Math.min(Math.max(0.1, transform.scale + delta * 0.001), 2);
-        const wx = (lx - transform.x) / transform.scale;
-        const wy = (ly - transform.y) / transform.scale;
-        setTransform({
-          x: lx - wx * newScale,
-          y: ly - wy * newScale,
-          scale: newScale,
-        });
       }
     };
 
@@ -281,7 +252,7 @@ const Viewport: React.FC = () => {
         // Mode-specific logic
         if (activeSpace?.mode === 'kanban') {
           const s = getGlobalScale();
-          const lx = lastMousePos.current.x;
+          const lx = lastMousePos.current.rawX / s;
           const width = window.innerWidth / s;
           if (lx < width * 0.25) newThoughtProps.status = 'none';
           else if (lx < width * 0.50) newThoughtProps.status = 'todo';
@@ -433,6 +404,9 @@ const Viewport: React.FC = () => {
     window.addEventListener('dragover', handleDragOver);
     window.addEventListener('dragleave', handleDragLeave);
     window.addEventListener('drop', handleDrop);
+    window.addEventListener('touchstart', handleTouchStartLocal, { passive: false });
+    window.addEventListener('touchmove', handleTouchMove, { passive: false });
+    window.addEventListener('touchend', handleTouchEnd);
 
     return () => {
       window.removeEventListener('mousedown', handleMouseDownLocal);
@@ -446,8 +420,11 @@ const Viewport: React.FC = () => {
       window.removeEventListener('dragover', handleDragOver);
       window.removeEventListener('dragleave', handleDragLeave);
       window.removeEventListener('drop', handleDrop);
+      window.removeEventListener('touchstart', handleTouchStartLocal);
+      window.removeEventListener('touchmove', handleTouchMove);
+      window.removeEventListener('touchend', handleTouchEnd);
     };
-  }, [activeSpace, setInspectorOpen, isGrabbing, selectedThoughtId, selectedThoughtIds, openModal, deleteThought, deleteSelectedThoughts, thoughts, addThought, setSelectedThoughtId, setSelectedThoughtIds, clearSelection, transform, isReadOnly]);
+  }, [activeSpace, setInspectorOpen, isGrabbing, selectedThoughtId, selectedThoughtIds, openModal, deleteThought, deleteSelectedThoughts, thoughts, addThought, setSelectedThoughtId, setSelectedThoughtIds, clearSelection, transform, isReadOnly, handleWheel, handleTouchStartLocal, handleTouchMove, handleTouchEnd]);
 
   return (
     <div
@@ -484,7 +461,7 @@ const Viewport: React.FC = () => {
       />
       <World
         canvasRef={canvasRef}
-        physicsResults={{ registerElement, registerWorld, handleMouseDown, isDragging }}
+        physicsResults={{ registerElement, registerWorld, handleMouseDown, handleTouchStart, isDragging }}
       />
 
       {/* DROP ZONE OVERLAY */}

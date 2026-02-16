@@ -677,3 +677,9 @@
   background: var(--accent);
   border-radius: 10px;
 }
+
+/* Elegant Space Switcher Scrollbar */ 
+.switcher-scrollbar::-webkit-scrollbar { height: 2px; } 
+.switcher-scrollbar::-webkit-scrollbar-track { background: transparent; } 
+.switcher-scrollbar::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.08); border-radius: 10px; } 
+.switcher-scrollbar::-webkit-scrollbar-thumb:hover { background: rgba(255, 255, 255, 0.15); }
