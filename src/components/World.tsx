@@ -8,13 +8,14 @@ interface WorldProps {
     registerElement: (id: number, el: HTMLDivElement | null) => void;
     registerWorld: (el: HTMLDivElement | null) => void;
     handleMouseDown: (id: number, e: React.MouseEvent) => void;
+    handleTouchStart: (id: number, e: React.TouchEvent) => void;
     isDragging: (id: number) => boolean;
   };
 }
 
 const World: React.FC<WorldProps> = ({ canvasRef, physicsResults }) => {
   const thoughts = useStore((state) => state.thoughts);
-  const { registerElement, registerWorld, handleMouseDown, isDragging } = physicsResults;
+  const { registerElement, registerWorld, handleMouseDown, handleTouchStart, isDragging } = physicsResults;
 
   const [size, setSize] = useState({ w: window.innerWidth, h: window.innerHeight });
 
@@ -55,6 +56,7 @@ const World: React.FC<WorldProps> = ({ canvasRef, physicsResults }) => {
             thought={thought}
             registerElement={registerElement}
             onMouseDown={handleMouseDown}
+            onTouchStart={handleTouchStart}
             isDragging={isDragging(thought.id)}
           />
         ))}

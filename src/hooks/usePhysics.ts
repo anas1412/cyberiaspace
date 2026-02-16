@@ -191,8 +191,27 @@ export const usePhysics = (
     };
     const onMouseMove = (e: MouseEvent) => handleMove(e.clientX, e.clientY);
     const onMouseUp = (e: MouseEvent) => handleUp(e.clientX, e.clientY, e);
-    window.addEventListener('mousemove', onMouseMove); window.addEventListener('mouseup', onMouseUp);
-    return () => { window.removeEventListener('mousemove', onMouseMove); window.removeEventListener('mouseup', onMouseUp); };
+
+    const handleTouchMoveGlobal = (e: TouchEvent) => {
+      const touch = e.touches[0];
+      handleMove(touch.clientX, touch.clientY);
+    };
+    const handleTouchEndGlobal = (e: TouchEvent) => {
+      const touch = e.changedTouches[0];
+      handleUp(touch.clientX, touch.clientY, { ctrlKey: e.ctrlKey, metaKey: e.metaKey } as any);
+    };
+
+    window.addEventListener('mousemove', onMouseMove); 
+    window.addEventListener('mouseup', onMouseUp);
+    window.addEventListener('touchmove', handleTouchMoveGlobal, { passive: false });
+    window.addEventListener('touchend', handleTouchEndGlobal);
+
+    return () => { 
+      window.removeEventListener('mousemove', onMouseMove); 
+      window.removeEventListener('mouseup', onMouseUp); 
+      window.removeEventListener('touchmove', handleTouchMoveGlobal);
+      window.removeEventListener('touchend', handleTouchEndGlobal);
+    };
   }, [getGlobalScale, transform.scale, updateThought, activeSpace, calendarViewDate]);
 
   const loop = useCallback(() => {
@@ -384,5 +403,14 @@ export const usePhysics = (
     dragRef.current = { id, startX: e.clientX / s, startY: e.clientY / s, moved: false, lastMouseX: e.clientX / s, lastMouseY: e.clientY / s, initialPositions };
   }, [getGlobalScale]);
 
-  return { registerElement: (id: number, el: HTMLDivElement | null) => { if (el) elements.current.set(id, el); else elements.current.delete(id); }, registerWorld: (el: HTMLDivElement | null) => { worldRef.current = el; }, registerGrid: (el: HTMLDivElement | null) => { gridRef.current = el; }, handleMouseDown: handleMouseDown as (id: number, e: React.MouseEvent) => void, isDragging: (id: number) => !!dragRef.current?.initialPositions.has(id), sidebarHeight: sbHeight, kanbanHeight: kMaxHeight };
+  const handleTouchStart = useCallback((id: number, e: React.TouchEvent) => {
+    const s = getGlobalScale(); const store = useStore.getState();
+    const touch = e.touches[0];
+    const targets = new Set(store.selectedThoughtIds); if (!targets.has(id)) targets.add(id);
+    const initialPositions = new Map();
+    targets.forEach(tid => { const p = physicsState.current.get(tid); if (p) initialPositions.set(tid, { x: p.x, y: p.y }); });
+    dragRef.current = { id, startX: touch.clientX / s, startY: touch.clientY / s, moved: false, lastMouseX: touch.clientX / s, lastMouseY: touch.clientY / s, initialPositions };
+  }, [getGlobalScale]);
+
+  return { registerElement: (id: number, el: HTMLDivElement | null) => { if (el) elements.current.set(id, el); else elements.current.delete(id); }, registerWorld: (el: HTMLDivElement | null) => { worldRef.current = el; }, registerGrid: (el: HTMLDivElement | null) => { gridRef.current = el; }, handleMouseDown: handleMouseDown as (id: number, e: React.MouseEvent) => void, handleTouchStart: handleTouchStart as (id: number, e: React.TouchEvent) => void, isDragging: (id: number) => !!dragRef.current?.initialPositions.has(id), sidebarHeight: sbHeight, kanbanHeight: kMaxHeight };
 };
