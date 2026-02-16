@@ -20,7 +20,7 @@ export const PLAN_CONFIG: Record<SubscriptionPlan, PlanLimits> = {
     MAX_THOUGHTS_PER_SPACE: 20,
     MAX_CLOUD_THOUGHTS: 60,
     AI_ENABLED: true,
-    AI_DAILY_LIMIT: 50,
+    AI_DAILY_LIMIT: 15,
     THEMES_ENABLED: ['cyberia', 'sea', 'forest', 'rain'],
   },
   pro: {

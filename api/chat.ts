@@ -459,8 +459,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     if (currentUsage >= limit) {
       return res.status(429).json({ 
-        error: "Neural link saturated.", 
-        message: "Choom, you've hit your daily data-stream limit. Upgrade to Pro for unlimited access!",
+        error: "Daily limit reached", 
+        message: "You've reached your daily AI message limit. Upgrade to Pro for unlimited access!",
         usage: currentUsage,
         limit
       });
@@ -592,10 +592,23 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   } catch (error: any) {
     console.error(`[Groq API] Error:`, error);
+
+    let friendlyMessage = error.message;
+    let isRateLimit = error.status === 429 || (error.message && error.message.includes('rate_limit_exceeded'));
+
+    if (isRateLimit) {
+      const timeMatch = error.message?.match(/try again in ([\w.]+s)/);
+      const waitTime = timeMatch ? timeMatch[1] : "a few minutes";
+      friendlyMessage = `The AI service is temporarily busy because it's receiving too many requests. Please try again in about ${waitTime}.`;
+    }
+
     if (!res.headersSent) {
-      res.status(500).json({ error: error.message });
+      res.status(error.status || 500).json({ 
+        error: isRateLimit ? "Rate limit reached" : "Internal server error", 
+        message: friendlyMessage 
+      });
     } else {
-      res.write(`data: ${JSON.stringify({ type: 'error', message: error.message })}\n\n`);
+      res.write(`data: ${JSON.stringify({ type: 'error', message: friendlyMessage })}\n\n`);
       res.end();
     }
   }
