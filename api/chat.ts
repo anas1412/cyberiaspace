@@ -1,7 +1,14 @@
 import Groq from "groq-sdk";
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { kv } from '@vercel/kv';
-import { PLAN_CONFIG, BASIC_MODELS, PREMIUM_MODELS } from '../src/constants';
+
+// --- CONSTANTS (Mirrored from src/constants.ts for Server-side stability) ---
+const PLAN_CONFIG = {
+  free: { AI_DAILY_LIMIT: 50 },
+  pro: { AI_DAILY_LIMIT: 1000 }
+};
+const BASIC_MODELS = ['openai/gpt-oss-20b'];
+const PREMIUM_MODELS = ['openai/gpt-oss-120b'];
 
 /**
  * ORACLE API HANDLER - GROQ NODE.JS EDITION

@@ -20,7 +20,7 @@ export const PLAN_CONFIG: Record<SubscriptionPlan, PlanLimits> = {
     MAX_THOUGHTS_PER_SPACE: 20,
     MAX_CLOUD_THOUGHTS: 60,
     AI_ENABLED: true,
-    AI_DAILY_LIMIT: 30,
+    AI_DAILY_LIMIT: 50,
     THEMES_ENABLED: ['cyberia', 'sea', 'forest', 'rain'],
   },
   pro: {
@@ -37,17 +37,7 @@ export const PLAN_CONFIG: Record<SubscriptionPlan, PlanLimits> = {
   },
 };
 
-// Environment-safe constant access
-const getEnv = (key: string) => {
-  if (typeof process !== 'undefined' && process.env?.[key]) return process.env[key];
-  try {
-    // @ts-ignore - Vite specific
-    if (import.meta.env?.[key]) return import.meta.env[key];
-  } catch (e) { }
-  return null;
-};
-
-export const DEFAULT_MODEL = getEnv('VITE_GROQ_MODEL') || 'openai/gpt-oss-120b';
+export const DEFAULT_MODEL = import.meta.env.VITE_GROQ_MODEL || 'openai/gpt-oss-120b';
 
 export const BASIC_MODELS = [
   'openai/gpt-oss-20b',
