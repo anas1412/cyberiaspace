@@ -50,7 +50,30 @@ export const SystemTray: React.FC<SystemTrayProps> = ({
       <div className="grid grid-cols-2 gap-2"><button onClick={() => { openModal({ title: 'Clear Workspace?', description: 'This will permanently delete all your spaces, thoughts, and stacks. This cannot be undone.', type: 'reset_confirm', confirmText: 'Clear All', onConfirm: clearWorkspace }); setIsSystemMenuOpen(false); }} className="w-full flex items-center justify-center gap-2 py-3 rounded-xl hover:bg-red-500/10 text-[9px] md:text-[10px] font-black uppercase tracking-widest text-red-400 transition-colors border border-transparent hover:border-red-500/10"><Trash2 className="w-3 h-3" /> Clear</button></div>
     </div>
     <div className="flex gap-2 pointer-events-auto">
-      {!isReadOnly && user && (<div className="relative group"><div className="absolute bottom-full mb-4 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-all duration-300 translate-y-2 group-hover:translate-y-0 pointer-events-none whitespace-nowrap z-[10001]"><div className="glass px-3 py-1.5 rounded-xl border border-white/10 flex items-center gap-2 shadow-2xl bg-[var(--bg-main)]/90 backdrop-blur-xl"><span className="text-[10px] font-black uppercase tracking-widest text-white/80">Ask Oracle</span></div></div><button onClick={() => { if (!limits.AI_ENABLED) { openPricing(); return; } setChatOpen(!isChatOpen); }} className={cn("glass w-10 h-10 md:w-12 md:h-12 flex items-center justify-center rounded-2xl border border-white/5 transition-all", !limits.AI_ENABLED ? "opacity-40 grayscale hover:opacity-100 transition-opacity" : isChatOpen ? "bg-[var(--accent)] text-white shadow-[0_0_20px_var(--accent-glow)]" : "text-[var(--accent)] hover:bg-[var(--accent)]/10")}>{!limits.AI_ENABLED ? <EyeOff className="w-4 h-4 md:w-5 md:h-5" /> : isChatOpen ? <Eye className="w-4 h-4 md:w-5 md:h-5" /> : <EyeClosed className="w-4 h-4 md:w-5 md:h-5" />}</button></div>)}
+      {!isReadOnly && (
+        <div className="relative group">
+          <div className="absolute bottom-full mb-4 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-all duration-300 translate-y-2 group-hover:translate-y-0 pointer-events-none whitespace-nowrap z-[10001]">
+            <div className="glass px-3 py-1.5 rounded-xl border border-white/10 flex items-center gap-2 shadow-2xl bg-[var(--bg-main)]/90 backdrop-blur-xl">
+              <span className="text-[10px] font-black uppercase tracking-widest text-white/80">
+                {!user ? 'Sign in to ask Oracle' : 'Ask Oracle'}
+              </span>
+            </div>
+          </div>
+          <button 
+            onClick={() => { 
+              if (!user) return;
+              if (!limits.AI_ENABLED) { openPricing(); return; } 
+              setChatOpen(!isChatOpen); 
+            }} 
+            className={cn(
+              "glass w-10 h-10 md:w-12 md:h-12 flex items-center justify-center rounded-2xl border border-white/5 transition-all", 
+              (!limits.AI_ENABLED || !user) ? "opacity-40 grayscale hover:opacity-100 transition-opacity" : isChatOpen ? "bg-[var(--accent)] text-white shadow-[0_0_20px_var(--accent-glow)]" : "text-[var(--accent)] hover:bg-[var(--accent)]/10"
+            )}
+          >
+            {(!limits.AI_ENABLED || !user) ? <EyeOff className="w-4 h-4 md:w-5 md:h-5" /> : isChatOpen ? <Eye className="w-4 h-4 md:w-5 md:h-5" /> : <EyeClosed className="w-4 h-4 md:w-5 md:h-5" />}
+          </button>
+        </div>
+      )}
       <button onClick={() => setIsShortcutsOpen(!isShortcutsOpen)} className={cn("group relative hidden md:flex glass w-12 h-12 items-center justify-center rounded-2xl transition-all border border-white/5", isShortcutsOpen ? "bg-[var(--accent)] text-white" : "text-slate-400 hover:text-white")}><div className="absolute bottom-full mb-4 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-all duration-300 translate-y-2 group-hover:translate-y-0 pointer-events-none whitespace-nowrap z-[10001]"><div className="glass px-3 py-1.5 rounded-xl border border-white/10 flex items-center gap-2 shadow-2xl bg-[var(--bg-main)]/90 backdrop-blur-xl"><span className="text-[10px] font-black uppercase tracking-widest text-white/80">Command Center</span></div></div><Keyboard className="w-5 h-5" /></button>
       <button onClick={() => setIsHelpOpen(!isHelpOpen)} className={cn("group relative glass w-10 h-10 md:w-12 md:h-12 flex items-center justify-center rounded-2xl transition-all border border-white/5", isHelpOpen ? "bg-[var(--accent)] text-white" : "text-slate-400 hover:text-white")}><div className="absolute bottom-full mb-4 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-all duration-300 translate-y-2 group-hover:translate-y-0 pointer-events-none whitespace-nowrap z-[10001]"><div className="glass px-3 py-1.5 rounded-xl border border-white/10 flex items-center gap-2 shadow-2xl bg-[var(--bg-main)]/90 backdrop-blur-xl"><span className="text-[10px] font-black uppercase tracking-widest text-white/80">Help</span></div></div><CircleHelp className="w-4 h-4 md:w-5 md:h-5" /></button>
       <button onClick={() => setIsSystemMenuOpen(!isSystemMenuOpen)} className={cn("group relative glass w-10 h-10 md:w-12 md:h-12 flex items-center justify-center rounded-2xl transition-all border border-white/5", isSystemMenuOpen ? "bg-[var(--accent)] text-white" : "text-slate-400 hover:text-white")}><div className="absolute bottom-full mb-4 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-all duration-300 translate-y-2 group-hover:translate-y-0 pointer-events-none whitespace-nowrap z-[10001]"><div className="glass px-3 py-1.5 rounded-xl border border-white/10 flex items-center gap-2 shadow-2xl bg-[var(--bg-main)]/90 backdrop-blur-xl"><span className="text-[10px] font-black uppercase tracking-widest text-white/80">System Menu</span></div></div><MoreVertical className="w-4 h-4 md:w-5 md:h-5" /></button>
