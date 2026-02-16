@@ -42,13 +42,17 @@ ${context || 'No workspace data provided.'}
 4. THOUGHT TYPES:
    - 'embed': Mandatory for YouTube videos, music, or social media links. Put the URL in 'content'.
    - 'text': For general notes, research findings, or information.
-   - 'tasks': For lists of things to do.
-   - 'table': For structured data or comparisons.
+   - 'tasks': For lists of things to do. Provide the list in the 'tasks' parameter.
+   - 'table': For structured data or comparisons. Provide the data in the 'table' parameter.
+   - 'paint': For sketches or drawings. Provide an SVG string in the 'drawing' parameter.
    - 'image': Only if you have a direct image URL (rare).
 5. THOUGHT STRUCTURE: 
    - 'text': The Title/Label.
    - 'content': The main body (Markdown for notes, URL for embeds).
    - 'description': Meta-info or a short summary.
+   - 'tasks': Array of { text: string, done: boolean } for type 'tasks'.
+   - 'table': 2D array of strings for type 'table'.
+   - 'drawing': SVG string (e.g., '<svg viewBox="0 0 100 100">...</svg>') for type 'paint'. Use simple shapes, icons, or diagrams. Use colors like #6366f1 (accent) or white. Keep SVGs lightweight.
 6. STACKS: You can manage groups of thoughts using Stacks. You can create them ('create_stack' or 'link_thoughts'), rename them ('update_stack'), unlink thoughts ('unlink_thoughts'), or move thoughts between them using 'stackName' in 'update_thought'.
 7. NO XML: NEVER output tags like <function>. Use the native tool interface only.
 8. FORMATTING: Use Markdown (bold, lists, headers) in your chat responses to make information clear and structured.
@@ -105,6 +109,24 @@ export const tools: any[] = [
           priority: { type: "string", enum: ["none", "low", "medium", "high", "urgent"] },
           status: { type: "string", enum: ["none", "todo", "doing", "done"] },
           date: { type: "string", description: "The date in YYYY-MM-DD format." },
+          tasks: {
+            type: "array",
+            items: {
+              type: "object",
+              properties: {
+                text: { type: "string" },
+                done: { type: "boolean" }
+              }
+            }
+          },
+          table: {
+            type: "array",
+            items: {
+              type: "array",
+              items: { type: "string" }
+            }
+          },
+          drawing: { type: "string", description: "SVG string for 'paint' type thoughts." },
           x: { anyOf: [{ type: "number" }, { type: "null" }] },
           y: { anyOf: [{ type: "number" }, { type: "null" }] }
         },
@@ -132,7 +154,25 @@ export const tools: any[] = [
                 stackName: { type: "string", description: "Name of a stack to add this to." },
                 priority: { type: "string", enum: ["none", "low", "medium", "high", "urgent"] },
                 status: { type: "string", enum: ["none", "todo", "doing", "done"] },
-                date: { type: "string", description: "The date in YYYY-MM-DD format." }
+                date: { type: "string", description: "The date in YYYY-MM-DD format." },
+                tasks: {
+                  type: "array",
+                  items: {
+                    type: "object",
+                    properties: {
+                      text: { type: "string" },
+                      done: { type: "boolean" }
+                    }
+                  }
+                },
+                table: {
+                  type: "array",
+                  items: {
+                    type: "array",
+                    items: { type: "string" }
+                  }
+                },
+                drawing: { type: "string", description: "SVG string for 'paint' type thoughts." }
               },
               required: ["text", "type", "content"]
             }
@@ -156,6 +196,24 @@ export const tools: any[] = [
           status: { type: "string", enum: ["none", "todo", "doing", "done"] },
           priority: { type: "string", enum: ["none", "low", "medium", "high", "urgent"] },
           date: { type: "string", description: "The date in YYYY-MM-DD format." },
+          tasks: {
+            type: "array",
+            items: {
+              type: "object",
+              properties: {
+                text: { type: "string" },
+                done: { type: "boolean" }
+              }
+            }
+          },
+          table: {
+            type: "array",
+            items: {
+              type: "array",
+              items: { type: "string" }
+            }
+          },
+          drawing: { type: "string", description: "SVG string for 'paint' type thoughts." },
           stackName: { type: "string", description: "Name of a stack to move this thought into." }
         },
         required: ["id"]
@@ -178,6 +236,24 @@ export const tools: any[] = [
           status: { type: "string", enum: ["none", "todo", "doing", "done"] },
           priority: { type: "string", enum: ["none", "low", "medium", "high", "urgent"] },
           date: { type: "string", description: "The date in YYYY-MM-DD format." },
+          tasks: {
+            type: "array",
+            items: {
+              type: "object",
+              properties: {
+                text: { type: "string" },
+                done: { type: "boolean" }
+              }
+            }
+          },
+          table: {
+            type: "array",
+            items: {
+              type: "array",
+              items: { type: "string" }
+            }
+          },
+          drawing: { type: "string", description: "SVG string for 'paint' type thoughts." },
           stackName: { type: "string", description: "Name of a stack to move these thoughts into." },
           x: { anyOf: [{ type: "number" }, { type: "null" }] },
           y: { anyOf: [{ type: "number" }, { type: "null" }] }

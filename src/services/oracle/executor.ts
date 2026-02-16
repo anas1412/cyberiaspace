@@ -4,6 +4,34 @@
  * Handles the execution of client-side tool calls from the Oracle AI.
  */
 
+const svgToDataUrl = (svg: string): string => {
+  if (svg.startsWith('data:image/svg+xml')) return svg;
+  
+  // Basic validation/cleanup
+  let cleanSvg = svg.trim();
+  if (!cleanSvg.includes('xmlns="http://www.w3.org/2000/svg"')) {
+    cleanSvg = cleanSvg.replace('<svg', '<svg xmlns="http://www.w3.org/2000/svg"');
+  }
+  
+  // Ensure we have a viewbox if not present, or at least width/height
+  if (!cleanSvg.includes('viewBox')) {
+    cleanSvg = cleanSvg.replace('<svg', '<svg viewBox="0 0 1920 1080"');
+  }
+
+  const encoded = encodeURIComponent(cleanSvg)
+    .replace(/'/g, '%27')
+    .replace(/"/g, '%22');
+
+  return `data:image/svg+xml;utf8,${encoded}`;
+};
+
+const processDrawing = (args: any) => {
+  if (args.drawing && typeof args.drawing === 'string' && args.drawing.includes('<svg')) {
+    args.drawing = svgToDataUrl(args.drawing);
+  }
+  return args;
+};
+
 export const executeOracleTool = async (toolCall: any, store: any) => {
   const { toolName, args } = toolCall;
   console.log(`[Oracle] Executing Tool: ${toolName}`, args);
@@ -11,7 +39,8 @@ export const executeOracleTool = async (toolCall: any, store: any) => {
   try {
     switch (toolName) {
       case 'create_thought': {
-        const { stackName, ...thoughtArgs } = args;
+        const processedArgs = processDrawing({ ...args });
+        const { stackName, ...thoughtArgs } = processedArgs;
         const x = typeof thoughtArgs.x !== 'undefined' ? Number(thoughtArgs.x) : window.innerWidth / 2;
         const y = typeof thoughtArgs.y !== 'undefined' ? Number(thoughtArgs.y) : window.innerHeight / 2;
 
@@ -32,7 +61,8 @@ export const executeOracleTool = async (toolCall: any, store: any) => {
         
         let createdCount = 0;
         for (const item of items) {
-          const { stackName, ...thoughtArgs } = item;
+          const processedItem = processDrawing({ ...item });
+          const { stackName, ...thoughtArgs } = processedItem;
           const x = typeof thoughtArgs.x !== 'undefined' ? Number(thoughtArgs.x) : window.innerWidth / 2;
           const y = typeof thoughtArgs.y !== 'undefined' ? Number(thoughtArgs.y) : window.innerHeight / 2;
           
@@ -82,7 +112,8 @@ export const executeOracleTool = async (toolCall: any, store: any) => {
       }
 
       case 'update_thought': {
-        const { id, stackName, ...updates } = args;
+        const processedArgs = processDrawing({ ...args });
+        const { id, stackName, ...updates } = processedArgs;
         if (!id) {
           return { success: false, error: 'Missing ID' };
         } else {
@@ -97,7 +128,8 @@ export const executeOracleTool = async (toolCall: any, store: any) => {
       }
 
       case 'update_thoughts': {
-        const { ids, stackName, ...updates } = args;
+        const processedArgs = processDrawing({ ...args });
+        const { ids, stackName, ...updates } = processedArgs;
         if (!ids?.length) {
           return { success: false, error: 'No IDs provided' };
         } else {
