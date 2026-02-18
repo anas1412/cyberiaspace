@@ -22,6 +22,7 @@ interface CyberiaState {
   kanbanSearchQuery: string;
   kanbanStackFilter: string | null;
   theme: 'cyberia' | 'sea' | 'forest' | 'rain';
+  customBg: string | null;
   isSpaceLoading: boolean;
   isInitializing: boolean;
   performanceMode: boolean;
@@ -42,6 +43,7 @@ interface CyberiaState {
 
   // Actions
   setTheme: (theme: 'cyberia' | 'sea' | 'forest' | 'rain') => void;
+  setCustomBg: (bg: string | null) => Promise<void>;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   setDeferredPrompt: (prompt: any) => void;
 
@@ -148,6 +150,7 @@ export const useStore = create<CyberiaState>((set, get) => ({
   lightboxImage: null,
   linkingSourceId: null,
   theme: (localStorage.getItem('cyberia-theme') as 'cyberia' | 'sea' | 'forest' | 'rain') || 'cyberia',
+  customBg: null,
   isSpaceLoading: true,
   isInitializing: true,
   performanceMode: typeof window !== 'undefined' ? (window.innerWidth < 763) : false,
@@ -349,6 +352,14 @@ export const useStore = create<CyberiaState>((set, get) => ({
     if (activeSpaceId && !get().isReadOnly) {
       get().updateSpace(activeSpaceId, { theme });
     }
+  },
+
+  setCustomBg: async (bg) => {
+    const { activeSpaceId, isReadOnly } = get();
+    if (isReadOnly || !activeSpaceId) return;
+
+    set({ customBg: bg });
+    await db.spaces.update(activeSpaceId, { customBg: bg });
   },
 
   setDeferredPrompt: (prompt) => set({ deferredPrompt: prompt }),
@@ -680,6 +691,9 @@ export const useStore = create<CyberiaState>((set, get) => ({
         updates.theme = space.theme;
         document.body.setAttribute('data-theme', space.theme);
       }
+
+      // Apply Space-Specific Background
+      updates.customBg = space.customBg || null;
     }
 
     set(updates);

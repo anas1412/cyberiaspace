@@ -34,6 +34,8 @@ const Toolbar: React.FC = () => {
   const clearWorkspace = useStore((state) => state.clearWorkspace);
   const theme = useStore((state) => state.theme);
   const setTheme = useStore((state) => state.setTheme);
+  const customBg = useStore((state) => state.customBg);
+  const setCustomBg = useStore((state) => state.setCustomBg);
   const performanceMode = useStore((state) => state.performanceMode);
   const setPerformanceMode = useStore((state) => state.setPerformanceMode);
   const deferredPrompt = useStore((state) => state.deferredPrompt);
@@ -289,6 +291,8 @@ const Toolbar: React.FC = () => {
         setTheme={setTheme} 
         performanceMode={performanceMode}
         setPerformanceMode={setPerformanceMode}
+        customBg={customBg}
+        setCustomBg={setCustomBg}
         deferredPrompt={deferredPrompt} 
         handleInstall={handleInstall} 
         handleExport={handleExport} 
