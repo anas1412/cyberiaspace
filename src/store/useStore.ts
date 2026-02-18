@@ -188,6 +188,7 @@ export const useStore = create<CyberiaState>((set, get) => ({
       const spaceThoughts = thoughts.filter(t => t.spaceId === spaceId);
       const spaceStacks = stacks.filter(s => s.spaceId === spaceId);
       const currentTheme = get().theme;
+      const currentCustomBg = get().customBg;
 
       const res = await fetch('/api/publish', {
         method: 'POST',
@@ -196,7 +197,7 @@ export const useStore = create<CyberiaState>((set, get) => ({
           'Authorization': `Bearer ${authStore.accessToken}`
         },
         body: JSON.stringify({
-          space: { ...space, theme: currentTheme },
+          space: { ...space, theme: currentTheme, customBg: currentCustomBg },
           thoughts: spaceThoughts,
           stacks: spaceStacks,
           publishedId: space.publishedId,
