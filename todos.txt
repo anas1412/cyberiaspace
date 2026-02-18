@@ -1,6 +1,19 @@
 
 Unplanned:
 
+create a backend for admin (maybe another project)
+
+performance mode 
+
+
+
+change stack to collection
+
+Cyberia is a spatial productivity platform for kinetic information architecture. It uses a physics-driven workspace to organize data through fluid Spatial, Kanban, and Calendar views, enabling high-velocity research and strategic planning.
+
+
+
+
 - make a better and simpler onboarding thoughts
 
 - add a vercel api route to enable oracle external api for built-in vercel key / add limiters
