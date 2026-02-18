@@ -528,7 +528,7 @@ const Inspector: React.FC = () => {
                               if (file.size > 2 * 1024 * 1024) {
                                 useModalStore.getState().openModal({
                                   title: 'Incompatible Mass',
-                                  description: 'This file exceeds the 2MB transmission limit. Compress your assets before uploading to neural storage.',
+                                  description: 'This file exceeds the 2MB transmission limit. Compress your assets before uploading to cloud storage.',
                                   type: 'alert',
                                   confirmText: 'Understood'
                                 });

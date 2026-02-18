@@ -13,7 +13,7 @@ export const parseAIError = (error: any): string => {
     if (message.toLowerCase().includes("quota")) {
       return `Oracle is resting. Rate limit exceeded.${retrySeconds}`;
     }
-    return `Oracle is having trouble connecting to the neural network. Please check your internet or try again later.`;
+    return `Oracle is having trouble connecting to the network. Please check your internet or try again later.`;
   }
 
   // 2. Authentication (401)

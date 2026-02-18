@@ -114,7 +114,8 @@ Cyberia supports three core aesthetic modes:
 - **World Space Compliance**: Spawning and dragging must divide client coordinates by the global scale before applying world-space translation.
 
 ## 9. Development Standards
-1. **Atomic Components:** Keep components focused (e.g., `ThoughtNode.tsx`).
+1. **Terminology Mandate (CRITICAL)**: NEVER use the terms "Neural", "Neural Link", or "Neural Layer" in the UI, code comments, or documentation. Use Cyberia-native terms like "Data Stream", "Spatial Mapping", "Workspace", or "Cloud Sync" instead.
+2. **Atomic Components:** Keep components focused (e.g., `ThoughtNode.tsx`).
 2. **Logic Isolation:** Physics and math reside in `usePhysics.ts`.
 3. **Tailwind First:** Use utility classes; avoid inline styles except for transform math.
 4. **Local First:** Always prioritize Dexie/IndexedDB over cloud sync.

@@ -507,7 +507,7 @@ const Viewport: React.FC = () => {
                 <div className="w-16 h-16 border-2 border-indigo-500/20 border-t-indigo-500 rounded-full animate-spin" />
 
                 <div className="text-center">
-                  <h2 className="text-white/80 text-[10px] font-black uppercase tracking-[0.5em] mb-2">Accessing Neural Layer</h2>
+                  <h2 className="text-white/80 text-[10px] font-black uppercase tracking-[0.5em] mb-2">Accessing Workspace</h2>
                   <div className="flex gap-1 justify-center">
                     {[0, 1, 2].map((i) => (
                       <motion.div

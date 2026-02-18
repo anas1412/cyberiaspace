@@ -837,7 +837,7 @@ export const useStore = create<CyberiaState>((set, get) => ({
     if (payloadSize > 2 * 1024 * 1024) {
       useModalStore.getState().openModal({
         title: 'Buffer Overflow',
-        description: 'Initial payload exceeds 2MB limit. Attempting to spawn an object too large for current neural architecture.',
+        description: 'Initial payload exceeds 2MB limit. Attempting to spawn an object too large for current system architecture.',
         type: 'alert',
         confirmText: 'Acknowledged'
       });

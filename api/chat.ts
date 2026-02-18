@@ -105,7 +105,7 @@ export const tools: any[] = [
           type: { type: "string", enum: ["text", "tasks", "paint", "table", "image", "embed"] },
           content: { type: "string", description: "The main content. For 'embed', this MUST be the URL. For 'text', this is the Markdown body." },
           description: { type: "string", description: "A very short summary (optional)." },
-          stackName: { type: "string", description: "Name of a stack to add this to." },
+          stackName: { anyOf: [{ type: "string" }, { type: "null" }], description: "Name of a stack to add this to." },
           priority: { type: "string", enum: ["none", "low", "medium", "high", "urgent"] },
           status: { type: "string", enum: ["none", "todo", "doing", "done"] },
           date: { type: "string", description: "The date in YYYY-MM-DD format." },
@@ -151,7 +151,7 @@ export const tools: any[] = [
                 type: { type: "string", enum: ["text", "tasks", "paint", "table", "image", "embed"] },
                 content: { type: "string", description: "The main content (URL or Markdown)." },
                 description: { type: "string", description: "Short summary." },
-                stackName: { type: "string", description: "Name of a stack to add this to." },
+                stackName: { anyOf: [{ type: "string" }, { type: "null" }], description: "Name of a stack to add this to." },
                 priority: { type: "string", enum: ["none", "low", "medium", "high", "urgent"] },
                 status: { type: "string", enum: ["none", "todo", "doing", "done"] },
                 date: { type: "string", description: "The date in YYYY-MM-DD format." },
@@ -214,7 +214,7 @@ export const tools: any[] = [
             }
           },
           drawing: { type: "string", description: "SVG string for 'paint' type thoughts." },
-          stackName: { type: "string", description: "Name of a stack to move this thought into." }
+          stackName: { anyOf: [{ type: "string" }, { type: "null" }], description: "Name of a stack to move this thought into." }
         },
         required: ["id"]
       }
@@ -254,7 +254,7 @@ export const tools: any[] = [
             }
           },
           drawing: { type: "string", description: "SVG string for 'paint' type thoughts." },
-          stackName: { type: "string", description: "Name of a stack to move these thoughts into." },
+          stackName: { anyOf: [{ type: "string" }, { type: "null" }], description: "Name of a stack to move these thoughts into." },
           x: { anyOf: [{ type: "number" }, { type: "null" }] },
           y: { anyOf: [{ type: "number" }, { type: "null" }] }
         },
@@ -600,6 +600,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       const timeMatch = error.message?.match(/try again in ([\w.]+s)/);
       const waitTime = timeMatch ? timeMatch[1] : "a few minutes";
       friendlyMessage = `The AI service is temporarily busy because it's receiving too many requests. Please try again in about ${waitTime}.`;
+    } else if (error.status === 400) {
+      friendlyMessage = "Oracle had a bit of a logic snag processing that action. Try that request one more time!";
     }
 
     if (!res.headersSent) {
