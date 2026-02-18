@@ -49,7 +49,7 @@ Cyberia is a spatial productivity platform for kinetic information architecture.
 
 TODO:
 
-change "reset view" to "scan-eye" or "focus"
+i want to change the performance on/off button between command center and oracle ai icons but also we have the physics button in controls? do u have any better idea? (dont implement we are planning)
 
 change stack to collection
 

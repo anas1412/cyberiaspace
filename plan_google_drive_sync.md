@@ -61,3 +61,27 @@ We will expand the Google OAuth request to include:
 - **Librarian Model:** Cyberia (Client-side) fetches data using the user's token and only passes necessary text to the AI.
 - **OAuth Token Safety:** Tokens remain in the browser and are never stored on Cyberia's backend.
 - **User Choice:** Users can toggle individual sync features (e.g., "Drive ON," "Calendar OFF") in the Account Menu.
+
+🎯 My Recommendation for Cyberia
+Dexie Stores:
+Metadata
+Markdown content
+Small attachments (< 20MB)
+Drive Stores:
+All heavy media
+PDFs
+Videos
+Audio
+Offline Mode:
+Notes work fully offline
+Media requires pre-download
+Optional “Make Available Offline” toggle
+
+🧠 Smart Feature Idea
+For media:
+Add:
+“Download for Offline”
+Then:
+Store blob in Dexie
+Track storage usage
+Allow user to clear cache
