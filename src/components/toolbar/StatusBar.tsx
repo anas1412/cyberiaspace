@@ -18,13 +18,11 @@ interface StatusBarProps {
   zoomIn: () => void;
   zoomOut: () => void;
   resetTransform: () => void;
-  performanceMode: boolean;
 }
 
 export const StatusBar: React.FC<StatusBarProps> = ({ 
   thoughtsCount, limits, activeSpace, undo, redo, 
-  historyIndex, historyLength, zoomIn, zoomOut, resetTransform,
-  performanceMode
+  historyIndex, historyLength, zoomIn, zoomOut, resetTransform
 }) => (
   <div className="fixed bottom-4 md:bottom-8 left-4 md:left-8 z-[9999] flex items-center gap-2 pointer-events-none">
     <div className="glass px-3 md:px-4 h-[40px] md:h-[48px] rounded-2xl flex items-center gap-2 md:gap-4 border border-white/5 pointer-events-auto">
