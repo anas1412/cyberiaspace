@@ -12,6 +12,7 @@ interface Space {
   publishedId?: string | null;
   lastPublished?: string | null;
   updatedAt?: string | null;
+  theme?: 'cyberia' | 'sea' | 'forest' | 'rain';
 }
 
 interface Stack {

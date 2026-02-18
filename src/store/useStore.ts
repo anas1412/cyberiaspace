@@ -184,6 +184,7 @@ export const useStore = create<CyberiaState>((set, get) => ({
     try {
       const spaceThoughts = thoughts.filter(t => t.spaceId === spaceId);
       const spaceStacks = stacks.filter(s => s.spaceId === spaceId);
+      const currentTheme = get().theme;
 
       const res = await fetch('/api/publish', {
         method: 'POST',
@@ -192,7 +193,7 @@ export const useStore = create<CyberiaState>((set, get) => ({
           'Authorization': `Bearer ${authStore.accessToken}`
         },
         body: JSON.stringify({
-          space,
+          space: { ...space, theme: currentTheme },
           thoughts: spaceThoughts,
           stacks: spaceStacks,
           publishedId: space.publishedId,
@@ -339,9 +340,15 @@ export const useStore = create<CyberiaState>((set, get) => ({
   closeLightbox: () => set({ isLightboxOpen: false, lightboxImage: null }),
 
   setTheme: (theme) => {
+    const { activeSpaceId } = get();
     set({ theme });
     localStorage.setItem('cyberia-theme', theme);
     document.body.setAttribute('data-theme', theme);
+    
+    // Save theme to current space if not in a shared read-only space
+    if (activeSpaceId && !get().isReadOnly) {
+      get().updateSpace(activeSpaceId, { theme });
+    }
   },
 
   setDeferredPrompt: (prompt) => set({ deferredPrompt: prompt }),
@@ -654,17 +661,25 @@ export const useStore = create<CyberiaState>((set, get) => ({
       isSpaceLoading: true, 
       history: [], 
       historyIndex: -1,
-      layerActionTrigger: null // Reset sonar trigger
+      layerActionTrigger: null 
     };
 
-    if (space && space.mode === 'spatial') {
-      updates.transform = {
-        x: space.transformX ?? 0,
-        y: space.transformY ?? 0,
-        scale: space.transformScale ?? 1
-      };
-    } else {
-      updates.transform = { x: 0, y: 0, scale: 1 };
+    if (space) {
+      if (space.mode === 'spatial') {
+        updates.transform = {
+          x: space.transformX ?? 0,
+          y: space.transformY ?? 0,
+          scale: space.transformScale ?? 1
+        };
+      } else {
+        updates.transform = { x: 0, y: 0, scale: 1 };
+      }
+
+      // Apply Space-Specific Theme
+      if (space.theme) {
+        updates.theme = space.theme;
+        document.body.setAttribute('data-theme', space.theme);
+      }
     }
 
     set(updates);
