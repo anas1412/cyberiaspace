@@ -24,6 +24,8 @@ interface CyberiaState {
   theme: 'cyberia' | 'sea' | 'forest' | 'rain';
   isSpaceLoading: boolean;
   isInitializing: boolean;
+  performanceMode: boolean;
+  setPerformanceMode: (mode: boolean) => void;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   deferredPrompt: any;
   layerActionTrigger: { id: number; time: number } | null;
@@ -148,6 +150,12 @@ export const useStore = create<CyberiaState>((set, get) => ({
   theme: (localStorage.getItem('cyberia-theme') as 'cyberia' | 'sea' | 'forest' | 'rain') || 'cyberia',
   isSpaceLoading: true,
   isInitializing: true,
+  performanceMode: typeof window !== 'undefined' ? (window.innerWidth < 1024 || (navigator as any).deviceMemory < 4) : false,
+  setPerformanceMode: (performanceMode) => {
+    set({ performanceMode });
+    if (performanceMode) document.body.classList.add('low-perf');
+    else document.body.classList.remove('low-perf');
+  },
   deferredPrompt: null,
   layerActionTrigger: null,
   isReadOnly: false,
@@ -360,7 +368,12 @@ export const useStore = create<CyberiaState>((set, get) => ({
   setChatOpen: (isOpen) => set({ isChatOpen: isOpen }),
 
   init: async () => {
-    // 1. Initialize Auth regardless (needed for UI consistency/Oracle status)
+    // 1. Initialize Performance Mode
+    if (get().performanceMode) {
+      document.body.classList.add('low-perf');
+    }
+
+    // 2. Initialize Auth regardless (needed for UI consistency/Oracle status)
     useAuthStore.getState().initAuth();
 
     // Reconcile Oracle status immediately from current auth state

@@ -31,8 +31,10 @@ export const usePhysics = (
   const kanbanSearchQuery = useStore((state) => state.kanbanSearchQuery);
   const kanbanStackFilter = useStore((state) => state.kanbanStackFilter);
   const linkingSourceId = useStore((state) => state.linkingSourceId);
+  const performanceMode = useStore((state) => state.performanceMode);
 
   const physicsState = useRef<Map<number, PhysicsPoint>>(new Map());
+  const frameCount = useRef(0);
   const elements = useRef<Map<number, HTMLDivElement>>(new Map());
   const worldRef = useRef<HTMLDivElement | null>(null);
   const gridRef = useRef<HTMLDivElement | null>(null);
@@ -267,6 +269,10 @@ export const usePhysics = (
     let maxColHeight = 0;
     let sidebarHeight = 0;
 
+    frameCount.current++;
+    // Physics is disabled in performanceMode unless we are explicitly returning home or dragging
+    const shouldCalculatePhysics = !performanceMode && (activeSpace?.physics ?? true);
+
     // 1. Calculate Targets & Apply Forces
     ids.forEach((id) => {
       const p = state.get(id)!;
@@ -279,8 +285,8 @@ export const usePhysics = (
         if (snapNextFrame.current) {
           p.x = t.x; p.y = t.y; p.vx = 0; p.vy = 0;
           p.scale = (1 + (PRIORITY_WEIGHT[t.priority] || 0) * 0.05) * (t.size || 1);
-        } else if (activeSpace?.physics ?? true) {
-          if (strategist.applyForces) {
+        } else {
+          if (strategist.applyForces && shouldCalculatePhysics) {
             const { vx, vy } = strategist.applyForces(id, p, state, t, allThoughts, context, elementHeights);
             p.vx += vx; p.vy += vy;
           }
@@ -387,7 +393,7 @@ export const usePhysics = (
       }
     });
     if (ids.length > 0) snapNextFrame.current = false;
-  }, [activeSpace, activeSpaceId, calendarViewDate, hoveredCalDate, calendarSearchQuery, calendarStackFilter, kanbanSearchQuery, kanbanStackFilter, transform, linkingSourceId, getGlobalScale, applyHomeReturn, selectedThoughtId]);
+  }, [activeSpace, activeSpaceId, calendarViewDate, hoveredCalDate, calendarSearchQuery, calendarStackFilter, kanbanSearchQuery, kanbanStackFilter, transform, linkingSourceId, getGlobalScale, applyHomeReturn, selectedThoughtId, performanceMode]);
 
   useEffect(() => {
     const animate = () => { loop(); requestRef.current = requestAnimationFrame(animate); };

@@ -33,8 +33,8 @@ export const SpaceSwitcher: React.FC<SpaceSwitcherProps> = ({
   creatorName, lastUpdated, activeSpace, isSpaceMenuOpen, setIsSpaceMenuOpen, 
   limits, handleCreateSpace, handleRenameSpace, handleMoveSpace, handleDeleteSpace, openModal 
 }) => (
-  <div className="md:absolute md:left-1/2 md:-translate-x-1/2 flex flex-col items-center gap-2 pointer-events-none z-10 w-full md:w-auto px-4 md:px-0">
-    <div className="max-w-full flex items-center h-[52px] glass rounded-full shadow-2xl transition-all pointer-events-auto border border-white/5 px-3">
+  <div className="lg:absolute lg:left-1/2 lg:-translate-x-1/2 flex flex-col items-center gap-2 pointer-events-none z-10 w-auto">
+    <div className="max-w-full flex items-center h-[48px] md:h-[52px] glass rounded-full shadow-2xl transition-all pointer-events-auto border border-white/5 px-2 md:px-3">
       {isReadOnly ? (
         <div className="px-6 flex items-center justify-center gap-2">
           {isSpaceLoading ? (
@@ -54,13 +54,13 @@ export const SpaceSwitcher: React.FC<SpaceSwitcherProps> = ({
         <div className="flex items-center gap-2 h-full min-w-max">
           <button onClick={() => setIsSpaceMenuOpen(!isSpaceMenuOpen)} className={cn("w-9 h-9 rounded-full transition-all flex-shrink-0 flex items-center justify-center border", isSpaceMenuOpen ? "bg-[var(--accent)] text-white border-[var(--accent)] shadow-[0_0_15px_var(--accent-glow)]" : "text-slate-600 hover:text-white hover:bg-white/10 border-white/10")} title="Space Settings"><Settings className={cn("w-3.5 h-3.5", isSpaceMenuOpen && "animate-spin-slow")} /></button>
           <div className="w-[1px] h-4 bg-white/10 flex-shrink-0"></div>
-          <div id="space-switcher-list" className="flex items-center gap-2 overflow-x-auto switcher-scrollbar pb-0 max-w-[450px] 2xl:max-w-[750px] pointer-events-auto" onWheel={(e) => { e.stopPropagation(); e.currentTarget.scrollLeft += e.deltaY; }}>
+          <div id="space-switcher-list" className="flex items-center gap-2 overflow-x-auto switcher-scrollbar pb-0 max-w-[calc(100vw-180px)] md:max-w-[450px] 2xl:max-w-[750px] pointer-events-auto" onWheel={(e) => { e.stopPropagation(); e.currentTarget.scrollLeft += e.deltaY; }}>
             {spaces.map((space) => {
               const isActive = space.id === activeSpaceId;
               return (
-                <button key={space.id} onClick={() => setActiveSpace(space.id)} className={cn("px-4 h-9 min-w-[120px] rounded-full text-[10px] uppercase font-black tracking-widest flex-shrink-0 transition-all duration-500 flex items-center justify-center gap-2.5 border", isActive ? "bg-white/10 text-white border-white/10 shadow-[0_0_20px_rgba(255,255,255,0.05)]" : "text-slate-500 hover:text-slate-300 hover:bg-white/[0.03] border-transparent")}>
+                <button key={space.id} onClick={() => setActiveSpace(space.id)} className={cn("px-4 h-9 min-w-max md:min-w-[120px] rounded-full text-[10px] uppercase font-black tracking-widest flex-shrink-0 transition-all duration-500 flex items-center justify-center gap-2.5 border", isActive ? "bg-white/10 text-white border-white/10 shadow-[0_0_20px_rgba(255,255,255,0.05)]" : "text-slate-500 hover:text-slate-300 hover:bg-white/[0.03] border-transparent")}>
                   <div className={cn("w-1 h-1 rounded-full shadow-[0_0_8px_currentColor]", getStatusColor(space, isReadOnly))} style={{ color: isActive ? 'var(--accent-secondary)' : 'transparent' }} />
-                  <span className="truncate">{space.name}</span>
+                  <span className={cn("truncate", !isActive && "hidden md:inline")}>{space.name}</span>
                 </button>
               );
             })}

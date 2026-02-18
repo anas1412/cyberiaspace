@@ -30,17 +30,42 @@ interface SystemTrayProps {
   isCapturing: boolean;
   openModal: (cfg: any) => void;
   clearWorkspace: () => void;
+  performanceMode: boolean;
+  setPerformanceMode: (val: boolean) => void;
 }
 
 export const SystemTray: React.FC<SystemTrayProps> = ({ 
   isReadOnly, user, limits, isChatOpen, setChatOpen, openPricing, 
   isShortcutsOpen, setIsShortcutsOpen, isHelpOpen, setIsHelpOpen, 
   isSystemMenuOpen, setIsSystemMenuOpen, theme, setTheme, 
-  deferredPrompt, handleInstall, handleExport, handleScreenshot, handleImport, isCapturing, openModal, clearWorkspace 
+  deferredPrompt, handleInstall, handleExport, handleScreenshot, handleImport, isCapturing, openModal, clearWorkspace,
+  performanceMode, setPerformanceMode
 }) => (
   <div className="fixed bottom-4 md:bottom-8 right-4 md:right-8 z-[9999] flex flex-col items-end gap-3 pointer-events-none system-tray-container">
     <div className={cn("glass p-4 md:p-5 rounded-[1.5rem] md:rounded-[2rem] border border-white/10 shadow-2xl flex flex-col gap-1 transition-all pointer-events-auto w-72 md:w-80 animate-in fade-in slide-in-from-bottom-2 duration-300", isSystemMenuOpen ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4 pointer-events-none")}>
       <div className="px-1 md:px-2 py-3 border-b border-white/5 mb-3"><p className="text-[10px] md:text-[11px] font-black uppercase tracking-[0.2em] text-slate-500 mb-4">Workspace Theme</p><div className="grid grid-cols-4 gap-2">{(['cyberia', 'sea', 'forest', 'rain'] as const).map((id) => { const labels = { cyberia: 'Space', sea: 'Sea', forest: 'Forest', rain: 'Rain' }; const colors = { cyberia: '#6366f1', sea: '#00b4d8', forest: '#2dce89', rain: '#d6d3d1' }; return (<button key={id} onClick={() => setTheme(id)} className={cn("flex flex-col items-center gap-2 p-1.5 rounded-xl border transition-all", theme === id ? "bg-white/10 border-white/20 shadow-lg" : "border-transparent hover:bg-white/5")}><div className="w-3.5 h-3.5 rounded-full shadow-lg" style={{ backgroundColor: colors[id] }} /><span className={cn("text-[8px] font-bold uppercase tracking-widest", theme === id ? "text-white" : "text-slate-500")}>{labels[id]}</span></button>); })}</div></div>
+      
+      <div className="px-1 md:px-2 py-3 border-b border-white/5 mb-3">
+        <div className="flex items-center justify-between">
+          <div>
+            <p className="text-[10px] md:text-[11px] font-black uppercase tracking-[0.2em] text-slate-500">Performance Mode</p>
+            <p className="text-[8px] font-bold text-slate-600 uppercase tracking-widest mt-0.5">{performanceMode ? "Efficiency Active (No Blur)" : "High Fidelity (Blur Active)"}</p>
+          </div>
+          <button 
+            onClick={() => setPerformanceMode(!performanceMode)}
+            className={cn(
+              "w-10 h-5 rounded-full p-1 transition-colors relative",
+              performanceMode ? "bg-indigo-500" : "bg-slate-700"
+            )}
+          >
+            <div className={cn(
+              "w-3 h-3 rounded-full bg-white transition-transform",
+              performanceMode ? "translate-x-5" : "translate-x-0"
+            )} />
+          </button>
+        </div>
+      </div>
+
       {deferredPrompt && (<button onClick={handleInstall} className="flex items-center gap-3 px-3 py-3 rounded-xl md:rounded-2xl bg-[var(--accent)]/10 hover:bg-[var(--accent)]/20 text-[9px] md:text-[10px] font-black uppercase tracking-widest text-[var(--accent-secondary)] transition-all mb-1 border border-[var(--accent)]/20"><MonitorSmartphone className="w-3.5 h-3.5" /> Install App</button>)}
       <button onClick={handleExport} className="flex items-center gap-3 px-3 py-3 rounded-xl md:rounded-2xl hover:bg-white/5 text-[9px] md:text-[10px] font-black uppercase tracking-widest text-slate-300 transition-colors"><Download className="w-3.5 h-3.5" /> Export Data</button>
       <label className="flex items-center gap-3 px-3 py-3 rounded-xl md:rounded-2xl hover:bg-white/5 text-[9px] md:text-[10px] font-black uppercase tracking-widest text-slate-300 transition-colors cursor-pointer"><Upload className="w-3.5 h-3.5" /> Import Data<input type="file" className="hidden" accept=".json" onChange={handleImport} /></label>

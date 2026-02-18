@@ -34,6 +34,8 @@ const Toolbar: React.FC = () => {
   const clearWorkspace = useStore((state) => state.clearWorkspace);
   const theme = useStore((state) => state.theme);
   const setTheme = useStore((state) => state.setTheme);
+  const performanceMode = useStore((state) => state.performanceMode);
+  const setPerformanceMode = useStore((state) => state.setPerformanceMode);
   const deferredPrompt = useStore((state) => state.deferredPrompt);
   const setDeferredPrompt = useStore((state) => state.setDeferredPrompt);
 
@@ -247,7 +249,7 @@ const Toolbar: React.FC = () => {
 
   return (
     <>
-            <div className="fixed top-4 md:top-6 left-4 md:left-6 right-4 md:right-6 z-[9999] flex items-center justify-between pointer-events-none">
+            <div className="fixed top-2 md:top-6 left-2 md:left-6 right-2 md:right-6 z-[9999] flex items-center justify-between gap-2 pointer-events-none">
               <ToolbarLogo />
               <SpaceSwitcher 
                 spaces={spaces}
@@ -270,8 +272,33 @@ const Toolbar: React.FC = () => {
         <ViewSwitcher activeSpace={activeSpace} setViewMode={setViewMode} />
       </div>
       <ActionFAB isReadOnly={isReadOnly} handleAddThought={handleAddThought} />
-      <SystemTray isReadOnly={isReadOnly} user={user} limits={limits} isChatOpen={isChatOpen} setChatOpen={setChatOpen} openPricing={openPricing} isShortcutsOpen={isShortcutsOpen} setIsShortcutsOpen={setIsShortcutsOpen} isHelpOpen={isHelpOpen} setIsHelpOpen={setIsHelpOpen} isSystemMenuOpen={isSystemMenuOpen} setIsSystemMenuOpen={setIsSystemMenuOpen} theme={theme} setTheme={setTheme} deferredPrompt={deferredPrompt} handleInstall={handleInstall} handleExport={handleExport} handleScreenshot={handleScreenshot} handleImport={handleImport} isCapturing={isCapturing} openModal={openModal} clearWorkspace={clearWorkspace} />
-      <StatusBar thoughtsCount={thoughts.length} limits={limits} activeSpace={activeSpace} handleTogglePhysics={handleTogglePhysics} undo={undo} redo={redo} historyIndex={historyIndex} historyLength={history.length} zoomIn={zoomIn} zoomOut={zoomOut} resetTransform={resetTransform} />
+      <SystemTray 
+        isReadOnly={isReadOnly} 
+        user={user} 
+        limits={limits} 
+        isChatOpen={isChatOpen} 
+        setChatOpen={setChatOpen} 
+        openPricing={openPricing} 
+        isShortcutsOpen={isShortcutsOpen} 
+        setIsShortcutsOpen={setIsShortcutsOpen} 
+        isHelpOpen={isHelpOpen} 
+        setIsHelpOpen={setIsHelpOpen} 
+        isSystemMenuOpen={isSystemMenuOpen} 
+        setIsSystemMenuOpen={setIsSystemMenuOpen} 
+        theme={theme} 
+        setTheme={setTheme} 
+        performanceMode={performanceMode}
+        setPerformanceMode={setPerformanceMode}
+        deferredPrompt={deferredPrompt} 
+        handleInstall={handleInstall} 
+        handleExport={handleExport} 
+        handleScreenshot={handleScreenshot} 
+        handleImport={handleImport} 
+        isCapturing={isCapturing} 
+        openModal={openModal} 
+        clearWorkspace={clearWorkspace} 
+      />
+      <StatusBar thoughtsCount={thoughts.length} limits={limits} activeSpace={activeSpace} handleTogglePhysics={handleTogglePhysics} undo={undo} redo={redo} historyIndex={historyIndex} historyLength={history.length} zoomIn={zoomIn} zoomOut={zoomOut} resetTransform={resetTransform} performanceMode={performanceMode} />
       <ShortcutsModal isOpen={isShortcutsOpen} onClose={() => setIsShortcutsOpen(false)} />
       <HelpModal isOpen={isHelpOpen} onClose={() => setIsHelpOpen(false)} activeTab={activeHelpTab} setActiveTab={setActiveHelpTab} quickMessage={quickMessage} setQuickMessage={setQuickMessage} quickType={quickType} setQuickType={setQuickType} isQuickSubmitting={isQuickSubmitting} quickSubmitStatus={quickSubmitStatus} handleQuickSubmit={handleQuickSubmit} contactName={contactName} setContactName={setContactName} contactEmail={contactEmail} setContactEmail={setContactEmail} contactMessage={contactMessage} setContactMessage={setContactMessage} isContactSubmitting={isContactSubmitting} contactSubmitStatus={contactSubmitStatus} handleContactSubmit={handleContactSubmit} openModal={openModal} />
     </>

@@ -22,7 +22,6 @@ import PaintFocusEditor from './components/editors/PaintFocusEditor';
 import TasksFocusEditor from './components/editors/TasksFocusEditor';
 import EmbedFocusEditor from './components/editors/EmbedFocusEditor';
 import ChatOverlay from './components/ChatOverlay';
-import MobileNotSupported from './components/MobileNotSupported';
 import FeedbackPage from './components/FeedbackPage';
 import LoadingOverlay from './components/LoadingOverlay';
 
@@ -45,7 +44,6 @@ function App() {
   const mouseScreenPos = useRef({ x: 0, y: 0 });
 
   const [path, setPath] = React.useState(window.location.pathname);
-  const [isMobile, setIsMobile] = React.useState(typeof window !== 'undefined' ? window.innerWidth < 1024 : false);
 
   useEffect(() => {
     // Global Re-auth handler for 401 recovery
@@ -74,12 +72,6 @@ function App() {
     const handlePopState = () => setPath(window.location.pathname);
     window.addEventListener('popstate', handlePopState);
     return () => window.removeEventListener('popstate', handlePopState);
-  }, []);
-
-  useEffect(() => {
-    const handleResize = () => setIsMobile(window.innerWidth < 1024);
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
   }, []);
 
   useEffect(() => {
@@ -310,6 +302,7 @@ function App() {
   }, [addThought, setSelectedThoughtId, setInspectorOpen, thoughts.length, openModal, path, limits.MAX_THOUGHTS_PER_SPACE]);
 
   const theme = useStore((state) => state.theme);
+  const performanceMode = useStore((state) => state.performanceMode);
 
   if (path === '/feedback') {
     return (
@@ -322,9 +315,7 @@ function App() {
 
   return (
     <div className="w-full h-full relative overflow-hidden bg-black">
-      {isMobile ? (
-        <MobileNotSupported />
-      ) : (
+      {!performanceMode ? (
         <>
           {/* Theme-Specific Background Layers */}
           {theme === 'cyberia' && (
@@ -362,8 +353,21 @@ function App() {
 
           <div className="nebula-cloud" />
           <div className="grain" />
+        </>
+      ) : (
+        /* Solid Color Fallback for Performance Mode - Using --bg-page equivalent for contrast */
+        <div 
+          className="fixed inset-0 z-0 transition-colors duration-500" 
+          style={{ 
+            backgroundColor: 
+              theme === 'sea' ? '#000507' : 
+              theme === 'forest' ? '#020806' : 
+              theme === 'rain' ? '#0c0a09' : '#020408' 
+          }} 
+        />
+      )}
 
-          <Viewport />
+      <Viewport />
           <EmptyState />
           <KanbanOverlay />
           <CalendarOverlay />
@@ -380,8 +384,6 @@ function App() {
           <TasksFocusEditor />
           <EmbedFocusEditor />
           <LoadingOverlay />
-        </>
-      )}
       <Analytics />
       <SpeedInsights />
     </div>
