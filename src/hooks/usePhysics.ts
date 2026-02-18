@@ -1,6 +1,6 @@
 import { useEffect, useRef, useCallback } from 'react';
 import { useStore } from '../store/useStore';
-import { db, type Thought } from '../db';
+import { type Thought } from '../db';
 import { getStrategist, type LayoutContext, type PhysicsPoint } from './physics';
 
 const DAMPING = 0.8;
@@ -117,7 +117,11 @@ export const usePhysics = (
       if (currentMode === 'spatial' && currentSpaceId) {
         thoughts.forEach((t) => {
           const p = physicsState.current.get(t.id);
-          if (p && !useStore.getState().isReadOnly) db.thoughts.update(t.id, { x: p.x, y: p.y });
+          if (p && !useStore.getState().isReadOnly) {
+            import('../db').then(({ db }) => {
+              db.thoughts.update(t.id, { x: p.x, y: p.y });
+            });
+          }
         });
       }
     };

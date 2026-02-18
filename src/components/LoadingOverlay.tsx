@@ -3,12 +3,17 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useStore } from '../store/useStore';
 import { Bot, Zap, Shield, Cpu } from 'lucide-react';
 
-const LoadingOverlay: React.FC = () => {
+interface LoadingOverlayProps {
+  force?: boolean;
+}
+
+const LoadingOverlay: React.FC<LoadingOverlayProps> = ({ force }) => {
   const isInitializing = useStore((state) => state.isInitializing);
+  const show = force || isInitializing;
 
   return (
     <AnimatePresence>
-      {isInitializing && (
+      {show && (
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
