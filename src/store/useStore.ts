@@ -355,10 +355,17 @@ export const useStore = create<CyberiaState>((set, get) => ({
   },
 
   setCustomBg: async (bg) => {
-    const { activeSpaceId, isReadOnly } = get();
+    const { activeSpaceId, isReadOnly, spaces } = get();
     if (isReadOnly || !activeSpaceId) return;
 
+    // Update local state
     set({ customBg: bg });
+    
+    // Update spaces array in store to ensure publishing has latest data
+    const updatedSpaces = spaces.map(s => s.id === activeSpaceId ? { ...s, customBg: bg } : s);
+    set({ spaces: updatedSpaces });
+
+    // Persist to DB
     await db.spaces.update(activeSpaceId, { customBg: bg });
   },
 
@@ -425,6 +432,7 @@ export const useStore = create<CyberiaState>((set, get) => ({
             creatorName,
             lastUpdated: data.lastUpdated || null,
             isInitializing: false,
+            customBg: space.customBg || null,
             transform: {
               x: space.transformX || 0,
               y: space.transformY || 0,
