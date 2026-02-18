@@ -22,7 +22,6 @@ import PaintFocusEditor from './components/editors/PaintFocusEditor';
 import TasksFocusEditor from './components/editors/TasksFocusEditor';
 import EmbedFocusEditor from './components/editors/EmbedFocusEditor';
 import ChatOverlay from './components/ChatOverlay';
-import MobileNotSupported from './components/MobileNotSupported';
 import FeedbackPage from './components/FeedbackPage';
 import LoadingOverlay from './components/LoadingOverlay';
 
@@ -45,7 +44,6 @@ function App() {
   const mouseScreenPos = useRef({ x: 0, y: 0 });
 
   const [path, setPath] = React.useState(window.location.pathname);
-  const [isMobile, setIsMobile] = React.useState(typeof window !== 'undefined' ? window.innerWidth < 1024 : false);
 
   useEffect(() => {
     // Global Re-auth handler for 401 recovery
@@ -74,12 +72,6 @@ function App() {
     const handlePopState = () => setPath(window.location.pathname);
     window.addEventListener('popstate', handlePopState);
     return () => window.removeEventListener('popstate', handlePopState);
-  }, []);
-
-  useEffect(() => {
-    const handleResize = () => setIsMobile(window.innerWidth < 1024);
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
   }, []);
 
   useEffect(() => {
@@ -310,6 +302,35 @@ function App() {
   }, [addThought, setSelectedThoughtId, setInspectorOpen, thoughts.length, openModal, path, limits.MAX_THOUGHTS_PER_SPACE]);
 
   const theme = useStore((state) => state.theme);
+  const performanceMode = useStore((state) => state.performanceMode);
+  const customBg = useStore((state) => state.customBg);
+  const [staticBg, setStaticBg] = React.useState<string | null>(null);
+
+  // Performance Optimization: Freeze GIFs in Performance Mode
+  useEffect(() => {
+    if (performanceMode && customBg && (customBg.includes('image/gif') || customBg.toLowerCase().endsWith('.gif'))) {
+      const img = new Image();
+      img.crossOrigin = "anonymous";
+      img.src = customBg;
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        canvas.width = img.width;
+        canvas.height = img.height;
+        const ctx = canvas.getContext('2d');
+        if (ctx) {
+          ctx.drawImage(img, 0, 0);
+          try {
+            setStaticBg(canvas.toDataURL('image/webp', 0.8));
+          } catch (e) {
+            console.warn("Could not freeze GIF due to CORS, falling back to original.");
+            setStaticBg(null);
+          }
+        }
+      };
+    } else {
+      setStaticBg(null);
+    }
+  }, [performanceMode, customBg]);
 
   if (path === '/feedback') {
     return (
@@ -322,11 +343,28 @@ function App() {
 
   return (
     <div className="w-full h-full relative overflow-hidden bg-black">
-      {isMobile ? (
-        <MobileNotSupported />
-      ) : (
+      {/* Custom Background Base Layer */}
+      {customBg && (
+        <div 
+          className="fixed inset-0 z-0 bg-cover bg-center bg-no-repeat transition-opacity duration-700 animate-in fade-in"
+          style={{ 
+            backgroundImage: `url(${staticBg || customBg})`,
+            opacity: 0.6 // Consistent reduced opacity for both modes
+          }}
+        />
+      )}
+
+      {!performanceMode ? (
         <>
-          {/* Theme-Specific Background Layers */}
+          {/* Theme-Specific Background Layers - Use semi-transparent overlay if customBg exists */}
+          <div 
+            className="fixed inset-0 z-[1] pointer-events-none transition-opacity duration-500"
+            style={{ 
+              backgroundColor: customBg ? 'rgba(2, 4, 8, 0.2)' : 'transparent',
+              mixBlendMode: customBg ? 'overlay' : 'normal'
+            }}
+          />
+          
           {theme === 'cyberia' && (
             <>
               <div className="stars-layer stars-1" />
@@ -362,8 +400,22 @@ function App() {
 
           <div className="nebula-cloud" />
           <div className="grain" />
+        </>
+      ) : (
+        /* Solid Color Fallback for Performance Mode - Using --bg-page equivalent for contrast */
+        <div 
+          className="fixed inset-0 z-[1] transition-colors duration-500" 
+          style={{ 
+            backgroundColor: 
+              theme === 'sea' ? '#000507' : 
+              theme === 'forest' ? '#020806' : 
+              theme === 'rain' ? '#0c0a09' : '#020408',
+            opacity: customBg ? 0.8 : 1 // Let the image show through slightly in performance mode
+          }} 
+        />
+      )}
 
-          <Viewport />
+      <Viewport />
           <EmptyState />
           <KanbanOverlay />
           <CalendarOverlay />
@@ -380,8 +432,6 @@ function App() {
           <TasksFocusEditor />
           <EmbedFocusEditor />
           <LoadingOverlay />
-        </>
-      )}
       <Analytics />
       <SpeedInsights />
     </div>

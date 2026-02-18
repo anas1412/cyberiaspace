@@ -22,8 +22,11 @@ interface CyberiaState {
   kanbanSearchQuery: string;
   kanbanStackFilter: string | null;
   theme: 'cyberia' | 'sea' | 'forest' | 'rain';
+  customBg: string | null;
   isSpaceLoading: boolean;
   isInitializing: boolean;
+  performanceMode: boolean;
+  setPerformanceMode: (mode: boolean) => void;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   deferredPrompt: any;
   layerActionTrigger: { id: number; time: number } | null;
@@ -40,6 +43,7 @@ interface CyberiaState {
 
   // Actions
   setTheme: (theme: 'cyberia' | 'sea' | 'forest' | 'rain') => void;
+  setCustomBg: (bg: string | null) => Promise<void>;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   setDeferredPrompt: (prompt: any) => void;
 
@@ -146,8 +150,15 @@ export const useStore = create<CyberiaState>((set, get) => ({
   lightboxImage: null,
   linkingSourceId: null,
   theme: (localStorage.getItem('cyberia-theme') as 'cyberia' | 'sea' | 'forest' | 'rain') || 'cyberia',
+  customBg: null,
   isSpaceLoading: true,
   isInitializing: true,
+  performanceMode: typeof window !== 'undefined' ? (window.innerWidth < 763) : false,
+  setPerformanceMode: (performanceMode) => {
+    set({ performanceMode });
+    if (performanceMode) document.body.classList.add('low-perf');
+    else document.body.classList.remove('low-perf');
+  },
   deferredPrompt: null,
   layerActionTrigger: null,
   isReadOnly: false,
@@ -176,6 +187,7 @@ export const useStore = create<CyberiaState>((set, get) => ({
     try {
       const spaceThoughts = thoughts.filter(t => t.spaceId === spaceId);
       const spaceStacks = stacks.filter(s => s.spaceId === spaceId);
+      const currentTheme = get().theme;
 
       const res = await fetch('/api/publish', {
         method: 'POST',
@@ -184,7 +196,7 @@ export const useStore = create<CyberiaState>((set, get) => ({
           'Authorization': `Bearer ${authStore.accessToken}`
         },
         body: JSON.stringify({
-          space,
+          space: { ...space, theme: currentTheme },
           thoughts: spaceThoughts,
           stacks: spaceStacks,
           publishedId: space.publishedId,
@@ -331,9 +343,30 @@ export const useStore = create<CyberiaState>((set, get) => ({
   closeLightbox: () => set({ isLightboxOpen: false, lightboxImage: null }),
 
   setTheme: (theme) => {
+    const { activeSpaceId } = get();
     set({ theme });
     localStorage.setItem('cyberia-theme', theme);
     document.body.setAttribute('data-theme', theme);
+    
+    // Save theme to current space if not in a shared read-only space
+    if (activeSpaceId && !get().isReadOnly) {
+      get().updateSpace(activeSpaceId, { theme });
+    }
+  },
+
+  setCustomBg: async (bg) => {
+    const { activeSpaceId, isReadOnly, spaces } = get();
+    if (isReadOnly || !activeSpaceId) return;
+
+    // Update local state
+    set({ customBg: bg });
+    
+    // Update spaces array in store to ensure publishing has latest data
+    const updatedSpaces = spaces.map(s => s.id === activeSpaceId ? { ...s, customBg: bg } : s);
+    set({ spaces: updatedSpaces });
+
+    // Persist to DB
+    await db.spaces.update(activeSpaceId, { customBg: bg });
   },
 
   setDeferredPrompt: (prompt) => set({ deferredPrompt: prompt }),
@@ -360,7 +393,12 @@ export const useStore = create<CyberiaState>((set, get) => ({
   setChatOpen: (isOpen) => set({ isChatOpen: isOpen }),
 
   init: async () => {
-    // 1. Initialize Auth regardless (needed for UI consistency/Oracle status)
+    // 1. Initialize Performance Mode
+    if (get().performanceMode) {
+      document.body.classList.add('low-perf');
+    }
+
+    // 2. Initialize Auth regardless (needed for UI consistency/Oracle status)
     useAuthStore.getState().initAuth();
 
     // Reconcile Oracle status immediately from current auth state
@@ -394,6 +432,7 @@ export const useStore = create<CyberiaState>((set, get) => ({
             creatorName,
             lastUpdated: data.lastUpdated || null,
             isInitializing: false,
+            customBg: space.customBg || null,
             transform: {
               x: space.transformX || 0,
               y: space.transformY || 0,
@@ -634,16 +673,35 @@ export const useStore = create<CyberiaState>((set, get) => ({
   setActiveSpace: (id) => {
     localStorage.setItem('cyberia-active-space-id', id);
     const space = get().spaces.find(s => s.id === id);
-    const updates: any = { activeSpaceId: id, thoughts: [], stacks: [], isSpaceLoading: true, history: [], historyIndex: -1 };
+    const updates: any = { 
+      activeSpaceId: id, 
+      thoughts: [], 
+      stacks: [], 
+      isSpaceLoading: true, 
+      history: [], 
+      historyIndex: -1,
+      layerActionTrigger: null 
+    };
 
-    if (space && space.mode === 'spatial') {
-      updates.transform = {
-        x: space.transformX ?? 0,
-        y: space.transformY ?? 0,
-        scale: space.transformScale ?? 1
-      };
-    } else {
-      updates.transform = { x: 0, y: 0, scale: 1 };
+    if (space) {
+      if (space.mode === 'spatial') {
+        updates.transform = {
+          x: space.transformX ?? 0,
+          y: space.transformY ?? 0,
+          scale: space.transformScale ?? 1
+        };
+      } else {
+        updates.transform = { x: 0, y: 0, scale: 1 };
+      }
+
+      // Apply Space-Specific Theme
+      if (space.theme) {
+        updates.theme = space.theme;
+        document.body.setAttribute('data-theme', space.theme);
+      }
+
+      // Apply Space-Specific Background
+      updates.customBg = space.customBg || null;
     }
 
     set(updates);

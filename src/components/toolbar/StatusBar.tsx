@@ -19,11 +19,13 @@ interface StatusBarProps {
   zoomIn: () => void;
   zoomOut: () => void;
   resetTransform: () => void;
+  performanceMode: boolean;
 }
 
 export const StatusBar: React.FC<StatusBarProps> = ({ 
   thoughtsCount, limits, activeSpace, handleTogglePhysics, undo, redo, 
-  historyIndex, historyLength, zoomIn, zoomOut, resetTransform 
+  historyIndex, historyLength, zoomIn, zoomOut, resetTransform,
+  performanceMode
 }) => (
   <div className="fixed bottom-4 md:bottom-8 left-4 md:left-8 z-[9999] flex items-center gap-2 pointer-events-none">
     <div className="glass px-3 md:px-4 h-[40px] md:h-[48px] rounded-2xl flex items-center gap-2 md:gap-4 border border-white/5 pointer-events-auto">
@@ -33,8 +35,15 @@ export const StatusBar: React.FC<StatusBarProps> = ({
         <span className={cn("text-[9px] md:text-[10px] uppercase font-black tracking-widest transition-colors", thoughtsCount > limits.MAX_THOUGHTS_PER_SPACE ? "text-red-400" : "text-white/80")}><span>{thoughtsCount}</span><span className="hidden sm:inline">/{limits.MAX_THOUGHTS_PER_SPACE} {thoughtsCount > limits.MAX_THOUGHTS_PER_SPACE ? 'Overflow' : 'Thoughts'}</span></span>
       </div>
       <div className="h-3 w-[1px] bg-white/10 mx-0.5"></div>
-      <button onClick={handleTogglePhysics} className={cn("group relative flex items-center gap-2 transition-all text-[9px] md:text-[10px] font-black uppercase tracking-widest", activeSpace?.physics ? "text-[var(--accent-secondary)]" : "text-slate-600")}>
-        <div className="absolute bottom-full mb-4 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-all duration-300 translate-y-2 group-hover:translate-y-0 pointer-events-none whitespace-nowrap z-[10001]"><div className="glass px-3 py-1.5 rounded-xl border border-white/10 flex items-center gap-2 shadow-2xl bg-[var(--bg-main)]/90 backdrop-blur-xl"><span className="text-[10px] font-black uppercase tracking-widest text-white/80">Physics</span><div className="w-[1px] h-2 bg-white/10 mx-0.5" /><span className={cn("text-[8px] font-black uppercase tracking-widest", activeSpace?.physics ? "text-green-400" : "text-slate-400")}>{activeSpace?.physics ? "Enabled" : "Disabled"}</span></div></div>
+      <button 
+        onClick={handleTogglePhysics} 
+        disabled={performanceMode}
+        className={cn(
+          "group relative flex items-center gap-2 transition-all text-[9px] md:text-[10px] font-black uppercase tracking-widest", 
+          performanceMode ? "text-slate-500 opacity-50 cursor-not-allowed" : activeSpace?.physics ? "text-[var(--accent-secondary)]" : "text-slate-600"
+        )}
+      >
+        <div className="absolute bottom-full mb-4 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-all duration-300 translate-y-2 group-hover:translate-y-0 pointer-events-none whitespace-nowrap z-[10001]"><div className="glass px-3 py-1.5 rounded-xl border border-white/10 flex items-center gap-2 shadow-2xl bg-[var(--bg-main)]/90 backdrop-blur-xl"><span className="text-[10px] font-black uppercase tracking-widest text-white/80">Physics</span><div className="w-[1px] h-2 bg-white/10 mx-0.5" /><span className={cn("text-[8px] font-black uppercase tracking-widest", performanceMode ? "text-amber-400" : activeSpace?.physics ? "text-green-400" : "text-slate-400")}>{performanceMode ? "Auto-Disabled" : activeSpace?.physics ? "Enabled" : "Disabled"}</span></div></div>
         <Zap className="w-3.5 h-3.5 md:w-4 md:h-4" /><span className="hidden xl:inline">Physics</span>
       </button>
       <div className="hidden sm:flex h-3 w-[1px] bg-white/10 mx-0.5"></div>

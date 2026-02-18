@@ -31,8 +31,9 @@ export const TextRenderer: React.FC<TextRendererProps> = ({
     <div className={cn("overflow-hidden relative", hasContent && "max-h-[140px]")}>
       {hasContent ? (
         <div
-          className="markdown-body text-[11px] leading-relaxed text-slate-300/90"
+          className="markdown-body text-[11px] leading-relaxed text-slate-300/90 select-none pointer-events-none"
           dangerouslySetInnerHTML={{ __html: parsedContent as string }}
+          onDragStart={(e) => e.preventDefault()}
         />
       ) : (
         !isReadOnly && (

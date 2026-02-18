@@ -35,6 +35,7 @@ const ThoughtNode: React.FC<ThoughtNodeProps> = React.memo(({ thought, registerE
   const isInspectorOpen = useStore((state) => state.isInspectorOpen);
   const layerActionTrigger = useStore((state) => state.layerActionTrigger);
   const isReadOnly = useStore((state) => state.isReadOnly);
+  const performanceMode = useStore((state) => state.performanceMode);
 
   const setSelectedThoughtId = useStore((state) => state.setSelectedThoughtId);
   const setInspectorOpen = useStore((state) => state.setInspectorOpen);
@@ -69,13 +70,19 @@ const ThoughtNode: React.FC<ThoughtNodeProps> = React.memo(({ thought, registerE
 
   const altitudeStyles = useMemo(() => {
     if (!thought.layer) return {};
+    if (performanceMode) {
+      return {
+        boxShadow: isSelected ? `0 0 20px var(--accent-glow)` : `0 4px 12px rgba(0,0,0,0.4)`,
+        transform: 'scale(1)',
+      };
+    }
     const shadowSize = isDragging ? 60 : Math.min(50, (thought.layer % 100) + 10);
     const altitudeScale = 1 + (Math.min(10, (thought.layer % 10)) / 200);
     return {
       boxShadow: `0 ${shadowSize / 2}px ${shadowSize}px rgba(0,0,0,0.6)`,
       transform: `scale(${altitudeScale})`,
     };
-  }, [thought.layer, isDragging]);
+  }, [thought.layer, isDragging, performanceMode, isSelected]);
 
   const parsedContent = useMemo(() => {
     return thought.content ? marked.parse(thought.content) : '';

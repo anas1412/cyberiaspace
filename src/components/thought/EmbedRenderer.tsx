@@ -55,7 +55,7 @@ export const EmbedRenderer: React.FC<EmbedRendererProps> = ({ thought }) => {
   const previewImage = thought.image || (provider === 'youtube' && id ? `https://img.youtube.com/vi/${id}/mqdefault.jpg` : null);
 
   return (
-    <div data-trigger="embed" className="mt-2 relative group prevent-drag cursor-pointer overflow-hidden rounded-xl border border-white/10 bg-black/50 aspect-video flex items-center justify-center">
+    <div data-trigger="embed" className="mt-2 relative group cursor-pointer overflow-hidden rounded-xl border border-white/10 bg-black/50 aspect-video flex items-center justify-center">
       {previewImage ? (
         <>
           <img
