@@ -150,7 +150,7 @@ export const useStore = create<CyberiaState>((set, get) => ({
   theme: (localStorage.getItem('cyberia-theme') as 'cyberia' | 'sea' | 'forest' | 'rain') || 'cyberia',
   isSpaceLoading: true,
   isInitializing: true,
-  performanceMode: typeof window !== 'undefined' ? (window.innerWidth < 1024 || (navigator as any).deviceMemory < 4) : false,
+  performanceMode: typeof window !== 'undefined' ? (window.innerWidth < 763) : false,
   setPerformanceMode: (performanceMode) => {
     set({ performanceMode });
     if (performanceMode) document.body.classList.add('low-perf');
