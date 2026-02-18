@@ -23,14 +23,14 @@ export const TableRenderer: React.FC<TableRendererProps> = ({
 
   if (isTableEmpty) {
     return (
-      <div data-trigger="table" className="mt-1 flex flex-col items-center gap-2 py-4 bg-black/20 rounded-xl border border-white/5 group/table relative cursor-pointer prevent-drag transition-colors hover:bg-white/[0.05]">
+      <div data-trigger="table" className="mt-1 flex flex-col items-center gap-2 py-4 bg-black/20 rounded-xl border border-white/5 group/table relative cursor-pointer transition-colors hover:bg-white/[0.05]">
         <Table className="w-6 h-6 text-white/20" />
         <span className="text-[10px] text-white/20 font-bold uppercase tracking-widest">Build Table</span>
         {!isReadOnly && (
           <div className="absolute inset-0 bg-[var(--accent)]/10 opacity-0 group-hover/table:opacity-100 transition-opacity rounded-xl flex items-center justify-center pointer-events-none">
             <button
               onClick={(e) => { e.stopPropagation(); setActiveFocus(thought.id, 'table'); }}
-              className="pointer-events-auto bg-[var(--accent)] text-white p-2 rounded-lg shadow-xl transform scale-90 group-hover/table:scale-100 transition-all hover:scale-110 active:scale-95"
+              className="pointer-events-auto prevent-drag bg-[var(--accent)] text-white p-2 rounded-lg shadow-xl transform scale-90 group-hover/table:scale-100 transition-all hover:scale-110 active:scale-95"
             >
               <Maximize2 className="w-4 h-4" />
             </button>
@@ -47,9 +47,9 @@ export const TableRenderer: React.FC<TableRendererProps> = ({
   const visibleRows = thought.table.slice(0, maxRows);
 
   return (
-    <div data-trigger="table" className="relative group/table overflow-hidden rounded-xl prevent-drag cursor-pointer min-h-[60px] flex flex-col justify-center">
+    <div data-trigger="table" className="relative group/table overflow-hidden rounded-xl cursor-pointer min-h-[60px] flex flex-col justify-center">
       <div className="overflow-x-auto custom-scroll pb-1">
-        <table className="thought-table mt-1 border-collapse w-full text-[10px]">
+        <table className="thought-table mt-1 border-collapse w-full text-[10px] select-none">
           <tbody>
             {visibleRows.map((row, r) => (
               <tr key={r} className={cn(r % 2 === 0 ? "bg-white/[0.01]" : "")}>
@@ -75,7 +75,7 @@ export const TableRenderer: React.FC<TableRendererProps> = ({
         <div className="absolute inset-0 bg-[var(--accent)]/10 opacity-0 group-hover/table:opacity-100 transition-opacity rounded-xl flex items-center justify-center pointer-events-none">
           <button
             onClick={(e) => { e.stopPropagation(); setActiveFocus(thought.id, 'table'); }}
-            className="pointer-events-auto bg-[var(--accent)] text-white p-2 rounded-lg shadow-xl transform scale-90 group-hover/table:scale-100 transition-all hover:scale-110 active:scale-95"
+            className="pointer-events-auto prevent-drag bg-[var(--accent)] text-white p-2 rounded-lg shadow-xl transform scale-90 group-hover/table:scale-100 transition-all hover:scale-110 active:scale-95"
           >
             <Maximize2 className="w-4 h-4" />
           </button>

@@ -25,14 +25,14 @@ export const TasksRenderer: React.FC<TasksRendererProps> = ({
 
   if (thought.tasks.length === 0) {
     return (
-      <div data-trigger="tasks" className="mt-1 flex flex-col items-center gap-2 py-4 bg-black/20 rounded-xl border border-white/5 group/tasks relative cursor-pointer prevent-drag transition-colors hover:bg-white/[0.05]">
+      <div data-trigger="tasks" className="mt-1 flex flex-col items-center gap-2 py-4 bg-black/20 rounded-xl border border-white/5 group/tasks relative cursor-pointer transition-colors hover:bg-white/[0.05]">
         <ListTodo className="w-6 h-6 text-white/20" />
         <span className="text-[10px] text-white/20 font-bold uppercase tracking-widest">Create Tasks</span>
         {!isReadOnly && (
           <div className="absolute inset-0 bg-[var(--accent)]/10 opacity-0 group-hover/tasks:opacity-100 transition-opacity rounded-xl flex items-center justify-center pointer-events-none">
             <button
               onClick={(e) => { e.stopPropagation(); setActiveFocus(thought.id, 'tasks'); }}
-              className="pointer-events-auto bg-[var(--accent)] text-white p-2 rounded-lg shadow-xl transform scale-90 group-hover/tasks:scale-100 transition-all hover:scale-110 active:scale-95"
+              className="pointer-events-auto prevent-drag bg-[var(--accent)] text-white p-2 rounded-lg shadow-xl transform scale-90 group-hover/tasks:scale-100 transition-all hover:scale-110 active:scale-95"
             >
               <Maximize2 className="w-4 h-4" />
             </button>
@@ -43,12 +43,12 @@ export const TasksRenderer: React.FC<TasksRendererProps> = ({
   }
 
   return (
-    <div data-trigger="tasks" className="mt-1 space-y-2 group/tasks relative cursor-pointer prevent-drag min-h-[60px] flex flex-col justify-center">
+    <div data-trigger="tasks" className="mt-1 space-y-2 group/tasks relative cursor-pointer min-h-[60px] flex flex-col justify-center">
       <div className="space-y-1.5 pr-10">
         {previewTasks.map((task, i) => (
           <div key={i} className="flex items-center gap-2 min-w-0">
             <div className={cn(
-              "w-3 h-3 rounded-sm border-[1.5px] flex-shrink-0 transition-colors",
+              "w-3 h-3 rounded-sm border-[1.5px] flex-shrink-0 transition-colors prevent-drag",
               task.done ? "bg-[var(--status-todo)] border-[var(--status-todo)]" : "border-white/20"
             )} />
             <span className={cn(
@@ -75,7 +75,7 @@ export const TasksRenderer: React.FC<TasksRendererProps> = ({
         <div className="absolute inset-0 bg-[var(--accent)]/10 opacity-0 group-hover/tasks:opacity-100 transition-opacity rounded-xl flex items-center justify-center pointer-events-none">
           <button
             onClick={(e) => { e.stopPropagation(); setActiveFocus(thought.id, 'tasks'); }}
-            className="pointer-events-auto bg-[var(--accent)] text-white p-2 rounded-lg shadow-xl transform scale-90 group-hover/tasks:scale-100 transition-all hover:scale-110 active:scale-95"
+            className="pointer-events-auto prevent-drag bg-[var(--accent)] text-white p-2 rounded-lg shadow-xl transform scale-90 group-hover/tasks:scale-100 transition-all hover:scale-110 active:scale-95"
           >
             <Maximize2 className="w-4 h-4" />
           </button>

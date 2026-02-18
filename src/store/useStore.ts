@@ -647,7 +647,15 @@ export const useStore = create<CyberiaState>((set, get) => ({
   setActiveSpace: (id) => {
     localStorage.setItem('cyberia-active-space-id', id);
     const space = get().spaces.find(s => s.id === id);
-    const updates: any = { activeSpaceId: id, thoughts: [], stacks: [], isSpaceLoading: true, history: [], historyIndex: -1 };
+    const updates: any = { 
+      activeSpaceId: id, 
+      thoughts: [], 
+      stacks: [], 
+      isSpaceLoading: true, 
+      history: [], 
+      historyIndex: -1,
+      layerActionTrigger: null // Reset sonar trigger
+    };
 
     if (space && space.mode === 'spatial') {
       updates.transform = {
