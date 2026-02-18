@@ -344,6 +344,7 @@ export const useStore = create<CyberiaState>((set, get) => ({
   closeLightbox: () => set({ isLightboxOpen: false, lightboxImage: null }),
 
   setTheme: (theme) => {
+    if (get().isReadOnly) return;
     const { activeSpaceId } = get();
     set({ theme });
     localStorage.setItem('cyberia-theme', theme);

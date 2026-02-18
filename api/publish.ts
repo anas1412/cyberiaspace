@@ -101,7 +101,7 @@ async function handleFetchPublished(req: VercelRequest, res: VercelResponse) {
 
         res.setHeader('Access-Control-Allow-Origin', '*');
         res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
-        res.setHeader('Cache-Control', 's-maxage=3600, stale-while-revalidate=1800');
+        res.setHeader('Cache-Control', 'public, s-maxage=1, stale-while-revalidate=5');
 
         return res.status(200).json(data);
     } catch (error) {
