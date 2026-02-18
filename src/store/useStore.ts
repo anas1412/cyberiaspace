@@ -104,7 +104,8 @@ interface CyberiaState {
   // Lightbox
   isLightboxOpen: boolean;
   lightboxImage: string | null;
-  openLightbox: (image: string) => void;
+  lightboxThoughtId: number | null;
+  openLightbox: (image: string, thoughtId: number) => void;
   closeLightbox: () => void;
 
   // Transform State (Moved from Viewport)
@@ -148,6 +149,7 @@ export const useStore = create<CyberiaState>((set, get) => ({
   kanbanStackFilter: null,
   isLightboxOpen: false,
   lightboxImage: null,
+  lightboxThoughtId: null,
   linkingSourceId: null,
   theme: (localStorage.getItem('cyberia-theme') as 'cyberia' | 'sea' | 'forest' | 'rain') || 'cyberia',
   customBg: null,
@@ -340,8 +342,8 @@ export const useStore = create<CyberiaState>((set, get) => ({
   oracleMode: false,
   isChatOpen: false,
 
-  openLightbox: (image) => set({ isLightboxOpen: true, lightboxImage: image }),
-  closeLightbox: () => set({ isLightboxOpen: false, lightboxImage: null }),
+  openLightbox: (image, thoughtId) => set({ isLightboxOpen: true, lightboxImage: image, lightboxThoughtId: thoughtId }),
+  closeLightbox: () => set({ isLightboxOpen: false, lightboxImage: null, lightboxThoughtId: null }),
 
   setTheme: (theme) => {
     if (get().isReadOnly) return;

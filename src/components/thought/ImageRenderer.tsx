@@ -7,7 +7,7 @@ interface ImageRendererProps {
   isReadOnly: boolean;
   setSelectedThoughtId: (id: number | null) => void;
   setInspectorOpen: (open: boolean) => void;
-  openLightbox: (url: string) => void;
+  openLightbox: (url: string, id: number) => void;
 }
 
 export const ImageRenderer: React.FC<ImageRendererProps> = ({ 
@@ -40,12 +40,12 @@ export const ImageRenderer: React.FC<ImageRendererProps> = ({
       <img
         src={thought.image}
         draggable="false"
-        onClick={(e) => { e.stopPropagation(); if (thought.image) openLightbox(thought.image); }}
+        onClick={(e) => { e.stopPropagation(); if (thought.image) openLightbox(thought.image, thought.id); }}
         className="w-full rounded-xl border border-white/10 max-h-[160px] object-cover bg-black/50 cursor-zoom-in"
         alt="Thought"
       />
       <button
-        onClick={(e) => { e.stopPropagation(); if (thought.image) openLightbox(thought.image); }}
+        onClick={(e) => { e.stopPropagation(); if (thought.image) openLightbox(thought.image, thought.id); }}
         className="expand-img prevent-drag absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-white rounded-xl"
       >
         <Maximize2 />
