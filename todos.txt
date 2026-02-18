@@ -7,7 +7,7 @@ performance mode
 
 
 
-change stack to collection
+
 
 Cyberia is a spatial productivity platform for kinetic information architecture. It uses a physics-driven workspace to organize data through fluid Spatial, Kanban, and Calendar views, enabling high-velocity research and strategic planning.
 
@@ -48,6 +48,30 @@ Cyberia is a spatial productivity platform for kinetic information architecture.
  
 
 TODO:
+
+i want to change the performance on/off button between command center and oracle ai icons but also we have the physics button in controls? do u have any better idea? (dont implement we are planning)
+
+change stack to collection
+
+the web app cyberia is so laggy with hand gestures and phyics as pwa on my tablet/website why? pls investigate throughly (dont implement anything)
+
+gallery of imaegs just like ytb
+
+
+
+  message: 'Tool call validation failed: tool call validation failed: parameters for tool create_thought did not match schema: errors: [`/stackName`: expected string, but got null]',
+    type: 'invalid_request_error',
+    code: 'tool_use_failed',
+    failed_generation: '{"name": "create_thought", "arguments": {\n' +
+      '  "text": "Java Hello World",\n' +
+      '  "type": "text",\n' +
+      '  "content": "```java\\npublic class HelloWorld {\\n    public static void main(String[] args) {\\n        System.out.println(\\"Hello, world!\\");\\n    }\\n}\\n```",\n' +
+      '  "date": "2026-02-18",\n' +
+      '  "description": "Simple Java program that prints Hello, world!",\n' +
+      '  "stackName": null\n' +
+      '}}',
+    status_code: 400 add an error msg
+------------------------------
 
   1. Spatial Teleportation (Navigation)
   Right now, Oracle can move thoughts, but it can't move you.
