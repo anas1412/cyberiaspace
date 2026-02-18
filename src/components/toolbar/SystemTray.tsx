@@ -69,30 +69,58 @@ export const SystemTray: React.FC<SystemTrayProps> = ({
   return (
     <div className="fixed bottom-4 md:bottom-8 right-4 md:right-8 z-[9999] flex flex-col items-end gap-3 pointer-events-none system-tray-container">
       <div className={cn("glass p-4 md:p-5 rounded-[1.5rem] md:rounded-[2rem] border border-white/10 shadow-2xl flex flex-col gap-1 transition-all pointer-events-auto w-72 md:w-80 animate-in fade-in slide-in-from-bottom-2 duration-300", isSystemMenuOpen ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4 pointer-events-none")}>
-        <div className="px-1 md:px-2 py-3 border-b border-white/5 mb-3"><p className="text-[10px] md:text-[11px] font-black uppercase tracking-[0.2em] text-slate-500 mb-4">Workspace Theme</p><div className="grid grid-cols-4 gap-2">{(['cyberia', 'sea', 'forest', 'rain'] as const).map((id) => { const labels = { cyberia: 'Space', sea: 'Sea', forest: 'Forest', rain: 'Rain' }; const colors = { cyberia: '#6366f1', sea: '#00b4d8', forest: '#2dce89', rain: '#d6d3d1' }; return (<button key={id} onClick={() => setTheme(id)} className={cn("flex flex-col items-center gap-2 p-1.5 rounded-xl border transition-all", theme === id ? "bg-white/10 border-white/20 shadow-lg" : "border-transparent hover:bg-white/5")}><div className="w-3.5 h-3.5 rounded-full shadow-lg" style={{ backgroundColor: colors[id] }} /><span className={cn("text-[8px] font-bold uppercase tracking-widest", theme === id ? "text-white" : "text-slate-500")}>{labels[id]}</span></button>); })}</div></div>
         
-        <div className="px-1 md:px-2 py-3 border-b border-white/5 mb-3">
-          <div className="flex items-center justify-between mb-4">
-            <p className="text-[10px] md:text-[11px] font-black uppercase tracking-[0.2em] text-slate-500">Custom Background</p>
-            {customBg && (
-              <button 
-                onClick={() => setCustomBg(null)}
-                className="text-[8px] font-black uppercase tracking-widest text-red-400 hover:text-red-300 transition-colors"
-              >
-                Remove
-              </button>
-            )}
-          </div>
-          <label className="flex items-center justify-center gap-3 px-3 py-3 rounded-xl md:rounded-2xl bg-white/5 hover:bg-white/10 border border-white/5 cursor-pointer transition-all group">
-            <div className="flex flex-col items-center gap-1">
-              <span className="text-[9px] font-black uppercase tracking-widest text-slate-300 group-hover:text-white">
-                {customBg ? 'Change Background' : 'Upload Image / GIF'}
-              </span>
-              <span className="text-[7px] font-bold text-slate-600 uppercase tracking-widest">Max 2MB • Per Space</span>
+        {!isReadOnly && (
+          <>
+            <div className="px-1 md:px-2 py-3 border-b border-white/5 mb-3">
+              <p className="text-[10px] md:text-[11px] font-black uppercase tracking-[0.2em] text-slate-500 mb-4">Workspace Theme</p>
+              <div className="grid grid-cols-4 gap-2">
+                {(['cyberia', 'sea', 'forest', 'rain'] as const).map((id) => {
+                  const labels = { cyberia: 'Space', sea: 'Sea', forest: 'Forest', rain: 'Rain' };
+                  const colors = { cyberia: '#6366f1', sea: '#00b4d8', forest: '#2dce89', rain: '#d6d3d1' };
+                  return (
+                    <button 
+                      key={id} 
+                      onClick={() => setTheme(id)} 
+                      className={cn(
+                        "flex flex-col items-center gap-2 p-1.5 rounded-xl border transition-all", 
+                        theme === id ? "bg-white/10 border-white/20 shadow-lg" : "border-transparent hover:bg-white/5"
+                      )}
+                    >
+                      <div className="w-3.5 h-3.5 rounded-full shadow-lg" style={{ backgroundColor: colors[id] }} />
+                      <span className={cn("text-[8px] font-bold uppercase tracking-widest", theme === id ? "text-white" : "text-slate-500")}>
+                        {labels[id]}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
             </div>
-            <input type="file" className="hidden" accept="image/*,.gif" onChange={handleBgUpload} />
-          </label>
-        </div>
+            
+            <div className="px-1 md:px-2 py-3 border-b border-white/5 mb-3">
+              <div className="flex items-center justify-between mb-4">
+                <p className="text-[10px] md:text-[11px] font-black uppercase tracking-[0.2em] text-slate-500">Custom Background</p>
+                {customBg && (
+                  <button 
+                    onClick={() => setCustomBg(null)}
+                    className="text-[8px] font-black uppercase tracking-widest text-red-400 hover:text-red-300 transition-colors"
+                  >
+                    Remove
+                  </button>
+                )}
+              </div>
+              <label className="flex items-center justify-center gap-3 px-3 py-3 rounded-xl md:rounded-2xl bg-white/5 hover:bg-white/10 border border-white/5 cursor-pointer transition-all group">
+                <div className="flex flex-col items-center gap-1">
+                  <span className="text-[9px] font-black uppercase tracking-widest text-slate-300 group-hover:text-white">
+                    {customBg ? 'Change Background' : 'Upload Image / GIF'}
+                  </span>
+                  <span className="text-[7px] font-bold text-slate-600 uppercase tracking-widest">Max 2MB • Per Space</span>
+                </div>
+                <input type="file" className="hidden" accept="image/*,.gif" onChange={handleBgUpload} />
+              </label>
+            </div>
+          </>
+        )}
 
         <div className="px-1 md:px-2 py-3 border-b border-white/5 mb-3">
           <div className="flex items-center justify-between">
