@@ -3,12 +3,17 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useStore } from '../store/useStore';
 import { Bot, Zap, Shield, Cpu } from 'lucide-react';
 
-const LoadingOverlay: React.FC = () => {
+interface LoadingOverlayProps {
+  force?: boolean;
+}
+
+const LoadingOverlay: React.FC<LoadingOverlayProps> = ({ force }) => {
   const isInitializing = useStore((state) => state.isInitializing);
+  const show = force || isInitializing;
 
   return (
     <AnimatePresence>
-      {isInitializing && (
+      {show && (
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
@@ -68,7 +73,7 @@ const LoadingOverlay: React.FC = () => {
             {/* Status Steps */}
             <div className="flex flex-col gap-3 w-64">
               <StatusItem delay={0.6} icon={<Shield className="w-3 h-3" />} label="Verifying Credentials" active />
-              <StatusItem delay={0.8} icon={<Cpu className="w-3 h-3" />} label="Syncing Neural Data" active />
+              <StatusItem delay={0.8} icon={<Cpu className="w-3 h-3" />} label="Syncing Cloud Data" active />
               <StatusItem delay={1.0} icon={<Zap className="w-3 h-3" />} label="Building Workspace" active />
               <StatusItem delay={1.2} icon={<Bot className="w-3 h-3" />} label="Activating Oracle" active />
             </div>

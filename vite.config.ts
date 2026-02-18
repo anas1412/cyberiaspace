@@ -10,7 +10,7 @@ export default defineConfig({
       registerType: 'autoUpdate',
       injectRegister: 'auto',
       devOptions: {
-        enabled: true
+        enabled: false
       },
       includeAssets: [
         'favicon.ico', 
@@ -61,5 +61,18 @@ export default defineConfig({
         changeOrigin: true,
       }
     }
+  },
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          'vendor-ui': ['framer-motion', 'lucide-react', 'clsx', 'tailwind-merge'],
+          'vendor-db': ['dexie'],
+          'vendor-utils': ['@vercel/analytics', '@vercel/speed-insights', 'canvas-confetti'],
+          'vendor-auth': ['@react-oauth/google']
+        }
+      }
+    },
+    chunkSizeWarningLimit: 600
   }
 })

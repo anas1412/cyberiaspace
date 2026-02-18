@@ -85,7 +85,7 @@ const ChatOverlay: React.FC = () => {
       const errorMsg: Message = { 
         id: Date.now().toString(), 
         role: 'assistant', 
-        content: "### Limit Reached\nChoom, you've hit your daily data-stream limit for the Free tier. Upgrade to **Pro** for unlimited neural access and premium models!" 
+        content: "### Limit Reached\nChoom, you've hit your daily data-stream limit for the Free tier. Upgrade to **Pro** for unlimited access and premium models!" 
       };
       setMessages(prev => [...prev, { id: (Date.now() - 1).toString(), role: 'user', content: input }, errorMsg]);
       setInput('');
@@ -126,7 +126,7 @@ const ChatOverlay: React.FC = () => {
         const errorMsg: Message = { 
           id: Date.now().toString(), 
           role: 'assistant', 
-          content: `### Neural Link Saturated\n${errorData.message}` 
+          content: `### Connection Saturated\n${errorData.message}` 
         };
         setMessages(prev => [...prev, errorMsg]);
         setDailyUsage(errorData.usage);
@@ -137,7 +137,7 @@ const ChatOverlay: React.FC = () => {
         const errorMsg: Message = { 
           id: Date.now().toString(), 
           role: 'assistant', 
-          content: `### Neural Link Expired\nChoom, your session has timed out. Please sign in again to continue your data stream.\n\n<button onclick="window._cyberia_reauth()" class="px-4 py-2 bg-indigo-500 text-white rounded-xl text-xs font-black uppercase tracking-widest hover:bg-indigo-600 transition-all mt-2">Refresh Link</button>` 
+          content: `### Connection Expired\nChoom, your session has timed out. Please sign in again to continue your data stream.\n\n<button onclick="window._cyberia_reauth()" class="px-4 py-2 bg-indigo-500 text-white rounded-xl text-xs font-black uppercase tracking-widest hover:bg-indigo-600 transition-all mt-2">Refresh Session</button>` 
         };
         setMessages(prev => [...prev, errorMsg]);
         useAuthStore.getState().signOut(); // Graceful cleanup

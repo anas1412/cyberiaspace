@@ -143,7 +143,7 @@ const ThoughtNode: React.FC<ThoughtNodeProps> = React.memo(({ thought, registerE
     const triggers = ['text', 'table', 'tasks', 'image', 'paint', 'embed'];
     for (const t of triggers) {
       if (target.closest(`[data-trigger="${t}"]`)) {
-        if (t === 'image') { if (thought.image) openLightbox(thought.image); }
+        if (t === 'image') { if (thought.image) openLightbox(thought.image, thought.id); }
         else setActiveFocus(thought.id, t as any);
         return;
       }

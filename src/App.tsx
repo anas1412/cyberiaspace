@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, Suspense, lazy } from 'react';
 import { Analytics } from '@vercel/analytics/react';
 import { SpeedInsights } from '@vercel/speed-insights/react';
 import { useStore } from './store/useStore';
@@ -7,23 +7,24 @@ import { useAuthStore } from './store/useAuthStore';
 import { PLAN_CONFIG, type SubscriptionPlan } from './constants';
 import Viewport from './components/Viewport';
 import Toolbar from './components/toolbar/Toolbar';
-import Inspector from './components/Inspector';
 import MultiSelectionMenu from './components/MultiSelectionMenu';
 import EmptyState from './components/EmptyState';
-import KanbanOverlay from './components/KanbanOverlay';
-import CalendarOverlay from './components/CalendarOverlay';
 import Modal from './components/Modal';
 import PricingModal from './components/PricingModal';
 import Lightbox from './components/Lightbox';
-
-import TextFocusEditor from './components/editors/TextFocusEditor';
-import TableFocusEditor from './components/editors/TableFocusEditor';
-import PaintFocusEditor from './components/editors/PaintFocusEditor';
-import TasksFocusEditor from './components/editors/TasksFocusEditor';
-import EmbedFocusEditor from './components/editors/EmbedFocusEditor';
-import ChatOverlay from './components/ChatOverlay';
-import FeedbackPage from './components/FeedbackPage';
 import LoadingOverlay from './components/LoadingOverlay';
+
+// Lazy Loaded Components (Chunks)
+const KanbanOverlay = lazy(() => import('./components/KanbanOverlay'));
+const CalendarOverlay = lazy(() => import('./components/CalendarOverlay'));
+const ChatOverlay = lazy(() => import('./components/ChatOverlay'));
+const Inspector = lazy(() => import('./components/Inspector'));
+const TextFocusEditor = lazy(() => import('./components/editors/TextFocusEditor'));
+const TableFocusEditor = lazy(() => import('./components/editors/TableFocusEditor'));
+const PaintFocusEditor = lazy(() => import('./components/editors/PaintFocusEditor'));
+const TasksFocusEditor = lazy(() => import('./components/editors/TasksFocusEditor'));
+const EmbedFocusEditor = lazy(() => import('./components/editors/EmbedFocusEditor'));
+const FeedbackPage = lazy(() => import('./components/FeedbackPage'));
 
 import { fetchEmbedMeta } from './utils/embeds';
 
@@ -334,10 +335,10 @@ function App() {
 
   if (path === '/feedback') {
     return (
-      <>
+      <Suspense fallback={<LoadingOverlay force />}>
         <FeedbackPage />
         <Modal />
-      </>
+      </Suspense>
     );
   }
 
@@ -415,23 +416,25 @@ function App() {
         />
       )}
 
-      <Viewport />
-          <EmptyState />
-          <KanbanOverlay />
-          <CalendarOverlay />
-          <Toolbar />
-          <Inspector />
-          <MultiSelectionMenu />
-          <ChatOverlay />
-          <Modal />
-          <PricingModal isOpen={isPricingOpen} onClose={closePricing} />
-          <Lightbox />
-          <TextFocusEditor />
-          <TableFocusEditor />
-          <PaintFocusEditor />
-          <TasksFocusEditor />
-          <EmbedFocusEditor />
-          <LoadingOverlay />
+      <Suspense fallback={null}>
+        <Viewport />
+        <EmptyState />
+        <KanbanOverlay />
+        <CalendarOverlay />
+        <Toolbar />
+        <Inspector />
+        <MultiSelectionMenu />
+        <ChatOverlay />
+        <Modal />
+        <PricingModal isOpen={isPricingOpen} onClose={closePricing} />
+        <Lightbox />
+        <TextFocusEditor />
+        <TableFocusEditor />
+        <PaintFocusEditor />
+        <TasksFocusEditor />
+        <EmbedFocusEditor />
+        <LoadingOverlay />
+      </Suspense>
       <Analytics />
       <SpeedInsights />
     </div>
