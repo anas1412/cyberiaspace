@@ -13,7 +13,7 @@ interface CyberiaState {
   selectedThoughtIds: number[];
   isInspectorOpen: boolean;
   activeFocusId: number | null;
-  focusType: 'text' | 'table' | 'paint' | 'tasks' | 'embed' | null;
+  focusType: 'text' | 'table' | 'paint' | 'tasks' | 'embed' | 'file' | null;
   calendarViewDate: Date;
   hoveredCalDate: string | null;
   linkingSourceId: number | null;
@@ -24,12 +24,19 @@ interface CyberiaState {
   theme: 'cyberia' | 'sea' | 'forest' | 'rain';
   customBg: string | null;
   isSpaceLoading: boolean;
+  totalThoughtCount: number;
   isInitializing: boolean;
   performanceMode: boolean;
   setPerformanceMode: (mode: boolean) => void;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   deferredPrompt: any;
   layerActionTrigger: { id: number; time: number } | null;
+  history: any[];
+  historyIndex: number;
+  isLightboxOpen: boolean;
+  lightboxImage: string | null;
+  lightboxThoughtId: number | null;
+  transform: { x: number; y: number; scale: number };
 
   // Plan Helper
   getLimits: () => typeof PLAN_CONFIG['free'];
@@ -40,6 +47,18 @@ interface CyberiaState {
 
   // Initialization
   init: () => Promise<void>;
+  refreshTotalThoughtCount: () => Promise<void>;
+  refreshSpaces: () => Promise<void>;
+  refreshThoughts: (spaceId?: string) => Promise<void>;
+  refreshStacks: (spaceId?: string) => Promise<void>;
+  pushHistory: () => void;
+  undo: () => void;
+  redo: () => void;
+  openLightbox: (image: string, thoughtId: number) => void;
+  closeLightbox: () => void;
+  setTransform: (transform: { x: number; y: number; scale: number }) => void;
+  clearWorkspace: () => Promise<void>;
+
 
   // Actions
   setTheme: (theme: 'cyberia' | 'sea' | 'forest' | 'rain') => void;
@@ -76,7 +95,7 @@ interface CyberiaState {
   linkSelectedThoughts: (name?: string) => Promise<void>;
   unlinkSelectedThoughts: () => Promise<void>;
   setInspectorOpen: (open: boolean) => void;
-  setActiveFocus: (id: number | null, type: 'text' | 'table' | 'paint' | 'tasks' | 'embed' | null) => void;
+  setActiveFocus: (id: number | null, type: 'text' | 'table' | 'paint' | 'tasks' | 'embed' | 'file' | null) => void;
   setHoveredCalDate: (date: string | null) => void;
   setCalendarSearchQuery: (query: string) => void;
   setCalendarStackFilter: (stackId: string | null) => void;
@@ -96,40 +115,14 @@ interface CyberiaState {
   lastUpdated: string | null;
   publishSpace: (id: string) => Promise<string | void>;
   unpublishSpace: (id: string) => Promise<void>;
+  importFullState: (data: any) => Promise<void>;
 
   // Data Lifecycle
+  clearLocalData: () => Promise<void>;
   exportData: () => Promise<void>;
-  importData: (data: File | unknown) => Promise<void>;
-  clearWorkspace: () => Promise<void>;
-
-  // Lightbox
-  isLightboxOpen: boolean;
-  lightboxImage: string | null;
-  lightboxThoughtId: number | null;
-  openLightbox: (image: string, thoughtId: number) => void;
-  closeLightbox: () => void;
-
-  // Transform State (Moved from Viewport)
-  transform: { x: number; y: number; scale: number };
-  setTransform: (transform: { x: number; y: number; scale: number }) => void;
-  resetTransform: () => void;
-  zoomIn: () => void;
-  zoomOut: () => void;
-
-  // History (Undo/Redo)
-  history: Thought[][];
-  historyIndex: number;
-  undo: () => Promise<void>;
-  redo: () => Promise<void>;
-  pushHistory: () => void;
-
-  // Refresh data
-  refreshThoughts: (spaceId?: string) => Promise<void>;
-  refreshSpaces: (spaceId?: string) => Promise<void>;
-  refreshStacks: (spaceId?: string) => Promise<void>;
-  refreshTotalThoughtCount: () => Promise<void>;
-  totalThoughtCount: number;
+  importData: (file: File) => Promise<void>;
 }
+
 
 export const useStore = create<CyberiaState>((set, get) => ({
   activeSpaceId: null,
@@ -835,9 +828,9 @@ export const useStore = create<CyberiaState>((set, get) => ({
 
     const limits = get().getLimits();
 
-    // 1. Size Validation (2MB Limit)
+    // 1. Size Validation (2MB Limit) - Only for non-file types
     const payloadSize = JSON.stringify(partialThought).length;
-    if (payloadSize > 2 * 1024 * 1024) {
+    if (payloadSize > 2 * 1024 * 1024 && partialThought.type !== 'file') {
       useModalStore.getState().openModal({
         title: 'Buffer Overflow',
         description: 'Initial payload exceeds 2MB limit. Attempting to spawn an object too large for current system architecture.',
@@ -896,6 +889,7 @@ export const useStore = create<CyberiaState>((set, get) => ({
         author: '',
         order: currentCount,
         layer: maxLayer + 1,
+        syncStatus: 'local',
         ...partialThought
       } as Thought;
 
@@ -920,47 +914,52 @@ export const useStore = create<CyberiaState>((set, get) => ({
 
   // Centralized Debounced Save Logic
   updateThought: async (id, updates) => {
-    // 1. Size Validation (2MB Limit)
-    // Approximate size calculation for Base64 and large text
-    const payloadSize = JSON.stringify(updates).length;
-    if (payloadSize > 2 * 1024 * 1024) {
-      useModalStore.getState().openModal({
-        title: 'Payload Reached',
-        description: 'This thought has exceeded the 2MB kinetic buffer. Reduce image resolution or text volume to synchronize.',
-        type: 'alert',
-        confirmText: 'Understood'
-      });
-      return;
+    const { thoughts, activeSpaceId, isReadOnly } = get();
+    const thought = thoughts.find(t => t.id === id);
+    const isFile = thought?.type === 'file' || updates.type === 'file';
+
+    // 1. Size Validation (2MB Limit) - Only for non-file types
+    // Optimization: Skip stringify if updates is small or just coordinates
+    const isSmallUpdate = Object.keys(updates).length <= 4 && !updates.content && !updates.image && !updates.drawing;
+    if (!isSmallUpdate && !isFile) {
+      const payloadSize = JSON.stringify(updates).length;
+      if (payloadSize > 2 * 1024 * 1024) {
+        useModalStore.getState().openModal({
+          title: 'Payload Reached',
+          description: 'This thought has exceeded the 2MB kinetic buffer. Reduce image resolution or text volume to synchronize.',
+          type: 'alert',
+          confirmText: 'Understood'
+        });
+        return;
+      }
     }
 
-    // Optimistic Update (Instant UI feedback) - Runs for everyone
-    const { thoughts } = get();
+    // Optimistic Update (Instant UI feedback)
     const index = thoughts.findIndex(t => t.id === id);
     if (index !== -1) {
       const newThoughts = [...thoughts];
-      newThoughts[index] = { ...newThoughts[index], ...updates };
+      const driveFields = ['text', 'content', 'tasks', 'table', 'drawing', 'image', 'date'];
+      const hasContentChange = Object.keys(updates).some(k => driveFields.includes(k));
+      
+      const syncStatus = (updates.syncStatus || (hasContentChange ? 'pending' : newThoughts[index].syncStatus)) as 'local' | 'synced' | 'pending' | 'error';
+      
+      newThoughts[index] = { ...newThoughts[index], ...updates, syncStatus };
       set({ thoughts: newThoughts });
     }
 
-    if (get().isReadOnly) {
-      const mode = get().spaces.find(s => s.id === get().activeSpaceId)?.mode || 'spatial';
+    if (isReadOnly) {
+      const mode = get().spaces.find(s => s.id === activeSpaceId)?.mode || 'spatial';
       // Only allow optimistic updates for x,y positions in spatial mode
       const allowedKeys = ['x', 'y', 'vx', 'vy'];
       const keys = Object.keys(updates);
       const isPositionUpdate = keys.every(k => allowedKeys.includes(k));
 
       if (mode === 'spatial' && isPositionUpdate) {
-        const { thoughts } = get();
-        const index = thoughts.findIndex(t => t.id === id);
-        if (index !== -1) {
-          const newThoughts = [...thoughts];
-          newThoughts[index] = { ...newThoughts[index], ...updates };
-          set({ thoughts: newThoughts });
-        }
+        // Already updated above via index !== -1
       }
       return;
     }
-    const activeSpaceId = get().activeSpaceId;
+
     if (activeSpaceId) {
       get().updateSpace(activeSpaceId, { updatedAt: new Date().toISOString() });
     }
@@ -969,7 +968,11 @@ export const useStore = create<CyberiaState>((set, get) => ({
     if (saveTimers[id]) clearTimeout(saveTimers[id]);
 
     saveTimers[id] = setTimeout(async () => {
-      await db.thoughts.update(id, updates);
+      const driveFields = ['text', 'content', 'tasks', 'table', 'drawing', 'image', 'date'];
+      const hasContentChange = Object.keys(updates).some(k => driveFields.includes(k));
+      const syncStatus = (updates.syncStatus || (hasContentChange ? 'pending' : thought?.syncStatus)) as any;
+
+      await db.thoughts.update(id, { ...updates, syncStatus });
       delete saveTimers[id];
       get().pushHistory(); // Push history after debounce
 
@@ -1017,12 +1020,19 @@ export const useStore = create<CyberiaState>((set, get) => ({
     if (get().isReadOnly) return;
     const thought = get().thoughts.find(t => t.id === id);
     const affectedStackId = thought?.stackId;
+    const authStore = (await import('./useAuthStore')).useAuthStore.getState();
 
     if (thought) {
       await get().updateSpace(thought.spaceId, { updatedAt: new Date().toISOString() });
+      
+      // Trigger Cloud Deletion for service-linked content
+      if (authStore.status === 'authenticated') {
+        authStore.deleteServiceContent(thought);
+      }
     }
 
     await db.thoughts.delete(id);
+    await db.blobs.where('thoughtId').equals(id).delete();
     await get().refreshThoughts();
     await get().refreshTotalThoughtCount();
 
@@ -1040,22 +1050,32 @@ export const useStore = create<CyberiaState>((set, get) => ({
     get().pushHistory();
 
     // Trigger Cloud Sync
-    const authStore = (await import('./useAuthStore')).useAuthStore.getState();
     if (authStore.autoSync && authStore.status === 'authenticated') {
       authStore.syncData();
     }
   },
 
+
   deleteThoughts: async (ids) => {
     if (get().isReadOnly) return;
     if (!ids || ids.length === 0) return;
     const { thoughts, selectedThoughtId, selectedThoughtIds } = get();
+    const authStore = (await import('./useAuthStore')).useAuthStore.getState();
 
     const affectedStackIds = Array.from(new Set(
       thoughts.filter(t => ids.includes(t.id)).map(t => t.stackId).filter(Boolean)
     )) as string[];
 
+    // Trigger Cloud Deletion for all affected thoughts
+    if (authStore.status === 'authenticated') {
+      const thoughtsToDelete = thoughts.filter(t => ids.includes(t.id));
+      for (const t of thoughtsToDelete) {
+        authStore.deleteServiceContent(t);
+      }
+    }
+
     await db.thoughts.bulkDelete(ids);
+    await db.blobs.where('thoughtId').anyOf(ids).delete();
     await get().refreshThoughts();
     await get().refreshTotalThoughtCount();
 
@@ -1072,11 +1092,11 @@ export const useStore = create<CyberiaState>((set, get) => ({
 
     get().pushHistory();
 
-    const authStore = (await import('./useAuthStore')).useAuthStore.getState();
     if (authStore.autoSync && authStore.status === 'authenticated') {
       authStore.syncData();
     }
   },
+
 
   bringToFront: async (id) => {
     if (get().isReadOnly) return;
@@ -1464,6 +1484,50 @@ export const useStore = create<CyberiaState>((set, get) => ({
       window.location.reload();
     } catch (err) {
       console.error('Clear failed:', err);
+    }
+  },
+
+  importFullState: async (data: any) => {
+    if (get().isReadOnly) return;
+    try {
+      await db.transaction('rw', db.spaces, db.thoughts, db.stacks, async () => {
+        // Only clear if we actually have incoming data
+        if (data.spaces?.length > 0) {
+          await db.spaces.clear();
+          await db.spaces.bulkAdd(data.spaces);
+        }
+        if (data.thoughts?.length > 0) {
+          // Merge logic or clear? For full sync, we usually clear.
+          await db.thoughts.clear();
+          await db.thoughts.bulkAdd(data.thoughts);
+        }
+        if (data.stacks?.length > 0) {
+          await db.stacks.clear();
+          await db.stacks.bulkAdd(data.stacks);
+        }
+      });
+
+      if (data.activeSpaceId) {
+        localStorage.setItem('cyberia-active-space-id', data.activeSpaceId);
+      }
+      
+      await get().init(); // Re-initialize state from DB
+    } catch (err) {
+      console.error('Full state import failed:', err);
+    }
+  },
+
+  clearLocalData: async () => {
+    try {
+      await db.transaction('rw', db.spaces, db.thoughts, db.stacks, async () => {
+        await db.spaces.clear();
+        await db.thoughts.clear();
+        await db.stacks.clear();
+      });
+      localStorage.clear();
+      window.location.reload();
+    } catch (err) {
+      console.error('Local data clear failed:', err);
     }
   }
 }));

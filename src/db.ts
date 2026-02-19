@@ -34,7 +34,7 @@ interface Thought {
   text: string;
   placeholder?: string;
   description: string;
-  type: 'text' | 'tasks' | 'paint' | 'table' | 'image' | 'embed';
+  type: 'text' | 'tasks' | 'paint' | 'table' | 'image' | 'embed' | 'file';
   content: string;
   image: string | null;
   drawing: string | null;
@@ -48,18 +48,33 @@ interface Thought {
   layer?: number;
   author: string; // Embed author/channel/artist
   meta?: any; // For flexible metadata storage (e.g. oEmbed HTML, author data)
+  driveFileId?: string;
+  googleTaskListId?: string;
+  googleCalendarEventId?: string;
+  syncStatus?: 'local' | 'synced' | 'pending' | 'error';
+}
+
+interface LocalBlob {
+  id: string; // Use driveFileId or a temp local ID
+  thoughtId: number;
+  blob: Blob;
+  name: string;
+  type: string;
+  updatedAt: number;
 }
 
 const db = new Dexie('CyberiaDB') as Dexie & {
   spaces: EntityTable<Space, 'id'>;
   thoughts: EntityTable<Thought, 'id'>;
   stacks: EntityTable<Stack, 'id'>;
+  blobs: EntityTable<LocalBlob, 'id'>;
 };
 
-db.version(4).stores({
+db.version(5).stores({
   spaces: 'id, name, order',
-  thoughts: '++id, spaceId, stackId, text, status, date, priority, order, author',
-  stacks: 'id, spaceId, name'
+  thoughts: '++id, spaceId, stackId, text, status, date, priority, order, author, driveFileId',
+  stacks: 'id, spaceId, name',
+  blobs: 'id, thoughtId'
 });
 
 export type { Space, Thought, Stack };

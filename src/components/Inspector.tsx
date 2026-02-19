@@ -1,11 +1,14 @@
 import React from 'react';
 import { useStore } from '../store/useStore';
 import { useModalStore } from '../store/useModalStore';
-import { X, Maximize2, Image as ImageIcon, Link, Trash2, Youtube, Type, ListTodo, Palette, Table, Calendar, ChevronLeft, ChevronRight, Layers, ArrowDown, Share2 } from 'lucide-react';
+import { useAuthStore } from '../store/useAuthStore';
+import { useGoogleLogin } from '@react-oauth/google';
+import { X, Maximize2, Image as ImageIcon, Link, Trash2, Youtube, Type, ListTodo, Palette, Table, Calendar, ChevronLeft, ChevronRight, Layers, ArrowDown, Share2, File as FileIcon, Globe, Shield } from 'lucide-react';
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 import { motion, AnimatePresence } from 'framer-motion';
 import { fetchEmbedMeta } from '../utils/embeds';
+
 
 function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -18,6 +21,7 @@ const typeIcons = {
   table: Table,
   image: ImageIcon,
   embed: Youtube,
+  file: FileIcon,
 };
 
 const DatePicker: React.FC<{ value: string; onChange: (val: string) => void; disabled?: boolean }> = ({ value, onChange, disabled }) => {
@@ -162,6 +166,19 @@ const Inspector: React.FC = () => {
   const isReadOnly = useStore((state) => state.isReadOnly);
 
   const { openModal } = useModalStore();
+  const grantedScopes = useAuthStore((state) => state.grantedScopes);
+  const requestServiceAccess = useAuthStore((state) => state.requestServiceAccess);
+  const hasCalendarAccess = grantedScopes.includes('https://www.googleapis.com/auth/calendar.events');
+
+  const calendarLogin = useGoogleLogin({
+    onSuccess: (response: any) => {
+      if (response.access_token) {
+        requestServiceAccess('https://www.googleapis.com/auth/calendar.events', response.access_token);
+      }
+    },
+    scope: [...grantedScopes, 'https://www.googleapis.com/auth/calendar.events'].join(' '),
+    flow: 'implicit'
+  } as any);
 
   const thought = thoughts.find((t) => t.id === selectedThoughtId);
   const stack = stacks.find((s) => s.id === thought?.stackId);
@@ -195,7 +212,7 @@ const Inspector: React.FC = () => {
     });
   };
 
-  const handleTypeChange = (type: 'text' | 'tasks' | 'paint' | 'table' | 'image' | 'embed') => {
+  const handleTypeChange = (type: 'text' | 'tasks' | 'paint' | 'table' | 'image' | 'embed' | 'file') => {
     if (!thought) return;
     updateThought(thought.id, { type });
   };
@@ -241,8 +258,8 @@ const Inspector: React.FC = () => {
 
           {/* SCROLLABLE CONTENT AREA */}
           <div className="flex-1 overflow-y-auto custom-scroll p-4 md:p-6 space-y-6">
-            <div className="grid grid-cols-6 gap-1 mb-6">
-              {(['text', 'tasks', 'paint', 'table', 'image', 'embed'] as const).map((type) => {
+            <div className="grid grid-cols-7 gap-1 mb-6">
+              {(['text', 'tasks', 'paint', 'table', 'image', 'embed', 'file'] as const).map((type) => {
                 const Icon = typeIcons[type];
                 return (
                   <button
@@ -305,6 +322,25 @@ const Inspector: React.FC = () => {
                   updateThought(thought.id, { date: val });
                 }}
               />
+
+              {localDate && !isReadOnly && (
+                <div className="mt-2 px-1">
+                  {!hasCalendarAccess ? (
+                    <button 
+                      onClick={() => calendarLogin()}
+                      className="flex items-center gap-2 text-[8px] font-black uppercase tracking-widest text-indigo-400 hover:text-white transition-colors"
+                    >
+                      <Shield className="w-3 h-3" />
+                      Sync with Google Calendar
+                    </button>
+                  ) : (
+                    <div className="flex items-center gap-2 text-[8px] font-black uppercase tracking-widest text-green-500 opacity-60">
+                      <Globe className="w-3 h-3" />
+                      Calendar Sync Active
+                    </div>
+                  )}
+                </div>
+              )}
 
               <div className="space-y-2">
                 <label className="text-[9px] uppercase font-bold tracking-widest text-slate-500 ml-1">Status</label>
@@ -523,6 +559,16 @@ const Inspector: React.FC = () => {
                       />
                     </div>
                   </div>
+                )}
+
+                {thought.type === 'file' && (
+                  <button
+                    onClick={() => setActiveFocus(thought.id, 'file')}
+                    className="w-full bg-[var(--accent)]/10 hover:bg-[var(--accent)]/20 border border-[var(--accent)]/30 text-[var(--accent-secondary)] py-6 rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] transition-all flex flex-col items-center gap-3"
+                  >
+                    <FileIcon className="w-5 h-5" />
+                    Open File Manager
+                  </button>
                 )}
 
                 {thought.type === 'image' && (

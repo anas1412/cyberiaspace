@@ -1,10 +1,13 @@
 import React, { useState } from 'react';
 import { useStore } from '../../store/useStore';
-import { CheckSquare, Plus, Trash2, GripVertical } from 'lucide-react';
+import { useAuthStore } from '../../store/useAuthStore';
+import { useGoogleLogin } from '@react-oauth/google';
+import { CheckSquare, Plus, Trash2, GripVertical, Globe, Shield } from 'lucide-react';
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 import { motion, Reorder } from 'framer-motion';
 import { FocusEditorShell } from './FocusEditorShell';
+
 
 function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -133,6 +136,20 @@ const TasksFocusEditor: React.FC = () => {
   const stacks = useStore((state) => state.stacks);
   const updateThought = useStore((state) => state.updateThought);
   const isReadOnly = useStore((state) => state.isReadOnly);
+  
+  const grantedScopes = useAuthStore((state) => state.grantedScopes);
+  const requestServiceAccess = useAuthStore((state) => state.requestServiceAccess);
+  const hasTasksAccess = grantedScopes.includes('https://www.googleapis.com/auth/tasks');
+
+  const tasksLogin = useGoogleLogin({
+    onSuccess: (response: any) => {
+      if (response.access_token) {
+        requestServiceAccess('https://www.googleapis.com/auth/tasks', response.access_token);
+      }
+    },
+    scope: [...grantedScopes, 'https://www.googleapis.com/auth/tasks'].join(' '),
+    flow: 'implicit'
+  } as any);
 
   const [isEditMode, setIsEditMode] = useState(false);
   const [localTitle, setLocalTitle] = useState('');
@@ -274,9 +291,26 @@ const TasksFocusEditor: React.FC = () => {
         </div>
       }
       footerStatus={
-        <p className="text-[8px] md:text-[10px] uppercase font-black tracking-widest text-slate-600">
-          {isReadOnly ? "Read-only view" : "Click a task in View mode to toggle it"}
-        </p>
+        <div className="flex items-center gap-4">
+          <p className="text-[8px] md:text-[10px] uppercase font-black tracking-widest text-slate-600">
+            {isReadOnly ? "Read-only view" : "Click a task in View mode to toggle it"}
+          </p>
+          {!hasTasksAccess && !isReadOnly && (
+            <button 
+              onClick={() => tasksLogin()}
+              className="flex items-center gap-2 text-[8px] md:text-[9px] font-black uppercase tracking-widest text-indigo-400 hover:text-white transition-colors"
+            >
+              <Shield className="w-3 h-3" />
+              Sync with Google Tasks
+            </button>
+          )}
+          {hasTasksAccess && (
+            <span className="flex items-center gap-2 text-[8px] md:text-[9px] font-black uppercase tracking-widest text-green-500 opacity-60">
+              <Globe className="w-3 h-3" />
+              Connected
+            </span>
+          )}
+        </div>
       }
     >
       <EditorContent 

@@ -70,8 +70,17 @@ const TextFocusEditor: React.FC = () => {
 
   const handleContentChange = (val: string) => {
     setLocalContent(val);
-    if (!isReadOnly && thought) updateThought(thought.id, { content: val });
+    if (!isReadOnly && thought) {
+      // Debounce the global store update to reduce lag
+      const timerKey = `content-save-${thought.id}`;
+      if ((window as any)[timerKey]) clearTimeout((window as any)[timerKey]);
+      (window as any)[timerKey] = setTimeout(() => {
+        updateThought(thought.id, { content: val });
+        delete (window as any)[timerKey];
+      }, 1000); // 1 second debounce for heavy content
+    }
   };
+
 
   const exportTXT = () => {
     if (!thought) return;

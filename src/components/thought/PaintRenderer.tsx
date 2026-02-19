@@ -5,7 +5,7 @@ import { type Thought } from '../../db';
 interface PaintRendererProps {
   thought: Thought;
   isReadOnly: boolean;
-  setActiveFocus: (id: number, type: 'text' | 'tasks' | 'paint' | 'table' | 'embed') => void;
+  setActiveFocus: (id: number, type: 'text' | 'tasks' | 'paint' | 'table' | 'embed' | 'file') => void;
 }
 
 export const PaintRenderer: React.FC<PaintRendererProps> = ({ 

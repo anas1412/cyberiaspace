@@ -14,6 +14,7 @@ import { PaintRenderer } from './thought/PaintRenderer';
 import { TableRenderer } from './thought/TableRenderer';
 import { ImageRenderer } from './thought/ImageRenderer';
 import { EmbedRenderer } from './thought/EmbedRenderer';
+import { FileRenderer } from './thought/FileRenderer';
 
 function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -140,7 +141,7 @@ const ThoughtNode: React.FC<ThoughtNodeProps> = React.memo(({ thought, registerE
     const target = e.target as HTMLElement;
     if (target.closest('.checkbox')) return;
 
-    const triggers = ['text', 'table', 'tasks', 'image', 'paint', 'embed'];
+    const triggers = ['text', 'table', 'tasks', 'image', 'paint', 'embed', 'file'];
     for (const t of triggers) {
       if (target.closest(`[data-trigger="${t}"]`)) {
         if (t === 'image') { if (thought.image) openLightbox(thought.image, thought.id); }
@@ -159,6 +160,7 @@ const ThoughtNode: React.FC<ThoughtNodeProps> = React.memo(({ thought, registerE
       case 'table': return <TableRenderer {...commonProps} />;
       case 'image': return <ImageRenderer {...commonProps} setSelectedThoughtId={setSelectedThoughtId} setInspectorOpen={setInspectorOpen} openLightbox={openLightbox} />;
       case 'embed': return <EmbedRenderer thought={thought} />;
+      case 'file': return <FileRenderer thought={thought} />;
       default: return null;
     }
   };

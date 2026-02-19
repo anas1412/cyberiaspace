@@ -26,7 +26,7 @@ const EditorContent: React.FC<{
   renderPlayer: () => React.ReactNode;
   stackItems: any[];
   stack: any;
-  setActiveFocus: (id: number | null, type: "text" | "tasks" | "paint" | "table" | "embed" | null) => void;
+  setActiveFocus: (id: number | null, type: "text" | "tasks" | "paint" | "table" | "embed" | "file" | null) => void;
   scrollerRef: React.RefObject<HTMLDivElement | null>;
 }> = ({ renderPlayer, stackItems, stack, setActiveFocus, scrollerRef }) => (
   <div className="flex-1 flex flex-col min-h-0 bg-black">

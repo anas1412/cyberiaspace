@@ -11,7 +11,7 @@ function cn(...inputs: ClassValue[]) {
 interface TasksRendererProps {
   thought: Thought;
   isReadOnly: boolean;
-  setActiveFocus: (id: number, type: 'text' | 'tasks' | 'paint' | 'table' | 'embed') => void;
+  setActiveFocus: (id: number, type: 'text' | 'tasks' | 'paint' | 'table' | 'embed' | 'file') => void;
 }
 
 export const TasksRenderer: React.FC<TasksRendererProps> = ({ 

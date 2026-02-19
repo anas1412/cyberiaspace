@@ -1,10 +1,12 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 /** AccountMenu component handles user authentication and cloud synchronization */
-import { useAuthStore, type User as UserType } from '../store/useAuthStore';
+import { useAuthStore } from '../store/useAuthStore';
+import { type User as UserType } from '../constants';
 import { useStore } from '../store/useStore';
+
 import { useModalStore } from '../store/useModalStore';
 import { useGoogleLogin } from '@react-oauth/google';
-import { User, LogOut, Cloud, CloudOff, RefreshCw, ChevronDown, ShieldCheck, Trash2, Power, Database, WifiOff, Zap, Star, CreditCard, Calendar } from 'lucide-react';
+import { User, LogOut, Cloud, CloudOff, RefreshCw, ChevronDown, ShieldCheck, Trash2, Power, Database, WifiOff, Zap, Star, CreditCard, Calendar, HardDrive, CheckSquare, Globe } from 'lucide-react';
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 
@@ -12,18 +14,25 @@ function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
 
+const SCOPES = {
+  DRIVE: 'https://www.googleapis.com/auth/drive.file',
+  TASKS: 'https://www.googleapis.com/auth/tasks',
+  CALENDAR: 'https://www.googleapis.com/auth/calendar.events'
+};
+
 const AccountMenu: React.FC = () => {
   const store = useAuthStore();
   const { 
     user, status, signOut, syncStatus, lastSync, 
     syncData, autoSync, setAutoSync, deleteCloudData, 
     cloudUsage, calculateUsage, isOnline, setAuthenticatedUser,
-    importCloudData
+    importCloudData, grantedScopes, requestServiceAccess
   } = store;
   
   const totalThoughtCount = useStore((state) => state.totalThoughtCount);
-  const importDataManual = useStore((state) => state.importData);
+  const importFullState = useStore((state) => state.importFullState);
   const { openModal, openPricing } = useModalStore();
+
   const [isOpen, setIsOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
 
@@ -45,7 +54,9 @@ const AccountMenu: React.FC = () => {
         plan: 'free' // Default to free on initial login
       };
 
-      await setAuthenticatedUser(googleUser, token);
+      // In implicit flow, the scopes are not returned in userinfo. 
+      // For the initial login, we assume basic profile scopes.
+      await setAuthenticatedUser(googleUser, token, ['openid', 'email', 'profile']);
 
       // Check for cloud data
       const cloudData = await importCloudData();
@@ -56,14 +67,15 @@ const AccountMenu: React.FC = () => {
           type: 'import_confirm',
           confirmText: 'Restore',
           onConfirm: () => {
-            importDataManual(cloudData);
+            importFullState(cloudData);
           }
         });
       }
     } catch (error) {
       console.error('Login processing error:', error);
     }
-  }, [setAuthenticatedUser, importCloudData, openModal, importDataManual]);
+  }, [setAuthenticatedUser, importCloudData, openModal, importFullState]);
+
 
   const googleLogin = useGoogleLogin({
     onSuccess: (response: any) => {
@@ -72,9 +84,27 @@ const AccountMenu: React.FC = () => {
       }
     },
     onError: (error: any) => console.error('Login Failed:', error),
-    // Use FedCM to avoid the legacy third-party cookie prompt
     use_fedcm_for_prompt: true,
   } as any);
+
+  const [pendingScope, setPendingScope] = useState<string | null>(null);
+
+  const serviceLogin = useGoogleLogin({
+    onSuccess: (response: any) => {
+      if (response.access_token && pendingScope) {
+        requestServiceAccess(pendingScope, response.access_token);
+        setPendingScope(null);
+      }
+    },
+    // Request cumulative scopes to ensure the token remains valid for all connected services
+    scope: [...grantedScopes, pendingScope].filter(Boolean).join(' '),
+    flow: 'implicit'
+  } as any);
+
+  const handleConnectService = (scope: string) => {
+    setPendingScope(scope);
+    setTimeout(() => serviceLogin(), 100);
+  };
 
   useEffect(() => {
     if (typeof calculateUsage === 'function') {
@@ -107,9 +137,10 @@ const AccountMenu: React.FC = () => {
         type: 'import_confirm',
         confirmText: 'Restore Now',
         onConfirm: () => {
-          importDataManual(cloudData);
+          importFullState(cloudData);
         }
       });
+
     } else {
       openModal({
         title: 'No Cloud Data',
@@ -246,6 +277,77 @@ const AccountMenu: React.FC = () => {
               <Star className="w-3.5 h-3.5 text-indigo-400 fill-indigo-400" />
             </button>
           )}
+
+          {/* Cloud Integrations Section */}
+          <div className="mb-4 space-y-1">
+            <p className="text-[8px] font-black uppercase tracking-[0.2em] text-slate-500 mb-2 px-1 flex items-center gap-2">
+              <Globe className="w-2.5 h-2.5" />
+              Ecosystem Sync
+            </p>
+            
+            <button 
+              onClick={() => handleConnectService(SCOPES.DRIVE)}
+              className={cn(
+                "w-full flex items-center justify-between p-2.5 rounded-xl border transition-all",
+                grantedScopes.includes(SCOPES.DRIVE) 
+                  ? "bg-green-500/5 border-green-500/10" 
+                  : "bg-white/[0.03] border-white/[0.05] hover:bg-white/5"
+              )}
+            >
+              <div className="flex items-center gap-2.5">
+                <HardDrive className={cn("w-3.5 h-3.5", grantedScopes.includes(SCOPES.DRIVE) ? "text-green-400" : "text-slate-500")} />
+                <div className="text-left">
+                  <p className="text-[8px] font-black uppercase tracking-widest text-white">Google Drive</p>
+                  <p className="text-[9px] font-bold text-slate-500 uppercase tracking-widest">
+                    {grantedScopes.includes(SCOPES.DRIVE) ? 'Connected (Blobs)' : 'Connect for Files'}
+                  </p>
+                </div>
+              </div>
+              {grantedScopes.includes(SCOPES.DRIVE) && <div className="w-1.5 h-1.5 rounded-full bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.5)]" />}
+            </button>
+
+            <button 
+              onClick={() => handleConnectService(SCOPES.TASKS)}
+              className={cn(
+                "w-full flex items-center justify-between p-2.5 rounded-xl border transition-all",
+                grantedScopes.includes(SCOPES.TASKS) 
+                  ? "bg-blue-500/5 border-blue-500/10" 
+                  : "bg-white/[0.03] border-white/[0.05] hover:bg-white/5"
+              )}
+            >
+              <div className="flex items-center gap-2.5">
+                <CheckSquare className={cn("w-3.5 h-3.5", grantedScopes.includes(SCOPES.TASKS) ? "text-blue-400" : "text-slate-500")} />
+                <div className="text-left">
+                  <p className="text-[8px] font-black uppercase tracking-widest text-white">Google Tasks</p>
+                  <p className="text-[9px] font-bold text-slate-500 uppercase tracking-widest">
+                    {grantedScopes.includes(SCOPES.TASKS) ? 'Connected (Sync)' : 'Connect Tasks'}
+                  </p>
+                </div>
+              </div>
+              {grantedScopes.includes(SCOPES.TASKS) && <div className="w-1.5 h-1.5 rounded-full bg-blue-500 shadow-[0_0_8px_rgba(59,130,246,0.5)]" />}
+            </button>
+
+            <button 
+              onClick={() => handleConnectService(SCOPES.CALENDAR)}
+              className={cn(
+                "w-full flex items-center justify-between p-2.5 rounded-xl border transition-all",
+                grantedScopes.includes(SCOPES.CALENDAR) 
+                  ? "bg-purple-500/5 border-purple-500/10" 
+                  : "bg-white/[0.03] border-white/[0.05] hover:bg-white/5"
+              )}
+            >
+              <div className="flex items-center gap-2.5">
+                <Calendar className={cn("w-3.5 h-3.5", grantedScopes.includes(SCOPES.CALENDAR) ? "text-purple-400" : "text-slate-500")} />
+                <div className="text-left">
+                  <p className="text-[8px] font-black uppercase tracking-widest text-white">Calendar</p>
+                  <p className="text-[9px] font-bold text-slate-500 uppercase tracking-widest">
+                    {grantedScopes.includes(SCOPES.CALENDAR) ? 'Connected (Events)' : 'Connect Events'}
+                  </p>
+                </div>
+              </div>
+              {grantedScopes.includes(SCOPES.CALENDAR) && <div className="w-1.5 h-1.5 rounded-full bg-purple-500 shadow-[0_0_8px_rgba(168,85,247,0.5)]" />}
+            </button>
+          </div>
 
           <div className="space-y-1 mb-4">
             <div className={cn(

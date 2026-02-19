@@ -1,5 +1,6 @@
 import React, { useRef, useState, useEffect } from 'react';
 import { useStore } from '../store/useStore';
+import { useAuthStore } from '../store/useAuthStore';
 import { useModalStore } from '../store/useModalStore';
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
@@ -8,6 +9,8 @@ import { usePhysics } from '../hooks/usePhysics';
 import { useViewportGestures } from '../hooks/useViewportGestures';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Upload } from 'lucide-react';
+
+import { db } from '../db';
 
 function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -27,6 +30,8 @@ const Viewport: React.FC = () => {
   const deleteSelectedThoughts = useStore((state) => state.deleteSelectedThoughts);
   const deleteThought = useStore((state) => state.deleteThought);
   const addThought = useStore((state) => state.addThought);
+  const setActiveFocus = useStore((state) => state.setActiveFocus);
+  const uploadThoughtBlob = useAuthStore((state) => state.uploadThoughtBlob);
   const saveSpaceTransform = useStore((state) => state.saveSpaceTransform);
   const transform = useStore((state) => state.transform);
   const setTransform = useStore((state) => state.setTransform);
@@ -311,23 +316,56 @@ const Viewport: React.FC = () => {
       const files = Array.from(e.dataTransfer?.files || []);
       if (files.length === 0) return;
 
-      const dropX = (e.clientX - transform.x) / transform.scale;
-      const dropY = (e.clientY - transform.y) / transform.scale;
+      const dropX = e.clientX !== 0 ? (e.clientX - transform.x) / transform.scale : window.innerWidth / 2;
+      const dropY = e.clientY !== 0 ? (e.clientY - transform.y) / transform.scale : window.innerHeight / 2;
 
       for (const file of files) {
-        if (file.size > 2 * 1024 * 1024) {
-          openModal({
-            title: 'File too Large',
-            description: `The file "${file.name}" is larger than 2MB. Please use smaller files.`,
-            type: 'alert',
-            confirmText: 'Okay'
+        const isImage = file.type.startsWith('image/');
+        const isText = file.name.endsWith('.txt') || file.type === 'text/plain';
+        const isCSV = file.name.endsWith('.csv') || file.type === 'text/csv';
+        const isLarge = file.size > 2 * 1024 * 1024;
+
+        if (isLarge || (!isImage && !isText && !isCSV)) {
+          // Create a 'file' thought type for large files or unknown types
+          const id = await addThought({
+            type: 'file',
+            text: file.name,
+            syncStatus: 'local',
+            x: dropX + (Math.random() * 20 - 10),
+            y: dropY + (Math.random() * 20 - 10),
+            meta: {
+              file: {
+                name: file.name,
+                size: file.size,
+                type: file.type,
+              }
+            }
           });
+
+          if (id !== -1) {
+            // Save to local blobs for background upload
+            await db.blobs.add({
+              id: `temp-${Date.now()}`,
+              thoughtId: id,
+              blob: file,
+              name: file.name,
+              type: file.type,
+              updatedAt: Date.now()
+            });
+            
+            setSelectedThoughtId(id);
+            setInspectorOpen(true);
+            setActiveFocus(id, 'file');
+
+            // Trigger background upload
+            uploadThoughtBlob(id);
+          }
           continue;
         }
 
         const reader = new FileReader();
 
-        if (file.type.startsWith('image/')) {
+        if (isImage) {
           reader.onload = async (ev) => {
             await addThought({
               type: 'image',

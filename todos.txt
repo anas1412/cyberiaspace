@@ -44,6 +44,9 @@ Cyberia is a spatial productivity platform for kinetic information architecture.
 
 TODO:
 
+add .md style link to your public privacy policy and a link to your public terms of service
+
+
 change stack to collection
 
 

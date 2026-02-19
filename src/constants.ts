@@ -1,6 +1,17 @@
 export type SubscriptionPlan = 'free' | 'pro';
 export type AccessPeriod = 'monthly' | 'yearly';
 
+export interface User {
+  id: string;
+  name: string;
+  email: string;
+  avatar: string;
+  plan: SubscriptionPlan;
+  expiresAt?: string | null;
+  subscriptionStatus?: 'active' | 'canceled' | 'past_due' | 'none';
+  expiryDate?: string | null;
+}
+
 export interface PlanLimits {
   MAX_SPACES: number;
   MAX_THOUGHTS_PER_SPACE: number;

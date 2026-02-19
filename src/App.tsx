@@ -24,6 +24,7 @@ const TableFocusEditor = lazy(() => import('./components/editors/TableFocusEdito
 const PaintFocusEditor = lazy(() => import('./components/editors/PaintFocusEditor'));
 const TasksFocusEditor = lazy(() => import('./components/editors/TasksFocusEditor'));
 const EmbedFocusEditor = lazy(() => import('./components/editors/EmbedFocusEditor'));
+const FileFocusEditor = lazy(() => import('./components/editors/FileFocusEditor'));
 const FeedbackPage = lazy(() => import('./components/FeedbackPage'));
 
 import { fetchEmbedMeta } from './utils/embeds';
@@ -433,6 +434,7 @@ function App() {
         <PaintFocusEditor />
         <TasksFocusEditor />
         <EmbedFocusEditor />
+        <FileFocusEditor />
         <LoadingOverlay />
       </Suspense>
       <Analytics />
