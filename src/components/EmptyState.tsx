@@ -122,7 +122,7 @@ const EmptyState: React.FC = () => {
       </div>
 
       {/* 5. AI Assistant (Bottom Right) - Points to Chat/Oracle button */}
-      <div className="hidden md:flex absolute bottom-[130px] right-[160px] rotate-[5deg] text-center flex flex-col items-center">
+      <div className="hidden md:flex absolute bottom-[130px] right-[260px] rotate-[5deg] text-center flex flex-col items-center">
         <p className="font-['CyberiaBlueprint',_cursive,_sans-serif] text-white/30 text-[12px] mb-2 tracking-widest uppercase">AI Assistant</p>
         <ChalkArrow d="M 30 10 L 30 70 M 15 50 L 30 70 L 45 50" />
       </div>
