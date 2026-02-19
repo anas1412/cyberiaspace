@@ -58,6 +58,9 @@ the web app cyberia is so laggy with hand gestures and phyics as pwa on my table
 gallery of imaegs just like ytb
 
 
+in thought make the date more visible and make a helper to convert date
+
+
 ------------------------------
 
   1. Spatial Teleportation (Navigation)

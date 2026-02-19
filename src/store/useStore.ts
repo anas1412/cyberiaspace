@@ -63,6 +63,7 @@ interface CyberiaState {
   // Thought Actions
   addThought: (thought: Partial<Thought>) => Promise<number>;
   updateThought: (id: number, updates: Partial<Thought>) => Promise<void>;
+  updateThoughts: (ids: number[], updates: Partial<Thought>) => Promise<void>;
   deleteThought: (id: number) => Promise<void>;
   deleteThoughts: (ids: number[]) => Promise<void>;
   bringToFront: (id: number) => Promise<void>;
@@ -984,6 +985,32 @@ export const useStore = create<CyberiaState>((set, get) => ({
     }, 500); // 500ms local debounce
 
     (window as any)._cyberia_save_timers = saveTimers;
+  },
+
+  updateThoughts: async (ids, updates) => {
+    if (get().isReadOnly) return;
+    const { thoughts, activeSpaceId } = get();
+    
+    if (activeSpaceId) {
+      get().updateSpace(activeSpaceId, { updatedAt: new Date().toISOString() });
+    }
+
+    // 1. Optimistic UI update
+    const newThoughts = thoughts.map(t => ids.includes(t.id) ? { ...t, ...updates } : t);
+    set({ thoughts: newThoughts });
+
+    // 2. DB Update
+    await db.thoughts.where('id').anyOf(ids).modify(updates);
+    get().pushHistory();
+
+    // 3. Sync
+    const authStore = (await import('./useAuthStore')).useAuthStore.getState();
+    if (authStore.autoSync && authStore.status === 'authenticated') {
+      if ((window as any)._cyberia_cloud_timer) clearTimeout((window as any)._cyberia_cloud_timer);
+      (window as any)._cyberia_cloud_timer = setTimeout(() => {
+        authStore.syncData();
+      }, 5000);
+    }
   },
 
   deleteThought: async (id) => {

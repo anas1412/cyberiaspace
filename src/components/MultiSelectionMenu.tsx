@@ -1,7 +1,7 @@
 import React from 'react';
 import { useStore } from '../store/useStore';
 import { useModalStore } from '../store/useModalStore';
-import { X, Link, Trash2 } from 'lucide-react';
+import { X, Link, Trash2, Calendar, ChevronLeft, ChevronRight, Hash, Layers } from 'lucide-react';
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -10,13 +10,80 @@ function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
 
+const BatchDatePicker: React.FC<{ onSelect: (val: string) => void }> = ({ onSelect }) => {
+  const [isOpen, setIsOpen] = React.useState(false);
+  const [viewDate, setViewDate] = React.useState(new Date());
+  const containerRef = React.useRef<HTMLDivElement>(null);
+
+  React.useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
+        setIsOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  const daysInMonth = (year: number, month: number) => new Date(year, month + 1, 0).getDate();
+  const firstDayOfMonth = (year: number, month: number) => new Date(year, month, 1).getDay();
+  const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+
+  return (
+    <div className="relative" ref={containerRef}>
+      <button
+        onClick={() => setIsOpen(!isOpen)}
+        className="w-full bg-[var(--bg-page)]/20 border border-white/10 rounded-xl p-3 text-[10px] font-black uppercase tracking-widest text-white/70 hover:text-white flex items-center justify-between transition-all group"
+      >
+        <span>Set Batch Date</span>
+        <Calendar className="w-3.5 h-3.5 text-slate-500 group-hover:text-indigo-400 transition-colors" />
+      </button>
+
+      <AnimatePresence>
+        {isOpen && (
+          <motion.div
+            initial={{ opacity: 0, y: -10, scale: 0.95 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: -10, scale: 0.95 }}
+            className="absolute top-full mt-2 left-0 right-0 z-[100] glass border border-white/10 rounded-2xl p-4 shadow-2xl overflow-hidden"
+          >
+            <div className="flex justify-between items-center mb-4">
+              <button onClick={() => setViewDate(new Date(viewDate.getFullYear(), viewDate.getMonth() - 1))} className="p-1 hover:bg-white/10 rounded-lg text-slate-400">
+                <ChevronLeft className="w-4 h-4" />
+              </button>
+              <h4 className="text-[9px] font-black uppercase tracking-widest text-white">{monthNames[viewDate.getMonth()]} {viewDate.getFullYear()}</h4>
+              <button onClick={() => setViewDate(new Date(viewDate.getFullYear(), viewDate.getMonth() + 1))} className="p-1 hover:bg-white/10 rounded-lg text-slate-400">
+                <ChevronRight className="w-4 h-4" />
+              </button>
+            </div>
+            <div className="grid grid-cols-7 gap-1">
+              {Array.from({ length: firstDayOfMonth(viewDate.getFullYear(), viewDate.getMonth()) }).map((_, i) => <div key={i} />)}
+              {Array.from({ length: daysInMonth(viewDate.getFullYear(), viewDate.getMonth()) }).map((_, i) => (
+                <button
+                  key={i}
+                  onClick={() => { onSelect(new Date(viewDate.getFullYear(), viewDate.getMonth(), i + 1).toLocaleDateString('en-CA')); setIsOpen(false); }}
+                  className="w-full aspect-square rounded-lg text-[9px] font-bold text-slate-400 hover:bg-indigo-500/20 hover:text-white transition-all"
+                >
+                  {i + 1}
+                </button>
+              ))}
+            </div>
+            <button onClick={() => { onSelect(""); setIsOpen(false); }} className="w-full mt-4 py-2 bg-white/5 rounded-lg text-[8px] font-black uppercase tracking-widest text-slate-500">Unschedule All</button>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+};
+
 const MultiSelectionMenu: React.FC = () => {
   const selectedThoughtIds = useStore((state) => state.selectedThoughtIds);
   const isReadOnly = useStore((state) => state.isReadOnly);
   const clearSelection = useStore((state) => state.clearSelection);
-  const deleteSelectedThoughts = useStore((state) => state.deleteSelectedThoughts);
+  const updateThoughts = useStore((state) => state.updateThoughts);
   const linkSelectedThoughts = useStore((state) => state.linkSelectedThoughts);
   const unlinkSelectedThoughts = useStore((state) => state.unlinkSelectedThoughts);
+  const deleteSelectedThoughts = useStore((state) => state.deleteSelectedThoughts);
   const thoughts = useStore((state) => state.thoughts);
   const stacks = useStore((state) => state.stacks);
   const updateStack = useStore((state) => state.updateStack);
@@ -24,7 +91,6 @@ const MultiSelectionMenu: React.FC = () => {
   const isChatOpen = useStore((state) => state.isChatOpen);
 
   const { openModal } = useModalStore();
-
   const isMobile = typeof window !== 'undefined' ? window.innerWidth < 768 : false;
 
   const sharedStack = React.useMemo(() => {
@@ -32,32 +98,11 @@ const MultiSelectionMenu: React.FC = () => {
     const selectedThoughts = thoughts.filter(t => selectedThoughtIds.includes(t.id));
     const firstStackId = selectedThoughts[0]?.stackId;
     if (!firstStackId) return null;
-    if (selectedThoughts.every(t => t.stackId === firstStackId)) {
-      return stacks.find(s => s.id === firstStackId) || null;
-    }
-    return null;
+    return selectedThoughts.every(t => t.stackId === firstStackId) ? stacks.find(s => s.id === firstStackId) || null : null;
   }, [selectedThoughtIds, thoughts, stacks]);
 
-  const areLinked = !!sharedStack;
   const [localStackName, setLocalStackName] = React.useState('');
-
-  React.useEffect(() => {
-    if (sharedStack) {
-      setLocalStackName(sharedStack.name);
-    } else {
-      setLocalStackName('');
-    }
-  }, [sharedStack]);
-
-  const handleDeleteAll = () => {
-    openModal({
-      title: `Delete ${selectedThoughtIds.length} Thoughts?`,
-      description: 'This action cannot be undone.',
-      type: 'delete_thought',
-      confirmText: 'Delete All',
-      onConfirm: () => deleteSelectedThoughts()
-    });
-  };
+  React.useEffect(() => setLocalStackName(sharedStack?.name || ''), [sharedStack]);
 
   if (selectedThoughtIds.length < 2 || isReadOnly) return null;
 
@@ -65,105 +110,112 @@ const MultiSelectionMenu: React.FC = () => {
     <AnimatePresence>
       <motion.div
         initial={isMobile ? { y: '100%' } : { opacity: 0, x: -20 }}
-        animate={isMobile
-          ? (isInspectorOpen || isChatOpen ? { y: '100%', opacity: 0 } : { y: 0, opacity: 1 })
-          : { opacity: 1, x: 0 }}
+        animate={isMobile ? (isInspectorOpen || isChatOpen ? { y: '100%', opacity: 0 } : { y: 0, opacity: 1 }) : { opacity: 1, x: 0 }}
         exit={isMobile ? { y: '100%' } : { opacity: 0, x: -20 }}
-        className={cn(
-          "ui-layer focus-box fixed bottom-4 left-4 right-4 md:bottom-auto md:left-8 md:top-24 w-[calc(100%-32px)] md:w-80 glass md:rounded-[2rem] p-4 md:p-5 shadow-[0_0_80px_rgba(0,0,0,0.5)] pointer-events-auto z-[9999] border border-white/10",
-          isMobile && (isInspectorOpen || isChatOpen) && "pointer-events-none"
-        )}
+        className="ui-layer focus-box fixed top-4 md:top-24 bottom-4 md:bottom-24 left-4 md:left-8 w-[calc(100%-32px)] md:w-[400px] glass md:rounded-[2rem] shadow-[0_0_80px_rgba(0,0,0,0.5)] pointer-events-auto z-[9999] border border-white/10 flex flex-col overflow-hidden"
       >
-        <div className="flex justify-between items-center mb-4 pb-4 border-b border-white/5">
-          <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded-xl bg-indigo-500/10 flex items-center justify-center border border-indigo-500/20">
-              <Link className="w-4 h-4 text-indigo-400" />
+        {/* MATCHING HEADER STYLE */}
+        <div className="p-4 md:p-5 border-b border-white/5 bg-black/20 backdrop-blur-md sticky top-0 z-20">
+          <div className="flex justify-between items-center">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 bg-indigo-500/10 rounded-xl flex items-center justify-center border border-indigo-500/20 shadow-[0_0_20px_rgba(99,102,241,0.15)]">
+                <Layers className="w-5 h-5 text-indigo-400" />
+              </div>
+              <div>
+                <h3 className="text-xs font-black uppercase tracking-[0.2em] text-white leading-none">Bulk Actions</h3>
+                <div className="flex items-center gap-2 mt-1">
+                  <span className="w-1 h-1 rounded-full bg-indigo-500 shadow-[0_0_8px_rgba(99,102,241,0.6)]" />
+                  <span className="text-[8px] font-bold text-slate-500 uppercase tracking-widest leading-none">{selectedThoughtIds.length} Nodes Selected</span>
+                </div>
+              </div>
             </div>
-            <div className="flex flex-col">
-              <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-white leading-none">Bulk Actions</h3>
-              <span className="text-[8px] text-slate-500 font-bold uppercase tracking-widest mt-1.5">{selectedThoughtIds.length} items selected</span>
-            </div>
+            <button onClick={clearSelection} className="p-2 hover:bg-white/5 rounded-lg text-slate-500 hover:text-white transition-all">
+              <X className="w-4 h-4" />
+            </button>
           </div>
-          <button onClick={clearSelection} className="p-2 hover:bg-white/5 rounded-lg text-slate-500 hover:text-white transition-all">
-            <X className="w-4 h-4" />
-          </button>
         </div>
 
-        <div className="space-y-3">
-          <div className="space-y-1.5">
-            <label className="text-[8px] uppercase font-bold tracking-widest text-slate-500 ml-1">
-              {areLinked ? "Stack Name" : "Create Named Stack"}
-            </label>
-            <div className="p-2.5 bg-[var(--bg-page)]/20 border border-white/10 rounded-xl flex items-center gap-2">
-              <div
-                className="w-2 h-2 rounded-full shadow-[0_0_10px_currentColor]"
-                style={{
-                  backgroundColor: sharedStack?.color || 'var(--accent)',
-                  color: sharedStack?.color || 'var(--accent)'
-                }}
-              />
+        <div className="flex-1 overflow-y-auto custom-scroll p-4 md:p-6 space-y-6">
+          {/* 1. Status Batch */}
+          <div className="space-y-3">
+            <label className="text-[9px] uppercase font-bold tracking-widest text-slate-500 ml-1">Batch Status</label>
+            <div className="grid grid-cols-4 gap-1">
+              {(['none', 'todo', 'doing', 'done'] as const).map(s => (
+                <button
+                  key={s}
+                  onClick={() => updateThoughts(selectedThoughtIds, { status: s })}
+                  className="py-2.5 rounded-lg border border-white/10 bg-white/[0.03] text-[8px] font-bold uppercase text-slate-400 hover:bg-white/10 hover:text-white transition-all"
+                >
+                  {s}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* 2. Priority Batch */}
+          <div className="space-y-3">
+            <label className="text-[9px] uppercase font-bold tracking-widest text-slate-500 ml-1">Batch Priority</label>
+            <div className="grid grid-cols-5 gap-1">
+              {(['none', 'low', 'medium', 'high', 'urgent'] as const).map(p => (
+                <button
+                  key={p}
+                  onClick={() => updateThoughts(selectedThoughtIds, { priority: p })}
+                  className="py-2.5 rounded-lg border border-white/10 bg-white/[0.03] text-[8px] font-bold uppercase text-slate-400 hover:bg-white/10 hover:text-white transition-all"
+                >
+                  {p === 'medium' ? 'Med' : p}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* 3. Date Batch */}
+          <div className="space-y-3">
+            <label className="text-[9px] uppercase font-bold tracking-widest text-slate-500 ml-1">Temporal Alignment</label>
+            <BatchDatePicker onSelect={(date) => updateThoughts(selectedThoughtIds, { date })} />
+          </div>
+
+          {/* 4. Stack Management */}
+          <div className="space-y-3 pt-4 border-t border-white/5">
+            <label className="text-[9px] uppercase font-bold tracking-widest text-slate-500 ml-1">Clustering</label>
+            <div className="p-4 bg-[var(--bg-page)]/20 border border-white/10 rounded-2xl space-y-4">
               <input
                 type="text"
                 value={localStackName}
                 onChange={(e) => setLocalStackName(e.target.value)}
-                onBlur={() => {
-                  if (areLinked && sharedStack && localStackName.trim()) {
-                    updateStack(sharedStack.id, { name: localStackName.trim() });
-                  }
-                }}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter' && localStackName.trim()) {
-                    if (areLinked && sharedStack) {
-                      updateStack(sharedStack.id, { name: localStackName.trim() });
-                    } else {
-                      linkSelectedThoughts();
-                    }
-                  }
-                }}
-                placeholder={areLinked ? "Rename Stack..." : "Name your stack..."}
-                className="bg-transparent text-[9px] font-black uppercase tracking-widest text-white outline-none flex-1"
+                placeholder="Name your stack..."
+                className="w-full bg-transparent text-[10px] font-black uppercase tracking-widest text-white outline-none border-b border-white/5 pb-2"
               />
+              <button
+                onClick={async () => {
+                  await linkSelectedThoughts();
+                  if (localStackName.trim()) {
+                    setTimeout(async () => {
+                      const latestThoughts = useStore.getState().thoughts;
+                      const firstSelected = latestThoughts.find(t => selectedThoughtIds.includes(t.id));
+                      if (firstSelected?.stackId) await updateStack(firstSelected.stackId, { name: localStackName.trim() });
+                    }, 100);
+                  }
+                }}
+                className="w-full py-3 bg-indigo-500/10 hover:bg-indigo-500/20 border border-indigo-500/30 text-indigo-400 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all"
+              >
+                {sharedStack ? 'Re-align Stack' : 'Link into New Stack'}
+              </button>
+              {sharedStack && (
+                <button onClick={unlinkSelectedThoughts} className="w-full py-2 bg-white/5 hover:bg-red-500/10 text-slate-500 hover:text-red-400 border border-white/5 rounded-xl text-[8px] font-black uppercase tracking-widest transition-all">Dissolve Stack</button>
+              )}
             </div>
           </div>
+        </div>
 
-          {areLinked ? (
-            <button
-              onClick={unlinkSelectedThoughts}
-              className="w-full bg-orange-500/10 hover:bg-orange-500/20 border border-orange-500/30 text-orange-400 py-3 rounded-xl text-[9px] font-black uppercase tracking-[0.2em] transition-all flex items-center justify-center gap-2.5"
-            >
-              <Link className="w-3.5 h-3.5 rotate-45" />
-              Remove from Stack
-            </button>
-          ) : (
-            <button
-              onClick={async () => {
-                await linkSelectedThoughts();
-                if (localStackName.trim()) {
-                  setTimeout(async () => {
-                    const latestThoughts = useStore.getState().thoughts;
-                    const firstSelected = latestThoughts.find(t => selectedThoughtIds.includes(t.id));
-                    if (firstSelected?.stackId) {
-                      await useStore.getState().updateStack(firstSelected.stackId, { name: localStackName.trim() });
-                    }
-                  }, 100);
-                }
-              }}
-              className="w-full bg-[var(--accent)]/10 hover:bg-[var(--accent)]/20 border border-[var(--accent)]/30 text-[var(--accent-secondary)] py-3 rounded-xl text-[9px] font-black uppercase tracking-[0.2em] transition-all flex items-center justify-center gap-2.5"
-            >
-              <Link className="w-3.5 h-3.5" />
-              Link into Stack
-            </button>
-          )}
-
-          <div className="pt-3 border-t border-white/5">
-            <button
-              onClick={handleDeleteAll}
-              className="w-full bg-red-500/10 hover:bg-red-500/20 text-red-400 py-3 rounded-xl text-[9px] font-bold uppercase tracking-widest transition-colors flex items-center justify-center gap-2.5"
-            >
-              <Trash2 className="w-3.5 h-3.5" />
-              Delete All
-            </button>
-          </div>
+        {/* FOOTER ACTIONS */}
+        <div className="p-4 md:p-6 bg-black/40 border-t border-white/5 mt-auto">
+          <button
+            onClick={() => openModal({ title: `Purge ${selectedThoughtIds.length} Nodes?`, description: 'This action is permanent and clears them from all views.', type: 'delete_thought', confirmText: 'Purge Selected', onConfirm: () => deleteSelectedThoughts() })}
+            className="w-full py-4 bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/20 rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] transition-all flex items-center justify-center gap-3 group"
+          >
+            <Trash2 className="w-4 h-4 group-hover:scale-110 transition-transform" />
+            Purge Selected
+          </button>
         </div>
       </motion.div>
     </AnimatePresence>
