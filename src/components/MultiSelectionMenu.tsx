@@ -1,14 +1,8 @@
 import React from 'react';
 import { useStore } from '../store/useStore';
 import { useModalStore } from '../store/useModalStore';
-import { X, Link, Trash2, Calendar, ChevronLeft, ChevronRight, Hash, Layers } from 'lucide-react';
-import { clsx, type ClassValue } from 'clsx';
-import { twMerge } from 'tailwind-merge';
+import { X, Trash2, Calendar, ChevronLeft, ChevronRight, Layers } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-
-function cn(...inputs: ClassValue[]) {
-  return twMerge(clsx(inputs));
-}
 
 const BatchDatePicker: React.FC<{ onSelect: (val: string) => void }> = ({ onSelect }) => {
   const [isOpen, setIsOpen] = React.useState(false);
