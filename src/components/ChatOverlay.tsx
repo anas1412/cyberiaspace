@@ -65,6 +65,14 @@ const ChatOverlay: React.FC = () => {
     }
   }, [isChatOpen, isLoading]);
 
+  // Dynamic Textarea Height logic
+  useEffect(() => {
+    if (inputRef.current) {
+      inputRef.current.style.height = 'auto';
+      inputRef.current.style.height = `${Math.min(inputRef.current.scrollHeight, 128)}px`;
+    }
+  }, [input]);
+
   // Strict plan-based model selection
   const activeModel = plan === 'pro' ? 'openai/gpt-oss-120b' : 'openai/gpt-oss-20b';
 
@@ -400,7 +408,7 @@ const ChatOverlay: React.FC = () => {
                   m.role === 'user' ? "items-end" : "items-start"
                 )}>
                   <div className={cn(
-                    "max-w-[95%] p-4 rounded-2xl text-[12px] leading-relaxed border shadow-sm prose prose-invert prose-xs",
+                    "max-w-[95%] p-4 rounded-2xl text-[12px] leading-relaxed border shadow-sm prose prose-invert prose-xs break-words overflow-hidden",
                     m.role === 'user' 
                       ? "bg-indigo-500/20 text-white border-indigo-400/30 rounded-tr-sm" 
                       : "bg-white/[0.03] text-slate-200 border-white/5 rounded-tl-sm"
@@ -466,7 +474,7 @@ const ChatOverlay: React.FC = () => {
                 }}
                 placeholder={suggestion}
                 rows={1}
-                className="flex-1 bg-transparent border-none py-2 pl-3 pr-2 text-xs text-white placeholder:text-slate-600 focus:outline-none resize-none min-h-[36px] max-h-32 custom-scroll flex items-center"
+                className="flex-1 bg-transparent border-none py-2.5 pl-3 pr-2 text-xs text-white placeholder:text-slate-600 focus:outline-none resize-none min-h-[36px] max-h-32 custom-scroll leading-relaxed"
               />
               {isLoading ? (
                 <button
