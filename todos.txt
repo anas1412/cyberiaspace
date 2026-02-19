@@ -55,7 +55,11 @@ change stack to collection
 
 the web app cyberia is so laggy with hand gestures and phyics as pwa on my tablet/website why? pls investigate throughly (dont implement anything)
 
-gallery of imaegs just like ytb
+create a new thought type "label", its an empty thought that has only title/description etc without any content (same as txt but without content)
+
+in thought make the date more visible and make a helper to convert date
+
+make the context smaller but excluding the content of thoughts but add a tool to read whats inside the thought when necessary to reduce tokens
 
 
 ------------------------------

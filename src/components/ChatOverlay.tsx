@@ -48,12 +48,30 @@ const ChatOverlay: React.FC = () => {
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [status, setStatus] = useState<string>('');
+  const [activeTool, setActiveTool] = useState<{ name: string; args: any } | null>(null);
   const [dailyUsage, setDailyUsage] = useState(0);
 
   const scrollRef = useRef<HTMLDivElement>(null);
 
   // Strict plan-based model selection
   const activeModel = plan === 'pro' ? 'openai/gpt-oss-120b' : 'openai/gpt-oss-20b';
+
+  const getFriendlyToolName = (name: string) => {
+    switch (name) {
+      case 'get_thought_details': return 'Reading Workspace Data...';
+      case 'create_thought': return 'Creating New Thought...';
+      case 'create_thoughts': return 'Bulk Creating Thoughts...';
+      case 'update_thought': return 'Updating Thought...';
+      case 'update_thoughts': return 'Bulk Updating Thoughts...';
+      case 'web_search': return 'Researching Online...';
+      case 'search_youtube': return 'Searching YouTube...';
+      case 'delete_thoughts': return 'Clearing Thoughts...';
+      case 'create_stack': return 'Organizing Stack...';
+      case 'link_thoughts': return 'Linking Thoughts...';
+      case 'unlink_thoughts': return 'Unlinking Thoughts...';
+      default: return 'Working...';
+    }
+  };
 
   const suggestion = React.useMemo(() => 
     SUGGESTIONS[Math.floor(Math.random() * SUGGESTIONS.length)], 
@@ -187,8 +205,72 @@ const ChatOverlay: React.FC = () => {
               } else if (data.type === 'usage') {
                 setDailyUsage(data.count);
               } else if (data.type === 'tool_call') {
-                setStatus(`Executing ${data.toolCall.toolName}...`);
-                await executeOracleTool(data.toolCall, store);
+                setActiveTool({ name: data.toolCall.toolName, args: data.toolCall.args });
+                setStatus(getFriendlyToolName(data.toolCall.toolName));
+                
+                try {
+                  const result = await executeOracleTool(data.toolCall, store);
+                  
+                  // DATA ROUND-TRIP: If the tool returned data (Retrieval), we need to send it back to Oracle
+                  // We store retrieval results to send them all at once after the tool loop finishes if needed,
+                  // but for now, we'll keep the immediate follow-up logic but make it more robust.
+                  
+                  if (data.toolCall.toolName === 'get_thought_details' && result.success) {
+                    // Silent auto-submit with the retrieved data so Oracle can continue its plan
+                    const authStore = useAuthStore.getState();
+                    const followUpResponse = await fetch('/api/chat', {
+                      method: 'POST',
+                      headers: { 
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${authStore.accessToken}`
+                      },
+                      body: JSON.stringify({
+                        messages: [
+                          ...messages.slice(-10), 
+                          assistantMessage,
+                          { role: 'tool', tool_call_id: data.toolCall.id, name: 'get_thought_details', content: JSON.stringify(result) }
+                        ],
+                        model: activeModel,
+                        plan: plan,
+                        context: serializeWorkspace(store.activeSpaceId, store.thoughts, store.spaces, store.stacks, store.selectedThoughtIds)
+                      }),
+                    });
+                    
+                    if (followUpResponse.ok) {
+                      const followUpReader = followUpResponse.body?.getReader();
+                      if (followUpReader) {
+                        const followUpDecoder = new TextDecoder();
+                        while (true) {
+                          const { done, value } = await followUpReader.read();
+                          if (done) break;
+                          const followUpChunk = followUpDecoder.decode(value, { stream: true });
+                          const followUpLines = followUpChunk.split('\n');
+                          for (const fLine of followUpLines) {
+                            if (fLine.startsWith('data: ')) {
+                              const fDataStr = fLine.slice(6);
+                              if (fDataStr === '[DONE]') break;
+                              try {
+                                const fData = JSON.parse(fDataStr);
+                                if (fData.type === 'text') {
+                                  assistantMessage.content += fData.content;
+                                  setMessages(prev => [...prev.slice(0, -1), { ...assistantMessage }]);
+                                } else if (fData.type === 'tool_call') {
+                                  // RECURSION: If Oracle calls ANOTHER tool after reading (like create_thought)
+                                  // We handle it by calling this same logic recursively or triggering a secondary execution
+                                  setActiveTool({ name: fData.toolCall.toolName, args: fData.toolCall.args });
+                                  setStatus(getFriendlyToolName(fData.toolCall.toolName));
+                                  await executeOracleTool(fData.toolCall, store);
+                                }
+                              } catch (e) {}
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                } finally {
+                  setActiveTool(null);
+                }
               }
             } catch (e) { }
           }
@@ -303,12 +385,21 @@ const ChatOverlay: React.FC = () => {
             
             {isLoading && (
               <div className="flex flex-col gap-2 items-start animate-pulse">
-                <div className="bg-white/[0.03] border border-white/5 p-4 rounded-2xl rounded-tl-sm flex items-center gap-2.5">
-                  <Loader2 className="w-3.5 h-3.5 text-indigo-400 animate-spin" />
-                  <span className="text-[9px] font-black uppercase tracking-widest text-slate-400">
-                    {status || 'Oracle is thinking...'}
-                  </span>
-                </div>
+                {activeTool ? (
+                  <div className="bg-indigo-500/10 border border-indigo-500/20 px-4 py-2 rounded-xl flex items-center gap-3 shadow-[0_0_20px_rgba(99,102,241,0.1)]">
+                    <Loader2 className="w-3 h-3 text-indigo-400 animate-spin" />
+                    <span className="text-[10px] font-black uppercase tracking-widest text-indigo-300">
+                      {getFriendlyToolName(activeTool.name)}
+                    </span>
+                  </div>
+                ) : (
+                  <div className="bg-white/[0.03] border border-white/5 p-4 rounded-2xl rounded-tl-sm flex items-center gap-2.5">
+                    <Loader2 className="w-3.5 h-3.5 text-indigo-400 animate-spin" />
+                    <span className="text-[9px] font-black uppercase tracking-widest text-slate-400">
+                      {status || 'Oracle is thinking...'}
+                    </span>
+                  </div>
+                )}
               </div>
             )}
           </div>

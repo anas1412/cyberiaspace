@@ -96,6 +96,24 @@ export const tools: any[] = [
   {
     type: "function",
     function: {
+      name: "get_thought_details",
+      description: "Fetches the full details (content, tasks, table data, or drawing) for one or more thoughts. Use this when you need to read the full body of a note or see the items in a list.",
+      parameters: {
+        type: "object",
+        properties: {
+          ids: { 
+            type: "array", 
+            items: { type: "number" },
+            description: "An array of thought IDs to retrieve details for."
+          }
+        },
+        required: ["ids"]
+      }
+    }
+  },
+  {
+    type: "function",
+    function: {
       name: "create_thought",
       description: "Adds a node to the workspace. Choose the type carefully based on the content (e.g., 'embed' for YouTube).",
       parameters: {
@@ -130,7 +148,7 @@ export const tools: any[] = [
           x: { anyOf: [{ type: "number" }, { type: "null" }] },
           y: { anyOf: [{ type: "number" }, { type: "null" }] }
         },
-        required: ["text", "type", "content"]
+        required: ["text", "type"]
       }
     }
   },
@@ -174,7 +192,7 @@ export const tools: any[] = [
                 },
                 drawing: { type: "string", description: "SVG string for 'paint' type thoughts." }
               },
-              required: ["text", "type", "content"]
+              required: ["text", "type"]
             }
           }
         },
@@ -567,15 +585,22 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
               toolCall: { id: tc.id, toolName: tc.function.name, args } 
             })}\n\n`);
 
-            // FEEDBACK LOOP: Tell the AI the client-side tool was triggered successfully
-            // This allows the AI to continue its chain of thought (e.g. do the next update)
-            nextMessages.push({
-              role: 'tool',
-              tool_call_id: tc.id,
-              name: tc.function.name,
-              content: JSON.stringify({ success: true, observed: false, message: "Action queued for client execution." })
-            });
-            hasServerResults = true; // Trigger recursion to continue the AI's thought process
+            // If it's a retrieval tool, we MUST stop here and wait for client feedback
+            if (tc.function.name === 'get_thought_details') {
+              hasServerResults = false; 
+              // Stop recursion for this branch, the client will re-trigger
+            } else {
+              // FOR ACTION TOOLS (create/update): 
+              // Tell the AI the client-side tool was triggered successfully
+              // This allows the AI to continue its chain of thought without waiting
+              nextMessages.push({
+                role: 'tool',
+                tool_call_id: tc.id,
+                name: tc.function.name,
+                content: JSON.stringify({ success: true, observed: false, message: "Action queued for client execution." })
+              });
+              hasServerResults = true; 
+            }
           }
         }
 
