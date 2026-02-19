@@ -2,7 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { useStore } from '../store/useStore';
 import { useAuthStore } from '../store/useAuthStore';
 import { serializeWorkspace } from '../utils/contextBuilder';
-import { X, Send, Shield, Loader2, Bot, History, Zap } from 'lucide-react';
+import { X, Send, Shield, Loader2, Bot, History, Zap, Square } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
@@ -52,6 +52,26 @@ const ChatOverlay: React.FC = () => {
   const [dailyUsage, setDailyUsage] = useState(0);
 
   const scrollRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLTextAreaElement>(null);
+  const abortControllerRef = useRef<AbortController | null>(null);
+
+  // Auto-focus logic
+  useEffect(() => {
+    if (isChatOpen && !isLoading) {
+      const timer = setTimeout(() => {
+        inputRef.current?.focus();
+      }, 300);
+      return () => clearTimeout(timer);
+    }
+  }, [isChatOpen, isLoading]);
+
+  // Dynamic Textarea Height logic
+  useEffect(() => {
+    if (inputRef.current) {
+      inputRef.current.style.height = 'auto';
+      inputRef.current.style.height = `${Math.min(inputRef.current.scrollHeight, 128)}px`;
+    }
+  }, [input]);
 
   // Strict plan-based model selection
   const activeModel = plan === 'pro' ? 'openai/gpt-oss-120b' : 'openai/gpt-oss-20b';
@@ -101,6 +121,15 @@ const ChatOverlay: React.FC = () => {
     setMessages([]);
   };
 
+  const handleCancel = () => {
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+      abortControllerRef.current = null;
+      setIsLoading(false);
+      setStatus('');
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!input.trim() || isLoading) return;
@@ -122,6 +151,9 @@ const ChatOverlay: React.FC = () => {
     setIsLoading(true);
     setStatus('thinking');
 
+    const controller = new AbortController();
+    abortControllerRef.current = controller;
+
     try {
       const authStore = useAuthStore.getState();
       const response = await fetch('/api/chat', {
@@ -130,6 +162,7 @@ const ChatOverlay: React.FC = () => {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${authStore.accessToken}`
         },
+        signal: controller.signal,
         body: JSON.stringify({
           // History Sliding Window: Only send last 10 messages
           messages: [...messages.slice(-10), userMessage],
@@ -224,6 +257,7 @@ const ChatOverlay: React.FC = () => {
                         'Content-Type': 'application/json',
                         'Authorization': `Bearer ${authStore.accessToken}`
                       },
+                      signal: controller.signal,
                       body: JSON.stringify({
                         messages: [
                           ...messages.slice(-10), 
@@ -277,11 +311,16 @@ const ChatOverlay: React.FC = () => {
         }
       }
 
-    } catch (error) {
-      console.error('[Oracle] Error:', error);
+    } catch (error: any) {
+      if (error.name === 'AbortError') {
+        console.log('[Oracle] Stream aborted by user');
+      } else {
+        console.error('[Oracle] Error:', error);
+      }
     } finally {
       setIsLoading(false);
       setStatus('');
+      abortControllerRef.current = null;
     }
   };
 
@@ -369,7 +408,7 @@ const ChatOverlay: React.FC = () => {
                   m.role === 'user' ? "items-end" : "items-start"
                 )}>
                   <div className={cn(
-                    "max-w-[95%] p-4 rounded-2xl text-[12px] leading-relaxed border shadow-sm prose prose-invert prose-xs",
+                    "max-w-[95%] p-4 rounded-2xl text-[12px] leading-relaxed border shadow-sm prose prose-invert prose-xs break-words overflow-hidden",
                     m.role === 'user' 
                       ? "bg-indigo-500/20 text-white border-indigo-400/30 rounded-tr-sm" 
                       : "bg-white/[0.03] text-slate-200 border-white/5 rounded-tl-sm"
@@ -422,27 +461,39 @@ const ChatOverlay: React.FC = () => {
               </div>
             )}
 
-            <form onSubmit={handleSubmit} className="relative group">
+            <form onSubmit={handleSubmit} className="relative flex items-center gap-2 bg-white/[0.03] border border-white/10 rounded-2xl p-1.5 focus-within:border-indigo-500/50 focus-within:bg-white/[0.05] transition-all">
               <textarea
+                ref={inputRef}
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 onKeyDown={(e) => {
                   if (e.key === 'Enter' && !e.shiftKey) {
                     e.preventDefault();
-                    e.currentTarget.form?.requestSubmit();
+                    if (!isLoading) e.currentTarget.form?.requestSubmit();
                   }
                 }}
                 placeholder={suggestion}
-                disabled={isLoading}
-                className="w-full bg-white/[0.03] border border-white/10 rounded-xl py-3 pl-4 pr-12 text-xs text-white placeholder:text-slate-600 focus:outline-none focus:border-indigo-500/50 focus:bg-white/[0.05] transition-all disabled:opacity-50 resize-none h-14 custom-scroll"
+                rows={1}
+                className="flex-1 bg-transparent border-none py-2.5 pl-3 pr-2 text-xs text-white placeholder:text-slate-600 focus:outline-none resize-none min-h-[36px] max-h-32 custom-scroll leading-relaxed"
               />
-              <button
-                type="submit"
-                disabled={isLoading || !input.trim()}
-                className="absolute right-2 top-2 bottom-2 w-9 flex items-center justify-center bg-indigo-500 hover:bg-indigo-600 disabled:bg-slate-800 disabled:text-slate-600 text-white rounded-lg transition-all shadow-lg active:scale-95"
-              >
-                {isLoading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Send className="w-3.5 h-3.5" />}
-              </button>
+              {isLoading ? (
+                <button
+                  type="button"
+                  onClick={handleCancel}
+                  className="w-9 h-9 flex-shrink-0 flex items-center justify-center bg-red-500 hover:bg-red-600 text-white rounded-xl transition-all shadow-lg active:scale-95 group/cancel"
+                  title="Cancel Stream"
+                >
+                  <Square className="w-3 h-3 fill-current group-hover:scale-110 transition-transform" />
+                </button>
+              ) : (
+                <button
+                  type="submit"
+                  disabled={!input.trim()}
+                  className="w-9 h-9 flex-shrink-0 flex items-center justify-center bg-indigo-500 hover:bg-indigo-600 disabled:bg-slate-800/50 disabled:text-slate-600 text-white rounded-xl transition-all shadow-lg active:scale-95"
+                >
+                  <Send className="w-3.5 h-3.5" />
+                </button>
+              )}
             </form>
           </div>
         </motion.div>
