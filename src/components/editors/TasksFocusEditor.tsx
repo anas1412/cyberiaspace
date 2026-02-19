@@ -6,6 +6,7 @@ import { twMerge } from 'tailwind-merge';
 import { motion, Reorder } from 'framer-motion';
 import { FocusEditorShell } from './FocusEditorShell';
 
+
 function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
@@ -133,7 +134,7 @@ const TasksFocusEditor: React.FC = () => {
   const stacks = useStore((state) => state.stacks);
   const updateThought = useStore((state) => state.updateThought);
   const isReadOnly = useStore((state) => state.isReadOnly);
-
+  
   const [isEditMode, setIsEditMode] = useState(false);
   const [localTitle, setLocalTitle] = useState('');
   const [localTasks, setLocalTasks] = useState<Task[]>([]);
@@ -274,9 +275,11 @@ const TasksFocusEditor: React.FC = () => {
         </div>
       }
       footerStatus={
-        <p className="text-[8px] md:text-[10px] uppercase font-black tracking-widest text-slate-600">
-          {isReadOnly ? "Read-only view" : "Click a task in View mode to toggle it"}
-        </p>
+        <div className="flex items-center gap-4">
+          <p className="text-[8px] md:text-[10px] uppercase font-black tracking-widest text-slate-600">
+            {isReadOnly ? "Read-only view" : "Click a task in View mode to toggle it"}
+          </p>
+        </div>
       }
     >
       <EditorContent 

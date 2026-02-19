@@ -7,21 +7,28 @@ interface ImageRendererProps {
   isReadOnly: boolean;
   setSelectedThoughtId: (id: number | null) => void;
   setInspectorOpen: (open: boolean) => void;
-  openLightbox: (url: string, id: number) => void;
 }
 
 export const ImageRenderer: React.FC<ImageRendererProps> = ({ 
   thought, 
   isReadOnly, 
   setSelectedThoughtId, 
-  setInspectorOpen, 
-  openLightbox 
+  setInspectorOpen
 }) => {
   if (!thought.image) {
+    const isStranded = !thought.driveFileId && thought.syncStatus !== 'synced' && !isReadOnly;
+    
     return (
       <div data-trigger="image" className="mt-1 flex flex-col items-center gap-2 py-6 bg-black/20 rounded-xl border border-white/5 group/image relative cursor-pointer transition-colors hover:bg-white/[0.05]">
         <ImageIcon className="w-6 h-6 text-white/20" />
-        <span className="text-[10px] text-white/20 font-bold uppercase tracking-widest">Add Image</span>
+        <span className="text-[10px] text-white/20 font-bold uppercase tracking-widest">
+          {isStranded ? 'Sync Pending' : 'Add Image'}
+        </span>
+        {isStranded && (
+          <p className="text-[7px] text-amber-500/40 font-black uppercase tracking-[0.2em] text-center px-4 animate-pulse">
+            Content on other device
+          </p>
+        )}
         {!isReadOnly && (
           <div className="absolute inset-0 bg-[var(--accent)]/10 opacity-0 group-hover/image:opacity-100 transition-opacity rounded-xl flex items-center justify-center pointer-events-none">
             <button
@@ -36,20 +43,23 @@ export const ImageRenderer: React.FC<ImageRendererProps> = ({
     );
   }
   return (
-    <div data-trigger="image" className="mt-2 relative group cursor-pointer">
+    <div data-trigger="image" className="mt-2 relative group cursor-pointer overflow-hidden rounded-xl border border-white/10 bg-black/50 aspect-video flex items-center justify-center">
       <img
         src={thought.image}
         draggable="false"
-        onClick={(e) => { e.stopPropagation(); if (thought.image) openLightbox(thought.image, thought.id); }}
-        className="w-full rounded-xl border border-white/10 max-h-[160px] object-cover bg-black/50 cursor-zoom-in"
-        alt="Thought"
+        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+        alt={thought.text}
       />
-      <button
-        onClick={(e) => { e.stopPropagation(); if (thought.image) openLightbox(thought.image, thought.id); }}
-        className="expand-img prevent-drag absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-white rounded-xl"
-      >
-        <Maximize2 />
-      </button>
+      <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center gap-2">
+        <Maximize2 className="w-6 h-6 text-white" />
+        <span className="text-[8px] font-black uppercase tracking-widest text-white/80">View Asset</span>
+      </div>
+      
+      {/* Type Badge */}
+      <div className="absolute bottom-2 right-2 px-2 py-0.5 rounded-md bg-black/60 backdrop-blur-md border border-white/10 text-[7px] font-black text-white/60 uppercase tracking-widest">
+        {thought.meta?.file?.type?.split('/')[1]?.toUpperCase() || thought.text?.split('.').pop()?.toUpperCase() || 'IMG'}
+      </div>
     </div>
   );
 };
+

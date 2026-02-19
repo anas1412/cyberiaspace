@@ -1,10 +1,10 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
-/** AccountMenu component handles user authentication and cloud synchronization */
-import { useAuthStore, type User as UserType } from '../store/useAuthStore';
+import React, { useState, useEffect, useRef } from 'react';
+import { useAuthStore } from '../store/useAuthStore';
 import { useStore } from '../store/useStore';
+import { PLAN_CONFIG } from '../constants';
 import { useModalStore } from '../store/useModalStore';
 import { useGoogleLogin } from '@react-oauth/google';
-import { User, LogOut, Cloud, CloudOff, RefreshCw, ChevronDown, ShieldCheck, Trash2, Power, Database, WifiOff, Zap, Star, CreditCard, Calendar } from 'lucide-react';
+import { User, LogOut, Cloud, CloudOff, RefreshCw, ChevronDown, Trash2, Power, Database, WifiOff, Zap, Star, CreditCard, Calendar, HardDrive, Loader2 } from 'lucide-react';
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 
@@ -17,69 +17,67 @@ const AccountMenu: React.FC = () => {
   const { 
     user, status, signOut, syncStatus, lastSync, 
     syncData, autoSync, setAutoSync, deleteCloudData, 
-    cloudUsage, calculateUsage, isOnline, setAuthenticatedUser,
+    cloudUsage, calculateUsage, isOnline,
+    handleAuthCode, updateSettings, setAuthenticatedUser,
     importCloudData
   } = store;
   
   const totalThoughtCount = useStore((state) => state.totalThoughtCount);
-  const importDataManual = useStore((state) => state.importData);
+  const importFullState = useStore((state) => state.importFullState);
   const { openModal, openPricing } = useModalStore();
+
   const [isOpen, setIsOpen] = useState(false);
+  const [isDriveLoading, setIsDriveLoading] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
 
-  const handleLoginSuccess = useCallback(async (token: string) => {
-    try {
-      const res = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      
-      if (!res.ok) throw new Error('Failed to fetch profile');
-      
-      const data = await res.json();
-      
-      const googleUser: UserType = {
-        id: data.sub,
-        name: data.name,
-        email: data.email,
-        avatar: data.picture,
-        plan: 'free' // Default to free on initial login
-      };
-
-      await setAuthenticatedUser(googleUser, token);
-
-      // Check for cloud data
-      const cloudData = await importCloudData();
-      if (cloudData) {
-        openModal({
-          title: 'Cloud Data Found',
-          description: 'We found a workspace backup in the cloud. Would you like to restore it? This will overwrite your local changes.',
-          type: 'import_confirm',
-          confirmText: 'Restore',
-          onConfirm: () => {
-            importDataManual(cloudData);
-          }
-        });
-      }
-    } catch (error) {
-      console.error('Login processing error:', error);
+  // Handle Drive Loading State completion
+  useEffect(() => {
+    if (status !== 'loading') {
+      setIsDriveLoading(false);
     }
-  }, [setAuthenticatedUser, importCloudData, openModal, importDataManual]);
+  }, [status]);
 
+  // Initial Login Flow (Identity Only) - Minimal config to reduce verification hurdles
   const googleLogin = useGoogleLogin({
-    onSuccess: (response: any) => {
+    onSuccess: async (response) => {
       if (response.access_token) {
-        handleLoginSuccess(response.access_token);
+        const res = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
+          headers: { Authorization: `Bearer ${response.access_token}` },
+        });
+        const data = await res.json();
+        
+        const googleUser: any = {
+          id: data.sub,
+          name: data.name,
+          email: data.email,
+          avatar: data.picture,
+          plan: 'free'
+        };
+
+        await setAuthenticatedUser(googleUser, response.access_token, ['openid', 'email', 'profile']);
       }
     },
-    onError: (error: any) => console.error('Login Failed:', error),
-    // Use FedCM to avoid the legacy third-party cookie prompt
-    use_fedcm_for_prompt: true,
+    onError: (error) => console.error('Login Failed:', error),
+    flow: 'implicit',
+    scope: 'openid email profile',
+  });
+
+  // Drive Opt-in Flow (Additional Scopes)
+  const driveLogin = useGoogleLogin({
+    onSuccess: (response: any) => {
+      if (response.code) {
+        handleAuthCode(response.code);
+      }
+    },
+    onError: (error: any) => console.error('Drive Login Failed:', error),
+    flow: 'auth-code',
+    scope: 'openid email profile https://www.googleapis.com/auth/drive.file',
+    select_account: true,
+    prompt: 'consent' // Force consent to ensure we get a refresh token with Drive scopes
   } as any);
 
   useEffect(() => {
-    if (typeof calculateUsage === 'function') {
-      calculateUsage(totalThoughtCount);
-    }
+    calculateUsage(totalThoughtCount);
   }, [totalThoughtCount, calculateUsage]);
 
   useEffect(() => {
@@ -107,7 +105,7 @@ const AccountMenu: React.FC = () => {
         type: 'import_confirm',
         confirmText: 'Restore Now',
         onConfirm: () => {
-          importDataManual(cloudData);
+          importFullState(cloudData);
         }
       });
     } else {
@@ -120,15 +118,35 @@ const AccountMenu: React.FC = () => {
     }
   };
 
-  const handleDeleteCloudData = async () => {
+  const handleDisconnectDrive = async () => {
     openModal({
-      title: 'Delete Cloud Data?',
-      description: 'Are you sure? This will remove all your data from the cloud. Your local workspace will remain intact.',
+      title: 'Revoke Cloud Access?',
+      description: 'This will permanently disconnect Google Drive and delete your cloud session keys. You will need to re-authenticate to enable sync again.',
       type: 'delete_thought',
-      confirmText: 'Delete Cloud Data',
+      confirmText: 'Revoke Access',
       onConfirm: async () => {
-        await deleteCloudData();
-        setIsOpen(false);
+        setIsDriveLoading(true);
+        try {
+          const authStore = useAuthStore.getState();
+          // 1. Tell backend to delete refresh token and disable drive
+          await fetch('/api/google-auth?action=revoke', {
+            headers: { Authorization: `Bearer ${authStore.accessToken}` }
+          });
+          
+          // 2. Update local profile state
+          await updateSettings({ driveEnabled: false });
+          
+          // 3. Wipe local scopes and force basic set
+          localStorage.removeItem('cyberia-scopes');
+          useAuthStore.setState({ grantedScopes: ['openid', 'email', 'profile'] });
+          
+          console.log('[Auth] Drive access revoked and state reset');
+        } catch (e) {
+          console.error('Revoke failed:', e);
+        } finally {
+          setIsDriveLoading(false);
+          setIsOpen(false);
+        }
       }
     });
   };
@@ -148,6 +166,8 @@ const AccountMenu: React.FC = () => {
       </button>
     );
   }
+
+  const isDriveActive = user.settings?.driveEnabled;
 
   return (
     <div className="relative pointer-events-auto" ref={menuRef}>
@@ -247,6 +267,50 @@ const AccountMenu: React.FC = () => {
             </button>
           )}
 
+          {/* Persistent Cloud Integrations */}
+          <div className="mb-4 space-y-1">
+            <div className={cn(
+              "w-full flex items-center justify-between p-2.5 rounded-xl border transition-all",
+              isDriveActive ? "bg-green-500/5 border-green-500/10" : "bg-white/[0.03] border-white/[0.05]"
+            )}>
+              <div className="flex items-center gap-2.5">
+                <HardDrive className={cn("w-3.5 h-3.5", isDriveActive ? "text-green-400" : "text-slate-500")} />
+                <div className="text-left">
+                  <p className="text-[8px] font-black uppercase tracking-widest text-white">Google Drive</p>
+                  <p className="text-[9px] font-bold text-slate-500 uppercase tracking-widest">
+                    {isDriveActive ? 'Cloud Sync Active' : 'Disconnected'}
+                  </p>
+                </div>
+              </div>
+              
+              <div className="flex items-center gap-2">
+                {isDriveLoading ? (
+                  <div className="px-3 py-1.5 flex items-center gap-2">
+                    <Loader2 className="w-3 h-3 text-indigo-400 animate-spin" />
+                    <span className="text-[8px] font-black uppercase tracking-widest text-indigo-400/60">Wait...</span>
+                  </div>
+                ) : isDriveActive ? (
+                  <button 
+                    onClick={handleDisconnectDrive}
+                    className="px-3 py-1.5 bg-red-500/10 hover:bg-red-500/20 text-red-500 rounded-lg text-[8px] font-black uppercase tracking-widest transition-all"
+                  >
+                    Disconnect
+                  </button>
+                ) : (
+                  <button 
+                    onClick={() => {
+                      setIsDriveLoading(true);
+                      driveLogin();
+                    }}
+                    className="px-3 py-1.5 bg-indigo-500 hover:bg-indigo-600 text-white rounded-lg text-[8px] font-black uppercase tracking-widest transition-all shadow-lg active:scale-95"
+                  >
+                    Connect
+                  </button>
+                )}
+              </div>
+            </div>
+          </div>
+
           <div className="space-y-1 mb-4">
             <div className={cn(
               "flex items-center justify-between p-2.5 rounded-xl md:rounded-2xl border transition-all",
@@ -289,8 +353,8 @@ const AccountMenu: React.FC = () => {
             >
               <Cloud className="w-3.5 h-3.5 text-blue-400" />
               <div className="text-left">
-                <p className="text-[8px] md:text-[9px] font-black uppercase tracking-widest text-white">Restore Cloud</p>
-                <p className="text-[9px] font-bold text-slate-500 uppercase tracking-widest">Download backup</p>
+                <p className="text-[8px] md:text-[9px] font-black uppercase tracking-widest text-white">Restore Backup</p>
+                <p className="text-[9px] font-bold text-slate-500 uppercase tracking-widest">Download cloud backup</p>
               </div>
             </button>
 
@@ -315,14 +379,6 @@ const AccountMenu: React.FC = () => {
                 )} />
               </div>
             </button>
-            
-            <div className="flex items-center gap-2.5 p-2.5 rounded-xl md:rounded-2xl hover:bg-white/5 transition-colors cursor-default">
-              <ShieldCheck className="w-3.5 h-3.5 text-purple-400" />
-              <div>
-                <p className="text-[8px] md:text-[9px] font-black uppercase tracking-widest text-white">Cloud Storage</p>
-                <p className="text-[9px] font-bold text-slate-500 uppercase tracking-widest">Secure Data Backup</p>
-              </div>
-            </div>
           </div>
 
           {/* Cloud Capacity */}
@@ -335,7 +391,9 @@ const AccountMenu: React.FC = () => {
               <span className={cn(
                 "text-[8px] font-black tracking-widest",
                 cloudUsage > 100 ? "text-red-400 animate-pulse" : cloudUsage > 90 ? "text-red-400" : "text-slate-500"
-              )}>{cloudUsage}% {cloudUsage > 100 && "(OVERFLOW)"}</span>
+              )}>
+                {user.usage.sync_thoughts} / {PLAN_CONFIG[user.plan].MAX_CLOUD_THOUGHTS}
+              </span>
             </div>
             <div className="h-1 w-full bg-white/5 rounded-full overflow-hidden border border-white/5">
               <div 
@@ -348,9 +406,10 @@ const AccountMenu: React.FC = () => {
             </div>
           </div>
 
+
           <div className="grid grid-cols-2 gap-2">
             <button
-              onClick={handleDeleteCloudData}
+              onClick={deleteCloudData}
               disabled={syncStatus === 'syncing' || !lastSync || !isOnline}
               className="flex items-center justify-center gap-1.5 py-2.5 rounded-lg md:rounded-xl hover:bg-red-500/10 text-red-500/60 hover:text-red-400 text-[8px] md:text-[9px] font-black uppercase tracking-widest transition-all border border-transparent hover:border-red-500/10 disabled:opacity-30"
               title="Delete cloud data only"

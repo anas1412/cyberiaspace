@@ -4,7 +4,7 @@ import { PRIO_COLORS, STATUS_COLORS } from './constants';
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 import { formatRelativeDate } from '../../utils/date';
-import { Calendar } from 'lucide-react';
+import { Calendar, Globe, RefreshCw, AlertCircle, CloudOff } from 'lucide-react';
 
 function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -58,8 +58,22 @@ export const ThoughtHeader: React.FC<ThoughtHeaderProps> = ({ thought, isCalenda
             <span className="uppercase tracking-wider">{formattedDate}</span>
           </div>
         )}
+        {thought.syncStatus && thought.type !== 'label' && (
+          <div className="flex items-center justify-center ml-1">
+            {thought.syncStatus === 'synced' ? (
+              <div className="w-3 h-3 flex items-center justify-center rounded-full bg-green-500/10 border border-green-500/20 shadow-[0_0_8px_rgba(34,197,94,0.2)]">
+                <Globe className="w-2 h-2 text-green-500 opacity-80" />
+              </div>
+            ) : thought.syncStatus === 'pending' ? (
+              <RefreshCw className="w-2.5 h-2.5 text-indigo-400 animate-spin opacity-80" />
+            ) : thought.syncStatus === 'error' ? (
+              <AlertCircle className="w-3 h-3 text-red-500 animate-pulse" />
+            ) : (
+              <CloudOff className="w-3.5 h-3.5 text-slate-600 opacity-40" />
+            )}
+          </div>
+        )}
       </div>
     </div>
   );
 };
-

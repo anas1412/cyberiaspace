@@ -14,6 +14,10 @@ import { PaintRenderer } from './thought/PaintRenderer';
 import { TableRenderer } from './thought/TableRenderer';
 import { ImageRenderer } from './thought/ImageRenderer';
 import { EmbedRenderer } from './thought/EmbedRenderer';
+import { FileRenderer } from './thought/FileRenderer';
+import { LabelRenderer } from './thought/LabelRenderer';
+import { Loader2, Trash2 } from 'lucide-react';
+
 
 function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -40,16 +44,19 @@ const ThoughtNode: React.FC<ThoughtNodeProps> = React.memo(({ thought, registerE
   const setSelectedThoughtId = useStore((state) => state.setSelectedThoughtId);
   const setInspectorOpen = useStore((state) => state.setInspectorOpen);
   const setActiveFocus = useStore((state) => state.setActiveFocus);
-  const openLightbox = useStore((state) => state.openLightbox);
   const linkingSourceId = useStore((state) => state.linkingSourceId);
+
   const setLinkingSourceId = useStore((state) => state.setLinkingSourceId);
   const stacks = useStore((state) => state.stacks);
   const spaces = useStore((state) => state.spaces);
   const activeSpaceId = useStore((state) => state.activeSpaceId);
   const setHoveredCalDate = useStore((state) => state.setHoveredCalDate);
   const hoveredCalDate = useStore((state) => state.hoveredCalDate);
+  const deletingThoughtIds = useStore((state) => state.deletingThoughtIds);
+  const isDeleting = deletingThoughtIds.includes(thought.id);
 
   const activeSpace = useMemo(() => spaces.find(s => s.id === activeSpaceId), [spaces, activeSpaceId]);
+
   const isSpatial = activeSpace?.mode === 'spatial';
   const isCalendar = activeSpace?.mode === 'calendar';
   const isDateHovered = isCalendar && thought.date === hoveredCalDate;
@@ -140,11 +147,11 @@ const ThoughtNode: React.FC<ThoughtNodeProps> = React.memo(({ thought, registerE
     const target = e.target as HTMLElement;
     if (target.closest('.checkbox')) return;
 
-    const triggers = ['text', 'table', 'tasks', 'image', 'paint', 'embed'];
+    const triggers = ['label', 'text', 'table', 'tasks', 'image', 'paint', 'embed', 'file'];
     for (const t of triggers) {
       if (target.closest(`[data-trigger="${t}"]`)) {
-        if (t === 'image') { if (thought.image) openLightbox(thought.image, thought.id); }
-        else setActiveFocus(thought.id, t as any);
+        if (t === 'label') return; // Labels don't have focus mode
+        setActiveFocus(thought.id, t as any);
         return;
       }
     }
@@ -153,12 +160,14 @@ const ThoughtNode: React.FC<ThoughtNodeProps> = React.memo(({ thought, registerE
   const renderContent = () => {
     const commonProps = { thought, isReadOnly, setActiveFocus };
     switch (thought.type) {
+      case 'label': return <LabelRenderer thought={thought} />;
       case 'text': return <TextRenderer {...commonProps} isCalendar={isCalendar} isSpatial={isSpatial} parsedContent={parsedContent} />;
       case 'tasks': return <TasksRenderer {...commonProps} />;
       case 'paint': return <PaintRenderer {...commonProps} />;
       case 'table': return <TableRenderer {...commonProps} />;
-      case 'image': return <ImageRenderer {...commonProps} setSelectedThoughtId={setSelectedThoughtId} setInspectorOpen={setInspectorOpen} openLightbox={openLightbox} />;
+      case 'image': return <ImageRenderer {...commonProps} setSelectedThoughtId={setSelectedThoughtId} setInspectorOpen={setInspectorOpen} />;
       case 'embed': return <EmbedRenderer thought={thought} />;
+      case 'file': return <FileRenderer thought={thought} />;
       default: return null;
     }
   };
@@ -171,8 +180,9 @@ const ThoughtNode: React.FC<ThoughtNodeProps> = React.memo(({ thought, registerE
       className={cn(
         "thought-bulb absolute select-none touch-none will-change-transform w-[280px] pointer-events-auto",
         isDragging ? "z-[1000] cursor-grabbing" : "z-20 cursor-grab",
-        isReadOnly && !isSpatial && "cursor-default"
+        (isReadOnly && !isSpatial) || isDeleting && "cursor-default pointer-events-none"
       )}
+
       onMouseDown={handleLocalMouseDown}
       onTouchStart={handleLocalTouchStart}
       onDragStart={(e) => e.preventDefault()}
@@ -191,9 +201,22 @@ const ThoughtNode: React.FC<ThoughtNodeProps> = React.memo(({ thought, registerE
       }}
     >
       {showPing && <div className="absolute inset-0 rounded-[32px] border-2 border-[var(--accent)] animate-sonar pointer-events-none z-0" />}
+      
+      {/* DELETING OVERLAY */}
+      {isDeleting && (
+        <div className="absolute inset-0 z-[50] rounded-3xl bg-black/60 backdrop-blur-sm border border-red-500/30 flex flex-col items-center justify-center gap-3 animate-in fade-in duration-300">
+          <div className="relative">
+            <Loader2 className="w-8 h-8 text-red-500 animate-spin" />
+            <Trash2 className="w-4 h-4 text-red-500 absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2" />
+          </div>
+          <span className="text-[8px] font-black uppercase tracking-[0.2em] text-red-400">Purging Data</span>
+        </div>
+      )}
+
       <div
         className={cn(
           "thought-bulb-content group backdrop-blur-[20px] border rounded-3xl flex flex-col relative transition-all duration-300",
+
           isCalendar && !isExpanded ? "p-3 gap-0" : "p-4.5 gap-2",
           isSelected
             ? "border-[var(--accent)]/50 shadow-[0_0_40px_var(--accent-glow)] bg-[var(--node-bg)]/80"

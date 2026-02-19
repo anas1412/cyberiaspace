@@ -5,7 +5,8 @@ export const serializeWorkspace = (
   thoughts: Thought[], 
   spaces: Space[], 
   stacks: Stack[],
-  selectedThoughtIds: number[] = []
+  selectedThoughtIds: number[] = [],
+  user?: any // Pass user for usage context
 ) => {
   const activeSpace = spaces.find(s => s.id === activeSpaceId);
   
@@ -17,6 +18,7 @@ export const serializeWorkspace = (
   // Simplify thoughts for token efficiency - SKELETON STRATEGY
   const simplifiedThoughts = thoughts.map(t => {
     const isSelected = selectedThoughtIds.includes(t.id);
+    const fileMeta = t.meta?.file || {};
     
     return {
       id: t.id,
@@ -28,14 +30,19 @@ export const serializeWorkspace = (
       date: t.date || undefined,
       stack: t.stackId ? stackMap.get(t.stackId) || "Unnamed Stack" : undefined,
       isSelected: isSelected || undefined,
+      syncStatus: t.syncStatus,
       // Metadata indicators - tell AI that data exists without sending it all
       hasContent: !!t.content?.trim(),
       hasTasks: t.type === 'tasks' && !!t.tasks?.length,
       hasTable: t.type === 'table' && !!t.table?.length,
       hasImage: !!t.image,
       hasDrawing: !!t.drawing,
-      // Include a TINY preview (50 chars) to help AI decide if it needs the full details
-      preview: t.content ? t.content.substring(0, 50).replace(/\n/g, ' ') + '...' : undefined
+      fileInfo: t.type === 'file' || t.type === 'image' ? {
+        extension: fileMeta.type?.split('/')[1] || t.text?.split('.').pop(),
+        size: fileMeta.size ? `${(fileMeta.size / (1024 * 1024)).toFixed(2)}MB` : undefined,
+        isCloudSynced: !!t.driveFileId
+      } : undefined,
+      // REMOVED: preview - moving to strict tool-based retrieval for token efficiency
     };
   });
 
@@ -45,6 +52,11 @@ export const serializeWorkspace = (
       full: new Date().toLocaleString(),
       day: new Date().toLocaleDateString('en-US', { weekday: 'long' })
     },
+    userQuota: user ? {
+      plan: user.plan,
+      aiDailyUsed: user.usage?.ai_daily_count,
+      syncThoughtsUsed: user.usage?.sync_thoughts
+    } : undefined,
     currentSpace: {
       id: activeSpace.id,
       name: activeSpace.name,
@@ -57,3 +69,4 @@ export const serializeWorkspace = (
 
   return JSON.stringify(context, null, 2);
 };
+

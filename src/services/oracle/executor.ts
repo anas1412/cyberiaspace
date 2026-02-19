@@ -57,8 +57,11 @@ export const executeOracleTool = async (toolCall: any, store: any) => {
             drawing: t.type === 'paint' ? t.drawing : undefined,
             date: t.date,
             status: t.status,
-            priority: t.priority
+            priority: t.priority,
+            meta: t.meta,
+            syncStatus: t.syncStatus
           };
+
         });
         
         return { success: true, thoughts: results };
@@ -200,6 +203,51 @@ export const executeOracleTool = async (toolCall: any, store: any) => {
           return { success: true };
         }
       }
+
+      case 'read_file_content': {
+        const { id } = args;
+        const thought = store.thoughts.find((t: any) => t.id === id);
+        if (!thought) return { success: false, error: 'Thought not found' };
+
+        try {
+          const { db } = await import('../../db');
+          const { driveService } = await import('../google/driveService');
+          const authStore = (await import('../../store/useAuthStore')).useAuthStore.getState();
+
+          // Try to get from local blobs first
+          let blob: Blob | null = null;
+          const blobEntry = await db.blobs.where('thoughtId').equals(id).first();
+          
+          if (blobEntry) {
+            blob = blobEntry.blob;
+          } else if (thought.driveFileId && authStore.accessToken) {
+            blob = await driveService.downloadFile(authStore.accessToken, thought.driveFileId);
+          }
+
+          if (!blob) return { success: false, error: 'File content not available (might be local-only and you are on a different device)' };
+
+          // Only read as text if it's a readable type
+          const readableTypes = ['text/', 'application/json', 'application/javascript', 'application/x-javascript'];
+          const isPDF = blob.type.includes('pdf');
+          
+          if (isPDF) {
+            // For now, we can't parse PDF on client easily, but we can return the metadata
+            return { success: true, type: 'pdf', message: "This is a PDF file. Direct text extraction is pending implementation, but I can see it's a valid document." };
+          }
+
+          const isText = readableTypes.some(t => blob!.type.startsWith(t)) || thought.text?.endsWith('.md') || thought.text?.endsWith('.txt');
+          
+          if (isText) {
+            const text = await blob.text();
+            return { success: true, type: 'text', content: text.substring(0, 10000) }; // Limit to 10k chars for safety
+          }
+
+          return { success: false, error: 'File type is not readable as text.' };
+        } catch (e: any) {
+          return { success: false, error: e.message };
+        }
+      }
+
 
       default:
         console.warn(`[Oracle] Unknown client-side tool: ${toolName}`);

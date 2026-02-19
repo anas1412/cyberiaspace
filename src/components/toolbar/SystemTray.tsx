@@ -70,8 +70,9 @@ export const SystemTray: React.FC<SystemTrayProps> = ({
   };
 
   return (
-    <div className="fixed bottom-4 md:bottom-8 right-4 md:right-8 z-[9999] flex flex-col items-end gap-3 pointer-events-none system-tray-container">
+    <div className="fixed bottom-4 md:bottom-8 right-4 md:right-8 z-[9999] flex flex-col items-end gap-3 pointer-events-none system-tray-container mobile-bottom-bar-adjust">
       <div className={cn("glass p-4 md:p-5 rounded-[1.5rem] md:rounded-[2rem] border border-white/10 shadow-2xl flex flex-col gap-1 transition-all pointer-events-auto w-72 md:w-80 animate-in fade-in slide-in-from-bottom-2 duration-300", isSystemMenuOpen ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4 pointer-events-none")}>
+
         
         {!isReadOnly && (
           <>

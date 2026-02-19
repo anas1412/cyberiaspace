@@ -11,7 +11,8 @@ function cn(...inputs: ClassValue[]) {
 interface TableRendererProps {
   thought: Thought;
   isReadOnly: boolean;
-  setActiveFocus: (id: number, type: 'text' | 'tasks' | 'paint' | 'table' | 'embed') => void;
+  setActiveFocus: (id: number, type: 'text' | 'tasks' | 'paint' | 'table' | 'embed' | 'file' | 'image') => void;
+
 }
 
 export const TableRenderer: React.FC<TableRendererProps> = ({ 
@@ -20,13 +21,22 @@ export const TableRenderer: React.FC<TableRendererProps> = ({
   setActiveFocus 
 }) => {
   const isTableEmpty = !thought.table || thought.table.every(row => row.every(cell => !cell || !cell.trim()));
+  const isStranded = isTableEmpty && !thought.driveFileId && thought.syncStatus !== 'synced' && !isReadOnly;
 
   if (isTableEmpty) {
     return (
       <div data-trigger="table" className="mt-1 flex flex-col items-center gap-2 py-4 bg-black/20 rounded-xl border border-white/5 group/table relative cursor-pointer transition-colors hover:bg-white/[0.05]">
         <Table className="w-6 h-6 text-white/20" />
-        <span className="text-[10px] text-white/20 font-bold uppercase tracking-widest">Build Table</span>
+        <span className="text-[10px] text-white/20 font-bold uppercase tracking-widest">
+          {isStranded ? 'Sync Pending' : 'Build Table'}
+        </span>
+        {isStranded && (
+          <p className="text-[7px] text-amber-500/40 font-black uppercase tracking-[0.2em] text-center px-4">
+            Data on other device
+          </p>
+        )}
         {!isReadOnly && (
+
           <div className="absolute inset-0 bg-[var(--accent)]/10 opacity-0 group-hover/table:opacity-100 transition-opacity rounded-xl flex items-center justify-center pointer-events-none">
             <button
               onClick={(e) => { e.stopPropagation(); setActiveFocus(thought.id, 'table'); }}
