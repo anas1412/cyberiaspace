@@ -64,22 +64,27 @@ const MultiSelectionMenu: React.FC = () => {
   return (
     <AnimatePresence>
       <motion.div
-        initial={isMobile ? { y: '100%' } : { opacity: 0, x: 20 }}
+        initial={isMobile ? { y: '100%' } : { opacity: 0, x: -20 }}
         animate={isMobile
           ? (isInspectorOpen || isChatOpen ? { y: '100%', opacity: 0 } : { y: 0, opacity: 1 })
           : { opacity: 1, x: 0 }}
-        exit={isMobile ? { y: '100%' } : { opacity: 0, x: 20 }}
+        exit={isMobile ? { y: '100%' } : { opacity: 0, x: -20 }}
         className={cn(
-          "ui-layer focus-box fixed bottom-0 left-0 right-0 md:bottom-auto md:left-auto md:top-[120px] md:right-8 w-full md:w-72 glass rounded-t-[2rem] md:rounded-[2rem] p-5 md:p-6 shadow-2xl pointer-events-auto",
+          "ui-layer focus-box fixed bottom-4 left-4 right-4 md:bottom-auto md:left-8 md:top-24 w-[calc(100%-32px)] md:w-80 glass md:rounded-[2rem] p-4 md:p-5 shadow-[0_0_80px_rgba(0,0,0,0.5)] pointer-events-auto z-[9999] border border-white/10",
           isMobile && (isInspectorOpen || isChatOpen) && "pointer-events-none"
         )}
       >
-        <div className="flex justify-between items-center mb-5">
-          <div className="flex flex-col">
-            <h3 className="text-[10px] font-black uppercase tracking-widest text-[var(--text-primary)]">Bulk Actions</h3>
-            <span className="text-[9px] text-slate-500 font-bold uppercase tracking-wider">{selectedThoughtIds.length} items selected</span>
+        <div className="flex justify-between items-center mb-4 pb-4 border-b border-white/5">
+          <div className="flex items-center gap-3">
+            <div className="w-8 h-8 rounded-xl bg-indigo-500/10 flex items-center justify-center border border-indigo-500/20">
+              <Link className="w-4 h-4 text-indigo-400" />
+            </div>
+            <div className="flex flex-col">
+              <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-white leading-none">Bulk Actions</h3>
+              <span className="text-[8px] text-slate-500 font-bold uppercase tracking-widest mt-1.5">{selectedThoughtIds.length} items selected</span>
+            </div>
           </div>
-          <button onClick={clearSelection} className="text-slate-500 hover:text-white">
+          <button onClick={clearSelection} className="p-2 hover:bg-white/5 rounded-lg text-slate-500 hover:text-white transition-all">
             <X className="w-4 h-4" />
           </button>
         </div>
@@ -138,7 +143,7 @@ const MultiSelectionMenu: React.FC = () => {
                     const latestThoughts = useStore.getState().thoughts;
                     const firstSelected = latestThoughts.find(t => selectedThoughtIds.includes(t.id));
                     if (firstSelected?.stackId) {
-                      await updateStack(firstSelected.stackId, { name: localStackName.trim() });
+                      await useStore.getState().updateStack(firstSelected.stackId, { name: localStackName.trim() });
                     }
                   }, 100);
                 }
