@@ -1,9 +1,7 @@
 import React from 'react';
 import { useStore } from '../store/useStore';
 import { useModalStore } from '../store/useModalStore';
-import { useAuthStore } from '../store/useAuthStore';
-import { useGoogleLogin } from '@react-oauth/google';
-import { X, Maximize2, Image as ImageIcon, Link, Trash2, Youtube, Type, ListTodo, Palette, Table, Calendar, ChevronLeft, ChevronRight, Layers, ArrowDown, Share2, File as FileIcon, Globe, Shield } from 'lucide-react';
+import { X, Maximize2, Image as ImageIcon, Link, Trash2, Youtube, Type, ListTodo, Palette, Table, Calendar, ChevronLeft, ChevronRight, Layers, ArrowDown, Share2, File as FileIcon } from 'lucide-react';
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -166,19 +164,6 @@ const Inspector: React.FC = () => {
   const isReadOnly = useStore((state) => state.isReadOnly);
 
   const { openModal } = useModalStore();
-  const grantedScopes = useAuthStore((state) => state.grantedScopes);
-  const requestServiceAccess = useAuthStore((state) => state.requestServiceAccess);
-  const hasCalendarAccess = grantedScopes.includes('https://www.googleapis.com/auth/calendar.events');
-
-  const calendarLogin = useGoogleLogin({
-    onSuccess: (response: any) => {
-      if (response.access_token) {
-        requestServiceAccess('https://www.googleapis.com/auth/calendar.events', response.access_token);
-      }
-    },
-    scope: [...grantedScopes, 'https://www.googleapis.com/auth/calendar.events'].join(' '),
-    flow: 'implicit'
-  } as any);
 
   const thought = thoughts.find((t) => t.id === selectedThoughtId);
   const stack = stacks.find((s) => s.id === thought?.stackId);
@@ -323,26 +308,8 @@ const Inspector: React.FC = () => {
                 }}
               />
 
-              {localDate && !isReadOnly && (
-                <div className="mt-2 px-1">
-                  {!hasCalendarAccess ? (
-                    <button 
-                      onClick={() => calendarLogin()}
-                      className="flex items-center gap-2 text-[8px] font-black uppercase tracking-widest text-indigo-400 hover:text-white transition-colors"
-                    >
-                      <Shield className="w-3 h-3" />
-                      Sync with Google Calendar
-                    </button>
-                  ) : (
-                    <div className="flex items-center gap-2 text-[8px] font-black uppercase tracking-widest text-green-500 opacity-60">
-                      <Globe className="w-3 h-3" />
-                      Calendar Sync Active
-                    </div>
-                  )}
-                </div>
-              )}
-
               <div className="space-y-2">
+
                 <label className="text-[9px] uppercase font-bold tracking-widest text-slate-500 ml-1">Status</label>
                 <div className="grid grid-cols-4 gap-1">
                   {(['none', 'todo', 'doing', 'done'] as const).map((s) => (

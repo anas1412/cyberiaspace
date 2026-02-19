@@ -329,16 +329,11 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     if (!accessToken || !isOnline || !user) return;
 
     const hasDrive = grantedScopes.includes('https://www.googleapis.com/auth/drive.file');
-    const hasTasks = grantedScopes.includes('https://www.googleapis.com/auth/tasks');
-    const hasCalendar = grantedScopes.includes('https://www.googleapis.com/auth/calendar.events');
-
-    if (!hasDrive && !hasTasks && !hasCalendar) return;
+    if (!hasDrive) return;
 
     try {
       const { db } = await import('../db');
       const { driveService } = await import('../services/google/driveService');
-      const { tasksService } = await import('../services/google/tasksService');
-      const { calendarService } = await import('../services/google/calendarService');
 
       const thoughtsToSync = await db.thoughts
         .where('syncStatus')
@@ -347,28 +342,18 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 
       if (thoughtsToSync.length === 0) return;
 
-      console.log(`[Sync] Deep syncing ${thoughtsToSync.length} thoughts to Google Services...`);
+      console.log(`[Sync] Syncing ${thoughtsToSync.length} items to Google Drive...`);
 
-      let thoughtsFolderId: string | undefined;
-      let drawingsFolderId: string | undefined;
-      let mediaFolderId: string | undefined;
-
-      if (hasDrive) {
-        try {
-          const rootId = await driveService.ensureRootFolder(accessToken);
-          thoughtsFolderId = await driveService.ensureSubFolder(accessToken, rootId, 'Thoughts');
-          drawingsFolderId = await driveService.ensureSubFolder(accessToken, rootId, 'Drawings');
-          mediaFolderId = await driveService.ensureSubFolder(accessToken, rootId, 'Media');
-        } catch (e) {
-          console.error('[Sync] Drive folder setup failed:', e);
-        }
-      }
+      const rootId = await driveService.ensureRootFolder(accessToken);
+      const thoughtsFolderId = await driveService.ensureSubFolder(accessToken, rootId, 'Thoughts');
+      const drawingsFolderId = await driveService.ensureSubFolder(accessToken, rootId, 'Drawings');
+      const mediaFolderId = await driveService.ensureSubFolder(accessToken, rootId, 'Media');
 
       for (const thought of thoughtsToSync) {
         try {
           let driveFileId = thought.driveFileId;
           
-          if (hasDrive && thoughtsFolderId && thought.type !== 'image' && thought.type !== 'embed') {
+          if (thought.type !== 'image' && thought.type !== 'embed') {
             let content = '';
             let fileName = `${thought.id}`;
             let mimeType = 'text/plain';
@@ -405,48 +390,12 @@ export const useAuthStore = create<AuthState>((set, get) => ({
             }
           }
 
-          let googleTaskListId = thought.googleTaskListId;
-          if (hasTasks && thought.type === 'tasks') {
-            try {
-              if (!googleTaskListId) {
-                console.log(`[Sync] Creating new Google Task List for thought ${thought.id}...`);
-                googleTaskListId = await tasksService.ensureTaskList(accessToken, thought.text || 'Cyberia Tasks');
-                await db.thoughts.update(thought.id, { googleTaskListId });
-              }
-              console.log(`[Sync] Pushing ${thought.tasks.length} items to Google Task List ${googleTaskListId}...`);
-              const success = await tasksService.syncTasks(accessToken, googleTaskListId, thought.tasks);
-              if (success) console.log(`[Sync] Google Tasks sync successful for thought ${thought.id}`);
-            } catch (e) {
-              console.error('[Sync] Tasks sync failed for thought:', thought.id, e);
-            }
-          }
-
-          let googleCalendarEventId = thought.googleCalendarEventId;
-          if (hasCalendar && thought.date) {
-            try {
-              console.log(`[Sync] Syncing thought ${thought.id} to Google Calendar...`);
-              const event = await calendarService.upsertEvent(accessToken, googleCalendarEventId, {
-                title: thought.text || 'Cyberia Event',
-                date: thought.date,
-                thoughtId: thought.id
-              });
-              googleCalendarEventId = event.id;
-              await db.thoughts.update(thought.id, { googleCalendarEventId });
-            } catch (e) {
-              console.error('[Sync] Calendar sync failed for thought:', thought.id, e);
-            }
-          }
-
-          const serviceUpdates: any = {
-            syncStatus: (hasDrive || hasTasks || hasCalendar) ? 'synced' : 'local'
-          };
+          const serviceUpdates: any = { syncStatus: 'synced' };
           if (driveFileId) serviceUpdates.driveFileId = driveFileId;
-          if (googleTaskListId) serviceUpdates.googleTaskListId = googleTaskListId;
-          if (googleCalendarEventId) serviceUpdates.googleCalendarEventId = googleCalendarEventId;
 
           await db.thoughts.update(thought.id, serviceUpdates);
 
-          if (hasDrive && mediaFolderId) {
+          if (mediaFolderId) {
             const blobEntry = await db.blobs.where('thoughtId').equals(thought.id).first();
             if (blobEntry && !thought.driveFileId) {
               const result = await driveService.uploadFile(accessToken, blobEntry.blob, blobEntry.name, mediaFolderId);
@@ -458,13 +407,12 @@ export const useAuthStore = create<AuthState>((set, get) => ({
           }
 
         } catch (err) {
-          console.error(`[Sync] Failed to process thought ${thought.id}:`, err);
+          console.error(`[Sync] Failed to sync thought ${thought.id}:`, err);
           await db.thoughts.update(thought.id, { syncStatus: 'error' });
         }
       }
     } catch (err) {
-      console.error('[Sync] Critical deep sync error:', err);
-      throw err;
+      console.error('[Sync] Deep sync process failed:', err);
     }
   },
 
@@ -473,31 +421,13 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     if (!accessToken || !isOnline) return;
 
     const hasDrive = grantedScopes.includes('https://www.googleapis.com/auth/drive.file');
-    const hasTasks = grantedScopes.includes('https://www.googleapis.com/auth/tasks');
-    const hasCalendar = grantedScopes.includes('https://www.googleapis.com/auth/calendar.events');
+    if (!hasDrive || !thought.driveFileId) return;
 
     try {
       const { driveService } = await import('../services/google/driveService');
-      const { tasksService } = await import('../services/google/tasksService');
-      const { calendarService } = await import('../services/google/calendarService');
-
-      const promises = [];
-
-      if (hasDrive && thought.driveFileId) {
-        promises.push(driveService.deleteFile(accessToken, thought.driveFileId).catch(e => console.warn('[Sync] Drive delete failed:', e)));
-      }
-
-      if (hasTasks && thought.googleTaskListId) {
-        promises.push(tasksService.deleteTaskList(accessToken, thought.googleTaskListId).catch(e => console.warn('[Sync] Tasks delete failed:', e)));
-      }
-
-      if (hasCalendar && thought.googleCalendarEventId) {
-        promises.push(calendarService.deleteEvent(accessToken, thought.googleCalendarEventId).catch(e => console.warn('[Sync] Calendar delete failed:', e)));
-      }
-
-      await Promise.all(promises);
+      await driveService.deleteFile(accessToken, thought.driveFileId);
     } catch (err) {
-      console.error('[Sync] Content deletion process failed:', err);
+      console.error('[Sync] Content deletion failed:', err);
     }
   },
 

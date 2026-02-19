@@ -6,7 +6,7 @@ import { useStore } from '../store/useStore';
 
 import { useModalStore } from '../store/useModalStore';
 import { useGoogleLogin } from '@react-oauth/google';
-import { User, LogOut, Cloud, CloudOff, RefreshCw, ChevronDown, ShieldCheck, Trash2, Power, Database, WifiOff, Zap, Star, CreditCard, Calendar, HardDrive, CheckSquare, Globe } from 'lucide-react';
+import { User, LogOut, Cloud, CloudOff, RefreshCw, ChevronDown, ShieldCheck, Trash2, Power, Database, WifiOff, Zap, Star, CreditCard, Calendar, HardDrive, Globe } from 'lucide-react';
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 
@@ -15,9 +15,7 @@ function cn(...inputs: ClassValue[]) {
 }
 
 const SCOPES = {
-  DRIVE: 'https://www.googleapis.com/auth/drive.file',
-  TASKS: 'https://www.googleapis.com/auth/tasks',
-  CALENDAR: 'https://www.googleapis.com/auth/calendar.events'
+  DRIVE: 'https://www.googleapis.com/auth/drive.file'
 };
 
 const AccountMenu: React.FC = () => {
@@ -304,48 +302,6 @@ const AccountMenu: React.FC = () => {
                 </div>
               </div>
               {grantedScopes.includes(SCOPES.DRIVE) && <div className="w-1.5 h-1.5 rounded-full bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.5)]" />}
-            </button>
-
-            <button 
-              onClick={() => handleConnectService(SCOPES.TASKS)}
-              className={cn(
-                "w-full flex items-center justify-between p-2.5 rounded-xl border transition-all",
-                grantedScopes.includes(SCOPES.TASKS) 
-                  ? "bg-blue-500/5 border-blue-500/10" 
-                  : "bg-white/[0.03] border-white/[0.05] hover:bg-white/5"
-              )}
-            >
-              <div className="flex items-center gap-2.5">
-                <CheckSquare className={cn("w-3.5 h-3.5", grantedScopes.includes(SCOPES.TASKS) ? "text-blue-400" : "text-slate-500")} />
-                <div className="text-left">
-                  <p className="text-[8px] font-black uppercase tracking-widest text-white">Google Tasks</p>
-                  <p className="text-[9px] font-bold text-slate-500 uppercase tracking-widest">
-                    {grantedScopes.includes(SCOPES.TASKS) ? 'Connected (Sync)' : 'Connect Tasks'}
-                  </p>
-                </div>
-              </div>
-              {grantedScopes.includes(SCOPES.TASKS) && <div className="w-1.5 h-1.5 rounded-full bg-blue-500 shadow-[0_0_8px_rgba(59,130,246,0.5)]" />}
-            </button>
-
-            <button 
-              onClick={() => handleConnectService(SCOPES.CALENDAR)}
-              className={cn(
-                "w-full flex items-center justify-between p-2.5 rounded-xl border transition-all",
-                grantedScopes.includes(SCOPES.CALENDAR) 
-                  ? "bg-purple-500/5 border-purple-500/10" 
-                  : "bg-white/[0.03] border-white/[0.05] hover:bg-white/5"
-              )}
-            >
-              <div className="flex items-center gap-2.5">
-                <Calendar className={cn("w-3.5 h-3.5", grantedScopes.includes(SCOPES.CALENDAR) ? "text-purple-400" : "text-slate-500")} />
-                <div className="text-left">
-                  <p className="text-[8px] font-black uppercase tracking-widest text-white">Calendar</p>
-                  <p className="text-[9px] font-bold text-slate-500 uppercase tracking-widest">
-                    {grantedScopes.includes(SCOPES.CALENDAR) ? 'Connected (Events)' : 'Connect Events'}
-                  </p>
-                </div>
-              </div>
-              {grantedScopes.includes(SCOPES.CALENDAR) && <div className="w-1.5 h-1.5 rounded-full bg-purple-500 shadow-[0_0_8px_rgba(168,85,247,0.5)]" />}
             </button>
           </div>
 
