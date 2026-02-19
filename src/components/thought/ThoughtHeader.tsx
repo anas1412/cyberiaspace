@@ -3,6 +3,8 @@ import { type Thought } from '../../db';
 import { PRIO_COLORS, STATUS_COLORS } from './constants';
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
+import { formatRelativeDate } from '../../utils/date';
+import { Calendar } from 'lucide-react';
 
 function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -15,6 +17,8 @@ interface ThoughtHeaderProps {
 }
 
 export const ThoughtHeader: React.FC<ThoughtHeaderProps> = ({ thought, isCalendar, isExpanded }) => {
+  const formattedDate = React.useMemo(() => formatRelativeDate(thought.date), [thought.date]);
+
   return (
     <div className={cn("flex items-start justify-between gap-4", isCalendar && !isExpanded ? "min-h-0" : "min-h-[24px]")}>
       <div className="flex items-start gap-2.5 flex-1 min-w-0">
@@ -49,11 +53,13 @@ export const ThoughtHeader: React.FC<ThoughtHeaderProps> = ({ thought, isCalenda
           </div>
         )}
         {thought.date && (
-          <div className="text-[8px] font-mono text-[var(--accent)] border border-[var(--accent)]/20 px-1.5 py-0.5 rounded bg-[var(--accent)]/5">
-            {thought.date}
+          <div className="flex items-center gap-1 text-[9px] font-bold text-indigo-400 bg-indigo-500/10 border border-indigo-500/20 px-2 py-0.5 rounded-lg shadow-[0_0_15px_rgba(99,102,241,0.1)]">
+            <Calendar className="w-2.5 h-2.5" />
+            <span className="uppercase tracking-wider">{formattedDate}</span>
           </div>
         )}
       </div>
     </div>
   );
 };
+
