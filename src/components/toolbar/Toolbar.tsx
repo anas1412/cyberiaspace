@@ -251,7 +251,7 @@ const Toolbar: React.FC = () => {
 
   return (
     <>
-            <div className="fixed top-2 md:top-6 left-2 md:left-6 right-2 md:right-6 z-[9999] flex items-center justify-between gap-2 pointer-events-none">
+            <div className="fixed top-2 md:top-6 left-4 md:left-10 right-4 md:right-10 z-[9999] flex items-center justify-between gap-2 pointer-events-none">
               <ToolbarLogo />
               <SpaceSwitcher 
                 spaces={spaces}
