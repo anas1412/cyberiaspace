@@ -22,18 +22,13 @@ Cyberia is a spatial productivity platform for kinetic information architecture.
 - add 2 modes for oracle chat mode and active mode
 
 
-- maybe change ai chat on the left
-
-- when ai fetchs a youtube video, the title should be in title and the uploader in description investigate that and if its done by oembed or not
-
-
 - small thing when i have multiple thoughts in a stack sometimes when i try to link the thick linking line sometimes not visible under the thoughts
 
 - implement Vercel AI SDK for multi models
 
 - add the ability to bring your own key or use cyberia AI key
 
-- add payement system
+- add payement system (flouci)
 
 - make a backend system to manage users, their plan, check how many active thoughts/spaces and cloud storage and refund button.
 
@@ -42,22 +37,19 @@ Cyberia is a spatial productivity platform for kinetic information architecture.
 - add codes to activate pro for a month single use
 
 - add copy space to my spaces ot smth like that
-- add description & categories to spaces 
+- add description & categories/tags to spaces 
 - make spaces catalog
 
  
 
 TODO:
 
-i want to change the performance on/off button between command center and oracle ai icons but also we have the physics button in controls? do u have any better idea? (dont implement we are planning)
-
 change stack to collection
 
-the web app cyberia is so laggy with hand gestures and phyics as pwa on my tablet/website why? pls investigate throughly (dont implement anything)
 
 create a new thought type "label", its an empty thought that has only title/description etc without any content (same as txt but without content)
 
-in thought make the date more visible and make a helper to convert date
+in thoughtnode make the date better for the user experience its not really visibilie like this right? and make a helper to convert date
 
 make the context smaller but excluding the content of thoughts but add a tool to read whats inside the thought when necessary to reduce tokens
 
