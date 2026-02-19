@@ -210,26 +210,37 @@ const Inspector: React.FC = () => {
       {isInspectorOpen && thought && (
         <motion.div
           id="inspector"
-          initial={{ opacity: 0, x: 20 }}
+          initial={{ opacity: 0, x: -20 }}
           animate={{ opacity: 1, x: 0 }}
-          exit={{ opacity: 0, x: 20 }}
-          transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-          className="ui-layer focus-box fixed top-[120px] right-8 w-80 glass rounded-[2.5rem] shadow-2xl pointer-events-auto transition-shadow overflow-hidden flex flex-col"
+          exit={{ opacity: 0, x: -20 }}
+          transition={{ type: 'spring', damping: 28, stiffness: 200 }}
+          className="ui-layer focus-box fixed top-4 md:top-24 bottom-4 md:bottom-24 left-4 md:left-8 w-[calc(100%-32px)] md:w-[400px] glass md:rounded-[2rem] shadow-[0_0_80px_rgba(0,0,0,0.5)] flex flex-col overflow-hidden z-[9999] border border-white/10"
         >
           {/* HEADER AREA */}
-          <div className="px-8 pt-8 pb-4">
+          <div className="p-4 md:p-5 border-b border-white/5 bg-black/20 backdrop-blur-md sticky top-0 z-20">
             <div className="flex justify-between items-center">
-              <h3 className="text-[10px] font-black uppercase tracking-widest text-[var(--text-primary)] select-none">
-                {isReadOnly ? 'Published Snapshot' : 'Thought Editor'}
-              </h3>
-              <button onClick={() => setInspectorOpen(false)} className="text-slate-500 hover:text-white relative z-10">
-                <X className="w-5 h-5" />
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 bg-[var(--accent)]/10 rounded-xl flex items-center justify-center border border-[var(--accent)]/20 shadow-[0_0_20px_rgba(99,102,241,0.15)]">
+                  {React.createElement(typeIcons[thought.type] || Type, { className: "w-5 h-5 text-[var(--accent-secondary)]" })}
+                </div>
+                <div>
+                  <h3 className="text-xs font-black uppercase tracking-[0.2em] text-white leading-none">
+                    {isReadOnly ? 'Published' : 'Editor'}
+                  </h3>
+                  <div className="flex items-center gap-2 mt-1">
+                    <span className="w-1 h-1 rounded-full bg-indigo-500 shadow-[0_0_8px_rgba(99,102,241,0.6)]" />
+                    <span className="text-[8px] font-bold text-slate-500 uppercase tracking-widest leading-none">Thought Properties</span>
+                  </div>
+                </div>
+              </div>
+              <button onClick={() => setInspectorOpen(false)} className="p-2 hover:bg-white/5 rounded-lg text-slate-500 hover:text-white transition-all">
+                <X className="w-4 h-4" />
               </button>
             </div>
           </div>
 
           {/* SCROLLABLE CONTENT AREA */}
-          <div className="flex-1 overflow-y-auto custom-scroll px-8 pb-8 max-h-[70vh]">
+          <div className="flex-1 overflow-y-auto custom-scroll p-4 md:p-6 space-y-6">
             <div className="grid grid-cols-6 gap-1 mb-6">
               {(['text', 'tasks', 'paint', 'table', 'image', 'embed'] as const).map((type) => {
                 const Icon = typeIcons[type];
