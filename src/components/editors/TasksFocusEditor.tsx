@@ -24,7 +24,9 @@ const EditorContent: React.FC<{
   onDelete: (id: string) => void;
   onAdd: () => void;
   isReadOnly: boolean;
-}> = ({ isEditMode, tasks, onReorder, onUpdate, onDelete, onAdd, isReadOnly }) => (
+  onDragStart: () => void;
+  onDragEnd: () => void;
+}> = ({ isEditMode, tasks, onReorder, onUpdate, onDelete, onAdd, isReadOnly, onDragStart, onDragEnd }) => (
   <div className="flex-1 overflow-y-auto custom-scroll p-6 md:p-12 bg-black/10">
     {isEditMode ? (
       <Reorder.Group
@@ -33,11 +35,17 @@ const EditorContent: React.FC<{
         onReorder={onReorder}
         className="space-y-2 md:space-y-3"
       >
-        {tasks.map((task) => (
+          {tasks.map((task) => (
           <Reorder.Item
             key={task.id}
             value={task}
             className="group flex items-center gap-3 md:gap-4 bg-white/[0.03] hover:bg-white/[0.05] border border-white/5 p-3 md:p-4 rounded-xl md:rounded-2xl transition-colors"
+            dragElastic={0.15}
+            layout
+            whileDrag={{ scale: 1.02, boxShadow: "0 20px 40px rgba(0,0,0,0.3)" }}
+            transition={{ type: "spring", stiffness: 300, damping: 25 }}
+            onDragStart={onDragStart}
+            onDragEnd={onDragEnd}
           >
             <div className="cursor-grab active:cursor-grabbing text-slate-600 p-1">
               <GripVertical className="w-4 h-4 md:w-5 md:h-5" />
@@ -129,6 +137,8 @@ const TasksFocusEditor: React.FC = () => {
   const [isEditMode, setIsEditMode] = useState(false);
   const [localTitle, setLocalTitle] = useState('');
   const [localTasks, setLocalTasks] = useState<Task[]>([]);
+  const isDraggingRef = React.useRef(false);
+  const pendingTasksRef = React.useRef<Task[] | null>(null);
 
   const thought = thoughts.find((t) => t.id === activeFocusId);
   const stack = stacks.find((s) => s.id === thought?.stackId);
@@ -183,8 +193,26 @@ const TasksFocusEditor: React.FC = () => {
   const handleReorderTasks = (newTasks: Task[]) => {
     if (!thought || isReadOnly) return;
     setLocalTasks(newTasks);
-    const tasksToSave = newTasks.map(({ id: _, ...rest }) => rest);
-    updateThought(thought.id, { tasks: tasksToSave });
+    if (isDraggingRef.current) {
+      pendingTasksRef.current = newTasks;
+    } else {
+      const tasksToSave = newTasks.map(({ id: _, ...rest }) => rest);
+      updateThought(thought.id, { tasks: tasksToSave });
+    }
+  };
+
+  const handleDragStart = () => {
+    isDraggingRef.current = true;
+    pendingTasksRef.current = null;
+  };
+
+  const handleDragEnd = () => {
+    isDraggingRef.current = false;
+    if (pendingTasksRef.current && thought) {
+      const tasksToSave = pendingTasksRef.current.map(({ id: _, ...rest }) => rest);
+      updateThought(thought.id, { tasks: tasksToSave });
+      pendingTasksRef.current = null;
+    }
   };
 
   if (!thought) return null;
@@ -259,6 +287,8 @@ const TasksFocusEditor: React.FC = () => {
         onDelete={handleDeleteTask}
         onAdd={handleAddTask}
         isReadOnly={isReadOnly}
+        onDragStart={handleDragStart}
+        onDragEnd={handleDragEnd}
       />
     </FocusEditorShell>
   );

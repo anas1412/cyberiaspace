@@ -20,20 +20,49 @@ Context is fluid. Cyberia morphs your data into the shape you need instantly.
 - **Calendar Mode**: A time-oriented "Filing Cabinet" where thoughts stack into elegant decks.
 
 ### 🧠 Oracle (AI) (Pro)
-Powered by the **Gemini 2.0 Flash**, Oracle is your spatial research assistant.
+Powered by high-speed OpenAI GPT-OSS models via Groq, Oracle is your spatial research assistant.
+- **Models**: Free tier uses `gpt-oss-20b`, Pro tier unlocks `gpt-oss-120b` for advanced reasoning.
 - **Live Research**: Ask the Oracle to pull information from the web and spawn it directly into your workspace.
 - **Intelligent Organization**: Let the AI help you cluster related thoughts or generate new branches of investigation.
+- **Tool Use**: Oracle can read your workspace, create stacks, and perform actions on your behalf.
 
 ## 🛠️ Tech Stack
 
 - **Frontend**: [React 19](https://react.dev/) + [Vite](https://vitejs.dev/) + [TypeScript](https://www.typescriptlang.org/)
 - **State**: [Zustand](https://zustand-demo.pmnd.rs/) (High-performance reactive state)
 - **Persistence**: [Dexie.js](https://dexie.org/) (Local-first IndexedDB)
+- **AI API**: [Groq](https://groq.com/) (Ultra-fast LLM inference)
 - **Theming**: [Tailwind CSS](https://tailwindcss.com/) (Advanced glassmorphism & cosmic aesthetics)
 - **Motion**: [Framer Motion](https://www.framer.com/motion/)
 
+## 🎯 Features
+
+### Rich Content Types
+Create versatile thoughts with multiple formats:
+- **Text**: Markdown-supported rich text editing
+- **Tasks**: Interactive checklists with progress tracking
+- **Tables**: Structured data with full editing capabilities
+- **Paint**: Freehand drawing and sketching
+- **Image**: Upload and organize visual content
+- **Embed**: Insert YouTube videos directly
+
+### Organization & Productivity
+- **Stacks**: Group related thoughts with color-coded collections
+- **Spaces**: Create multiple workspaces for different projects
+- **Multi-Selection**: Select and manipulate multiple thoughts at once
+- **History**: Full undo/redo support for all actions
+- **Search**: Universal search across all your content
+- **Themes**: Customize with Cyberia, Sea, Forest, or Rain themes
+
+### Collaboration & Sync
+- **Google Sign-In**: Secure authentication with Google OAuth
+- **Cloud Sync**: Backup and sync your workspace across devices
+- **Share Spaces**: Generate public share links for read-only access
+- **Import/Export**: Full data ownership with JSON import/export
+
 ## 🔒 Privacy First
-Your mind is private. Cyberia is built on a **local-first** philosophy. All your data, images, and drawings are stored directly in your browser's IndexedDB. We don't see your thoughts unless you choose to sync them.
+
+Your mind is private. Cyberia is built on a **local-first** philosophy. All your data, images, and drawings are stored directly in your browser's IndexedDB. Cloud sync is optional—we don't see your thoughts unless you choose to sync them.
 
 ---
 
@@ -44,4 +73,5 @@ Your mind is private. Cyberia is built on a **local-first** philosophy. All your
 3. Launch the Wired: `npm run dev`
 
 ---
+
 *Welcome to the Wired. Optimized for desktop and high-resolution displays.*
