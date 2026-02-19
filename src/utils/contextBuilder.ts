@@ -14,32 +14,28 @@ export const serializeWorkspace = (
   // Map stacks for quick lookup
   const stackMap = new Map(stacks.map(s => [s.id, s.name]));
 
-  // Simplify thoughts for token efficiency
+  // Simplify thoughts for token efficiency - SKELETON STRATEGY
   const simplifiedThoughts = thoughts.map(t => {
     const isSelected = selectedThoughtIds.includes(t.id);
     
     return {
       id: t.id,
       text: t.text,
-      placeholder: t.placeholder,
-      description: t.description,
+      description: t.description !== t.text ? t.description?.substring(0, 100) : undefined,
       type: t.type,
-      order: t.order,
-      layer: t.layer,
-      size: t.size,
-      // God-Like Hybrid Strategy: Full content for selected thoughts, 500 chars for others
-      content: isSelected ? t.content : t.content?.substring(0, 500),
-      isSelected: isSelected || undefined, // Explicitly tell AI what is selected
-      author: t.author,
-      stack: t.stackId ? { id: t.stackId, name: stackMap.get(t.stackId) || "Unnamed Stack" } : null,
-      status: t.status,
-      priority: t.priority,
-      date: t.date,
+      status: t.status !== 'none' ? t.status : undefined,
+      priority: t.priority !== 'none' ? t.priority : undefined,
+      date: t.date || undefined,
+      stack: t.stackId ? stackMap.get(t.stackId) || "Unnamed Stack" : undefined,
+      isSelected: isSelected || undefined,
+      // Metadata indicators - tell AI that data exists without sending it all
+      hasContent: !!t.content?.trim(),
+      hasTasks: t.type === 'tasks' && !!t.tasks?.length,
+      hasTable: t.type === 'table' && !!t.table?.length,
       hasImage: !!t.image,
       hasDrawing: !!t.drawing,
-      // Include structured data only if it exists/relevant
-      ...(t.type === 'tasks' && t.tasks?.length ? { tasks: t.tasks } : {}),
-      ...(t.type === 'table' && t.table?.length ? { table: t.table } : {})
+      // Include a TINY preview (50 chars) to help AI decide if it needs the full details
+      preview: t.content ? t.content.substring(0, 50).replace(/\n/g, ' ') + '...' : undefined
     };
   });
 

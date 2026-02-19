@@ -60,6 +60,8 @@ gallery of imaegs just like ytb
 
 in thought make the date more visible and make a helper to convert date
 
+make the context smaller but excluding the content of thoughts but add a tool to read whats inside the thought when necessary to reduce tokens
+
 
 ------------------------------
 

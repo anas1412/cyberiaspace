@@ -38,6 +38,32 @@ export const executeOracleTool = async (toolCall: any, store: any) => {
 
   try {
     switch (toolName) {
+      case 'get_thought_details': {
+        const { ids } = args;
+        if (!ids || !Array.isArray(ids)) return { success: false, error: 'Invalid IDs' };
+        
+        const results = ids.map(id => {
+          const t = store.thoughts.find((thought: any) => thought.id === id);
+          if (!t) return { id, error: 'Not found' };
+          
+          return {
+            id: t.id,
+            text: t.text,
+            type: t.type,
+            content: t.content,
+            description: t.description,
+            tasks: t.type === 'tasks' ? t.tasks : undefined,
+            table: t.type === 'table' ? t.table : undefined,
+            drawing: t.type === 'paint' ? t.drawing : undefined,
+            date: t.date,
+            status: t.status,
+            priority: t.priority
+          };
+        });
+        
+        return { success: true, thoughts: results };
+      }
+
       case 'create_thought': {
         const processedArgs = processDrawing({ ...args });
         const { stackName, ...thoughtArgs } = processedArgs;
