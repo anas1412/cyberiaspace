@@ -49,7 +49,8 @@ const ChatOverlay: React.FC = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [status, setStatus] = useState<string>('');
   const [activeTool, setActiveTool] = useState<{ name: string; args: any } | null>(null);
-  const [dailyUsage, setDailyUsage] = useState(0);
+  const [dailyUsage, setDailyUsage] = useState(user?.usage?.ai_daily_count || 0);
+
 
   const scrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
@@ -173,8 +174,10 @@ const ChatOverlay: React.FC = () => {
             store.thoughts, 
             store.spaces, 
             store.stacks,
-            store.selectedThoughtIds
+            store.selectedThoughtIds,
+            user
           )
+
         }),
       });
 
@@ -266,7 +269,8 @@ const ChatOverlay: React.FC = () => {
                         ],
                         model: activeModel,
                         plan: plan,
-                        context: serializeWorkspace(store.activeSpaceId, store.thoughts, store.spaces, store.stacks, store.selectedThoughtIds)
+                        context: serializeWorkspace(store.activeSpaceId, store.thoughts, store.spaces, store.stacks, store.selectedThoughtIds, user)
+
                       }),
                     });
                     
@@ -335,8 +339,9 @@ const ChatOverlay: React.FC = () => {
           animate={{ x: 0, opacity: 1 }}
           exit={{ x: '100%', opacity: 0 }}
           transition={{ type: 'spring', damping: 28, stiffness: 200 }}
-          className="fixed top-4 md:top-24 bottom-4 md:bottom-24 right-4 w-[calc(100%-32px)] md:w-[520px] glass md:rounded-[2rem] shadow-[0_0_80px_rgba(0,0,0,0.5)] flex flex-col overflow-hidden z-[9999] border border-white/10"
+          className="fixed top-4 md:top-24 bottom-4 md:bottom-24 right-4 w-[calc(100%-32px)] md:w-[520px] glass md:rounded-[2rem] shadow-[0_0_80px_rgba(0,0,0,0.5)] flex flex-col overflow-hidden z-[9999] border border-white/10 mobile-bottom-bar-adjust"
         >
+
           {/* Header */}
           <div className="p-4 md:p-5 border-b border-white/5 flex items-center justify-between bg-black/20 backdrop-blur-md sticky top-0 z-20">
             <div className="flex items-center gap-3">
@@ -375,7 +380,27 @@ const ChatOverlay: React.FC = () => {
             </div>
           </div>
 
+          {/* AI Usage Progress Bar */}
+          {user && (
+            <div className="px-5 py-2 bg-black/10 border-b border-white/5">
+              <div className="flex justify-between items-center mb-1">
+                <span className="text-[7px] font-black uppercase tracking-widest text-slate-500">Daily Quota</span>
+                <span className="text-[7px] font-black text-indigo-400">
+                  {dailyUsage} / {limits.AI_DAILY_LIMIT}
+                </span>
+              </div>
+              <div className="h-0.5 w-full bg-white/5 rounded-full overflow-hidden">
+                <motion.div 
+                  initial={{ width: 0 }}
+                  animate={{ width: `${Math.min(100, (dailyUsage / (limits.AI_DAILY_LIMIT || 1)) * 100)}%` }}
+                  className="h-full bg-indigo-500 shadow-[0_0_8px_rgba(99,102,241,0.4)]" 
+                />
+              </div>
+            </div>
+          )}
+
           {/* Messages Area */}
+
           <div 
             ref={scrollRef}
             className="flex-1 overflow-y-auto p-4 md:p-6 space-y-6 custom-scroll"
@@ -445,23 +470,8 @@ const ChatOverlay: React.FC = () => {
 
           {/* Footer Area */}
           <div className="p-4 md:p-6 bg-black/40 border-t border-white/5 space-y-3">
-            {plan === 'free' && (
-              <div className="px-1">
-                <div className="flex justify-between items-center mb-1.5">
-                  <span className="text-[7px] font-black uppercase tracking-widest text-slate-500">Daily Stream Usage</span>
-                  <span className="text-[7px] font-black text-indigo-400">{dailyUsage} / {limits.AI_DAILY_LIMIT}</span>
-                </div>
-                <div className="h-1 w-full bg-white/5 rounded-full overflow-hidden border border-white/5">
-                  <motion.div 
-                    initial={{ width: 0 }}
-                    animate={{ width: `${(dailyUsage / (limits.AI_DAILY_LIMIT || 1)) * 100}%` }}
-                    className="h-full bg-indigo-500 shadow-[0_0_10px_rgba(99,102,241,0.5)]" 
-                  />
-                </div>
-              </div>
-            )}
-
             <form onSubmit={handleSubmit} className="relative flex items-center gap-2 bg-white/[0.03] border border-white/10 rounded-2xl p-1.5 focus-within:border-indigo-500/50 focus-within:bg-white/[0.05] transition-all">
+
               <textarea
                 ref={inputRef}
                 value={input}

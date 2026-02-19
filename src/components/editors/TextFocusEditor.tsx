@@ -31,7 +31,7 @@ const EditorContent: React.FC<{
     ) : (
       <div className="flex-1 p-8 md:p-20 overflow-y-auto custom-scroll bg-black/20">
         <div
-          className="focus-markdown-body max-w-3xl mx-auto text-sm md:text-base"
+          className="focus-markdown-body max-w-3xl mx-auto text-sm md:text-base break-words"
           dangerouslySetInnerHTML={{ __html: marked.parse(content || "_No content yet. Click Edit to start writing..._") as string }}
         />
       </div>

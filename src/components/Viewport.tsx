@@ -1,8 +1,10 @@
-import React, { useRef, useState, useEffect } from 'react';
+import React, { useRef, useState, useEffect, useCallback } from 'react';
 import { useStore } from '../store/useStore';
 import { useAuthStore } from '../store/useAuthStore';
 import { useModalStore } from '../store/useModalStore';
+import { MAX_FILE_SIZE_MB } from '../constants';
 import { clsx, type ClassValue } from 'clsx';
+
 import { twMerge } from 'tailwind-merge';
 import World from './World';
 import { usePhysics } from '../hooks/usePhysics';
@@ -11,6 +13,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Upload } from 'lucide-react';
 
 import { db } from '../db';
+import { generateThumbnail } from '../utils/image';
 
 function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -30,9 +33,9 @@ const Viewport: React.FC = () => {
   const deleteSelectedThoughts = useStore((state) => state.deleteSelectedThoughts);
   const deleteThought = useStore((state) => state.deleteThought);
   const addThought = useStore((state) => state.addThought);
-  const setActiveFocus = useStore((state) => state.setActiveFocus);
   const uploadThoughtBlob = useAuthStore((state) => state.uploadThoughtBlob);
   const saveSpaceTransform = useStore((state) => state.saveSpaceTransform);
+
   const transform = useStore((state) => state.transform);
   const setTransform = useStore((state) => state.setTransform);
   const isSpaceLoading = useStore((state) => state.isSpaceLoading);
@@ -49,13 +52,12 @@ const Viewport: React.FC = () => {
 
   const { registerElement, registerWorld, registerGrid, handleMouseDown, handleTouchStart, isDragging, kanbanHeight } = usePhysics(canvasRef, transform);
 
-  // Helper for Responsive Scaling (Global Scale from index.css)
-  const getGlobalScale = () => {
+  const getGlobalScale = useCallback(() => {
     const body = document.querySelector('.app-body') || document.body;
     const style = window.getComputedStyle(body);
     const m = new DOMMatrix(style.transform);
     return m.a || 1;
-  };
+  }, []);
 
   const {
     handleWheel,
@@ -75,7 +77,6 @@ const Viewport: React.FC = () => {
     getGlobalScale
   });
 
-  // Save transform when it changes (Debounced)
   useEffect(() => {
     if (activeSpace?.mode === 'spatial' && activeSpaceId) {
       if (saveTimeoutRef.current) window.clearTimeout(saveTimeoutRef.current);
@@ -108,14 +109,12 @@ const Viewport: React.FC = () => {
         activeSpace?.mode === 'spatial' &&
         !(e.target as HTMLElement).closest('button, input, textarea, .thought-bulb, #inspector, .ui-layer, .expand-img, #chat-overlay, .focus-box')
       ) {
-        // PANNING: Left Click Drag (No Ctrl) OR Middle Click OR Alt+Left Click
         if ((isLeftClick && !isCtrlLeftClick) || isMiddleClick || isAltLeftClick) {
           isPanningRef.current = true;
           setIsGrabbing(true);
           lastMousePos.current = { rawX: e.clientX, rawY: e.clientY };
           if (isMiddleClick || isAltLeftClick) e.preventDefault();
         } 
-        // SELECTING: Ctrl + Left Click Drag (Spatial Mode Only for marquee)
         else if (isCtrlLeftClick) {
           isSelectingRef.current = true;
         }
@@ -127,7 +126,6 @@ const Viewport: React.FC = () => {
       const lx = e.clientX / s;
       const ly = e.clientY / s;
 
-      // Always track world position for spawning
       mouseWorldPos.current = {
         x: (lx - transform.x) / transform.scale,
         y: (ly - transform.y) / transform.scale
@@ -153,7 +151,6 @@ const Viewport: React.FC = () => {
         if (w > 5 || h > 5) {
           setSelectionRect({ x, y, w, h });
 
-          // Selection Logic
           const rectX = (x - transform.x) / transform.scale;
           const rectY = (y - transform.y) / transform.scale;
           const rectW = w / transform.scale;
@@ -162,7 +159,6 @@ const Viewport: React.FC = () => {
           const selectedIds = thoughts.filter(t => {
             const tx = t.x;
             const ty = t.y;
-            // Rough bounding box check for thoughts (centered at x,y with approx 280x200 size)
             const tw = 280 / 2;
             const th = 200 / 2;
             return tx + tw > rectX && tx - tw < rectX + rectW &&
@@ -183,18 +179,14 @@ const Viewport: React.FC = () => {
     };
 
     const handleAuxClick = (e: MouseEvent) => {
-      if (e.button === 1) e.preventDefault(); // Stop auto-scroll
+      if (e.button === 1) e.preventDefault();
     };
 
     const handleClick = (e: MouseEvent) => {
       const target = e.target as HTMLElement;
-
-      // 5px rule for selection clearing: If they moved more than 5px, they were likely doing a marquee select
       const dist = Math.sqrt(Math.pow(e.clientX - selectionStartRef.current.rawX, 2) + Math.pow(e.clientY - selectionStartRef.current.rawY, 2));
       if (dist > 5) return;
 
-      // We want to unselect if the user clicks the "background" of the workspace, 
-      // including the calendar grid and sidebar, but NOT if they click a thought or specific UI panels.
       if (!target.closest('.thought-bulb, #inspector, .expand-img, button, input, textarea, #chat-overlay, .modal-content, .focus-box')) {
         setInspectorOpen(false);
         clearSelection();
@@ -232,7 +224,7 @@ const Viewport: React.FC = () => {
       if (e.key === ' ') {
         if (isReadOnly) return;
         e.preventDefault();
-        if (e.repeat) return; // Stop rapid-fire creation when holding space
+        if (e.repeat) return;
 
         if (thoughts.length >= 40) {
           openModal({
@@ -244,12 +236,11 @@ const Viewport: React.FC = () => {
           return;
         }
 
-        let newThoughtProps: any = {
+        const newThoughtProps: any = {
           x: mouseWorldPos.current.x,
           y: mouseWorldPos.current.y
         };
 
-        // Mode-specific logic
         if (activeSpace?.mode === 'kanban') {
           const s = getGlobalScale();
           const lx = lastMousePos.current.rawX / s;
@@ -259,7 +250,6 @@ const Viewport: React.FC = () => {
           else if (lx < width * 0.75) newThoughtProps.status = 'doing';
           else newThoughtProps.status = 'done';
         } else if (activeSpace?.mode === 'calendar') {
-          // elementsFromPoint needs raw screen coordinates
           const elements = document.elementsFromPoint(lastMousePos.current.rawX, lastMousePos.current.rawY);
           const cell = elements.find(el => (el as HTMLElement).classList.contains('cal-cell'));
           if (cell) {
@@ -295,7 +285,6 @@ const Viewport: React.FC = () => {
     const handleDragLeave = (e: DragEvent) => {
       e.preventDefault();
       e.stopPropagation();
-      // Only set to false if we're actually leaving the viewport
       const target = e.relatedTarget as HTMLElement;
       if (!target || !target.closest('#viewport')) {
         setIsDraggingFile(false);
@@ -320,13 +309,59 @@ const Viewport: React.FC = () => {
       const dropY = e.clientY !== 0 ? (e.clientY - transform.y) / transform.scale : window.innerHeight / 2;
 
       for (const file of files) {
-        const isImage = file.type.startsWith('image/');
+        if (file.size > MAX_FILE_SIZE_MB * 1024 * 1024) {
+          openModal({
+            title: 'File Too Large',
+            description: `The file "${file.name}" exceeds the ${MAX_FILE_SIZE_MB}MB transmission limit. Please compress your asset or use a smaller file.`,
+            type: 'alert',
+            confirmText: 'Acknowledged'
+          });
+          continue;
+        }
+
+        const isImage = file.type.startsWith('image/') || /\.(jpg|jpeg|png|gif|webp|svg)$/i.test(file.name);
         const isText = file.name.endsWith('.txt') || file.type === 'text/plain';
         const isCSV = file.name.endsWith('.csv') || file.type === 'text/csv';
         const isLarge = file.size > 2 * 1024 * 1024;
 
+        if (isImage) {
+          const thumbnail = await generateThumbnail(file).catch(err => {
+            console.warn('Thumbnail generation failed:', err);
+            return null;
+          });
+
+          const id = await addThought({
+            type: 'image',
+            text: file.name,
+            image: thumbnail,
+            syncStatus: 'local',
+            x: dropX + (Math.random() * 20 - 10),
+            y: dropY + (Math.random() * 20 - 10),
+            meta: {
+              file: {
+                name: file.name,
+                size: file.size,
+                type: file.type,
+              }
+            }
+          });
+
+          if (id !== -1) {
+            await db.blobs.add({
+              id: `temp-${Date.now()}-${id}`,
+              thoughtId: id,
+              blob: file,
+              name: file.name,
+              type: file.type,
+              updatedAt: Date.now()
+            });
+            setSelectedThoughtId(id);
+            uploadThoughtBlob(id);
+          }
+          continue;
+        }
+
         if (isLarge || (!isImage && !isText && !isCSV)) {
-          // Create a 'file' thought type for large files or unknown types
           const id = await addThought({
             type: 'file',
             text: file.name,
@@ -343,41 +378,23 @@ const Viewport: React.FC = () => {
           });
 
           if (id !== -1) {
-            // Save to local blobs for background upload
             await db.blobs.add({
-              id: `temp-${Date.now()}`,
+              id: `temp-${Date.now()}-${id}`,
               thoughtId: id,
               blob: file,
               name: file.name,
               type: file.type,
               updatedAt: Date.now()
             });
-            
             setSelectedThoughtId(id);
             setInspectorOpen(true);
-            setActiveFocus(id, 'file');
-
-            // Trigger background upload
             uploadThoughtBlob(id);
           }
           continue;
         }
 
         const reader = new FileReader();
-
-        if (isImage) {
-          reader.onload = async (ev) => {
-            await addThought({
-              type: 'image',
-              image: ev.target?.result as string,
-              x: dropX + (Math.random() * 20 - 10),
-              y: dropY + (Math.random() * 20 - 10),
-              text: file.name
-            });
-          };
-          reader.readAsDataURL(file);
-        }
-        else if (file.name.endsWith('.txt') || file.type === 'text/plain') {
+        if (file.name.endsWith('.txt') || file.type === 'text/plain') {
           reader.onload = async (ev) => {
             await addThought({
               type: 'text',
@@ -392,7 +409,6 @@ const Viewport: React.FC = () => {
         else if (file.name.endsWith('.csv') || file.type === 'text/csv') {
           reader.onload = async (ev) => {
             const csvText = ev.target?.result as string;
-            // Basic CSV parser
             const rows = csvText.split(/\r?\n/).filter(line => line.trim()).map(line => {
               const cells: string[] = [];
               let current = '';
@@ -457,7 +473,7 @@ const Viewport: React.FC = () => {
       window.removeEventListener('touchmove', handleTouchMove);
       window.removeEventListener('touchend', handleTouchEnd);
     };
-  }, [activeSpace, setInspectorOpen, isGrabbing, selectedThoughtId, selectedThoughtIds, openModal, deleteThought, deleteSelectedThoughts, thoughts, addThought, setSelectedThoughtId, setSelectedThoughtIds, clearSelection, transform, isReadOnly, handleWheel, handleTouchStartLocal, handleTouchMove, handleTouchEnd]);
+  }, [activeSpace, setInspectorOpen, isGrabbing, selectedThoughtId, selectedThoughtIds, openModal, deleteThought, deleteSelectedThoughts, thoughts, addThought, setSelectedThoughtId, setSelectedThoughtIds, clearSelection, transform, isReadOnly, handleWheel, handleTouchStartLocal, handleTouchMove, handleTouchEnd, getGlobalScale, uploadThoughtBlob, applyConstraints, lastMousePos, selectionStartRef, isPanningRef, isSelectingRef]);
 
   return (
     <div
@@ -533,7 +549,6 @@ const Viewport: React.FC = () => {
             className="fixed inset-0 z-[10005] bg-[#020408]/60 backdrop-blur-2xl flex flex-col items-center justify-center pointer-events-auto"
           >
             <div className="relative">
-              {/* Pulsing Glow */}
               <motion.div
                 animate={{ scale: [1, 1.2, 1], opacity: [0.3, 0.6, 0.3] }}
                 transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
@@ -541,7 +556,6 @@ const Viewport: React.FC = () => {
               />
 
               <div className="flex flex-col items-center gap-6 relative z-10">
-                {/* Spinner */}
                 <div className="w-16 h-16 border-2 border-indigo-500/20 border-t-indigo-500 rounded-full animate-spin" />
 
                 <div className="text-center">

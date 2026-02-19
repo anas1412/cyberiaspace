@@ -34,7 +34,7 @@ interface Thought {
   text: string;
   placeholder?: string;
   description: string;
-  type: 'text' | 'tasks' | 'paint' | 'table' | 'image' | 'embed' | 'file';
+  type: 'label' | 'text' | 'tasks' | 'paint' | 'table' | 'image' | 'embed' | 'file';
   content: string;
   image: string | null;
   drawing: string | null;
@@ -63,19 +63,27 @@ interface LocalBlob {
   updatedAt: number;
 }
 
+interface PendingDeletion {
+  id?: number;
+  driveFileId: string;
+  type: 'drive';
+}
+
 const db = new Dexie('CyberiaDB') as Dexie & {
   spaces: EntityTable<Space, 'id'>;
   thoughts: EntityTable<Thought, 'id'>;
   stacks: EntityTable<Stack, 'id'>;
   blobs: EntityTable<LocalBlob, 'id'>;
+  pendingDeletions: EntityTable<PendingDeletion, 'id'>;
 };
 
-db.version(5).stores({
+db.version(8).stores({
   spaces: 'id, name, order',
-  thoughts: '++id, spaceId, stackId, text, status, date, priority, order, author, driveFileId',
+  thoughts: '++id, spaceId, stackId, text, status, date, priority, order, author, driveFileId, syncStatus',
   stacks: 'id, spaceId, name',
-  blobs: 'id, thoughtId'
+  blobs: 'id, thoughtId',
+  pendingDeletions: '++id, driveFileId'
 });
 
-export type { Space, Thought, Stack };
+export type { Space, Thought, Stack, PendingDeletion };
 export { db };

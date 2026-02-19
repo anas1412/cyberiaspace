@@ -5,7 +5,7 @@ create a backend for admin (maybe another project)
 
 performance mode 
 
-
+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
 
 
 
@@ -40,14 +40,20 @@ Cyberia is a spatial productivity platform for kinetic information architecture.
 - add description & categories/tags to spaces 
 - make spaces catalog
 
- 
+- add .md style link to your public privacy policy and a link to your public terms of service
+
+- add a hamburger mode to thoughtnode
+
+- change stack to collection
+
+- add thumnail to thoughtnode when mp3/mp4/PDF if possible
+
+-  can you use max ai daily use from @constrainst instead of hardcoding it in @chat
+
 
 TODO:
 
-add .md style link to your public privacy policy and a link to your public terms of service
 
-
-change stack to collection
 
 
 create a new thought type "label", its an empty thought that has only title/description etc without any content (same as txt but without content)

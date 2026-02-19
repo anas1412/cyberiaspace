@@ -1,5 +1,26 @@
 import { create } from 'zustand';
 import { type User, type SubscriptionPlan, type AccessPeriod, PLAN_CONFIG } from '../constants';
+import { db } from '../db';
+import { driveService } from '../services/google/driveService';
+
+// Helper to convert base64 to Blob
+const base64ToBlob = (base64: string) => {
+  try {
+    const parts = base64.split(';base64,');
+    if (parts.length < 2) return null;
+    const contentType = parts[0].split(':')[1];
+    const raw = window.atob(parts[1]);
+    const rawLength = raw.length;
+    const uInt8Array = new Uint8Array(rawLength);
+    for (let i = 0; i < rawLength; ++i) {
+      uInt8Array[i] = raw.charCodeAt(i);
+    }
+    return new Blob([uInt8Array], { type: contentType });
+  } catch (e) {
+    console.error('Base64 to Blob conversion failed', e);
+    return null;
+  }
+};
 
 export interface AuthState {
   user: User | null;
@@ -13,11 +34,13 @@ export interface AuthState {
   isOnline: boolean;
 
   setAuthenticatedUser: (user: User, token: string, scopes?: string[]) => Promise<void>;
+  handleAuthCode: (code: string) => Promise<void>;
   requestServiceAccess: (scope: string, token: string) => void;
   signOut: () => Promise<void>;
   syncData: () => Promise<void>;
   syncToServices: () => Promise<void>;
   deleteServiceContent: (thought: any) => Promise<void>;
+  processPendingDeletions: () => Promise<void>;
   uploadThoughtBlob: (thoughtId: number) => Promise<void>;
   importCloudData: () => Promise<unknown | null>;
   setAutoSync: (enabled: boolean) => void;
@@ -26,7 +49,8 @@ export interface AuthState {
   initAuth: () => void;
   upgradePlan: (plan: SubscriptionPlan, period?: AccessPeriod) => void;
   checkExpiry: () => void;
-  refreshProStatus: () => Promise<void>;
+  refreshProfile: () => Promise<void>;
+  updateSettings: (settings: Partial<User['settings']>) => Promise<void>;
   cancelSubscription: () => void;
 }
 
@@ -45,45 +69,106 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     window.addEventListener('online', () => set({ isOnline: true }));
     window.addEventListener('offline', () => set({ isOnline: false, syncStatus: 'offline' }));
     get().checkExpiry();
+    if (get().status === 'authenticated') {
+      get().refreshProfile();
+    }
   },
 
   checkExpiry: () => {
     const { user } = get();
-    if (!user || user.plan === 'free' || !user.expiresAt) return;
-    if (new Date(user.expiresAt) < new Date()) {
+    if (!user || user.plan === 'free' || !user.expiryDate) return;
+    if (new Date(user.expiryDate) < new Date()) {
       set({ user: { ...user, plan: 'free' } });
       localStorage.setItem('cyberia-user', JSON.stringify({ ...user, plan: 'free' }));
     }
   },
 
-  refreshProStatus: async () => {
+  refreshProfile: async () => {
     const { accessToken, user } = get();
     if (!accessToken || !user) return;
     try {
-      const res = await fetch('/api/user?action=profile', {
+      // 1. First try a silent refresh if token might be expired
+      const refreshRes = await fetch('/api/google-auth?action=refresh', {
+        method: 'POST', // Code flow exchange usually POST
         headers: { Authorization: `Bearer ${accessToken}` }
+      });
+      
+      let currentToken = accessToken;
+      if (refreshRes.ok) {
+        const refreshData = await refreshRes.json();
+        currentToken = refreshData.access_token;
+        set({ accessToken: currentToken });
+        localStorage.setItem('cyberia-token', currentToken);
+      } else if (refreshRes.status === 401) {
+        // Refresh token invalid/revoked
+        get().signOut();
+        return;
+      }
+
+      // 2. Fetch full profile
+      const res = await fetch(`/api/user?action=profile&email=${encodeURIComponent(user.email)}&name=${encodeURIComponent(user.name)}&avatar=${encodeURIComponent(user.avatar)}`, {
+        headers: { Authorization: `Bearer ${currentToken}` }
       });
       if (res.ok) {
         const data = await res.json();
         const updatedUser = { ...user, ...data.user };
-        set({ user: updatedUser });
+        
+        // Sync local grantedScopes from profile drive state IF the local session also has the token
+        const scopes = [...get().grantedScopes];
+        const hasDriveScope = scopes.includes('https://www.googleapis.com/auth/drive.file');
+        
+        if (updatedUser.settings?.driveEnabled && !hasDriveScope) {
+          // If the cloud says drive is enabled, but local doesn't have the scope yet,
+          // we only add it if we are sure the current accessToken (refreshed above) 
+          // actually has the drive permissions.
+          // For safety, we only do this if it's NOT a fresh login.
+          if (get().status === 'authenticated') {
+            scopes.push('https://www.googleapis.com/auth/drive.file');
+          }
+        }
+
+        set({ user: updatedUser, grantedScopes: scopes });
         localStorage.setItem('cyberia-user', JSON.stringify(updatedUser));
+        localStorage.setItem('cyberia-scopes', JSON.stringify(scopes));
       }
     } catch (e) {
-      console.warn('Failed to refresh pro status', e);
+      console.warn('Failed to refresh profile', e);
+    }
+  },
+
+
+  updateSettings: async (settings) => {
+    const { accessToken, user } = get();
+    if (!accessToken || !user) return;
+    
+    const updatedUser = { ...user, settings: { ...user.settings, ...settings } };
+    set({ user: updatedUser });
+    localStorage.setItem('cyberia-user', JSON.stringify(updatedUser));
+
+    try {
+      await fetch('/api/user?action=settings', {
+        method: 'POST',
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${accessToken}` 
+        },
+        body: JSON.stringify({ settings })
+      });
+    } catch (e) {
+      console.warn('Settings cloud sync failed', e);
     }
   },
 
   upgradePlan: (plan, period) => {
     const { user } = get();
     if (!user) return;
-    const expiresAt = period === 'yearly' 
+    const expiryDate = period === 'yearly' 
       ? new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString()
       : period === 'monthly'
         ? new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString()
         : null;
     
-    const updatedUser: User = { ...user, plan, expiresAt };
+    const updatedUser: User = { ...user, plan, expiryDate };
     set({ user: updatedUser });
     localStorage.setItem('cyberia-user', JSON.stringify(updatedUser));
   },
@@ -91,7 +176,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   cancelSubscription: () => {
     const { user } = get();
     if (!user) return;
-    const updatedUser: User = { ...user, plan: 'free', expiresAt: null };
+    const updatedUser: User = { ...user, plan: 'free', expiryDate: null };
     set({ user: updatedUser });
     localStorage.setItem('cyberia-user', JSON.stringify(updatedUser));
   },
@@ -100,12 +185,20 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     const { user } = get();
     const plan = user?.plan || 'free';
     const limit = PLAN_CONFIG[plan].MAX_CLOUD_THOUGHTS;
-    set({ cloudUsage: (thoughtCount / limit) * 100 });
+    const currentCount = user?.usage?.sync_thoughts ?? thoughtCount;
+    set({ cloudUsage: (currentCount / limit) * 100 });
   },
 
   setAuthenticatedUser: async (user: User, token: string, scopes?: string[]) => {
-    const userWithPlan = { ...user, plan: user.plan || 'free' };
-    localStorage.setItem('cyberia-user', JSON.stringify(userWithPlan));
+    const userWithDefaults: User = { 
+      ...user, 
+      plan: user.plan || 'free',
+      subscriptionStatus: user.subscriptionStatus || 'none',
+      usage: user.usage || { ai_daily_count: 0, sync_thoughts: 0, last_ai_reset: new Date().toISOString().split('T')[0] },
+      settings: user.settings || { theme: 'cyberia', autoSync: true, driveEnabled: false }
+    };
+    
+    localStorage.setItem('cyberia-user', JSON.stringify(userWithDefaults));
     localStorage.setItem('cyberia-token', token);
     
     if (scopes) {
@@ -116,7 +209,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     useStore.getState().isInitializing = true;
 
     set({
-      user: userWithPlan,
+      user: userWithDefaults,
       accessToken: token,
       grantedScopes: scopes || get().grantedScopes,
       status: 'authenticated',
@@ -124,16 +217,55 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     });
 
     try {
+      await get().refreshProfile();
+      
       const data = await get().importCloudData();
       if (data) {
         await useStore.getState().importFullState(data);
       }
       set({ syncStatus: 'synced', lastSync: new Date() });
     } catch (e) {
-      console.error('Initial sync failed', e);
+      console.error('Initial login sync failed', e);
       set({ syncStatus: 'error' });
     } finally {
       useStore.getState().isInitializing = false;
+    }
+  },
+
+  handleAuthCode: async (code: string) => {
+    set({ status: 'loading' });
+    try {
+      const res = await fetch('/api/google-auth?action=exchange', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ code })
+      });
+
+      const data = await res.json();
+      if (!res.ok) {
+        console.error('[Auth] Token exchange failed:', data);
+        throw new Error(data.details?.error_description || data.error || 'Token exchange failed');
+      }
+
+      // Automatically determine granted scopes from server response if possible, 
+      // but for now we'll trust the flow that triggered it.
+      // The server already updated the profile with driveEnabled if scope was present.
+      const scopes = ['openid', 'email', 'profile'];
+      if (data.user?.settings?.driveEnabled) {
+        scopes.push('https://www.googleapis.com/auth/drive.file');
+      }
+
+      await get().setAuthenticatedUser(data.user, data.access_token, scopes);
+    } catch (err: any) {
+      console.error('Auth code handling failed:', err);
+      const { useModalStore } = await import('./useModalStore');
+      useModalStore.getState().openModal({
+        title: 'Authentication Error',
+        description: err.message || 'Failed to establish a permanent session. Please check your internet and try again.',
+        type: 'alert',
+        confirmText: 'Acknowledged'
+      });
+      set({ status: 'unauthenticated' });
     }
   },
 
@@ -145,7 +277,6 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       localStorage.setItem('cyberia-token', token);
       set({ grantedScopes: newScopes, accessToken: token });
       
-      // Trigger immediate sync to push existing data to the newly connected service
       get().syncData();
     }
   },
@@ -173,12 +304,14 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   },
 
   uploadThoughtBlob: async (thoughtId: number) => {
-    const { accessToken, grantedScopes } = get();
+    const { accessToken, grantedScopes, autoSync, user } = get();
+    if (!autoSync || !user?.settings?.driveEnabled) {
+      console.log('[Sync] Auto-sync or Drive is OFF, keeping blob in local buffer');
+      return;
+    }
     if (!accessToken || !grantedScopes.includes('https://www.googleapis.com/auth/drive.file')) return;
 
     try {
-      const { db } = await import('../db');
-      const { driveService } = await import('../services/google/driveService');
       const { useStore } = await import('./useStore');
 
       const blobEntry = await db.blobs.where('thoughtId').equals(thoughtId).first();
@@ -214,7 +347,6 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 
     } catch (err) {
       console.error('[Upload] Failed to upload blob:', err);
-      const { db } = await import('../db');
       await db.thoughts.update(thoughtId, { syncStatus: 'error' });
     }
   },
@@ -251,12 +383,10 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     set({ syncStatus: 'syncing' });
 
     try {
-      const { db } = await import('../db');
       const allSpaces = await db.spaces.toArray();
       const allThoughts = await db.thoughts.toArray();
       const allStacks = await db.stacks.toArray();
 
-      // PERFORMANCE: Manual loop to reduce main thread lag during heavy sync
       const metadataThoughts = [];
       for (let i = 0; i < allThoughts.length; i++) {
         const t = allThoughts[i];
@@ -265,22 +395,6 @@ export const useAuthStore = create<AuthState>((set, get) => ({
           drawing: '',
           image: (t.image && t.image.length > 50000) ? null : t.image
         });
-      }
-
-      const plan = (user?.plan as SubscriptionPlan) || 'free';
-      const limits = PLAN_CONFIG[plan] || PLAN_CONFIG.free;
-
-      if (allThoughts.length > limits.MAX_CLOUD_THOUGHTS) {
-        const { useModalStore } = await import('./useModalStore');
-        useModalStore.getState().openModal({
-          title: 'Sync Blocked',
-          description: `You have too many thoughts for the Free plan (${allThoughts.length}/${limits.MAX_CLOUD_THOUGHTS}). Upgrade to Pro to sync everything.`,
-          type: 'alert',
-          confirmText: 'View Plans',
-          onConfirm: () => useModalStore.getState().openPricing()
-        });
-        set({ syncStatus: 'error' });
-        return;
       }
 
       const payload = {
@@ -308,8 +422,14 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       }
 
       if (!response.ok) throw new Error('Sync failed');
+      
+      const resData = await response.json();
+      if (resData.usage && user) {
+        set({ user: { ...user, usage: resData.usage } });
+      }
 
       await get().syncToServices();
+      await get().processPendingDeletions();
 
       const now = new Date();
       localStorage.setItem('cyberia-last-sync', now.toISOString());
@@ -326,65 +446,87 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 
   syncToServices: async () => {
     const { accessToken, isOnline, user, grantedScopes } = get();
-    if (!accessToken || !isOnline || !user) return;
+    if (!accessToken || !isOnline || !user || !user.settings?.driveEnabled) return;
 
     const hasDrive = grantedScopes.includes('https://www.googleapis.com/auth/drive.file');
     if (!hasDrive) return;
 
     try {
-      const { db } = await import('../db');
-      const { driveService } = await import('../services/google/driveService');
-
-      const thoughtsToSync = await db.thoughts
-        .where('syncStatus')
-        .notEqual('synced')
-        .toArray();
+      console.log('[Sync] Starting service sync...');
+      
+      const allThoughts = await db.thoughts.toArray();
+      const thoughtsToSync = allThoughts.filter(t => t.syncStatus !== 'synced');
 
       if (thoughtsToSync.length === 0) return;
 
-      console.log(`[Sync] Syncing ${thoughtsToSync.length} items to Google Drive...`);
-
       const rootId = await driveService.ensureRootFolder(accessToken);
       const thoughtsFolderId = await driveService.ensureSubFolder(accessToken, rootId, 'Thoughts');
-      const drawingsFolderId = await driveService.ensureSubFolder(accessToken, rootId, 'Drawings');
       const mediaFolderId = await driveService.ensureSubFolder(accessToken, rootId, 'Media');
 
       for (const thought of thoughtsToSync) {
         try {
-          let driveFileId = thought.driveFileId;
-          
-          if (thought.type !== 'image' && thought.type !== 'embed') {
-            let content = '';
-            let fileName = `${thought.id}`;
-            let mimeType = 'text/plain';
-            let targetFolderId: string | undefined = thoughtsFolderId;
+          const currentThought = await db.thoughts.get(thought.id);
+          if (!currentThought) continue;
 
-            if (thought.type === 'text') {
-              content = thought.content;
-              fileName += '.md';
-              mimeType = 'text/markdown';
-            } else if (thought.type === 'tasks') {
-              content = JSON.stringify(thought.tasks, null, 2);
-              fileName += '.tasks.json';
-              mimeType = 'application/json';
-            } else if (thought.type === 'table') {
-              content = JSON.stringify(thought.table, null, 2);
-              fileName += '.table.json';
-              mimeType = 'application/json';
-            } else if (thought.type === 'paint' && thought.drawing) {
-              content = thought.drawing;
-              fileName += '.svg';
-              mimeType = 'image/svg+xml';
-              targetFolderId = drawingsFolderId;
-            } else if (thought.type === 'file') {
-              targetFolderId = mediaFolderId;
+          let driveFileId = currentThought.driveFileId;
+          
+          const jsonTypes = ['text', 'tasks', 'table', 'paint'];
+          const isMedia = currentThought.type === 'image' || currentThought.type === 'file';
+
+          if (currentThought.type === 'label') {
+            // No Drive file needed
+          } else if (jsonTypes.includes(currentThought.type)) {
+            const payload = {
+              id: currentThought.id,
+              type: currentThought.type,
+              text: currentThought.text,
+              content: currentThought.content,
+              tasks: currentThought.tasks,
+              table: currentThought.table,
+              drawing: currentThought.drawing,
+              date: currentThought.date,
+              priority: currentThought.priority,
+              updatedAt: new Date().toISOString()
+            };
+
+            const contentString = JSON.stringify(payload, null, 2);
+            const fileName = `${currentThought.id}.json`;
+            const mimeType = 'application/json';
+
+            const hasActualContent = currentThought.content?.trim() || 
+                                   (currentThought.tasks && currentThought.tasks.length > 0) ||
+                                   (currentThought.table && currentThought.table.length > 0 && currentThought.table[0][0]) ||
+                                   currentThought.drawing;
+
+            if (hasActualContent) {
+              if (driveFileId) {
+                await driveService.updateFileContent(accessToken, driveFileId, contentString);
+              } else {
+                const result = await driveService.uploadFile(accessToken, new Blob([contentString], { type: mimeType }), fileName, thoughtsFolderId);
+                driveFileId = result.id;
+              }
+            }
+          } else if (isMedia) {
+            let content: Blob | null = null;
+            let fileName = `${currentThought.id}`;
+            let mimeType = 'application/octet-stream';
+            
+            const blobEntry = await db.blobs.where('thoughtId').equals(currentThought.id).first();
+            if (blobEntry) {
+              content = blobEntry.blob;
+              fileName = blobEntry.name;
+              mimeType = blobEntry.type;
+            } else if (currentThought.type === 'image' && currentThought.image && currentThought.image.startsWith('data:')) {
+              content = base64ToBlob(currentThought.image);
+              mimeType = currentThought.image.split(';base64,')[0].split(':')[1];
+              fileName += '.' + (mimeType.split('/')[1] || 'png');
             }
 
-            if (content && targetFolderId) {
+            if (content && mediaFolderId) {
               if (driveFileId) {
                 await driveService.updateFileContent(accessToken, driveFileId, content);
               } else {
-                const result = await driveService.uploadFile(accessToken, new Blob([content], { type: mimeType }), fileName, targetFolderId);
+                const result = await driveService.uploadFile(accessToken, content, fileName, mediaFolderId);
                 driveFileId = result.id;
               }
             }
@@ -393,22 +535,15 @@ export const useAuthStore = create<AuthState>((set, get) => ({
           const serviceUpdates: any = { syncStatus: 'synced' };
           if (driveFileId) serviceUpdates.driveFileId = driveFileId;
 
-          await db.thoughts.update(thought.id, serviceUpdates);
-
-          if (mediaFolderId) {
-            const blobEntry = await db.blobs.where('thoughtId').equals(thought.id).first();
-            if (blobEntry && !thought.driveFileId) {
-              const result = await driveService.uploadFile(accessToken, blobEntry.blob, blobEntry.name, mediaFolderId);
-              await db.thoughts.update(thought.id, { 
-                driveFileId: result.id,
-                meta: { ...thought.meta, file: { id: result.id, name: result.name, size: blobEntry.blob.size, type: blobEntry.blob.type, link: result.webContentLink } }
-              });
-            }
-          }
+          await db.thoughts.update(currentThought.id, serviceUpdates);
+          const { useStore } = await import('./useStore');
+          useStore.getState().updateThought(currentThought.id, serviceUpdates);
 
         } catch (err) {
           console.error(`[Sync] Failed to sync thought ${thought.id}:`, err);
-          await db.thoughts.update(thought.id, { syncStatus: 'error' });
+          if (err instanceof Error && err.name !== 'DatabaseClosedError') {
+            await db.thoughts.update(thought.id, { syncStatus: 'error' }).catch(() => {});
+          }
         }
       }
     } catch (err) {
@@ -417,17 +552,60 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   },
 
   deleteServiceContent: async (thought: any) => {
-    const { accessToken, isOnline, grantedScopes } = get();
-    if (!accessToken || !isOnline) return;
+    const { accessToken, grantedScopes, user } = get();
+    // Only proceed if drive was enabled for this account
+    if (!user?.settings?.driveEnabled) return;
+    
+    // Fetch latest driveFileId from DB just in case
+    const latest = await db.thoughts.get(thought.id).catch(() => null);
+    const driveFileId = latest?.driveFileId || thought.driveFileId;
+
+    if (!driveFileId) return;
+
+    // Add to queue for persistent deletion (retried during sync)
+    await db.pendingDeletions.put({ driveFileId, type: 'drive' }).catch(() => {});
 
     const hasDrive = grantedScopes.includes('https://www.googleapis.com/auth/drive.file');
-    if (!hasDrive || !thought.driveFileId) return;
+    if (get().isOnline && accessToken && hasDrive) {
+      try {
+        console.log(`[Sync] Attempting immediate cloud deletion for ${driveFileId}`);
+        await driveService.deleteFile(accessToken, driveFileId);
+        // If success, remove from queue
+        await db.pendingDeletions.where('driveFileId').equals(driveFileId).delete();
+        console.log('[Sync] Cloud deletion successful');
+      } catch (err) {
+        console.warn('[Sync] Immediate deletion failed (will retry during sync):', err);
+      }
+    }
+  },
+
+  processPendingDeletions: async () => {
+    const { accessToken, isOnline, grantedScopes } = get();
+    if (!isOnline || !accessToken) return;
+    
+    const hasDrive = grantedScopes.includes('https://www.googleapis.com/auth/drive.file');
+    if (!hasDrive) return;
 
     try {
-      const { driveService } = await import('../services/google/driveService');
-      await driveService.deleteFile(accessToken, thought.driveFileId);
+      const pending = await db.pendingDeletions.toArray();
+      if (pending.length === 0) return;
+
+      console.log(`[Sync] Processing ${pending.length} pending cloud deletions...`);
+
+      for (const item of pending) {
+        try {
+          await driveService.deleteFile(accessToken, item.driveFileId);
+          await db.pendingDeletions.delete(item.id!);
+        } catch (err: any) {
+          if (err.message?.includes('404') || err.status === 404) {
+            await db.pendingDeletions.delete(item.id!);
+          } else {
+            console.warn(`[Sync] Failed to process pending deletion ${item.driveFileId}:`, err);
+          }
+        }
+      }
     } catch (err) {
-      console.error('[Sync] Content deletion failed:', err);
+      console.error('[Sync] Pending deletions process failed:', err);
     }
   },
 

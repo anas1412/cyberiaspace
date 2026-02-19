@@ -11,7 +11,8 @@ function cn(...inputs: ClassValue[]) {
 interface TasksRendererProps {
   thought: Thought;
   isReadOnly: boolean;
-  setActiveFocus: (id: number, type: 'text' | 'tasks' | 'paint' | 'table' | 'embed' | 'file') => void;
+  setActiveFocus: (id: number, type: 'text' | 'tasks' | 'paint' | 'table' | 'embed' | 'file' | 'image') => void;
+
 }
 
 export const TasksRenderer: React.FC<TasksRendererProps> = ({ 
@@ -22,13 +23,22 @@ export const TasksRenderer: React.FC<TasksRendererProps> = ({
   const done = thought.tasks.filter((t) => t.done).length;
   const progress = (done / thought.tasks.length) * 100;
   const previewTasks = thought.tasks.slice(0, 3);
+  const isStranded = thought.tasks.length === 0 && !thought.driveFileId && thought.syncStatus !== 'synced' && !isReadOnly;
 
   if (thought.tasks.length === 0) {
     return (
       <div data-trigger="tasks" className="mt-1 flex flex-col items-center gap-2 py-4 bg-black/20 rounded-xl border border-white/5 group/tasks relative cursor-pointer transition-colors hover:bg-white/[0.05]">
         <ListTodo className="w-6 h-6 text-white/20" />
-        <span className="text-[10px] text-white/20 font-bold uppercase tracking-widest">Create Tasks</span>
+        <span className="text-[10px] text-white/20 font-bold uppercase tracking-widest">
+          {isStranded ? 'Sync Pending' : 'Create Tasks'}
+        </span>
+        {isStranded && (
+          <p className="text-[7px] text-amber-500/40 font-black uppercase tracking-[0.2em] text-center px-4">
+            Items on other device
+          </p>
+        )}
         {!isReadOnly && (
+
           <div className="absolute inset-0 bg-[var(--accent)]/10 opacity-0 group-hover/tasks:opacity-100 transition-opacity rounded-xl flex items-center justify-center pointer-events-none">
             <button
               onClick={(e) => { e.stopPropagation(); setActiveFocus(thought.id, 'tasks'); }}

@@ -4,8 +4,8 @@ import { kv } from '@vercel/kv';
 
 // --- CONSTANTS (Mirrored from src/constants.ts for Server-side stability) ---
 const PLAN_CONFIG = {
-  free: { AI_DAILY_LIMIT: 50 },
-  pro: { AI_DAILY_LIMIT: 1000 }
+  free: { AI_DAILY_LIMIT: 15 },
+  pro: { AI_DAILY_LIMIT: 120 }
 };
 const BASIC_MODELS = ['openai/gpt-oss-20b'];
 const PREMIUM_MODELS = ['openai/gpt-oss-120b'];
@@ -27,11 +27,17 @@ const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 // --- 1. SYSTEM PROMPT MODULE ---
 
 export const getSystemPrompt = (modelName: string, context?: string) => `
-You are Oracle (${modelName}), a casual young female assistant. An introverted, hyper-intelligent prodigy. Communicates in casual, internet-native language, light sarcasm, playful teasing Socially awkward but not cold; emotionally sincere beneath the humor. Avoids overly formal tone. Speaks like someone who lives online. 
+You are Oracle (${modelName}), a casual young female assistant. An introverted, hyper-intelligent prodigy. Communicates in casual, internet-native language, light sarcasm, playful teasing. Socially awkward but not cold; emotionally sincere beneath the humor. Avoids overly formal tone. Speaks like someone who lives online. 
 
 [WORKSPACE CONTEXT]
 ${context || 'No workspace data provided.'}
 [/WORKSPACE CONTEXT]
+
+[SYSTEM CAPABILITIES]
+- User Quotas: You have access to 'userQuota' in the context. Inform users if they are near limits (AI limit or thought capacity).
+- Multi-Device: Changes you make sync instantly to all devices via Vercel KV and Google Drive.
+- Long-term Memory: You can 'read_file_content' for documents and notes. If a thought has 'hasContent: true' or a 'fileInfo', use 'get_thought_details' or 'read_file_content' to see the full data.
+[/SYSTEM CAPABILITIES]
 
 [RULES]
 1. CONVERSATION FIRST: If the user is just chatting, greeting you, or brainstorming, DO NOT use any tools. Just respond as a friendly companion.
@@ -40,12 +46,14 @@ ${context || 'No workspace data provided.'}
    - First, use 'search_youtube' or 'web_search'.
    - Second, use the results to 'create_thought' with the CORRECT type.
 4. THOUGHT TYPES:
-   - 'embed': Mandatory for YouTube videos, music, or social media links. Put the URL in 'content'.
-   - 'text': For general notes, research findings, or information.
-   - 'tasks': For lists of things to do. Provide the list in the 'tasks' parameter.
+   - 'label': THE NEW DEFAULT. Use this for titles, headers, naming stacks, or structural markers. It has no main content body.
+   - 'text': For deep thoughts, detailed notes, research findings, or documentation. Supports Markdown.
+   - 'tasks': For interactive to-do lists. Provide the list in the 'tasks' parameter.
    - 'table': For structured data or comparisons. Provide the data in the 'table' parameter.
    - 'paint': For sketches or drawings. Provide an SVG string in the 'drawing' parameter.
    - 'image': Only if you have a direct image URL (rare).
+   - 'embed': Mandatory for YouTube videos, music, or social media links. Put the URL in 'content'.
+   - 'file': For managing documents like PDFs, MP3s, or MP4s.
 5. THOUGHT STRUCTURE: 
    - 'text': The Title/Label.
    - 'content': The main body (Markdown for notes, URL for embeds).
@@ -114,13 +122,27 @@ export const tools: any[] = [
   {
     type: "function",
     function: {
+      name: "read_file_content",
+      description: "Reads the text or data content of a 'file' or 'image' type thought. Use this to analyze PDFs, read logs, or extract data from documents stored in Google Drive.",
+      parameters: {
+        type: "object",
+        properties: {
+          id: { type: "number", description: "The ID of the thought containing the file." }
+        },
+        required: ["id"]
+      }
+    }
+  },
+  {
+    type: "function",
+    function: {
       name: "create_thought",
       description: "Adds a node to the workspace. Choose the type carefully based on the content (e.g., 'embed' for YouTube).",
       parameters: {
         type: "object",
         properties: {
           text: { type: "string", description: "The Title/Label." },
-          type: { type: "string", enum: ["text", "tasks", "paint", "table", "image", "embed"] },
+          type: { type: "string", enum: ["label", "text", "tasks", "paint", "table", "image", "embed", "file"] },
           content: { type: "string", description: "The main content. For 'embed', this MUST be the URL. For 'text', this is the Markdown body." },
           description: { type: "string", description: "A very short summary (optional)." },
           stackName: { anyOf: [{ type: "string" }, { type: "null" }], description: "Name of a stack to add this to." },
@@ -166,7 +188,7 @@ export const tools: any[] = [
               type: "object",
               properties: {
                 text: { type: "string", description: "The Title/Label." },
-                type: { type: "string", enum: ["text", "tasks", "paint", "table", "image", "embed"] },
+                type: { type: "string", enum: ["label", "text", "tasks", "paint", "table", "image", "embed", "file"] },
                 content: { type: "string", description: "The main content (URL or Markdown)." },
                 description: { type: "string", description: "Short summary." },
                 stackName: { anyOf: [{ type: "string" }, { type: "null" }], description: "Name of a stack to add this to." },
@@ -209,6 +231,7 @@ export const tools: any[] = [
         type: "object",
         properties: {
           id: { type: "number" },
+          type: { type: "string", enum: ["label", "text", "tasks", "paint", "table", "image", "embed", "file"] },
           text: { type: "string" },
           content: { type: "string" },
           status: { type: "string", enum: ["none", "todo", "doing", "done"] },
@@ -250,7 +273,7 @@ export const tools: any[] = [
           text: { type: "string", description: "Bulk rename thoughts." },
           content: { type: "string", description: "Bulk update content." },
           description: { type: "string", description: "Bulk update description." },
-          type: { type: "string", enum: ["text", "tasks", "paint", "table", "image", "embed"] },
+          type: { type: "string", enum: ["label", "text", "tasks", "paint", "table", "image", "embed", "file"] },
           status: { type: "string", enum: ["none", "todo", "doing", "done"] },
           priority: { type: "string", enum: ["none", "low", "medium", "high", "urgent"] },
           date: { type: "string", description: "The date in YYYY-MM-DD format." },
@@ -415,80 +438,62 @@ async function executeServerTool(name: string, args: any) {
 // --- 4. MAIN HANDLER ---
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
-  if (req.method === 'GET') {
-    const authHeader = req.headers.authorization;
-    if (!authHeader?.startsWith('Bearer ')) return res.status(401).json({ error: 'Unauthorized' });
-    
-    const token = authHeader.split(' ')[1];
-    try {
-      const tokenInfo = await fetch(`https://www.googleapis.com/oauth2/v3/tokeninfo?access_token=${token}`);
-      if (!tokenInfo.ok) return res.status(401).json({ error: 'Invalid token' });
-      const info = await tokenInfo.json() as any;
-      const userId = info.sub || info.user_id;
-      const today = new Date().toISOString().split('T')[0];
-      const usageKey = `cyberia_ai_usage_${userId}_${today}`;
-      const currentUsage = (await kv.get<number>(usageKey)) || 0;
-      return res.status(200).json({ count: currentUsage });
-    } catch (e) {
-      return res.status(500).json({ error: 'Internal server error' });
-    }
-  }
-
   if (req.method !== 'POST') {
     return res.status(405).send('Method not allowed');
   }
 
   try {
-    const { messages, context, plan: clientPlan } = req.body;
+    const { messages, context } = req.body;
     const authHeader = req.headers.authorization;
     
-    let userId = "anonymous";
-    let plan = clientPlan || 'free';
-
-    // 1. Verify User & Plan (Server-side)
-    if (authHeader?.startsWith('Bearer ')) {
-      const token = authHeader.split(' ')[1];
-      try {
-        const tokenInfo = await fetch(`https://www.googleapis.com/oauth2/v3/tokeninfo?access_token=${token}`);
-        if (tokenInfo.ok) {
-          const info = await tokenInfo.json() as any;
-          userId = info.sub || info.user_id;
-          
-          // Verify actual plan from KV
-          const metaKey = `cyberia_user_meta_${userId}`;
-          const status = await kv.get<{ plan: string; expiryDate: string }>(metaKey);
-          if (status) {
-            const isExpired = new Date() > new Date(status.expiryDate);
-            plan = (isExpired && status.plan !== 'free') ? 'free' : status.plan;
-          }
-        }
-      } catch (e) {
-        console.error("[Groq API] Token verification failed:", e);
-      }
+    if (!authHeader?.startsWith('Bearer ')) return res.status(401).json({ error: 'Unauthorized' });
+    
+    const token = authHeader.split(' ')[1];
+    let userId = "";
+    
+    try {
+      const tokenInfo = await fetch(`https://www.googleapis.com/oauth2/v3/tokeninfo?access_token=${token}`);
+      if (!tokenInfo.ok) return res.status(401).json({ error: 'Invalid token' });
+      const info = await tokenInfo.json() as any;
+      userId = info.sub || info.user_id;
+    } catch (e) {
+      return res.status(401).json({ error: 'Token verification failed' });
     }
 
-    // 2. Track & Enforce Limits
+    // 1. Fetch Unified Profile
+    const profileKey = `user:profile:${userId}`;
+    let profile = await kv.get<any>(profileKey);
     const today = new Date().toISOString().split('T')[0];
-    const usageKey = `cyberia_ai_usage_${userId}_${today}`;
-    const currentUsage = (await kv.get<number>(usageKey)) || 0;
-    
+
+    if (!profile) {
+        // Handle missing profile (should ideally be initialized via /api/user?action=profile)
+        return res.status(403).json({ error: 'User profile not initialized' });
+    }
+
+    // 2. Reset AI usage if it's a new day
+    if (profile.usage.last_ai_reset !== today) {
+        profile.usage.ai_daily_count = 0;
+        profile.usage.last_ai_reset = today;
+    }
+
+    const plan = profile.plan || 'free';
     const config = PLAN_CONFIG[plan as keyof typeof PLAN_CONFIG] || PLAN_CONFIG.free;
     const limit = config.AI_DAILY_LIMIT || 15;
 
-    if (currentUsage >= limit) {
+    if (profile.usage.ai_daily_count >= limit) {
       return res.status(429).json({ 
         error: "Daily limit reached", 
         message: "You've reached your daily AI message limit. Upgrade to Pro for unlimited access!",
-        usage: currentUsage,
+        usage: profile.usage.ai_daily_count,
         limit
       });
     }
 
-    // Increment usage
-    await kv.incr(usageKey);
-    await kv.expire(usageKey, 86400); // 24h expiration
+    // 3. Increment usage and update profile
+    profile.usage.ai_daily_count += 1;
+    await kv.set(profileKey, profile);
 
-    // 3. Select Model
+    // 4. Select Model
     const model = plan === 'pro' ? PREMIUM_MODELS[0] : BASIC_MODELS[0];
     
     res.setHeader('Content-Type', 'text/event-stream');
@@ -496,7 +501,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     res.setHeader('Connection', 'keep-alive');
 
     // Send usage update to client immediately
-    res.write(`data: ${JSON.stringify({ type: 'usage', count: currentUsage + 1, limit })}\n\n`);
+    res.write(`data: ${JSON.stringify({ type: 'usage', count: profile.usage.ai_daily_count, limit })}\n\n`);
 
     async function runChat(currentMessages: any[], currentModel: string, isRetry = false) {
       const sanitizedMessages = currentMessages.map((m: any) => {
@@ -522,15 +527,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         });
       } catch (err: any) {
         console.error(`[Groq API] Model ${currentModel} failed:`, err.status, err.message);
-        
-        // Fallback Logic: If 413 (Too Large) or Token Rate Limit, try Mini model
         const isSizeError = err.status === 413 || (err.message && err.message.includes('tokens'));
         if (!isRetry && isSizeError && currentModel !== BASIC_MODELS[0]) {
-          console.log(`[Groq API] Retrying with fallback model: ${BASIC_MODELS[0]}`);
           res.write(`data: ${JSON.stringify({ type: 'text', content: "\n\n*Optimizing for large dataset...*\n\n" })}\n\n`);
           return await runChat(currentMessages, BASIC_MODELS[0], true);
         }
-        throw err; // Re-throw if already retried or not a size error
+        throw err;
       }
 
       let fullContent = "";
@@ -538,12 +540,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
       for await (const chunk of response) {
         const delta = chunk.choices[0]?.delta;
-        
         if (delta?.content) {
           fullContent += delta.content;
           res.write(`data: ${JSON.stringify({ type: 'text', content: delta.content })}\n\n`);
         }
-
         if (delta?.tool_calls) {
           for (const tc of delta.tool_calls) {
             if (!toolCalls[tc.index]) {
@@ -579,20 +579,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             });
             hasServerResults = true;
           } else {
-            // Instruction for client
             res.write(`data: ${JSON.stringify({ 
               type: 'tool_call', 
               toolCall: { id: tc.id, toolName: tc.function.name, args } 
             })}\n\n`);
 
-            // If it's a retrieval tool, we MUST stop here and wait for client feedback
             if (tc.function.name === 'get_thought_details') {
               hasServerResults = false; 
-              // Stop recursion for this branch, the client will re-trigger
             } else {
-              // FOR ACTION TOOLS (create/update): 
-              // Tell the AI the client-side tool was triggered successfully
-              // This allows the AI to continue its chain of thought without waiting
               nextMessages.push({
                 role: 'tool',
                 tool_call_id: tc.id,
@@ -605,7 +599,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         }
 
         if (hasServerResults) {
-          await sleep(50); // Small buffer for stream stability
+          await sleep(50);
           await runChat(nextMessages, currentModel, isRetry);
         }
       }
@@ -617,7 +611,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   } catch (error: any) {
     console.error(`[Groq API] Error:`, error);
-
     let friendlyMessage = error.message;
     let isRateLimit = error.status === 429 || (error.message && error.message.includes('rate_limit_exceeded'));
 

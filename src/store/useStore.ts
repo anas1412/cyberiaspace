@@ -13,7 +13,7 @@ interface CyberiaState {
   selectedThoughtIds: number[];
   isInspectorOpen: boolean;
   activeFocusId: number | null;
-  focusType: 'text' | 'table' | 'paint' | 'tasks' | 'embed' | 'file' | null;
+  focusType: 'text' | 'table' | 'paint' | 'tasks' | 'embed' | 'file' | 'image' | null;
   calendarViewDate: Date;
   hoveredCalDate: string | null;
   linkingSourceId: number | null;
@@ -37,6 +37,7 @@ interface CyberiaState {
   lightboxImage: string | null;
   lightboxThoughtId: number | null;
   transform: { x: number; y: number; scale: number };
+  deletingThoughtIds: number[];
 
   // Plan Helper
   getLimits: () => typeof PLAN_CONFIG['free'];
@@ -57,6 +58,9 @@ interface CyberiaState {
   openLightbox: (image: string, thoughtId: number) => void;
   closeLightbox: () => void;
   setTransform: (transform: { x: number; y: number; scale: number }) => void;
+  zoomIn: () => void;
+  zoomOut: () => void;
+  resetTransform: () => void;
   clearWorkspace: () => Promise<void>;
 
 
@@ -95,7 +99,8 @@ interface CyberiaState {
   linkSelectedThoughts: (name?: string) => Promise<void>;
   unlinkSelectedThoughts: () => Promise<void>;
   setInspectorOpen: (open: boolean) => void;
-  setActiveFocus: (id: number | null, type: 'text' | 'table' | 'paint' | 'tasks' | 'embed' | 'file' | null) => void;
+  setActiveFocus: (id: number | null, type: 'text' | 'table' | 'paint' | 'tasks' | 'embed' | 'file' | 'image' | null) => void;
+
   setHoveredCalDate: (date: string | null) => void;
   setCalendarSearchQuery: (query: string) => void;
   setCalendarStackFilter: (stackId: string | null) => void;
@@ -252,7 +257,9 @@ export const useStore = create<CyberiaState>((set, get) => ({
   },
 
   transform: { x: 0, y: 0, scale: 1 },
+  deletingThoughtIds: [],
   history: [],
+
   historyIndex: -1,
 
   setTransform: (transform) => set({ transform }),
@@ -350,7 +357,14 @@ export const useStore = create<CyberiaState>((set, get) => ({
     if (activeSpaceId && !get().isReadOnly) {
       get().updateSpace(activeSpaceId, { theme });
     }
+
+    // Sync theme to cloud profile
+    const authStore = useAuthStore.getState();
+    if (authStore.status === 'authenticated') {
+      authStore.updateSettings({ theme } as any);
+    }
   },
+
 
   setCustomBg: async (bg) => {
     const { activeSpaceId, isReadOnly, spaces } = get();
@@ -771,6 +785,16 @@ export const useStore = create<CyberiaState>((set, get) => ({
       }
     }
 
+    const thoughtsInSpace = await db.thoughts.where('spaceId').equals(id).toArray();
+    const authStore = useAuthStore.getState();
+    
+    // Trigger Cloud Deletion for all thoughts in the space
+    for (const t of thoughtsInSpace) {
+      if (t.driveFileId) {
+        await authStore.deleteServiceContent(t);
+      }
+    }
+
     await db.spaces.delete(id);
     await db.thoughts.where('spaceId').equals(id).delete();
     await db.stacks.where('spaceId').equals(id).delete();
@@ -828,9 +852,11 @@ export const useStore = create<CyberiaState>((set, get) => ({
 
     const limits = get().getLimits();
 
-    // 1. Size Validation (2MB Limit) - Only for non-file types
+    const isBlobType = partialThought.type === 'file' || partialThought.type === 'image';
+
+    // 1. Size Validation (2MB Limit) - Only for non-blob types
     const payloadSize = JSON.stringify(partialThought).length;
-    if (payloadSize > 2 * 1024 * 1024 && partialThought.type !== 'file') {
+    if (payloadSize > 2 * 1024 * 1024 && !isBlobType) {
       useModalStore.getState().openModal({
         title: 'Buffer Overflow',
         description: 'Initial payload exceeds 2MB limit. Attempting to spawn an object too large for current system architecture.',
@@ -876,7 +902,7 @@ export const useStore = create<CyberiaState>((set, get) => ({
         text: '',
         placeholder: randomTitle,
         description: '',
-        type: 'text',
+        type: 'label',
         content: '',
         image: null,
         drawing: null,
@@ -893,8 +919,10 @@ export const useStore = create<CyberiaState>((set, get) => ({
         ...partialThought
       } as Thought;
 
-      return await db.thoughts.add(thought);
+      const id = await db.thoughts.add(thought);
+      return id;
     });
+
 
     if (result !== -1) {
       await get().updateSpace(targetSpaceId, { updatedAt: new Date().toISOString() });
@@ -916,12 +944,12 @@ export const useStore = create<CyberiaState>((set, get) => ({
   updateThought: async (id, updates) => {
     const { thoughts, activeSpaceId, isReadOnly } = get();
     const thought = thoughts.find(t => t.id === id);
-    const isFile = thought?.type === 'file' || updates.type === 'file';
+    const isBlobType = thought?.type === 'file' || updates.type === 'file' || thought?.type === 'image' || updates.type === 'image';
 
-    // 1. Size Validation (2MB Limit) - Only for non-file types
+    // 1. Size Validation (2MB Limit) - Only for non-blob types
     // Optimization: Skip stringify if updates is small or just coordinates
     const isSmallUpdate = Object.keys(updates).length <= 4 && !updates.content && !updates.image && !updates.drawing;
-    if (!isSmallUpdate && !isFile) {
+    if (!isSmallUpdate && !isBlobType) {
       const payloadSize = JSON.stringify(updates).length;
       if (payloadSize > 2 * 1024 * 1024) {
         useModalStore.getState().openModal({
@@ -1022,12 +1050,15 @@ export const useStore = create<CyberiaState>((set, get) => ({
     const affectedStackId = thought?.stackId;
     const authStore = (await import('./useAuthStore')).useAuthStore.getState();
 
+    // Set deleting state
+    set(state => ({ deletingThoughtIds: [...state.deletingThoughtIds, id] }));
+
     if (thought) {
       await get().updateSpace(thought.spaceId, { updatedAt: new Date().toISOString() });
       
       // Trigger Cloud Deletion for service-linked content
       if (authStore.status === 'authenticated') {
-        authStore.deleteServiceContent(thought);
+        await authStore.deleteServiceContent(thought);
       }
     }
 
@@ -1047,6 +1078,10 @@ export const useStore = create<CyberiaState>((set, get) => ({
       const newIds = get().selectedThoughtIds.filter(tid => tid !== id);
       set({ selectedThoughtIds: newIds });
     }
+    
+    // Remove from deleting state
+    set(state => ({ deletingThoughtIds: state.deletingThoughtIds.filter(tid => tid !== id) }));
+    
     get().pushHistory();
 
     // Trigger Cloud Sync
@@ -1062,6 +1097,9 @@ export const useStore = create<CyberiaState>((set, get) => ({
     const { thoughts, selectedThoughtId, selectedThoughtIds } = get();
     const authStore = (await import('./useAuthStore')).useAuthStore.getState();
 
+    // Set deleting state
+    set(state => ({ deletingThoughtIds: [...state.deletingThoughtIds, ...ids] }));
+
     const affectedStackIds = Array.from(new Set(
       thoughts.filter(t => ids.includes(t.id)).map(t => t.stackId).filter(Boolean)
     )) as string[];
@@ -1069,8 +1107,13 @@ export const useStore = create<CyberiaState>((set, get) => ({
     // Trigger Cloud Deletion for all affected thoughts
     if (authStore.status === 'authenticated') {
       const thoughtsToDelete = thoughts.filter(t => ids.includes(t.id));
+      // Use for...of to await each deletion correctly
       for (const t of thoughtsToDelete) {
-        authStore.deleteServiceContent(t);
+        try {
+          await authStore.deleteServiceContent(t);
+        } catch (e) {
+          console.warn('Batch cloud delete failed for thought:', t.id, e);
+        }
       }
     }
 
@@ -1089,6 +1132,9 @@ export const useStore = create<CyberiaState>((set, get) => ({
     }
     const newSelectedIds = selectedThoughtIds.filter(tid => !ids.includes(tid));
     set({ selectedThoughtIds: newSelectedIds });
+
+    // Remove from deleting state
+    set(state => ({ deletingThoughtIds: state.deletingThoughtIds.filter(tid => !ids.includes(tid)) }));
 
     get().pushHistory();
 
@@ -1197,20 +1243,47 @@ export const useStore = create<CyberiaState>((set, get) => ({
     const { selectedThoughtIds, thoughts } = get();
     if (selectedThoughtIds.length === 0) return;
 
+    // Set deleting state
+    set(state => ({ deletingThoughtIds: [...state.deletingThoughtIds, ...selectedThoughtIds] }));
+
+    const authStore = (await import('./useAuthStore')).useAuthStore.getState();
     const affectedStackIds = Array.from(new Set(
       thoughts.filter(t => selectedThoughtIds.includes(t.id)).map(t => t.stackId).filter(Boolean)
     )) as string[];
 
+    // Trigger Cloud Deletion
+    if (authStore.status === 'authenticated') {
+      const thoughtsToDelete = thoughts.filter(t => selectedThoughtIds.includes(t.id));
+      for (const t of thoughtsToDelete) {
+        try {
+          await authStore.deleteServiceContent(t);
+        } catch (e) {
+          console.warn('Selected cloud delete failed:', t.id, e);
+        }
+      }
+    }
+
     await db.thoughts.bulkDelete(selectedThoughtIds);
+    await db.blobs.where('thoughtId').anyOf(selectedThoughtIds).delete();
     await get().refreshThoughts();
 
     if (affectedStackIds.length > 0) {
       await get().cleanupStacks();
     }
 
+    const deletedIds = [...selectedThoughtIds];
     set({ selectedThoughtIds: [], selectedThoughtId: null, isInspectorOpen: false });
+    
+    // Remove from deleting state
+    set(state => ({ deletingThoughtIds: state.deletingThoughtIds.filter(tid => !deletedIds.includes(tid)) }));
+
     get().pushHistory();
+
+    if (authStore.autoSync && authStore.status === 'authenticated') {
+      authStore.syncData();
+    }
   },
+
 
   linkSelectedThoughts: async (name) => {
     if (get().isReadOnly) return;

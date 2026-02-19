@@ -1,7 +1,11 @@
 import React from 'react';
 import { useStore } from '../store/useStore';
+import { useAuthStore } from '../store/useAuthStore';
 import { useModalStore } from '../store/useModalStore';
-import { X, Maximize2, Image as ImageIcon, Link, Trash2, Youtube, Type, ListTodo, Palette, Table, Calendar, ChevronLeft, ChevronRight, Layers, ArrowDown, Share2, File as FileIcon } from 'lucide-react';
+import { db } from '../db';
+import { generateThumbnail } from '../utils/image';
+import { X, Maximize2, Image as ImageIcon, Trash2, Youtube, Type, ListTodo, Palette, Table, Calendar, ChevronLeft, ChevronRight, Layers, ArrowDown, Share2, File as FileIcon, Upload, Tag } from 'lucide-react';
+import { MAX_FILE_SIZE_MB } from '../constants';
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -13,6 +17,7 @@ function cn(...inputs: ClassValue[]) {
 }
 
 const typeIcons = {
+  label: Tag,
   text: Type,
   tasks: ListTodo,
   paint: Palette,
@@ -21,6 +26,7 @@ const typeIcons = {
   embed: Youtube,
   file: FileIcon,
 };
+
 
 const DatePicker: React.FC<{ value: string; onChange: (val: string) => void; disabled?: boolean }> = ({ value, onChange, disabled }) => {
   const [isOpen, setIsOpen] = React.useState(false);
@@ -159,7 +165,9 @@ const Inspector: React.FC = () => {
   const deleteThought = useStore((state) => state.deleteThought);
   const unlinkSelectedThoughts = useStore((state) => state.unlinkSelectedThoughts);
   const setActiveFocus = useStore((state) => state.setActiveFocus);
+  const uploadThoughtBlob = useAuthStore((state) => state.uploadThoughtBlob);
   const bringToFront = useStore((state) => state.bringToFront);
+
   const sendToBack = useStore((state) => state.sendToBack);
   const isReadOnly = useStore((state) => state.isReadOnly);
 
@@ -197,10 +205,11 @@ const Inspector: React.FC = () => {
     });
   };
 
-  const handleTypeChange = (type: 'text' | 'tasks' | 'paint' | 'table' | 'image' | 'embed' | 'file') => {
+  const handleTypeChange = (type: 'label' | 'text' | 'tasks' | 'paint' | 'table' | 'image' | 'embed' | 'file') => {
     if (!thought) return;
     updateThought(thought.id, { type });
   };
+
 
   const handlePriorityChange = (priority: 'none' | 'low' | 'medium' | 'high' | 'urgent') => {
     if (!thought) return;
@@ -216,7 +225,8 @@ const Inspector: React.FC = () => {
           animate={{ opacity: 1, x: 0 }}
           exit={{ opacity: 0, x: -20 }}
           transition={{ type: 'spring', damping: 28, stiffness: 200 }}
-          className="ui-layer focus-box fixed top-4 md:top-24 bottom-4 md:bottom-24 left-4 md:left-8 w-[calc(100%-32px)] md:w-[400px] glass md:rounded-[2rem] shadow-[0_0_80px_rgba(0,0,0,0.5)] flex flex-col overflow-hidden z-[9999] border border-white/10"
+          className="ui-layer focus-box fixed top-4 md:top-24 bottom-4 md:bottom-24 left-4 md:left-8 w-[calc(100%-32px)] md:w-[400px] glass md:rounded-[2rem] shadow-[0_0_80px_rgba(0,0,0,0.5)] flex flex-col overflow-hidden z-[9999] border border-white/10 mobile-bottom-bar-adjust"
+
         >
           {/* HEADER AREA */}
           <div className="p-4 md:p-5 border-b border-white/5 bg-black/20 backdrop-blur-md sticky top-0 z-20">
@@ -243,8 +253,8 @@ const Inspector: React.FC = () => {
 
           {/* SCROLLABLE CONTENT AREA */}
           <div className="flex-1 overflow-y-auto custom-scroll p-4 md:p-6 space-y-6">
-            <div className="grid grid-cols-7 gap-1 mb-6">
-              {(['text', 'tasks', 'paint', 'table', 'image', 'embed', 'file'] as const).map((type) => {
+            <div className="grid grid-cols-8 gap-1 mb-6">
+              {(['label', 'text', 'tasks', 'paint', 'table', 'image', 'embed', 'file'] as const).map((type) => {
                 const Icon = typeIcons[type];
                 return (
                   <button
@@ -266,6 +276,7 @@ const Inspector: React.FC = () => {
                 );
               })}
             </div>
+
 
             <div className="space-y-5">
               <input
@@ -529,60 +540,118 @@ const Inspector: React.FC = () => {
                 )}
 
                 {thought.type === 'file' && (
-                  <button
-                    onClick={() => setActiveFocus(thought.id, 'file')}
-                    className="w-full bg-[var(--accent)]/10 hover:bg-[var(--accent)]/20 border border-[var(--accent)]/30 text-[var(--accent-secondary)] py-6 rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] transition-all flex flex-col items-center gap-3"
-                  >
-                    <FileIcon className="w-5 h-5" />
-                    Open File Manager
-                  </button>
+                  <div className="space-y-3">
+                    <button
+                      onClick={() => setActiveFocus(thought.id, 'file')}
+                      className="w-full bg-[var(--accent)]/10 hover:bg-[var(--accent)]/20 border border-[var(--accent)]/30 text-[var(--accent-secondary)] py-6 rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] transition-all flex flex-col items-center gap-3"
+                    >
+                      <FileIcon className="w-5 h-5" />
+                      Open File Manager
+                    </button>
+
+                    {!isReadOnly && (
+                      <div className="border border-dashed border-white/10 rounded-xl p-4 text-center hover:bg-white/5 transition-colors cursor-pointer relative">
+                        <input
+                          type="file"
+                          className="absolute inset-0 opacity-0 cursor-pointer"
+                          onChange={async (e) => {
+                            const file = e.target.files?.[0];
+                            if (file) {
+                              if (file.size > MAX_FILE_SIZE_MB * 1024 * 1024) {
+                                openModal({
+                                  title: 'Incompatible Mass',
+                                  description: `This asset exceeds the ${MAX_FILE_SIZE_MB}MB transmission limit. Please compress your assets or use a smaller file.`,
+                                  type: 'alert',
+                                  confirmText: 'Acknowledged'
+                                });
+                                return;
+                              }
+                              
+                              // 1. Update metadata and type if image
+                              const isImage = file.type.startsWith('image/') || /\.(jpg|jpeg|png|gif|webp|svg)$/i.test(file.name);
+                              const thumbnail = isImage ? await generateThumbnail(file).catch(() => null) : null;
+
+                              await updateThought(thought.id, { 
+                                text: file.name,
+                                type: isImage ? 'image' : 'file',
+                                image: thumbnail || undefined,
+                                meta: { ...thought.meta, file: { name: file.name, size: file.size, type: file.type } }
+                              });
+
+                              // 2. Save to blobs
+                              await db.blobs.put({
+                                id: `local-${Date.now()}-${thought.id}`,
+                                thoughtId: thought.id,
+                                blob: file,
+                                name: file.name,
+                                type: file.type,
+                                updatedAt: Date.now()
+                              });
+
+                              // 3. Trigger upload
+                              uploadThoughtBlob(thought.id);
+                            }
+                          }}
+                        />
+                        <Upload className="w-6 h-6 mx-auto text-slate-500 mb-2" />
+                        <p className="text-[9px] text-slate-400 uppercase font-bold tracking-widest">Upload or Drag File</p>
+                      </div>
+                    )}
+                  </div>
                 )}
+
 
                 {thought.type === 'image' && (
                   <div className="space-y-3">
+                    <button
+                      onClick={() => setActiveFocus(thought.id, 'file')}
+                      className="w-full bg-[var(--accent)]/10 hover:bg-[var(--accent)]/20 border border-[var(--accent)]/30 text-[var(--accent-secondary)] py-6 rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] transition-all flex flex-col items-center gap-3"
+                    >
+                      <ImageIcon className="w-5 h-5" />
+                      Open Image Manager
+                    </button>
+
                     {!isReadOnly && (
                       <div className="border border-dashed border-white/10 rounded-xl p-4 text-center hover:bg-white/5 transition-colors cursor-pointer relative">
                         <input
                           type="file"
                           accept="image/*"
                           className="absolute inset-0 opacity-0 cursor-pointer"
-                          onChange={(e) => {
+                          onChange={async (e) => {
                             const file = e.target.files?.[0];
                             if (file) {
-                              if (file.size > 2 * 1024 * 1024) {
-                                useModalStore.getState().openModal({
+                              if (file.size > MAX_FILE_SIZE_MB * 1024 * 1024) {
+                                openModal({
                                   title: 'Incompatible Mass',
-                                  description: 'This file exceeds the 2MB transmission limit. Compress your assets before uploading to cloud storage.',
+                                  description: `This asset exceeds the ${MAX_FILE_SIZE_MB}MB transmission limit. Please compress your assets or use a smaller file.`,
                                   type: 'alert',
-                                  confirmText: 'Understood'
+                                  confirmText: 'Acknowledged'
                                 });
                                 return;
                               }
-                              const reader = new FileReader();
-                              reader.onload = (ev) => updateThought(thought.id, { image: ev.target?.result as string });
-                              reader.readAsDataURL(file);
+                              
+                              const thumbnail = await generateThumbnail(file).catch(() => null);
+                              await updateThought(thought.id, { 
+                                image: thumbnail || undefined,
+                                text: file.name,
+                                meta: { ...thought.meta, file: { name: file.name, size: file.size, type: file.type } }
+                              });
+
+                              // Also save full file to blobs for sync
+                              await db.blobs.put({
+                                id: `local-${Date.now()}-${thought.id}`,
+                                thoughtId: thought.id,
+                                blob: file,
+                                name: file.name,
+                                type: file.type,
+                                updatedAt: Date.now()
+                              });
+                              uploadThoughtBlob(thought.id);
                             }
                           }}
                         />
                         <ImageIcon className="w-6 h-6 mx-auto text-slate-500 mb-2" />
-                        <p className="text-[9px] text-slate-400 uppercase font-bold tracking-widest">Upload or Drag Image</p>
-                      </div>
-                    )}
-                    {!isReadOnly && (
-                      <div className="flex gap-2">
-                        <input
-                          type="text"
-                          placeholder="Or paste image URL..."
-                          className="flex-1 bg-black/40 border border-white/10 rounded-xl p-2 text-xs outline-none focus:border-[var(--accent)] text-white"
-                          onKeyDown={(e) => {
-                            if (e.key === 'Enter') {
-                              updateThought(thought.id, { image: e.currentTarget.value });
-                            }
-                          }}
-                        />
-                        <button className="p-2 bg-white/5 rounded-xl hover:bg-white/10 text-white">
-                          <Link className="w-4 h-4" />
-                        </button>
+                        <p className="text-[9px] text-slate-400 uppercase font-bold tracking-widest">Update Image Asset</p>
                       </div>
                     )}
                     {thought.image && (
@@ -592,6 +661,7 @@ const Inspector: React.FC = () => {
                     )}
                   </div>
                 )}
+
               </div>
 
               <div className="space-y-3 pt-4 border-t border-white/5">

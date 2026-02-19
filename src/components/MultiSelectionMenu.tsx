@@ -80,8 +80,8 @@ const MultiSelectionMenu: React.FC = () => {
   const deleteSelectedThoughts = useStore((state) => state.deleteSelectedThoughts);
   const thoughts = useStore((state) => state.thoughts);
   const stacks = useStore((state) => state.stacks);
-  const updateStack = useStore((state) => state.updateStack);
   const isInspectorOpen = useStore((state) => state.isInspectorOpen);
+
   const isChatOpen = useStore((state) => state.isChatOpen);
 
   const { openModal } = useModalStore();
@@ -181,24 +181,37 @@ const MultiSelectionMenu: React.FC = () => {
               />
               <button
                 onClick={async () => {
-                  await linkSelectedThoughts();
-                  if (localStackName.trim()) {
-                    setTimeout(async () => {
-                      const latestThoughts = useStore.getState().thoughts;
-                      const firstSelected = latestThoughts.find(t => selectedThoughtIds.includes(t.id));
-                      if (firstSelected?.stackId) await updateStack(firstSelected.stackId, { name: localStackName.trim() });
-                    }, 100);
-                  }
+                  await linkSelectedThoughts(localStackName.trim());
                 }}
                 className="w-full py-3 bg-indigo-500/10 hover:bg-indigo-500/20 border border-indigo-500/30 text-indigo-400 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all"
               >
                 {sharedStack ? 'Re-align Stack' : 'Link into New Stack'}
               </button>
+
+              {stacks.length > 0 && !sharedStack && (
+                <div className="space-y-1.5 pt-2">
+                  <label className="text-[7px] uppercase font-black tracking-[0.2em] text-slate-600 ml-1">Add to Existing</label>
+                  <div className="flex flex-col gap-1 max-h-[160px] overflow-y-auto custom-scroll pr-1">
+                    {stacks.map(s => (
+                      <button
+                        key={s.id}
+                        onClick={() => updateThoughts(selectedThoughtIds, { stackId: s.id })}
+                        className="w-full flex items-center gap-3 p-2.5 rounded-xl bg-white/[0.02] hover:bg-white/[0.05] border border-transparent hover:border-white/5 transition-all text-left"
+                      >
+                        <div className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: s.color, boxShadow: `0 0 8px ${s.color}44` }} />
+                        <span className="text-[9px] font-bold uppercase tracking-widest text-slate-400 hover:text-white transition-colors">{s.name}</span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
               {sharedStack && (
                 <button onClick={unlinkSelectedThoughts} className="w-full py-2 bg-white/5 hover:bg-red-500/10 text-slate-500 hover:text-red-400 border border-white/5 rounded-xl text-[8px] font-black uppercase tracking-widest transition-all">Dissolve Stack</button>
               )}
             </div>
           </div>
+
         </div>
 
         {/* FOOTER ACTIONS */}

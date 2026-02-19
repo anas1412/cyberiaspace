@@ -1,10 +1,11 @@
-import React, { useEffect, useRef, Suspense, lazy } from 'react';
+import { useEffect, useRef, Suspense, lazy, useState, useCallback } from 'react';
 import { Analytics } from '@vercel/analytics/react';
 import { SpeedInsights } from '@vercel/speed-insights/react';
 import { useStore } from './store/useStore';
 import { useModalStore } from './store/useModalStore';
 import { useAuthStore } from './store/useAuthStore';
-import { PLAN_CONFIG, type SubscriptionPlan } from './constants';
+import { PLAN_CONFIG } from './constants';
+import { detectImageType, generateThumbnail } from './utils/image';
 import Viewport from './components/Viewport';
 import Toolbar from './components/toolbar/Toolbar';
 import MultiSelectionMenu from './components/MultiSelectionMenu';
@@ -13,8 +14,9 @@ import Modal from './components/Modal';
 import PricingModal from './components/PricingModal';
 import Lightbox from './components/Lightbox';
 import LoadingOverlay from './components/LoadingOverlay';
+import { fetchEmbedMeta } from './utils/embeds';
 
-// Lazy Loaded Components (Chunks)
+// Lazy Loaded Components
 const KanbanOverlay = lazy(() => import('./components/KanbanOverlay'));
 const CalendarOverlay = lazy(() => import('./components/CalendarOverlay'));
 const ChatOverlay = lazy(() => import('./components/ChatOverlay'));
@@ -27,8 +29,6 @@ const EmbedFocusEditor = lazy(() => import('./components/editors/EmbedFocusEdito
 const FileFocusEditor = lazy(() => import('./components/editors/FileFocusEditor'));
 const FeedbackPage = lazy(() => import('./components/FeedbackPage'));
 
-import { fetchEmbedMeta } from './utils/embeds';
-
 function App() {
   const init = useStore((state) => state.init);
   const setDeferredPrompt = useStore((state) => state.setDeferredPrompt);
@@ -39,27 +39,11 @@ function App() {
   const activeSpaceId = useStore((state) => state.activeSpaceId);
   const spaces = useStore((state) => state.spaces);
 
-  const { openModal, isPricingOpen, closePricing, openPricing } = useModalStore();
-  const { user } = useAuthStore();
-  const limits = (user?.plan && user.plan in PLAN_CONFIG) ? PLAN_CONFIG[user.plan as SubscriptionPlan] : PLAN_CONFIG.free;
+  const { isPricingOpen, closePricing, openModal } = useModalStore();
   const mouseWorldPos = useRef({ x: 0, y: 0 });
   const mouseScreenPos = useRef({ x: 0, y: 0 });
 
-  const [path, setPath] = React.useState(window.location.pathname);
-
-  useEffect(() => {
-    // Global Re-auth handler for 401 recovery
-    (window as any)._cyberia_reauth = () => {
-      // @ts-ignore
-      if (window.google) {
-        // @ts-ignore
-        window.google.accounts.id.prompt();
-      } else {
-        // Fallback: Open system menu where sign-in is visible
-        console.warn("Google SDK not ready, cannot trigger prompt.");
-      }
-    };
-  }, []);
+  const [path, setPath] = useState(window.location.pathname);
 
   useEffect(() => {
     if (path === '/') {
@@ -108,7 +92,7 @@ function App() {
     return () => window.removeEventListener('mousemove', handleMouseMove);
   }, []);
 
-  const getPlacementProps = () => {
+  const getPlacementProps = useCallback(() => {
     const activeSpace = spaces.find(s => s.id === activeSpaceId);
     const props: any = {
       x: mouseWorldPos.current.x,
@@ -130,10 +114,9 @@ function App() {
       }
     }
     return props;
-  };
+  }, [spaces, activeSpaceId]);
 
   useEffect(() => {
-    // Only init DB if we are not on the feedback page
     if (path === '/' || path.startsWith('/s/')) {
       init();
     }
@@ -144,117 +127,113 @@ function App() {
     };
 
     window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
-
-    return () => {
-      window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
-    };
+    return () => window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
   }, [init, setDeferredPrompt, path]);
 
-
   useEffect(() => {
-    const handlePaste = async (e: ClipboardEvent) => {
-      if (path !== '/' || useStore.getState().isReadOnly) return;
-      const target = e.target as HTMLElement;
-      if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA') return;
-
-      if (thoughts.length >= limits.MAX_THOUGHTS_PER_SPACE) {
-        const isPro = user?.plan === 'pro';
+    const processPasteData = async (clipboardData: DataTransfer | null, textFallback?: string) => {
+      const authStore = useAuthStore.getState();
+      const currentLimits = PLAN_CONFIG[authStore.user?.plan || 'free'];
+      if (thoughts.length >= currentLimits.MAX_THOUGHTS_PER_SPACE) {
         openModal({
           title: 'Space is Full',
-          description: isPro
-            ? `This space has reached its maximum capacity of ${limits.MAX_THOUGHTS_PER_SPACE} thoughts.`
-            : `You've reached the Free limit of ${limits.MAX_THOUGHTS_PER_SPACE} thoughts per space. Upgrade to Pro for more capacity.`,
+          description: `Capacity reached. Free limit is ${currentLimits.MAX_THOUGHTS_PER_SPACE}.`,
           type: 'limit_thought',
-          confirmText: isPro ? 'Okay' : 'Upgrade Now',
-          onConfirm: isPro ? undefined : () => openPricing()
+          confirmText: 'Okay'
         });
         return;
       }
 
-      const clipboardData = e.clipboardData;
-      if (!clipboardData) return;
+      // 1. Handle Image/File Data from clipboard
+      if (clipboardData) {
+        const items = clipboardData.items;
+        let bestFile: File | null = null;
+        let htmlContent: string | null = null;
+        const priority = ['image/gif', 'image/webp', 'image/png', 'image/jpeg'];
 
-      // Deep Scan Logic: Browsers often hide the original animated GIF source in the HTML payload
-      const html = clipboardData.getData('text/html');
-      if (html) {
-        const parser = new DOMParser();
-        const doc = parser.parseFromString(html, 'text/html');
-        const img = doc.querySelector('img');
-        const src = img?.getAttribute('src');
+        for (let i = 0; i < items.length; i++) {
+          if (items[i].type === 'text/html') {
+            htmlContent = clipboardData.getData('text/html');
+          }
 
-        if (src) {
-          // More robust GIF detection (handles hex encoding like Wattpad's 2e676966, query params, and anchors)
-          const isGif = /\.(gif|2e676966)($|\?|#|&)/i.test(src) ||
-            src.includes('image/gif') ||
-            src.includes('giphy.com') ||
-            src.includes('tenor.com') ||
-            src.toLowerCase().includes('/gif');
-
-          const isImage = src.startsWith('data:image/') ||
-            /\.(jpg|jpeg|png|webp|avif|svg)($|\?|#|&)/i.test(src) ||
-            /2e(6a7067|706e67|77656270)/i.test(src); // Support hex for jpg, png, webp
-
-          if (isGif || isImage) {
-            e.preventDefault();
-            const id = await addThought({
-              ...getPlacementProps(),
-              type: 'image',
-              image: src,
-              text: "Image"
-            });
-            if (id !== -1) {
-              setSelectedThoughtId(id);
-              setInspectorOpen(true);
+          if (items[i].type.startsWith('image/')) {
+            const file = items[i].getAsFile();
+            if (file) {
+              const actualType = await detectImageType(file);
+              if (!bestFile || priority.indexOf(actualType) < priority.indexOf(bestFile.type)) {
+                // If it's a GIF but labeled as PNG, we create a new file with the correct type
+                if (actualType !== file.type) {
+                  bestFile = new File([file], file.name, { type: actualType });
+                } else {
+                  bestFile = file;
+                }
+              }
             }
-            return;
           }
         }
-      }
 
-      const items = Array.from(clipboardData.items);
-      const gifItem = items.find(item => item.type === 'image/gif');
-      const imageItem = gifItem || items.find(item => item.type.startsWith('image/'));
-
-      if (imageItem) {
-        const blob = imageItem.getAsFile();
-        if (blob) {
-          if (blob.size > 2 * 1024 * 1024) {
-            openModal({
-              title: 'File too Large',
-              description: 'This image is larger than 2MB. Please use a smaller image to save space.',
-              type: 'alert',
-              confirmText: 'Okay'
-            });
-            return;
-          }
-          const reader = new FileReader();
-          reader.onload = async (event) => {
-            const id = await addThought({
-              ...getPlacementProps(),
-              type: 'image',
-              image: event.target?.result as string,
-              text: "Image"
-            });
-            if (id !== -1) {
-              setSelectedThoughtId(id);
-              setInspectorOpen(true);
+        // GIF RECOVERY: If we have HTML but the image found is not a GIF
+        if (htmlContent && (!bestFile || bestFile.type !== 'image/gif')) {
+          const doc = new DOMParser().parseFromString(htmlContent, 'text/html');
+          const img = doc.querySelector('img');
+          const src = img?.getAttribute('src');
+          if (src && (src.toLowerCase().includes('.gif') || src.startsWith('data:image/gif'))) {
+            try {
+              const response = await fetch(src);
+              const blob = await response.blob();
+              const fileName = src.split('/').pop()?.split('?')[0] || 'recovered_animation.gif';
+              bestFile = new File([blob], fileName, { type: 'image/gif' });
+            } catch (e) {
+              console.warn('[Paste] Failed to recover original GIF animation:', e);
             }
-          };
-          reader.readAsDataURL(blob);
-          e.preventDefault();
+          }
+        }
+
+        if (bestFile) {
+          const actualType = bestFile.type;
+          const extension = actualType.split('/')[1] || 'png';
+          const fileName = bestFile.name || `pasted_image.${extension}`;
+          
+          const thumbnail = await generateThumbnail(bestFile).catch(() => null);
+          const id = await addThought({
+            ...getPlacementProps(),
+            type: 'image',
+            image: thumbnail, // Compressed preview
+            text: 'Pasted Image',
+            meta: {
+              file: {
+                name: fileName,
+                size: bestFile.size,
+                type: actualType
+              }
+            }
+          });
+          
+          if (id !== -1) {
+            const { db } = await import('./db');
+            await db.blobs.add({
+              id: `local-${Date.now()}-${id}`,
+              thoughtId: id,
+              blob: bestFile,
+              name: fileName,
+              type: actualType,
+              updatedAt: Date.now()
+            });
+            
+            setSelectedThoughtId(id);
+            useAuthStore.getState().uploadThoughtBlob(id);
+          }
           return;
         }
       }
 
-      // Priority 3: Text
-      const text = clipboardData.getData('text');
+      // 2. Handle Text Paste
+      const text = clipboardData ? clipboardData.getData('text') : textFallback;
       if (text && text.trim()) {
         const cleanText = text.trim();
         const isUrl = /^https?:\/\/[^\s]+$/i.test(cleanText);
 
         if (isUrl) {
-          e.preventDefault();
-
           const id = await addThought({
             ...getPlacementProps(),
             type: 'embed',
@@ -264,7 +243,6 @@ function App() {
 
           if (id !== -1) {
             setSelectedThoughtId(id);
-
             fetchEmbedMeta(cleanText)
               .then(metadata => {
                 if (metadata) {
@@ -277,15 +255,13 @@ function App() {
                   });
                 }
               })
-              .catch(err => {
-                console.warn("Embed metadata fetch failed:", err);
+              .catch(() => {
                 useStore.getState().updateThought(id, { text: "Link" });
               });
           }
           return;
         }
 
-        e.preventDefault();
         const id = await addThought({
           ...getPlacementProps(),
           type: 'text',
@@ -299,16 +275,29 @@ function App() {
       }
     };
 
+    const handlePaste = (e: ClipboardEvent) => {
+      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement || (e.target as HTMLElement).isContentEditable) return;
+      processPasteData(e.clipboardData);
+    };
+
+    const handleCustomPaste = (e: any) => {
+      const { dataTransfer, text } = e.detail;
+      processPasteData(dataTransfer || null, text);
+    };
+
     window.addEventListener('paste', handlePaste);
-    return () => window.removeEventListener('paste', handlePaste);
-  }, [addThought, setSelectedThoughtId, setInspectorOpen, thoughts.length, openModal, path, limits.MAX_THOUGHTS_PER_SPACE]);
+    window.addEventListener('cyberia-paste-triggered', handleCustomPaste);
+    return () => {
+      window.removeEventListener('paste', handlePaste);
+      window.removeEventListener('cyberia-paste-triggered', handleCustomPaste);
+    };
+  }, [addThought, setSelectedThoughtId, setInspectorOpen, thoughts.length, openModal, path, getPlacementProps]);
 
   const theme = useStore((state) => state.theme);
   const performanceMode = useStore((state) => state.performanceMode);
   const customBg = useStore((state) => state.customBg);
-  const [staticBg, setStaticBg] = React.useState<string | null>(null);
+  const [staticBg, setStaticBg] = useState<string | null>(null);
 
-  // Performance Optimization: Freeze GIFs in Performance Mode
   useEffect(() => {
     if (performanceMode && customBg && (customBg.includes('image/gif') || customBg.toLowerCase().endsWith('.gif'))) {
       const img = new Image();
@@ -324,7 +313,6 @@ function App() {
           try {
             setStaticBg(canvas.toDataURL('image/webp', 0.8));
           } catch (e) {
-            console.warn("Could not freeze GIF due to CORS, falling back to original.");
             setStaticBg(null);
           }
         }
@@ -345,76 +333,24 @@ function App() {
 
   return (
     <div className="w-full h-full relative overflow-hidden bg-black">
-      {/* Custom Background Base Layer */}
       {customBg && (
         <div 
           className="fixed inset-0 z-0 bg-cover bg-center bg-no-repeat transition-opacity duration-700 animate-in fade-in"
-          style={{ 
-            backgroundImage: `url(${staticBg || customBg})`,
-            opacity: 0.6 // Consistent reduced opacity for both modes
-          }}
+          style={{ backgroundImage: `url(${staticBg || customBg})`, opacity: 0.6 }}
         />
       )}
 
       {!performanceMode ? (
         <>
-          {/* Theme-Specific Background Layers - Use semi-transparent overlay if customBg exists */}
-          <div 
-            className="fixed inset-0 z-[1] pointer-events-none transition-opacity duration-500"
-            style={{ 
-              backgroundColor: customBg ? 'rgba(2, 4, 8, 0.2)' : 'transparent',
-              mixBlendMode: customBg ? 'overlay' : 'normal'
-            }}
-          />
-          
-          {theme === 'cyberia' && (
-            <>
-              <div className="stars-layer stars-1" />
-              <div className="stars-layer stars-2" />
-              <div className="stars-layer stars-twinkle" />
-            </>
-          )}
-
-          {theme === 'sea' && (
-            <div className="sea-layer">
-              <div className="sea-caustics" />
-              <div className="bubbles-distant" />
-              <div className="bubbles-near" />
-              <div className="sea-silt" />
-            </div>
-          )}
-
-          {theme === 'forest' && (
-            <div className="forest-layer">
-              <div className="forest-canopy" />
-              <div className="god-rays" />
-              <div className="fireflies-distant" />
-              <div className="fireflies-near" />
-            </div>
-          )}
-
-          {theme === 'rain' && (
-            <div className="rain-layer">
-              <div className="rain-drops" />
-              <div className="thunder" />
-            </div>
-          )}
-
-          <div className="nebula-cloud" />
-          <div className="grain" />
+          <div className="fixed inset-0 z-[1] pointer-events-none transition-opacity duration-500" style={{ backgroundColor: customBg ? 'rgba(2, 4, 8, 0.2)' : 'transparent', mixBlendMode: customBg ? 'overlay' : 'normal' }} />
+          {theme === 'cyberia' && <><div className="stars-layer stars-1" /><div className="stars-layer stars-2" /><div className="stars-layer stars-twinkle" /></>}
+          {theme === 'sea' && <div className="sea-layer"><div className="sea-caustics" /><div className="bubbles-distant" /><div className="bubbles-near" /><div className="sea-silt" /></div>}
+          {theme === 'forest' && <div className="forest-layer"><div className="forest-canopy" /><div className="god-rays" /><div className="fireflies-distant" /><div className="fireflies-near" /></div>}
+          {theme === 'rain' && <div className="rain-layer"><div className="rain-drops" /><div className="thunder" /></div>}
+          <div className="nebula-cloud" /><div className="grain" />
         </>
       ) : (
-        /* Solid Color Fallback for Performance Mode - Using --bg-page equivalent for contrast */
-        <div 
-          className="fixed inset-0 z-[1] transition-colors duration-500" 
-          style={{ 
-            backgroundColor: 
-              theme === 'sea' ? '#000507' : 
-              theme === 'forest' ? '#020806' : 
-              theme === 'rain' ? '#0c0a09' : '#020408',
-            opacity: customBg ? 0.8 : 1 // Let the image show through slightly in performance mode
-          }} 
-        />
+        <div className="fixed inset-0 z-[1] transition-colors duration-500" style={{ backgroundColor: theme === 'sea' ? '#000507' : theme === 'forest' ? '#020806' : theme === 'rain' ? '#0c0a09' : '#020408', opacity: customBg ? 0.8 : 1 }} />
       )}
 
       <Suspense fallback={null}>
