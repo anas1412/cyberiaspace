@@ -225,8 +225,7 @@ const Inspector: React.FC = () => {
           animate={{ opacity: 1, x: 0 }}
           exit={{ opacity: 0, x: -20 }}
           transition={{ type: 'spring', damping: 28, stiffness: 200 }}
-          className="ui-layer focus-box fixed top-4 md:top-24 bottom-4 md:bottom-24 left-4 md:left-8 w-[calc(100%-32px)] md:w-[400px] glass md:rounded-[2rem] shadow-[0_0_80px_rgba(0,0,0,0.5)] flex flex-col overflow-hidden z-[9999] border border-white/10 mobile-bottom-bar-adjust"
-
+          className="ui-layer focus-box fixed top-4 md:top-24 bottom-4 md:bottom-24 left-4 md:left-8 w-[calc(100%-32px)] md:w-[400px] glass md:rounded-[2rem] shadow-[0_0_80px_rgba(0,0,0,0.5)] flex flex-col overflow-hidden z-[9999] border border-white/10"
         >
           {/* HEADER AREA */}
           <div className="p-4 md:p-5 border-b border-white/5 bg-black/20 backdrop-blur-md sticky top-0 z-20">
