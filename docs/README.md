@@ -18,6 +18,8 @@ Welcome to the Cyberia technical repository. This directory contains the master 
    - Safe Entry (Implicit) vs. Full Sync (Auth Code) and Master Key management.
 7. [**Onboarding & Development Mandates**](./onboarding.md)
    - Coding standards, mandatory terminology, and verification steps.
+8. [**Google Verification Guide**](./google_verification_guide.md)
+   - Steps to remove the "Unverified" warning and the technical roadmap for migration.
 
 ---
 
