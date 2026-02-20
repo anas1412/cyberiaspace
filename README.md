@@ -19,18 +19,18 @@ Context is fluid. Cyberia morphs your data into the shape you need instantly.
 - **Kanban Mode**: A structured, column-based workflow for task management.
 - **Calendar Mode**: A time-oriented "Filing Cabinet" where thoughts stack into elegant decks.
 
-### 🧠 Oracle (AI) (Pro)
-Powered by high-speed OpenAI GPT-OSS models via Groq, Oracle is your spatial research assistant.
-- **Models**: Free tier uses `gpt-oss-20b`, Pro tier unlocks `gpt-oss-120b` for advanced reasoning.
-- **Live Research**: Ask the Oracle to pull information from the web and spawn it directly into your workspace.
-- **Intelligent Organization**: Let the AI help you cluster related thoughts or generate new branches of investigation.
-- **Tool Use**: Oracle can read your workspace, create stacks, and perform actions on your behalf.
+### 🧠 Oracle (AI)
+Oracle is your spatial research assistant, integrated directly into the workspace loop.
+- **Skeleton Strategy**: Optimized context handling for high-speed reasoning.
+- **Deep Investigation**: Oracle can "read" your documents and analyze notes to provide deep insights.
+- **Autonomous Actions**: Let the AI help you cluster related thoughts or generate new branches of investigation.
 
 ## 🛠️ Tech Stack
 
 - **Frontend**: [React 19](https://react.dev/) + [Vite](https://vitejs.dev/) + [TypeScript](https://www.typescriptlang.org/)
 - **State**: [Zustand](https://zustand-demo.pmnd.rs/) (High-performance reactive state)
 - **Persistence**: [Dexie.js](https://dexie.org/) (Local-first IndexedDB)
+- **Sync Infrastructure**: [Vercel KV](https://vercel.com/storage/kv) (Spatial Metadata) + [Google Drive](https://www.google.com/drive/) (Rich Content)
 - **AI API**: [Groq](https://groq.com/) (Ultra-fast LLM inference)
 - **Theming**: [Tailwind CSS](https://tailwindcss.com/) (Advanced glassmorphism & cosmic aesthetics)
 - **Motion**: [Framer Motion](https://www.framer.com/motion/)
@@ -39,30 +39,24 @@ Powered by high-speed OpenAI GPT-OSS models via Groq, Oracle is your spatial res
 
 ### Rich Content Types
 Create versatile thoughts with multiple formats:
-- **Text**: Markdown-supported rich text editing
-- **Tasks**: Interactive checklists with progress tracking
-- **Tables**: Structured data with full editing capabilities
-- **Paint**: Freehand drawing and sketching
-- **Image**: Upload and organize visual content
-- **Embed**: Insert YouTube videos directly
+- **Label**: Pure structural markers for map headers and stack titles.
+- **Text**: Markdown-supported rich text editing for deep notes.
+- **Tasks**: Interactive checklists with real-time status tracking.
+- **Tables**: Structured data grids with full editing capabilities.
+- **Paint**: SVG-based sketches and diagrams.
+- **Image**: Photos and GIFs with automated cloud offloading.
+- **File**: Secure management for PDFs, MP3s, and MP4s.
+- **Embed**: Interactive players for YouTube, Spotify, and more.
 
-### Organization & Productivity
-- **Stacks**: Group related thoughts with color-coded collections
-- **Spaces**: Create multiple workspaces for different projects
-- **Multi-Selection**: Select and manipulate multiple thoughts at once
-- **History**: Full undo/redo support for all actions
-- **Search**: Universal search across all your content
-- **Themes**: Customize with Cyberia, Sea, Forest, or Rain themes
+### Distributed Sync Bridge
+- **Local-First**: Work offline with zero latency via IndexedDB.
+- **Hybrid Cloud**: Fast map sync via Vercel KV and user-owned content storage via Google Drive.
+- **Permanent Sessions**: authorization Code flow ensures you stay logged in indefinitely without recurring popups.
+- **Universal Previews**: Instant local previews for large files while background sync handles the cloud upload.
 
-### Collaboration & Sync
-- **Google Sign-In**: Secure authentication with Google OAuth
-- **Cloud Sync**: Backup and sync your workspace across devices
-- **Share Spaces**: Generate public share links for read-only access
-- **Import/Export**: Full data ownership with JSON import/export
+## 🔒 Data Sovereignty
 
-## 🔒 Privacy First
-
-Your mind is private. Cyberia is built on a **local-first** philosophy. All your data, images, and drawings are stored directly in your browser's IndexedDB. Cloud sync is optional—we don't see your thoughts unless you choose to sync them.
+Your mind belongs to you. Cyberia uses a **user-owned storage model**. While metadata is synced for convenience, your rich content and media reside in a visible `/Cyberia` folder in your own Google Drive.
 
 ---
 
@@ -74,4 +68,4 @@ Your mind is private. Cyberia is built on a **local-first** philosophy. All your
 
 ---
 
-*Welcome to the Wired. Optimized for desktop and high-resolution displays.*
+*Welcome to the Wired. Optimized for Desktop, Tablet, and Mobile.*

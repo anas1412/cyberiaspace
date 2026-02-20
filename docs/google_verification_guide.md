@@ -1,56 +1,51 @@
-# Google OAuth Verification & Migration Guide
+# Google OAuth Verification & Migration Checklist
 
-This guide details the steps required to verify Cyberia with Google and the subsequent technical roadmap to migrate from the temporary "Safe Entry" (Implicit Flow) to a unified, permanent session architecture.
-
----
-
-## Part 1: How to Verify Your App
-
-Google requires verification because we use the `https://www.googleapis.com/auth/drive.file` scope, which is classified as **Sensitive**.
-
-### 1. Prerequisites
-Before submitting for review, ensure you have:
-*   **Privacy Policy:** A hosted URL (e.g., `cyberia.app/privacy`) that explicitly states how you use Google Drive data (i.e., "We only store files you explicitly drop into the workspace").
-*   **Domain Verification:** Your domain (`cyberia.app`) must be verified in the [Google Search Console](https://search.google.com/search-console).
-*   **Branding:** Ensure your app name, logo, and support email are consistent across the console and the site.
-
-### 2. Submission Steps
-1.  Go to the [Google Cloud Console](https://console.cloud.google.com/).
-2.  Navigate to **APIs & Services > OAuth consent screen**.
-3.  Click **"Edit App"**.
-4.  Ensure all **Scopes** are added: `openid`, `email`, `profile`, and `.../auth/drive.file`.
-5.  Upload your Privacy Policy link and Terms of Service link.
-6.  Click **"Submit for Verification"**.
-7.  **Response:** Google will email you within 3-7 days. They may ask for a YouTube video showing the "OAuth Grant" process (you should record yourself dragging a file and accepting the Drive popup).
+This document serves as your master TODO list for achieving Google Brand Verification for the `drive.file` scope. Completing these steps will remove the "Unverified App" warning and enable a professional, one-time login experience.
 
 ---
 
-## Part 2: Technical Roadmap (For opencode)
-
-Once the app is verified, we can remove the "Safe Entry" workarounds and move to a professional, unified architecture.
-
-### 1. Unify the Auth Flow
-*   **Action:** Convert the main `googleLogin` in `AccountMenu.tsx` from `flow: 'implicit'` back to `flow: 'auth-code'`.
-*   **Benefit:** Users get a long-lived session immediately upon signing in. No more "1-hour expiry" for the basic account.
-
-### 2. Automatic Drive Initialization
-*   **Action:** Include the `drive.file` scope in the initial login request.
-*   **Logic:** Since the app is verified, users won't see the "Unsafe" warning. They can grant both Identity and Drive permissions in one single, clean popup.
-
-### 3. Background Profile Refresh Enhancement
-*   **Action:** Update `useAuthStore.initAuth` to perform a silent token rotation check every time the app opens.
-*   **Logic:** Use the stored `refresh_token` in Vercel KV to fetch a fresh `access_token` without any UI flicker.
-
-### 4. Code Cleanup
-*   **Action:** Delete the redundant `driveLogin` hook in `AccountMenu.tsx`.
-*   **Action:** Remove all "Safe Entry" comments and fallback implicit logic in `api/google-auth.ts`.
+## 🟢 Phase 1: Prerequisites (Completed)
+- [x] **Verify Top Private Domain:** Ownership of `cyberia.tn` confirmed in Google Search Console.
+- [x] **Authorized Domains List:** `cyberia.tn` added to the "Authorized Domains" section in Google Cloud Console.
 
 ---
 
-## Summary of Post-Verification State
-| Feature | Pre-Verification (Current) | Post-Verification |
-| :--- | :--- | :--- |
-| **Login Type** | Implicit (Short-lived) | Auth Code (Permanent) |
-| **Warnings** | Shows "Unverified" for Drive | No Warnings |
-| **Popups** | Multiple (Login then Drive) | One (All-in-one) |
-| **Security** | Token in Browser | Token in Secure KV |
+## 🟡 Phase 2: Branding & Compliance (Action Required)
+- [ ] **Match App Name:** Ensure the "App Name" in Google Console matches the logo/title on `cyberia.tn` exactly.
+- [ ] **Support Email:** Ensure the support email is an active address you can check (Google will contact you here).
+- [ ] **Privacy Policy:** Hosted at `https://cyberia.tn/privacy`.
+    - [x] **Critical Clause:** Added section on "Google API Limited Use."
+    - [x] **Data Disclosure:** Explicitly stated how `drive.file` is used.
+- [ ] **Terms of Service:** Hosted at `https://cyberia.tn/terms`.
+- [x] **Homepage Compliance:** Added descriptive "About Cyberia" section to the unauthenticated landing state to satisfy the "No Login-Only Pages" requirement.
+
+---
+
+## 🔴 Phase 3: The Verification Submission (Action Required)
+- [ ] **Move to Production:** In the Google OAuth Consent screen, change the "Publishing Status" from **Testing** to **In Production**.
+- [ ] **Submit for Review:** Use the "Submit for Verification" button.
+- [ ] **Justification Description:** Use the provided professional template.
+    - *Template:* "Cyberia is a spatial productivity workspace. We require the `drive.file` scope to allow users to store and retrieve their own large research assets (PDFs, Videos, Audio) directly within their private Google Drive, bypassing browser storage limits and ensuring data ownership."
+- [ ] **Demonstration Video:** Create an unlisted YouTube video following this exact script:
+    1. **The Origin:** Start on the `cyberia.tn` homepage.
+    2. **The Identification:** Click "Sign In." **Crucial:** Zoom in or show the URL bar so the `client_id` is clearly visible in the browser address bar.
+    3. **The Grant:** Complete the login and then click "Connect Google Drive." Show the permission popup.
+    4. **The Usage:** Drag a PDF file into the workspace and show it appearing on the map.
+    5. **The Explanation:** Narrate: "We use this scope only to save and load files that the user explicitly adds to their workspace."
+
+---
+
+## 🔵 Phase 4: Technical Migration (Lead Engineer Roadmap)
+*Once Google grants "Verified" status, I (opencode) will perform the following:*
+
+- [ ] **Unify Auth Flow:** Switch `googleLogin` in `AccountMenu.tsx` from `flow: 'implicit'` to `flow: 'auth-code'`.
+- [ ] **One-Popup Experience:** Merge Identity and Drive scopes into a single initial login request.
+- [ ] **Permanent Sessions:** Fully activate the Refresh Token (Master Key) logic for all users.
+- [ ] **Code Cleanup:** Remove all "Safe Entry" fallbacks and redundant login hooks.
+
+---
+
+## 🛡️ Support & Timeline
+- **Initial Review:** 3-7 business days.
+- **Total Duration:** 2-4 weeks if revisions are needed.
+- **Tip:** Respond to Google's "Trust & Safety" emails within 24 hours to keep the process moving.

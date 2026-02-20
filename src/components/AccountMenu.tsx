@@ -153,19 +153,37 @@ const AccountMenu: React.FC = () => {
 
   if (status === 'unauthenticated' || !user) {
     return (
-      <button
-        onClick={() => googleLogin()}
-        disabled={status === 'loading'}
-        className="h-[48px] px-6 glass rounded-2xl border border-white/5 shadow-2xl transition-all hover:bg-white/10 active:scale-95 flex items-center gap-3 group pointer-events-auto"
-      >
-        <div className="w-6 h-6 rounded-full bg-white/5 flex items-center justify-center text-slate-400 group-hover:text-white transition-colors">
-          <User className="w-3.5 h-3.5" />
+      <div className="flex flex-col items-end gap-2">
+        <button
+          onClick={() => googleLogin()}
+          disabled={status === 'loading'}
+          className="h-[48px] px-6 glass rounded-2xl border border-white/5 shadow-2xl transition-all hover:bg-white/10 active:scale-95 flex items-center gap-3 group pointer-events-auto"
+        >
+          <div className="w-6 h-6 rounded-full bg-white/5 flex items-center justify-center text-slate-400 group-hover:text-white transition-colors">
+            <User className="w-3.5 h-3.5" />
+          </div>
+          <span className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-300 group-hover:text-white">Sign In</span>
+          {status === 'loading' && <RefreshCw className="w-3.5 h-3.5 animate-spin text-[var(--accent)]" />}
+        </button>
+        <div className="flex items-center gap-3 pr-2 opacity-40">
+          <button 
+            onClick={() => window.location.href = '/privacy'}
+            className="text-[7px] font-black uppercase tracking-widest text-slate-400 hover:text-white transition-colors"
+          >
+            Privacy
+          </button>
+          <span className="w-0.5 h-0.5 rounded-full bg-white/20" />
+          <button 
+            onClick={() => window.location.href = '/terms'}
+            className="text-[7px] font-black uppercase tracking-widest text-slate-400 hover:text-white transition-colors"
+          >
+            Terms
+          </button>
         </div>
-        <span className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-300 group-hover:text-white">Sign In</span>
-        {status === 'loading' && <RefreshCw className="w-3.5 h-3.5 animate-spin text-[var(--accent)]" />}
-      </button>
+      </div>
     );
   }
+
 
   const isDriveActive = user.settings?.driveEnabled;
 
@@ -407,7 +425,7 @@ const AccountMenu: React.FC = () => {
           </div>
 
 
-          <div className="grid grid-cols-2 gap-2">
+          <div className="grid grid-cols-2 gap-2 mb-4">
             <button
               onClick={deleteCloudData}
               disabled={syncStatus === 'syncing' || !lastSync || !isOnline}
@@ -428,10 +446,27 @@ const AccountMenu: React.FC = () => {
               Sign Out
             </button>
           </div>
+
+          <div className="flex items-center justify-center gap-4 pt-2 border-t border-white/5">
+            <button 
+              onClick={() => window.location.href = '/privacy'}
+              className="text-[7px] font-black uppercase tracking-[0.2em] text-slate-600 hover:text-slate-400 transition-colors"
+            >
+              Privacy
+            </button>
+            <span className="w-1 h-1 rounded-full bg-white/5" />
+            <button 
+              onClick={() => window.location.href = '/terms'}
+              className="text-[7px] font-black uppercase tracking-[0.2em] text-slate-600 hover:text-slate-400 transition-colors"
+            >
+              Terms
+            </button>
+          </div>
         </div>
       )}
     </div>
   );
 };
+
 
 export default AccountMenu;

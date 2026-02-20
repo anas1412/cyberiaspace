@@ -28,6 +28,9 @@ const TasksFocusEditor = lazy(() => import('./components/editors/TasksFocusEdito
 const EmbedFocusEditor = lazy(() => import('./components/editors/EmbedFocusEditor'));
 const FileFocusEditor = lazy(() => import('./components/editors/FileFocusEditor'));
 const FeedbackPage = lazy(() => import('./components/FeedbackPage'));
+const PrivacyPolicy = lazy(() => import('./components/legal/PrivacyPolicy'));
+const TermsOfService = lazy(() => import('./components/legal/TermsOfService'));
+const LandingAbout = lazy(() => import('./components/LandingAbout'));
 
 function App() {
   const init = useStore((state) => state.init);
@@ -40,7 +43,9 @@ function App() {
   const spaces = useStore((state) => state.spaces);
 
   const { isPricingOpen, closePricing, openModal } = useModalStore();
+  const { status } = useAuthStore();
   const mouseWorldPos = useRef({ x: 0, y: 0 });
+
   const mouseScreenPos = useRef({ x: 0, y: 0 });
 
   const [path, setPath] = useState(window.location.pathname);
@@ -331,6 +336,23 @@ function App() {
     );
   }
 
+  if (path === '/privacy') {
+    return (
+      <Suspense fallback={<LoadingOverlay force />}>
+        <PrivacyPolicy />
+      </Suspense>
+    );
+  }
+
+  if (path === '/terms') {
+    return (
+      <Suspense fallback={<LoadingOverlay force />}>
+        <TermsOfService />
+      </Suspense>
+    );
+  }
+
+
   return (
     <div className="w-full h-full relative overflow-hidden bg-black">
       {customBg && (
@@ -355,8 +377,10 @@ function App() {
 
       <Suspense fallback={null}>
         <Viewport />
+        {status === 'unauthenticated' && <LandingAbout />}
         <EmptyState />
         <KanbanOverlay />
+
         <CalendarOverlay />
         <Toolbar />
         <Inspector />
