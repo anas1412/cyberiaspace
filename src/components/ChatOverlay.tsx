@@ -339,7 +339,7 @@ const ChatOverlay: React.FC = () => {
           animate={{ x: 0, opacity: 1 }}
           exit={{ x: '100%', opacity: 0 }}
           transition={{ type: 'spring', damping: 28, stiffness: 200 }}
-          className="fixed top-4 md:top-24 bottom-4 md:bottom-24 right-4 w-[calc(100%-32px)] md:w-[520px] glass md:rounded-[2rem] shadow-[0_0_80px_rgba(0,0,0,0.5)] flex flex-col overflow-hidden z-[9999] border border-white/10 mobile-bottom-bar-adjust"
+          className="fixed top-4 md:top-24 bottom-4 md:bottom-24 right-4 w-[calc(100%-32px)] md:w-[520px] glass md:rounded-[2rem] shadow-[0_0_80px_rgba(0,0,0,0.5)] flex flex-col overflow-hidden z-[9999] border border-white/10"
         >
 
           {/* Header */}
