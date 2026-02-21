@@ -25,9 +25,11 @@ const LoginPage: React.FC = () => {
     const nonce = crypto.randomUUID();
 
     // Store in cookies for backend verification (15 min expiry)
+    const isLocalhost = window.location.hostname === 'localhost';
+    const cookieDomain = isLocalhost ? '' : '; domain=.cyberia.tn';
     const expiry = new Date(Date.now() + 15 * 60 * 1000).toUTCString();
-    document.cookie = `auth_state=${state}; path=/; expires=${expiry}; SameSite=Lax; Secure`;
-    document.cookie = `auth_nonce=${nonce}; path=/; expires=${expiry}; SameSite=Lax; Secure`;
+    document.cookie = `auth_state=${state}; path=/; expires=${expiry}; SameSite=Lax; Secure${cookieDomain}`;
+    document.cookie = `auth_nonce=${nonce}; path=/; expires=${expiry}; SameSite=Lax; Secure${cookieDomain}`;
 
     const SCOPE = 'openid email profile';
     const RESPONSE_TYPE = 'code';
