@@ -47,46 +47,46 @@ const CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET;
 export default async function handler(req: VercelRequest, res: VercelResponse) {
     const { code, state, error } = req.query;
 
-    // 1. Validate State (CSRF Protection)
-    const storedState = req.cookies.auth_state;
-    const storedNonce = req.cookies.auth_nonce;
+    // 1. Determine redirect URI based on host
+    const host = req.headers.host || '';
+    const isLocalhost = host.includes('localhost') || host.includes('127.0.0.1');
+    const REDIRECT_URI = isLocalhost 
+        ? `http://${host}/api/auth/callback` 
+        : 'https://cyberia.tn/api/auth/callback';
+
+    console.log(`[Auth Callback] Initializing callback. Host: ${host} | Expected Redirect: ${REDIRECT_URI}`);
 
     if (error) {
+        console.error('[Auth Callback] Google returned error:', error);
         return res.redirect('/login?error=' + encodeURIComponent(error as string));
     }
 
     if (!code) {
+        console.warn('[Auth Callback] No code provided in request');
         return res.redirect('/login');
     }
 
+    // 2. Validate State (CSRF Protection)
+    const storedState = req.cookies.auth_state;
+    const storedNonce = req.cookies.auth_nonce;
+
     if (!storedState || state !== storedState) {
-        console.error('[Auth Callback] State mismatch or missing. CSRF potential.');
-        return res.status(403).send('Security Error: Invalid state. Please try logging in again.');
+        console.error('[Auth Callback] Security mismatch. URL State:', state, 'Stored State:', storedState);
+        return res.redirect('/login?error=security_mismatch');
     }
 
     if (!CLIENT_ID || !CLIENT_SECRET) {
-        console.error('[Auth Callback] Missing credentials. CLIENT_ID:', CLIENT_ID ? 'set' : 'MISSING', 'CLIENT_SECRET:', CLIENT_SECRET ? 'set' : 'MISSING');
+        console.error('[Auth Callback] Missing credentials in environment');
         return res.status(500).send('Server configuration error: Missing Google Credentials');
     }
 
-    // Determine redirect URI based on environment
-    const host = req.headers.host || '';
-    const isLocalhost = host.includes('localhost') || host.includes('127.0.0.1');
-    const protocol = isLocalhost ? 'http' : 'https';
-    
-    // Use APP_URL only in production (not localhost)
-    const baseUrl = isLocalhost ? `${protocol}://${host}` : (process.env.APP_URL || `${protocol}://${host}`);
-    const REDIRECT_URI = `${baseUrl}/api/auth/callback`;
-
-    console.log('[Auth Callback] Host:', host, '| REDIRECT_URI:', REDIRECT_URI);
-
     try {
-        console.log('[Auth Callback] Creating OAuth client with REDIRECT_URI:', REDIRECT_URI);
         const client = new OAuth2Client(CLIENT_ID, CLIENT_SECRET, REDIRECT_URI);
 
-        // 2. Exchange code for tokens
-        console.log('[Auth Callback] Exchanging code for tokens...');
+        // 3. Exchange code for tokens
+        console.log('[Auth Callback] Exchanging code...');
         const { tokens } = await client.getToken(code as string);
+
         console.log('[Auth Callback] Tokens received:', tokens.access_token ? 'access_token OK' : 'NO access_token', '| id_token:', tokens.id_token ? 'OK' : 'MISSING');
         
         if (!tokens.access_token) {

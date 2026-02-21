@@ -1,7 +1,8 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { useAuthStore } from '../../store/useAuthStore';
-import { ArrowLeft } from 'lucide-react';
+import { useStore } from '../../store/useStore';
+import { ArrowLeft, AlertCircle } from 'lucide-react';
 
 const GoogleIcon = () => (
   <svg width="18" height="18" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48">
@@ -16,20 +17,47 @@ const GoogleIcon = () => (
 const LoginPage: React.FC = () => {
   const { status } = useAuthStore();
 
+  // 1. Error Handling & Loading State Management
+  const searchParams = new URLSearchParams(window.location.search);
+  const errorParam = searchParams.get('error');
+
+  useEffect(() => {
+    if (errorParam) {
+      console.error('[Auth] Redirect error detected:', errorParam);
+      // Clear global loading if stuck
+      useStore.setState({ isInitializing: false });
+      useAuthStore.setState({ status: 'unauthenticated', syncStatus: 'offline' });
+    }
+  }, [errorParam]);
+
   const handleLogin = () => {
-    const CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID;
-    const REDIRECT_URI = window.location.origin + '/api/auth/callback';
+    const hostname = window.location.hostname;
+    const isLocalhost = hostname === 'localhost' || hostname === '127.0.0.1';
     
+    // 2. Domain Enforcement: Force production for all Vercel previews
+    if (!isLocalhost && hostname !== 'cyberia.tn') {
+      console.log('[Auth] Preview domain detected. Redirecting to production for secure login...');
+      window.location.href = 'https://cyberia.tn/login';
+      return;
+    }
+
+    const CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID;
+    
+    // 3. Consistent Redirect URI
+    const REDIRECT_URI = isLocalhost 
+      ? `${window.location.origin}/api/auth/callback`
+      : 'https://cyberia.tn/api/auth/callback';
+    
+    console.log('[Auth] Starting flow with REDIRECT_URI:', REDIRECT_URI);
+
     // Generate secure random state and nonce
     const state = crypto.randomUUID();
     const nonce = crypto.randomUUID();
 
     // Store in cookies for backend verification (15 min expiry)
-    const isLocalhost = window.location.hostname === 'localhost';
-    const cookieDomain = isLocalhost ? '' : '; domain=.cyberia.tn';
     const expiry = new Date(Date.now() + 15 * 60 * 1000).toUTCString();
-    document.cookie = `auth_state=${state}; path=/; expires=${expiry}; SameSite=Lax; Secure${cookieDomain}`;
-    document.cookie = `auth_nonce=${nonce}; path=/; expires=${expiry}; SameSite=Lax; Secure${cookieDomain}`;
+    document.cookie = `auth_state=${state}; path=/; expires=${expiry}; SameSite=Lax; Secure`;
+    document.cookie = `auth_nonce=${nonce}; path=/; expires=${expiry}; SameSite=Lax; Secure`;
 
     const SCOPE = 'openid email profile';
     const RESPONSE_TYPE = 'code';
@@ -87,6 +115,16 @@ const LoginPage: React.FC = () => {
               Synchronize your workspace
             </p>
           </div>
+
+          {errorParam && (
+            <div className="bg-red-500/10 border border-red-500/20 rounded-2xl p-4 flex items-center gap-3 animate-shake">
+              <AlertCircle className="w-5 h-5 text-red-400 shrink-0" />
+              <p className="text-[10px] font-black uppercase tracking-widest text-red-400 text-left leading-tight">
+                Authentication snaged. <br/>
+                <span className="opacity-60">Try signing in again.</span>
+              </p>
+            </div>
+          )}
 
           <div className="space-y-6">
             <p className="text-[11px] md:text-[13px] text-slate-400 leading-relaxed font-medium max-w-sm mx-auto uppercase tracking-wider">

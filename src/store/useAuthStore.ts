@@ -420,6 +420,8 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     } catch (e) {
       console.error('Initial login sync failed', e);
       set({ syncStatus: 'error' });
+    } finally {
+      useStore.getState().isInitializing = false;
     }
   },
 
