@@ -54,8 +54,8 @@ Cyberia is a spatial productivity platform for kinetic information architecture.
 TODO:
 
 
-- the term of services in HELP/ABOUT US
-- the sing in page (change button and content)
+- change api to flouci
+- verify with google https://support.google.com/cloud/answer/13463073?visit_id=639071902685974440-279288002&rd=1
 
 
 
