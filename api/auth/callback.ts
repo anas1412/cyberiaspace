@@ -1,7 +1,45 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { kv } from '@vercel/kv';
 import { OAuth2Client } from 'google-auth-library';
-import { hydrateProfile } from '../profile-helper';
+
+function hydrateProfile(profile: any) {
+    const today = new Date().toISOString().split('T')[0];
+    
+    const defaultUsage = {
+        ai_daily_count: 0,
+        sync_thoughts: 0,
+        last_ai_reset: today
+    };
+
+    const defaultSettings = {
+        theme: 'cyberia',
+        autoSync: true,
+        driveEnabled: false
+    };
+
+    const hydrated = {
+        ...profile,
+        plan: profile.plan || 'free',
+        subscriptionStatus: profile.subscriptionStatus || 'none',
+        expiryDate: profile.expiryDate || null,
+        usage: {
+            ...defaultUsage,
+            ...(profile.usage || {})
+        },
+        settings: {
+            ...defaultSettings,
+            ...(profile.settings || {})
+        },
+        lastSeen: new Date().toISOString()
+    };
+
+    if (hydrated.usage.last_ai_reset !== today) {
+        hydrated.usage.ai_daily_count = 0;
+        hydrated.usage.last_ai_reset = today;
+    }
+
+    return hydrated;
+}
 
 const CLIENT_ID = process.env.VITE_GOOGLE_CLIENT_ID || process.env.GOOGLE_CLIENT_ID;
 const CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET;
@@ -27,22 +65,29 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
 
     if (!CLIENT_ID || !CLIENT_SECRET) {
+        console.error('[Auth Callback] Missing credentials. CLIENT_ID:', CLIENT_ID ? 'set' : 'MISSING', 'CLIENT_SECRET:', CLIENT_SECRET ? 'set' : 'MISSING');
         return res.status(500).send('Server configuration error: Missing Google Credentials');
     }
 
-    // Use APP_URL for consistent redirect URI in production
-    const host = req.headers.host;
-    const protocol = host?.includes('localhost') ? 'http' : 'https';
-    const baseUrl = process.env.APP_URL || `${protocol}://${host}`;
+    // Determine redirect URI based on environment
+    const host = req.headers.host || '';
+    const isLocalhost = host.includes('localhost') || host.includes('127.0.0.1');
+    const protocol = isLocalhost ? 'http' : 'https';
+    
+    // Use APP_URL only in production (not localhost)
+    const baseUrl = isLocalhost ? `${protocol}://${host}` : (process.env.APP_URL || `${protocol}://${host}`);
     const REDIRECT_URI = `${baseUrl}/api/auth/callback`;
 
-    console.log('[Auth Callback] Using REDIRECT_URI:', REDIRECT_URI);
+    console.log('[Auth Callback] Host:', host, '| REDIRECT_URI:', REDIRECT_URI);
 
     try {
+        console.log('[Auth Callback] Creating OAuth client with REDIRECT_URI:', REDIRECT_URI);
         const client = new OAuth2Client(CLIENT_ID, CLIENT_SECRET, REDIRECT_URI);
 
         // 2. Exchange code for tokens
+        console.log('[Auth Callback] Exchanging code for tokens...');
         const { tokens } = await client.getToken(code as string);
+        console.log('[Auth Callback] Tokens received:', tokens.access_token ? 'access_token OK' : 'NO access_token', '| id_token:', tokens.id_token ? 'OK' : 'MISSING');
         
         if (!tokens.access_token) {
             throw new Error('Failed to obtain access token');
@@ -68,10 +113,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         }
 
         const userId = payload.sub;
+        console.log('[Auth Callback] User ID:', userId);
 
         // 4. Update/Create Profile in KV
         const profileKey = `user:profile:${userId}`;
+        console.log('[Auth Callback] Fetching profile from KV:', profileKey);
         const existingProfile = await kv.get<any>(profileKey) || {};
+        console.log('[Auth Callback] Profile fetched, saving...');
         
         const grantedScopes = tokens.scope || '';
         const hasDriveScope = grantedScopes.includes('drive.file') || grantedScopes.includes('https://www.googleapis.com/auth/drive.file');
@@ -136,7 +184,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         return res.status(200).send(html);
 
     } catch (e: any) {
-        console.error('[Auth Callback] Error:', e);
+        console.error('[Auth Callback] Error:', e.message || e, e.stack);
         return res.status(500).send('Authentication failed: ' + (e.message || 'Unknown error'));
     }
 }
