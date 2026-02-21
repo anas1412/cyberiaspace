@@ -19,6 +19,16 @@ const LoginPage: React.FC = () => {
   const handleLogin = () => {
     const CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID;
     const REDIRECT_URI = window.location.origin + '/api/auth/callback';
+    
+    // Generate secure random state and nonce
+    const state = crypto.randomUUID();
+    const nonce = crypto.randomUUID();
+
+    // Store in cookies for backend verification (15 min expiry)
+    const expiry = new Date(Date.now() + 15 * 60 * 1000).toUTCString();
+    document.cookie = `auth_state=${state}; path=/; expires=${expiry}; SameSite=Lax; Secure`;
+    document.cookie = `auth_nonce=${nonce}; path=/; expires=${expiry}; SameSite=Lax; Secure`;
+
     const SCOPE = 'openid email profile';
     const RESPONSE_TYPE = 'code';
     const ACCESS_TYPE = 'offline';
@@ -30,6 +40,8 @@ const LoginPage: React.FC = () => {
       `response_type=${RESPONSE_TYPE}&` +
       `scope=${encodeURIComponent(SCOPE)}&` +
       `access_type=${ACCESS_TYPE}&` +
+      `state=${state}&` +
+      `nonce=${nonce}&` +
       `prompt=${PROMPT}`;
 
     window.location.href = authUrl;

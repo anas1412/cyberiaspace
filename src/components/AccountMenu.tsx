@@ -53,7 +53,7 @@ const AccountMenu: React.FC = () => {
     onError: (error: any) => console.error('Drive Login Failed:', error),
     flow: 'auth-code',
     scope: 'openid email profile https://www.googleapis.com/auth/drive.file',
-    select_account: true,
+    login_hint: user?.email,
     prompt: 'consent' // Force consent to ensure we get a refresh token with Drive scopes
   } as any);
 
