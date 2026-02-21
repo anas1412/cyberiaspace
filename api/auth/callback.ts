@@ -1,45 +1,7 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { kv } from '@vercel/kv';
 import { OAuth2Client } from 'google-auth-library';
-
-function hydrateProfile(profile: any) {
-    const today = new Date().toISOString().split('T')[0];
-    
-    const defaultUsage = {
-        ai_daily_count: 0,
-        sync_thoughts: 0,
-        last_ai_reset: today
-    };
-
-    const defaultSettings = {
-        theme: 'cyberia',
-        autoSync: true,
-        driveEnabled: false
-    };
-
-    const hydrated = {
-        ...profile,
-        plan: profile.plan || 'free',
-        subscriptionStatus: profile.subscriptionStatus || 'none',
-        expiryDate: profile.expiryDate || null,
-        usage: {
-            ...defaultUsage,
-            ...(profile.usage || {})
-        },
-        settings: {
-            ...defaultSettings,
-            ...(profile.settings || {})
-        },
-        lastSeen: new Date().toISOString()
-    };
-
-    if (hydrated.usage.last_ai_reset !== today) {
-        hydrated.usage.ai_daily_count = 0;
-        hydrated.usage.last_ai_reset = today;
-    }
-
-    return hydrated;
-}
+import { hydrateProfile } from '../profile-helper';
 
 const CLIENT_ID = process.env.VITE_GOOGLE_CLIENT_ID || process.env.GOOGLE_CLIENT_ID;
 const CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET;
@@ -47,23 +9,23 @@ const CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET;
 export default async function handler(req: VercelRequest, res: VercelResponse) {
     const { code, state, error } = req.query;
 
-    // 1. Determine redirect URI based on host
+    // 1. Determine redirect URI based on host for consistency
     const host = req.headers.host || '';
     const isLocalhost = host.includes('localhost') || host.includes('127.0.0.1');
     const REDIRECT_URI = isLocalhost 
         ? `http://${host}/api/auth/callback` 
-        : 'https://cyberia.tn/api/auth/callback';
+        : 'https://cyberia.tn/api/auth/callback'; // Always enforce production for non-localhost
 
     console.log(`[Auth Callback] Initializing callback. Host: ${host} | Expected Redirect: ${REDIRECT_URI}`);
 
+    // Early exit for Google's errors or missing code
     if (error) {
         console.error('[Auth Callback] Google returned error:', error);
         return res.redirect('/login?error=' + encodeURIComponent(error as string));
     }
-
     if (!code) {
         console.warn('[Auth Callback] No code provided in request');
-        return res.redirect('/login');
+        return res.redirect('/login?error=no_code_provided');
     }
 
     // 2. Validate State (CSRF Protection)
@@ -71,13 +33,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const storedNonce = req.cookies.auth_nonce;
 
     if (!storedState || state !== storedState) {
-        console.error('[Auth Callback] Security mismatch. URL State:', state, 'Stored State:', storedState);
+        console.error('[Auth Callback] Security mismatch. URL State:', state, 'Stored State:', storedState, 'Cookies:', req.headers.cookie);
         return res.redirect('/login?error=security_mismatch');
     }
 
     if (!CLIENT_ID || !CLIENT_SECRET) {
         console.error('[Auth Callback] Missing credentials in environment');
-        return res.status(500).send('Server configuration error: Missing Google Credentials');
+        return res.redirect('/login?error=server_config_error');
     }
 
     try {
@@ -87,39 +49,43 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         console.log('[Auth Callback] Exchanging code...');
         const { tokens } = await client.getToken(code as string);
 
-        console.log('[Auth Callback] Tokens received:', tokens.access_token ? 'access_token OK' : 'NO access_token', '| id_token:', tokens.id_token ? 'OK' : 'MISSING');
+        console.log('[Auth Callback] Tokens received. Access Token:', tokens.access_token ? 'OK' : 'MISSING', '| ID Token:', tokens.id_token ? 'OK' : 'MISSING');
         
         if (!tokens.access_token) {
-            throw new Error('Failed to obtain access token');
+            console.error('[Auth Callback] Failed to obtain access token (empty response).');
+            return res.redirect('/login?error=token_exchange_failed');
         }
-
-        // 3. Verify ID Token (Identity & Nonce Validation)
         if (!tokens.id_token) {
-            throw new Error('Missing ID Token from Google');
+            console.error('[Auth Callback] Missing ID Token from Google.');
+            return res.redirect('/login?error=missing_id_token');
         }
 
+        // 4. Verify ID Token (Identity & Nonce Validation)
         const ticket = await client.verifyIdToken({
             idToken: tokens.id_token,
             audience: CLIENT_ID,
         });
         
         const payload = ticket.getPayload();
-        if (!payload) throw new Error('Invalid ID Token payload');
+        if (!payload) {
+            console.error('[Auth Callback] Invalid ID Token payload (empty).');
+            return res.redirect('/login?error=invalid_id_token_payload');
+        }
 
         // Nonce verification (Replay Protection)
         if (payload.nonce !== storedNonce) {
-            console.error('[Auth Callback] Nonce mismatch. Replay attack potential.');
-            return res.status(403).send('Security Error: Invalid nonce. Please try logging in again.');
+            console.error('[Auth Callback] Nonce mismatch. Replay attack potential. Payload Nonce:', payload.nonce, 'Stored Nonce:', storedNonce);
+            return res.redirect('/login?error=nonce_mismatch');
         }
 
         const userId = payload.sub;
         console.log('[Auth Callback] User ID:', userId);
 
-        // 4. Update/Create Profile in KV
+        // 5. Update/Create Profile in KV
         const profileKey = `user:profile:${userId}`;
         console.log('[Auth Callback] Fetching profile from KV:', profileKey);
         const existingProfile = await kv.get<any>(profileKey) || {};
-        console.log('[Auth Callback] Profile fetched, saving...');
+        console.log('[Auth Callback] Profile fetched, hydrating...');
         
         const grantedScopes = tokens.scope || '';
         const hasDriveScope = grantedScopes.includes('drive.file') || grantedScopes.includes('https://www.googleapis.com/auth/drive.file');
@@ -144,14 +110,16 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         }
         
         await kv.set(profileKey, updatedProfile);
+        console.log('[Auth Callback] Profile updated successfully in KV.');
 
-        // 5. Clean up security cookies
+        // 6. Clean up security cookies
         res.setHeader('Set-Cookie', [
             'auth_state=; Path=/; Max-Age=0; SameSite=Lax; Secure',
             'auth_nonce=; Path=/; Max-Age=0; SameSite=Lax; Secure'
         ]);
+        console.log('[Auth Callback] Security cookies cleared.');
 
-        // 6. Return HTML that sets localStorage and redirects
+        // 7. Return HTML that sets localStorage and redirects
         const responseData = {
             token: tokens.access_token,
             user: updatedProfile,
@@ -181,11 +149,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         `;
 
         res.setHeader('Content-Type', 'text/html');
+        console.log('[Auth Callback] Sending success HTML and redirecting to /');
         return res.status(200).send(html);
 
     } catch (e: any) {
-        console.error('[Auth Callback] Error:', e.message || e, e.stack);
-        return res.status(500).send('Authentication failed: ' + (e.message || 'Unknown error'));
+        console.error('[Auth Callback] General error during authentication:', e.message || e, e.stack);
+        return res.redirect('/login?error=auth_process_failed');
     }
 }
-
