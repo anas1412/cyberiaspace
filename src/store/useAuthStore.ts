@@ -49,6 +49,7 @@ export interface AuthState {
   initAuth: () => void;
   handlePostAuthSync: () => Promise<void>;
   _syncPromise: Promise<void> | null;
+  mediaSweep: () => Promise<void>;
   upgradePlan: (plan: SubscriptionPlan, period?: AccessPeriod) => void;
   checkExpiry: () => void;
   refreshProfile: () => Promise<void>;
@@ -99,6 +100,14 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     window.addEventListener('online', () => set({ isOnline: true }));
     window.addEventListener('offline', () => set({ isOnline: false, syncStatus: 'offline' }));
     get().checkExpiry();
+
+    // Safety cleanup: Reset any stuck 'syncing' states back to 'local' on app boot
+    try {
+      await db.thoughts.where('syncStatus').equals('syncing').modify({ syncStatus: 'local' });
+    } catch (e) {
+      console.warn('[Auth] Syncing state cleanup failed:', e);
+    }
+
     if (get().status === 'authenticated') {
       console.log('[Auth] Initializing authenticated session...');
       try {
@@ -127,6 +136,9 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       
       console.log('[Sync] Starting handlePostAuthSync...');
       set({ syncStatus: 'syncing' });
+      
+      // Start global loading state
+      useStore.setState({ isInitializing: true });
       
       try {
         const data: any = await get().importCloudData();
@@ -168,6 +180,9 @@ export const useAuthStore = create<AuthState>((set, get) => ({
                     const now = new Date();
                     set({ lastSync: now, syncStatus: 'synced' });
                     localStorage.setItem('cyberia-last-sync', now.toISOString());
+                    
+                    // Trigger media sweep after conflict resolution
+                    await get().mediaSweep();
                   } finally {
                     useStore.setState({ isInitializing: false });
                     resolve(void 0);
@@ -178,11 +193,13 @@ export const useAuthStore = create<AuthState>((set, get) => ({
           } else {
             console.log('[Sync] Local is empty, auto-importing cloud data...');
             await useStore.getState().importFullState(data);
+            await get().mediaSweep();
           }
         } else {
           console.log('[Sync] Cloud is empty or missing, keeping local data...');
           if (get().status === 'authenticated') {
             await get().syncData();
+            await get().mediaSweep();
           }
         }
         
@@ -204,6 +221,39 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 
     set({ _syncPromise: syncTask });
     return syncTask;
+  },
+
+  mediaSweep: async () => {
+    const { user, accessToken, grantedScopes } = get();
+    if (!user?.settings?.driveEnabled || !accessToken) return;
+    if (!grantedScopes.includes('https://www.googleapis.com/auth/drive.file')) return;
+
+    console.log('[Sync] Conducting Media Sweep...');
+    try {
+      const { useStore } = await import('./useStore');
+      // Find all media thoughts that aren't synced yet
+      const mediaThoughts = await db.thoughts
+        .filter(t => (t.type === 'image' || t.type === 'file') && t.syncStatus !== 'synced')
+        .toArray();
+
+      if (mediaThoughts.length === 0) {
+        console.log('[Sync] Media sweep: Nothing to upload.');
+        return;
+      }
+
+      console.log(`[Sync] Media sweep: Found ${mediaThoughts.length} items to upload.`);
+      
+      // Update UI state for these thoughts so user sees immediate feedback
+      for (const t of mediaThoughts) {
+        useStore.getState().updateThought(t.id, { syncStatus: 'syncing' });
+      }
+
+      // Trigger service sync - syncToServices will handle the DB locking and upload
+      await get().syncToServices();
+      console.log('[Sync] Media sweep complete.');
+    } catch (err) {
+      console.error('[Sync] Media sweep failed:', err);
+    }
   },
 
 
@@ -274,9 +324,15 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     const { accessToken, user } = get();
     if (!accessToken || !user) return;
     
+    const oldDriveEnabled = user.settings?.driveEnabled;
     const updatedUser = { ...user, settings: { ...user.settings, ...settings } };
     set({ user: updatedUser });
     localStorage.setItem('cyberia-user', JSON.stringify(updatedUser));
+
+    // If Drive was just enabled, trigger a sync to push local media
+    if (!oldDriveEnabled && settings.driveEnabled) {
+      get().mediaSweep();
+    }
 
     try {
       await fetch('/api/user?action=settings', {
@@ -594,7 +650,8 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       console.log('[Sync] Starting service sync...');
       
       const allThoughts = await db.thoughts.toArray();
-      const thoughtsToSync = allThoughts.filter(t => t.syncStatus !== 'synced');
+      // Only pick thoughts that are NOT synced and NOT already syncing
+      const thoughtsToSync = allThoughts.filter(t => t.syncStatus !== 'synced' && t.syncStatus !== 'syncing');
 
       if (thoughtsToSync.length === 0) return;
 
@@ -604,16 +661,24 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 
       for (const thought of thoughtsToSync) {
         try {
+          // Double check DB state right before processing to avoid race conditions
           const currentThought = await db.thoughts.get(thought.id);
-          if (!currentThought) continue;
+          if (!currentThought || currentThought.syncStatus === 'synced' || currentThought.syncStatus === 'syncing') continue;
+
+          // CRITICAL: Mark as syncing in DATABASE immediately to lock this thought
+          await db.thoughts.update(currentThought.id, { syncStatus: 'syncing' });
+          
+          const { useStore } = await import('./useStore');
+          useStore.getState().updateThought(currentThought.id, { syncStatus: 'syncing' });
 
           let driveFileId = currentThought.driveFileId;
+          let uploadSuccessful = false;
           
           const jsonTypes = ['text', 'tasks', 'table', 'paint'];
           const isMedia = currentThought.type === 'image' || currentThought.type === 'file';
 
           if (currentThought.type === 'label') {
-            // No Drive file needed
+            uploadSuccessful = true; // Labels don't need Drive files
           } else if (jsonTypes.includes(currentThought.type)) {
             const payload = {
               id: currentThought.id,
@@ -644,6 +709,10 @@ export const useAuthStore = create<AuthState>((set, get) => ({
                 const result = await driveService.uploadFile(accessToken, new Blob([contentString], { type: mimeType }), fileName, thoughtsFolderId);
                 driveFileId = result.id;
               }
+              uploadSuccessful = true;
+            } else {
+              // It's empty, we don't upload but we can consider it synced to avoid retries
+              uploadSuccessful = true;
             }
           } else if (isMedia) {
             let content: Blob | null = null;
@@ -668,20 +737,31 @@ export const useAuthStore = create<AuthState>((set, get) => ({
                 const result = await driveService.uploadFile(accessToken, content, fileName, mediaFolderId);
                 driveFileId = result.id;
               }
+              uploadSuccessful = true;
+            } else {
+              console.warn(`[Sync] Skipping media thought ${currentThought.id}: Binary content not found.`);
+              uploadSuccessful = false; // Stay local/error until content is available
             }
           }
 
-          const serviceUpdates: any = { syncStatus: 'synced' };
-          if (driveFileId) serviceUpdates.driveFileId = driveFileId;
+          if (uploadSuccessful) {
+            const serviceUpdates: any = { syncStatus: 'synced' };
+            if (driveFileId) serviceUpdates.driveFileId = driveFileId;
 
-          await db.thoughts.update(currentThought.id, serviceUpdates);
-          const { useStore } = await import('./useStore');
-          useStore.getState().updateThought(currentThought.id, serviceUpdates);
+            await db.thoughts.update(currentThought.id, serviceUpdates);
+            useStore.getState().updateThought(currentThought.id, serviceUpdates);
+          } else if (isMedia) {
+            // Explicitly mark as error if media is missing to alert the user/system
+            await db.thoughts.update(currentThought.id, { syncStatus: 'error' });
+            useStore.getState().updateThought(currentThought.id, { syncStatus: 'error' });
+          }
 
         } catch (err) {
           console.error(`[Sync] Failed to sync thought ${thought.id}:`, err);
+          const { useStore } = await import('./useStore');
           if (err instanceof Error && err.name !== 'DatabaseClosedError') {
             await db.thoughts.update(thought.id, { syncStatus: 'error' }).catch(() => {});
+            useStore.getState().updateThought(thought.id, { syncStatus: 'error' });
           }
         }
       }

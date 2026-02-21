@@ -62,17 +62,37 @@ export const ThoughtHeader: React.FC<ThoughtHeaderProps> = ({ thought, isCalenda
           </div>
         )}
         {isAuthenticated && thought.syncStatus && thought.type !== 'label' && (
-          <div className="flex items-center justify-center ml-1">
+          <div className="flex items-center justify-center ml-1 group/sync relative">
             {thought.syncStatus === 'synced' ? (
               <div className="w-3 h-3 flex items-center justify-center rounded-full bg-green-500/10 border border-green-500/20 shadow-[0_0_8px_rgba(34,197,94,0.2)]">
                 <Globe className="w-2 h-2 text-green-500 opacity-80" />
               </div>
-            ) : thought.syncStatus === 'pending' ? (
-              <RefreshCw className="w-2.5 h-2.5 text-blue-400 animate-spin opacity-80" />
+            ) : thought.syncStatus === 'pending' || thought.syncStatus === 'syncing' ? (
+              <div className="relative">
+                <RefreshCw className="w-2.5 h-2.5 text-blue-400 animate-spin opacity-80" />
+                <div className="absolute inset-0 bg-blue-400/20 blur-sm rounded-full animate-pulse" />
+              </div>
             ) : thought.syncStatus === 'error' ? (
-              <AlertCircle className="w-3 h-3 text-red-500 animate-pulse" />
+              <div className="relative">
+                <AlertCircle className="w-3 h-3 text-red-500 animate-pulse" />
+                {/* Tooltip for error */}
+                <div className="absolute bottom-full right-0 mb-2 hidden group-hover/sync:block z-[100] pointer-events-none">
+                  <div className="bg-red-950/90 backdrop-blur-md border border-red-500/30 rounded-lg p-2 shadow-2xl min-w-[120px]">
+                    <p className="text-[7px] font-black uppercase tracking-widest text-red-400">Sync Failure</p>
+                    <p className="text-[8px] font-bold text-red-200/70 mt-0.5 leading-tight">Media asset missing or Drive connection interrupted.</p>
+                  </div>
+                </div>
+              </div>
             ) : (
-              <CloudOff className="w-3.5 h-3.5 text-slate-600 opacity-40" />
+              <div className="group/local relative">
+                <CloudOff className="w-3 h-3 text-slate-600 opacity-40 hover:opacity-100 transition-opacity" />
+                <div className="absolute bottom-full right-0 mb-2 hidden group-hover/local:block z-[100] pointer-events-none">
+                  <div className="glass p-2 rounded-lg shadow-2xl min-w-[100px]">
+                    <p className="text-[7px] font-black uppercase tracking-widest text-slate-400">Local Only</p>
+                    <p className="text-[8px] font-bold text-slate-500 mt-0.5 leading-tight uppercase">Connect Drive to backup media assets.</p>
+                  </div>
+                </div>
+              </div>
             )}
           </div>
         )}

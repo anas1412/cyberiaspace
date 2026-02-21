@@ -50,7 +50,10 @@ const AccountMenu: React.FC = () => {
         handleAuthCode(response.code);
       }
     },
-    onError: (error: any) => console.error('Drive Login Failed:', error),
+    onError: (error: any) => {
+      console.error('Drive Login Failed:', error);
+      setIsDriveLoading(false);
+    },
     flow: 'auth-code',
     scope: 'openid email profile https://www.googleapis.com/auth/drive.file',
     login_hint: user?.email,
@@ -101,29 +104,25 @@ const AccountMenu: React.FC = () => {
 
   const handleDisconnectDrive = async () => {
     openModal({
-      title: 'Revoke Cloud Access?',
-      description: 'This will permanently disconnect Google Drive and delete your cloud session keys. You will need to re-authenticate to enable sync again.',
-      type: 'delete_thought',
-      confirmText: 'Revoke Access',
+      title: 'Disconnect Google Drive?',
+      description: 'This will stop syncing your media and research assets to the cloud. You will remain signed in to your Cyberia account.',
+      type: 'confirm_cancel',
+      confirmText: 'Disconnect',
       onConfirm: async () => {
         setIsDriveLoading(true);
         try {
           const authStore = useAuthStore.getState();
-          // 1. Tell backend to delete refresh token and disable drive
-          await fetch('/api/google-auth?action=revoke', {
+          // 1. Tell backend to disable drive without revoking the main session token
+          await fetch('/api/google-auth?action=disable-drive', {
             headers: { Authorization: `Bearer ${authStore.accessToken}` }
           });
           
           // 2. Update local profile state
           await updateSettings({ driveEnabled: false });
           
-          // 3. Wipe local scopes and force basic set
-          localStorage.removeItem('cyberia-scopes');
-          useAuthStore.setState({ grantedScopes: ['openid', 'email', 'profile'] });
-          
-          console.log('[Auth] Drive access revoked and state reset');
+          console.log('[Auth] Drive synchronization disabled');
         } catch (e) {
-          console.error('Revoke failed:', e);
+          console.error('Disconnect failed:', e);
         } finally {
           setIsDriveLoading(false);
           setIsOpen(false);

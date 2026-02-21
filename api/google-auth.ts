@@ -16,9 +16,28 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         return handleRefresh(req, res);
     } else if (action === 'revoke') {
         return handleRevoke(req, res);
+    } else if (action === 'disable-drive') {
+        return handleDisableDrive(req, res);
     }
 
     return res.status(400).json({ error: 'Invalid action' });
+}
+
+async function handleDisableDrive(req: VercelRequest, res: VercelResponse) {
+    const userId = await getUserIdFromAuthHeader(req.headers.authorization);
+    if (!userId) return res.status(401).json({ error: 'Unauthorized' });
+
+    const profileKey = `user:profile:${userId}`;
+    const profile = await kv.get<any>(profileKey);
+
+    if (profile) {
+        if (profile.settings) {
+            profile.settings.driveEnabled = false;
+            await kv.set(profileKey, profile);
+        }
+    }
+
+    return res.status(200).json({ success: true });
 }
 
 async function handleExchange(req: VercelRequest, res: VercelResponse) {

@@ -51,7 +51,7 @@ interface Thought {
   driveFileId?: string;
   googleTaskListId?: string;
   googleCalendarEventId?: string;
-  syncStatus?: 'local' | 'synced' | 'pending' | 'error';
+  syncStatus?: 'local' | 'synced' | 'pending' | 'syncing' | 'error';
 }
 
 interface LocalBlob {
