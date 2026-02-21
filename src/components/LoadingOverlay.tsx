@@ -1,8 +1,8 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useStore } from '../store/useStore';
 import { APP_VERSION } from '../constants';
-import { Bot, Zap, Shield, Cpu } from 'lucide-react';
+import { Bot, Zap, Shield, Cpu, RefreshCw } from 'lucide-react';
 
 interface LoadingOverlayProps {
   force?: boolean;
@@ -11,6 +11,35 @@ interface LoadingOverlayProps {
 const LoadingOverlay: React.FC<LoadingOverlayProps> = ({ force }) => {
   const isInitializing = useStore((state) => state.isInitializing);
   const show = force || isInitializing;
+  const [showReset, setShowReset] = useState(false);
+
+  useEffect(() => {
+    if (show) {
+      const timer = setTimeout(() => {
+        setShowReset(true);
+      }, 15000); // Show reset button after 15 seconds
+      return () => clearTimeout(timer);
+    } else {
+      setShowReset(false);
+    }
+  }, [show]);
+
+  const handleForceReset = () => {
+    // Clear all PWA caches and local storage items related to the app
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.getRegistrations().then(registrations => {
+        for (const registration of registrations) {
+          registration.unregister();
+        }
+      });
+    }
+    // Clear localStorage (careful not to clear critical browser settings)
+    localStorage.clear(); 
+    // Clear IndexedDB
+    indexedDB.deleteDatabase('CyberiaDB');
+    // Force reload
+    window.location.reload();
+  };
 
   return (
     <AnimatePresence>
@@ -26,6 +55,7 @@ const LoadingOverlay: React.FC<LoadingOverlayProps> = ({ force }) => {
             <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-blue-500/5 rounded-full blur-[120px] animate-pulse" />
             <div className="absolute top-1/4 left-1/4 w-[400px] h-[400px] bg-blue-500/5 rounded-full blur-[100px] animate-pulse" style={{ animationDelay: '1s' }} />
           </div>
+
 
           <div className="relative flex flex-col items-center">
             {/* Logo Hexagon / Core */}
@@ -73,10 +103,10 @@ const LoadingOverlay: React.FC<LoadingOverlayProps> = ({ force }) => {
 
             {/* Status Steps */}
             <div className="flex flex-col gap-3 w-64">
-              <StatusItem delay={0.6} icon={<Shield className="w-3 h-3" />} label="Verifying Credentials" active />
-              <StatusItem delay={0.8} icon={<Cpu className="w-3 h-3" />} label="Syncing Cloud Data" active />
-              <StatusItem delay={1.0} icon={<Zap className="w-3 h-3" />} label="Building Workspace" active />
-              <StatusItem delay={1.2} icon={<Bot className="w-3 h-3" />} label="Activating Oracle" active />
+              <StatusItem delay={0.6} icon={<Shield className="w-3 h-3" />} label="Verifying Credentials" active={isInitializing} />
+              <StatusItem delay={0.8} icon={<Cpu className="w-3 h-3" />} label="Syncing Cloud Data" active={isInitializing} />
+              <StatusItem delay={1.0} icon={<Zap className="w-3 h-3" />} label="Building Workspace" active={isInitializing} />
+              <StatusItem delay={1.2} icon={<Bot className="w-3 h-3" />} label="Activating Oracle" active={isInitializing} />
             </div>
 
             {/* Progress Bar */}
@@ -88,6 +118,19 @@ const LoadingOverlay: React.FC<LoadingOverlayProps> = ({ force }) => {
                 className="w-full h-full bg-gradient-to-r from-transparent via-blue-500 to-transparent"
               />
             </div>
+
+            {showReset && (
+              <motion.button
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.5 }}
+                onClick={handleForceReset}
+                className="mt-8 flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-slate-500 hover:text-white transition-colors group"
+              >
+                <RefreshCw className="w-3 h-3 group-hover:rotate-45 transition-transform" />
+                <span>Loading taking too long? <span className="text-blue-400">Force Reset Workspace</span></span>
+              </motion.button>
+            )}
           </div>
 
           <motion.div
