@@ -2,7 +2,7 @@ import Groq from "groq-sdk";
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { kv } from '@vercel/kv';
 
-// --- CONSTANTS (Mirrored from src/constants.ts for Server-side stability) ---
+// --- CONSTANTS (Self-contained for Server-side stability) ---
 const PLAN_CONFIG = {
   free: { AI_DAILY_LIMIT: 15 },
   pro: { AI_DAILY_LIMIT: 120 }
@@ -605,39 +605,3 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             }
           }
         }
-
-        if (hasServerResults) {
-          await sleep(50);
-          await runChat(nextMessages, currentModel, isRetry);
-        }
-      }
-    }
-
-    await runChat(messages, model);
-    res.write('data: [DONE]\n\n');
-    res.end();
-
-  } catch (error: any) {
-    console.error(`[Groq API] Error:`, error);
-    let friendlyMessage = error.message;
-    let isRateLimit = error.status === 429 || (error.message && error.message.includes('rate_limit_exceeded'));
-
-    if (isRateLimit) {
-      const timeMatch = error.message?.match(/try again in ([\w.]+s)/);
-      const waitTime = timeMatch ? timeMatch[1] : "a few minutes";
-      friendlyMessage = `The AI service is temporarily busy because it's receiving too many requests. Please try again in about ${waitTime}.`;
-    } else if (error.status === 400) {
-      friendlyMessage = "Oracle had a bit of a logic snag processing that action. Try that request one more time!";
-    }
-
-    if (!res.headersSent) {
-      res.status(error.status || 500).json({ 
-        error: isRateLimit ? "Rate limit reached" : "Internal server error", 
-        message: friendlyMessage 
-      });
-    } else {
-      res.write(`data: ${JSON.stringify({ type: 'error', message: friendlyMessage })}\n\n`);
-      res.end();
-    }
-  }
-}
