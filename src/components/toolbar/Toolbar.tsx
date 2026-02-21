@@ -31,8 +31,8 @@ const Toolbar: React.FC = () => {
   const setInspectorOpen = useStore((state) => state.setInspectorOpen);
   const exportData = useStore((state) => state.exportData);
   const importData = useStore((state) => state.importData);
-  const clearWorkspace = useStore((state) => state.clearWorkspace);
   const theme = useStore((state) => state.theme);
+
   const setTheme = useStore((state) => state.setTheme);
   const customBg = useStore((state) => state.customBg);
   const setCustomBg = useStore((state) => state.setCustomBg);
@@ -300,13 +300,13 @@ const Toolbar: React.FC = () => {
         handleImport={handleImport} 
         isCapturing={isCapturing} 
         openModal={openModal} 
-        clearWorkspace={clearWorkspace} 
         activeSpace={activeSpace}
         handleTogglePhysics={handleTogglePhysics}
       />
+
       <StatusBar thoughtsCount={thoughts.length} limits={limits} activeSpace={activeSpace} undo={undo} redo={redo} historyIndex={historyIndex} historyLength={history.length} zoomIn={zoomIn} zoomOut={zoomOut} resetTransform={resetTransform} />
       <ShortcutsModal isOpen={isShortcutsOpen} onClose={() => setIsShortcutsOpen(false)} />
-      <HelpModal isOpen={isHelpOpen} onClose={() => setIsHelpOpen(false)} activeTab={activeHelpTab} setActiveTab={setActiveHelpTab} quickMessage={quickMessage} setQuickMessage={setQuickMessage} quickType={quickType} setQuickType={setQuickType} isQuickSubmitting={isQuickSubmitting} quickSubmitStatus={quickSubmitStatus} handleQuickSubmit={handleQuickSubmit} contactName={contactName} setContactName={setContactName} contactEmail={contactEmail} setContactEmail={setContactEmail} contactMessage={contactMessage} setContactMessage={setContactMessage} isContactSubmitting={isContactSubmitting} contactSubmitStatus={contactSubmitStatus} handleContactSubmit={handleContactSubmit} openModal={openModal} />
+      <HelpModal isOpen={isHelpOpen} onClose={() => setIsHelpOpen(false)} activeTab={activeHelpTab} setActiveTab={setActiveHelpTab} quickMessage={quickMessage} setQuickMessage={setQuickMessage} quickType={quickType} setQuickType={setQuickType} isQuickSubmitting={isQuickSubmitting} quickSubmitStatus={quickSubmitStatus} handleQuickSubmit={handleQuickSubmit} contactName={contactName} setContactName={setContactName} contactEmail={contactEmail} setContactEmail={setContactEmail} contactMessage={contactMessage} setContactMessage={setContactMessage} isContactSubmitting={isContactSubmitting} contactSubmitStatus={contactSubmitStatus} handleContactSubmit={handleContactSubmit} />
     </>
   );
 };

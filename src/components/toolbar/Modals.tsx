@@ -1,7 +1,8 @@
 import React from 'react';
-import { Plus, CheckCircle, MessageSquare, Shield, CircleHelp, Loader2, Send, MousePointer2 } from 'lucide-react';
+import { Plus, CheckCircle, MessageSquare, CircleHelp, Loader2, Send, MousePointer2 } from 'lucide-react';
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
+import { APP_VERSION } from '../../constants';
 
 function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -28,13 +29,12 @@ interface HelpModalProps {
   isContactSubmitting: boolean;
   contactSubmitStatus: string;
   handleContactSubmit: (e: any) => void;
-  openModal: (cfg: any) => void;
 }
 
 export const HelpModal: React.FC<HelpModalProps> = ({ 
   isOpen, onClose, activeTab, setActiveTab, 
   quickMessage, setQuickMessage, quickType, setQuickType, isQuickSubmitting, quickSubmitStatus, handleQuickSubmit,
-  contactName, setContactName, contactEmail, setContactEmail, contactMessage, setContactMessage, isContactSubmitting, contactSubmitStatus, handleContactSubmit, openModal
+  contactName, setContactName, contactEmail, setContactEmail, contactMessage, setContactMessage, isContactSubmitting, contactSubmitStatus, handleContactSubmit
 }) => (
   isOpen && (
     <div className="fixed inset-0 z-[10001] bg-black/60 backdrop-blur-md flex items-center justify-center p-10 pointer-events-auto" onClick={onClose}>
@@ -54,7 +54,6 @@ export const HelpModal: React.FC<HelpModalProps> = ({
               <h4 className="text-[11px] font-black text-white uppercase tracking-widest">About Cyberia</h4>
               <p className="text-xs text-slate-400 leading-relaxed italic">Cyberia is a spatial workspace designed for fluid information management. We treat data as physical objects to help you visualize connections and organize your thoughts naturally.</p>
               <p className="text-xs text-slate-500 leading-relaxed">Designed for non-linear thinkers, visionaries, and digital architects. We believe productivity shouldn't feel like a spreadsheet. It should feel like a world.</p>
-              <button onClick={() => openModal({ title: 'Terms of Service', type: 'terms', confirmText: 'Acknowledged' })} className="text-[10px] font-black uppercase tracking-widest text-slate-600 hover:text-indigo-400 transition-colors flex items-center gap-2 mt-4"><Shield className="w-3 h-3" /> View Terms of Service</button>
             </div>
           )}
           {activeTab === 'issue' && (
@@ -86,14 +85,44 @@ export const HelpModal: React.FC<HelpModalProps> = ({
                   </div>
                   <div className="space-y-1.5"><label className="text-[8px] font-black uppercase tracking-widest text-slate-600 ml-1">Message</label><textarea required value={contactMessage} onChange={(e) => setContactMessage(e.target.value)} placeholder="How can we help?" className="w-full h-24 bg-black/40 border border-white/5 rounded-xl p-4 text-xs text-white outline-none focus:border-[var(--accent)]/50 transition-all resize-none" /></div>
                   {contactSubmitStatus === 'error' && <div className="p-3 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 text-[8px] font-black uppercase tracking-widest text-center">Failed to send message. Please try again.</div>}
-                  <button type="submit" disabled={isContactSubmitting || !contactMessage.trim()} className="w-full h-12 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white rounded-xl font-black uppercase text-[10px] tracking-[0.1em] transition-all flex items-center justify-center gap-2 shadow-lg shadow-indigo-500/10">{isContactSubmitting ? <Loader2 className="w-4 h-4 animate-spin" /> : <><Send className="w-3.5 h-3.5" /> Send Message</>}</button>
+                  <button type="submit" disabled={isContactSubmitting || !contactMessage.trim()} className="w-full h-12 bg-blue-600 hover:bg-blue-500 disabled:opacity-50 text-white rounded-xl font-black uppercase text-[10px] tracking-[0.1em] transition-all flex items-center justify-center gap-2 shadow-lg shadow-blue-500/10">{isContactSubmitting ? <Loader2 className="w-4 h-4 animate-spin" /> : <><Send className="w-3.5 h-3.5" /> Send Message</>}</button>
                 </form>
               )}
               <div className="pt-2 border-t border-white/5 flex items-center justify-between"><div className="flex flex-col"><span className="text-[8px] font-black text-slate-600 uppercase tracking-widest">Support Email</span><span className="text-[9px] font-bold text-[var(--accent-secondary)]">{import.meta.env.VITE_CONTACT_EMAIL || 'anasbassoumi@gmail.com'}</span></div><div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-white/5 border border-white/5"><div className="w-1.5 h-1.5 rounded-full bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.5)]" /><span className="text-[8px] font-black uppercase tracking-widest text-slate-400">System Online</span></div></div>
             </div>
           )}
         </div>
-        <div className="mt-10 pt-8 border-t border-white/5 flex items-center gap-4"><div className="w-10 h-10 rounded-xl bg-indigo-500/10 flex items-center justify-center text-indigo-400"><CircleHelp className="w-5 h-5" /></div><p className="text-[9px] uppercase font-bold tracking-widest text-slate-500 leading-relaxed">Version {import.meta.env.VITE_APP_VERSION || '10.0.4'} <br /> Stable release.</p></div>
+        <div className="mt-10 pt-8 border-t border-white/5 flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            <div className="w-10 h-10 rounded-xl bg-blue-500/10 flex items-center justify-center text-blue-400">
+              <CircleHelp className="w-5 h-5" />
+            </div>
+            <p className="text-[9px] uppercase font-bold tracking-widest text-slate-500 leading-relaxed">
+              Version {APP_VERSION} <br /> Stable release.
+            </p>
+          </div>
+          <div className="flex items-center gap-4 opacity-40">
+            <button 
+              onClick={() => {
+                window.history.pushState({}, '', '/privacy');
+                window.dispatchEvent(new PopStateEvent('popstate'));
+              }}
+              className="text-[8px] font-black uppercase tracking-widest text-slate-400 hover:text-white transition-colors"
+            >
+              Privacy Policy
+            </button>
+            <span className="w-0.5 h-0.5 rounded-full bg-white/20" />
+            <button 
+              onClick={() => {
+                window.history.pushState({}, '', '/terms');
+                window.dispatchEvent(new PopStateEvent('popstate'));
+              }}
+              className="text-[8px] font-black uppercase tracking-widest text-slate-400 hover:text-white transition-colors"
+            >
+              Terms of Service
+            </button>
+          </div>
+        </div>
       </div>
     </div>
   )

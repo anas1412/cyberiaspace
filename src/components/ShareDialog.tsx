@@ -55,7 +55,7 @@ const ShareDialog: React.FC<ShareDialogProps> = ({ spaceId }) => {
             <div className="flex items-start justify-between gap-4 mb-2">
                 <div className="flex flex-col">
                     <h3 className="text-xl font-bold text-white flex items-center gap-2">
-                        <Share2 className="w-5 h-5 text-indigo-400" />
+                        <Share2 className="w-5 h-5 text-blue-400" />
                         Share Space
                     </h3>
                 </div>
@@ -72,7 +72,7 @@ const ShareDialog: React.FC<ShareDialogProps> = ({ spaceId }) => {
                 <button
                     onClick={handlePublish}
                     disabled={isPublishing}
-                    className="w-full py-3 px-4 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white rounded-xl font-bold transition-all shadow-lg shadow-indigo-500/20 flex items-center justify-center gap-2"
+                    className="w-full py-3 px-4 bg-blue-600 hover:bg-blue-500 disabled:opacity-50 text-white rounded-xl font-bold transition-all shadow-lg shadow-blue-500/20 flex items-center justify-center gap-2"
                 >
                     {isPublishing ? (
                         <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
@@ -91,7 +91,7 @@ const ShareDialog: React.FC<ShareDialogProps> = ({ spaceId }) => {
                             )}
                         </div>
                         <div className="flex gap-2">
-                            <div className="flex-1 bg-black/40 border border-white/5 rounded-lg px-3 py-2 text-sm text-indigo-300 truncate font-mono">
+                            <div className="flex-1 bg-black/40 border border-white/5 rounded-lg px-3 py-2 text-sm text-blue-300 truncate font-mono">
                                 {shareUrl}
                             </div>
                             <button
@@ -113,7 +113,7 @@ const ShareDialog: React.FC<ShareDialogProps> = ({ spaceId }) => {
                         </button>
                         <button
                             onClick={() => setShowQR(!showQR)}
-                            className={`p-2.5 rounded-lg transition-all flex items-center justify-center gap-2 ${showQR ? 'bg-indigo-600 text-white' : 'bg-slate-800 text-slate-300 hover:bg-slate-700'}`}
+                            className={`p-2.5 rounded-lg transition-all flex items-center justify-center gap-2 ${showQR ? 'bg-blue-600 text-white' : 'bg-slate-800 text-slate-300 hover:bg-slate-700'}`}
                         >
                             <QrCode className="w-5 h-5" />
                         </button>

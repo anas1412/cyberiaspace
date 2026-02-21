@@ -197,7 +197,7 @@ const ChatOverlay: React.FC = () => {
         const errorMsg: Message = { 
           id: Date.now().toString(), 
           role: 'assistant', 
-          content: `### Connection Expired\nChoom, your session has timed out. Please sign in again to continue your data stream.\n\n<button onclick="window._cyberia_reauth()" class="px-4 py-2 bg-indigo-500 text-white rounded-xl text-xs font-black uppercase tracking-widest hover:bg-indigo-600 transition-all mt-2">Refresh Session</button>` 
+          content: `### Connection Expired\nChoom, your session has timed out. Please sign in again to continue your data stream.\n\n<button onclick="window._cyberia_reauth()" class="px-4 py-2 bg-blue-500 text-white rounded-xl text-xs font-black uppercase tracking-widest hover:bg-blue-600 transition-all mt-2">Refresh Session</button>` 
         };
         setMessages(prev => [...prev, errorMsg]);
         useAuthStore.getState().signOut(); // Graceful cleanup
@@ -345,9 +345,9 @@ const ChatOverlay: React.FC = () => {
           {/* Header */}
           <div className="p-4 md:p-5 border-b border-white/5 flex items-center justify-between bg-black/20 backdrop-blur-md sticky top-0 z-20">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-indigo-500/10 rounded-xl flex items-center justify-center border border-indigo-500/20 shadow-[0_0_20px_rgba(99,102,241,0.15)] relative overflow-hidden group">
-                <div className="absolute inset-0 bg-indigo-500/5 animate-pulse" />
-                <Bot className="w-5 h-5 text-indigo-400 relative z-10" />
+              <div className="w-10 h-10 bg-blue-500/10 rounded-xl flex items-center justify-center border border-blue-500/20 shadow-[0_0_20px_rgba(99,102,241,0.15)] relative overflow-hidden group">
+                <div className="absolute inset-0 bg-blue-500/5 animate-pulse" />
+                <Bot className="w-5 h-5 text-blue-400 relative z-10" />
               </div>
               <div>
                 <div className="flex items-center gap-2">
@@ -385,7 +385,7 @@ const ChatOverlay: React.FC = () => {
             <div className="px-5 py-2 bg-black/10 border-b border-white/5">
               <div className="flex justify-between items-center mb-1">
                 <span className="text-[7px] font-black uppercase tracking-widest text-slate-500">Daily Quota</span>
-                <span className="text-[7px] font-black text-indigo-400">
+                <span className="text-[7px] font-black text-blue-400">
                   {dailyUsage} / {limits.AI_DAILY_LIMIT}
                 </span>
               </div>
@@ -393,7 +393,7 @@ const ChatOverlay: React.FC = () => {
                 <motion.div 
                   initial={{ width: 0 }}
                   animate={{ width: `${Math.min(100, (dailyUsage / (limits.AI_DAILY_LIMIT || 1)) * 100)}%` }}
-                  className="h-full bg-indigo-500 shadow-[0_0_8px_rgba(99,102,241,0.4)]" 
+                  className="h-full bg-blue-500 shadow-[0_0_8px_rgba(99,102,241,0.4)]" 
                 />
               </div>
             </div>
@@ -415,10 +415,10 @@ const ChatOverlay: React.FC = () => {
                   Ready to map your thoughts. Ask me to research, organize, or create.
                 </p>
                 {plan === 'free' && (
-                  <div className="mt-6 p-4 rounded-2xl bg-indigo-500/5 border border-indigo-500/10 mx-4">
-                    <p className="text-[9px] uppercase font-black tracking-[0.2em] text-indigo-400 mb-1.5">Limited Capabilities</p>
+                  <div className="mt-6 p-4 rounded-2xl bg-blue-500/5 border border-blue-500/10 mx-4">
+                    <p className="text-[9px] uppercase font-black tracking-[0.2em] text-blue-400 mb-1.5">Limited Capabilities</p>
                     <p className="text-[8px] font-bold text-slate-500 leading-relaxed uppercase tracking-widest">
-                      Upgrade to Pro for <strong className="text-indigo-300">Unlimited</strong> usage and <strong className="text-indigo-300">120B</strong> reasoning models.
+                      Upgrade to Pro for <strong className="text-blue-300">Unlimited</strong> usage and <strong className="text-blue-300">120B</strong> reasoning models.
                     </p>
                   </div>
                 )}
@@ -435,7 +435,7 @@ const ChatOverlay: React.FC = () => {
                   <div className={cn(
                     "max-w-[95%] p-4 rounded-2xl text-[12px] leading-relaxed border shadow-sm prose prose-invert prose-xs break-words overflow-hidden",
                     m.role === 'user' 
-                      ? "bg-indigo-500/20 text-white border-indigo-400/30 rounded-tr-sm" 
+                      ? "bg-blue-500/20 text-white border-blue-400/30 rounded-tr-sm" 
                       : "bg-white/[0.03] text-slate-200 border-white/5 rounded-tl-sm"
                   )}>
                     <ReactMarkdown remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeRaw]}>{m.content}</ReactMarkdown>
@@ -450,15 +450,15 @@ const ChatOverlay: React.FC = () => {
             {isLoading && (
               <div className="flex flex-col gap-2 items-start animate-pulse">
                 {activeTool ? (
-                  <div className="bg-indigo-500/10 border border-indigo-500/20 px-4 py-2 rounded-xl flex items-center gap-3 shadow-[0_0_20px_rgba(99,102,241,0.1)]">
-                    <Loader2 className="w-3 h-3 text-indigo-400 animate-spin" />
-                    <span className="text-[10px] font-black uppercase tracking-widest text-indigo-300">
+                  <div className="bg-blue-500/10 border border-blue-500/20 px-4 py-2 rounded-xl flex items-center gap-3 shadow-[0_0_20px_rgba(99,102,241,0.1)]">
+                    <Loader2 className="w-3 h-3 text-blue-400 animate-spin" />
+                    <span className="text-[10px] font-black uppercase tracking-widest text-blue-300">
                       {getFriendlyToolName(activeTool.name)}
                     </span>
                   </div>
                 ) : (
                   <div className="bg-white/[0.03] border border-white/5 p-4 rounded-2xl rounded-tl-sm flex items-center gap-2.5">
-                    <Loader2 className="w-3.5 h-3.5 text-indigo-400 animate-spin" />
+                    <Loader2 className="w-3.5 h-3.5 text-blue-400 animate-spin" />
                     <span className="text-[9px] font-black uppercase tracking-widest text-slate-400">
                       {status || 'Oracle is thinking...'}
                     </span>
@@ -470,7 +470,7 @@ const ChatOverlay: React.FC = () => {
 
           {/* Footer Area */}
           <div className="p-4 md:p-6 bg-black/40 border-t border-white/5 space-y-3">
-            <form onSubmit={handleSubmit} className="relative flex items-center gap-2 bg-white/[0.03] border border-white/10 rounded-2xl p-1.5 focus-within:border-indigo-500/50 focus-within:bg-white/[0.05] transition-all">
+            <form onSubmit={handleSubmit} className="relative flex items-center gap-2 bg-white/[0.03] border border-white/10 rounded-2xl p-1.5 focus-within:border-blue-500/50 focus-within:bg-white/[0.05] transition-all">
 
               <textarea
                 ref={inputRef}
@@ -499,7 +499,7 @@ const ChatOverlay: React.FC = () => {
                 <button
                   type="submit"
                   disabled={!input.trim()}
-                  className="w-9 h-9 flex-shrink-0 flex items-center justify-center bg-indigo-500 hover:bg-indigo-600 disabled:bg-slate-800/50 disabled:text-slate-600 text-white rounded-xl transition-all shadow-lg active:scale-95"
+                  className="w-9 h-9 flex-shrink-0 flex items-center justify-center bg-blue-500 hover:bg-blue-600 disabled:bg-slate-800/50 disabled:text-slate-600 text-white rounded-xl transition-all shadow-lg active:scale-95"
                 >
                   <Send className="w-3.5 h-3.5" />
                 </button>

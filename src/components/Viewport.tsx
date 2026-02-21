@@ -486,7 +486,7 @@ const Viewport: React.FC = () => {
       {/* Selection Marquee */}
       {selectionRect && (
         <div
-          className="fixed border-2 border-indigo-500/50 bg-indigo-500/10 z-[1001] pointer-events-none"
+          className="fixed border-2 border-blue-500/50 bg-blue-500/10 z-[1001] pointer-events-none"
           style={{
             left: selectionRect.x,
             top: selectionRect.y,
@@ -520,19 +520,19 @@ const Viewport: React.FC = () => {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[10006] bg-indigo-500/10 backdrop-blur-md flex flex-col items-center justify-center pointer-events-none border-[4px] border-dashed border-indigo-500/30 m-4 rounded-[3rem]"
+            className="fixed inset-0 z-[10006] bg-blue-500/10 backdrop-blur-md flex flex-col items-center justify-center pointer-events-none border-[4px] border-dashed border-blue-500/30 m-4 rounded-[3rem]"
           >
             <motion.div
               initial={{ scale: 0.9, y: 20 }}
               animate={{ scale: 1, y: 0 }}
               className="flex flex-col items-center gap-6"
             >
-              <div className="w-24 h-24 bg-indigo-500/20 rounded-full flex items-center justify-center border border-indigo-500/30 shadow-[0_0_50px_rgba(99,102,241,0.2)]">
-                <Upload className="w-10 h-10 text-indigo-400 animate-bounce" />
+              <div className="w-24 h-24 bg-blue-500/20 rounded-full flex items-center justify-center border border-blue-500/30 shadow-[0_0_50px_rgba(99,102,241,0.2)]">
+                <Upload className="w-10 h-10 text-blue-400 animate-bounce" />
               </div>
               <div className="text-center">
                 <h2 className="text-white text-xl font-black uppercase tracking-[0.3em] mb-2">Import Files</h2>
-                <p className="text-indigo-300/60 text-xs font-bold uppercase tracking-widest">Drop images, text, or CSV files here</p>
+                <p className="text-blue-300/60 text-xs font-bold uppercase tracking-widest">Drop images, text, or CSV files here</p>
               </div>
             </motion.div>
           </motion.div>
@@ -552,11 +552,11 @@ const Viewport: React.FC = () => {
               <motion.div
                 animate={{ scale: [1, 1.2, 1], opacity: [0.3, 0.6, 0.3] }}
                 transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
-                className="absolute inset-0 bg-indigo-500/20 blur-[60px] rounded-full"
+                className="absolute inset-0 bg-blue-500/20 blur-[60px] rounded-full"
               />
 
               <div className="flex flex-col items-center gap-6 relative z-10">
-                <div className="w-16 h-16 border-2 border-indigo-500/20 border-t-indigo-500 rounded-full animate-spin" />
+                <div className="w-16 h-16 border-2 border-blue-500/20 border-t-blue-500 rounded-full animate-spin" />
 
                 <div className="text-center">
                   <h2 className="text-white/80 text-[10px] font-black uppercase tracking-[0.5em] mb-2">Accessing Workspace</h2>
@@ -566,7 +566,7 @@ const Viewport: React.FC = () => {
                         key={i}
                         animate={{ opacity: [0.2, 1, 0.2] }}
                         transition={{ duration: 1, repeat: Infinity, delay: i * 0.2 }}
-                        className="w-1 h-1 bg-indigo-400 rounded-full"
+                        className="w-1 h-1 bg-blue-400 rounded-full"
                       />
                     ))}
                   </div>

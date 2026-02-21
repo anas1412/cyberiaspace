@@ -54,13 +54,10 @@ Cyberia is a spatial productivity platform for kinetic information architecture.
 TODO:
 
 
+- change api to flouci
+- verify with google https://support.google.com/cloud/answer/13463073?visit_id=639071902685974440-279288002&rd=1
 
 
-create a new thought type "label", its an empty thought that has only title/description etc without any content (same as txt but without content)
-
-in thoughtnode make the date better for the user experience its not really visibilie like this right? and make a helper to convert date
-
-make the context smaller but excluding the content of thoughts but add a tool to read whats inside the thought when necessary to reduce tokens
 
 
 ------------------------------

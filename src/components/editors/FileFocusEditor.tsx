@@ -43,8 +43,8 @@ const EditorContent: React.FC<{
       <div className="flex-1 relative min-h-0">
         {isFetching ? (
           <div className="absolute inset-0 flex flex-col items-center justify-center bg-[#020408] gap-4">
-            <Loader2 className="w-10 h-10 text-indigo-500 animate-spin" />
-            <p className="text-[10px] font-black uppercase tracking-[0.2em] text-indigo-400">Retrieving Data...</p>
+            <Loader2 className="w-10 h-10 text-blue-500 animate-spin" />
+            <p className="text-[10px] font-black uppercase tracking-[0.2em] text-blue-400">Retrieving Data...</p>
           </div>
         ) : isStranded ? (
           <div className="absolute inset-0 flex flex-col items-center justify-center bg-[#020408] p-8 text-center gap-6">
@@ -83,9 +83,9 @@ const EditorContent: React.FC<{
             ) : fileMeta.type?.includes('audio') || thought.text?.toLowerCase().endsWith('.mp3') || thought.text?.toLowerCase().endsWith('.wav') || thought.text?.toLowerCase().endsWith('.ogg') ? (
               <div className="flex flex-col items-center justify-center w-full h-full p-8 bg-[#020408]">
                 <div className="relative mb-12">
-                  <div className="absolute inset-0 bg-indigo-500/10 rounded-full blur-3xl animate-pulse scale-150" />
-                  <div className="relative w-32 h-32 md:w-40 md:h-40 bg-indigo-500/5 rounded-full flex items-center justify-center border border-indigo-500/10 shadow-[0_0_80px_rgba(99,102,241,0.2)]">
-                    <FileAudio className="w-16 h-12 md:w-20 md:h-16 text-indigo-400 opacity-60" />
+                  <div className="absolute inset-0 bg-blue-500/10 rounded-full blur-3xl animate-pulse scale-150" />
+                  <div className="relative w-32 h-32 md:w-40 md:h-40 bg-blue-500/5 rounded-full flex items-center justify-center border border-blue-500/10 shadow-[0_0_80px_rgba(99,102,241,0.2)]">
+                    <FileAudio className="w-16 h-12 md:w-20 md:h-16 text-blue-400 opacity-60" />
                   </div>
                 </div>
                 
@@ -121,15 +121,15 @@ const EditorContent: React.FC<{
 
             {isUploading && (
               <div className="absolute top-6 right-6 px-4 py-2 bg-black/60 backdrop-blur-md border border-white/10 rounded-full flex items-center gap-3 z-20">
-                <Loader2 className="w-3 h-3 text-indigo-400 animate-spin" />
-                <span className="text-[9px] font-black uppercase tracking-widest text-indigo-300">Syncing to Cloud...</span>
+                <Loader2 className="w-3 h-3 text-blue-400 animate-spin" />
+                <span className="text-[9px] font-black uppercase tracking-widest text-blue-300">Syncing to Cloud...</span>
               </div>
             )}
           </div>
         ) : !hasDriveAccess ? (
           <div className="absolute inset-0 flex flex-col items-center justify-center bg-[#020408] p-8 text-center">
-            <div className="w-24 h-24 bg-indigo-500/5 rounded-[2rem] border border-indigo-500/10 flex items-center justify-center mb-8 shadow-2xl">
-              <Shield className="w-10 h-10 text-indigo-400 opacity-40" />
+            <div className="w-24 h-24 bg-blue-500/5 rounded-[2rem] border border-blue-500/10 flex items-center justify-center mb-8 shadow-2xl">
+              <Shield className="w-10 h-10 text-blue-400 opacity-40" />
             </div>
             <h3 className="text-xl font-black uppercase tracking-[0.2em] text-white mb-3">Cloud Backup</h3>
             <p className="text-xs font-medium text-slate-500 max-w-xs leading-relaxed mb-8 uppercase tracking-widest">
@@ -137,7 +137,7 @@ const EditorContent: React.FC<{
             </p>
             <button 
               onClick={driveLogin}
-              className="inline-flex items-center gap-3 px-8 py-4 bg-indigo-500 hover:bg-indigo-600 text-white rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] transition-all shadow-lg shadow-indigo-500/20 active:scale-95"
+              className="inline-flex items-center gap-3 px-8 py-4 bg-blue-500 hover:bg-blue-600 text-white rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] transition-all shadow-lg shadow-blue-500/20 active:scale-95"
             >
               <Globe className="w-4 h-4" />
               Enable Drive Sync
@@ -146,10 +146,10 @@ const EditorContent: React.FC<{
         ) : (
           <div className="absolute inset-0 flex flex-col items-center justify-center bg-[#020408] p-8 text-center">
             <div className="w-24 h-24 bg-white/5 rounded-[2rem] border border-white/10 flex items-center justify-center mb-8 shadow-2xl relative group">
-              <Upload className="w-10 h-10 text-slate-500 group-hover:text-indigo-400 transition-colors" />
+              <Upload className="w-10 h-10 text-slate-500 group-hover:text-blue-400 transition-colors" />
               {isUploading && (
                 <div className="absolute inset-0 bg-black/60 rounded-[2rem] flex items-center justify-center backdrop-blur-sm">
-                  <Loader2 className="w-8 h-8 text-indigo-400 animate-spin" />
+                  <Loader2 className="w-8 h-8 text-blue-400 animate-spin" />
                 </div>
               )}
             </div>
@@ -159,7 +159,7 @@ const EditorContent: React.FC<{
             </p>
             
             <label className={cn(
-              "inline-flex items-center gap-3 px-8 py-4 bg-indigo-500 hover:bg-indigo-600 text-white rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] transition-all cursor-pointer shadow-lg shadow-indigo-500/20 active:scale-95",
+              "inline-flex items-center gap-3 px-8 py-4 bg-blue-500 hover:bg-blue-600 text-white rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] transition-all cursor-pointer shadow-lg shadow-blue-500/20 active:scale-95",
               isUploading && "opacity-50 pointer-events-none"
             )}>
               <Upload className="w-4 h-4" />
@@ -476,7 +476,7 @@ const FileFocusEditor: React.FC = () => {
           {(thought.driveFileId || localPreviewUrl) && (
             <button 
               onClick={handleDownload}
-              className="flex items-center gap-2 px-5 py-2.5 bg-indigo-500 hover:bg-indigo-600 text-white rounded-xl text-[10px] font-black uppercase tracking-widest transition-all shadow-lg shadow-indigo-500/20 active:scale-95"
+              className="flex items-center gap-2 px-5 py-2.5 bg-blue-500 hover:bg-blue-600 text-white rounded-xl text-[10px] font-black uppercase tracking-widest transition-all shadow-lg shadow-blue-500/20 active:scale-95"
             >
               <Download className="w-3.5 h-3.5" /> Download
             </button>

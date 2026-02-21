@@ -239,7 +239,7 @@ const Inspector: React.FC = () => {
                     {isReadOnly ? 'Published' : 'Editor'}
                   </h3>
                   <div className="flex items-center gap-2 mt-1">
-                    <span className="w-1 h-1 rounded-full bg-indigo-500 shadow-[0_0_8px_rgba(99,102,241,0.6)]" />
+                    <span className="w-1 h-1 rounded-full bg-blue-500 shadow-[0_0_8px_rgba(99,102,241,0.6)]" />
                     <span className="text-[8px] font-bold text-slate-500 uppercase tracking-widest leading-none">Thought Properties</span>
                   </div>
                 </div>
@@ -495,7 +495,7 @@ const Inspector: React.FC = () => {
                   <div className="space-y-4">
                     <button
                       onClick={() => setActiveFocus(thought.id, 'embed')}
-                      className="w-full bg-indigo-500/10 hover:bg-indigo-500/20 border border-indigo-500/30 text-[var(--accent-secondary)] py-6 rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] transition-all flex flex-col items-center gap-3"
+                      className="w-full bg-blue-500/10 hover:bg-blue-500/20 border border-blue-500/30 text-[var(--accent-secondary)] py-6 rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] transition-all flex flex-col items-center gap-3"
                     >
                       <Share2 className="w-5 h-5" />
                       Open Interaction Layer

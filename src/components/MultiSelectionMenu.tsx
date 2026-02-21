@@ -30,7 +30,7 @@ const BatchDatePicker: React.FC<{ onSelect: (val: string) => void }> = ({ onSele
         className="w-full bg-[var(--bg-page)]/20 border border-white/10 rounded-xl p-3 text-[10px] font-black uppercase tracking-widest text-white/70 hover:text-white flex items-center justify-between transition-all group"
       >
         <span>Set Batch Date</span>
-        <Calendar className="w-3.5 h-3.5 text-slate-500 group-hover:text-indigo-400 transition-colors" />
+        <Calendar className="w-3.5 h-3.5 text-slate-500 group-hover:text-blue-400 transition-colors" />
       </button>
 
       <AnimatePresence>
@@ -56,7 +56,7 @@ const BatchDatePicker: React.FC<{ onSelect: (val: string) => void }> = ({ onSele
                 <button
                   key={i}
                   onClick={() => { onSelect(new Date(viewDate.getFullYear(), viewDate.getMonth(), i + 1).toLocaleDateString('en-CA')); setIsOpen(false); }}
-                  className="w-full aspect-square rounded-lg text-[9px] font-bold text-slate-400 hover:bg-indigo-500/20 hover:text-white transition-all"
+                  className="w-full aspect-square rounded-lg text-[9px] font-bold text-slate-400 hover:bg-blue-500/20 hover:text-white transition-all"
                 >
                   {i + 1}
                 </button>
@@ -112,13 +112,13 @@ const MultiSelectionMenu: React.FC = () => {
         <div className="p-4 md:p-5 border-b border-white/5 bg-black/20 backdrop-blur-md sticky top-0 z-20">
           <div className="flex justify-between items-center">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-indigo-500/10 rounded-xl flex items-center justify-center border border-indigo-500/20 shadow-[0_0_20px_rgba(99,102,241,0.15)]">
-                <Layers className="w-5 h-5 text-indigo-400" />
+              <div className="w-10 h-10 bg-blue-500/10 rounded-xl flex items-center justify-center border border-blue-500/20 shadow-[0_0_20px_rgba(99,102,241,0.15)]">
+                <Layers className="w-5 h-5 text-blue-400" />
               </div>
               <div>
                 <h3 className="text-xs font-black uppercase tracking-[0.2em] text-white leading-none">Bulk Actions</h3>
                 <div className="flex items-center gap-2 mt-1">
-                  <span className="w-1 h-1 rounded-full bg-indigo-500 shadow-[0_0_8px_rgba(99,102,241,0.6)]" />
+                  <span className="w-1 h-1 rounded-full bg-blue-500 shadow-[0_0_8px_rgba(99,102,241,0.6)]" />
                   <span className="text-[8px] font-bold text-slate-500 uppercase tracking-widest leading-none">{selectedThoughtIds.length} Nodes Selected</span>
                 </div>
               </div>
@@ -183,7 +183,7 @@ const MultiSelectionMenu: React.FC = () => {
                 onClick={async () => {
                   await linkSelectedThoughts(localStackName.trim());
                 }}
-                className="w-full py-3 bg-indigo-500/10 hover:bg-indigo-500/20 border border-indigo-500/30 text-indigo-400 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all"
+                className="w-full py-3 bg-blue-500/10 hover:bg-blue-500/20 border border-blue-500/30 text-blue-400 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all"
               >
                 {sharedStack ? 'Re-align Stack' : 'Link into New Stack'}
               </button>

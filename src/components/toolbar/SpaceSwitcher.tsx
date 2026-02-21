@@ -38,14 +38,14 @@ export const SpaceSwitcher: React.FC<SpaceSwitcherProps> = ({
       {isReadOnly ? (
         <div className="px-6 flex items-center justify-center gap-2">
           {isSpaceLoading ? (
-            <div className="flex items-center gap-3 animate-pulse"><div className="w-2 h-2 rounded-full bg-indigo-500/50" /><div className="h-2 w-32 bg-white/10 rounded-full" /><div className="h-5 w-12 bg-white/5 rounded-full border border-white/5" /></div>
+            <div className="flex items-center gap-3 animate-pulse"><div className="w-2 h-2 rounded-full bg-blue-500/50" /><div className="h-2 w-32 bg-white/10 rounded-full" /><div className="h-5 w-12 bg-white/5 rounded-full border border-white/5" /></div>
           ) : (
             <>
               <div className={cn("w-2 h-2 rounded-full", getStatusColor(activeSpace, isReadOnly))} />
               <span className="text-[10px] font-black uppercase tracking-[0.2em] text-white/90 truncate max-w-[300px]">{creatorName}'s {activeSpace?.name || 'Space'}</span>
               <div className="flex items-center justify-center px-2 py-0.5 rounded-full bg-white/5 border border-white/10 ml-2 h-5"><span className="text-[8px] font-black text-slate-500 uppercase tracking-widest leading-none">Public</span></div>
               {lastUpdated && (
-                <div className="flex items-center gap-1.5 ml-3 pl-3 border-l border-white/5 h-4 group/updated"><div className="w-1 h-1 rounded-full bg-slate-600 group-hover/updated:bg-indigo-400 transition-colors" /><span className="text-[8px] font-bold text-slate-500 uppercase tracking-[0.15em] whitespace-nowrap">Updated {formatLastUpdated(lastUpdated)}</span></div>
+                <div className="flex items-center gap-1.5 ml-3 pl-3 border-l border-white/5 h-4 group/updated"><div className="w-1 h-1 rounded-full bg-slate-600 group-hover/updated:bg-blue-400 transition-colors" /><span className="text-[8px] font-bold text-slate-500 uppercase tracking-[0.15em] whitespace-nowrap">Updated {formatLastUpdated(lastUpdated)}</span></div>
               )}
             </>
           )}
@@ -81,7 +81,7 @@ export const SpaceSwitcher: React.FC<SpaceSwitcherProps> = ({
           <div className="glass px-3 py-1.5 rounded-xl border border-white/10 flex items-center gap-1 shadow-2xl">
             <button onClick={handleRenameSpace} className="p-1.5 hover:bg-white/5 rounded-lg text-slate-400 hover:text-white transition-all flex items-center gap-2 group" title="Rename Space"><Edit3 className="w-3.5 h-3.5 group-hover:scale-110 transition-transform" /><span className="text-[8px] font-black uppercase tracking-widest hidden sm:inline">Rename</span></button>
             <div className="w-px h-3 bg-white/5 mx-1" />
-            <button onClick={() => { openModal({ title: 'Share Space', type: 'custom', content: <ShareDialog spaceId={activeSpace.id} /> }); setIsSpaceMenuOpen(false); }} className="p-1.5 hover:bg-white/5 rounded-lg text-indigo-400 hover:text-indigo-300 transition-all flex items-center gap-2 group" title="Share Space"><Share2 className="w-3.5 h-3.5 group-hover:scale-110 transition-transform" /><span className="text-[8px] font-black uppercase tracking-widest hidden sm:inline">Share Link</span></button>
+            <button onClick={() => { openModal({ title: 'Share Space', type: 'custom', content: <ShareDialog spaceId={activeSpace.id} /> }); setIsSpaceMenuOpen(false); }} className="p-1.5 hover:bg-white/5 rounded-lg text-blue-400 hover:text-blue-300 transition-all flex items-center gap-2 group" title="Share Space"><Share2 className="w-3.5 h-3.5 group-hover:scale-110 transition-transform" /><span className="text-[8px] font-black uppercase tracking-widest hidden sm:inline">Share Link</span></button>
             <div className="w-px h-3 bg-white/5 mx-1" />
             <button onClick={() => handleMoveSpace(-1)} className="p-1.5 hover:bg-white/5 rounded-lg text-slate-400 hover:text-white transition-all group" title="Move Left"><ChevronLeft className="w-3.5 h-3.5 group-hover:-translate-x-0.5 transition-transform" /></button>
             <button onClick={() => handleMoveSpace(1)} className="p-1.5 hover:bg-white/5 rounded-lg text-slate-400 hover:text-white transition-all group" title="Move Right"><ChevronRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" /></button>

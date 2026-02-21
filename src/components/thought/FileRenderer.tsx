@@ -1,6 +1,6 @@
 import React from 'react';
 import { type Thought } from '../../db';
-import { FileText, Download, FileAudio, FileVideo, FileCode, File as FileIcon, Maximize2 } from 'lucide-react';
+import { FileText, Download, FileAudio, FileVideo, FileCode, File as FileIcon, Maximize2, RefreshCw } from 'lucide-react';
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 
@@ -24,6 +24,7 @@ export const FileRenderer: React.FC<FileRendererProps> = ({ thought }) => {
   const fileMeta = thought.meta?.file || {};
   const isImage = fileMeta.type?.startsWith('image/') || thought.image || ['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg'].includes(thought.text?.toLowerCase().split('.').pop() || '');
   const isStranded = !thought.driveFileId && thought.syncStatus !== 'synced';
+  const isSyncing = thought.syncStatus === 'syncing' || thought.syncStatus === 'pending';
 
   if (isImage && (thought.image || isStranded)) {
     return (
@@ -32,7 +33,10 @@ export const FileRenderer: React.FC<FileRendererProps> = ({ thought }) => {
           <img
             src={thought.image}
             draggable="false"
-            className="w-full h-full object-cover cursor-zoom-in group-hover:scale-105 transition-transform duration-500"
+            className={cn(
+              "w-full h-full object-cover cursor-zoom-in group-hover:scale-105 transition-transform duration-500",
+              isSyncing && "opacity-40 grayscale"
+            )}
             alt={thought.text}
           />
         ) : (
@@ -43,9 +47,20 @@ export const FileRenderer: React.FC<FileRendererProps> = ({ thought }) => {
             </span>
           </div>
         )}
+
+        {isSyncing && (
+          <div className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-2 bg-blue-500/5 backdrop-blur-[2px]">
+            <div className="relative">
+              <RefreshCw className="w-6 h-6 text-blue-400 animate-spin" />
+              <div className="absolute inset-0 bg-blue-400/20 blur-md rounded-full animate-pulse" />
+            </div>
+            <span className="text-[8px] font-black uppercase tracking-[0.2em] text-blue-400/80">Securing to Cloud</span>
+          </div>
+        )}
+
         <div className={cn(
           "absolute inset-0 bg-black/40 flex flex-col items-center justify-center gap-2 transition-opacity",
-          thought.image ? "opacity-0 group-hover:opacity-100" : "opacity-100"
+          (thought.image && !isSyncing) ? "opacity-0 group-hover:opacity-100" : isSyncing ? "opacity-0" : "opacity-100"
         )}>
           <Maximize2 className="w-6 h-6 text-white" />
           <span className="text-[8px] font-black uppercase tracking-widest text-white/80">
@@ -70,12 +85,18 @@ export const FileRenderer: React.FC<FileRendererProps> = ({ thought }) => {
   return (
     <div 
       data-trigger="file"
-      className="p-4 rounded-2xl bg-white/5 border border-white/5 hover:bg-white/10 transition-all cursor-pointer group flex items-center gap-4"
+      className="p-4 rounded-2xl bg-white/5 border border-white/5 hover:bg-white/10 transition-all cursor-pointer group flex items-center gap-4 relative overflow-hidden"
     >
-      <div className="w-14 h-14 rounded-xl bg-black/20 flex items-center justify-center border border-white/5 shadow-inner">
+      {isSyncing && (
+        <div className="absolute inset-0 z-10 flex items-center justify-center gap-3 bg-blue-500/10 backdrop-blur-[2px]">
+          <RefreshCw className="w-4 h-4 text-blue-400 animate-spin" />
+          <span className="text-[8px] font-black uppercase tracking-[0.2em] text-blue-400">Syncing...</span>
+        </div>
+      )}
+      <div className={cn("w-14 h-14 rounded-xl bg-black/20 flex items-center justify-center border border-white/5 shadow-inner", isSyncing && "opacity-20")}>
         {getFileIcon(fileMeta.type || '')}
       </div>
-      <div className="flex-1 overflow-hidden">
+      <div className={cn("flex-1 overflow-hidden", isSyncing && "opacity-20")}>
         <h4 className="text-[11px] font-black uppercase tracking-widest text-white truncate mb-1">
           {thought.text || 'Untitled File'}
         </h4>
@@ -90,8 +111,8 @@ export const FileRenderer: React.FC<FileRendererProps> = ({ thought }) => {
           )}
         </div>
       </div>
-      <div className="w-8 h-8 rounded-lg bg-indigo-500/10 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-        <Download className="w-3.5 h-3.5 text-indigo-400" />
+      <div className={cn("w-8 h-8 rounded-lg bg-blue-500/10 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity", isSyncing && "hidden")}>
+        <Download className="w-3.5 h-3.5 text-blue-400" />
       </div>
     </div>
   );

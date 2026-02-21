@@ -437,48 +437,56 @@ async function executeServerTool(name: string, args: any) {
 
 // --- 4. MAIN HANDLER ---
 
+async function getUserIdFromAuth(authHeader: string | undefined): Promise<string | null> {
+  if (!authHeader?.startsWith('Bearer ')) return null;
+  const token = authHeader.split(' ')[1];
+  try {
+    const tokenInfo = await fetch(`https://www.googleapis.com/oauth2/v3/tokeninfo?access_token=${token}`);
+    if (!tokenInfo.ok) return null;
+    const info = await tokenInfo.json() as any;
+    return info.sub || info.user_id;
+  } catch (e) {
+    return null;
+  }
+}
+
 export default async function handler(req: VercelRequest, res: VercelResponse) {
+  const userId = await getUserIdFromAuth(req.headers.authorization);
+  if (!userId) return res.status(401).json({ error: 'Unauthorized' });
+
+  const profileKey = `user:profile:${userId}`;
+  let profile = await kv.get<any>(profileKey);
+  const today = new Date().toISOString().split('T')[0];
+
+  if (!profile) {
+    return res.status(403).json({ error: 'User profile not initialized' });
+  }
+
+  // Reset AI usage if it's a new day
+  if (profile.usage.last_ai_reset !== today) {
+    profile.usage.ai_daily_count = 0;
+    profile.usage.last_ai_reset = today;
+    await kv.set(profileKey, profile);
+  }
+
+  const plan = profile.plan || 'free';
+  const config = PLAN_CONFIG[plan as keyof typeof PLAN_CONFIG] || PLAN_CONFIG.free;
+  const limit = config.AI_DAILY_LIMIT || 15;
+
+  // Handle GET request for usage check
+  if (req.method === 'GET') {
+    return res.status(200).json({ 
+      count: profile.usage.ai_daily_count, 
+      limit 
+    });
+  }
+
   if (req.method !== 'POST') {
     return res.status(405).send('Method not allowed');
   }
 
   try {
     const { messages, context } = req.body;
-    const authHeader = req.headers.authorization;
-    
-    if (!authHeader?.startsWith('Bearer ')) return res.status(401).json({ error: 'Unauthorized' });
-    
-    const token = authHeader.split(' ')[1];
-    let userId = "";
-    
-    try {
-      const tokenInfo = await fetch(`https://www.googleapis.com/oauth2/v3/tokeninfo?access_token=${token}`);
-      if (!tokenInfo.ok) return res.status(401).json({ error: 'Invalid token' });
-      const info = await tokenInfo.json() as any;
-      userId = info.sub || info.user_id;
-    } catch (e) {
-      return res.status(401).json({ error: 'Token verification failed' });
-    }
-
-    // 1. Fetch Unified Profile
-    const profileKey = `user:profile:${userId}`;
-    let profile = await kv.get<any>(profileKey);
-    const today = new Date().toISOString().split('T')[0];
-
-    if (!profile) {
-        // Handle missing profile (should ideally be initialized via /api/user?action=profile)
-        return res.status(403).json({ error: 'User profile not initialized' });
-    }
-
-    // 2. Reset AI usage if it's a new day
-    if (profile.usage.last_ai_reset !== today) {
-        profile.usage.ai_daily_count = 0;
-        profile.usage.last_ai_reset = today;
-    }
-
-    const plan = profile.plan || 'free';
-    const config = PLAN_CONFIG[plan as keyof typeof PLAN_CONFIG] || PLAN_CONFIG.free;
-    const limit = config.AI_DAILY_LIMIT || 15;
 
     if (profile.usage.ai_daily_count >= limit) {
       return res.status(429).json({ 
@@ -489,11 +497,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       });
     }
 
-    // 3. Increment usage and update profile
+    // Increment usage and update profile
     profile.usage.ai_daily_count += 1;
     await kv.set(profileKey, profile);
 
-    // 4. Select Model
+    // Select Model
     const model = plan === 'pro' ? PREMIUM_MODELS[0] : BASIC_MODELS[0];
     
     res.setHeader('Content-Type', 'text/event-stream');

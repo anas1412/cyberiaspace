@@ -1,6 +1,8 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { kv } from '@vercel/kv';
 
+import { hydrateProfile } from './profile-helper';
+
 export default async function handler(req: VercelRequest, res: VercelResponse) {
     const { action } = req.query;
 
@@ -32,41 +34,24 @@ async function getUnifiedProfile(userId: string, email?: string, name?: string, 
     const profileKey = `user:profile:${userId}`;
     let profile = await kv.get<any>(profileKey);
 
-    const today = new Date().toISOString().split('T')[0];
-
-    if (!profile) {
-        // Initialize new profile
+    const isNew = !profile;
+    
+    if (isNew) {
         profile = {
             id: userId,
             email: email || '',
             name: name || '',
-            avatar: avatar || '',
-            plan: 'free',
-            subscriptionStatus: 'none',
-            expiryDate: null,
-            usage: {
-                ai_daily_count: 0,
-                sync_thoughts: 0,
-                last_ai_reset: today
-            },
-            settings: {
-                theme: 'cyberia',
-                autoSync: true,
-                driveEnabled: false
-            },
-            lastSeen: new Date().toISOString()
+            avatar: avatar || ''
         };
-        await kv.set(profileKey, profile);
-    } else {
-        // Reset AI usage if it's a new day
-        if (profile.usage.last_ai_reset !== today) {
-            profile.usage.ai_daily_count = 0;
-            profile.usage.last_ai_reset = today;
-            await kv.set(profileKey, profile);
-        }
     }
 
-    return profile;
+    const hydrated = hydrateProfile(profile);
+
+    // Save if new or if hydration changed something (implied by hydrateProfile logic)
+    // To be safe and future-proof, we always save on load to keep lastSeen and schema updated
+    await kv.set(profileKey, hydrated);
+
+    return hydrated;
 }
 
 async function handleProfile(req: VercelRequest, res: VercelResponse) {

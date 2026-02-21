@@ -11,14 +11,13 @@ const Modal: React.FC = () => {
   const { isOpen, title, description, type, inputValue: initialValue, confirmText, onConfirm, content, closeModal } = useModalStore();
   const [inputValue, setInputValue] = useState('');
 
-  const handleConfirm = React.useCallback(() => {
-    if (onConfirm) onConfirm(inputValue);
+  const handleConfirm = React.useCallback((value?: string) => {
+    if (onConfirm) onConfirm(value || inputValue);
     closeModal();
   }, [onConfirm, inputValue, closeModal]);
 
   useEffect(() => {
     if (isOpen) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect
       setInputValue(initialValue || '');
     }
   }, [isOpen, initialValue]);
@@ -36,7 +35,8 @@ const Modal: React.FC = () => {
   if (!isOpen) return null;
 
   const showInput = ['rename', 'new_space'].includes(type);
-  const showCancel = !['limit_space', 'limit_thought', 'alert', 'terms'].includes(type);
+  const showCancel = !['limit_space', 'limit_thought', 'alert', 'terms', 'conflict_resolver'].includes(type);
+  const showStandardButtons = !['terms', 'conflict_resolver', 'custom'].includes(type);
 
   return (
     <div id="modal-overlay" className="fixed inset-0 bg-black/90 backdrop-blur-[10px] z-[11000] flex items-center justify-center animate-in fade-in duration-200 p-4">
@@ -49,7 +49,6 @@ const Modal: React.FC = () => {
 
         {type === 'terms' ? (
           <div className="text-left space-y-8 my-8 max-h-[70vh] overflow-y-auto pr-4 custom-scroll">
-            {/* 1. Visual Summary Cards */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
               {[
                 { title: 'Local First', icon: '🔒', desc: 'Your data stays on your device by default.' },
@@ -58,53 +57,45 @@ const Modal: React.FC = () => {
               ].map((card, i) => (
                 <div key={i} className="bg-white/[0.03] border border-white/5 p-4 rounded-2xl flex flex-col items-center text-center">
                   <span className="text-xl mb-2">{card.icon}</span>
-                  <h4 className="text-[9px] font-black uppercase tracking-widest text-indigo-400 mb-1">{card.title}</h4>
+                  <h4 className="text-[9px] font-black uppercase tracking-widest text-blue-400 mb-1">{card.title}</h4>
                   <p className="text-[10px] text-slate-500 font-medium leading-tight">{card.desc}</p>
                 </div>
               ))}
             </div>
 
-            {/* 2. Detailed Protocol */}
             <div className="space-y-6">
               {[
-                {
-                  title: 'A. Data Ownership & Governance',
-                  desc: 'Everything you create in Cyberia is your property. We treat your thoughts as private, kinetic assets. We do not license, mine, or metadata-track your workspace content.'
-                },
-                {
-                  title: 'B. Payments & Security (Konnect Network)',
-                  desc: 'We use the Konnect Network for payment processing. Cyberia never touches your sensitive card details. Our system only receives a verification token to activate your Pro tier.'
-                },
-                {
-                  title: 'C. AI Interaction (Llama Models)',
-                  desc: 'When communicating with The Oracle, relevant snippets of your space are processed by high-speed Llama models via Groq. This data is used only for real-time inference and is not stored permanently or used for global model training.'
-                },
-                {
-                  title: 'D. Cloud Sync Protocol',
-                  desc: 'Sync is a convenience service. Data sent to our cloud (Vercel KV) is encrypted in-transit and isolated to your Google ID. You can wipe your cloud data at any time.'
-                },
-                {
-                  title: 'E. Ephemeral Sharing (30-Day Policy)',
-                  desc: 'Publicly shared snapshots are temporary. They naturally expire and are purged from our servers 30 days after their last update to maintain a clean digital footprint.'
-                },
-                {
-                  title: 'F. Portability Commitment',
-                  desc: "Cyberia will always provide a free, unrestricted way to export your data into standard formats like Markdown or JSON. You are never locked into our ecosystem."
-                }
+                { title: 'A. Data Ownership & Governance', desc: 'Everything you create in Cyberia is your property. We treat your thoughts as private, kinetic assets.' },
+                { title: 'B. Payments & Security', desc: 'We use the Konnect Network for payment processing. Cyberia never touches your sensitive card details.' },
+                { title: 'C. AI Interaction', desc: 'When communicating with The Oracle, relevant snippets of your space are processed by high-speed Llama models via Groq.' },
+                { title: 'D. Cloud Sync Protocol', desc: 'Sync is a convenience service. Data sent to our cloud (Vercel KV) is encrypted in-transit and isolated to your Google ID.' },
+                { title: 'E. Ephemeral Sharing', desc: 'Publicly shared snapshots are temporary. They naturally expire and are purged from our servers 30 days after their last update.' },
+                { title: 'F. Portability Commitment', desc: "Cyberia will always provide a free, unrestricted way to export your data into standard formats like Markdown or JSON." }
               ].map((protocol, i) => (
-                <div key={i} className="space-y-1.5 border-l-2 border-indigo-500/20 pl-4 py-1">
-                  <h4 className="text-[10px] font-black uppercase tracking-widest text-indigo-400/80">{protocol.title}</h4>
+                <div key={i} className="space-y-1.5 border-l-2 border-blue-500/20 pl-4 py-1">
+                  <h4 className="text-[10px] font-black uppercase tracking-widest text-blue-400/80">{protocol.title}</h4>
                   <p className="text-[11px] text-slate-400 leading-relaxed font-medium">{protocol.desc}</p>
                 </div>
               ))}
             </div>
-
-            {/* 3. Footer Tech Specs */}
-            <div className="pt-4 border-t border-white/5">
-              <p className="text-[9px] font-mono text-slate-600 uppercase tracking-tighter">
-                Architecture: AES-256-GCM • TLS 1.3 • OAuth 2.0 • Local-First PWA
-              </p>
-            </div>
+          </div>
+        ) : type === 'conflict_resolver' ? (
+          <div className="flex flex-col gap-4 mt-8">
+            <button
+              onClick={() => handleConfirm('cloud')}
+              className="w-full py-4 bg-blue-500 hover:bg-blue-600 text-white rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all shadow-lg shadow-blue-500/20 active:scale-95"
+            >
+              Use Cloud Backup (Overwrite)
+            </button>
+            <button
+              onClick={() => handleConfirm('local')}
+              className="w-full py-4 bg-white/5 hover:bg-white/10 text-white rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all border border-white/10 active:scale-95"
+            >
+              Keep Local Data (Push to Cloud)
+            </button>
+            <p className="text-[8px] text-slate-500 uppercase font-bold tracking-widest text-center mt-2">
+              Choosing "Keep Local" will update your cloud account with this device's data.
+            </p>
           </div>
         ) : type === 'custom' ? (
           <div className="my-4">
@@ -125,10 +116,10 @@ const Modal: React.FC = () => {
           />
         )}
 
-        {type !== 'custom' && (
+        {showStandardButtons && (
           <div className="flex flex-col md:flex-row gap-3 md:gap-4">
             <button
-              onClick={handleConfirm}
+              onClick={() => handleConfirm()}
               className="order-1 md:order-2 flex-1 py-3.5 md:py-4 text-[10px] md:text-xs font-bold uppercase tracking-widest bg-[var(--accent)] rounded-xl md:rounded-2xl text-white hover:opacity-90 transition-colors shadow-lg shadow-[var(--accent-glow)]"
             >
               {confirmText || 'Confirm'}
@@ -142,6 +133,15 @@ const Modal: React.FC = () => {
               </button>
             )}
           </div>
+        )}
+
+        {type === 'terms' && (
+          <button
+            onClick={() => handleConfirm()}
+            className="w-full py-4 text-[10px] font-black uppercase tracking-[0.3em] bg-blue-500 rounded-2xl text-white hover:bg-blue-600 transition-all shadow-xl shadow-blue-500/20 active:scale-95"
+          >
+            Acknowledge & Enter
+          </button>
         )}
       </div>
     </div>
