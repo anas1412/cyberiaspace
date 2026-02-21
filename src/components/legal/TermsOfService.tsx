@@ -4,7 +4,7 @@ import { FileText, ArrowLeft } from 'lucide-react';
 
 const TermsOfService: React.FC = () => {
   return (
-    <div className="min-h-[100dvh] bg-black text-slate-300 p-6 md:p-20 overflow-y-auto custom-scroll selection:bg-indigo-500/30">
+    <div className="min-h-[100dvh] bg-black text-slate-300 p-6 md:p-20 overflow-y-auto custom-scroll selection:bg-blue-500/30">
       <motion.div 
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -12,7 +12,7 @@ const TermsOfService: React.FC = () => {
       >
         <button 
           onClick={() => window.location.href = '/'}
-          className="flex items-center gap-2 text-indigo-400 hover:text-white transition-colors mb-12 group"
+          className="flex items-center gap-2 text-blue-400 hover:text-white transition-colors mb-12 group"
         >
           <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
           <span className="text-xs font-black uppercase tracking-widest">Back to Workspace</span>
@@ -20,8 +20,8 @@ const TermsOfService: React.FC = () => {
 
         <header className="mb-16">
           <div className="flex items-center gap-4 mb-6">
-            <div className="w-12 h-12 bg-indigo-500/10 rounded-2xl flex items-center justify-center border border-indigo-500/20">
-              <FileText className="w-6 h-6 text-indigo-400" />
+            <div className="w-12 h-12 bg-blue-500/10 rounded-2xl flex items-center justify-center border border-blue-500/20">
+              <FileText className="w-6 h-6 text-blue-400" />
             </div>
             <h1 className="text-4xl md:text-6xl font-black text-white uppercase tracking-tighter leading-none">Terms of Service</h1>
           </div>

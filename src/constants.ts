@@ -61,6 +61,8 @@ export const PLAN_CONFIG: Record<SubscriptionPlan, PlanLimits> = {
 
 export const MAX_FILE_SIZE_MB = 10;
 
+export const APP_VERSION = '1.0.5';
+
 export const DEFAULT_MODEL = import.meta.env.VITE_GROQ_MODEL || 'openai/gpt-oss-120b';
 
 

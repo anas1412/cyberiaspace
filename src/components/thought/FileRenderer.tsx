@@ -90,8 +90,8 @@ export const FileRenderer: React.FC<FileRendererProps> = ({ thought }) => {
           )}
         </div>
       </div>
-      <div className="w-8 h-8 rounded-lg bg-indigo-500/10 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-        <Download className="w-3.5 h-3.5 text-indigo-400" />
+      <div className="w-8 h-8 rounded-lg bg-blue-500/10 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+        <Download className="w-3.5 h-3.5 text-blue-400" />
       </div>
     </div>
   );

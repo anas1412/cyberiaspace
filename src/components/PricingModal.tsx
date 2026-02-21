@@ -109,7 +109,7 @@ const PricingModal: React.FC<PricingModalProps> = ({ isOpen, onClose }) => {
         {/* LEFT: Benefits */}
         <div className="flex-1 p-8 md:p-12 border-b md:border-b-0 md:border-r border-white/5">
           <div className="flex items-center gap-3 mb-8">
-            <div className="w-12 h-12 rounded-2xl bg-indigo-500/20 flex items-center justify-center text-indigo-400">
+            <div className="w-12 h-12 rounded-2xl bg-blue-500/20 flex items-center justify-center text-blue-400">
               <Zap className="w-6 h-6 animate-pulse" />
             </div>
             <div>
@@ -127,11 +127,11 @@ const PricingModal: React.FC<PricingModalProps> = ({ isOpen, onClose }) => {
               { title: 'Custom Themes', desc: 'Exclusive access to future premium visual architectures.' }
             ].map((feature, i) => (
               <div key={i} className="flex gap-4 group">
-                <div className="w-5 h-5 rounded-full bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center text-indigo-400 shrink-0 mt-0.5 group-hover:scale-110 transition-transform">
+                <div className="w-5 h-5 rounded-full bg-blue-500/10 border border-blue-500/20 flex items-center justify-center text-blue-400 shrink-0 mt-0.5 group-hover:scale-110 transition-transform">
                   <Check className="w-3 h-3" />
                 </div>
                 <div>
-                  <h4 className="text-[11px] font-black uppercase tracking-widest text-white group-hover:text-indigo-400 transition-colors">{feature.title}</h4>
+                  <h4 className="text-[11px] font-black uppercase tracking-widest text-white group-hover:text-blue-400 transition-colors">{feature.title}</h4>
                   <p className="text-[10px] font-medium text-slate-500">{feature.desc}</p>
                 </div>
               </div>
@@ -204,7 +204,7 @@ const PricingModal: React.FC<PricingModalProps> = ({ isOpen, onClose }) => {
               "w-full py-5 rounded-[2rem] text-[11px] font-black uppercase tracking-[0.2em] transition-all flex items-center justify-center gap-3 mb-6",
               (isLoading || import.meta.env.PROD)
                 ? "bg-slate-800 text-slate-500 cursor-not-allowed opacity-50"
-                : "bg-indigo-600 hover:bg-indigo-500 text-white shadow-xl shadow-indigo-500/20 active:scale-[0.98]"
+                : "bg-blue-600 hover:bg-blue-500 text-white shadow-xl shadow-blue-500/20 active:scale-[0.98]"
             )}
           >
             {isLoading ? (
@@ -225,7 +225,7 @@ const PricingModal: React.FC<PricingModalProps> = ({ isOpen, onClose }) => {
                 type: 'terms',
                 confirmText: 'Acknowledged'
               })}
-              className="text-[8px] font-black uppercase tracking-widest text-slate-500 hover:text-indigo-400 transition-colors pointer-events-auto"
+              className="text-[8px] font-black uppercase tracking-widest text-slate-500 hover:text-blue-400 transition-colors pointer-events-auto"
             >
               Privacy Policy & Terms
             </button>

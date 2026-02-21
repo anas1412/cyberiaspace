@@ -4,7 +4,7 @@ import { Shield, ArrowLeft } from 'lucide-react';
 
 const PrivacyPolicy: React.FC = () => {
   return (
-    <div className="min-h-[100dvh] bg-black text-slate-300 p-6 md:p-20 overflow-y-auto custom-scroll selection:bg-indigo-500/30">
+    <div className="min-h-[100dvh] bg-black text-slate-300 p-6 md:p-20 overflow-y-auto custom-scroll selection:bg-blue-500/30">
       <motion.div 
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -12,7 +12,7 @@ const PrivacyPolicy: React.FC = () => {
       >
         <button 
           onClick={() => window.location.href = '/'}
-          className="flex items-center gap-2 text-indigo-400 hover:text-white transition-colors mb-12 group"
+          className="flex items-center gap-2 text-blue-400 hover:text-white transition-colors mb-12 group"
         >
           <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
           <span className="text-xs font-black uppercase tracking-widest">Back to Workspace</span>
@@ -20,8 +20,8 @@ const PrivacyPolicy: React.FC = () => {
 
         <header className="mb-16">
           <div className="flex items-center gap-4 mb-6">
-            <div className="w-12 h-12 bg-indigo-500/10 rounded-2xl flex items-center justify-center border border-indigo-500/20">
-              <Shield className="w-6 h-6 text-indigo-400" />
+            <div className="w-12 h-12 bg-blue-500/10 rounded-2xl flex items-center justify-center border border-blue-500/20">
+              <Shield className="w-6 h-6 text-blue-400" />
             </div>
             <h1 className="text-4xl md:text-6xl font-black text-white uppercase tracking-tighter leading-none">Privacy Policy</h1>
           </div>
@@ -43,8 +43,8 @@ const PrivacyPolicy: React.FC = () => {
             </p>
           </div>
 
-          <div className="space-y-4 bg-indigo-500/5 border border-indigo-500/10 p-8 rounded-[2rem]">
-            <h2 className="text-xl font-black text-indigo-400 uppercase tracking-widest border-b border-indigo-500/20 pb-2">3. Google API Data Usage</h2>
+          <div className="space-y-4 bg-blue-500/5 border border-blue-500/10 p-8 rounded-[2rem]">
+            <h2 className="text-xl font-black text-blue-400 uppercase tracking-widest border-b border-blue-500/20 pb-2">3. Google API Data Usage</h2>
             <p className="leading-relaxed text-white font-medium">
               Cyberia uses Google OAuth services to provide optional cloud synchronization features.
             </p>
@@ -57,7 +57,7 @@ const PrivacyPolicy: React.FC = () => {
               </li>
             </ul>
             <p className="mt-6 p-4 bg-black/40 rounded-xl border border-white/5 text-sm italic">
-              <strong>Google Limited Use Disclosure:</strong> Cyberia's use and transfer to any other app of information received from Google APIs will adhere to the <a href="https://developers.google.com/terms/api-services-user-data-policy" target="_blank" rel="noreferrer" className="text-indigo-400 underline underline-offset-4 hover:text-indigo-300 transition-colors">Google API Services User Data Policy</a>, including the Limited Use requirements.
+              <strong>Google Limited Use Disclosure:</strong> Cyberia's use and transfer to any other app of information received from Google APIs will adhere to the <a href="https://developers.google.com/terms/api-services-user-data-policy" target="_blank" rel="noreferrer" className="text-blue-400 underline underline-offset-4 hover:text-blue-300 transition-colors">Google API Services User Data Policy</a>, including the Limited Use requirements.
             </p>
           </div>
 
@@ -71,7 +71,7 @@ const PrivacyPolicy: React.FC = () => {
           <div className="space-y-4">
             <h2 className="text-xl font-black text-white uppercase tracking-widest border-b border-white/5 pb-2">5. Contact</h2>
             <p className="leading-relaxed">
-              If you have questions about this policy or your data, please contact the Architect at <span className="text-indigo-400 font-mono">support@cyberia.tn</span>.
+              If you have questions about this policy or your data, please contact the Architect at <span className="text-blue-400 font-mono">support@cyberia.tn</span>.
             </p>
           </div>
         </section>

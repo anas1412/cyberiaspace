@@ -4,7 +4,8 @@ import { useStore } from '../store/useStore';
 import { PLAN_CONFIG } from '../constants';
 import { useModalStore } from '../store/useModalStore';
 import { useGoogleLogin } from '@react-oauth/google';
-import { User, LogOut, Cloud, CloudOff, RefreshCw, ChevronDown, Trash2, Power, Database, WifiOff, Zap, Star, CreditCard, Calendar, HardDrive, Loader2 } from 'lucide-react';
+import { LogOut, Cloud, CloudOff, RefreshCw, ChevronDown, Trash2, Power, Database, WifiOff, Zap, Star, CreditCard, Calendar, HardDrive, Loader2, LogIn } from 'lucide-react';
+
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 
@@ -18,7 +19,7 @@ const AccountMenu: React.FC = () => {
     user, status, signOut, syncStatus, lastSync, 
     syncData, autoSync, setAutoSync, deleteCloudData, 
     cloudUsage, calculateUsage, isOnline,
-    handleAuthCode, updateSettings, setAuthenticatedUser,
+    handleAuthCode, updateSettings,
     importCloudData
   } = store;
   
@@ -37,30 +38,10 @@ const AccountMenu: React.FC = () => {
     }
   }, [status]);
 
-  // Initial Login Flow (Identity Only) - Minimal config to reduce verification hurdles
-  const googleLogin = useGoogleLogin({
-    onSuccess: async (response) => {
-      if (response.access_token) {
-        const res = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
-          headers: { Authorization: `Bearer ${response.access_token}` },
-        });
-        const data = await res.json();
-        
-        const googleUser: any = {
-          id: data.sub,
-          name: data.name,
-          email: data.email,
-          avatar: data.picture,
-          plan: 'free'
-        };
-
-        await setAuthenticatedUser(googleUser, response.access_token, ['openid', 'email', 'profile']);
-      }
-    },
-    onError: (error) => console.error('Login Failed:', error),
-    flow: 'implicit',
-    scope: 'openid email profile',
-  });
+  const handleNavigateToLogin = () => {
+    window.history.pushState({}, '', '/login');
+    window.dispatchEvent(new PopStateEvent('popstate'));
+  };
 
   // Drive Opt-in Flow (Additional Scopes)
   const driveLogin = useGoogleLogin({
@@ -151,41 +132,37 @@ const AccountMenu: React.FC = () => {
     });
   };
 
+  const handleClearCloudData = () => {
+    openModal({
+      title: 'Clear Cloud Backup?',
+      description: 'This will permanently delete your workspace backup from the cloud. Your local data will remain intact.',
+      type: 'delete_thought',
+      confirmText: 'Clear Backup',
+      onConfirm: async () => {
+        await deleteCloudData();
+        setIsOpen(false);
+      }
+    });
+  };
+
   if (status === 'unauthenticated' || !user) {
     return (
-      <div className="flex flex-col items-end gap-2">
-        <button
-          onClick={() => googleLogin()}
-          disabled={status === 'loading'}
-          className="h-[48px] px-6 glass rounded-2xl border border-white/5 shadow-2xl transition-all hover:bg-white/10 active:scale-95 flex items-center gap-3 group pointer-events-auto"
-        >
-          <div className="w-6 h-6 rounded-full bg-white/5 flex items-center justify-center text-slate-400 group-hover:text-white transition-colors">
-            <User className="w-3.5 h-3.5" />
-          </div>
-          <span className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-300 group-hover:text-white">Sign In</span>
-          {status === 'loading' && <RefreshCw className="w-3.5 h-3.5 animate-spin text-[var(--accent)]" />}
-        </button>
-        <div className="flex items-center gap-3 pr-2 opacity-40">
-          <button 
-            onClick={() => window.location.href = '/privacy'}
-            className="text-[7px] font-black uppercase tracking-widest text-slate-400 hover:text-white transition-colors"
-          >
-            Privacy
-          </button>
-          <span className="w-0.5 h-0.5 rounded-full bg-white/20" />
-          <button 
-            onClick={() => window.location.href = '/terms'}
-            className="text-[7px] font-black uppercase tracking-widest text-slate-400 hover:text-white transition-colors"
-          >
-            Terms
-          </button>
-        </div>
-      </div>
+      <button
+        onClick={handleNavigateToLogin}
+        disabled={status === 'loading'}
+        className="h-[48px] px-6 glass rounded-2xl border border-white/5 shadow-2xl hover:bg-white/10 text-white flex items-center justify-center gap-3 group pointer-events-auto active:scale-95 transition-all"
+      >
+        <LogIn className="w-4 h-4 text-blue-400 group-hover:scale-110 transition-transform" />
+        <span className="text-[10px] font-black uppercase tracking-[0.2em] whitespace-nowrap">Sign In</span>
+        {status === 'loading' && <RefreshCw className="ml-1 w-3.5 h-3.5 animate-spin text-white/50" />}
+      </button>
     );
   }
 
 
-  const isDriveActive = user.settings?.driveEnabled;
+
+
+  const isDriveActive = user?.settings?.driveEnabled;
 
   return (
     <div className="relative pointer-events-auto" ref={menuRef}>
@@ -198,8 +175,8 @@ const AccountMenu: React.FC = () => {
       >
         <div className="relative">
           <img 
-            src={user.avatar} 
-            alt={user.name} 
+            src={user?.avatar} 
+            alt={user?.name} 
             referrerPolicy="no-referrer"
             className="w-8 h-8 rounded-xl border border-white/10 shadow-lg"
           />
@@ -219,41 +196,41 @@ const AccountMenu: React.FC = () => {
         <div className="absolute top-full mt-2 right-0 w-64 md:w-72 glass rounded-[1.5rem] md:rounded-[2rem] border border-white/10 shadow-2xl p-4 md:p-5 animate-in fade-in slide-in-from-top-2 duration-300 z-[10000]">
           <div className="flex items-center gap-3 mb-4">
             <img 
-              src={user.avatar} 
-              alt={user.name} 
+              src={user?.avatar} 
+              alt={user?.name} 
               referrerPolicy="no-referrer"
               className="w-10 h-10 rounded-xl border border-white/10 shadow-xl"
             />
             <div className="flex-1 overflow-hidden">
               <div className="flex items-center gap-2 mb-0.5">
-                <h4 className="text-[10px] md:text-[11px] font-black uppercase tracking-widest text-white truncate">{user.name}</h4>
+                <h4 className="text-[10px] md:text-[11px] font-black uppercase tracking-widest text-white truncate">{user?.name}</h4>
                 <div className={cn(
                   "px-1.5 py-0.5 rounded-md text-[8px] font-black uppercase tracking-widest border shrink-0",
-                  user.plan === 'pro' ? "bg-indigo-500/20 border-indigo-500/30 text-indigo-400" : "bg-slate-500/20 border-slate-500/30 text-slate-400"
+                  user?.plan === 'pro' ? "bg-blue-500/20 border-blue-500/30 text-blue-400" : "bg-slate-500/20 border-slate-500/30 text-slate-400"
                 )}>
-                  {user.plan === 'pro' ? 'PRO' : 'FREE'}
+                  {user?.plan === 'pro' ? 'PRO' : 'FREE'}
                 </div>
               </div>
-              <p className="text-[8px] md:text-[9px] font-medium text-slate-500 truncate w-full">{user.email}</p>
+              <p className="text-[8px] md:text-[9px] font-medium text-slate-500 truncate w-full">{user?.email}</p>
             </div>
           </div>
 
-          {user.plan === 'pro' ? (
-            <div className="mb-4 p-3 rounded-2xl bg-indigo-500/5 border border-indigo-500/10">
+          {user?.plan === 'pro' ? (
+            <div className="mb-4 p-3 rounded-2xl bg-blue-500/5 border border-blue-500/10">
               <div className="flex items-center justify-between mb-2">
                 <div className="flex items-center gap-2">
-                  <CreditCard className="w-3 h-3 text-indigo-400" />
+                  <CreditCard className="w-3 h-3 text-blue-400" />
                   <span className="text-[8px] font-black uppercase tracking-widest text-slate-300">Pro Access</span>
                 </div>
                 <span className={cn(
                   "text-[9px] font-black uppercase px-1.5 py-0.5 rounded-md",
-                  user.subscriptionStatus === 'active' ? "bg-green-500/10 text-green-400" : "bg-red-500/10 text-red-400"
-                )}>{user.subscriptionStatus}</span>
+                  user?.subscriptionStatus === 'active' ? "bg-green-500/10 text-green-400" : "bg-red-500/10 text-red-400"
+                )}>{user?.subscriptionStatus}</span>
               </div>
               <div className="flex items-center gap-2 mb-3">
                 <Calendar className="w-3 h-3 text-slate-500" />
                 <span className="text-[9px] font-bold text-slate-500 uppercase tracking-widest">
-                  Expires: {user.expiryDate ? new Date(user.expiryDate).toLocaleDateString() : 'N/A'}
+                  Expires: {user?.expiryDate ? new Date(user?.expiryDate).toLocaleDateString() : 'N/A'}
                 </span>
               </div>
               <button 
@@ -261,7 +238,7 @@ const AccountMenu: React.FC = () => {
                   openPricing();
                   setIsOpen(false);
                 }}
-                className="w-full py-2 bg-indigo-500/10 hover:bg-indigo-500/20 text-indigo-400 rounded-xl text-[7px] font-black uppercase tracking-widest transition-all border border-indigo-500/20"
+                className="w-full py-2 bg-blue-500/10 hover:bg-blue-500/20 text-blue-400 rounded-xl text-[7px] font-black uppercase tracking-widest transition-all border border-blue-500/20"
               >
                 Extend Access
               </button>
@@ -272,16 +249,16 @@ const AccountMenu: React.FC = () => {
                 openPricing();
                 setIsOpen(false);
               }}
-              className="w-full mb-4 flex items-center justify-between p-3 rounded-2xl bg-indigo-500/10 border border-indigo-500/20 hover:bg-indigo-500/20 transition-all group"
+              className="w-full mb-4 flex items-center justify-between p-3 rounded-2xl bg-blue-500/10 border border-blue-500/20 hover:bg-blue-500/20 transition-all group"
             >
               <div className="flex items-center gap-2.5">
-                <Zap className="w-4 h-4 text-indigo-400 animate-pulse" />
+                <Zap className="w-4 h-4 text-blue-400 animate-pulse" />
                 <div className="text-left">
                   <p className="text-[9px] font-black uppercase tracking-widest text-white">Upgrade to Pro</p>
-                  <p className="text-[7px] font-bold text-indigo-400/70 uppercase tracking-widest">Unlock Oracle & More Spaces</p>
+                  <p className="text-[7px] font-bold text-blue-400/70 uppercase tracking-widest">Unlock Oracle & More Spaces</p>
                 </div>
               </div>
-              <Star className="w-3.5 h-3.5 text-indigo-400 fill-indigo-400" />
+              <Star className="w-3.5 h-3.5 text-blue-400 fill-blue-400" />
             </button>
           )}
 
@@ -304,8 +281,8 @@ const AccountMenu: React.FC = () => {
               <div className="flex items-center gap-2">
                 {isDriveLoading ? (
                   <div className="px-3 py-1.5 flex items-center gap-2">
-                    <Loader2 className="w-3 h-3 text-indigo-400 animate-spin" />
-                    <span className="text-[8px] font-black uppercase tracking-widest text-indigo-400/60">Wait...</span>
+                    <Loader2 className="w-3 h-3 text-blue-400 animate-spin" />
+                    <span className="text-[8px] font-black uppercase tracking-widest text-blue-400/60">Wait...</span>
                   </div>
                 ) : isDriveActive ? (
                   <button 
@@ -320,7 +297,7 @@ const AccountMenu: React.FC = () => {
                       setIsDriveLoading(true);
                       driveLogin();
                     }}
-                    className="px-3 py-1.5 bg-indigo-500 hover:bg-indigo-600 text-white rounded-lg text-[8px] font-black uppercase tracking-widest transition-all shadow-lg active:scale-95"
+                    className="px-3 py-1.5 bg-blue-500 hover:bg-blue-600 text-white rounded-lg text-[8px] font-black uppercase tracking-widest transition-all shadow-lg active:scale-95"
                   >
                     Connect
                   </button>
@@ -410,7 +387,7 @@ const AccountMenu: React.FC = () => {
                 "text-[8px] font-black tracking-widest",
                 cloudUsage > 100 ? "text-red-400 animate-pulse" : cloudUsage > 90 ? "text-red-400" : "text-slate-500"
               )}>
-                {user.usage.sync_thoughts} / {PLAN_CONFIG[user.plan].MAX_CLOUD_THOUGHTS}
+                {user?.usage?.sync_thoughts || 0} / {PLAN_CONFIG[user?.plan || 'free'].MAX_CLOUD_THOUGHTS}
               </span>
             </div>
             <div className="h-1 w-full bg-white/5 rounded-full overflow-hidden border border-white/5">
@@ -427,7 +404,7 @@ const AccountMenu: React.FC = () => {
 
           <div className="grid grid-cols-2 gap-2 mb-4">
             <button
-              onClick={deleteCloudData}
+              onClick={handleClearCloudData}
               disabled={syncStatus === 'syncing' || !lastSync || !isOnline}
               className="flex items-center justify-center gap-1.5 py-2.5 rounded-lg md:rounded-xl hover:bg-red-500/10 text-red-500/60 hover:text-red-400 text-[8px] md:text-[9px] font-black uppercase tracking-widest transition-all border border-transparent hover:border-red-500/10 disabled:opacity-30"
               title="Delete cloud data only"
@@ -447,19 +424,25 @@ const AccountMenu: React.FC = () => {
             </button>
           </div>
 
-          <div className="flex items-center justify-center gap-4 pt-2 border-t border-white/5">
+          <div className="flex items-center justify-center gap-4 pt-2 border-t border-white/5 opacity-40">
             <button 
-              onClick={() => window.location.href = '/privacy'}
-              className="text-[7px] font-black uppercase tracking-[0.2em] text-slate-600 hover:text-slate-400 transition-colors"
+              onClick={() => {
+                window.history.pushState({}, '', '/privacy');
+                window.dispatchEvent(new PopStateEvent('popstate'));
+              }}
+              className="text-[8px] font-black uppercase tracking-widest text-slate-400 hover:text-white transition-colors"
             >
-              Privacy
+              Privacy Policy
             </button>
-            <span className="w-1 h-1 rounded-full bg-white/5" />
+            <span className="w-0.5 h-0.5 rounded-full bg-white/20" />
             <button 
-              onClick={() => window.location.href = '/terms'}
-              className="text-[7px] font-black uppercase tracking-[0.2em] text-slate-600 hover:text-slate-400 transition-colors"
+              onClick={() => {
+                window.history.pushState({}, '', '/terms');
+                window.dispatchEvent(new PopStateEvent('popstate'));
+              }}
+              className="text-[8px] font-black uppercase tracking-widest text-slate-400 hover:text-white transition-colors"
             >
-              Terms
+              Terms of Service
             </button>
           </div>
         </div>

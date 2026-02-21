@@ -14,6 +14,7 @@ import Modal from './components/Modal';
 import PricingModal from './components/PricingModal';
 import Lightbox from './components/Lightbox';
 import LoadingOverlay from './components/LoadingOverlay';
+import UpdateToast from './components/UpdateToast';
 import { fetchEmbedMeta } from './utils/embeds';
 
 // Lazy Loaded Components
@@ -31,6 +32,7 @@ const FeedbackPage = lazy(() => import('./components/FeedbackPage'));
 const PrivacyPolicy = lazy(() => import('./components/legal/PrivacyPolicy'));
 const TermsOfService = lazy(() => import('./components/legal/TermsOfService'));
 const LandingAbout = lazy(() => import('./components/LandingAbout'));
+const LoginPage = lazy(() => import('./components/auth/LoginPage'));
 
 function App() {
   const init = useStore((state) => state.init);
@@ -41,6 +43,7 @@ function App() {
   const setInspectorOpen = useStore((state) => state.setInspectorOpen);
   const activeSpaceId = useStore((state) => state.activeSpaceId);
   const spaces = useStore((state) => state.spaces);
+  const onboardingDismissed = useStore((state) => state.onboardingDismissed);
 
   const { isPricingOpen, closePricing, openModal } = useModalStore();
   const { status } = useAuthStore();
@@ -352,6 +355,14 @@ function App() {
     );
   }
 
+  if (path === '/login') {
+    return (
+      <Suspense fallback={<LoadingOverlay force />}>
+        <LoginPage />
+      </Suspense>
+    );
+  }
+
 
   return (
     <div className="w-full h-full relative overflow-hidden bg-black">
@@ -377,7 +388,7 @@ function App() {
 
       <Suspense fallback={null}>
         <Viewport />
-        {status === 'unauthenticated' && <LandingAbout />}
+        {(status === 'unauthenticated' && !onboardingDismissed) && <LandingAbout />}
         <EmptyState />
         <KanbanOverlay />
 
@@ -396,6 +407,7 @@ function App() {
         <EmbedFocusEditor />
         <FileFocusEditor />
         <LoadingOverlay />
+        <UpdateToast />
       </Suspense>
       <Analytics />
       <SpeedInsights />

@@ -1,6 +1,7 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { kv } from '@vercel/kv';
 import crypto from 'crypto';
+import { hydrateProfile } from './profile-helper';
 
 const KONNECT_API_URL = process.env.NODE_ENV === 'production'
     ? 'https://api.konnect.network/api/v2'
@@ -162,7 +163,8 @@ async function handleWebhook(req: VercelRequest, res: VercelResponse) {
                 }
 
                 const { userId, billingCycle } = mapping;
-                const metaKey = `cyberia_user_meta_${userId}`;
+                const profileKey = `user:profile:${userId}`;
+                const existingProfile = await kv.get<any>(profileKey) || {};
 
                 const now = new Date();
                 const expiry = new Date();
@@ -172,11 +174,15 @@ async function handleWebhook(req: VercelRequest, res: VercelResponse) {
                     expiry.setMonth(now.getMonth() + 1);
                 }
 
-                await kv.set(metaKey, {
+                const updatedProfile = hydrateProfile({
+                    ...existingProfile,
                     plan: 'pro',
+                    subscriptionStatus: 'active',
                     expiryDate: expiry.toISOString(),
                     updatedAt: now.toISOString()
                 });
+
+                await kv.set(profileKey, updatedProfile);
 
                 await kv.del(mappingKey);
                 console.log(`User ${userId} upgraded to Pro until ${expiry.toISOString()}`);

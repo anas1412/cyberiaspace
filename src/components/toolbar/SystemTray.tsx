@@ -1,5 +1,7 @@
 import React from 'react';
-import { MonitorSmartphone, Download, Upload, Camera, Shield, EyeOff, Eye, EyeClosed, Keyboard, CircleHelp, MoreVertical, Trash2, Zap, Gauge } from 'lucide-react';
+import { useStore } from '../../store/useStore';
+import { MonitorSmartphone, Download, Upload, Camera, EyeOff, Eye, EyeClosed, Keyboard, CircleHelp, MoreVertical, RefreshCw, Zap, Gauge, Trash2 } from 'lucide-react';
+
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 
@@ -29,8 +31,8 @@ interface SystemTrayProps {
   handleImport: (e: any) => void;
   isCapturing: boolean;
   openModal: (cfg: any) => void;
-  clearWorkspace: () => void;
   performanceMode: boolean;
+
   setPerformanceMode: (val: boolean) => void;
   customBg: string | null;
   setCustomBg: (bg: string | null) => Promise<void>;
@@ -42,8 +44,9 @@ export const SystemTray: React.FC<SystemTrayProps> = ({
   isReadOnly, user, limits, isChatOpen, setChatOpen, openPricing, 
   isShortcutsOpen, setIsShortcutsOpen, isHelpOpen, setIsHelpOpen, 
   isSystemMenuOpen, setIsSystemMenuOpen, theme, setTheme, 
-  deferredPrompt, handleInstall, handleExport, handleScreenshot, handleImport, isCapturing, openModal, clearWorkspace,
+  deferredPrompt, handleInstall, handleExport, handleScreenshot, handleImport, isCapturing, openModal,
   performanceMode, setPerformanceMode,
+
   customBg, setCustomBg,
   activeSpace, handleTogglePhysics
 }) => {
@@ -130,10 +133,41 @@ export const SystemTray: React.FC<SystemTrayProps> = ({
         <button onClick={handleExport} className="flex items-center gap-3 px-3 py-3 rounded-xl md:rounded-2xl hover:bg-white/5 text-[9px] md:text-[10px] font-black uppercase tracking-widest text-slate-300 transition-colors"><Download className="w-3.5 h-3.5" /> Export Data</button>
         <label className="flex items-center gap-3 px-3 py-3 rounded-xl md:rounded-2xl hover:bg-white/5 text-[9px] md:text-[10px] font-black uppercase tracking-widest text-slate-300 transition-colors cursor-pointer"><Upload className="w-3.5 h-3.5" /> Import Data<input type="file" className="hidden" accept=".json" onChange={handleImport} /></label>
         <button onClick={handleScreenshot} disabled={isCapturing} className="flex items-center gap-3 px-3 py-3 rounded-xl md:rounded-2xl hover:bg-white/5 text-[9px] md:text-[10px] font-black uppercase tracking-widest text-slate-300 transition-colors"><Camera className="w-3.5 h-3.5" /> {isCapturing ? 'Saving...' : 'Screenshot'}</button>
-        <button onClick={() => { openModal({ title: 'Terms of Service', type: 'terms', confirmText: 'Acknowledged' }); setIsSystemMenuOpen(false); }} className="flex items-center gap-3 px-3 py-3 rounded-xl md:rounded-2xl hover:bg-white/5 text-[9px] md:text-[10px] font-black uppercase tracking-widest text-slate-500 hover:text-indigo-400 transition-colors"><Shield className="w-3.5 h-3.5" /> Terms of Service</button>
         <div className="h-[1px] bg-white/5 my-3 mx-1"></div>
-        <div className="grid grid-cols-2 gap-2"><button onClick={() => { openModal({ title: 'Clear Workspace?', description: 'This will permanently delete all your spaces, thoughts, and stacks. This cannot be undone.', type: 'reset_confirm', confirmText: 'Clear All', onConfirm: clearWorkspace }); setIsSystemMenuOpen(false); }} className="w-full flex items-center justify-center gap-2 py-3 rounded-xl hover:bg-red-500/10 text-[9px] md:text-[10px] font-black uppercase tracking-widest text-red-400 transition-colors border border-transparent hover:border-red-500/10"><Trash2 className="w-3 h-3" /> Clear</button></div>
+        <div className="grid grid-cols-2 gap-2">
+          <button 
+            onClick={() => { 
+              openModal({ 
+                title: 'Clear Workspace?', 
+                description: 'This will delete all spaces, thoughts, and stacks, leaving one fresh workspace. This cannot be undone.', 
+                type: 'reset_confirm', 
+                confirmText: 'Clear All', 
+                onConfirm: () => useStore.getState().clearWorkspace() 
+              }); 
+              setIsSystemMenuOpen(false); 
+            }} 
+            className="w-full flex items-center justify-center gap-2 py-3 rounded-xl hover:bg-red-500/10 text-[9px] md:text-[10px] font-black uppercase tracking-widest text-red-400 transition-colors border border-transparent hover:border-red-500/10"
+          >
+            <Trash2 className="w-3 h-3" /> Clear
+          </button>
+          <button 
+            onClick={() => { 
+              openModal({ 
+                title: 'Reset App & Data?', 
+                description: 'This will permanently delete all your data, clear your session, and reset the onboarding. This cannot be undone.', 
+                type: 'reset_confirm', 
+                confirmText: 'Reset App', 
+                onConfirm: () => useStore.getState().clearLocalData() 
+              }); 
+              setIsSystemMenuOpen(false); 
+            }} 
+            className="w-full flex items-center justify-center gap-2 py-3 rounded-xl hover:bg-red-500/10 text-[9px] md:text-[10px] font-black uppercase tracking-widest text-red-400 transition-colors border border-transparent hover:border-red-500/10"
+          >
+            <RefreshCw className="w-3 h-3" /> Reset
+          </button>
+        </div>
       </div>
+
       <div className="flex items-center gap-3 pointer-events-auto">
         {/* Engine Cluster: Intelligence, Physics, Performance */}
         <div className="flex items-center gap-1.5 glass p-1.5 rounded-[1.5rem] border border-white/5">
@@ -148,7 +182,11 @@ export const SystemTray: React.FC<SystemTrayProps> = ({
               </div>
               <button 
                 onClick={() => { 
-                  if (!user) return;
+                  if (!user) {
+                    window.history.pushState({}, '', '/login');
+                    window.dispatchEvent(new PopStateEvent('popstate'));
+                    return;
+                  }
                   if (!limits.AI_ENABLED) { openPricing(); return; } 
                   setChatOpen(!isChatOpen); 
                 }} 
@@ -189,7 +227,7 @@ export const SystemTray: React.FC<SystemTrayProps> = ({
               <div className="glass px-3 py-1.5 rounded-xl border border-white/10 flex items-center gap-2 shadow-2xl bg-[var(--bg-main)]/90 backdrop-blur-xl">
                 <span className="text-[10px] font-black uppercase tracking-widest text-white/80">Performance</span>
                 <div className="w-[1px] h-2 bg-white/10 mx-0.5" />
-                <span className={cn("text-[8px] font-black uppercase tracking-widest", performanceMode ? "text-indigo-400" : "text-slate-400")}>
+                <span className={cn("text-[8px] font-black uppercase tracking-widest", performanceMode ? "text-blue-400" : "text-slate-400")}>
                   {performanceMode ? "Efficiency" : "High Quality"}
                 </span>
               </div>
@@ -198,7 +236,7 @@ export const SystemTray: React.FC<SystemTrayProps> = ({
               onClick={() => setPerformanceMode(!performanceMode)}
               className={cn(
                 "w-10 h-10 md:w-11 md:h-11 flex items-center justify-center rounded-2xl transition-all", 
-                performanceMode ? "bg-indigo-500 text-white shadow-[0_0_20px_rgba(99,102,241,0.3)]" : "text-slate-500 hover:bg-white/5"
+                performanceMode ? "bg-blue-500 text-white shadow-[0_0_20px_rgba(99,102,241,0.3)]" : "text-slate-500 hover:bg-white/5"
               )}
             >
               <Gauge className="w-4 h-4" />

@@ -514,3 +514,20 @@ body.low-perf .animate-breathe {
   background-image: radial-gradient(var(--accent-glow) 0.5px, transparent 0.5px);
   background-size: 60px 60px;
 }
+
+/* Global Interactive Cursors */
+button, 
+[role="button"], 
+label, 
+select, 
+summary, 
+a {
+  cursor: pointer;
+}
+
+button:disabled, 
+[role="button"]:disabled, 
+label:disabled {
+  cursor: not-allowed;
+}
+

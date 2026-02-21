@@ -69,11 +69,15 @@ const ThoughtNode: React.FC<ThoughtNodeProps> = React.memo(({ thought, registerE
 
   useEffect(() => {
     if (layerActionTrigger?.id === thought.id) {
-      setShowPing(true);
-      const timer = setTimeout(() => setShowPing(false), 800);
-      return () => clearTimeout(timer);
+      const timer = setTimeout(() => setShowPing(true), 0);
+      const hideTimer = setTimeout(() => setShowPing(false), 800);
+      return () => {
+        clearTimeout(timer);
+        clearTimeout(hideTimer);
+      };
     }
   }, [layerActionTrigger?.id, layerActionTrigger?.time, thought.id]);
+
 
   const altitudeStyles = useMemo(() => {
     if (!thought.layer) return {};

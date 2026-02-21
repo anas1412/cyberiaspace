@@ -47,6 +47,8 @@ export interface AuthState {
   deleteCloudData: () => Promise<void>;
   calculateUsage: (thoughtCount: number) => void;
   initAuth: () => void;
+  handlePostAuthSync: () => Promise<void>;
+  _syncPromise: Promise<void> | null;
   upgradePlan: (plan: SubscriptionPlan, period?: AccessPeriod) => void;
   checkExpiry: () => void;
   refreshProfile: () => Promise<void>;
@@ -54,8 +56,35 @@ export interface AuthState {
   cancelSubscription: () => void;
 }
 
+const getInitialUser = (): User | null => {
+  try {
+    const stored = localStorage.getItem('cyberia-user');
+    if (!stored) return null;
+    const user = JSON.parse(stored);
+    
+    const today = new Date().toISOString().split('T')[0];
+    return {
+      ...user,
+      plan: user.plan || 'free',
+      subscriptionStatus: user.subscriptionStatus || 'none',
+      usage: {
+        ai_daily_count: user.usage?.ai_daily_count ?? 0,
+        sync_thoughts: user.usage?.sync_thoughts ?? 0,
+        last_ai_reset: user.usage?.last_ai_reset ?? today,
+      },
+      settings: {
+        theme: user.settings?.theme ?? 'cyberia',
+        autoSync: user.settings?.autoSync ?? true,
+        driveEnabled: user.settings?.driveEnabled ?? false,
+      }
+    };
+  } catch (e) {
+    return null;
+  }
+};
+
 export const useAuthStore = create<AuthState>((set, get) => ({
-  user: JSON.parse(localStorage.getItem('cyberia-user') || 'null'),
+  user: getInitialUser(),
   accessToken: localStorage.getItem('cyberia-token'),
   grantedScopes: JSON.parse(localStorage.getItem('cyberia-scopes') || '[]'),
   status: localStorage.getItem('cyberia-user') ? 'authenticated' : 'unauthenticated',
@@ -64,15 +93,119 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   autoSync: localStorage.getItem('cyberia-auto-sync') !== 'false',
   cloudUsage: 0,
   isOnline: navigator.onLine,
+  _syncPromise: null as Promise<void> | null,
 
-  initAuth: () => {
+  initAuth: async () => {
     window.addEventListener('online', () => set({ isOnline: true }));
     window.addEventListener('offline', () => set({ isOnline: false, syncStatus: 'offline' }));
     get().checkExpiry();
     if (get().status === 'authenticated') {
-      get().refreshProfile();
+      console.log('[Auth] Initializing authenticated session...');
+      try {
+        await get().refreshProfile();
+        // After profile is refreshed, check for initial sync
+        if (!get().lastSync) {
+          console.log('[Auth] No lastSync found, triggering post-auth sync...');
+          await get().handlePostAuthSync();
+        }
+      } catch (err) {
+        console.warn('[Auth] Initialization failed:', err);
+      }
     }
   },
+
+  handlePostAuthSync: async () => {
+    // Coalesce multiple calls into one
+    if (get()._syncPromise) {
+      console.log('[Sync] Coalescing handlePostAuthSync call...');
+      return get()._syncPromise!;
+    }
+
+    const syncTask = (async () => {
+      const { useStore } = await import('./useStore');
+      const isBooting = useStore.getState().isInitializing;
+      
+      console.log('[Sync] Starting handlePostAuthSync...');
+      set({ syncStatus: 'syncing' });
+      
+      try {
+        const data: any = await get().importCloudData();
+        console.log('[Sync] Cloud data fetched:', data ? 'Data exists' : 'No data');
+        
+        // Check if cloud data is actually meaningful
+        const cloudIsEmpty = !data || (
+          (!data.thoughts || data.thoughts.length === 0) && 
+          (!data.spaces || data.spaces.length <= 1)
+        );
+
+        if (data && !cloudIsEmpty) {
+          console.log('[Sync] Cloud data is meaningful, checking local state...');
+          const localIsEmpty = await useStore.getState().isLocalWorkspaceEmpty();
+          console.log('[Sync] Local workspace empty:', localIsEmpty);
+          
+          if (!localIsEmpty) {
+            console.log('[Sync] CONFLICT DETECTED');
+            const { useModalStore } = await import('./useModalStore');
+            
+            // Ensure we stop loading so user can see the modal
+            useStore.setState({ isInitializing: false });
+
+            await new Promise((resolve) => {
+              useModalStore.getState().openModal({
+                title: 'Data Conflict',
+                description: 'We found existing data on this device. Would you like to use your cloud backup or keep your local workspace?',
+                type: 'conflict_resolver',
+                onConfirm: async (choice) => {
+                  console.log('[Sync] User choice:', choice);
+                  // Only show loader during actual destructive swap
+                  useStore.setState({ isInitializing: true });
+                  try {
+                    if (choice === 'cloud') {
+                      await useStore.getState().importFullState(data);
+                    } else if (choice === 'local') {
+                      await get().syncData();
+                    }
+                    const now = new Date();
+                    set({ lastSync: now, syncStatus: 'synced' });
+                    localStorage.setItem('cyberia-last-sync', now.toISOString());
+                  } finally {
+                    useStore.setState({ isInitializing: false });
+                    resolve(void 0);
+                  }
+                }
+              });
+            });
+          } else {
+            console.log('[Sync] Local is empty, auto-importing cloud data...');
+            await useStore.getState().importFullState(data);
+          }
+        } else {
+          console.log('[Sync] Cloud is empty or missing, keeping local data...');
+          if (get().status === 'authenticated') {
+            await get().syncData();
+          }
+        }
+        
+        const now = new Date();
+        set({ syncStatus: 'synced', lastSync: now });
+        localStorage.setItem('cyberia-last-sync', now.toISOString());
+        console.log('[Sync] Post-auth sync complete.');
+      } catch (e: any) {
+        console.error('[Sync] Post-auth sync failed:', e);
+        set({ syncStatus: 'error' });
+      } finally {
+        set({ _syncPromise: null });
+        // Only clear initializing if we are actually in a booting sequence
+        if (isBooting) {
+          useStore.setState({ isInitializing: false });
+        }
+      }
+    })();
+
+    set({ _syncPromise: syncTask });
+    return syncTask;
+  },
+
 
   checkExpiry: () => {
     const { user } = get();
@@ -190,12 +323,21 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   },
 
   setAuthenticatedUser: async (user: User, token: string, scopes?: string[]) => {
+    const today = new Date().toISOString().split('T')[0];
     const userWithDefaults: User = { 
       ...user, 
       plan: user.plan || 'free',
       subscriptionStatus: user.subscriptionStatus || 'none',
-      usage: user.usage || { ai_daily_count: 0, sync_thoughts: 0, last_ai_reset: new Date().toISOString().split('T')[0] },
-      settings: user.settings || { theme: 'cyberia', autoSync: true, driveEnabled: false }
+      usage: {
+        ai_daily_count: user.usage?.ai_daily_count ?? 0,
+        sync_thoughts: user.usage?.sync_thoughts ?? 0,
+        last_ai_reset: user.usage?.last_ai_reset ?? today,
+      },
+      settings: {
+        theme: user.settings?.theme ?? 'cyberia',
+        autoSync: user.settings?.autoSync ?? true,
+        driveEnabled: user.settings?.driveEnabled ?? false,
+      }
     };
     
     localStorage.setItem('cyberia-user', JSON.stringify(userWithDefaults));
@@ -218,17 +360,10 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 
     try {
       await get().refreshProfile();
-      
-      const data = await get().importCloudData();
-      if (data) {
-        await useStore.getState().importFullState(data);
-      }
-      set({ syncStatus: 'synced', lastSync: new Date() });
+      await get().handlePostAuthSync();
     } catch (e) {
       console.error('Initial login sync failed', e);
       set({ syncStatus: 'error' });
-    } finally {
-      useStore.getState().isInitializing = false;
     }
   },
 
@@ -361,15 +496,18 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         headers: { 'Authorization': `Bearer ${accessToken}` }
       });
 
-      if (response.status === 401) {
-        get().signOut();
+      if (!response.ok) {
+        if (response.status === 401) {
+          get().signOut();
+        }
         return null;
       }
 
       const result = await response.json();
       set({ syncStatus: 'synced' });
       return result.data;
-    } catch {
+    } catch (err) {
+      console.error('[Sync] importCloudData failed:', err);
       set({ syncStatus: 'error' });
       return null;
     }
@@ -416,12 +554,13 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         body: JSON.stringify(payload)
       });
 
-      if (response.status === 401) {
-        get().signOut();
-        return;
+      if (!response.ok) {
+        if (response.status === 401) {
+          get().signOut();
+          return;
+        }
+        throw new Error(`Sync failed with status: ${response.status}`);
       }
-
-      if (!response.ok) throw new Error('Sync failed');
       
       const resData = await response.json();
       if (resData.usage && user) {

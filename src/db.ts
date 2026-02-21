@@ -77,9 +77,15 @@ const db = new Dexie('CyberiaDB') as Dexie & {
   pendingDeletions: EntityTable<PendingDeletion, 'id'>;
 };
 
-db.version(8).stores({
+// Handle database blocked or version change
+db.on('versionchange', () => {
+  db.close();
+  window.location.reload();
+});
+
+db.version(9).stores({
   spaces: 'id, name, order',
-  thoughts: '++id, spaceId, stackId, text, status, date, priority, order, author, driveFileId, syncStatus',
+  thoughts: '++id, spaceId, stackId, text, type, status, date, priority, order, author, driveFileId, syncStatus',
   stacks: 'id, spaceId, name',
   blobs: 'id, thoughtId',
   pendingDeletions: '++id, driveFileId'

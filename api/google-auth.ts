@@ -1,9 +1,24 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { kv } from '@vercel/kv';
+import { hydrateProfile } from './profile-helper';
 
 const CLIENT_ID = process.env.VITE_GOOGLE_CLIENT_ID || process.env.GOOGLE_CLIENT_ID;
 const CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET;
 const REDIRECT_URI = 'postmessage'; // standard for react-oauth/google code flow
+
+interface GoogleTokens {
+    access_token: string;
+    refresh_token?: string;
+    expires_in: number;
+    scope: string;
+}
+
+interface GoogleUser {
+    sub: string;
+    email: string;
+    name: string;
+    picture: string;
+}
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
     const { action } = req.query;
@@ -46,7 +61,7 @@ async function handleExchange(req: VercelRequest, res: VercelResponse) {
             }),
         });
 
-        const tokens = await tokenRes.json() as any;
+        const tokens = await tokenRes.json() as GoogleTokens;
         if (!tokenRes.ok) {
             console.error('[Google Auth] Google API Error:', tokens);
             return res.status(tokenRes.status).json({ 
@@ -65,38 +80,32 @@ async function handleExchange(req: VercelRequest, res: VercelResponse) {
         const userRes = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
             headers: { Authorization: `Bearer ${tokens.access_token}` },
         });
-        const userData = await userRes.json() as any;
+        const userData = await userRes.json() as GoogleUser;
         const userId = userData.sub;
 
         // Save refresh token in KV profile
         const profileKey = `user:profile:${userId}`;
-        const profile = await kv.get<any>(profileKey) || {};
+        const existingProfile = await kv.get<any>(profileKey) || {};
         
-        // Use default settings if new profile
-        const settings = {
-            autoSync: true,
-            theme: 'cyberia',
-            driveEnabled: false,
-            ...profile.settings
+        // Merging logic
+        const profileToHydrate = {
+            ...existingProfile,
+            id: userId,
+            email: userData.email || existingProfile.email,
+            name: userData.name || existingProfile.name,
+            avatar: userData.picture || existingProfile.avatar,
+            refreshToken: tokens.refresh_token || existingProfile.refreshToken
         };
 
-        // Update profile with refresh token and drive state
-        const updatedProfile = {
-            ...profile,
-            id: userId,
-            email: userData.email,
-            name: userData.name,
-            avatar: userData.picture,
-            refreshToken: tokens.refresh_token || profile.refreshToken,
-            settings: {
-                ...settings,
-                // Enable drive if:
-                // 1. The user just granted the scope in this popup
-                // 2. OR it was previously enabled AND we still have a valid master key
-                driveEnabled: hasDriveScope || (settings.driveEnabled && !!(tokens.refresh_token || profile.refreshToken))
-            },
-            lastSeen: new Date().toISOString()
-        };
+        const updatedProfile = hydrateProfile(profileToHydrate);
+
+        // Specialized incremental scope check
+        if (hasDriveScope) {
+            updatedProfile.settings.driveEnabled = true;
+        } else if (updatedProfile.settings.driveEnabled && !updatedProfile.refreshToken) {
+            // Safety: if drive is enabled but we lost the refresh token, disable it
+            updatedProfile.settings.driveEnabled = false;
+        }
         
         await kv.set(profileKey, updatedProfile);
 
@@ -133,7 +142,7 @@ async function handleRefresh(req: VercelRequest, res: VercelResponse) {
             }),
         });
 
-        const tokens = await tokenRes.json() as any;
+        const tokens = await tokenRes.json() as GoogleTokens;
         if (!tokenRes.ok) return res.status(tokenRes.status).json(tokens);
 
         return res.status(200).json({
