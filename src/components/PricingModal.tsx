@@ -120,11 +120,11 @@ const PricingModal: React.FC<PricingModalProps> = ({ isOpen, onClose }) => {
 
           <div className="space-y-6">
             {[
+              { title: 'Premium Oracle AI', desc: `Access advanced premium models with ${PLAN_CONFIG.pro.AI_DAILY_LIMIT} daily interactions (Free uses mini models with ${PLAN_CONFIG.free.AI_DAILY_LIMIT} daily).` },
               { title: 'Expanded Workspaces', desc: `Create up to ${PLAN_CONFIG.pro.MAX_SPACES} different spaces (Free only has ${PLAN_CONFIG.free.MAX_SPACES}).` },
               { title: 'High Frequency Flow', desc: `Add up to ${PLAN_CONFIG.pro.MAX_THOUGHTS_PER_SPACE} thoughts in every single space.` },
               { title: 'Heavy Cloud Sync', desc: `${PLAN_CONFIG.pro.MAX_CLOUD_THOUGHTS} Cloud Thoughts for power users (Free is ${PLAN_CONFIG.free.MAX_CLOUD_THOUGHTS}).` },
-              { title: 'Oracle AI Multiplier', desc: `${PLAN_CONFIG.pro.AI_DAILY_LIMIT} high-speed AI interactions daily (Free is ${PLAN_CONFIG.free.AI_DAILY_LIMIT}).` },
-              { title: 'Custom Visuals', desc: 'Exclusive access to premium architectures and future themes.' }
+              { title: 'Advanced Functionalities', desc: 'Exclusive access to future premium collaborative tools and beta updates.' }
             ].map((feature, i) => (
               <div key={i} className="flex gap-4 group">
                 <div className="w-5 h-5 rounded-full bg-blue-500/10 border border-blue-500/20 flex items-center justify-center text-blue-400 shrink-0 mt-0.5 group-hover:scale-110 transition-transform">
