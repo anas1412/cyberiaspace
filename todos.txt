@@ -55,9 +55,9 @@ TODO:
 
 
 - change api to flouci
-- verify with google https://support.google.com/cloud/answer/13463073?visit_id=639071902685974440-279288002&rd=1
+- verify with google https://support.google.com/cloud/answer/13463073?visit_id=639071902685974440-279288002&rd=1goo
 
-
+- i pushed to main and the app didnt update, probably the toast implementation isnt working? idk whats going on can u tell me. the app is still on the old version in my browser, the preview website got update but main one did not
 
 
 ------------------------------

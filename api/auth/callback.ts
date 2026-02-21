@@ -30,10 +30,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         return res.status(500).send('Server configuration error: Missing Google Credentials');
     }
 
-    // Dynamically determine redirect URI
+    // Use APP_URL for consistent redirect URI in production
     const host = req.headers.host;
     const protocol = host?.includes('localhost') ? 'http' : 'https';
-    const REDIRECT_URI = `${protocol}://${host}/api/auth/callback`;
+    const baseUrl = process.env.APP_URL || `${protocol}://${host}`;
+    const REDIRECT_URI = `${baseUrl}/api/auth/callback`;
+
+    console.log('[Auth Callback] Using REDIRECT_URI:', REDIRECT_URI);
 
     try {
         const client = new OAuth2Client(CLIENT_ID, CLIENT_SECRET, REDIRECT_URI);
