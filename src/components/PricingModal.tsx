@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useModalStore } from '../store/useModalStore';
 import { PLAN_CONFIG, type AccessPeriod } from '../constants';
-import { Zap, Check, Star, X } from 'lucide-react';
+import { Zap, Check, Star, X, Shield } from 'lucide-react';
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 
@@ -71,7 +71,7 @@ const PricingModal: React.FC<PricingModalProps> = ({ isOpen, onClose }) => {
           'Authorization': `Bearer ${authStore.accessToken}`
         },
         body: JSON.stringify({
-          amount: billingCycle === 'monthly' ? currentPrice.tnd : currentPrice.tnd * 12,
+          amount: location?.currency === 'DT' ? currentPrice.tnd : currentPrice.usd,
           currency: location?.currency === 'DT' ? 'TND' : 'USD',
           billingCycle
         })
@@ -120,11 +120,11 @@ const PricingModal: React.FC<PricingModalProps> = ({ isOpen, onClose }) => {
 
           <div className="space-y-6">
             {[
-              { title: 'More Workspaces', desc: 'Create up to 8 different spaces (Free only has 3).' },
-              { title: 'Bigger Capacity', desc: 'Add up to 50 thoughts in every single space.' },
-              { title: '400 Cloud Thoughts', desc: 'High-capacity sync for power users (Free is 60).' },
-              { title: 'Priority Support', desc: 'Get help directly from the Cyberia development team.' },
-              { title: 'Custom Themes', desc: 'Exclusive access to future premium visual architectures.' }
+              { title: 'Expanded Workspaces', desc: `Create up to ${PLAN_CONFIG.pro.MAX_SPACES} different spaces (Free only has ${PLAN_CONFIG.free.MAX_SPACES}).` },
+              { title: 'High Frequency Flow', desc: `Add up to ${PLAN_CONFIG.pro.MAX_THOUGHTS_PER_SPACE} thoughts in every single space.` },
+              { title: 'Heavy Cloud Sync', desc: `${PLAN_CONFIG.pro.MAX_CLOUD_THOUGHTS} Cloud Thoughts for power users (Free is ${PLAN_CONFIG.free.MAX_CLOUD_THOUGHTS}).` },
+              { title: 'Oracle AI Multiplier', desc: `${PLAN_CONFIG.pro.AI_DAILY_LIMIT} high-speed AI interactions daily (Free is ${PLAN_CONFIG.free.AI_DAILY_LIMIT}).` },
+              { title: 'Custom Visuals', desc: 'Exclusive access to premium architectures and future themes.' }
             ].map((feature, i) => (
               <div key={i} className="flex gap-4 group">
                 <div className="w-5 h-5 rounded-full bg-blue-500/10 border border-blue-500/20 flex items-center justify-center text-blue-400 shrink-0 mt-0.5 group-hover:scale-110 transition-transform">
@@ -132,7 +132,7 @@ const PricingModal: React.FC<PricingModalProps> = ({ isOpen, onClose }) => {
                 </div>
                 <div>
                   <h4 className="text-[11px] font-black uppercase tracking-widest text-white group-hover:text-blue-400 transition-colors">{feature.title}</h4>
-                  <p className="text-[10px] font-medium text-slate-500">{feature.desc}</p>
+                  <p className="text-[10px] font-medium text-slate-500 leading-tight uppercase tracking-wider">{feature.desc}</p>
                 </div>
               </div>
             ))}
@@ -215,20 +215,37 @@ const PricingModal: React.FC<PricingModalProps> = ({ isOpen, onClose }) => {
             {import.meta.env.PROD ? 'Coming Soon' : (isLoading ? 'Processing...' : 'Upgrade Now')}
           </button>
 
-          <div className="text-center space-y-3">
-            <p className="text-[9px] text-slate-600 font-medium leading-relaxed">
-              Secure 256-bit encrypted transactions. <br /> We never store your card details on our servers.
-            </p>
-            <button
-              onClick={() => openModal({
-                title: 'Privacy & Security',
-                type: 'terms',
-                confirmText: 'Acknowledged'
-              })}
-              className="text-[8px] font-black uppercase tracking-widest text-slate-500 hover:text-blue-400 transition-colors pointer-events-auto"
-            >
-              Privacy Policy & Terms
-            </button>
+          <div className="text-center space-y-4">
+            <div className="p-4 rounded-2xl bg-blue-500/5 border border-blue-500/10 flex items-start gap-3 text-left">
+              <div className="w-8 h-8 rounded-lg bg-blue-500/10 flex items-center justify-center shrink-0 mt-0.5">
+                <Shield className="w-4 h-4 text-blue-400" />
+              </div>
+              <p className="text-[9px] text-slate-500 font-medium leading-relaxed uppercase tracking-wider">
+                Secure 256-bit payments via <span className="text-blue-400">Konnect</span>. Card details never touch our servers.
+              </p>
+            </div>
+            
+            <div className="flex items-center justify-center gap-4 opacity-40">
+              <button 
+                onClick={() => {
+                  window.history.pushState({}, '', '/privacy');
+                  window.dispatchEvent(new PopStateEvent('popstate'));
+                }}
+                className="text-[8px] font-black uppercase tracking-widest text-slate-500 hover:text-blue-400 transition-colors"
+              >
+                Privacy Policy
+              </button>
+              <span className="w-0.5 h-0.5 rounded-full bg-white/20" />
+              <button 
+                onClick={() => {
+                  window.history.pushState({}, '', '/terms');
+                  window.dispatchEvent(new PopStateEvent('popstate'));
+                }}
+                className="text-[8px] font-black uppercase tracking-widest text-slate-500 hover:text-blue-400 transition-colors"
+              >
+                Terms of Service
+              </button>
+            </div>
           </div>
         </div>
       </div>

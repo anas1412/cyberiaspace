@@ -3,6 +3,11 @@ import { motion } from 'framer-motion';
 import { Shield, ArrowLeft } from 'lucide-react';
 
 const PrivacyPolicy: React.FC = () => {
+  const handleBack = () => {
+    window.history.pushState({}, '', '/');
+    window.dispatchEvent(new PopStateEvent('popstate'));
+  };
+
   return (
     <div className="min-h-[100dvh] bg-black text-slate-300 p-6 md:p-20 overflow-y-auto custom-scroll selection:bg-blue-500/30">
       <motion.div 
@@ -11,7 +16,7 @@ const PrivacyPolicy: React.FC = () => {
         className="max-w-4xl mx-auto"
       >
         <button 
-          onClick={() => window.location.href = '/'}
+          onClick={handleBack}
           className="flex items-center gap-2 text-blue-400 hover:text-white transition-colors mb-12 group"
         >
           <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
@@ -25,7 +30,7 @@ const PrivacyPolicy: React.FC = () => {
             </div>
             <h1 className="text-4xl md:text-6xl font-black text-white uppercase tracking-tighter leading-none">Privacy Policy</h1>
           </div>
-          <p className="text-slate-500 font-mono text-sm uppercase tracking-widest">Effective Date: February 20, 2026</p>
+          <p className="text-slate-500 font-mono text-sm uppercase tracking-widest">Effective Date: February 21, 2026</p>
         </header>
 
         <section className="space-y-12 pb-20">
@@ -48,12 +53,12 @@ const PrivacyPolicy: React.FC = () => {
             <p className="leading-relaxed text-white font-medium">
               Cyberia uses Google OAuth services to provide optional cloud synchronization features.
             </p>
-            <ul className="list-disc list-inside space-y-3 mt-4 ml-2">
+            <ul className="list-disc list-inside space-y-3 mt-4 ml-2 uppercase text-[10px] font-bold tracking-wide">
               <li>
-                <strong className="text-white">Google Drive (`drive.file`):</strong> We request access only to files created or opened by Cyberia. We use this to store your rich content (Markdown, JSON) and media assets (PDFs, Images, Audio) in a visible `/Cyberia` folder in your private Drive.
+                <strong className="text-white">Google Drive (`drive.file`):</strong> We request access only to files created or opened by Cyberia. We use this to store your rich content and media assets in a private `/Cyberia` folder in your Drive.
               </li>
               <li>
-                <strong className="text-white">Google Account Info:</strong> We access your basic profile (email, name, avatar) strictly for identity management and to personalize your workspace.
+                <strong className="text-white">Google Account Info:</strong> We access your basic profile strictly for identity management and to personalize your workspace.
               </li>
             </ul>
             <p className="mt-6 p-4 bg-black/40 rounded-xl border border-white/5 text-sm italic">
@@ -62,14 +67,33 @@ const PrivacyPolicy: React.FC = () => {
           </div>
 
           <div className="space-y-4">
-            <h2 className="text-xl font-black text-white uppercase tracking-widest border-b border-white/5 pb-2">4. Data Sharing & Security</h2>
+            <h2 className="text-xl font-black text-white uppercase tracking-widest border-b border-white/5 pb-2">4. AI Data Protocol (The Oracle)</h2>
             <p className="leading-relaxed">
-              We do **not** sell, trade, or share your personal data or workspace content with third parties. Your Google Drive data remains in your own account; Cyberia only acts as a bridge to manage those files.
+              When interacting with The Oracle, relevant snippets of your workspace are processed in real-time via high-speed inference models (hosted by Groq/OpenAI). 
+            </p>
+            <ul className="list-disc list-inside space-y-3 mt-4 ml-2">
+              <li>Data is processed temporarily for the duration of the request.</li>
+              <li>Your personal data and thoughts are **never** used for model training.</li>
+              <li>We do not store your AI chat history on our central servers; it is stored locally on your device.</li>
+            </ul>
+          </div>
+
+          <div className="space-y-4">
+            <h2 className="text-xl font-black text-white uppercase tracking-widest border-b border-white/5 pb-2">5. Payment Security</h2>
+            <p className="leading-relaxed">
+              Payments are handled securely by the **Konnect Network**. Cyberia does not collect or store your credit card numbers, CVVs, or billing addresses. We only receive a confirmation token to activate your Pro features.
             </p>
           </div>
 
           <div className="space-y-4">
-            <h2 className="text-xl font-black text-white uppercase tracking-widest border-b border-white/5 pb-2">5. Contact</h2>
+            <h2 className="text-xl font-black text-white uppercase tracking-widest border-b border-white/5 pb-2">6. Data Portability</h2>
+            <p className="leading-relaxed">
+              We believe in data freedom. You can export your entire workspace as a standard JSON file at any time via the System Tray. You are never locked into the Cyberia ecosystem.
+            </p>
+          </div>
+
+          <div className="space-y-4">
+            <h2 className="text-xl font-black text-white uppercase tracking-widest border-b border-white/5 pb-2">7. Contact</h2>
             <p className="leading-relaxed">
               If you have questions about this policy or your data, please contact the Architect at <span className="text-blue-400 font-mono">support@cyberia.tn</span>.
             </p>
