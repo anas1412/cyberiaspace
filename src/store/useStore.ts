@@ -935,7 +935,8 @@ export const useStore = create<CyberiaState>((set, get) => ({
     const allSpaces = await db.spaces.toArray();
     const allThoughts = await db.thoughts.toArray();
     const allStacks = await db.stacks.toArray();
-    const data = { spaces: allSpaces, thoughts: allThoughts, stacks: allStacks, activeSpaceId: get().activeSpaceId, version: 2, timestamp: Date.now() };
+    const allBlobs = await db.blobs.toArray();
+    const data = { spaces: allSpaces, thoughts: allThoughts, stacks: allStacks, blobs: allBlobs, activeSpaceId: get().activeSpaceId, version: 3, timestamp: Date.now() };
     const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
@@ -949,13 +950,15 @@ export const useStore = create<CyberiaState>((set, get) => ({
     if (get().isReadOnly) return;
     const processData = async (data: any) => {
       if (!data || typeof data !== 'object' || !('spaces' in data) || !('thoughts' in data)) throw new Error('Invalid backup');
-      await db.transaction('rw', db.spaces, db.thoughts, db.stacks, async () => {
+      await db.transaction('rw', db.spaces, db.thoughts, db.stacks, db.blobs, async () => {
         await db.spaces.clear();
         await db.thoughts.clear();
         await db.stacks.clear();
+        await db.blobs.clear();
         await db.spaces.bulkAdd(data.spaces);
         await db.thoughts.bulkAdd(data.thoughts);
         if (data.stacks) await db.stacks.bulkAdd(data.stacks);
+        if (data.blobs) await db.blobs.bulkAdd(data.blobs);
       });
       if (data.activeSpaceId) localStorage.setItem('cyberia-active-space-id', data.activeSpaceId);
       if (data.settings?.theme) localStorage.setItem('cyberia-theme', data.settings.theme);
@@ -963,7 +966,18 @@ export const useStore = create<CyberiaState>((set, get) => ({
     };
     if (input instanceof File) {
       const reader = new FileReader();
-      reader.onload = async (e) => { try { await processData(JSON.parse(e.target?.result as string)); } catch (err) { console.error('Import failed', err); } };
+      reader.onload = async (e) => { 
+        try { await processData(JSON.parse(e.target?.result as string)); } 
+        catch (err) { 
+          console.error('Import failed', err);
+          useModalStore.getState().openModal({ 
+            title: 'Import Failed', 
+            description: 'The backup file is invalid or corrupted. Please select a valid Cyberia backup file.', 
+            type: 'alert', 
+            confirmText: 'Okay' 
+          });
+        } 
+      };
       reader.readAsText(input);
     } else {
       try { await processData(input); } catch (err) { console.error('Import failed', err); }

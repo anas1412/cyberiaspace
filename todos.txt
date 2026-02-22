@@ -63,6 +63,8 @@ TODO:
 
 - implement Batch processing
 
+- change in account menu the thoughts in cloud to available space in the cloud if possible
+
 ------------------------------
 
   1. Spatial Teleportation (Navigation)
