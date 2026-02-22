@@ -194,6 +194,21 @@ export const executeOracleTool = async (toolCall: any, store: any) => {
         }
       }
 
+      case 'update_stacks': {
+        const { stacks } = args;
+        if (!stacks || !Array.isArray(stacks)) {
+          return { success: false, error: 'Invalid stacks array' };
+        }
+        let updatedCount = 0;
+        for (const stack of stacks) {
+          if (stack.id && stack.name) {
+            await store.updateStack(stack.id, { name: stack.name });
+            updatedCount++;
+          }
+        }
+        return { success: true, count: updatedCount };
+      }
+
       case 'delete_stack': {
         const { id } = args;
         if (!id) {
@@ -202,6 +217,21 @@ export const executeOracleTool = async (toolCall: any, store: any) => {
           await store.deleteStack(id);
           return { success: true };
         }
+      }
+
+      case 'delete_stacks': {
+        const { ids } = args;
+        if (!ids || !Array.isArray(ids)) {
+          return { success: false, error: 'Invalid IDs array' };
+        }
+        let deletedCount = 0;
+        for (const id of ids) {
+          if (id) {
+            await store.deleteStack(id);
+            deletedCount++;
+          }
+        }
+        return { success: true, count: deletedCount };
       }
 
       case 'read_file_content': {
@@ -246,6 +276,59 @@ export const executeOracleTool = async (toolCall: any, store: any) => {
         } catch (e: any) {
           return { success: false, error: e.message };
         }
+      }
+
+      case 'read_files_content': {
+        const { ids } = args;
+        if (!ids || !Array.isArray(ids)) {
+          return { success: false, error: 'Invalid IDs array' };
+        }
+
+        const results = [];
+        for (const id of ids) {
+          const thought = store.thoughts.find((t: any) => t.id === id);
+          if (!thought) {
+            results.push({ id, success: false, error: 'Thought not found' });
+            continue;
+          }
+
+          try {
+            const { db } = await import('../../db');
+            const { driveService } = await import('../google/driveService');
+            const authStore = (await import('../../store/useAuthStore')).useAuthStore.getState();
+
+            let blob: Blob | null = null;
+            const blobEntry = await db.blobs.where('thoughtId').equals(id).first();
+            
+            if (blobEntry) {
+              blob = blobEntry.blob;
+            } else if (thought.driveFileId && authStore.accessToken) {
+              blob = await driveService.downloadFile(authStore.accessToken, thought.driveFileId);
+            }
+
+            if (!blob) {
+              results.push({ id, success: false, error: 'File content not available' });
+              continue;
+            }
+
+            const readableTypes = ['text/', 'application/json', 'application/javascript', 'application/x-javascript'];
+            const isPDF = blob.type.includes('pdf');
+            const isText = readableTypes.some(t => blob!.type.startsWith(t)) || thought.text?.endsWith('.md') || thought.text?.endsWith('.txt');
+
+            if (isPDF) {
+              results.push({ id, success: true, type: 'pdf', message: 'PDF file' });
+            } else if (isText) {
+              const text = await blob.text();
+              results.push({ id, success: true, type: 'text', content: text.substring(0, 10000) });
+            } else {
+              results.push({ id, success: false, error: 'File type not readable' });
+            }
+          } catch (e: any) {
+            results.push({ id, success: false, error: e.message });
+          }
+        }
+
+        return { success: true, files: results };
       }
 
 
