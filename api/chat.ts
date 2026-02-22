@@ -64,6 +64,7 @@ ${context || 'No workspace data provided.'}
 8. FORMATTING: Use Markdown (bold, lists, headers) in your chat responses to make information clear and structured.
    - For tables: Keep them compact. Avoid more than 3-4 columns if possible. Prefer lists for long datasets.
 9. PERSONA: Talk like a female human with a casual and playful vibe.
+10. TOOL CONTINUATION: If you are responding after a 'tool' role message (receiving data from a tool you called), DO NOT repeat your initial greeting or "Hey hey". Get straight to the point or provide the data requested.
 [/RULES]
 `;
 
@@ -377,6 +378,59 @@ export const tools: any[] = [
   {
     type: "function",
     function: {
+      name: "update_stacks",
+      description: "Updates multiple stacks at once. Use this to rename several stacks in a single operation.",
+      parameters: {
+        type: "object",
+        properties: {
+          stacks: {
+            type: "array",
+            items: {
+              type: "object",
+              properties: {
+                id: { type: "string", description: "The stack ID." },
+                name: { type: "string", description: "The new name for the stack." }
+              },
+              required: ["id", "name"]
+            },
+            description: "Array of stack updates."
+          }
+        },
+        required: ["stacks"]
+      }
+    }
+  },
+  {
+    type: "function",
+    function: {
+      name: "delete_stacks",
+      description: "Deletes multiple stacks at once. This unlinks all thoughts in the stacks but does NOT delete the thoughts themselves.",
+      parameters: {
+        type: "object",
+        properties: {
+          ids: { type: "array", items: { type: "string" }, description: "Array of stack IDs to delete." }
+        },
+        required: ["ids"]
+      }
+    }
+  },
+  {
+    type: "function",
+    function: {
+      name: "read_files_content",
+      description: "Reads the text or data content of multiple 'file' or 'image' type thoughts at once.",
+      parameters: {
+        type: "object",
+        properties: {
+          ids: { type: "array", items: { type: "number" }, description: "Array of thought IDs to read." }
+        },
+        required: ["ids"]
+      }
+    }
+  },
+  {
+    type: "function",
+    function: {
       name: "delete_stack",
       description: "Deletes a stack by ID. This unlinks all thoughts in the stack but does NOT delete the thoughts themselves.",
       parameters: {
@@ -428,6 +482,80 @@ async function executeServerTool(name: string, args: any) {
     } catch (error: any) {
       return { error: error.message };
     }
+  }
+
+return null;
+}
+
+// --- BATCH PROCESSING HELPERS ---
+
+function groupClientToolCalls(toolCalls: any[]): any[][] {
+  const groups: any[][] = [];
+  let currentGroup: any[] = [];
+  let currentType: string | null = null;
+
+  for (const tc of toolCalls) {
+    if (tc.function.name === 'get_thought_details') {
+      if (currentGroup.length > 0) {
+        groups.push(currentGroup);
+        currentGroup = [];
+        currentType = null;
+      }
+      groups.push([tc]);
+    } else if (currentType === tc.function.name && 
+               (tc.function.name === 'create_thought' || 
+                tc.function.name === 'update_thought' || 
+                tc.function.name === 'update_stack' ||
+                tc.function.name === 'delete_stack')) {
+      currentGroup.push(tc);
+    } else {
+      if (currentGroup.length > 0) {
+        groups.push(currentGroup);
+      }
+      currentGroup = [tc];
+      currentType = tc.function.name;
+    }
+  }
+
+  if (currentGroup.length > 0) {
+    groups.push(currentGroup);
+  }
+
+  return groups;
+}
+
+function convertToBatchFormat(batch: any[]): { toolName: string; args: any } | null {
+  if (batch.length === 0) return null;
+
+  const toolName = batch[0].function.name;
+  
+  if (toolName === 'create_thought') {
+    const items = batch.map(tc => {
+      const args = JSON.parse(tc.function.arguments);
+      const { stackName, ...rest } = args;
+      return rest;
+    });
+    return { toolName: 'create_thoughts', args: { items } };
+  }
+
+  if (toolName === 'update_thought') {
+    const ids = batch.map(tc => JSON.parse(tc.function.arguments).id);
+    const firstArgs = JSON.parse(batch[0].function.arguments);
+    const { id, stackName, ...updates } = firstArgs;
+    return { toolName: 'update_thoughts', args: { ids, ...updates } };
+  }
+
+  if (toolName === 'update_stack') {
+    const stacks = batch.map(tc => {
+      const args = JSON.parse(tc.function.arguments);
+      return { id: args.id, name: args.name };
+    });
+    return { toolName: 'update_stacks', args: { stacks } };
+  }
+
+  if (toolName === 'delete_stack') {
+    const ids = batch.map(tc => JSON.parse(tc.function.arguments).id);
+    return { toolName: 'delete_stacks', args: { ids } };
   }
 
   return null;
@@ -521,7 +649,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
       let response;
       try {
-        response = await groq.chat.completions.create({
+response = await groq.chat.completions.create({
           model: currentModel,
           messages: [
             { role: 'system', content: getSystemPrompt(currentModel, context) },
@@ -530,6 +658,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           tools,
           tool_choice: 'auto',
           stream: true,
+          max_tokens: 1024,
         });
       } catch (err: any) {
         console.error(`[Groq API] Model ${currentModel} failed:`, err.status, err.message);
@@ -566,23 +695,43 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         }
       }
 
-      const filteredToolCalls = toolCalls.filter(Boolean);
+const filteredToolCalls = toolCalls.filter(Boolean);
       if (filteredToolCalls.length > 0) {
         const nextMessages = [...currentMessages];
         nextMessages.push({ role: 'assistant', content: fullContent || null, tool_calls: filteredToolCalls });
 
-        for (const tc of filteredToolCalls) {
-          const args = JSON.parse(tc.function.arguments);
-          const serverResult = await executeServerTool(tc.function.name, args);
-          
-          if (serverResult) {
+        const serverToolCalls = filteredToolCalls.filter(tc => 
+          tc.function.name === 'web_search' || tc.function.name === 'search_youtube'
+        );
+        
+        const clientToolCalls = filteredToolCalls.filter(tc => 
+          tc.function.name !== 'web_search' && tc.function.name !== 'search_youtube'
+        );
+
+        if (serverToolCalls.length > 0) {
+          const serverResults = await Promise.all(
+            serverToolCalls.map(tc => 
+              executeServerTool(tc.function.name, JSON.parse(tc.function.arguments))
+            )
+          );
+
+          serverToolCalls.forEach((tc, i) => {
             nextMessages.push({
               role: 'tool',
               tool_call_id: tc.id,
               name: tc.function.name,
-              content: JSON.stringify(serverResult)
+              content: JSON.stringify(serverResults[i])
             });
-          } else {
+          });
+        }
+
+        const batchedClientCalls = groupClientToolCalls(clientToolCalls);
+        
+        for (const batch of batchedClientCalls) {
+          if (batch.length === 1) {
+            const tc = batch[0];
+            const args = JSON.parse(tc.function.arguments);
+            
             res.write(`data: ${JSON.stringify({ 
               type: 'tool_call', 
               toolCall: { id: tc.id, toolName: tc.function.name, args } 
@@ -594,6 +743,27 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                 tool_call_id: tc.id,
                 name: tc.function.name,
                 content: JSON.stringify({ success: true, observed: false, message: "Action queued for client execution." })
+              });
+            }
+          } else {
+            const batchArgs = convertToBatchFormat(batch);
+            if (batchArgs) {
+              res.write(`data: ${JSON.stringify({ 
+                type: 'tool_call', 
+                toolCall: { 
+                  id: batch[0].id, 
+                  toolName: batchArgs.toolName, 
+                  args: batchArgs.args 
+                },
+                isBatch: true,
+                batchCount: batch.length
+              })}\n\n`);
+
+              nextMessages.push({
+                role: 'tool',
+                tool_call_id: batch[0].id,
+                name: batchArgs.toolName,
+                content: JSON.stringify({ success: true, observed: false, message: `Batch action queued for ${batch.length} items.` })
               });
             }
           }

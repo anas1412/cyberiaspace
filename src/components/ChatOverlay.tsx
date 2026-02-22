@@ -84,6 +84,12 @@ const ChatOverlay: React.FC = () => {
       case 'create_thoughts': return 'Bulk Creating Thoughts...';
       case 'update_thought': return 'Updating Thought...';
       case 'update_thoughts': return 'Bulk Updating Thoughts...';
+      case 'update_stack': return 'Renaming Stack...';
+      case 'update_stacks': return 'Renaming Stacks...';
+      case 'delete_stack': return 'Deleting Stack...';
+      case 'delete_stacks': return 'Deleting Stacks...';
+      case 'read_file_content': return 'Reading File...';
+      case 'read_files_content': return 'Reading Files...';
       case 'web_search': return 'Researching Online...';
       case 'search_youtube': return 'Searching YouTube...';
       case 'delete_thoughts': return 'Clearing Thoughts...';
@@ -165,8 +171,8 @@ const ChatOverlay: React.FC = () => {
         },
         signal: controller.signal,
         body: JSON.stringify({
-          // History Sliding Window: Only send last 10 messages
-          messages: [...messages.slice(-10), userMessage],
+// History Sliding Window: Only send last 5 messages
+          messages: [...messages.slice(-5), userMessage],
           model: activeModel,
           plan: plan,
           context: serializeWorkspace(
@@ -240,9 +246,11 @@ const ChatOverlay: React.FC = () => {
                 ]);
               } else if (data.type === 'usage') {
                 setDailyUsage(data.count);
-              } else if (data.type === 'tool_call') {
+} else if (data.type === 'tool_call') {
                 setActiveTool({ name: data.toolCall.toolName, args: data.toolCall.args });
-                setStatus(getFriendlyToolName(data.toolCall.toolName));
+                setStatus(data.isBatch 
+                  ? `Batch Creating ${data.batchCount} Thoughts...` 
+                  : getFriendlyToolName(data.toolCall.toolName));
                 
                 try {
                   const result = await executeOracleTool(data.toolCall, store);
@@ -251,8 +259,24 @@ const ChatOverlay: React.FC = () => {
                   // We store retrieval results to send them all at once after the tool loop finishes if needed,
                   // but for now, we'll keep the immediate follow-up logic but make it more robust.
                   
-                  if (data.toolCall.toolName === 'get_thought_details' && result.success) {
-                    // Silent auto-submit with the retrieved data so Oracle can continue its plan
+if (data.toolCall.toolName === 'get_thought_details' && result.success) {
+                    // Optimized: Continue with minimal context to avoid re-sending full workspace
+                    const minimalContext = JSON.stringify({
+                      currentTime: {
+                        date: new Date().toLocaleDateString('en-CA'),
+                        full: new Date().toLocaleString(),
+                        day: new Date().toLocaleDateString('en-US', { weekday: 'long' })
+                      },
+                      userQuota: user ? {
+                        plan: user.plan,
+                        aiDailyUsed: user.usage?.ai_daily_count,
+                      } : undefined,
+                      currentSpace: {
+                        id: store.activeSpaceId,
+                        name: store.spaces.find((s: any) => s.id === store.activeSpaceId)?.name || 'Unknown'
+                      }
+                    });
+
                     const authStore = useAuthStore.getState();
                     const followUpResponse = await fetch('/api/chat', {
                       method: 'POST',
@@ -263,14 +287,12 @@ const ChatOverlay: React.FC = () => {
                       signal: controller.signal,
                       body: JSON.stringify({
                         messages: [
-                          ...messages.slice(-10), 
-                          assistantMessage,
+                          { role: 'user', content: 'Continue with the thought details I provided.' },
                           { role: 'tool', tool_call_id: data.toolCall.id, name: 'get_thought_details', content: JSON.stringify(result) }
                         ],
                         model: activeModel,
                         plan: plan,
-                        context: serializeWorkspace(store.activeSpaceId, store.thoughts, store.spaces, store.stacks, store.selectedThoughtIds, user)
-
+                        context: minimalContext
                       }),
                     });
                     
