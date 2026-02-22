@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import { type User, type SubscriptionPlan, type AccessPeriod, PLAN_CONFIG } from '../constants';
 import { db } from '../db';
 import { driveService } from '../services/google/driveService';
+import { supabaseSync } from '../services/supabaseSync';
 
 // Helper to convert base64 to Blob
 const base64ToBlob = (base64: string) => {
@@ -272,7 +273,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     try {
       // 1. First try a silent refresh if token might be expired
       const refreshRes = await fetch('/api/google-auth?action=refresh', {
-        method: 'POST', // Code flow exchange usually POST
+        method: 'POST',
         headers: { Authorization: `Bearer ${accessToken}` }
       });
       
@@ -283,36 +284,53 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         set({ accessToken: currentToken });
         localStorage.setItem('cyberia-token', currentToken);
       } else if (refreshRes.status === 401) {
-        // Refresh token invalid/revoked
         get().signOut();
         return;
       }
 
-      // 2. Fetch full profile
-      const res = await fetch(`/api/user?action=profile&email=${encodeURIComponent(user.email)}&name=${encodeURIComponent(user.name)}&avatar=${encodeURIComponent(user.avatar)}`, {
-        headers: { Authorization: `Bearer ${currentToken}` }
-      });
-      if (res.ok) {
-        const data = await res.json();
-        const updatedUser = { ...user, ...data.user };
-        
-        // Sync local grantedScopes from profile drive state IF the local session also has the token
-        const scopes = [...get().grantedScopes];
-        const hasDriveScope = scopes.includes('https://www.googleapis.com/auth/drive.file');
-        
-        if (updatedUser.settings?.driveEnabled && !hasDriveScope) {
-          // If the cloud says drive is enabled, but local doesn't have the scope yet,
-          // we only add it if we are sure the current accessToken (refreshed above) 
-          // actually has the drive permissions.
-          // For safety, we only do this if it's NOT a fresh login.
-          if (get().status === 'authenticated') {
-            scopes.push('https://www.googleapis.com/auth/drive.file');
+      // 2. Fetch profile from Supabase
+      try {
+        const supabaseProfile = await supabaseSync.getProfile(user.id);
+        if (supabaseProfile?.user) {
+          const updatedUser = { ...user, ...supabaseProfile.user };
+          
+          const scopes = [...get().grantedScopes];
+          const hasDriveScope = scopes.includes('https://www.googleapis.com/auth/drive.file');
+          
+          if (updatedUser.settings?.driveEnabled && !hasDriveScope) {
+            if (get().status === 'authenticated') {
+              scopes.push('https://www.googleapis.com/auth/drive.file');
+            }
           }
-        }
 
-        set({ user: updatedUser, grantedScopes: scopes });
-        localStorage.setItem('cyberia-user', JSON.stringify(updatedUser));
-        localStorage.setItem('cyberia-scopes', JSON.stringify(scopes));
+          set({ user: updatedUser, grantedScopes: scopes });
+          localStorage.setItem('cyberia-user', JSON.stringify(updatedUser));
+          localStorage.setItem('cyberia-scopes', JSON.stringify(scopes));
+        }
+      } catch (supabaseErr) {
+        console.warn('Supabase profile fetch failed, falling back to Vercel:', supabaseErr);
+        
+        // Fallback to Vercel API
+        const res = await fetch(`/api/user?action=profile&email=${encodeURIComponent(user.email)}&name=${encodeURIComponent(user.name)}&avatar=${encodeURIComponent(user.avatar)}`, {
+          headers: { Authorization: `Bearer ${currentToken}` }
+        });
+        if (res.ok) {
+          const data = await res.json();
+          const updatedUser = { ...user, ...data.user };
+          
+          const scopes = [...get().grantedScopes];
+          const hasDriveScope = scopes.includes('https://www.googleapis.com/auth/drive.file');
+          
+          if (updatedUser.settings?.driveEnabled && !hasDriveScope) {
+            if (get().status === 'authenticated') {
+              scopes.push('https://www.googleapis.com/auth/drive.file');
+            }
+          }
+
+          set({ user: updatedUser, grantedScopes: scopes });
+          localStorage.setItem('cyberia-user', JSON.stringify(updatedUser));
+          localStorage.setItem('cyberia-scopes', JSON.stringify(scopes));
+        }
       }
     } catch (e) {
       console.warn('Failed to refresh profile', e);
@@ -329,22 +347,27 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     set({ user: updatedUser });
     localStorage.setItem('cyberia-user', JSON.stringify(updatedUser));
 
-    // If Drive was just enabled, trigger a sync to push local media
     if (!oldDriveEnabled && settings.driveEnabled) {
       get().mediaSweep();
     }
 
+    // Try Supabase first, fallback to Vercel
     try {
-      await fetch('/api/user?action=settings', {
-        method: 'POST',
-        headers: { 
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${accessToken}` 
-        },
-        body: JSON.stringify({ settings })
-      });
+      await supabaseSync.updateSettings(user.id, updatedUser.settings);
     } catch (e) {
-      console.warn('Settings cloud sync failed', e);
+      console.warn('Supabase settings sync failed, falling back to Vercel:', e);
+      try {
+        await fetch('/api/user?action=settings', {
+          method: 'POST',
+          headers: { 
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${accessToken}` 
+          },
+          body: JSON.stringify({ settings })
+        });
+      } catch (err) {
+        console.warn('Settings cloud sync failed', err);
+      }
     }
   },
 
@@ -401,6 +424,15 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     
     if (scopes) {
       localStorage.setItem('cyberia-scopes', JSON.stringify(scopes));
+    }
+
+    // Sync user to Supabase on login
+    try {
+      console.log('[Supabase] Syncing user to Supabase:', user.id, user.email)
+      await supabaseSync.upsertProfile(user.id, user.email, user.name, user.avatar || '')
+      console.log('[Supabase] User synced successfully')
+    } catch (e) {
+      console.error('[Supabase] Failed to sync user:', e)
     }
 
     const { useStore } = await import('./useStore');
