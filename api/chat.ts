@@ -22,8 +22,6 @@ const groq = new Groq({
   apiKey: process.env.GROQ_API_KEY,
 });
 
-const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
-
 // --- 1. SYSTEM PROMPT MODULE ---
 
 export const getSystemPrompt = (modelName: string, context?: string) => `
@@ -573,7 +571,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         const nextMessages = [...currentMessages];
         nextMessages.push({ role: 'assistant', content: fullContent || null, tool_calls: filteredToolCalls });
 
-        let hasServerResults = false;
         for (const tc of filteredToolCalls) {
           const args = JSON.parse(tc.function.arguments);
           const serverResult = await executeServerTool(tc.function.name, args);
@@ -585,23 +582,34 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
               name: tc.function.name,
               content: JSON.stringify(serverResult)
             });
-            hasServerResults = true;
           } else {
             res.write(`data: ${JSON.stringify({ 
               type: 'tool_call', 
               toolCall: { id: tc.id, toolName: tc.function.name, args } 
             })}\n\n`);
 
-            if (tc.function.name === 'get_thought_details') {
-              hasServerResults = false; 
-            } else {
+            if (tc.function.name !== 'get_thought_details') {
               nextMessages.push({
                 role: 'tool',
                 tool_call_id: tc.id,
                 name: tc.function.name,
                 content: JSON.stringify({ success: true, observed: false, message: "Action queued for client execution." })
               });
-              hasServerResults = true; 
             }
           }
         }
+
+        return await runChat(nextMessages, currentModel, isRetry);
+      }
+    }
+
+    await runChat(messages, model);
+
+    res.write('data: [DONE]\n\n');
+    res.end();
+
+  } catch (error: any) {
+    console.error('[Oracle Error]', error);
+    res.status(500).json({ error: 'Internal Server Error', message: error.message });
+  }
+}
