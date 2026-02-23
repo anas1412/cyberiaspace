@@ -25,7 +25,7 @@ export const TextRenderer: React.FC<TextRendererProps> = ({
   setActiveFocus 
 }) => {
   const hasContent = thought.content && thought.content.trim().length > 0;
-  const isStranded = !hasContent && !thought.storageUrl && thought.syncStatus !== 'synced' && !isReadOnly;
+  const hasRemoteContent = thought.storageUrl && !hasContent && thought.syncStatus !== 'synced' && !isReadOnly;
 
   if (!hasContent) {
     if (isCalendar) return null;
@@ -36,9 +36,9 @@ export const TextRenderer: React.FC<TextRendererProps> = ({
       >
         <Type className="w-6 h-6 text-white/20" />
         <span className="text-[10px] text-white/20 font-bold uppercase tracking-widest">
-          {isStranded ? 'Sync Pending' : 'Write Note'}
+          {hasRemoteContent ? 'Sync Pending' : 'Write Note'}
         </span>
-        {isStranded && (
+        {hasRemoteContent && (
           <p className="text-[7px] text-amber-500/40 font-black uppercase tracking-[0.2em] text-center px-4">
             Content on other device
           </p>

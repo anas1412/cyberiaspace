@@ -21,16 +21,16 @@ export const TableRenderer: React.FC<TableRendererProps> = ({
   setActiveFocus 
 }) => {
   const isTableEmpty = !thought.table || thought.table.every(row => row.every(cell => !cell || !cell.trim()));
-  const isStranded = isTableEmpty && !thought.storageUrl && thought.syncStatus !== 'synced' && !isReadOnly;
+  const hasRemoteContent = thought.storageUrl && isTableEmpty && thought.syncStatus !== 'synced' && !isReadOnly;
 
   if (isTableEmpty) {
     return (
       <div data-trigger="table" className="mt-1 flex flex-col items-center gap-2 py-4 bg-black/20 rounded-xl border border-white/5 group/table relative cursor-pointer transition-colors hover:bg-white/[0.05]">
         <Table className="w-6 h-6 text-white/20" />
         <span className="text-[10px] text-white/20 font-bold uppercase tracking-widest">
-          {isStranded ? 'Sync Pending' : 'Build Table'}
+          {hasRemoteContent ? 'Sync Pending' : 'Build Table'}
         </span>
-        {isStranded && (
+        {hasRemoteContent && (
           <p className="text-[7px] text-amber-500/40 font-black uppercase tracking-[0.2em] text-center px-4">
             Data on other device
           </p>
