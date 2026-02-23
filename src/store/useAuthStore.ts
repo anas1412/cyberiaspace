@@ -163,6 +163,16 @@ export const useAuthStore = create<AuthState>((set, get) => ({
                 try {
                   if (choice === 'cloud') {
                     await useStore.getState().importFullState(data);
+                    
+                    // Clean up orphaned local blobs after cloud import
+                    const cloudThoughtIds = new Set(data.thoughts?.map((t: any) => t.id) || []);
+                    const allBlobs = await db.blobs.toArray();
+                    for (const blob of allBlobs) {
+                      if (blob.thoughtId && !cloudThoughtIds.has(blob.thoughtId)) {
+                        await db.blobs.delete(blob.id!);
+                        console.log(`[Sync] Deleted orphaned blob: ${blob.id}`);
+                      }
+                    }
                   } else if (choice === 'local') {
                     await syncOrchestrator.fullPushSync();
                   }
