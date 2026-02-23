@@ -50,6 +50,7 @@ Cyberia is a spatial productivity platform for kinetic information architecture.
 
 -  can you use max ai daily use from @constrainst instead of hardcoding it in @chat
 
+export SUPABASE_ACCESS_TOKEN="sbp_0db3854d5896ef20e6f0598c43f7e61077718ab4"
 
 TODO:
 

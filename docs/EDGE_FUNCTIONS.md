@@ -1,4 +1,4 @@
-# Supabase Edge Functions - Ready to Deploy
+# Supabase Edge Functions - Ready to Deploy (With CORS)
 
 ## user
 
@@ -10,7 +10,16 @@ const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
 
 const supabase = createClient(supabaseUrl, supabaseServiceKey)
 
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+}
+
 Deno.serve(async (req) => {
+  if (req.method === 'OPTIONS') {
+    return new Response(null, { headers: corsHeaders })
+  }
+
   const { action, ...data } = await req.json()
   
   if (action === 'get-profile') {
@@ -23,10 +32,10 @@ Deno.serve(async (req) => {
       .maybeSingle()
     
     if (error) {
-      return new Response(JSON.stringify({ error: error.message }), { status: 500 })
+      return new Response(JSON.stringify({ error: error.message }), { status: 500, headers: corsHeaders })
     }
     
-    return new Response(JSON.stringify({ user }), { status: 200 })
+    return new Response(JSON.stringify({ user }), { status: 200, headers: corsHeaders })
   }
   
   if (action === 'upsert-profile') {
@@ -51,9 +60,9 @@ Deno.serve(async (req) => {
         .maybeSingle()
       
       if (error) {
-        return new Response(JSON.stringify({ error: error.message }), { status: 500 })
+        return new Response(JSON.stringify({ error: error.message }), { status: 500, headers: corsHeaders })
       }
-      return new Response(JSON.stringify({ user }), { status: 200 })
+      return new Response(JSON.stringify({ user }), { status: 200, headers: corsHeaders })
     } else {
       const { data: user, error } = await supabase
         .from('users')
@@ -67,9 +76,9 @@ Deno.serve(async (req) => {
         .maybeSingle()
       
       if (error) {
-        return new Response(JSON.stringify({ error: error.message }), { status: 500 })
+        return new Response(JSON.stringify({ error: error.message }), { status: 500, headers: corsHeaders })
       }
-      return new Response(JSON.stringify({ user }), { status: 200 })
+      return new Response(JSON.stringify({ user }), { status: 200, headers: corsHeaders })
     }
   }
   
@@ -95,13 +104,13 @@ Deno.serve(async (req) => {
       .maybeSingle()
     
     if (error) {
-      return new Response(JSON.stringify({ error: error.message }), { status: 500 })
+      return new Response(JSON.stringify({ error: error.message }), { status: 500, headers: corsHeaders })
     }
     
-    return new Response(JSON.stringify({ settings: user?.settings || {} }), { status: 200 })
+    return new Response(JSON.stringify({ settings: user?.settings || {} }), { status: 200, headers: corsHeaders })
   }
   
-  return new Response(JSON.stringify({ error: 'Invalid action' }), { status: 400 })
+  return new Response(JSON.stringify({ error: 'Invalid action' }), { status: 400, headers: corsHeaders })
 })
 ```
 
@@ -117,7 +126,16 @@ const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
 
 const supabase = createClient(supabaseUrl, supabaseServiceKey)
 
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+}
+
 Deno.serve(async (req) => {
+  if (req.method === 'OPTIONS') {
+    return new Response(null, { headers: corsHeaders })
+  }
+
   const { action, ...data } = await req.json()
   
   if (action === 'list') {
@@ -130,10 +148,10 @@ Deno.serve(async (req) => {
       .order('order', { ascending: true })
     
     if (error) {
-      return new Response(JSON.stringify({ error: error.message }), { status: 500 })
+      return new Response(JSON.stringify({ error: error.message }), { status: 500, headers: corsHeaders })
     }
     
-    return new Response(JSON.stringify({ spaces: spaces || [] }), { status: 200 })
+    return new Response(JSON.stringify({ spaces: spaces || [] }), { status: 200, headers: corsHeaders })
   }
   
   if (action === 'get') {
@@ -147,10 +165,10 @@ Deno.serve(async (req) => {
       .maybeSingle()
     
     if (error) {
-      return new Response(JSON.stringify({ error: error.message }), { status: 500 })
+      return new Response(JSON.stringify({ error: error.message }), { status: 500, headers: corsHeaders })
     }
     
-    return new Response(JSON.stringify({ space }), { status: 200 })
+    return new Response(JSON.stringify({ space }), { status: 200, headers: corsHeaders })
   }
   
   if (action === 'create') {
@@ -163,10 +181,10 @@ Deno.serve(async (req) => {
       .maybeSingle()
     
     if (error) {
-      return new Response(JSON.stringify({ error: error.message }), { status: 500 })
+      return new Response(JSON.stringify({ error: error.message }), { status: 500, headers: corsHeaders })
     }
     
-    return new Response(JSON.stringify({ space: created }), { status: 200 })
+    return new Response(JSON.stringify({ space: created }), { status: 200, headers: corsHeaders })
   }
   
   if (action === 'update') {
@@ -180,10 +198,10 @@ Deno.serve(async (req) => {
       .maybeSingle()
     
     if (error) {
-      return new Response(JSON.stringify({ error: error.message }), { status: 500 })
+      return new Response(JSON.stringify({ error: error.message }), { status: 500, headers: corsHeaders })
     }
     
-    return new Response(JSON.stringify({ space: updated }), { status: 200 })
+    return new Response(JSON.stringify({ space: updated }), { status: 200, headers: corsHeaders })
   }
   
   if (action === 'delete') {
@@ -195,13 +213,13 @@ Deno.serve(async (req) => {
       .eq('id', spaceId)
     
     if (error) {
-      return new Response(JSON.stringify({ error: error.message }), { status: 500 })
+      return new Response(JSON.stringify({ error: error.message }), { status: 500, headers: corsHeaders })
     }
     
-    return new Response(JSON.stringify({ success: true }), { status: 200 })
+    return new Response(JSON.stringify({ success: true }), { status: 200, headers: corsHeaders })
   }
   
-  return new Response(JSON.stringify({ error: 'Invalid action' }), { status: 400 })
+  return new Response(JSON.stringify({ error: 'Invalid action' }), { status: 400, headers: corsHeaders })
 })
 ```
 
@@ -217,7 +235,16 @@ const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
 
 const supabase = createClient(supabaseUrl, supabaseServiceKey)
 
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+}
+
 Deno.serve(async (req) => {
+  if (req.method === 'OPTIONS') {
+    return new Response(null, { headers: corsHeaders })
+  }
+
   const { action, ...data } = await req.json()
   
   if (action === 'list') {
@@ -235,10 +262,10 @@ Deno.serve(async (req) => {
     const { data: thoughts, error } = await query.order('order', { ascending: true })
     
     if (error) {
-      return new Response(JSON.stringify({ error: error.message }), { status: 500 })
+      return new Response(JSON.stringify({ error: error.message }), { status: 500, headers: corsHeaders })
     }
     
-    return new Response(JSON.stringify({ thoughts: thoughts || [] }), { status: 200 })
+    return new Response(JSON.stringify({ thoughts: thoughts || [] }), { status: 200, headers: corsHeaders })
   }
   
   if (action === 'get') {
@@ -251,10 +278,10 @@ Deno.serve(async (req) => {
       .maybeSingle()
     
     if (error) {
-      return new Response(JSON.stringify({ error: error.message }), { status: 500 })
+      return new Response(JSON.stringify({ error: error.message }), { status: 500, headers: corsHeaders })
     }
     
-    return new Response(JSON.stringify({ thought }), { status: 200 })
+    return new Response(JSON.stringify({ thought }), { status: 200, headers: corsHeaders })
   }
   
   if (action === 'create') {
@@ -267,10 +294,10 @@ Deno.serve(async (req) => {
       .maybeSingle()
     
     if (error) {
-      return new Response(JSON.stringify({ error: error.message }), { status: 500 })
+      return new Response(JSON.stringify({ error: error.message }), { status: 500, headers: corsHeaders })
     }
     
-    return new Response(JSON.stringify({ thought: created }), { status: 200 })
+    return new Response(JSON.stringify({ thought: created }), { status: 200, headers: corsHeaders })
   }
   
   if (action === 'createMany') {
@@ -282,10 +309,10 @@ Deno.serve(async (req) => {
       .select()
     
     if (error) {
-      return new Response(JSON.stringify({ error: error.message }), { status: 500 })
+      return new Response(JSON.stringify({ error: error.message }), { status: 500, headers: corsHeaders })
     }
     
-    return new Response(JSON.stringify({ thoughts: created || [] }), { status: 200 })
+    return new Response(JSON.stringify({ thoughts: created || [] }), { status: 200, headers: corsHeaders })
   }
   
   if (action === 'update') {
@@ -299,10 +326,10 @@ Deno.serve(async (req) => {
       .maybeSingle()
     
     if (error) {
-      return new Response(JSON.stringify({ error: error.message }), { status: 500 })
+      return new Response(JSON.stringify({ error: error.message }), { status: 500, headers: corsHeaders })
     }
     
-    return new Response(JSON.stringify({ thought: updated }), { status: 200 })
+    return new Response(JSON.stringify({ thought: updated }), { status: 200, headers: corsHeaders })
   }
   
   if (action === 'delete') {
@@ -314,10 +341,10 @@ Deno.serve(async (req) => {
       .eq('id', thoughtId)
     
     if (error) {
-      return new Response(JSON.stringify({ error: error.message }), { status: 500 })
+      return new Response(JSON.stringify({ error: error.message }), { status: 500, headers: corsHeaders })
     }
     
-    return new Response(JSON.stringify({ success: true }), { status: 200 })
+    return new Response(JSON.stringify({ success: true }), { status: 200, headers: corsHeaders })
   }
   
   if (action === 'deleteMany') {
@@ -329,13 +356,13 @@ Deno.serve(async (req) => {
       .in('id', thoughtIds)
     
     if (error) {
-      return new Response(JSON.stringify({ error: error.message }), { status: 500 })
+      return new Response(JSON.stringify({ error: error.message }), { status: 500, headers: corsHeaders })
     }
     
-    return new Response(JSON.stringify({ success: true }), { status: 200 })
+    return new Response(JSON.stringify({ success: true }), { status: 200, headers: corsHeaders })
   }
   
-  return new Response(JSON.stringify({ error: 'Invalid action' }), { status: 400 })
+  return new Response(JSON.stringify({ error: 'Invalid action' }), { status: 400, headers: corsHeaders })
 })
 ```
 
@@ -351,7 +378,16 @@ const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
 
 const supabase = createClient(supabaseUrl, supabaseServiceKey)
 
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+}
+
 Deno.serve(async (req) => {
+  if (req.method === 'OPTIONS') {
+    return new Response(null, { headers: corsHeaders })
+  }
+
   const { action, ...data } = await req.json()
   
   if (action === 'list') {
@@ -369,10 +405,10 @@ Deno.serve(async (req) => {
     const { data: stacks, error } = await query
     
     if (error) {
-      return new Response(JSON.stringify({ error: error.message }), { status: 500 })
+      return new Response(JSON.stringify({ error: error.message }), { status: 500, headers: corsHeaders })
     }
     
-    return new Response(JSON.stringify({ stacks: stacks || [] }), { status: 200 })
+    return new Response(JSON.stringify({ stacks: stacks || [] }), { status: 200, headers: corsHeaders })
   }
   
   if (action === 'create') {
@@ -385,10 +421,10 @@ Deno.serve(async (req) => {
       .maybeSingle()
     
     if (error) {
-      return new Response(JSON.stringify({ error: error.message }), { status: 500 })
+      return new Response(JSON.stringify({ error: error.message }), { status: 500, headers: corsHeaders })
     }
     
-    return new Response(JSON.stringify({ stack: created }), { status: 200 })
+    return new Response(JSON.stringify({ stack: created }), { status: 200, headers: corsHeaders })
   }
   
   if (action === 'update') {
@@ -402,10 +438,10 @@ Deno.serve(async (req) => {
       .maybeSingle()
     
     if (error) {
-      return new Response(JSON.stringify({ error: error.message }), { status: 500 })
+      return new Response(JSON.stringify({ error: error.message }), { status: 500, headers: corsHeaders })
     }
     
-    return new Response(JSON.stringify({ stack: updated }), { status: 200 })
+    return new Response(JSON.stringify({ stack: updated }), { status: 200, headers: corsHeaders })
   }
   
   if (action === 'delete') {
@@ -417,13 +453,13 @@ Deno.serve(async (req) => {
       .eq('id', stackId)
     
     if (error) {
-      return new Response(JSON.stringify({ error: error.message }), { status: 500 })
+      return new Response(JSON.stringify({ error: error.message }), { status: 500, headers: corsHeaders })
     }
     
-    return new Response(JSON.stringify({ success: true }), { status: 200 })
+    return new Response(JSON.stringify({ success: true }), { status: 200, headers: corsHeaders })
   }
   
-  return new Response(JSON.stringify({ error: 'Invalid action' }), { status: 400 })
+  return new Response(JSON.stringify({ error: 'Invalid action' }), { status: 400, headers: corsHeaders })
 })
 ```
 
@@ -439,7 +475,16 @@ const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
 
 const supabase = createClient(supabaseUrl, supabaseServiceKey)
 
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+}
+
 Deno.serve(async (req) => {
+  if (req.method === 'OPTIONS') {
+    return new Response(null, { headers: corsHeaders })
+  }
+
   const { action, ...data } = await req.json()
   
   if (action === 'get') {
@@ -452,10 +497,10 @@ Deno.serve(async (req) => {
       .maybeSingle()
     
     if (error) {
-      return new Response(JSON.stringify({ error: error.message }), { status: 500 })
+      return new Response(JSON.stringify({ error: error.message }), { status: 500, headers: corsHeaders })
     }
     
-    return new Response(JSON.stringify({ published }), { status: 200 })
+    return new Response(JSON.stringify({ published }), { status: 200, headers: corsHeaders })
   }
   
   if (action === 'publish') {
@@ -477,10 +522,10 @@ Deno.serve(async (req) => {
       .maybeSingle()
     
     if (error) {
-      return new Response(JSON.stringify({ error: error.message }), { status: 500 })
+      return new Response(JSON.stringify({ error: error.message }), { status: 500, headers: corsHeaders })
     }
     
-    return new Response(JSON.stringify({ published }), { status: 200 })
+    return new Response(JSON.stringify({ published }), { status: 200, headers: corsHeaders })
   }
   
   if (action === 'unpublish') {
@@ -492,13 +537,13 @@ Deno.serve(async (req) => {
       .eq('id', publishedId)
     
     if (error) {
-      return new Response(JSON.stringify({ error: error.message }), { status: 500 })
+      return new Response(JSON.stringify({ error: error.message }), { status: 500, headers: corsHeaders })
     }
     
-    return new Response(JSON.stringify({ success: true }), { status: 200 })
+    return new Response(JSON.stringify({ success: true }), { status: 200, headers: corsHeaders })
   }
   
-  return new Response(JSON.stringify({ error: 'Invalid action' }), { status: 400 })
+  return new Response(JSON.stringify({ error: 'Invalid action' }), { status: 400, headers: corsHeaders })
 })
 ```
 
@@ -514,7 +559,16 @@ const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
 
 const supabase = createClient(supabaseUrl, supabaseServiceKey)
 
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+}
+
 Deno.serve(async (req) => {
+  if (req.method === 'OPTIONS') {
+    return new Response(null, { headers: corsHeaders })
+  }
+
   const { action, ...data } = await req.json()
   
   if (action === 'list') {
@@ -527,10 +581,10 @@ Deno.serve(async (req) => {
       .order('created_at', { ascending: false })
     
     if (error) {
-      return new Response(JSON.stringify({ error: error.message }), { status: 500 })
+      return new Response(JSON.stringify({ error: error.message }), { status: 500, headers: corsHeaders })
     }
     
-    return new Response(JSON.stringify({ feedback: feedback || [] }), { status: 200 })
+    return new Response(JSON.stringify({ feedback: feedback || [] }), { status: 200, headers: corsHeaders })
   }
   
   if (action === 'create') {
@@ -548,10 +602,10 @@ Deno.serve(async (req) => {
       .maybeSingle()
     
     if (error) {
-      return new Response(JSON.stringify({ error: error.message }), { status: 500 })
+      return new Response(JSON.stringify({ error: error.message }), { status: 500, headers: corsHeaders })
     }
     
-    return new Response(JSON.stringify({ feedback: created }), { status: 200 })
+    return new Response(JSON.stringify({ feedback: created }), { status: 200, headers: corsHeaders })
   }
   
   if (action === 'delete') {
@@ -563,13 +617,13 @@ Deno.serve(async (req) => {
       .eq('id', feedbackId)
     
     if (error) {
-      return new Response(JSON.stringify({ error: error.message }), { status: 500 })
+      return new Response(JSON.stringify({ error: error.message }), { status: 500, headers: corsHeaders })
     }
     
-    return new Response(JSON.stringify({ success: true }), { status: 200 })
+    return new Response(JSON.stringify({ success: true }), { status: 200, headers: corsHeaders })
   }
   
-  return new Response(JSON.stringify({ error: 'Invalid action' }), { status: 400 })
+  return new Response(JSON.stringify({ error: 'Invalid action' }), { status: 400, headers: corsHeaders })
 })
 ```
 
@@ -585,7 +639,16 @@ const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
 
 const supabase = createClient(supabaseUrl, supabaseServiceKey)
 
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+}
+
 Deno.serve(async (req) => {
+  if (req.method === 'OPTIONS') {
+    return new Response(null, { headers: corsHeaders })
+  }
+
   const { action, ...data } = await req.json()
   
   if (action === 'create') {
@@ -604,10 +667,10 @@ Deno.serve(async (req) => {
       .maybeSingle()
     
     if (error) {
-      return new Response(JSON.stringify({ error: error.message }), { status: 500 })
+      return new Response(JSON.stringify({ error: error.message }), { status: 500, headers: corsHeaders })
     }
     
-    return new Response(JSON.stringify({ payment }), { status: 200 })
+    return new Response(JSON.stringify({ payment }), { status: 200, headers: corsHeaders })
   }
   
   if (action === 'get') {
@@ -620,10 +683,10 @@ Deno.serve(async (req) => {
       .maybeSingle()
     
     if (error) {
-      return new Response(JSON.stringify({ error: error.message }), { status: 500 })
+      return new Response(JSON.stringify({ error: error.message }), { status: 500, headers: corsHeaders })
     }
     
-    return new Response(JSON.stringify({ payment }), { status: 200 })
+    return new Response(JSON.stringify({ payment }), { status: 200, headers: corsHeaders })
   }
   
   if (action === 'update-status') {
@@ -637,10 +700,10 @@ Deno.serve(async (req) => {
       .maybeSingle()
     
     if (error) {
-      return new Response(JSON.stringify({ error: error.message }), { status: 500 })
+      return new Response(JSON.stringify({ error: error.message }), { status: 500, headers: corsHeaders })
     }
     
-    return new Response(JSON.stringify({ payment: updated }), { status: 200 })
+    return new Response(JSON.stringify({ payment: updated }), { status: 200, headers: corsHeaders })
   }
   
   if (action === 'list') {
@@ -653,13 +716,13 @@ Deno.serve(async (req) => {
       .order('created_at', { ascending: false })
     
     if (error) {
-      return new Response(JSON.stringify({ error: error.message }), { status: 500 })
+      return new Response(JSON.stringify({ error: error.message }), { status: 500, headers: corsHeaders })
     }
     
-    return new Response(JSON.stringify({ payments: payments || [] }), { status: 200 })
+    return new Response(JSON.stringify({ payments: payments || [] }), { status: 200, headers: corsHeaders })
   }
   
-  return new Response(JSON.stringify({ error: 'Invalid action' }), { status: 400 })
+  return new Response(JSON.stringify({ error: 'Invalid action' }), { status: 400, headers: corsHeaders })
 })
 ```
 
@@ -675,12 +738,21 @@ const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
 
 const supabase = createClient(supabaseUrl, supabaseServiceKey)
 
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+}
+
 Deno.serve(async (req) => {
+  if (req.method === 'OPTIONS') {
+    return new Response(null, { headers: corsHeaders })
+  }
+
   const { action, ...data } = await req.json()
   
   const adminKey = req.headers.get('x-admin-key')
   if (adminKey !== Deno.env.get('ADMIN_SECRET_KEY')) {
-    return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401 })
+    return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401, headers: corsHeaders })
   }
   
   if (action === 'stats') {
@@ -713,7 +785,7 @@ Deno.serve(async (req) => {
     
     return new Response(JSON.stringify({
       stats: { totalUsers, totalThoughts, totalSpaces, dau, planCounts }
-    }), { status: 200 })
+    }), { status: 200, headers: corsHeaders })
   }
   
   if (action === 'users') {
@@ -726,10 +798,10 @@ Deno.serve(async (req) => {
       .range(offset, offset + limit - 1)
     
     if (error) {
-      return new Response(JSON.stringify({ error: error.message }), { status: 500 })
+      return new Response(JSON.stringify({ error: error.message }), { status: 500, headers: corsHeaders })
     }
     
-    return new Response(JSON.stringify({ users: users || [] }), { status: 200 })
+    return new Response(JSON.stringify({ users: users || [] }), { status: 200, headers: corsHeaders })
   }
   
   if (action === 'export-users') {
@@ -738,7 +810,7 @@ Deno.serve(async (req) => {
       .select('id, email, name, plan, subscription_status, created_at, updated_at')
     
     if (error) {
-      return new Response(JSON.stringify({ error: error.message }), { status: 500 })
+      return new Response(JSON.stringify({ error: error.message }), { status: 500, headers: corsHeaders })
     }
     
     const headers = ['id', 'email', 'name', 'plan', 'subscription_status', 'created_at', 'updated_at']
@@ -748,11 +820,11 @@ Deno.serve(async (req) => {
     ].join('\n')
     
     return new Response(csv, {
-      headers: { 'Content-Type': 'text/csv', 'Content-Disposition': 'attachment; filename=users.csv' }
+      headers: { ...corsHeaders, 'Content-Type': 'text/csv', 'Content-Disposition': 'attachment; filename=users.csv' }
     })
   }
   
-  return new Response(JSON.stringify({ error: 'Invalid action' }), { status: 400 })
+  return new Response(JSON.stringify({ error: 'Invalid action' }), { status: 400, headers: corsHeaders })
 })
 ```
 

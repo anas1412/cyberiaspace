@@ -1,8 +1,13 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { kv } from '@vercel/kv';
+import { createClient } from '@supabase/supabase-js';
 import crypto from 'crypto';
 
-import { hydrateProfile } from './profile-helper.js';
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.VITE_SUPABASE_URL;
+const supabaseKey = process.env.VITE_SUPABASE_ANON_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+
+const supabase = createClient(supabaseUrl!, supabaseKey!, {
+  auth: { autoRefreshToken: false, persistSession: false }
+});
 
 const KONNECT_API_URL = process.env.NODE_ENV === 'production'
     ? 'https://api.konnect.network/api/v2'
@@ -101,13 +106,18 @@ async function handleInit(req: VercelRequest, res: VercelResponse) {
 
         const { payUrl, paymentRef } = await response.json() as any;
 
-        // Best Practice: Store expected amount and currency to verify in webhook
-        await kv.set(`pay_ref_${paymentRef}`, {
-            userId,
-            billingCycle,
-            expectedAmount: subunitAmount,
-            expectedToken: currency
-        }, { ex: 3600 });
+        // Store payment reference in Supabase
+        await supabase.from('payments').insert({
+            payment_ref: paymentRef,
+            user_id: userId,
+            amount: subunitAmount,
+            currency: currency,
+            status: 'pending',
+            metadata: {
+                billingCycle,
+                expectedToken: currency
+            }
+        });
 
         return res.status(200).json({ payUrl });
 
@@ -148,25 +158,24 @@ async function handleWebhook(req: VercelRequest, res: VercelResponse) {
         const { payment } = await response.json() as any;
 
         if (payment.status === 'completed') {
-            const mappingKey = `pay_ref_${paymentRef}`;
-            const mapping = await kv.get<{
-                userId: string;
-                billingCycle: string;
-                expectedAmount: number;
-                expectedToken: string;
-            }>(mappingKey);
+            // Get payment record from Supabase
+            const { data: paymentRecord } = await supabase
+                .from('payments')
+                .select('*')
+                .eq('payment_ref', paymentRef)
+                .maybeSingle();
 
-            if (mapping) {
-                // Best Practice: Verify amount and token
-                if (payment.amount !== mapping.expectedAmount || payment.token !== mapping.expectedToken) {
+            if (paymentRecord) {
+                const { user_id: userId, metadata } = paymentRecord;
+                const billingCycle = metadata?.billingCycle || 'monthly';
+
+                // Verify amount and token
+                if (payment.amount !== paymentRecord.amount || payment.token !== paymentRecord.currency) {
                     console.error('Payment validation failed: Amount/Token mismatch');
                     return res.status(400).json({ error: 'Payment validation failed' });
                 }
 
-                const { userId, billingCycle } = mapping;
-                const profileKey = `user:profile:${userId}`;
-                const existingProfile = await kv.get<any>(profileKey) || {};
-
+                // Calculate expiry date
                 const now = new Date();
                 const expiry = new Date();
                 if (billingCycle === 'yearly') {
@@ -175,18 +184,31 @@ async function handleWebhook(req: VercelRequest, res: VercelResponse) {
                     expiry.setMonth(now.getMonth() + 1);
                 }
 
-                const updatedProfile = hydrateProfile({
-                    ...existingProfile,
-                    plan: 'pro',
-                    subscriptionStatus: 'active',
-                    expiryDate: expiry.toISOString(),
-                    updatedAt: now.toISOString()
-                });
+                // Update user to pro
+                const { error: updateError } = await supabase
+                    .from('users')
+                    .update({
+                        plan: 'pro',
+                        subscription_status: 'active',
+                        expiry_date: expiry.toISOString(),
+                        updated_at: now.toISOString()
+                    })
+                    .eq('id', userId);
 
-                await kv.set(profileKey, updatedProfile);
+                if (updateError) {
+                    console.error('Failed to update user:', updateError);
+                } else {
+                    console.log(`User ${userId} upgraded to Pro until ${expiry.toISOString()}`);
+                }
 
-                await kv.del(mappingKey);
-                console.log(`User ${userId} upgraded to Pro until ${expiry.toISOString()}`);
+                // Update payment status
+                await supabase
+                    .from('payments')
+                    .update({
+                        status: 'completed',
+                        updated_at: now.toISOString()
+                    })
+                    .eq('payment_ref', paymentRef);
             }
         }
 

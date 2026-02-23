@@ -17,7 +17,6 @@ export interface User {
   settings: {
     // Account-wide settings only
     autoSync: boolean;
-    driveEnabled: boolean;
     theme: string;
   };
 }
@@ -27,6 +26,7 @@ export interface PlanLimits {
   MAX_SPACES: number;
   MAX_THOUGHTS_PER_SPACE: number;
   MAX_CLOUD_THOUGHTS: number;
+  MAX_STORAGE_MB: number;
   AI_ENABLED: boolean;
   AI_DAILY_LIMIT?: number;
   THEMES_ENABLED: string[];
@@ -41,6 +41,7 @@ export const PLAN_CONFIG: Record<SubscriptionPlan, PlanLimits> = {
     MAX_SPACES: 3,
     MAX_THOUGHTS_PER_SPACE: 20,
     MAX_CLOUD_THOUGHTS: 60,
+    MAX_STORAGE_MB: 50,
     AI_ENABLED: true,
     AI_DAILY_LIMIT: 15,
     THEMES_ENABLED: ['cyberia', 'sea', 'forest', 'rain'],
@@ -49,6 +50,7 @@ export const PLAN_CONFIG: Record<SubscriptionPlan, PlanLimits> = {
     MAX_SPACES: 12,
     MAX_THOUGHTS_PER_SPACE: 40,
     MAX_CLOUD_THOUGHTS: 480,
+    MAX_STORAGE_MB: 500,
     AI_ENABLED: true,
     AI_DAILY_LIMIT: 120,
     THEMES_ENABLED: ['cyberia', 'sea', 'forest', 'rain'],

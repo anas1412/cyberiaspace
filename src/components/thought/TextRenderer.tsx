@@ -25,7 +25,7 @@ export const TextRenderer: React.FC<TextRendererProps> = ({
   setActiveFocus 
 }) => {
   const hasContent = thought.content && thought.content.trim().length > 0;
-  const isStranded = !hasContent && !thought.driveFileId && thought.syncStatus !== 'synced' && !isReadOnly;
+  const isStranded = !hasContent && !thought.storageUrl && thought.syncStatus !== 'synced' && !isReadOnly;
 
   if (!hasContent) {
     if (isCalendar) return null;

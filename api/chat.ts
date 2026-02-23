@@ -1,6 +1,12 @@
 import Groq from "groq-sdk";
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { kv } from '@vercel/kv';
+import { createClient } from '@supabase/supabase-js';
+
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.VITE_SUPABASE_URL;
+const supabaseKey = process.env.VITE_SUPABASE_ANON_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+const supabase = supabaseUrl && supabaseKey 
+    ? createClient(supabaseUrl, supabaseKey, { auth: { autoRefreshToken: false, persistSession: false } })
+    : null;
 
 // --- CONSTANTS (Self-contained for Server-side stability) ---
 const PLAN_CONFIG = {
@@ -580,19 +586,26 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   const userId = await getUserIdFromAuth(req.headers.authorization);
   if (!userId) return res.status(401).json({ error: 'Unauthorized' });
 
-  const profileKey = `user:profile:${userId}`;
-  let profile = await kv.get<any>(profileKey);
   const today = new Date().toISOString().split('T')[0];
 
-  if (!profile) {
+  // Get user from Supabase
+  const { data: profile, error: profileError } = await supabase!
+    .from('users')
+    .select('*')
+    .eq('id', userId)
+    .maybeSingle();
+
+  if (profileError || !profile) {
     return res.status(403).json({ error: 'User profile not initialized' });
   }
 
+  let usage = profile.usage || { ai_daily_count: 0, sync_thoughts: 0, last_ai_reset: '' };
+
   // Reset AI usage if it's a new day
-  if (profile.usage.last_ai_reset !== today) {
-    profile.usage.ai_daily_count = 0;
-    profile.usage.last_ai_reset = today;
-    await kv.set(profileKey, profile);
+  if (usage.last_ai_reset !== today) {
+    usage.ai_daily_count = 0;
+    usage.last_ai_reset = today;
+    await supabase!.from('users').update({ usage }).eq('id', userId);
   }
 
   const plan = profile.plan || 'free';
@@ -602,7 +615,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   // Handle GET request for usage check
   if (req.method === 'GET') {
     return res.status(200).json({ 
-      count: profile.usage.ai_daily_count, 
+      count: usage.ai_daily_count, 
       limit 
     });
   }
@@ -614,18 +627,18 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   try {
     const { messages, context } = req.body;
 
-    if (profile.usage.ai_daily_count >= limit) {
+    if (usage.ai_daily_count >= limit) {
       return res.status(429).json({ 
         error: "Daily limit reached", 
         message: "You've reached your daily AI message limit. Upgrade to Pro for unlimited access!",
-        usage: profile.usage.ai_daily_count,
+        usage: usage.ai_daily_count,
         limit
       });
     }
 
-    // Increment usage and update profile
-    profile.usage.ai_daily_count += 1;
-    await kv.set(profileKey, profile);
+    // Increment usage
+    usage.ai_daily_count += 1;
+    await supabase!.from('users').update({ usage }).eq('id', userId);
 
     // Select Model
     const model = plan === 'pro' ? PREMIUM_MODELS[0] : BASIC_MODELS[0];
@@ -635,7 +648,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     res.setHeader('Connection', 'keep-alive');
 
     // Send usage update to client immediately
-    res.write(`data: ${JSON.stringify({ type: 'usage', count: profile.usage.ai_daily_count, limit })}\n\n`);
+    res.write(`data: ${JSON.stringify({ type: 'usage', count: usage.ai_daily_count, limit })}\n\n`);
 
     async function runChat(currentMessages: any[], currentModel: string, isRetry = false) {
       const sanitizedMessages = currentMessages.map((m: any) => {

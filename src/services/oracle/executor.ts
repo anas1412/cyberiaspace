@@ -241,8 +241,7 @@ export const executeOracleTool = async (toolCall: any, store: any) => {
 
         try {
           const { db } = await import('../../db');
-          const { driveService } = await import('../google/driveService');
-          const authStore = (await import('../../store/useAuthStore')).useAuthStore.getState();
+          const { supabaseStorage } = await import('../supabaseStorage');
 
           // Try to get from local blobs first
           let blob: Blob | null = null;
@@ -250,8 +249,10 @@ export const executeOracleTool = async (toolCall: any, store: any) => {
           
           if (blobEntry) {
             blob = blobEntry.blob;
-          } else if (thought.driveFileId && authStore.accessToken) {
-            blob = await driveService.downloadFile(authStore.accessToken, thought.driveFileId);
+          } else if (thought.storagePath) {
+            const signedUrl = await supabaseStorage.getSignedUrl(thought.storagePath);
+            const response = await fetch(signedUrl);
+            blob = await response.blob();
           }
 
           if (!blob) return { success: false, error: 'File content not available (might be local-only and you are on a different device)' };
@@ -294,16 +295,17 @@ export const executeOracleTool = async (toolCall: any, store: any) => {
 
           try {
             const { db } = await import('../../db');
-            const { driveService } = await import('../google/driveService');
-            const authStore = (await import('../../store/useAuthStore')).useAuthStore.getState();
+            const { supabaseStorage } = await import('../supabaseStorage');
 
             let blob: Blob | null = null;
             const blobEntry = await db.blobs.where('thoughtId').equals(id).first();
             
             if (blobEntry) {
               blob = blobEntry.blob;
-            } else if (thought.driveFileId && authStore.accessToken) {
-              blob = await driveService.downloadFile(authStore.accessToken, thought.driveFileId);
+            } else if (thought.storagePath) {
+              const signedUrl = await supabaseStorage.getSignedUrl(thought.storagePath);
+              const response = await fetch(signedUrl);
+              blob = await response.blob();
             }
 
             if (!blob) {

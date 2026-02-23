@@ -23,7 +23,7 @@ export const TasksRenderer: React.FC<TasksRendererProps> = ({
   const done = thought.tasks.filter((t) => t.done).length;
   const progress = (done / thought.tasks.length) * 100;
   const previewTasks = thought.tasks.slice(0, 3);
-  const isStranded = thought.tasks.length === 0 && !thought.driveFileId && thought.syncStatus !== 'synced' && !isReadOnly;
+  const isStranded = thought.tasks.length === 0 && !thought.storageUrl && thought.syncStatus !== 'synced' && !isReadOnly;
 
   if (thought.tasks.length === 0) {
     return (

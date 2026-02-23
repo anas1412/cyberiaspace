@@ -1,12 +1,11 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useStore } from '../../store/useStore';
 import { useAuthStore } from '../../store/useAuthStore';
-import { File as FileIcon, Upload, Download, Loader2, FileAudio, Globe, Shield, ExternalLink, Database, CloudOff } from 'lucide-react';
+import { File as FileIcon, Upload, Download, Loader2, FileAudio, Shield, ExternalLink, Database, CloudOff, Cloud } from 'lucide-react';
 import { FocusEditorShell } from './FocusEditorShell';
 import { MAX_FILE_SIZE_MB } from '../../constants';
 import { generateThumbnail } from '../../utils/image';
-import { driveService } from '../../services/google/driveService';
-import { useGoogleLogin } from '@react-oauth/google';
+import { supabaseStorage } from '../../services/supabaseStorage';
 import { motion, AnimatePresence } from 'framer-motion';
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
@@ -19,27 +18,23 @@ const EditorContent: React.FC<{
   thought: any;
   fileMeta: any;
   localPreviewUrl: string | null;
-  accessToken: string | null;
   isUploading: boolean;
   isFetching: boolean;
   error: string | null;
-  hasDriveAccess: boolean;
-  driveLogin: () => void;
   handleFileSelect: (e: React.ChangeEvent<HTMLInputElement>) => void;
   stackItems: any[];
   setActiveFocus: (id: number | null, type: any) => void;
   scrollerRef: React.RefObject<HTMLDivElement | null>;
   stack: any;
 }> = ({ 
-  thought, fileMeta, localPreviewUrl, accessToken, isUploading, isFetching, error,
-  hasDriveAccess, driveLogin, handleFileSelect, 
+  thought, fileMeta, localPreviewUrl, isUploading, isFetching, error,
+  handleFileSelect, 
   stackItems, setActiveFocus, scrollerRef, stack 
 }) => {
-  const isStranded = !thought.driveFileId && !localPreviewUrl && !thought.image && thought.syncStatus !== 'synced';
+  const isStranded = !thought.storageUrl && !localPreviewUrl && !thought.image && thought.syncStatus !== 'synced';
 
   return (
     <div className="flex-1 flex flex-col min-h-0 bg-black">
-      {/* Preview Area */}
       <div className="flex-1 relative min-h-0">
         {isFetching ? (
           <div className="absolute inset-0 flex flex-col items-center justify-center bg-[#020408] gap-4">
@@ -61,11 +56,11 @@ const EditorContent: React.FC<{
               </p>
             </div>
           </div>
-        ) : (thought.driveFileId || localPreviewUrl || thought.image) ? (
+        ) : (thought.storageUrl || localPreviewUrl || thought.image) ? (
           <div className="absolute inset-0 flex items-center justify-center p-4">
             {fileMeta.type?.includes('pdf') || thought.text?.toLowerCase().endsWith('.pdf') ? (
               <iframe 
-                src={localPreviewUrl ? `${localPreviewUrl}#toolbar=0&navpanes=0&scrollbar=0` : `https://drive.google.com/file/d/${thought.driveFileId}/preview`} 
+                src={localPreviewUrl || thought.storageUrl}
                 className="w-full h-full border-none bg-white rounded-xl shadow-2xl"
                 title="PDF Preview"
               />
@@ -73,7 +68,7 @@ const EditorContent: React.FC<{
               <div className="flex flex-col items-center justify-center w-full h-full p-4 md:p-8">
                 <div className="relative w-full h-full flex items-center justify-center overflow-hidden rounded-2xl">
                   <img 
-                    src={localPreviewUrl || (accessToken && thought.driveFileId ? `https://www.googleapis.com/drive/v3/files/${thought.driveFileId}?alt=media&access_token=${accessToken}` : thought.image)} 
+                    src={localPreviewUrl || thought.storageUrl || thought.image}
                     alt={thought.text}
                     className="max-w-full max-h-full object-contain shadow-2xl transition-opacity duration-300"
                     style={{ opacity: isFetching ? 0.5 : 1 }}
@@ -88,60 +83,21 @@ const EditorContent: React.FC<{
                     <FileAudio className="w-16 h-12 md:w-20 md:h-16 text-blue-400 opacity-60" />
                   </div>
                 </div>
-                
                 <div className="w-full max-w-lg glass p-4 md:p-6 rounded-[2.5rem] border border-white/5 shadow-2xl relative z-10">
                   <audio 
                     controls 
-                    autoPlay
+                    autoPlay 
                     className="w-full h-10 invert brightness-200 hue-rotate-[240deg]"
-                    src={localPreviewUrl || (accessToken ? `https://www.googleapis.com/drive/v3/files/${thought.driveFileId}?alt=media&access_token=${accessToken}` : undefined)}
+                    src={localPreviewUrl || thought.storageUrl}
                   />
                 </div>
               </div>
-            ) : fileMeta.type?.includes('video') || thought.text?.toLowerCase().endsWith('.mp4') || thought.text?.toLowerCase().endsWith('.mov') || thought.text?.toLowerCase().endsWith('.webm') ? (
-              <video 
-                controls 
-                autoPlay
-                className="w-full h-full object-contain bg-black"
-                src={localPreviewUrl || (accessToken ? `https://www.googleapis.com/drive/v3/files/${thought.driveFileId}?alt=media&access_token=${accessToken}` : undefined)}
-              />
             ) : (
-              <div className="flex flex-col items-center gap-8 p-12">
-                <div className="w-32 h-32 bg-white/5 rounded-[2.5rem] border border-white/10 flex items-center justify-center shadow-inner">
-                  <FileIcon className="w-16 h-16 text-slate-500" />
-                </div>
-                <div className="text-center">
-                  <h4 className="text-2xl font-black uppercase tracking-widest text-white mb-3">{thought.text || fileMeta.name}</h4>
-                  <p className="text-xs font-bold text-slate-500 uppercase tracking-widest leading-relaxed">
-                    Preview not available for this format.<br/>Download to view on your system.
-                  </p>
-                </div>
+              <div className="flex flex-col items-center justify-center p-8 text-center">
+                <FileIcon className="w-24 h-24 text-slate-600 mb-4" />
+                <p className="text-slate-500 text-sm">Preview not available</p>
               </div>
             )}
-
-            {isUploading && (
-              <div className="absolute top-6 right-6 px-4 py-2 bg-black/60 backdrop-blur-md border border-white/10 rounded-full flex items-center gap-3 z-20">
-                <Loader2 className="w-3 h-3 text-blue-400 animate-spin" />
-                <span className="text-[9px] font-black uppercase tracking-widest text-blue-300">Syncing to Cloud...</span>
-              </div>
-            )}
-          </div>
-        ) : !hasDriveAccess ? (
-          <div className="absolute inset-0 flex flex-col items-center justify-center bg-[#020408] p-8 text-center">
-            <div className="w-24 h-24 bg-blue-500/5 rounded-[2rem] border border-blue-500/10 flex items-center justify-center mb-8 shadow-2xl">
-              <Shield className="w-10 h-10 text-blue-400 opacity-40" />
-            </div>
-            <h3 className="text-xl font-black uppercase tracking-[0.2em] text-white mb-3">Cloud Backup</h3>
-            <p className="text-xs font-medium text-slate-500 max-w-xs leading-relaxed mb-8 uppercase tracking-widest">
-              Connect Google Drive to store large files securely in your private cloud.
-            </p>
-            <button 
-              onClick={driveLogin}
-              className="inline-flex items-center gap-3 px-8 py-4 bg-blue-500 hover:bg-blue-600 text-white rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] transition-all shadow-lg shadow-blue-500/20 active:scale-95"
-            >
-              <Globe className="w-4 h-4" />
-              Enable Drive Sync
-            </button>
           </div>
         ) : (
           <div className="absolute inset-0 flex flex-col items-center justify-center bg-[#020408] p-8 text-center">
@@ -157,7 +113,6 @@ const EditorContent: React.FC<{
             <p className="text-xs font-medium text-slate-500 leading-relaxed mb-8 uppercase tracking-widest">
               Drop a file or select one to begin.
             </p>
-            
             <label className={cn(
               "inline-flex items-center gap-3 px-8 py-4 bg-blue-500 hover:bg-blue-600 text-white rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] transition-all cursor-pointer shadow-lg shadow-blue-500/20 active:scale-95",
               isUploading && "opacity-50 pointer-events-none"
@@ -166,13 +121,11 @@ const EditorContent: React.FC<{
               {isUploading ? 'Preparing...' : 'Select File'}
               <input type="file" className="hidden" onChange={handleFileSelect} disabled={isUploading} />
             </label>
-
             {error && <p className="mt-6 text-[10px] font-bold text-red-400 uppercase tracking-widest">{error}</p>}
           </div>
         )}
       </div>
 
-      {/* Collection Carousel */}
       <AnimatePresence>
         {stackItems.length > 0 && (
           <motion.div
@@ -188,7 +141,6 @@ const EditorContent: React.FC<{
               {stackItems.map((item) => {
                 const itemMeta = item.meta?.file || {};
                 const isItemImage = item.type === 'image' || itemMeta.type?.startsWith('image/');
-                
                 return (
                   <button
                     key={item.id}
@@ -197,11 +149,7 @@ const EditorContent: React.FC<{
                   >
                     <div className="w-full h-full flex flex-col items-center justify-center relative">
                       {isItemImage && item.image ? (
-                        <img 
-                          src={item.image} 
-                          className="w-full h-full object-cover opacity-40 group-hover/item:opacity-100 transition-opacity" 
-                          alt={item.text} 
-                        />
+                        <img src={item.image} className="w-full h-full object-cover opacity-40 group-hover/item:opacity-100 transition-opacity" alt={item.text} />
                       ) : (
                         <div className="flex flex-col items-center justify-center gap-2 p-2">
                           {itemMeta.type?.includes('pdf') ? <FileIcon className="w-6 h-6 text-red-400 opacity-40 group-hover/item:opacity-100" /> : 
@@ -227,93 +175,52 @@ const EditorContent: React.FC<{
 const FileFocusEditor: React.FC = () => {
   const activeFocusId = useStore((state) => state.activeFocusId);
   const focusType = useStore((state) => state.focusType);
-  const setActiveFocus = useStore((state) => state.setActiveFocus);
   const thoughts = useStore((state) => state.thoughts);
   const stacks = useStore((state) => state.stacks);
   const updateThought = useStore((state) => state.updateThought);
-  const isReadOnly = useStore((state) => state.isReadOnly);
+  const setActiveFocus = useStore((state) => state.setActiveFocus);
   
-  const accessToken = useAuthStore((state) => state.accessToken);
-  const grantedScopes = useAuthStore((state) => state.grantedScopes);
-  const requestServiceAccess = useAuthStore((state) => state.requestServiceAccess);
+  const { user } = useAuthStore();
 
-  const hasDriveAccess = grantedScopes.includes('https://www.googleapis.com/auth/drive.file');
+  const thought = useMemo(() => {
+    if (focusType === 'file' || focusType === 'image') {
+      return thoughts.find(t => t.id === activeFocusId);
+    }
+    return null;
+  }, [activeFocusId, focusType, thoughts]);
 
+  const stack = useMemo(() => {
+    if (!thought?.stackId) return null;
+    return stacks.find(s => s.id === thought.stackId);
+  }, [thought, stacks]);
+
+  const stackItems = useMemo(() => {
+    if (!stack) return [];
+    return thoughts.filter(t => t.stackId === stack.id && t.id !== thought?.id);
+  }, [stack, thoughts, thought]);
+
+  const [localTitle, setLocalTitle] = useState('');
+  const [localPreviewUrl, setLocalPreviewUrl] = useState<string | null>(null);
   const [isUploading, setIsUploading] = useState(false);
   const [isFetching, setIsFetching] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [localTitle, setLocalTitle] = useState('');
-  const [localPreviewUrl, setLocalPreviewUrl] = useState<string | null>(null);
-
-  const thought = thoughts.find((t) => t.id === activeFocusId);
-  const stack = stacks.find((s) => s.id === thought?.stackId);
-  const isVisible = (focusType === 'file' || focusType === 'image') && !!thought;
-
-  const fileMeta = thought?.meta?.file || {};
-
   const scrollerRef = useRef<HTMLDivElement>(null);
 
-  const stackItems = useMemo(() => {
-    if (!thought?.stackId) return [];
-    return thoughts.filter(t => t.stackId === thought.stackId && t.id !== thought.id && (t.type === 'file' || t.type === 'image'));
-  }, [thoughts, thought]);
+  const isVisible = !!thought;
+  const isReadOnly = false;
 
-  // Load local blob preview if exists
-  useEffect(() => {
-    let currentObjectUrl: string | null = null;
-    let isMounted = true;
-
-    if (isVisible && thought) {
-      const loadLocalBlob = async () => {
-        setIsFetching(true);
-        try {
-          const { db: database } = await import('../../db');
-          // Try to find the original blob by thoughtId
-          const entry = await database.blobs.where('thoughtId').equals(thought.id).first();
-          
-          if (entry && isMounted) {
-            console.log(`[Focus] Found local blob for thought ${thought.id}, type: ${entry.type}`);
-            currentObjectUrl = URL.createObjectURL(entry.blob);
-            setLocalPreviewUrl(currentObjectUrl);
-          } else {
-            console.log(`[Focus] No local blob found for thought ${thought.id}, falling back to cloud/thumbnail`);
-          }
-        } catch (e) {
-          console.error('[Focus] Failed to load local blob', e);
-        } finally {
-          if (isMounted) setIsFetching(false);
-        }
-      };
-      loadLocalBlob();
-    }
-
-    return () => {
-      isMounted = false;
-      if (currentObjectUrl) {
-        URL.revokeObjectURL(currentObjectUrl);
-      }
-      setLocalPreviewUrl(null);
-    };
-  }, [isVisible, thought?.id]);
+  const fileMeta = useMemo(() => {
+    if (!thought) return {};
+    return thought.meta?.file || {};
+  }, [thought]);
 
   useEffect(() => {
+    if (!scrollerRef.current || !isVisible || stackItems.length === 0) return;
     const el = scrollerRef.current;
-    if (!el) return;
     const onWheel = (e: WheelEvent) => { if (e.deltaY === 0) return; e.preventDefault(); el.scrollLeft += e.deltaY; };
     el.addEventListener('wheel', onWheel, { passive: false });
     return () => el.removeEventListener('wheel', onWheel);
   }, [isVisible, stackItems.length]);
-
-  // Google Login hook for Drive access on-demand
-  const driveLogin = useGoogleLogin({
-    onSuccess: (response: any) => {
-      if (response.access_token) {
-        requestServiceAccess('https://www.googleapis.com/auth/drive.file', response.access_token);
-      }
-    },
-    scope: [...grantedScopes, 'https://www.googleapis.com/auth/drive.file'].join(' '),
-    flow: 'implicit'
-  } as any);
 
   useEffect(() => {
     if (thought) {
@@ -321,21 +228,34 @@ const FileFocusEditor: React.FC = () => {
     }
   }, [activeFocusId, thought?.text]);
 
+  useEffect(() => {
+    const loadLocalBlob = async () => {
+      if (!thought) return;
+      if (thought.storageUrl || localPreviewUrl) return;
+      if (thought.type !== 'file' && thought.type !== 'image') return;
+      
+      try {
+        const { db: database } = await import('../../db');
+        const blobEntry = await database.blobs.where('thoughtId').equals(thought.id).first();
+        
+        if (blobEntry?.blob) {
+          const url = URL.createObjectURL(blobEntry.blob);
+          setLocalPreviewUrl(url);
+        }
+      } catch (err) {
+        console.error('Failed to load local blob:', err);
+      }
+    };
+    
+    loadLocalBlob();
+  }, [thought?.id, thought?.storageUrl, thought?.type]);
+
   const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (!file || !thought) return;
+    if (!file || !thought || !user) return;
 
     if (file.size > MAX_FILE_SIZE_MB * 1024 * 1024) {
       setError(`File too large. Maximum allowed size is ${MAX_FILE_SIZE_MB}MB.`);
-      return;
-    }
-
-    await uploadToDrive(file);
-  };
-
-  const uploadToDrive = async (file: File) => {
-    if (!accessToken) {
-      setError('Please sign in to upload files to Google Drive.');
       return;
     }
 
@@ -343,9 +263,10 @@ const FileFocusEditor: React.FC = () => {
     setError(null);
     try {
       const { db: database } = await import('../../db');
+      
       await database.blobs.put({
         id: `local-${Date.now()}`,
-        thoughtId: thought!.id,
+        thoughtId: thought.id,
         blob: file,
         name: file.name,
         type: file.type,
@@ -355,42 +276,31 @@ const FileFocusEditor: React.FC = () => {
       const url = URL.createObjectURL(file);
       setLocalPreviewUrl(url);
 
-      const folderId = await driveService.ensureRootFolder(accessToken);
-      const result = await driveService.uploadFile(accessToken, file, file.name, folderId);
+      const result = await supabaseStorage.uploadFile(user.id, file, file.name);
       
       const isImage = file.type.startsWith('image/') || /\.(jpg|jpeg|png|gif|webp|svg)$/i.test(file.name);
       const thumbnail = isImage ? await generateThumbnail(file).catch(() => null) : null;
       
-      await updateThought(thought!.id, {
+      await updateThought(thought.id, {
         text: file.name,
         type: isImage ? 'image' : 'file',
         image: thumbnail || null,
         syncStatus: 'synced',
-        driveFileId: result.id,
-        meta: {
-          ...thought?.meta,
-          file: {
-            id: result.id,
-            name: result.name,
-            size: file.size,
-            type: file.type,
-            link: result.webContentLink,
-            webViewLink: result.webViewLink
-          }
-        }
+        storageUrl: result.url,
+        storagePath: result.path,
       });
       
       setLocalTitle(file.name);
     } catch (err: any) {
       console.error('Upload error:', err);
-      setError(err.message || 'Failed to upload to Google Drive');
+      setError(err.message || 'Failed to upload file');
     } finally {
       setIsUploading(false);
     }
   };
 
   const handleDownload = async () => {
-    if (!thought?.driveFileId && !localPreviewUrl) return;
+    if (!thought?.storageUrl && !localPreviewUrl) return;
     try {
       let blob: Blob;
       if (localPreviewUrl) {
@@ -398,9 +308,12 @@ const FileFocusEditor: React.FC = () => {
         const entry = await database.blobs.where('thoughtId').equals(thought!.id).first();
         if (!entry) throw new Error('Local file not found');
         blob = entry.blob;
+      } else if (thought?.storagePath) {
+        const signedUrl = await supabaseStorage.getSignedUrl(thought.storagePath);
+        const response = await fetch(signedUrl);
+        blob = await response.blob();
       } else {
-        if (!accessToken) throw new Error('Auth required for cloud download');
-        blob = await driveService.downloadFile(accessToken, thought!.driveFileId!);
+        throw new Error('No file available');
       }
       
       const url = URL.createObjectURL(blob);
@@ -431,28 +344,23 @@ const FileFocusEditor: React.FC = () => {
       stack={stack}
       headerActions={
         <div className="flex items-center gap-2">
-          {(!thought.driveFileId && localPreviewUrl && !isUploading) && (
+          {(!thought.storageUrl && localPreviewUrl && !isUploading) && (
             <div className="flex items-center gap-2 px-3 py-1.5 bg-amber-500/10 border border-amber-500/20 rounded-xl">
               <Shield className="w-3 h-3 text-amber-500" />
               <span className="text-[8px] font-black uppercase tracking-widest text-amber-500">Stored Locally</span>
             </div>
           )}
-          {thought.driveFileId && (
-            <a 
-              href={fileMeta.webViewLink || `https://drive.google.com/file/d/${thought.driveFileId}/view`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="p-3 md:p-4 hover:bg-white/5 rounded-xl md:rounded-2xl text-slate-400 hover:text-white transition-all"
-              title="Open in Drive"
-            >
-              <ExternalLink className="w-5 h-5 md:w-6 md:h-6" />
-            </a>
+          {thought.storageUrl && (
+            <div className="flex items-center gap-2 px-3 py-1.5 bg-blue-500/10 border border-blue-500/20 rounded-xl">
+              <Cloud className="w-3 h-3 text-blue-500" />
+              <span className="text-[8px] font-black uppercase tracking-widest text-blue-500">Cloud Synced</span>
+            </div>
           )}
         </div>
       }
       footerStatus={
         <p className="text-[8px] md:text-[10px] uppercase font-black tracking-widest text-slate-600 italic">
-          {thought.syncStatus === 'synced' ? 'Synced to Google Drive' : 'Stored in Local Buffer'}
+          {thought.syncStatus === 'synced' ? 'Synced to Cloud' : 'Stored in Local Buffer'}
         </p>
       }
       footerActions={
@@ -473,7 +381,7 @@ const FileFocusEditor: React.FC = () => {
             </div>
           </div>
 
-          {(thought.driveFileId || localPreviewUrl) && (
+          {(thought.storageUrl || localPreviewUrl) && (
             <button 
               onClick={handleDownload}
               className="flex items-center gap-2 px-5 py-2.5 bg-blue-500 hover:bg-blue-600 text-white rounded-xl text-[10px] font-black uppercase tracking-widest transition-all shadow-lg shadow-blue-500/20 active:scale-95"
@@ -488,12 +396,9 @@ const FileFocusEditor: React.FC = () => {
         thought={thought}
         fileMeta={fileMeta}
         localPreviewUrl={localPreviewUrl}
-        accessToken={accessToken}
         isUploading={isUploading}
         isFetching={isFetching}
         error={error}
-        hasDriveAccess={hasDriveAccess}
-        driveLogin={driveLogin}
         handleFileSelect={handleFileSelect}
         stackItems={stackItems}
         setActiveFocus={setActiveFocus}

@@ -14,7 +14,7 @@ export const PaintRenderer: React.FC<PaintRendererProps> = ({
   isReadOnly, 
   setActiveFocus 
 }) => {
-  const isStranded = !thought.drawing && !thought.driveFileId && thought.syncStatus !== 'synced';
+  const isStranded = !thought.drawing && !thought.storageUrl && thought.syncStatus !== 'synced';
 
   return (
     <div data-trigger="paint" className="paint-container bg-black/40 rounded-xl p-2 mt-1 border border-white/5 cursor-pointer group/paint relative overflow-hidden min-h-[60px] flex items-center justify-center">

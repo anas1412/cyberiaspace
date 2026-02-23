@@ -1,0 +1,190 @@
+@supabase_supabase-js.js?v=9e61807d:11339  PATCH https://syuysihulszhsbwxpqci.supabase.co/rest/v1/spaces?id=eq.9f30112f-87b2-44dd-b2ad-0a8b50b31c97&select=* 400 (Bad Request)
+(anonymous) @ @supabase_supabase-js.js?v=9e61807d:11339
+(anonymous) @ @supabase_supabase-js.js?v=9e61807d:11353
+await in (anonymous)
+then @ @supabase_supabase-js.js?v=9e61807d:310
+supabaseSync.ts:162 [Supabase] updateSpace error: invalid input syntax for type uuid: "s-workspace"
+updateSpace @ supabaseSync.ts:162
+await in updateSpace
+syncChange @ syncOrchestrator.ts:108
+processQueue @ syncOrchestrator.ts:62
+await in processQueue
+syncData @ useAuthStore.ts:620
+handleSync @ AccountMenu.tsx:53
+executeDispatch @ react-dom_client.js?v=9e61807d:13622
+runWithFiberInDEV @ react-dom_client.js?v=9e61807d:997
+processDispatchQueue @ react-dom_client.js?v=9e61807d:13658
+(anonymous) @ react-dom_client.js?v=9e61807d:14071
+batchedUpdates$1 @ react-dom_client.js?v=9e61807d:2626
+dispatchEventForPluginEventSystem @ react-dom_client.js?v=9e61807d:13763
+dispatchEvent @ react-dom_client.js?v=9e61807d:16784
+dispatchDiscreteEvent @ react-dom_client.js?v=9e61807d:16765
+<button>
+exports.jsxDEV @ react_jsx-dev-runtime.js?v=9e61807d:247
+AccountMenu @ AccountMenu.tsx:228
+react_stack_bottom_frame @ react-dom_client.js?v=9e61807d:18509
+renderWithHooksAgain @ react-dom_client.js?v=9e61807d:5729
+renderWithHooks @ react-dom_client.js?v=9e61807d:5665
+updateFunctionComponent @ react-dom_client.js?v=9e61807d:7475
+beginWork @ react-dom_client.js?v=9e61807d:8525
+runWithFiberInDEV @ react-dom_client.js?v=9e61807d:997
+performUnitOfWork @ react-dom_client.js?v=9e61807d:12561
+workLoopSync @ react-dom_client.js?v=9e61807d:12424
+renderRootSync @ react-dom_client.js?v=9e61807d:12408
+performWorkOnRoot @ react-dom_client.js?v=9e61807d:11766
+performSyncWorkOnRoot @ react-dom_client.js?v=9e61807d:13517
+flushSyncWorkAcrossRoots_impl @ react-dom_client.js?v=9e61807d:13414
+processRootScheduleInMicrotask @ react-dom_client.js?v=9e61807d:13437
+(anonymous) @ react-dom_client.js?v=9e61807d:13531
+syncOrchestrator.ts:67 [Sync] Failed to sync update spaces:s-workspace: Error: invalid input syntax for type uuid: "s-workspace"
+    at Object.updateSpace (supabaseSync.ts:163:13)
+    at async Object.syncChange (syncOrchestrator.ts:108:9)
+    at async Object.processQueue (syncOrchestrator.ts:62:11)
+    at async syncData (useAuthStore.ts:620:5)
+    at async handleSync (AccountMenu.tsx:53:5)
+processQueue @ syncOrchestrator.ts:67
+await in processQueue
+syncData @ useAuthStore.ts:620
+handleSync @ AccountMenu.tsx:53
+executeDispatch @ react-dom_client.js?v=9e61807d:13622
+runWithFiberInDEV @ react-dom_client.js?v=9e61807d:997
+processDispatchQueue @ react-dom_client.js?v=9e61807d:13658
+(anonymous) @ react-dom_client.js?v=9e61807d:14071
+batchedUpdates$1 @ react-dom_client.js?v=9e61807d:2626
+dispatchEventForPluginEventSystem @ react-dom_client.js?v=9e61807d:13763
+dispatchEvent @ react-dom_client.js?v=9e61807d:16784
+dispatchDiscreteEvent @ react-dom_client.js?v=9e61807d:16765
+<button>
+exports.jsxDEV @ react_jsx-dev-runtime.js?v=9e61807d:247
+AccountMenu @ AccountMenu.tsx:228
+react_stack_bottom_frame @ react-dom_client.js?v=9e61807d:18509
+renderWithHooksAgain @ react-dom_client.js?v=9e61807d:5729
+renderWithHooks @ react-dom_client.js?v=9e61807d:5665
+updateFunctionComponent @ react-dom_client.js?v=9e61807d:7475
+beginWork @ react-dom_client.js?v=9e61807d:8525
+runWithFiberInDEV @ react-dom_client.js?v=9e61807d:997
+performUnitOfWork @ react-dom_client.js?v=9e61807d:12561
+workLoopSync @ react-dom_client.js?v=9e61807d:12424
+renderRootSync @ react-dom_client.js?v=9e61807d:12408
+performWorkOnRoot @ react-dom_client.js?v=9e61807d:11766
+performSyncWorkOnRoot @ react-dom_client.js?v=9e61807d:13517
+flushSyncWorkAcrossRoots_impl @ react-dom_client.js?v=9e61807d:13414
+processRootScheduleInMicrotask @ react-dom_client.js?v=9e61807d:13437
+(anonymous) @ react-dom_client.js?v=9e61807d:13531
+@supabase_supabase-js.js?v=9e61807d:11339  PATCH https://syuysihulszhsbwxpqci.supabase.co/rest/v1/spaces?id=eq.9f30112f-87b2-44dd-b2ad-0a8b50b31c97&select=* 400 (Bad Request)
+(anonymous) @ @supabase_supabase-js.js?v=9e61807d:11339
+(anonymous) @ @supabase_supabase-js.js?v=9e61807d:11353
+await in (anonymous)
+then @ @supabase_supabase-js.js?v=9e61807d:310
+supabaseSync.ts:162 [Supabase] updateSpace error: invalid input syntax for type uuid: "s-workspace"
+updateSpace @ supabaseSync.ts:162
+await in updateSpace
+syncChange @ syncOrchestrator.ts:108
+processQueue @ syncOrchestrator.ts:62
+await in processQueue
+syncData @ useAuthStore.ts:620
+handleSync @ AccountMenu.tsx:53
+executeDispatch @ react-dom_client.js?v=9e61807d:13622
+runWithFiberInDEV @ react-dom_client.js?v=9e61807d:997
+processDispatchQueue @ react-dom_client.js?v=9e61807d:13658
+(anonymous) @ react-dom_client.js?v=9e61807d:14071
+batchedUpdates$1 @ react-dom_client.js?v=9e61807d:2626
+dispatchEventForPluginEventSystem @ react-dom_client.js?v=9e61807d:13763
+dispatchEvent @ react-dom_client.js?v=9e61807d:16784
+dispatchDiscreteEvent @ react-dom_client.js?v=9e61807d:16765
+<button>
+exports.jsxDEV @ react_jsx-dev-runtime.js?v=9e61807d:247
+AccountMenu @ AccountMenu.tsx:228
+react_stack_bottom_frame @ react-dom_client.js?v=9e61807d:18509
+renderWithHooksAgain @ react-dom_client.js?v=9e61807d:5729
+renderWithHooks @ react-dom_client.js?v=9e61807d:5665
+updateFunctionComponent @ react-dom_client.js?v=9e61807d:7475
+beginWork @ react-dom_client.js?v=9e61807d:8525
+runWithFiberInDEV @ react-dom_client.js?v=9e61807d:997
+performUnitOfWork @ react-dom_client.js?v=9e61807d:12561
+workLoopSync @ react-dom_client.js?v=9e61807d:12424
+renderRootSync @ react-dom_client.js?v=9e61807d:12408
+performWorkOnRoot @ react-dom_client.js?v=9e61807d:11766
+performSyncWorkOnRoot @ react-dom_client.js?v=9e61807d:13517
+flushSyncWorkAcrossRoots_impl @ react-dom_client.js?v=9e61807d:13414
+processRootScheduleInMicrotask @ react-dom_client.js?v=9e61807d:13437
+(anonymous) @ react-dom_client.js?v=9e61807d:13531
+syncOrchestrator.ts:67 [Sync] Failed to sync update spaces:s-workspace: Error: invalid input syntax for type uuid: "s-workspace"
+    at Object.updateSpace (supabaseSync.ts:163:13)
+    at async Object.syncChange (syncOrchestrator.ts:108:9)
+    at async Object.processQueue (syncOrchestrator.ts:62:11)
+    at async syncData (useAuthStore.ts:620:5)
+    at async handleSync (AccountMenu.tsx:53:5)
+processQueue @ syncOrchestrator.ts:67
+await in processQueue
+syncData @ useAuthStore.ts:620
+handleSync @ AccountMenu.tsx:53
+executeDispatch @ react-dom_client.js?v=9e61807d:13622
+runWithFiberInDEV @ react-dom_client.js?v=9e61807d:997
+processDispatchQueue @ react-dom_client.js?v=9e61807d:13658
+(anonymous) @ react-dom_client.js?v=9e61807d:14071
+batchedUpdates$1 @ react-dom_client.js?v=9e61807d:2626
+dispatchEventForPluginEventSystem @ react-dom_client.js?v=9e61807d:13763
+dispatchEvent @ react-dom_client.js?v=9e61807d:16784
+dispatchDiscreteEvent @ react-dom_client.js?v=9e61807d:16765
+<button>
+exports.jsxDEV @ react_jsx-dev-runtime.js?v=9e61807d:247
+AccountMenu @ AccountMenu.tsx:228
+react_stack_bottom_frame @ react-dom_client.js?v=9e61807d:18509
+renderWithHooksAgain @ react-dom_client.js?v=9e61807d:5729
+renderWithHooks @ react-dom_client.js?v=9e61807d:5665
+updateFunctionComponent @ react-dom_client.js?v=9e61807d:7475
+beginWork @ react-dom_client.js?v=9e61807d:8525
+runWithFiberInDEV @ react-dom_client.js?v=9e61807d:997
+performUnitOfWork @ react-dom_client.js?v=9e61807d:12561
+workLoopSync @ react-dom_client.js?v=9e61807d:12424
+renderRootSync @ react-dom_client.js?v=9e61807d:12408
+performWorkOnRoot @ react-dom_client.js?v=9e61807d:11766
+performSyncWorkOnRoot @ react-dom_client.js?v=9e61807d:13517
+flushSyncWorkAcrossRoots_impl @ react-dom_client.js?v=9e61807d:13414
+processRootScheduleInMicrotask @ react-dom_client.js?v=9e61807d:13437
+(anonymous) @ react-dom_client.js?v=9e61807d:13531
+@supabase_supabase-js.js?v=9e61807d:11339  PATCH https://syuysihulszhsbwxpqci.supabase.co/rest/v1/spaces?id=eq.9f30112f-87b2-44dd-b2ad-0a8b50b31c97&select=* 400 (Bad Request)
+(anonymous) @ @supabase_supabase-js.js?v=9e61807d:11339
+(anonymous) @ @supabase_supabase-js.js?v=9e61807d:11353
+await in (anonymous)
+then @ @supabase_supabase-js.js?v=9e61807d:310
+supabaseSync.ts:162 [Supabase] updateSpace error: invalid input syntax for type uuid: "s-workspace"
+updateSpace @ supabaseSync.ts:162
+await in updateSpace
+syncChange @ syncOrchestrator.ts:108
+processQueue @ syncOrchestrator.ts:62
+await in processQueue
+syncData @ useAuthStore.ts:620
+handleSync @ AccountMenu.tsx:53
+executeDispatch @ react-dom_client.js?v=9e61807d:13622
+runWithFiberInDEV @ react-dom_client.js?v=9e61807d:997
+processDispatchQueue @ react-dom_client.js?v=9e61807d:13658
+(anonymous) @ react-dom_client.js?v=9e61807d:14071
+batchedUpdates$1 @ react-dom_client.js?v=9e61807d:2626
+dispatchEventForPluginEventSystem @ react-dom_client.js?v=9e61807d:13763
+dispatchEvent @ react-dom_client.js?v=9e61807d:16784
+dispatchDiscreteEvent @ react-dom_client.js?v=9e61807d:16765
+<button>
+exports.jsxDEV @ react_jsx-dev-runtime.js?v=9e61807d:247
+AccountMenu @ AccountMenu.tsx:228
+react_stack_bottom_frame @ react-dom_client.js?v=9e61807d:18509
+renderWithHooksAgain @ react-dom_client.js?v=9e61807d:5729
+renderWithHooks @ react-dom_client.js?v=9e61807d:5665
+updateFunctionComponent @ react-dom_client.js?v=9e61807d:7475
+beginWork @ react-dom_client.js?v=9e61807d:8525
+runWithFiberInDEV @ react-dom_client.js?v=9e61807d:997
+performUnitOfWork @ react-dom_client.js?v=9e61807d:12561
+workLoopSync @ react-dom_client.js?v=9e61807d:12424
+renderRootSync @ react-dom_client.js?v=9e61807d:12408
+performWorkOnRoot @ react-dom_client.js?v=9e61807d:11766
+performSyncWorkOnRoot @ react-dom_client.js?v=9e61807d:13517
+flushSyncWorkAcrossRoots_impl @ react-dom_client.js?v=9e61807d:13414
+processRootScheduleInMicrotask @ react-dom_client.js?v=9e61807d:13437
+(anonymous) @ react-dom_client.js?v=9e61807d:13531
+syncOrchestrator.ts:67 [Sync] Failed to sync update spaces:s-workspace: Error: invalid input syntax for type uuid: "s-workspace"
+    at Object.updateSpace (supabaseSync.ts:163:13)
+    at async Object.syncChange (syncOrchestrator.ts:108:9)
+    at async Object.processQueue (syncOrchestrator.ts:62:11)
+    at async syncData (useAuthStore.ts:620:5)
+    at async handleSync (AccountMenu.tsx:53:5)

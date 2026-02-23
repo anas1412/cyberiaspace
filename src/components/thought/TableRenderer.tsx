@@ -21,7 +21,7 @@ export const TableRenderer: React.FC<TableRendererProps> = ({
   setActiveFocus 
 }) => {
   const isTableEmpty = !thought.table || thought.table.every(row => row.every(cell => !cell || !cell.trim()));
-  const isStranded = isTableEmpty && !thought.driveFileId && thought.syncStatus !== 'synced' && !isReadOnly;
+  const isStranded = isTableEmpty && !thought.storageUrl && thought.syncStatus !== 'synced' && !isReadOnly;
 
   if (isTableEmpty) {
     return (

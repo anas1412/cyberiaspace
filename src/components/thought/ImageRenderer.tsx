@@ -16,7 +16,7 @@ export const ImageRenderer: React.FC<ImageRendererProps> = ({
   setInspectorOpen
 }) => {
   if (!thought.image) {
-    const isStranded = !thought.driveFileId && thought.syncStatus !== 'synced' && !isReadOnly;
+    const isStranded = !thought.storageUrl && thought.syncStatus !== 'synced' && !isReadOnly;
     
     return (
       <div data-trigger="image" className="mt-1 flex flex-col items-center gap-2 py-6 bg-black/20 rounded-xl border border-white/5 group/image relative cursor-pointer transition-colors hover:bg-white/[0.05]">

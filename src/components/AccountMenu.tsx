@@ -1,10 +1,10 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useAuthStore } from '../store/useAuthStore';
 import { useStore } from '../store/useStore';
+import { useSyncStore } from '../store/useSyncStore';
 import { PLAN_CONFIG } from '../constants';
 import { useModalStore } from '../store/useModalStore';
-import { useGoogleLogin } from '@react-oauth/google';
-import { LogOut, Cloud, CloudOff, RefreshCw, ChevronDown, Trash2, Power, Database, WifiOff, Zap, Star, CreditCard, Calendar, HardDrive, Loader2, LogIn } from 'lucide-react';
+import { LogOut, Cloud, CloudOff, RefreshCw, ChevronDown, Trash2, Power, Database, WifiOff, Zap, Star, CreditCard, Calendar, LogIn } from 'lucide-react';
 
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
@@ -14,51 +14,28 @@ function cn(...inputs: ClassValue[]) {
 }
 
 const AccountMenu: React.FC = () => {
-  const store = useAuthStore();
+  const authStore = useAuthStore();
+  const syncStore = useSyncStore();
   const { 
-    user, status, signOut, syncStatus, lastSync, 
+    user, status, signOut, lastSync, 
     syncData, autoSync, setAutoSync, deleteCloudData, 
-    cloudUsage, calculateUsage, isOnline,
-    handleAuthCode, updateSettings,
+    storageUsageMB, calculateUsage, isOnline,
     importCloudData
-  } = store;
+  } = authStore;
+  
+  const syncStatus = syncStore.status;
   
   const totalThoughtCount = useStore((state) => state.totalThoughtCount);
   const importFullState = useStore((state) => state.importFullState);
   const { openModal, openPricing } = useModalStore();
 
   const [isOpen, setIsOpen] = useState(false);
-  const [isDriveLoading, setIsDriveLoading] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
-
-  // Handle Drive Loading State completion
-  useEffect(() => {
-    if (status !== 'loading') {
-      setIsDriveLoading(false);
-    }
-  }, [status]);
 
   const handleNavigateToLogin = () => {
     window.history.pushState({}, '', '/login');
     window.dispatchEvent(new PopStateEvent('popstate'));
   };
-
-  // Drive Opt-in Flow (Additional Scopes)
-  const driveLogin = useGoogleLogin({
-    onSuccess: (response: any) => {
-      if (response.code) {
-        handleAuthCode(response.code);
-      }
-    },
-    onError: (error: any) => {
-      console.error('Drive Login Failed:', error);
-      setIsDriveLoading(false);
-    },
-    flow: 'auth-code',
-    scope: 'openid email profile https://www.googleapis.com/auth/drive.file',
-    login_hint: user?.email,
-    prompt: 'consent' // Force consent to ensure we get a refresh token with Drive scopes
-  } as any);
 
   useEffect(() => {
     calculateUsage(totalThoughtCount);
@@ -76,8 +53,16 @@ const AccountMenu: React.FC = () => {
 
   const handleSync = async (e: React.MouseEvent) => {
     e.stopPropagation();
-    if (syncStatus === 'syncing' || !isOnline) return;
-    await syncData();
+    console.log('[AccountMenu] handleSync called', { syncStatus, isOnline });
+    if (syncStatus === 'syncing' || !isOnline) {
+      console.log('[AccountMenu] Sync skipped', { reason: syncStatus === 'syncing' ? 'already syncing' : 'offline' });
+      return;
+    }
+    try {
+      await syncData();
+    } catch (err) {
+      console.error('[AccountMenu] Sync failed:', err);
+    }
   };
 
   const handleRestore = async () => {
@@ -100,35 +85,6 @@ const AccountMenu: React.FC = () => {
         confirmText: 'Got it'
       });
     }
-  };
-
-  const handleDisconnectDrive = async () => {
-    openModal({
-      title: 'Disconnect Google Drive?',
-      description: 'This will stop syncing your media and research assets to the cloud. You will remain signed in to your Cyberia account.',
-      type: 'confirm_cancel',
-      confirmText: 'Disconnect',
-      onConfirm: async () => {
-        setIsDriveLoading(true);
-        try {
-          const authStore = useAuthStore.getState();
-          // 1. Tell backend to disable drive without revoking the main session token
-          await fetch('/api/google-auth?action=disable-drive', {
-            headers: { Authorization: `Bearer ${authStore.accessToken}` }
-          });
-          
-          // 2. Update local profile state
-          await updateSettings({ driveEnabled: false });
-          
-          console.log('[Auth] Drive synchronization disabled');
-        } catch (e) {
-          console.error('Disconnect failed:', e);
-        } finally {
-          setIsDriveLoading(false);
-          setIsOpen(false);
-        }
-      }
-    });
   };
 
   const handleClearCloudData = () => {
@@ -159,9 +115,7 @@ const AccountMenu: React.FC = () => {
   }
 
 
-
-
-  const isDriveActive = user?.settings?.driveEnabled;
+  
 
   return (
     <div className="relative pointer-events-auto" ref={menuRef}>
@@ -261,50 +215,6 @@ const AccountMenu: React.FC = () => {
             </button>
           )}
 
-          {/* Persistent Cloud Integrations */}
-          <div className="mb-4 space-y-1">
-            <div className={cn(
-              "w-full flex items-center justify-between p-2.5 rounded-xl border transition-all",
-              isDriveActive ? "bg-green-500/5 border-green-500/10" : "bg-white/[0.03] border-white/[0.05]"
-            )}>
-              <div className="flex items-center gap-2.5">
-                <HardDrive className={cn("w-3.5 h-3.5", isDriveActive ? "text-green-400" : "text-slate-500")} />
-                <div className="text-left">
-                  <p className="text-[8px] font-black uppercase tracking-widest text-white">Google Drive</p>
-                  <p className="text-[9px] font-bold text-slate-500 uppercase tracking-widest">
-                    {isDriveActive ? 'Cloud Sync Active' : 'Disconnected'}
-                  </p>
-                </div>
-              </div>
-              
-              <div className="flex items-center gap-2">
-                {isDriveLoading ? (
-                  <div className="px-3 py-1.5 flex items-center gap-2">
-                    <Loader2 className="w-3 h-3 text-blue-400 animate-spin" />
-                    <span className="text-[8px] font-black uppercase tracking-widest text-blue-400/60">Wait...</span>
-                  </div>
-                ) : isDriveActive ? (
-                  <button 
-                    onClick={handleDisconnectDrive}
-                    className="px-3 py-1.5 bg-red-500/10 hover:bg-red-500/20 text-red-500 rounded-lg text-[8px] font-black uppercase tracking-widest transition-all"
-                  >
-                    Disconnect
-                  </button>
-                ) : (
-                  <button 
-                    onClick={() => {
-                      setIsDriveLoading(true);
-                      driveLogin();
-                    }}
-                    className="px-3 py-1.5 bg-blue-500 hover:bg-blue-600 text-white rounded-lg text-[8px] font-black uppercase tracking-widest transition-all shadow-lg active:scale-95"
-                  >
-                    Connect
-                  </button>
-                )}
-              </div>
-            </div>
-          </div>
-
           <div className="space-y-1 mb-4">
             <div className={cn(
               "flex items-center justify-between p-2.5 rounded-xl md:rounded-2xl border transition-all",
@@ -375,27 +285,27 @@ const AccountMenu: React.FC = () => {
             </button>
           </div>
 
-          {/* Cloud Capacity */}
+          {/* Storage */}
           <div className="px-2.5 mb-4">
             <div className="flex justify-between items-center mb-1.5">
               <div className="flex items-center gap-2">
                 <Database className="w-2.5 h-2.5 text-slate-500" />
-                <span className="text-[8px] font-black uppercase tracking-widest text-slate-400">Cloud Capacity</span>
+                <span className="text-[8px] font-black uppercase tracking-widest text-slate-400">Storage</span>
               </div>
               <span className={cn(
                 "text-[8px] font-black tracking-widest",
-                cloudUsage > 100 ? "text-red-400 animate-pulse" : cloudUsage > 90 ? "text-red-400" : "text-slate-500"
+                storageUsageMB > PLAN_CONFIG[user?.plan || 'free'].MAX_STORAGE_MB ? "text-red-400 animate-pulse" : "text-slate-500"
               )}>
-                {user?.usage?.sync_thoughts || 0} / {PLAN_CONFIG[user?.plan || 'free'].MAX_CLOUD_THOUGHTS}
+                {storageUsageMB.toFixed(1)} MB / {PLAN_CONFIG[user?.plan || 'free'].MAX_STORAGE_MB} MB
               </span>
             </div>
             <div className="h-1 w-full bg-white/5 rounded-full overflow-hidden border border-white/5">
               <div 
                 className={cn(
                   "h-full transition-all duration-500 rounded-full",
-                  cloudUsage > 90 ? "bg-red-500" : cloudUsage > 70 ? "bg-amber-500" : "bg-[var(--accent)]"
+                  storageUsageMB > PLAN_CONFIG[user?.plan || 'free'].MAX_STORAGE_MB * 0.9 ? "bg-red-500" : storageUsageMB > PLAN_CONFIG[user?.plan || 'free'].MAX_STORAGE_MB * 0.7 ? "bg-amber-500" : "bg-[var(--accent)]"
                 )}
-                style={{ width: `${Math.min(cloudUsage, 100)}%` }}
+                style={{ width: `${Math.min((storageUsageMB / PLAN_CONFIG[user?.plan || 'free'].MAX_STORAGE_MB) * 100, 100)}%` }}
               />
             </div>
           </div>

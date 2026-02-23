@@ -1,24 +1,26 @@
-# Cyberia Migration Plan: Vercel KV → Supabase (PostgreSQL + Edge Functions)
+# Cyberia Migration Plan: Vercel KV → Supabase (PostgreSQL + Storage)
 
 ## Overview
 
 Migrate from Vercel KV to Supabase while keeping:
 - Google Auth (existing, on Vercel)
-- Google Drive file storage (existing)
 - Dexie local-first architecture (existing)
 
-**Key architectural change:** Use Supabase Edge Functions instead of Vercel API routes to avoid Vercel's 12-function limit.
+**NEW: Replace Google Drive with Supabase Storage for file handling.**
+
+---
 
 ## Why Migrate
 
 | Current Pain | Solution with Supabase |
-|--------------|------------------------|
-| No proper users table | Dedicated `users` table with RLS |
+|--------------|----------------------|
+| No proper users table | Dedicated `users` table |
 | KV = black box blob | Queryable relational data |
 | Can't query across users | Full SQL for analytics |
-| No admin dashboard | Easy dashboard with SQL queries |
+| No admin dashboard | Easy SQL dashboard |
 | Vercel 12-function limit | Unlimited Supabase Edge Functions |
-| Hard to scale to 1000+ users | Proper indexing, constraints |
+| Drive OAuth complexity | Supabase Storage (simpler) |
+| Large files blocked | Up to 50 MB per file (Free tier) |
 
 ---
 
@@ -31,21 +33,21 @@ Migrate from Vercel KV to Supabase while keeping:
 │  │   Dexie     │  │   Zustand   │  │  Google OAuth       │ │
 │  │ (IndexedDB) │  │   (State)   │  │  (Vercel)          │ │
 │  └─────────────┘  └─────────────┘  └─────────────────────┘ │
-│         │                │                    │            │
-│         ▼                ▼                    ▼            │
-│  ┌───────────────────────────────────────────────────────┐ │
-│  │               Cyberia Frontend                        │ │
-│  └───────────────────────────────────────────────────────┘ │
+│         │                │                    │              │
+│         ▼                ▼                    ▼              │
+│  ┌───────────────────────────────────────────────────────┐   │
+│  │               Cyberia Frontend                        │   │
+│  └───────────────────────────────────────────────────────┘   │
 └──────────────────────────┬──────────────────────────────────┘
                            │
-         ┌─────────────────┼─────────────────┐
-         ▼                 ▼                 ▼
+        ┌──────────────────┼──────────────────┐
+        ▼                  ▼                  ▼
 ┌─────────────┐   ┌─────────────────┐   ┌─────────────────┐
-│   Vercel    │   │  Supabase       │   │   Google       │
-│   (Google   │   │  Edge Functions │   │   Drive        │
-│   OAuth)    │   │  (API)          │   │   (Files)      │
+│   Vercel    │   │  Supabase      │   │  Supabase       │
+│   (Google   │   │  Edge Functions │   │  Storage        │
+│   OAuth)    │   │  (API)         │   │  (Files)        │
 │             │   └────────┬────────┘   └─────────────────┘
-└─────────────┘            │
+└─────────────┘             │
                            ▼
                     ┌─────────────────┐
                     │   Supabase      │
@@ -53,74 +55,84 @@ Migrate from Vercel KV to Supabase while keeping:
                     └─────────────────┘
 ```
 
-### API Distribution
+### Storage Distribution
 
-| Functionality | Location | Why |
-|---------------|----------|-----|
-| Google OAuth | Vercel `api/google-auth.ts` | Needs to set Vercel cookies |
-| Google Auth Callback | Vercel `api/auth/callback.ts` | Needs to set Vercel cookies |
-| AI Chat | Vercel `api/chat.ts` | Uses Groq SDK, stays on Vercel |
-| User CRUD | Supabase Edge Functions | Avoids Vercel limit |
-| Spaces CRUD | Supabase Edge Functions | Avoids Vercel limit |
-| Thoughts CRUD | Supabase Edge Functions | Avoids Vercel limit |
-| Stacks CRUD | Supabase Edge Functions | Avoids Vercel limit |
-| Publish | Supabase Edge Functions | Avoids Vercel limit |
-| Feedback | Supabase Edge Functions | Avoids Vercel limit |
-| Payments | Supabase Edge Functions | Avoids Vercel limit |
-| Admin | Supabase Edge Functions | Avoids Vercel limit |
+| Data Type | Location | Why |
+|-----------|----------|-----|
+| Spaces | PostgreSQL | Relational data, queries |
+| Stacks | PostgreSQL | Relational data, queries |
+| Thoughts (content) | PostgreSQL | Text, JSON |
+| Thoughts (media) | Supabase Storage | Files up to 50 MB |
+| User avatars | Supabase Storage | Images |
+
+---
+
+## Supabase Storage Limits
+
+| Plan | File Size Limit | Total Storage |
+|------|-----------------|---------------|
+| Free | 50 MB | 1 GB |
+| Pro | 500 GB | 100 GB |
+
+✅ **50 MB matches our requirements!**
 
 ---
 
 ## Database Schema
 
 ```sql
--- Users table (replaces KV profile blobs)
+-- Enable UUID extension
+CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
+
+-- Users table
 CREATE TABLE users (
     id TEXT PRIMARY KEY,  -- Google sub (user unique ID)
     email TEXT UNIQUE NOT NULL,
     name TEXT,
     avatar TEXT,
-    plan TEXT DEFAULT 'free' CHECK (plan IN ('free', 'pro', 'enterprise')),
+    plan TEXT DEFAULT 'free' CHECK (plan IN ('free', 'pro')),
     subscription_status TEXT DEFAULT 'none',
-    expiry_date TIMESTAMP,
     settings JSONB DEFAULT '{}',
+    storage_used BIGINT DEFAULT 0,       -- Track storage usage
+    storage_limit BIGINT DEFAULT 52428800, -- 50 MB default
     created_at TIMESTAMP DEFAULT NOW(),
     updated_at TIMESTAMP DEFAULT NOW()
 );
 
--- Spaces table
+-- Spaces table (UUID primary key, local_id for Dexie mapping)
 CREATE TABLE spaces (
-    id TEXT PRIMARY KEY,
-    user_id TEXT REFERENCES users(id) ON DELETE CASCADE,
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    local_id TEXT,                       -- Dexie ID for mapping
+    user_id TEXT NOT NULL,
     name TEXT NOT NULL,
-    mode TEXT DEFAULT 'spatial' CHECK (mode IN ('spatial', 'kanban', 'calendar')),
+    mode TEXT DEFAULT 'spatial',
     physics BOOLEAN DEFAULT true,
     "order" INT DEFAULT 0,
     transform JSONB DEFAULT '{"x": 0, "y": 0, "scale": 1}',
     theme TEXT DEFAULT 'cyberia',
     custom_bg TEXT,
-    published_id TEXT,
-    last_published TIMESTAMP,
     created_at TIMESTAMP DEFAULT NOW(),
     updated_at TIMESTAMP DEFAULT NOW()
 );
 
 -- Stacks table
 CREATE TABLE stacks (
-    id TEXT PRIMARY KEY,
-    user_id TEXT REFERENCES users(id) ON DELETE CASCADE,
-    space_id TEXT REFERENCES spaces(id) ON DELETE CASCADE,
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    local_id TEXT,
+    user_id TEXT NOT NULL,
+    space_id TEXT,                       -- FK to spaces (TEXT for local IDs)
     name TEXT NOT NULL,
     color TEXT DEFAULT '#6366f1',
     created_at TIMESTAMP DEFAULT NOW()
 );
 
--- Thoughts table (main content)
+-- Thoughts table
 CREATE TABLE thoughts (
-    id BIGSERIAL PRIMARY KEY,
-    user_id TEXT REFERENCES users(id) ON DELETE CASCADE,
-    space_id TEXT REFERENCES spaces(id) ON DELETE CASCADE,
-    stack_id TEXT REFERENCES stacks(id) ON DELETE SET NULL,
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    local_id BIGINT,                     -- Dexie auto-increment ID
+    user_id TEXT NOT NULL,
+    space_id TEXT,
+    stack_id TEXT,
     x REAL DEFAULT 0,
     y REAL DEFAULT 0,
     vx REAL DEFAULT 0,
@@ -128,52 +140,51 @@ CREATE TABLE thoughts (
     text TEXT DEFAULT '',
     placeholder TEXT,
     description TEXT DEFAULT '',
-    type TEXT NOT NULL CHECK (type IN ('label', 'text', 'tasks', 'paint', 'table', 'image', 'embed', 'file')),
+    type TEXT NOT NULL,
     content TEXT DEFAULT '',
     image TEXT,
     drawing TEXT,
-    status TEXT DEFAULT 'none' CHECK (status IN ('none', 'todo', 'doing', 'done')),
+    status TEXT DEFAULT 'none',
     tasks JSONB DEFAULT '[]',
     table_data JSONB DEFAULT '[]',
-    date TIMESTAMP DEFAULT NOW(),
-    priority TEXT DEFAULT 'none' CHECK (priority IN ('none', 'low', 'medium', 'high', 'urgent')),
+    "table" JSONB DEFAULT '[]',
+    date TIMESTAMP,
+    priority TEXT DEFAULT 'none',
     size REAL DEFAULT 1,
     "order" INT DEFAULT 0,
     layer INT DEFAULT 0,
     author TEXT,
     meta JSONB DEFAULT '{}',
-    drive_file_id TEXT,
-    google_task_list_id TEXT,
-    google_calendar_event_id TEXT,
-    sync_status TEXT DEFAULT 'local' CHECK (sync_status IN ('local', 'synced', 'pending', 'syncing', 'error')),
+    storage_url TEXT,                    -- NEW: Supabase Storage URL
+    sync_status TEXT DEFAULT 'local',
     created_at TIMESTAMP DEFAULT NOW(),
     updated_at TIMESTAMP DEFAULT NOW()
 );
 
--- Published spaces (for sharing)
+-- Published spaces
 CREATE TABLE published_spaces (
-    id TEXT PRIMARY KEY,
-    space_id TEXT REFERENCES spaces(id) ON DELETE CASCADE,
-    user_id TEXT REFERENCES users(id) ON DELETE CASCADE,
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    space_id TEXT,
+    user_id TEXT NOT NULL,
     snapshot JSONB NOT NULL,
     created_at TIMESTAMP DEFAULT NOW(),
     expires_at TIMESTAMP
 );
 
--- Feedback table
+-- Feedback
 CREATE TABLE feedback (
-    id BIGSERIAL PRIMARY KEY,
-    user_id TEXT REFERENCES users(id) ON DELETE SET NULL,
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id TEXT,
     type TEXT NOT NULL,
     content TEXT NOT NULL,
     metadata JSONB DEFAULT '{}',
     created_at TIMESTAMP DEFAULT NOW()
 );
 
--- Payments table
+-- Payments
 CREATE TABLE payments (
-    id BIGSERIAL PRIMARY KEY,
-    user_id TEXT REFERENCES users(id) ON DELETE CASCADE,
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id TEXT NOT NULL,
     payment_ref TEXT UNIQUE NOT NULL,
     amount INT NOT NULL,
     currency TEXT DEFAULT 'USD',
@@ -183,356 +194,235 @@ CREATE TABLE payments (
     updated_at TIMESTAMP DEFAULT NOW()
 );
 
--- Indexes for performance
+-- Pending deletions (for sync)
+CREATE TABLE pending_deletes (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id TEXT NOT NULL,
+    table_name TEXT NOT NULL,
+    local_id TEXT NOT NULL,
+    created_at TIMESTAMP DEFAULT NOW()
+);
+
+-- Indexes
 CREATE INDEX idx_spaces_user ON spaces(user_id);
-CREATE INDEX idx_stacks_space ON stacks(space_id);
 CREATE INDEX idx_stacks_user ON stacks(user_id);
-CREATE INDEX idx_thoughts_space ON thoughts(space_id);
 CREATE INDEX idx_thoughts_user ON thoughts(user_id);
-CREATE INDEX idx_thoughts_type ON thoughts(type);
-CREATE INDEX idx_thoughts_status ON thoughts(status);
-CREATE INDEX idx_published_user ON published_spaces(user_id);
-CREATE INDEX idx_feedback_user ON feedback(user_id);
-CREATE INDEX idx_payments_user ON payments(user_id);
-
--- Row Level Security (RLS)
-ALTER TABLE users ENABLE ROW LEVEL SECURITY;
-ALTER TABLE spaces ENABLE ROW LEVEL SECURITY;
-ALTER TABLE stacks ENABLE ROW LEVEL SECURITY;
-ALTER TABLE thoughts ENABLE ROW LEVEL SECURITY;
-ALTER TABLE published_spaces ENABLE ROW LEVEL SECURITY;
-ALTER TABLE feedback ENABLE ROW LEVEL SECURITY;
-ALTER TABLE payments ENABLE ROW LEVEL SECURITY;
-
--- Users can only see their own data
--- Note: Since we use Google Auth (not Supabase Auth), RLS uses custom validation
--- In Edge Functions, we validate the Google token manually and pass user_id
-
-CREATE POLICY "Users can view own profile" ON users FOR SELECT USING (id = current_setting('request.jwt.claims', true)::jsonb->>'sub');
-CREATE POLICY "Users can update own profile" ON users FOR UPDATE USING (id = current_setting('request.jwt.claims', true)::jsonb->>'sub');
-CREATE POLICY "Users can view own spaces" ON spaces FOR SELECT USING (user_id = current_setting('request.jwt.claims', true)::jsonb->>'sub');
-CREATE POLICY "Users can manage own spaces" ON spaces FOR ALL USING (user_id = current_setting('request.jwt.claims', true)::jsonb->>'sub');
-CREATE POLICY "Users can view own stacks" ON stacks FOR SELECT USING (user_id = current_setting('request.jwt.claims', true)::jsonb->>'sub');
-CREATE POLICY "Users can manage own stacks" ON stacks FOR ALL USING (user_id = current_setting('request.jwt.claims', true)::jsonb->>'sub');
-CREATE POLICY "Users can view own thoughts" ON thoughts FOR SELECT USING (user_id = current_setting('request.jwt.claims', true)::jsonb->>'sub');
-CREATE POLICY "Users can manage own thoughts" ON thoughts FOR ALL USING (user_id = current_setting('request.jwt.claims', true)::jsonb->>'sub');
+CREATE INDEX idx_thoughts_space ON thoughts(space_id);
+CREATE INDEX idx_pending_deletes_user ON pending_deletes(user_id);
 ```
 
-### Alternative: Bypass RLS in Edge Functions
+---
 
-Since you're validating Google tokens in Edge Functions, you can use the service role key to bypass RLS entirely. This is simpler but requires careful code:
+## Supabase Storage Setup
 
-```typescript
-// Use service role to bypass RLS
-const supabaseAdmin = createClient(
-  Deno.env.get('SUPABASE_URL')!,
-  Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
-)
+### Create Bucket
 
-// Then filter by user_id manually in queries
-const { data } = await supabaseAdmin
-  .from('users')
-  .select('*')
-  .eq('id', userId)  // User ID from validated Google token
+```sql
+-- Create bucket (run in Supabase Dashboard → Storage)
+-- Or via API:
+INSERT INTO storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
+VALUES ('user-files', 'user-files', true, 52428800, NULL);
+```
+
+### Storage Policies
+
+```sql
+-- Allow users to upload their own files
+CREATE POLICY "Users can upload own files"
+ON storage.objects FOR INSERT
+WITH CHECK (bucket_id = 'user-files' AND auth.uid()::text = (storage.foldername(name))[1]);
+
+-- Allow users to read own files
+CREATE POLICY "Users can read own files"
+ON storage.objects FOR SELECT
+USING (bucket_id = 'user-files' AND auth.uid()::text = (storage.foldername(name))[1]);
+
+-- Allow users to delete own files
+CREATE POLICY "Users can delete own files"
+ON storage.objects FOR DELETE
+USING (bucket_id = 'user-files' AND auth.uid()::text = (storage.foldername(name))[1]);
+```
+
+---
+
+## Sync Strategy
+
+### Dexie → Supabase Sync Flow
+
+| Action | Local (Dexie) | Sync Behavior |
+|--------|---------------|---------------|
+| Create space/stack/thought | `syncStatus: 'pending'` | Push on login → mark 'synced' |
+| Edit space/stack/thought | `syncStatus: 'pending'` | Push on login → mark 'synced' |
+| Delete | Add to `pendingDeleting` table | Delete from Supabase on login |
+| Upload media | Store in IndexedDB | Upload to Supabase Storage → save URL |
+
+### Sync Status Values
+
+- `local` - Created locally, never synced
+- `synced` - Synced to Supabase
+- `pending` - Modified locally, needs sync
+- `syncing` - Currently syncing
+- `error` - Sync failed
+
+### On Login Sync Sequence
+
+1. Process `pendingDeleting` → delete from Supabase
+2. Push pending creates/updates → mark as synced
+3. Pull cloud data → merge with local
+4. Upload pending media files to Supabase Storage
+
+---
+
+## File Storage Flow
+
+### Upload (New Thought with Media)
+```
+User uploads file → IndexedDB (temp) → Supabase Storage → Get URL → Save to thought.storage_url
+```
+
+### Download
+```
+thought.storage_url → Supabase Storage → Get signed URL → Load in app
+```
+
+### Delete
+```
+Delete thought → Add to pending_deletes → On sync: delete from Supabase Storage
 ```
 
 ---
 
 ## Migration Steps
 
-### Phase 1: Setup Supabase
+### Phase 1: Setup Supabase Storage (DONE ✅)
 
-- [ ] Create Supabase project at supabase.com (free tier)
-- [ ] Run SQL schema in Supabase SQL Editor
-- [ ] Get Supabase credentials from Dashboard: Settings → API
-  - Project URL
-  - `anon` public key
-  - `service_role` secret key
-- [ ] Add Edge Function secrets: Settings → Edge Functions → Secrets
-  - Add `SUPABASE_SERVICE_ROLE_KEY`
-  - Add `GOOGLE_CLIENT_ID`
-  - Add `GOOGLE_CLIENT_SECRET`
+- [x] Create Supabase project
+- [x] Run SQL schema
+- [x] Create storage bucket `user-files`
+- [x] Set file size limit to 50 MB
 
-### Phase 2: Create Supabase Edge Functions
+### Phase 2: Update Client Code
 
-You can create functions via the **Supabase Dashboard → Edge Functions** or using the CLI. Here's both approaches:
+- [ ] Update `src/db.ts`:
+  - Add `syncStatus` to Space and Stack
+  - Replace `driveFileId` with `storageUrl`
+  - Update `PendingDeletion` interface
 
-#### Option A: Via Dashboard (Recommended)
-1. Go to Edge Functions in Dashboard
-2. Click "Deploy a new function" → "Via Editor"
-3. Copy-paste your function code
-4. Click Deploy
+- [ ] Create `src/services/supabaseStorage.ts`:
+  ```typescript
+  import { createClient } from '@supabase/storage-js'
+  
+  const supabaseUrl = import.meta.env.VITE_PUBLIC_SUPABASE_URL
+  const supabaseAnonKey = import.meta.env.VITE_PUBLIC_SUPABASE_ANON_KEY
+  
+  export const storageClient = createClient(supabaseUrl, supabaseAnonKey)
+  
+  export const storageService = {
+    async upload(userId: string, file: Blob, fileName: string): Promise<string> {
+      const path = `${userId}/${Date.now()}-${fileName}`
+      const { data, error } = await storageClient
+        .from('user-files')
+        .upload(path, file, { upsert: false })
+      
+      if (error) throw error
+      
+      const { data: { publicUrl } } = storageClient
+        .from('user-files')
+        .getPublicUrl(path)
+      
+      return publicUrl
+    },
+    
+    async delete(storagePath: string): Promise<void> {
+      const { error } = await storageClient
+        .from('user-files')
+        .remove([storagePath])
+      
+      if (error) throw error
+    }
+  }
+  ```
 
-#### Option B: Via CLI
-```bash
-supabase functions new user
-# Edit supabase/functions/user/index.ts
-supabase functions deploy user
-```
+- [ ] Update `src/services/supabaseSync.ts`:
+  - Use `syncStatus` to track changes
+  - Add deletion sync
+  - Handle storage URLs
 
-#### Functions to Create
+- [ ] Update `src/store/useAuthStore.ts`:
+  - Remove Drive OAuth scopes
+  - Remove `driveService` imports
+  - Add storage sync
+  - Update `syncData()` to process pending operations
 
-- [ ] Create `user` function - User CRUD (profile, settings, sync)
-- [ ] Create `spaces` function - Space CRUD
-- [ ] Create `thoughts` function - Thought CRUD
-- [ ] Create `stacks` function - Stack CRUD
-- [ ] Create `publish` function - Publish functionality
-- [ ] Create `feedback` function - Feedback
-- [ ] Create `payments` function - Payments
-- [ ] Create `admin` function - Admin analytics
+### Phase 3: Remove Google Drive
 
-#### Set Secrets
-Go to Settings → Edge Functions → Secrets:
-```
-SUPABASE_SERVICE_ROLE_KEY=your_service_role_key
-GOOGLE_CLIENT_ID=your_google_client_id
-GOOGLE_CLIENT_SECRET=your_google_client_secret
-```
+- [ ] Delete `src/services/google/driveService.ts`
+- [ ] Remove Drive-related code from `useAuthStore.ts`
+- [ ] Remove `driveEnabled` from settings
+- [ ] Remove Drive OAuth from Google Auth config
 
-### Phase 3: Client Updates
+### Phase 4: Test
 
-- [ ] Install `@supabase/supabase-js` in client
-- [ ] Create `src/lib/supabase.ts` - Client-side Supabase config
-- [ ] Update auth flow to sync user to Supabase on Google login
-- [ ] Add sync mechanism: Dexie ↔ Supabase Edge Functions
-- [ ] Update API calls to use Supabase functions instead of Vercel API
-
-### Phase 4: Keep Vercel Functions (Lightweight)
-
-- [ ] Keep `api/google-auth.ts` - OAuth flow (needs Vercel cookies)
-- [ ] Keep `api/auth/callback.ts` - Auth callback
-- [ ] Keep `api/chat.ts` - Groq AI API
-- [ ] Remove KV dependencies from remaining Vercel functions
-
-### Phase 5: Admin Dashboard
-
-- [ ] Create `/admin` route (protected)
-- [ ] User management table
-- [ ] Analytics: daily active users
-- [ ] Analytics: thoughts per user
-- [ ] Analytics: storage usage
-- [ ] Export functionality (CSV)
-
-### Phase 6: Data Migration (Optional)
-
-- [ ] Export existing KV data
-- [ ] Write migration script
-- [ ] Import to Supabase
-- [ ] Verify data integrity
-
-### Phase 7: Cleanup
-
-- [ ] Remove KV dependencies from Supabase Edge Functions
-- [ ] Remove KV from package.json
-- [ ] Test all functionality
-- [ ] Monitor for 1 week
+- [ ] Test file upload (< 50 MB)
+- [ ] Test file download
+- [ ] Test file deletion
+- [ ] Test sync on login
+- [ ] Test deletion sync
 
 ---
 
-## File Structure
+## File Size Handling
 
-### Supabase Edge Functions (via Dashboard)
-
-Create these in **Dashboard → Edge Functions**:
-- `user` - User CRUD
-- `spaces` - Space CRUD  
-- `thoughts` - Thought CRUD
-- `stacks` - Stack CRUD
-- `publish` - Publish functionality
-- `feedback` - Feedback
-- `payments` - Payments
-- `admin` - Admin analytics
-
-### Frontend Updates
-
-```
-src/
-├── lib/
-│   └── supabase.ts        # Client-side Supabase (anon key)
-├── components/
-│   └── Admin/             # Admin dashboard components
-└── pages/
-    └── admin.tsx          # Admin page
-```
-
-### Keep on Vercel (Lightweight)
-
-```
-api/
-├── google-auth.ts         # Google OAuth flow (needs cookies)
-├── auth/
-│   └── callback.ts        # Auth callback
-└── chat.ts               # Groq AI API
-```
+| File Size | Handling |
+|-----------|----------|
+| < 50 MB | Upload to Supabase Storage ✅ |
+| > 50 MB | Show error, suggest compression |
 
 ---
 
-## Edge Function Endpoints
+## Storage Usage Tracking
 
-All Supabase Edge Functions run at: `https://[PROJECT_REF].supabase.co/functions/v1/[name]`
-
-| Function | Endpoint | Method | Description |
-|----------|----------|--------|-------------|
-| user | `/functions/v1/user` | POST | profile, settings, sync |
-| spaces | `/functions/v1/spaces` | GET/POST | List/create spaces |
-| spaces | `/functions/v1/spaces` | PUT/DELETE | Update/delete space |
-| thoughts | `/functions/v1/thoughts` | GET/POST | List/create thoughts |
-| thoughts | `/functions/v1/thoughts` | PUT/DELETE | Update/delete thought |
-| stacks | `/functions/v1/stacks` | GET/POST | List/create stacks |
-| stacks | `/functions/v1/stacks` | PUT/DELETE | Update/delete stack |
-| publish | `/functions/v1/publish` | GET/POST | Published spaces |
-| feedback | `/functions/v1/feedback` | GET/POST | Feedback |
-| payments | `/functions/v1/payments` | GET/POST | Payments |
-| admin | `/functions/v1/admin` | GET | Admin analytics |
-
-### Client Usage Example
-
-```typescript
-import { createClient } from '@supabase/supabase-js'
-
-const supabase = createClient(
-  import.meta.env.VITE_SUPABASE_URL,
-  import.meta.env.VITE_SUPABASE_ANON_KEY
+```sql
+-- Track storage per user
+UPDATE users 
+SET storage_used = (
+  SELECT COALESCE(SUM(size), 0)
+  FROM storage.objects
+  WHERE name LIKE user_id || '%'
 )
-
-// Call Edge Function
-const { data, error } = await supabase.functions.invoke('user', {
-  body: { action: 'profile', userId: 'google-sub-id' }
-})
+WHERE id = 'user-id';
 ```
-
-### Vercel Endpoints (Keep)
-
-| Endpoint | Description |
-|----------|-------------|
-| `/api/google-auth` | Google OAuth initiation |
-| `/api/auth/callback` | Google OAuth callback |
-| `/api/chat` | Groq AI chat |
-
----
-
-## Environment Variables
-
-### Supabase (set via CLI or Dashboard)
-
-```bash
-# Supabase Edge Functions will access these via Deno.env.get()
-supabase functions secrets set SUPABASE_SERVICE_ROLE_KEY=your_service_role_key
-supabase functions secrets set GOOGLE_CLIENT_ID=your_client_id
-supabase functions secrets set GOOGLE_CLIENT_SECRET=your_client_secret
-```
-
-### Frontend (.env)
-
-```
-VITE_SUPABASE_URL=https://[PROJECT_REF].supabase.co
-VITE_SUPABASE_ANON_KEY=your_anon_key
-```
-
-### Vercel (keep existing)
-
-```
-GOOGLE_CLIENT_ID=...
-GOOGLE_CLIENT_SECRET=...
-GROQ_API_KEY=...
-```
-
----
-
-## Backward Compatibility
-
-- Dexie remains the primary local store
-- Supabase acts as cloud sync + user management
-- Users without Supabase sync can continue using local-only mode
 
 ---
 
 ## Cost Projection
 
-| Users | Supabase Free | Notes |
-|-------|---------------|-------|
-| 0-500 | ✅ Free | 2M edge function invocations/mo, 500MB DB |
-| 500-2000 | ~$25/mo | Pro plan |
-| 2000+ | ~$50/mo | Pro plan |
+| Users | Storage | Supabase Cost |
+|-------|---------|---------------|
+| 100 | 1 GB | Free |
+| 1,000 | 10 GB | Free (1 GB included) |
+| 10,000 | 100 GB | ~$2/mo |
 
-**Vercel:** Remove KV (saves potential $5+/mo at scale), keep free tier for OAuth + Chat.
+**Google Drive:** Removed - saves OAuth complexity.
 
 ---
 
 ## Your Next Steps
 
-1. **Create Supabase project** at https://supabase.com/database.new
-2. **Run SQL** from this plan in the SQL Editor
-3. **Deploy Edge Functions** via Dashboard (user, spaces, thoughts, stacks, publish, feedback, payments, admin)
-4. **Add secrets** in Settings → Edge Functions → Secrets
+1. **Create storage bucket** in Supabase Dashboard → Storage
+2. **Update client code** to use Supabase Storage
+3. **Test file operations**
+4. **Remove Drive code**
 
 ---
 
-## Edge Function Development Workflow
+## Files to Modify
 
-### Via Dashboard (Your Approach)
-
-1. **Create**: Go to Edge Functions → Deploy new function → Via Editor
-2. **Edit**: Modify code in the browser editor
-3. **Deploy**: Click "Deploy function" button
-4. **Test**: Use the built-in test runner or curl:
-
-```bash
-# Test your function
-curl -X POST 'https://[PROJECT_REF].supabase.co/functions/v1/user' \
-  -H 'Authorization: Bearer [ANON_KEY]' \
-  -H 'Content-Type: application/json' \
-  -d '{"action": "profile"}'
-```
-
-### Via CLI (Optional Local Dev)
-
-```bash
-# Link to your project
-supabase link --project-ref [YOUR_PROJECT_REF]
-
-# Serve locally with hot reload
-supabase functions serve user --env-file .env
-
-# Deploy to production
-supabase functions deploy user
-```
-
-### Testing from Client
-
-```typescript
-// Development
-const fn = supabase.functions.invoke('user', { body: {...} })
-// → calls http://localhost:54321/functions/v1/user
-
-// Production  
-const fn = supabase.functions.invoke('user', { body: {...} })
-// → calls https://[ref].supabase.co/functions/v1/user
-```
-
----
-
-## Risks & Mitigations
-
-| Risk | Mitigation |
-|------|------------|
-| Migration downtime | Keep KV as fallback during migration |
-| Data loss | Export KV before migration |
-| Auth issues | Keep Google Auth on Vercel, sync to Supabase |
-| RLS misconfigured | Test thoroughly with test users |
-| Edge function cold starts | Design for idempotent, short operations |
-| Deno runtime differences | Test locally with `supabase functions serve` |
-
----
-
-## Timeline Estimate
-
-| Phase | Effort |
-|-------|--------|
-| Phase 1 (Setup) | 1 day |
-| Phase 2 (Edge Functions) | 2-3 days |
-| Phase 3 (Client) | 1-2 days |
-| Phase 4 (Vercel Cleanup) | 0.5 day |
-| Phase 5 (Admin) | 2-3 days |
-| Phase 6-7 (Migration) | 1-2 days |
-| **Total** | **~8-10 days** |
+| File | Action |
+|------|--------|
+| `src/db.ts` | Update interfaces |
+| `src/services/supabaseStorage.ts` | New file |
+| `src/services/supabaseSync.ts` | Add sync status |
+| `src/store/useAuthStore.ts` | Remove Drive, add Storage |
+| `src/services/google/driveService.ts` | Delete |
+| `src/constants.ts` | Update limits |

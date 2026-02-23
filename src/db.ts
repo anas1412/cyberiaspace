@@ -14,6 +14,8 @@ interface Space {
   updatedAt?: string | null;
   theme?: 'cyberia' | 'sea' | 'forest' | 'rain';
   customBg?: string | null;
+  syncStatus?: 'local' | 'synced' | 'pending' | 'syncing' | 'error';
+  retryCount?: number;
 }
 
 interface Stack {
@@ -21,12 +23,14 @@ interface Stack {
   name: string;
   color: string;
   spaceId: string;
+  syncStatus?: 'local' | 'synced' | 'pending' | 'syncing' | 'error';
+  retryCount?: number;
 }
 
 interface Thought {
   id: number;
   spaceId: string;
-  stackId: string | null; // Unique Stack Reference
+  stackId: string | null;
   x: number;
   y: number;
   vx: number;
@@ -43,19 +47,21 @@ interface Thought {
   table: string[][];
   date: string;
   priority: 'none' | 'low' | 'medium' | 'high' | 'urgent';
-  size: number; // 0.5 to 2.0
+  size: number;
   order: number;
   layer?: number;
-  author: string; // Embed author/channel/artist
-  meta?: any; // For flexible metadata storage (e.g. oEmbed HTML, author data)
-  driveFileId?: string;
+  author: string;
+  meta?: any;
+  storageUrl?: string;      // NEW: Supabase Storage URL
+  storagePath?: string;    // NEW: Supabase Storage path for deletion
   googleTaskListId?: string;
   googleCalendarEventId?: string;
   syncStatus?: 'local' | 'synced' | 'pending' | 'syncing' | 'error';
+  retryCount?: number;
 }
 
 interface LocalBlob {
-  id: string; // Use driveFileId or a temp local ID
+  id: string;
   thoughtId: number;
   blob: Blob;
   name: string;
@@ -65,8 +71,19 @@ interface LocalBlob {
 
 interface PendingDeletion {
   id?: number;
-  driveFileId: string;
-  type: 'drive';
+  tableName: 'spaces' | 'stacks' | 'thoughts';
+  localId: string | number;
+  storagePath?: string;
+  createdAt: number;
+}
+
+interface PendingBlob {
+  id?: number;
+  thoughtId: number;
+  name: string;
+  type: string;
+  createdAt: number;
+  retryCount: number;
 }
 
 const db = new Dexie('CyberiaDB') as Dexie & {
@@ -75,21 +92,22 @@ const db = new Dexie('CyberiaDB') as Dexie & {
   stacks: EntityTable<Stack, 'id'>;
   blobs: EntityTable<LocalBlob, 'id'>;
   pendingDeletions: EntityTable<PendingDeletion, 'id'>;
+  pendingBlobs: EntityTable<PendingBlob, 'id'>;
 };
 
-// Handle database blocked or version change
 db.on('versionchange', () => {
   db.close();
   window.location.reload();
 });
 
-db.version(9).stores({
-  spaces: 'id, name, order',
-  thoughts: '++id, spaceId, stackId, text, type, status, date, priority, order, author, driveFileId, syncStatus',
-  stacks: 'id, spaceId, name',
+db.version(12).stores({
+  spaces: 'id, name, order, syncStatus',
+  thoughts: '++id, spaceId, stackId, text, type, status, date, priority, order, author, storageUrl, syncStatus',
+  stacks: 'id, spaceId, name, syncStatus',
   blobs: 'id, thoughtId',
-  pendingDeletions: '++id, driveFileId'
+  pendingDeletions: '++id, tableName, localId',
+  pendingBlobs: '++id, thoughtId, createdAt'
 });
 
-export type { Space, Thought, Stack, PendingDeletion };
+export type { Space, Thought, Stack, PendingDeletion, PendingBlob };
 export { db };

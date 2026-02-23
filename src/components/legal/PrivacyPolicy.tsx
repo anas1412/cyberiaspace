@@ -55,15 +55,12 @@ const PrivacyPolicy: React.FC = () => {
             </p>
             <ul className="list-disc list-inside space-y-3 mt-4 ml-2 uppercase text-[10px] font-bold tracking-wide">
               <li>
-                <strong className="text-white">Google Drive (`drive.file`):</strong> We request access only to files created or opened by Cyberia. We use this to store your rich content and media assets in a private `/Cyberia` folder in your Drive.
+                <strong className="text-white">Supabase Storage:</strong> Your files and media are stored securely in Supabase cloud storage. This provides persistent storage for your research assets across all devices.
               </li>
               <li>
                 <strong className="text-white">Google Account Info:</strong> We access your basic profile strictly for identity management and to personalize your workspace.
               </li>
             </ul>
-            <p className="mt-6 p-4 bg-black/40 rounded-xl border border-white/5 text-sm italic">
-              <strong>Google Limited Use Disclosure:</strong> Cyberia's use and transfer to any other app of information received from Google APIs will adhere to the <a href="https://developers.google.com/terms/api-services-user-data-policy" target="_blank" rel="noreferrer" className="text-blue-400 underline underline-offset-4 hover:text-blue-300 transition-colors">Google API Services User Data Policy</a>, including the Limited Use requirements.
-            </p>
           </div>
 
           <div className="space-y-4">

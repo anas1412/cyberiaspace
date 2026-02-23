@@ -23,7 +23,7 @@ export const FileRenderer: React.FC<FileRendererProps> = ({ thought }) => {
 
   const fileMeta = thought.meta?.file || {};
   const isImage = fileMeta.type?.startsWith('image/') || thought.image || ['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg'].includes(thought.text?.toLowerCase().split('.').pop() || '');
-  const isStranded = !thought.driveFileId && thought.syncStatus !== 'synced';
+  const isStranded = !thought.storageUrl && thought.syncStatus !== 'synced';
   const isSyncing = thought.syncStatus === 'syncing' || thought.syncStatus === 'pending';
 
   if (isImage && (thought.image || isStranded)) {

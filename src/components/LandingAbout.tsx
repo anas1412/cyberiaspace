@@ -48,10 +48,10 @@ const LandingAbout: React.FC = () => {
             <div className="space-y-2 text-left">
               <div className="flex items-center gap-3">
                 <Database className="w-4 h-4 text-blue-400" />
-                <h3 className="text-[10px] font-black uppercase tracking-widest text-white text-left">Drive Sync Bridge</h3>
+                <h3 className="text-[10px] font-black uppercase tracking-widest text-white text-left">Cloud Sync</h3>
               </div>
               <p className="text-[9px] text-slate-500 leading-relaxed uppercase font-bold tracking-wider">
-                Connect your Google Drive to enable persistent, user-owned storage for massive research assets, PDFs, and media across all devices.
+                Supabase-powered cloud storage for persistent access to your research assets, PDFs, and media across all devices.
               </p>
             </div>
 
