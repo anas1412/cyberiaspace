@@ -64,20 +64,70 @@ export const syncOrchestrator = {
     try {
       const userId = authState.user!.id;
       
-      console.log('[Sync] Wiping cloud content before push...');
-      await syncOrchestrator.deleteCloudContent();
-      console.log('[Sync] Cloud wiped');
-      
+      // Get local data
       const [localSpaces, localStacks, localThoughts] = await Promise.all([
         db.spaces.toArray(),
         db.stacks.toArray(),
         db.thoughts.toArray(),
       ]);
       
-      console.log(`[Sync] Pushing ${localSpaces.length} spaces, ${localStacks.length} stacks, ${localThoughts.length} thoughts`);
+      console.log(`[Sync] Local: ${localSpaces.length} spaces, ${localStacks.length} stacks, ${localThoughts.length} thoughts`);
       
+      // Fetch cloud data for comparison
+      console.log('[Sync] Fetching cloud data for comparison...');
+      const [cloudSpaces, cloudStacks, cloudThoughts] = await Promise.all([
+        supabaseSync.getSpaces(userId),
+        supabaseSync.getStacks(userId),
+        supabaseSync.getThoughts(userId),
+      ]);
+      
+      const cloudSpaceIds = new Set(cloudSpaces.spaces?.map(s => s.id) || []);
+      const cloudStackIds = new Set(cloudStacks.stacks?.map(s => s.id) || []);
+      const cloudThoughtIds = new Set(cloudThoughts.thoughts?.map(t => t.id) || []);
+      
+      console.log(`[Sync] Cloud: ${cloudSpaceIds.size} spaces, ${cloudStackIds.size} stacks, ${cloudThoughtIds.size} thoughts`);
+      
+      // STEP 1: Delete orphaned cloud data (exists in cloud but not in local)
+      // Delete orphaned spaces
+      for (const spaceId of cloudSpaceIds) {
+        if (!localSpaces.find(s => s.id === spaceId)) {
+          console.log(`[Sync] Deleting orphaned space: ${spaceId}`);
+          await supabaseSync.deleteSpace(spaceId, userId);
+        }
+      }
+      
+      // Delete orphaned stacks
+      for (const stackId of cloudStackIds) {
+        if (!localStacks.find(s => s.id === stackId)) {
+          console.log(`[Sync] Deleting orphaned stack: ${stackId}`);
+          await supabaseSync.deleteStack(stackId, userId);
+        }
+      }
+      
+      // Delete orphaned thoughts and their storage files
+      for (const thoughtId of cloudThoughtIds) {
+        if (!localThoughts.find(t => t.id === thoughtId)) {
+          const cloudThought = cloudThoughts.thoughts?.find(t => t.id === thoughtId);
+          if (cloudThought?.storagePath) {
+            console.log(`[Sync] Deleting orphaned file: ${cloudThought.storagePath}`);
+            await supabaseStorage.deleteFile(cloudThought.storagePath);
+          }
+          console.log(`[Sync] Deleting orphaned thought: ${thoughtId}`);
+          await supabaseSync.deleteThought(thoughtId, userId);
+        }
+      }
+      
+      console.log('[Sync] Orphan cleanup complete');
+      
+      // STEP 2: Build valid storage paths from local thoughts
       const validStoragePaths = new Set<string>();
+      for (const thought of localThoughts) {
+        if (thought.storagePath) {
+          validStoragePaths.add(thought.storagePath);
+        }
+      }
       
+      // STEP 3: Push local spaces to cloud
       if (localSpaces.length > 0) {
         const cleanedSpaces = localSpaces.map(s => ({
           ...s,
@@ -87,6 +137,7 @@ export const syncOrchestrator = {
         console.log('[Sync] Spaces synced');
       }
       
+      // STEP 4: Push local stacks to cloud
       if (localStacks.length > 0) {
         const cleanedStacks = localStacks.map(s => ({
           ...s,
@@ -96,31 +147,25 @@ export const syncOrchestrator = {
         console.log('[Sync] Stacks synced');
       }
       
+      // STEP 5: Push local thoughts to cloud and upload new files
       if (localThoughts.length > 0) {
         for (const thought of localThoughts) {
-          if (thought.storagePath) {
-            validStoragePaths.add(thought.storagePath);
-          }
-          
-          if (thought.type === 'image' || thought.type === 'file') {
+          // Upload new files if thought has a blob and no storagePath
+          if ((thought.type === 'image' || thought.type === 'file') && !thought.storagePath) {
             const blob = await db.blobs.where('thoughtId').equals(thought.id).first();
             if (blob?.blob) {
-              const exists = await supabaseStorage.fileExists(userId, blob.name);
-              if (!exists) {
-                const result = await supabaseStorage.uploadFile(userId, blob.blob, blob.name);
-                await db.thoughts.update(thought.id, {
-                  storageUrl: result.url,
-                  storagePath: result.path,
-                });
-                validStoragePaths.add(result.path);
-                console.log(`[Sync] Uploaded file for thought ${thought.id}`);
-              } else {
-                console.log(`[Sync] File already exists for thought ${thought.id}, skipping`);
-              }
+              const result = await supabaseStorage.uploadFile(userId, blob.blob, blob.name);
+              await db.thoughts.update(thought.id, {
+                storageUrl: result.url,
+                storagePath: result.path,
+              });
+              validStoragePaths.add(result.path);
+              console.log(`[Sync] Uploaded file for thought ${thought.id}`);
             }
           }
         }
         
+        // Push thoughts to cloud
         const cleanedThoughts = localThoughts.map(t => ({
           ...t,
           user_id: userId,
@@ -129,12 +174,10 @@ export const syncOrchestrator = {
         console.log('[Sync] Thoughts synced');
       }
       
+      // STEP 6: Clean up orphaned storage files
       console.log(`[Sync] Valid storage paths: ${validStoragePaths.size}`);
-      
-      if (validStoragePaths.size > 0 || localThoughts.length > 0) {
-        const cleanedCount = await supabaseStorage.cleanupOrphanedFiles(userId, validStoragePaths);
-        console.log(`[Sync] Cleaned up ${cleanedCount} orphaned files`);
-      }
+      const cleanedCount = await supabaseStorage.cleanupOrphanedFiles(userId, validStoragePaths);
+      console.log(`[Sync] Cleaned up ${cleanedCount} orphaned files`);
       
       const now = new Date();
       useSyncStore.setState({
@@ -258,6 +301,12 @@ export const syncOrchestrator = {
   async uploadMedia(thoughtId: number): Promise<void> {
     const thought = await db.thoughts.get(thoughtId);
     if (!thought) return;
+    
+    // Skip if already has storagePath (don't re-upload)
+    if (thought.storagePath) {
+      console.log('[Sync] uploadMedia: Thought already has storagePath, skipping');
+      return;
+    }
     
     const { useAuthStore } = await import('../../store/useAuthStore');
     if (useAuthStore.getState().status !== 'authenticated') return;

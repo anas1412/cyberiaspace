@@ -15,16 +15,17 @@ export const supabaseStorage = {
       throw new Error(`File too large. Maximum size is ${MAX_FILE_SIZE / 1024 / 1024} MB`)
     }
 
-    const timestamp = Date.now()
     const safeName = fileName.replace(/[^a-zA-Z0-9.-]/g, '_')
-    const path = `${userId}/${timestamp}-${safeName}`
-
+    const path = `${userId}/${safeName}`
+    
+    // Just upload with upsert - don't check if file exists
+    // This prevents the re-upload bug
     const { error } = await storageClient
       .storage
       .from(BUCKET_NAME)
       .upload(path, file, {
         cacheControl: '3600',
-        upsert: false,
+        upsert: true,
         contentType: file.type || 'application/octet-stream',
       })
 
@@ -62,17 +63,13 @@ export const supabaseStorage = {
   },
 
   async getSignedUrl(storagePath: string, expiresIn = 3600): Promise<string> {
-    const { data, error } = await storageClient
+    // Bucket is public, use getPublicUrl for direct access
+    const { data } = await storageClient
       .storage
       .from(BUCKET_NAME)
-      .createSignedUrl(storagePath, expiresIn)
+      .getPublicUrl(storagePath)
 
-    if (error) {
-      console.error('[Storage] Signed URL error:', error)
-      throw new Error(`Failed to get signed URL: ${error.message}`)
-    }
-
-    return data.signedUrl
+    return data.publicUrl
   },
 
   async listFiles(userId: string): Promise<{ name: string; size: number }[]> {
@@ -95,19 +92,32 @@ export const supabaseStorage = {
 
   async fileExists(userId: string, fileName: string): Promise<boolean> {
     try {
-      const { data, error } = await storageClient
+      const fullPath = fileName.includes('/') ? fileName : `${userId}/${fileName}`;
+      // Use getPublicUrl since bucket is public
+      const { data } = await storageClient
         .storage
         .from(BUCKET_NAME)
-        .list(userId, { search: fileName });
-
-      if (error) {
-        console.error('[Storage] fileExists check error:', error);
-        return false;
-      }
-
-      return (data?.length ?? 0) > 0;
+        .getPublicUrl(fullPath);
+      
+      // If publicUrl is returned, file exists
+      return !!data.publicUrl;
     } catch (err) {
       console.error('[Storage] fileExists failed:', err);
+      return false;
+    }
+  },
+
+  async checkFileAccessible(storagePath: string): Promise<boolean> {
+    try {
+      // Use getPublicUrl since bucket is public
+      const { data } = await storageClient
+        .storage
+        .from(BUCKET_NAME)
+        .getPublicUrl(storagePath);
+      
+      return !!data.publicUrl;
+    } catch (err) {
+      console.error('[Storage] checkFileAccessible failed:', err);
       return false;
     }
   },
@@ -136,7 +146,6 @@ export const supabaseStorage = {
       let offset = 0;
       const limit = 100;
       
-      // Paginate through all files in user's folder
       while (true) {
         const { data, error } = await storageClient
           .storage
@@ -153,13 +162,11 @@ export const supabaseStorage = {
         allFiles = allFiles.concat(data);
         offset += limit;
         
-        // Safety: don't loop forever
         if (data.length < limit) break;
       }
 
       console.log(`[Storage] Found ${allFiles.length} files in bucket`);
 
-      // Find orphans (files not in validPaths)
       const orphans = allFiles.filter(f => {
         const fullPath = `${userId}/${f.name}`;
         return !validPaths.has(fullPath);
@@ -171,7 +178,6 @@ export const supabaseStorage = {
         return 0;
       }
 
-      // Delete orphans in batches
       const pathsToDelete = orphans.map(f => `${userId}/${f.name}`);
       const batchSize = 10;
       

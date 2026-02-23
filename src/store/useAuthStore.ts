@@ -251,6 +251,12 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       console.log(`[Sync] Media sweep: Found ${mediaThoughts.length} items to upload.`);
       
       for (const t of mediaThoughts) {
+        // Skip if already has storagePath (don't re-upload)
+        if (t.storagePath) {
+          console.log(`[Sync] Media sweep: Thought ${t.id} already has storagePath, skipping`);
+          continue;
+        }
+        
         const blobEntry = await db.blobs.where('thoughtId').equals(t.id).first();
         
         if (!blobEntry) {
@@ -565,6 +571,12 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 
       if (!blobEntry || !thought) return;
 
+      // Skip if already has storagePath (don't re-upload)
+      if (thought.storagePath) {
+        console.log('[Storage] Thought already has storagePath, skipping upload');
+        return;
+      }
+
       // Check file size
       const sizeCheck = supabaseStorage.checkFileSize(blobEntry.blob)
       if (!sizeCheck.valid) {
@@ -731,8 +743,17 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         try {
           // Get the blob from db.blobs
           const blobEntry = await db.blobs.where('thoughtId').equals(blob.thoughtId).first();
+          const thought = await db.thoughts.get(blob.thoughtId);
+          
           if (!blobEntry) {
             // Blob no longer exists, remove from queue
+            await db.pendingBlobs.delete(blob.id!);
+            continue;
+          }
+
+          // Skip if already has storagePath (don't re-upload)
+          if (thought?.storagePath) {
+            console.log('[Storage] Thought already has storagePath, skipping pending upload');
             await db.pendingBlobs.delete(blob.id!);
             continue;
           }
