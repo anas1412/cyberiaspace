@@ -162,30 +162,39 @@ export const useAuthStore = create<AuthState>((set, get) => ({
                 useStore.setState({ isInitializing: true });
                 try {
                   if (choice === 'cloud') {
+                    // Import cloud data to local
                     await useStore.getState().importFullState(data);
                     
-                    // Clean up orphaned local blobs after cloud import
-                    const cloudThoughtIds = new Set(data.thoughts?.map((t: any) => t.id) || []);
+                    // Clean up LOCAL orphaned blobs only (not cloud storage!)
+                    // Get valid local thought IDs after import
+                    const localThoughtIds = new Set((await db.thoughts.toArray()).map(t => t.id));
+                    
+                    // Delete blobs whose thoughtId doesn't exist locally
                     const allBlobs = await db.blobs.toArray();
                     for (const blob of allBlobs) {
-                      if (blob.thoughtId && !cloudThoughtIds.has(blob.thoughtId)) {
+                      if (blob.thoughtId && !localThoughtIds.has(blob.thoughtId)) {
                         await db.blobs.delete(blob.id!);
-                        console.log(`[Sync] Deleted orphaned blob: ${blob.id}`);
+                        console.log(`[Sync] Deleted orphaned local blob: ${blob.id}`);
                       }
                     }
+                    
+                    // NO cloud storage cleanup when choosing cloud!
                   } else if (choice === 'local') {
+                    // Push local to cloud (wipes cloud first, then pushes)
                     await syncOrchestrator.fullPushSync();
+                    
+                    // Clean up CLOUD orphaned files (this is correct for local choice)
+                    const validPaths = new Set<string>();
+                    const allThoughts = await db.thoughts.toArray();
+                    for (const t of allThoughts) {
+                      if (t.storagePath) validPaths.add(t.storagePath);
+                    }
+                    await supabaseStorage.cleanupOrphanedFiles(get().user!.id, validPaths);
                   }
+                  
                   const now = new Date();
                   set({ lastSync: now, syncStatus: 'synced' });
                   localStorage.setItem('cyberia-last-sync', now.toISOString());
-                  
-                  const validPaths = new Set<string>();
-                  const allThoughts = await db.thoughts.toArray();
-                  for (const t of allThoughts) {
-                    if (t.storagePath) validPaths.add(t.storagePath);
-                  }
-                  await supabaseStorage.cleanupOrphanedFiles(get().user!.id, validPaths);
                   
                   await get().mediaSweep();
                 } finally {
