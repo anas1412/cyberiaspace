@@ -36,7 +36,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   // CREATE - Submit new feedback
   if (req.method === 'POST') {
-    const { action, message, email, type, userId, content, metadata, feedbackId, status, adminReply, name } = req.body;
+    const { action, message, email, type, userId, content, metadata, name } = req.body;
 
     // Handle contact form submission
     if (action === 'contact' || (!type && message)) {

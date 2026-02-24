@@ -62,7 +62,7 @@ export const supabaseStorage = {
     console.log('[Storage] Deleted:', storagePath)
   },
 
-  async getSignedUrl(storagePath: string, expiresIn = 3600): Promise<string> {
+  async getSignedUrl(storagePath: string, _expiresIn = 3600): Promise<string> {
     // Bucket is public, use getPublicUrl for direct access
     const { data } = await storageClient
       .storage

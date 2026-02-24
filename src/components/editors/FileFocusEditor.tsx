@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useStore } from '../../store/useStore';
 import { useAuthStore } from '../../store/useAuthStore';
-import { File as FileIcon, Upload, Download, Loader2, FileAudio, Shield, ExternalLink, Database, CloudOff, Cloud } from 'lucide-react';
+import { File as FileIcon, Upload, Download, Loader2, FileAudio, Shield, Database, CloudOff, Cloud } from 'lucide-react';
 import { FocusEditorShell } from './FocusEditorShell';
 import { MAX_FILE_SIZE_MB } from '../../constants';
 import { generateThumbnail } from '../../utils/image';
@@ -202,7 +202,6 @@ const FileFocusEditor: React.FC = () => {
   const [localTitle, setLocalTitle] = useState('');
   const [localPreviewUrl, setLocalPreviewUrl] = useState<string | null>(null);
   const [isUploading, setIsUploading] = useState(false);
-  const [isFetching, setIsFetching] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const scrollerRef = useRef<HTMLDivElement>(null);
 
@@ -397,7 +396,7 @@ const FileFocusEditor: React.FC = () => {
         fileMeta={fileMeta}
         localPreviewUrl={localPreviewUrl}
         isUploading={isUploading}
-        isFetching={isFetching}
+        isFetching={false}
         error={error}
         handleFileSelect={handleFileSelect}
         stackItems={stackItems}
