@@ -36,8 +36,8 @@ export default defineConfig({
         'icon-512x512.png'
       ],
       manifest: {
-        name: 'Cyberia Space',
-        short_name: 'Cyberia Space',
+        name: 'Cyberia Workspace',
+        short_name: 'Cyberia Workspace',
         description: 'Kinetic Information Architecture & Spatial Thinking',
         theme_color: '#020408',
         background_color: '#020408',

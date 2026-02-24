@@ -37,7 +37,7 @@ const LegalNotice: React.FC = () => {
           <div className="space-y-4">
             <h2 className="text-xl font-black text-white uppercase tracking-widest border-b border-white/5 pb-2">1. Company Information</h2>
             <p className="leading-relaxed">
-              Cyberia is developed and operated by Cyberia, a registered company in <strong className="text-white">Tunisia</strong>.
+              Cyberia is developed and operated by Cyberia AI Studio, a registered company in <strong className="text-white">Tunisia</strong>.
             </p>
             <p className="leading-relaxed">
               <strong className="text-white">Website:</strong> <a href="https://cyberia.tn" className="text-blue-400 hover:text-white">https://cyberia.tn</a>
@@ -50,7 +50,7 @@ const LegalNotice: React.FC = () => {
               <strong className="text-white">Copyright:</strong> All content, design, code, and materials related to Cyberia are protected by copyright laws and international treaties.
             </p>
             <p className="leading-relaxed">
-              <strong className="text-white">Trademarks:</strong> "Cyberia," the Cyberia logo, and related marks are trademarks of Cyberia. All rights reserved. Unauthorized use is prohibited.
+              <strong className="text-white">Trademarks:</strong> The Cyberia logo, and related marks are trademarks of Cyberia AI Studio. All rights reserved. Unauthorized use is prohibited.
             </p>
             <p className="leading-relaxed">
               <strong className="text-white">User Content:</strong> Users retain ownership of all content they create within Cyberia. By using the Service, you grant us a limited license to store and display your content as necessary for providing the Service.
@@ -63,10 +63,9 @@ const LegalNotice: React.FC = () => {
               Cyberia integrates with third-party services:
             </p>
             <ul className="list-disc list-inside space-y-3 mt-4 ml-2">
-              <li><strong className="text-white">Google Drive:</strong> For cloud storage of user content</li>
-              <li><strong className="text-white">Groq:</strong> For AI inference (Oracle features)</li>
-              <li><strong className="text-white">Vercel:</strong> For metadata sync infrastructure</li>
-              <li><strong className="text-white">Supabase:</strong> For cloud storage</li>
+              <li><strong className="text-white">Groq, OpenAI, Google & Anthropic:</strong> For AI inference (Oracle features)</li>
+              <li><strong className="text-white">Vercel:</strong> For hosting and deployment infrastructure</li>
+              <li><strong className="text-white">Supabase:</strong> For database and cloud storage</li>
             </ul>
             <p className="leading-relaxed mt-4">
               We are not responsible for the privacy practices or content of these third-party services.

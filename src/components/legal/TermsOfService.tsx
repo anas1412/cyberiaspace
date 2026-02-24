@@ -30,7 +30,7 @@ const TermsOfService: React.FC = () => {
             </div>
             <h1 className="text-4xl md:text-6xl font-black text-white uppercase tracking-tighter leading-none">Terms of Service</h1>
           </div>
-          <p className="text-slate-500 font-mono text-sm uppercase tracking-widest">Last Updated: February 21, 2026</p>
+          <p className="text-slate-500 font-mono text-sm uppercase tracking-widest">Last Updated: February 24, 2026</p>
         </header>
 
         <section className="space-y-12 pb-20">
@@ -78,9 +78,16 @@ const TermsOfService: React.FC = () => {
           </div>
 
           <div className="space-y-4">
-            <h2 className="text-xl font-black text-white uppercase tracking-widest border-b border-white/5 pb-2">6. Disclaimers</h2>
+<h2 className="text-xl font-black text-white uppercase tracking-widest border-b border-white/5 pb-2">6. Disclaimers</h2>
             <p className="leading-relaxed font-mono text-xs uppercase tracking-wider text-slate-500">
               Cyberia disclaims all warranties, express or implied. In no event shall Cyberia be liable for any indirect, incidental, or consequential damages arising out of the use of the service.
+            </p>
+          </div>
+
+          <div className="space-y-4">
+            <h2 className="text-xl font-black text-white uppercase tracking-widest border-b border-white/5 pb-2">7. Governing Law</h2>
+            <p className="leading-relaxed">
+              These Terms of Service shall be governed by the laws of Tunisia.
             </p>
           </div>
         </section>

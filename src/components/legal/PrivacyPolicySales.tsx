@@ -2,7 +2,7 @@ import React from 'react';
 import { motion } from 'framer-motion';
 import { Shield, ArrowLeft } from 'lucide-react';
 
-const PrivacyPolicy: React.FC = () => {
+const PrivacyPolicySales: React.FC = () => {
   const handleBack = () => {
     window.history.pushState({}, '', '/');
     window.dispatchEvent(new PopStateEvent('popstate'));
@@ -28,16 +28,16 @@ const PrivacyPolicy: React.FC = () => {
             <div className="w-12 h-12 bg-blue-500/10 rounded-2xl flex items-center justify-center border border-blue-500/20">
               <Shield className="w-6 h-6 text-blue-400" />
             </div>
-            <h1 className="text-4xl md:text-6xl font-black text-white uppercase tracking-tighter leading-none">Privacy Policy</h1>
+            <h1 className="text-4xl md:text-6xl font-black text-white uppercase tracking-tighter leading-none">Privacy Policy (Sales)</h1>
           </div>
-          <p className="text-slate-500 font-mono text-sm uppercase tracking-widest">Effective Date: February 21, 2026</p>
+          <p className="text-slate-500 font-mono text-sm uppercase tracking-widest">Effective Date: February 24, 2026</p>
         </header>
 
         <section className="space-y-12 pb-20">
           <div className="space-y-4">
             <h2 className="text-xl font-black text-white uppercase tracking-widest border-b border-white/5 pb-2">1. Overview</h2>
             <p className="leading-relaxed">
-              Cyberia ("we," "us," or "our") is a spatial productivity tool designed with a **Local-First** philosophy. We believe your thoughts should remain private and under your control. This policy explains how we handle your data when you use our website (cyberia.tn) and our integrated services.
+              This Privacy Policy outlines how Cyberia AI Studio handles your data when you use our services, with a specific focus on payment and transaction privacy. We are a registered company in <strong className="text-white">Tunisia</strong> committed to protecting your personal and financial information.
             </p>
           </div>
 
@@ -48,12 +48,12 @@ const PrivacyPolicy: React.FC = () => {
             </p>
           </div>
 
-          <div className="space-y-4 bg-blue-500/5 border border-blue-500/10 p-8 rounded-[2rem]">
+          <div className="bg-blue-500/5 border border-blue-500/10 p-8 rounded-[2rem] space-y-4">
             <h2 className="text-xl font-black text-blue-400 uppercase tracking-widest border-b border-blue-500/20 pb-2">3. Google API Data Usage</h2>
             <p className="leading-relaxed text-white font-medium">
               Cyberia uses Google OAuth services to provide optional cloud synchronization features.
             </p>
-            <ul className="list-disc list-inside space-y-3 mt-4 ml-2 uppercase text-[10px] font-bold tracking-wide">
+            <ul className="list-disc list-inside space-y-3 mt-4 ml-2">
               <li>
                 <strong className="text-white">Supabase Storage:</strong> Your files and media are stored securely in Supabase cloud storage. This provides persistent storage for your research assets across all devices.
               </li>
@@ -70,7 +70,7 @@ const PrivacyPolicy: React.FC = () => {
             </p>
             <ul className="list-disc list-inside space-y-3 mt-4 ml-2">
               <li>Data is processed temporarily for the duration of the request.</li>
-              <li>Your personal data and thoughts are **never** used for model training.</li>
+              <li>Your personal data and thoughts are <strong className="text-white">never</strong> used for model training.</li>
               <li>We do not store your AI chat history on our central servers; it is stored locally on your device.</li>
             </ul>
           </div>
@@ -78,7 +78,7 @@ const PrivacyPolicy: React.FC = () => {
           <div className="space-y-4">
             <h2 className="text-xl font-black text-white uppercase tracking-widest border-b border-white/5 pb-2">5. Payment Security</h2>
             <p className="leading-relaxed">
-              Payments are handled securely by **Flouci**. Cyberia does not collect or store your credit card numbers, CVVs, or billing addresses. We only receive a confirmation token to activate your Pro features.
+              Payments are handled securely by the <strong className="text-white">Flouci</strong>. Cyberia does not collect or store your credit card numbers, CVVs, or billing addresses. We only receive a confirmation token to activate your Pro features.
             </p>
           </div>
 
@@ -90,7 +90,31 @@ const PrivacyPolicy: React.FC = () => {
           </div>
 
           <div className="space-y-4">
-            <h2 className="text-xl font-black text-white uppercase tracking-widest border-b border-white/5 pb-2">7. Contact</h2>
+            <h2 className="text-xl font-black text-white uppercase tracking-widest border-b border-white/5 pb-2">7. Your Rights</h2>
+            <ul className="list-disc list-inside space-y-3 mt-4 ml-2">
+              <li><strong className="text-white">Access:</strong> Download your data at any time</li>
+              <li><strong className="text-white">Deletion:</strong> Request deletion of your account and associated data</li>
+              <li><strong className="text-white">Portability:</strong> Export your content in standard formats</li>
+              <li><strong className="text-white">Revoke Access:</strong> Disconnect Google Drive anytime</li>
+            </ul>
+          </div>
+
+          <div className="space-y-4">
+            <h2 className="text-xl font-black text-white uppercase tracking-widest border-b border-white/5 pb-2">8. Children's Privacy</h2>
+            <p className="leading-relaxed">
+              The Service is not intended for children under 13. We do not knowingly collect information from children.
+            </p>
+          </div>
+
+          <div className="space-y-4">
+            <h2 className="text-xl font-black text-white uppercase tracking-widest border-b border-white/5 pb-2">9. Changes to This Policy</h2>
+            <p className="leading-relaxed">
+              We may update this Privacy Policy periodically. We will notify you of material changes via the app or email.
+            </p>
+          </div>
+
+          <div className="space-y-4">
+            <h2 className="text-xl font-black text-white uppercase tracking-widest border-b border-white/5 pb-2">10. Contact</h2>
             <p className="leading-relaxed">
               If you have questions about this policy or your data, please contact us at <a href="mailto:anas.bassoumi@gmail.com" className="text-blue-400 hover:text-white">anas.bassoumi@gmail.com</a>.
             </p>
@@ -101,4 +125,4 @@ const PrivacyPolicy: React.FC = () => {
   );
 };
 
-export default PrivacyPolicy;
+export default PrivacyPolicySales;

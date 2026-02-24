@@ -29,10 +29,10 @@ const TasksFocusEditor = lazy(() => import('./components/editors/TasksFocusEdito
 const EmbedFocusEditor = lazy(() => import('./components/editors/EmbedFocusEditor'));
 const FileFocusEditor = lazy(() => import('./components/editors/FileFocusEditor'));
 const FeedbackPage = lazy(() => import('./components/FeedbackPage'));
-const PrivacyPolicy = lazy(() => import('./components/legal/PrivacyPolicy'));
+const PrivacyPolicyGeneral = lazy(() => import('./components/legal/PrivacyPolicyGeneral'));
 const TermsOfService = lazy(() => import('./components/legal/TermsOfService'));
 const SalesConditions = lazy(() => import('./components/legal/SalesConditions'));
-const PrivacyPolicyFull = lazy(() => import('./components/legal/PrivacyPolicyFull'));
+const PrivacyPolicySales = lazy(() => import('./components/legal/PrivacyPolicySales'));
 const LegalNotice = lazy(() => import('./components/legal/LegalNotice'));
 const Contact = lazy(() => import('./components/legal/Contact'));
 const LandingAbout = lazy(() => import('./components/LandingAbout'));
@@ -343,10 +343,10 @@ function App() {
     );
   }
 
-  if (path === '/privacy') {
+if (path === '/privacy') {
     return (
       <Suspense fallback={<LoadingOverlay force />}>
-        <PrivacyPolicy />
+        <PrivacyPolicyGeneral />
       </Suspense>
     );
   }
@@ -370,7 +370,7 @@ function App() {
   if (path === '/privacy-policy') {
     return (
       <Suspense fallback={<LoadingOverlay force />}>
-        <PrivacyPolicyFull />
+        <PrivacyPolicySales />
       </Suspense>
     );
   }
