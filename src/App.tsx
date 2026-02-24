@@ -31,6 +31,10 @@ const FileFocusEditor = lazy(() => import('./components/editors/FileFocusEditor'
 const FeedbackPage = lazy(() => import('./components/FeedbackPage'));
 const PrivacyPolicy = lazy(() => import('./components/legal/PrivacyPolicy'));
 const TermsOfService = lazy(() => import('./components/legal/TermsOfService'));
+const SalesConditions = lazy(() => import('./components/legal/SalesConditions'));
+const PrivacyPolicyFull = lazy(() => import('./components/legal/PrivacyPolicyFull'));
+const LegalNotice = lazy(() => import('./components/legal/LegalNotice'));
+const Contact = lazy(() => import('./components/legal/Contact'));
 const LandingAbout = lazy(() => import('./components/LandingAbout'));
 const LoginPage = lazy(() => import('./components/auth/LoginPage'));
 
@@ -351,6 +355,38 @@ function App() {
     return (
       <Suspense fallback={<LoadingOverlay force />}>
         <TermsOfService />
+      </Suspense>
+    );
+  }
+
+  if (path === '/sales-conditions') {
+    return (
+      <Suspense fallback={<LoadingOverlay force />}>
+        <SalesConditions />
+      </Suspense>
+    );
+  }
+
+  if (path === '/privacy-policy') {
+    return (
+      <Suspense fallback={<LoadingOverlay force />}>
+        <PrivacyPolicyFull />
+      </Suspense>
+    );
+  }
+
+  if (path === '/legal-notice') {
+    return (
+      <Suspense fallback={<LoadingOverlay force />}>
+        <LegalNotice />
+      </Suspense>
+    );
+  }
+
+  if (path === '/contact') {
+    return (
+      <Suspense fallback={<LoadingOverlay force />}>
+        <Contact />
       </Suspense>
     );
   }

@@ -66,7 +66,7 @@ const TermsOfService: React.FC = () => {
             </p>
             <ul className="list-disc list-inside space-y-3 mt-4 ml-2 uppercase text-[10px] font-bold tracking-wide">
               <li><strong>Manual Renewal:</strong> Cyberia follows a non-predatory billing model. We do not automatically charge your card. You must manually renew your access at the end of each period.</li>
-              <li><strong>Third-Party Gateway:</strong> All financial transactions are handled by the Konnect Network. By upgrading, you agree to their terms of service as well.</li>
+              <li><strong>Third-Party Gateway:</strong> All financial transactions are handled by Flouci. By upgrading, you agree to their terms of service as well.</li>
             </ul>
           </div>
 

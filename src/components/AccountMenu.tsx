@@ -333,7 +333,7 @@ const AccountMenu: React.FC = () => {
             </button>
           </div>
 
-          <div className="flex items-center justify-center gap-4 pt-2 border-t border-white/5 opacity-40">
+          <div className="flex items-center justify-center gap-2 pt-2 border-t border-white/5 opacity-40">
             <button 
               onClick={() => {
                 window.history.pushState({}, '', '/privacy');

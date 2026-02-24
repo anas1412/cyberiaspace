@@ -38,7 +38,7 @@ export const HelpModal: React.FC<HelpModalProps> = ({
 }) => (
   isOpen && (
     <div className="fixed inset-0 z-[10001] bg-black/60 backdrop-blur-md flex items-center justify-center p-10 pointer-events-auto" onClick={onClose}>
-      <div className="glass max-w-lg w-full p-10 rounded-[3rem] border border-white/10" onClick={e => e.stopPropagation()}>
+      <div className="glass max-w-xl w-full p-10 rounded-[3rem] border border-white/10" onClick={e => e.stopPropagation()}>
         <div className="flex justify-between items-center mb-8">
           <h3 className="text-sm font-black uppercase tracking-[0.2em] text-[var(--accent-secondary)]">System Help</h3>
           <button onClick={onClose} className="text-slate-500 hover:text-white transition-colors"><Plus className="w-6 h-6 rotate-45" /></button>
@@ -92,22 +92,22 @@ export const HelpModal: React.FC<HelpModalProps> = ({
             </div>
           )}
         </div>
-        <div className="mt-10 pt-8 border-t border-white/5 flex items-center justify-between">
+        <div className="mt-10 pt-8 border-t border-white/5 flex flex-col items-center gap-4">
           <div className="flex items-center gap-4">
             <div className="w-10 h-10 rounded-xl bg-blue-500/10 flex items-center justify-center text-blue-400">
               <CircleHelp className="w-5 h-5" />
             </div>
-            <p className="text-[9px] uppercase font-bold tracking-widest text-slate-500 leading-relaxed">
+            <p className="text-[10px] uppercase font-bold tracking-widest text-slate-500 leading-relaxed">
               Version {APP_VERSION} <br /> Stable release.
             </p>
           </div>
-          <div className="flex items-center gap-4 opacity-40">
+          <div className="flex items-center gap-3 opacity-40 flex-wrap justify-center">
             <button 
               onClick={() => {
                 window.history.pushState({}, '', '/privacy');
                 window.dispatchEvent(new PopStateEvent('popstate'));
               }}
-              className="text-[8px] font-black uppercase tracking-widest text-slate-400 hover:text-white transition-colors"
+              className="text-[10px] font-black uppercase tracking-widest text-slate-400 hover:text-white transition-colors"
             >
               Privacy Policy
             </button>
@@ -117,9 +117,39 @@ export const HelpModal: React.FC<HelpModalProps> = ({
                 window.history.pushState({}, '', '/terms');
                 window.dispatchEvent(new PopStateEvent('popstate'));
               }}
-              className="text-[8px] font-black uppercase tracking-widest text-slate-400 hover:text-white transition-colors"
+              className="text-[10px] font-black uppercase tracking-widest text-slate-400 hover:text-white transition-colors"
             >
               Terms of Service
+            </button>
+            <span className="w-0.5 h-0.5 rounded-full bg-white/20" />
+            <button 
+              onClick={() => {
+                window.history.pushState({}, '', '/sales-conditions');
+                window.dispatchEvent(new PopStateEvent('popstate'));
+              }}
+              className="text-[10px] font-black uppercase tracking-widest text-slate-400 hover:text-white transition-colors"
+            >
+              Terms of Sale & Refund Policy
+            </button>
+            <span className="w-0.5 h-0.5 rounded-full bg-white/20" />
+            <button 
+              onClick={() => {
+                window.history.pushState({}, '', '/legal-notice');
+                window.dispatchEvent(new PopStateEvent('popstate'));
+              }}
+              className="text-[10px] font-black uppercase tracking-widest text-slate-400 hover:text-white transition-colors"
+            >
+              Legal Notice
+            </button>
+            <span className="w-0.5 h-0.5 rounded-full bg-white/20" />
+            <button 
+              onClick={() => {
+                window.history.pushState({}, '', '/contact');
+                window.dispatchEvent(new PopStateEvent('popstate'));
+              }}
+              className="text-[10px] font-black uppercase tracking-widest text-slate-400 hover:text-white transition-colors"
+            >
+              Contact
             </button>
           </div>
         </div>

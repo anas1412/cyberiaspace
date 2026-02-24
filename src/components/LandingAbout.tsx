@@ -8,7 +8,7 @@ const LandingAbout: React.FC = () => {
 
   return (
     <div className="fixed inset-0 z-[10001] bg-[#020408]/80 backdrop-blur-xl flex items-center justify-center p-6 overflow-y-auto custom-scroll selection:bg-blue-500/30 pointer-events-auto">
-      <div className="max-w-xl w-full my-auto">
+      <div className="max-w-3xl w-full my-auto">
         <motion.div
           initial={{ opacity: 0, scale: 0.9, y: 20 }}
           animate={{ opacity: 1, scale: 1, y: 0 }}
@@ -76,17 +76,17 @@ const LandingAbout: React.FC = () => {
             </button>
 
             <div className="pt-6 border-t border-white/5 text-center space-y-4">
-              <p className="text-[8px] font-black uppercase tracking-[0.2em] text-slate-600 italic leading-loose">
+              <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-600 italic leading-loose">
                 Sign in above to enable cloud sync<br/>
                 By using Cyberia, you agree to our policies
               </p>
-              <div className="flex items-center justify-center gap-4 opacity-40">
+              <div className="flex items-center justify-center gap-4 opacity-40 flex-wrap">
                 <button 
                   onClick={() => {
                     window.history.pushState({}, '', '/privacy');
                     window.dispatchEvent(new PopStateEvent('popstate'));
                   }}
-                  className="text-[8px] font-black uppercase tracking-widest text-slate-400 hover:text-white transition-colors"
+                  className="text-[10px] font-black uppercase tracking-widest text-slate-400 hover:text-white transition-colors"
                 >
                   Privacy Policy
                 </button>
@@ -96,9 +96,39 @@ const LandingAbout: React.FC = () => {
                     window.history.pushState({}, '', '/terms');
                     window.dispatchEvent(new PopStateEvent('popstate'));
                   }}
-                  className="text-[8px] font-black uppercase tracking-widest text-slate-400 hover:text-white transition-colors"
+                  className="text-[10px] font-black uppercase tracking-widest text-slate-400 hover:text-white transition-colors"
                 >
                   Terms of Service
+                </button>
+                <span className="w-0.5 h-0.5 rounded-full bg-white/20" />
+                <button 
+                  onClick={() => {
+                    window.history.pushState({}, '', '/sales-conditions');
+                    window.dispatchEvent(new PopStateEvent('popstate'));
+                  }}
+                  className="text-[10px] font-black uppercase tracking-widest text-slate-400 hover:text-white transition-colors"
+                >
+Terms of Sale & Refund Policy
+                </button>
+                <span className="w-0.5 h-0.5 rounded-full bg-white/20" />
+                <button 
+                  onClick={() => {
+                    window.history.pushState({}, '', '/legal-notice');
+                    window.dispatchEvent(new PopStateEvent('popstate'));
+                  }}
+                  className="text-[10px] font-black uppercase tracking-widest text-slate-400 hover:text-white transition-colors"
+                >
+                  Legal Notice
+                </button>
+                <span className="w-0.5 h-0.5 rounded-full bg-white/20" />
+                <button 
+                  onClick={() => {
+                    window.history.pushState({}, '', '/contact');
+                    window.dispatchEvent(new PopStateEvent('popstate'));
+                  }}
+                  className="text-[10px] font-black uppercase tracking-widest text-slate-400 hover:text-white transition-colors"
+                >
+                  Contact
                 </button>
               </div>
             </div>

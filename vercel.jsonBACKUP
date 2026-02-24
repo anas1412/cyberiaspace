@@ -1,0 +1,11 @@
+{
+  "version": 2,
+  "redirects": [
+    { "source": "/terms", "destination": "/terms" },
+    { "source": "/privacy", "destination": "/privacy" },
+    { "source": "/sales-conditions", "destination": "/sales-conditions.html" },
+    { "source": "/privacy-policy", "destination": "/privacy-policy.html" },
+    { "source": "/legal-notice", "destination": "/legal-notice.html" },
+    { "source": "/contact", "destination": "/contact.html" }
+  ]
+}
