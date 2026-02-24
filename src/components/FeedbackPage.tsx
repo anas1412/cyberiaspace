@@ -14,11 +14,27 @@ interface FeedbackEntry {
   id: string;
   type: 'issue' | 'feedback' | 'feature';
   status?: 'todo' | 'doing' | 'done';
-  message: string;
-  email: string;
+  content: string;
+  message?: string;
+  email?: string;
+  metadata?: { email?: string };
+  admin_reply?: string;
   adminReply?: string;
-  timestamp: number;
+  created_at?: string;
+  timestamp?: number;
 }
+
+// Helper to get message (supports both legacy 'message' and DB 'content')
+const getMessage = (item: FeedbackEntry) => item.message || item.content || '';
+
+// Helper to get email (supports both legacy 'email' and DB 'metadata.email')
+const getEmail = (item: FeedbackEntry) => item.email || item.metadata?.email || '';
+
+// Helper to get admin reply (supports both legacy 'adminReply' and DB 'admin_reply')
+const getAdminReply = (item: FeedbackEntry) => item.adminReply || item.admin_reply || '';
+
+// Helper to get timestamp (supports both legacy 'timestamp' and DB 'created_at')
+const getTimestamp = (item: FeedbackEntry) => item.timestamp || (item.created_at ? new Date(item.created_at).getTime() : Date.now());
 
 const FeedbackPage: React.FC = () => {
   const [view, setView] = useState<'list' | 'submit' | 'admin'>('list');
@@ -375,7 +391,7 @@ const FeedbackPage: React.FC = () => {
                           <div className="flex items-center gap-2 text-slate-500">
                             <Clock className="w-3 h-3" />
                             <span className="text-[9px] font-bold uppercase tracking-widest">
-                              {new Date(item.timestamp).toLocaleDateString()}
+                              {new Date(getTimestamp(item)).toLocaleDateString()}
                             </span>
                           </div>
                         </div>
@@ -387,7 +403,7 @@ const FeedbackPage: React.FC = () => {
                               "text-[9px] font-bold uppercase tracking-widest",
                               !isAdminAuthenticated && "truncate max-w-[150px]"
                             )}>
-                              {item.email}
+                              {getEmail(item)}
                             </span>
                           </div>
 
@@ -398,7 +414,7 @@ const FeedbackPage: React.FC = () => {
                                 disabled={updatingId === item.id || deletingId === item.id}
                                 onClick={() => {
                                   setEditingReplyId(item.id);
-                                  setTempReply(item.adminReply || '');
+                                  setTempReply(getAdminReply(item));
                                 }}
                                 className="p-2 rounded-lg bg-white/5 text-slate-400 hover:text-white hover:bg-white/10 disabled:opacity-30 transition-all"
                                 title="Reply"
@@ -419,11 +435,11 @@ const FeedbackPage: React.FC = () => {
                       </div>
 
                       <p className="text-sm md:text-base text-slate-300 leading-relaxed font-medium mb-6 break-words">
-                        {item.message}
+                        {getMessage(item)}
                       </p>
 
                       {/* Admin Reply Section */}
-                      {(item.adminReply || editingReplyId === item.id) && (
+                      {(getAdminReply(item) || editingReplyId === item.id) && (
                         <div className="mt-6 pt-6 border-t border-white/5">
                           {editingReplyId === item.id ? (
                             <div className="space-y-3">
@@ -459,7 +475,7 @@ const FeedbackPage: React.FC = () => {
                               </div>
                               <div className="flex-1">
                                 <p className="text-[8px] font-black uppercase tracking-widest text-[var(--accent-secondary)] mb-1">Cyberia Response</p>
-                                <p className="text-xs text-slate-400 leading-relaxed italic">{item.adminReply}</p>
+                                <p className="text-xs text-slate-400 leading-relaxed italic">{getAdminReply(item)}</p>
                               </div>
                             </div>
                           )}

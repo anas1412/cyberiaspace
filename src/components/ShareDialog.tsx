@@ -10,6 +10,7 @@ interface ShareDialogProps {
 
 const ShareDialog: React.FC<ShareDialogProps> = ({ spaceId }) => {
     const [isPublishing, setIsPublishing] = useState(false);
+    const [isUnpublishing, setIsUnpublishing] = useState(false);
     const [copySuccess, setCopySuccess] = useState(false);
     const [showQR, setShowQR] = useState(false);
 
@@ -36,8 +37,13 @@ const ShareDialog: React.FC<ShareDialogProps> = ({ spaceId }) => {
             type: 'confirm_cancel',
             confirmText: 'Stop Sharing',
             onConfirm: async () => {
-                await unpublishSpace(spaceId);
-                closeModal();
+                setIsUnpublishing(true);
+                try {
+                    await unpublishSpace(spaceId);
+                    closeModal();
+                } finally {
+                    setIsUnpublishing(false);
+                }
             }
         });
     };
@@ -139,10 +145,15 @@ const ShareDialog: React.FC<ShareDialogProps> = ({ spaceId }) => {
 
                     <button
                         onClick={handleUnpublish}
-                        className="w-full py-2.5 border border-red-500/20 hover:bg-red-500/10 text-red-400 rounded-lg text-sm font-semibold transition-all flex items-center justify-center gap-2 mt-2"
+                        disabled={isUnpublishing}
+                        className="w-full py-2.5 border border-red-500/20 hover:bg-red-500/10 text-red-400 rounded-lg text-sm font-semibold transition-all flex items-center justify-center gap-2 mt-2 disabled:opacity-50"
                     >
-                        <Trash2 className="w-4 h-4" />
-                        Stop Sharing
+                        {isUnpublishing ? (
+                            <div className="w-4 h-4 border-2 border-red-400/30 border-t-red-400 rounded-full animate-spin" />
+                        ) : (
+                            <Trash2 className="w-4 h-4" />
+                        )}
+                        {isUnpublishing ? 'Removing...' : 'Stop Sharing'}
                     </button>
                 </div>
             )}

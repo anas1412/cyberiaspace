@@ -110,6 +110,7 @@ export const supabaseSync = {
   async createSpace(userId: string, space: Record<string, unknown>) {
     const clean = toSnakeCase({ ...space, local_id: space.id, user_id: userId })
     delete clean.id
+    delete clean.last_published  // Remove - stored in published_spaces table
     const { data, error } = await supabase
       .from('spaces')
       .upsert(clean, { onConflict: 'local_id,user_id' })
@@ -127,6 +128,7 @@ export const supabaseSync = {
     const records = spaces.map(s => {
       const clean = toSnakeCase({ ...s, local_id: s.id, user_id: userId })
       delete clean.id
+      delete clean.last_published  // Remove - stored in published_spaces table
       return clean
     })
     const { data, error } = await supabase
@@ -154,7 +156,7 @@ export const supabaseSync = {
     }
     const updatePayload: Record<string, unknown> = { updated_at: new Date().toISOString() }
     for (const [key, value] of Object.entries(clean)) {
-      if (key !== 'id' && key !== 'local_id' && key !== 'user_id') {
+      if (key !== 'id' && key !== 'local_id' && key !== 'user_id' && key !== 'last_published') {
         updatePayload[key] = value
       }
     }
@@ -247,7 +249,7 @@ export const supabaseSync = {
     const uuidValue = found.id
     const updatePayload: Record<string, unknown> = { updated_at: new Date().toISOString() }
     for (const [key, value] of Object.entries(clean)) {
-      if (key !== 'id' && key !== 'local_id' && key !== 'user_id') {
+      if (key !== 'id' && key !== 'local_id' && key !== 'user_id' && key !== 'last_published') {
         updatePayload[key] = value
       }
     }
@@ -362,7 +364,7 @@ export const supabaseSync = {
     }
     const updatePayload: Record<string, unknown> = {}
     for (const [key, value] of Object.entries(clean)) {
-      if (key !== 'id' && key !== 'local_id' && key !== 'user_id') {
+      if (key !== 'id' && key !== 'local_id' && key !== 'user_id' && key !== 'last_published') {
         updatePayload[key] = value
       }
     }

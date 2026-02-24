@@ -31,7 +31,6 @@ CREATE TABLE IF NOT EXISTS spaces (
     theme TEXT DEFAULT 'cyberia',
     custom_bg TEXT,
     published_id TEXT,
-    last_published TIMESTAMP,
     created_at TIMESTAMP DEFAULT NOW(),
     updated_at TIMESTAMP DEFAULT NOW()
 );
@@ -90,6 +89,7 @@ CREATE TABLE IF NOT EXISTS published_spaces (
     space_id UUID,
     user_id TEXT NOT NULL,
     snapshot JSONB NOT NULL,
+    last_published TIMESTAMP DEFAULT NOW(),
     created_at TIMESTAMP DEFAULT NOW(),
     expires_at TIMESTAMP
 );
