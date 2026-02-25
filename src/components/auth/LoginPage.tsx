@@ -34,19 +34,17 @@ const LoginPage: React.FC = () => {
     const hostname = window.location.hostname;
     const isLocalhost = hostname === 'localhost' || hostname === '127.0.0.1';
     
-    // 2. Domain Enforcement: Force production for all Vercel previews
-    if (!isLocalhost && hostname !== 'cyberia.tn') {
-      console.log('[Auth] Preview domain detected. Redirecting to production for secure login...');
-      window.location.href = 'https://cyberia.tn/login';
+    if (!isLocalhost && hostname !== 'app.cyberia.tn') {
+      console.log('[Auth] Non-app domain detected. Redirecting to app.cyberia.tn for secure login...');
+      window.location.href = 'https://app.cyberia.tn/login';
       return;
     }
 
     const CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID;
     
-    // 3. Consistent Redirect URI
     const REDIRECT_URI = isLocalhost 
       ? `${window.location.origin}/api/auth/callback`
-      : 'https://cyberia.tn/api/auth/callback';
+      : 'https://app.cyberia.tn/api/auth/callback';
     
     console.log('[Auth] Starting flow with REDIRECT_URI:', REDIRECT_URI);
 
@@ -108,8 +106,8 @@ const LoginPage: React.FC = () => {
 
         <div className="glass p-8 md:p-16 rounded-[3rem] border border-white/10 shadow-2xl space-y-10 text-center">
           <div className="space-y-4">
-            <h1 className="text-3xl md:text-5xl font-black text-white uppercase tracking-tighter leading-none">
-              Welcome <span className="text-blue-500">Back</span>
+<h1 className="text-3xl md:text-5xl font-black text-white uppercase tracking-tighter leading-none">
+              Welcome <span style={{ color: 'var(--accent)' }}>Back</span>
             </h1>
             <p className="text-[10px] md:text-[12px] font-bold text-slate-500 uppercase tracking-[0.3em]">
               Synchronize your workspace

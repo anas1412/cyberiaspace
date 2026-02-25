@@ -18,7 +18,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const isLocalhost = host.includes('localhost') || host.includes('127.0.0.1');
     const REDIRECT_URI = isLocalhost 
         ? `http://${host}/api/auth/callback` 
-        : 'https://cyberia.tn/api/auth/callback';
+        : 'https://app.cyberia.tn/api/auth/callback';
 
     console.log(`[Auth Callback] Host: ${host} | Redirect: ${REDIRECT_URI}`);
 

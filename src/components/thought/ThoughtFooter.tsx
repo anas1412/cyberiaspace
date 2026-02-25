@@ -8,6 +8,28 @@ function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
 
+const toRgba = (color: string, alpha: number) => {
+  // Handle hex colors (#6366f1)
+  const hexMatch = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(color);
+  if (hexMatch) {
+    return `rgba(${parseInt(hexMatch[1], 16)}, ${parseInt(hexMatch[2], 16)}, ${parseInt(hexMatch[3], 16)}, ${alpha})`;
+  }
+  
+  // Handle HSLA colors (hsla(262, 70%, 50%, 1))
+  const hslaMatch = /^hsla?\((\d+),\s*(\d+)%?,\s*(\d+)%?,\s*([\d.]+)\)$/i.exec(color);
+  if (hslaMatch) {
+    return `hsla(${hslaMatch[1]}, ${hslaMatch[2]}%, ${hslaMatch[3]}%, ${alpha})`;
+  }
+  
+  // Handle RGBA colors - replace alpha
+  if (color.includes('rgba')) {
+    return color.replace(/[\d.]+\)$/, `${alpha})`);
+  }
+  
+  // Return original if no match, fallback to white
+  return color;
+};
+
 interface ThoughtFooterProps {
   thought: Thought;
   stack: any;
@@ -32,9 +54,9 @@ export const ThoughtFooter: React.FC<ThoughtFooterProps> = ({
           <div
             className="px-2 py-0.5 rounded-md text-[8px] font-black uppercase tracking-wider border border-white/10"
             style={{
-              backgroundColor: stack.color ? stack.color.replace('1)', '0.15)') : 'rgba(255,255,255,0.1)',
+              backgroundColor: stack.color ? toRgba(stack.color, 0.15) : 'rgba(255,255,255,0.1)',
               color: stack.color || '#fff',
-              borderColor: stack.color ? stack.color.replace('1)', '0.3)') : 'rgba(255,255,255,0.2)'
+              borderColor: stack.color ? toRgba(stack.color, 0.3) : 'rgba(255,255,255,0.2)'
             }}
           >
             {stack.name || "Unnamed Stack"}
