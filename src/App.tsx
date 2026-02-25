@@ -37,6 +37,7 @@ const LegalNotice = lazy(() => import('./components/legal/LegalNotice'));
 const Contact = lazy(() => import('./components/legal/Contact'));
 const LoginPage = lazy(() => import('./components/auth/LoginPage'));
 const Homepage = lazy(() => import('./components/Homepage'));
+const NotFound = lazy(() => import('./components/NotFound'));
 
 function App() {
   const init = useStore((state) => state.init);
@@ -423,6 +424,14 @@ if (path === '/privacy') {
     );
   }
 
+  // 404 Catch-all for undefined routes on main domain only
+  if (isMainDomain) {
+    return (
+      <Suspense fallback={<LoadingOverlay force />}>
+        <NotFound />
+      </Suspense>
+    );
+  }
 
   return (
     <div className="w-full h-full relative overflow-hidden bg-black">

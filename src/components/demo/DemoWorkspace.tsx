@@ -51,7 +51,7 @@ const DemoWorkspace: React.FC = () => {
       
       {/* Fixed Spatial Indicator */}
       <div className="absolute top-6 left-1/2 -translate-x-1/2 z-[100] flex p-1 bg-black/40 backdrop-blur-md border border-white/10 rounded-2xl shadow-xl transition-all group-hover:opacity-100 opacity-80 pointer-events-none">
-        <div className="px-4 py-2.5 rounded-xl flex items-center gap-2 text-[10px] font-black uppercase tracking-widest bg-blue-600 text-white shadow-lg">
+        <div className="px-4 py-2.5 rounded-xl flex items-center gap-2 text-[10px] font-black uppercase tracking-widest shadow-lg" style={{ backgroundColor: 'var(--accent)', color: 'white' }}>
           <MousePointer2 className="w-4 h-4" />
           <span>Spatial Mode</span>
         </div>
@@ -74,8 +74,8 @@ const DemoWorkspace: React.FC = () => {
       </div>
 
       <div className="absolute bottom-6 left-6 z-[100] flex items-center gap-3 transition-all group-hover:opacity-100 opacity-40">
-        <div className="w-8 h-8 rounded-lg bg-blue-500/20 flex items-center justify-center text-blue-400">
-          <Rocket className="w-4 h-4 animate-pulse" />
+        <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ backgroundColor: 'rgba(99, 102, 241, 0.2)' }}>
+          <Rocket className="w-4 h-4" style={{ color: 'var(--accent-secondary)' }} />
         </div>
         <div className="flex flex-col">
           <span className="text-[10px] font-black uppercase tracking-widest text-white">Live Engine Demo</span>
@@ -85,7 +85,7 @@ const DemoWorkspace: React.FC = () => {
 
       {/* Interactive Hint */}
       <div className="absolute bottom-6 right-6 z-[100] pointer-events-none transition-all group-hover:opacity-0 opacity-100">
-        <span className="text-[10px] font-black uppercase tracking-[0.3em] text-blue-500/60 animate-pulse">Drag Nodes to Interact</span>
+        <span className="text-[10px] font-black uppercase tracking-[0.3em] animate-pulse" style={{ color: 'var(--accent)', opacity: 0.6 }}>Drag Nodes to Interact</span>
       </div>
     </div>
   );

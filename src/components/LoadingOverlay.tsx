@@ -96,9 +96,9 @@ const LoadingOverlay: React.FC<LoadingOverlayProps> = ({ force }) => {
               transition={{ delay: 0.4 }}
               className="flex items-center gap-2 mb-8"
             >
-              <span className="h-[1px] w-8 bg-gradient-to-r from-transparent to-blue-500/50" />
-              <span className="text-[10px] font-black uppercase tracking-[0.2em] text-blue-400/80">Cyberia Workspace</span>
-              <span className="h-[1px] w-8 bg-gradient-to-l from-transparent to-blue-500/50" />
+              <span className="h-[1px] w-8 bg-gradient-to-r from-transparent to-[var(--accent)]/50" />
+              <span className="text-[10px] font-black uppercase tracking-[0.2em]" style={{ color: 'var(--accent-secondary)' }}>Cyberia Workspace</span>
+              <span className="h-[1px] w-8 bg-gradient-to-l from-transparent to-[var(--accent)]/50" />
             </motion.div>
 
             {/* Status Steps */}
