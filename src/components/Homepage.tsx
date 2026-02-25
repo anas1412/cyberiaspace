@@ -1,6 +1,6 @@
 import React, { lazy, Suspense, useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { MousePointer2, Layout, Database, Sparkles, ArrowRight, Zap, Shield, Globe, Check, Rocket, Menu, X, Send, Loader2, CheckCircle } from 'lucide-react';
+import { MousePointer2, Layout, Database, Sparkles, ArrowRight, Check, Rocket, Menu, X, Send, Loader2, CheckCircle, Shield } from 'lucide-react';
 import { PLAN_CONFIG } from '../constants';
 
 const DemoWorkspace = lazy(() => import('./demo/DemoWorkspace'));
@@ -80,24 +80,30 @@ const Homepage: React.FC = () => {
           </div>
 
           {/* Desktop Nav - ViewSwitcher Style */}
-          <div className="hidden md:flex items-center gap-2">
-            <div className="flex items-center h-12 p-1.5 glass rounded-2xl shadow-xl border border-white/5">
-              {['features', 'pricing', 'about', 'contact'].map((item) => (
-                <button 
-                  key={item}
-                  onClick={() => scrollToSection(item)} 
-                  className="px-4 h-full rounded-xl transition-all duration-300 flex items-center group/nav"
-                >
-                  <span className="text-[10px] font-black uppercase tracking-[0.15em] text-slate-400 group-hover/nav:text-white transition-colors">
-                    {item}
-                  </span>
-                </button>
-              ))}
-            </div>
-            <a href="https://app.cyberia.tn" className="h-10 px-4 bg-[var(--accent)] hover:bg-[var(--accent-secondary)] text-white rounded-2xl text-[10px] font-black uppercase tracking-[0.15em] transition-all shadow-lg shadow-[var(--accent)]/20 hover:shadow-[var(--accent)]/40 flex items-center">
-              Launch App
-            </a>
-          </div>
+          <div className="hidden md:flex items-center gap-3"> {/* Increased gap slightly to 3 */}
+  {/* The Nav Container */}
+  <div className="flex items-center h-12 p-1.5 glass rounded-2xl shadow-xl border border-white/5">
+    {['features', 'pricing', 'about', 'contact'].map((item) => (
+      <button 
+        key={item}
+        onClick={() => scrollToSection(item)} 
+        className="px-4 h-full rounded-xl transition-all duration-300 flex items-center group/nav hover:bg-white/5"
+      >
+        <span className="text-[10px] font-black uppercase tracking-[0.15em] text-slate-400 group-hover/nav:text-white transition-colors">
+          {item}
+        </span>
+      </button>
+    ))}
+  </div>
+
+  {/* The CTA Button - Now height matched and radius matched */}
+  <a 
+    href="https://app.cyberia.tn" 
+    className="h-11 px-6 bg-[var(--accent)] hover:bg-[var(--accent-secondary)] text-white rounded-2xl text-[10px] font-black uppercase tracking-[0.15em] transition-all shadow-lg shadow-[var(--accent)]/20 hover:shadow-[var(--accent)]/40 flex items-center justify-center border border-white/10"
+  >
+    Open Workspace
+  </a>
+</div>
 
           {/* Mobile Toggle */}
           <button 
@@ -344,32 +350,63 @@ className="glass p-10 rounded-[3rem] border-[var(--accent)]/30 bg-[var(--accent)
 
       <section id="about" className="py-32 px-6 relative z-10">
         <div className="max-w-4xl mx-auto">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-12 text-center">
-            {[
-              {
-                icon: Zap,
-                title: 'High Inertia',
-                description: 'Lightning-fast performance that keeps up with your thoughts. No lag, no waiting.'
-              },
-              {
-                icon: Shield,
-                title: 'Data Sovereignty',
-                description: 'Your thoughts stay yours. Complete privacy with military-grade encryption.'
-              },
-              {
-                icon: Globe,
-                title: 'Works Everywhere',
-                description: 'Seamless experience across all your devices. Works offline, syncs everywhere.'
-              }
-            ].map((item) => (
-              <div key={item.title} className="group">
-<div className="w-20 h-20 mx-auto mb-6 rounded-3xl bg-[var(--accent)]/5 border border-white/5 flex items-center justify-center group-hover:bg-[var(--accent)]/10 transition-all">
-                  <item.icon className="w-8 h-8 text-[var(--accent-secondary)]" />
-                </div>
-                <h3 className="text-sm font-black uppercase tracking-[0.2em] text-white mb-4">{item.title}</h3>
-                <p className="text-xs text-slate-400 leading-relaxed font-medium">{item.description}</p>
-              </div>
-            ))}
+          <div className="text-center mb-12">
+            <h2 className="text-4xl md:text-5xl font-black tracking-tighter uppercase mb-4">
+              Why <span style={{ color: 'var(--accent)' }}>Cyberia Workspace</span>?
+            </h2>
+            <p className="text-slate-400">Simple. Your brain isn't a spreadsheet.</p>
+          </div>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <motion.div 
+              initial={{ opacity: 0, x: -20 }}
+              whileInView={{ opacity: 1, x: 0 }}
+              viewport={{ once: true }}
+              className="glass rounded-3xl p-6 shadow-[0_10px_40px_rgba(0,0,0,0.5)]"
+            >
+              <h3 className="text-[14px] font-black uppercase tracking-[0.2em] text-white mb-4">The Problem</h3>
+              <p className="text-sm text-[var(--text-dimmed)] leading-relaxed">
+                <span className="text-white font-semibold">Spreadsheets kill creativity.</span> Your brain doesn't think in rows and columns—so why should your tools?
+              </p>
+            </motion.div>
+
+            <motion.div 
+              initial={{ opacity: 0, x: 20 }}
+              whileInView={{ opacity: 1, x: 0 }}
+              viewport={{ once: true }}
+              className="glass rounded-3xl p-6 shadow-[0_10px_40px_rgba(0,0,0,0.5)]"
+            >
+              <h3 className="text-[14px] font-black uppercase tracking-[0.2em] text-white mb-4">The Physics</h3>
+              <p className="text-sm text-[var(--text-dimmed)] leading-relaxed">
+                Your thoughts <span className="text-white font-semibold">drift, collide, and cluster</span> like galaxies. We built a workspace that respects that.
+              </p>
+            </motion.div>
+
+            <motion.div 
+              initial={{ opacity: 0, x: -20 }}
+              whileInView={{ opacity: 1, x: 0 }}
+              viewport={{ once: true }}
+              transition={{ delay: 0.1 }}
+              className="glass rounded-3xl p-6 shadow-[0_10px_40px_rgba(0,0,0,0.5)]"
+            >
+              <h3 className="text-[14px] font-black uppercase tracking-[0.2em] text-white mb-4">The AI</h3>
+              <p className="text-sm text-[var(--text-dimmed)] leading-relaxed">
+                Oracle doesn't just chat. It <span className="text-white font-semibold">lives in your space</span>, reading docs and connecting dots.
+              </p>
+            </motion.div>
+
+            <motion.div 
+              initial={{ opacity: 0, x: 20 }}
+              whileInView={{ opacity: 1, x: 0 }}
+              viewport={{ once: true }}
+              transition={{ delay: 0.1 }}
+              className="glass rounded-3xl p-6 shadow-[0_10px_40px_rgba(0,0,0,0.5)]"
+            >
+              <h3 className="text-[14px] font-black uppercase tracking-[0.2em] text-white mb-4">The Ownership</h3>
+              <p className="text-sm text-[var(--text-dimmed)] leading-relaxed">
+                <span className="text-white font-semibold">Your data stays local.</span> No cloud lock-in. You own your mind.
+              </p>
+            </motion.div>
           </div>
         </div>
       </section>
