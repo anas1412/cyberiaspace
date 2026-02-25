@@ -40,6 +40,10 @@ interface CyberiaState {
   transform: { x: number; y: number; scale: number };
   deletingThoughtIds: number[];
   onboardingDismissed: boolean;
+  isDemo: boolean;
+  setDemoMode: (enabled: boolean) => void;
+  loadOnboardingData: () => void;
+
 
   getLimits: () => typeof PLAN_CONFIG['free'];
 
@@ -143,8 +147,9 @@ export const useStore = create<CyberiaState>((set, get) => ({
   linkingSourceId: null,
   theme: (localStorage.getItem('cyberia-theme') as any) || 'cyberia',
   customBg: null,
-  isSpaceLoading: true,
-  isInitializing: true,
+  isSpaceLoading: typeof window !== 'undefined' ? (window.location.hostname !== 'cyberia.tn' && window.location.hostname !== 'www.cyberia.tn') : true,
+  isInitializing: typeof window !== 'undefined' ? (window.location.hostname !== 'cyberia.tn' && window.location.hostname !== 'www.cyberia.tn') : true,
+
   performanceMode: typeof window !== 'undefined' ? (window.innerWidth < 763) : false,
   setPerformanceMode: (performanceMode) => {
     set({ performanceMode });
@@ -159,6 +164,64 @@ export const useStore = create<CyberiaState>((set, get) => ({
   transform: { x: 0, y: 0, scale: 1 },
   deletingThoughtIds: [],
   onboardingDismissed: localStorage.getItem('cyberia-onboarding-dismissed') === 'true',
+  isDemo: false,
+
+  setDemoMode: (enabled) => {
+    if (enabled) {
+      set({ isDemo: true, isReadOnly: true, isSpaceLoading: false, activeSpaceId: 'demo-space' });
+      get().loadOnboardingData();
+    } else {
+      set({ isDemo: false, isReadOnly: false });
+    }
+  },
+
+  loadOnboardingData: () => {
+    const demoSpaceId = 'demo-space';
+    const s1 = 'demo-s1';
+    const s2 = 'demo-s2';
+    const s3 = 'demo-s3';
+
+    const demoSpaces: Space[] = [{
+      id: demoSpaceId,
+      name: 'Demo Workspace',
+      mode: 'spatial',
+      physics: true,
+      order: 0
+    }];
+
+    const demoStacks: Stack[] = [
+      { id: s1, name: 'Spatial Flux', color: '#6366f1', spaceId: demoSpaceId },
+      { id: s2, name: 'Dynamic Views', color: '#8b5cf6', spaceId: demoSpaceId },
+      { id: s3, name: 'Oracle AI', color: '#3b82f6', spaceId: demoSpaceId },
+    ];
+
+    const demoThoughts: Thought[] = [
+      // STACK 1
+      { id: 1001, text: 'Physical Thinking', type: 'text', content: 'Thoughts have mass and velocity. Drag them to interact with the engine.', x: 300, y: 200, vx: 0, vy: 0, stackId: s1, status: 'done', spaceId: demoSpaceId, layer: 1, priority: 'urgent', description: '', author: 'Cyberia', size: 1.2, order: 0, image: null, drawing: null, tasks: [], table: [], date: '2026-03-01' },
+      { id: 1002, text: 'Physical Links', type: 'text', content: 'Nodes in a stack physically orbit each other.', x: 300, y: 400, vx: 0, vy: 0, stackId: s1, status: 'doing', spaceId: demoSpaceId, layer: 2, priority: 'high', description: '', author: 'Cyberia', size: 1.0, order: 1, image: null, drawing: null, tasks: [], table: [], date: '2026-03-01' },
+      { id: 1003, text: 'Spatial Logic', type: 'label', x: 300, y: 100, vx: 0, vy: 0, stackId: s1, status: 'todo', spaceId: demoSpaceId, layer: 500, priority: 'none', description: '', author: 'Cyberia', size: 1.0, order: 2, image: null, drawing: null, tasks: [], table: [], content: '', date: '' },
+      
+      // STACK 2
+      { id: 1004, text: 'Infinite Canvas', type: 'image', image: '/onboarding.jpg', description: 'Visual mapping across infinite space.', x: 600, y: 300, vx: 0, vy: 0, stackId: s2, status: 'done', spaceId: demoSpaceId, layer: 3, priority: 'high', author: 'Cyberia', size: 1.3, order: 0, drawing: null, tasks: [], table: [], content: '', date: '2026-03-05' },
+      { id: 1005, text: 'Dynamic Stacks', type: 'tasks', tasks: [{ text: 'Move a node', done: true }, { text: 'Toggle View', done: false }], x: 600, y: 500, vx: 0, vy: 0, stackId: s2, status: 'doing', spaceId: demoSpaceId, layer: 4, priority: 'medium', description: '', author: 'Cyberia', size: 1.0, order: 1, image: null, drawing: null, table: [], content: '', date: '2026-03-05' },
+      { id: 1006, text: 'Morphing Views', type: 'label', x: 600, y: 200, vx: 0, vy: 0, stackId: s2, status: 'todo', spaceId: demoSpaceId, layer: 501, priority: 'none', description: '', author: 'Cyberia', size: 1.0, order: 2, image: null, drawing: null, tasks: [], table: [], content: '', date: '' },
+
+      // STACK 3
+      { id: 1007, text: 'Autonomous Agents', type: 'text', content: 'Deploy AI to research the web and automate connections.', x: 900, y: 200, vx: 0, vy: 0, stackId: s3, status: 'done', spaceId: demoSpaceId, layer: 5, priority: 'urgent', description: '', author: 'Cyberia', size: 1.4, order: 0, image: null, drawing: null, tasks: [], table: [], date: '2026-03-10' },
+      { id: 1008, text: 'Data Structures', type: 'table', table: [['Type', 'Function'], ['Text', 'Knowledge'], ['AI', 'Oracle']], x: 900, y: 400, vx: 0, vy: 0, stackId: s3, status: 'todo', spaceId: demoSpaceId, layer: 6, priority: 'high', description: '', author: 'Cyberia', size: 1.1, order: 1, image: null, drawing: null, tasks: [], content: '', date: '2026-03-10' },
+      { id: 1009, text: 'Cognitive Layer', type: 'label', x: 900, y: 100, vx: 0, vy: 0, stackId: s3, status: 'none', spaceId: demoSpaceId, layer: 502, priority: 'none', description: '', author: 'Cyberia', size: 1.0, order: 2, image: null, drawing: null, tasks: [], table: [], content: '', date: '' },
+    ];
+
+    set({ 
+      spaces: demoSpaces, 
+      stacks: demoStacks, 
+      thoughts: demoThoughts, 
+      activeSpaceId: demoSpaceId,
+      isSpaceLoading: false,
+      transform: { x: 0, y: 0, scale: 0.8 } 
+    });
+  },
+
   history: [],
   historyIndex: -1,
 
@@ -398,7 +461,12 @@ export const useStore = create<CyberiaState>((set, get) => ({
   setChatOpen: (isOpen) => set({ isChatOpen: isOpen }),
 
   init: async () => {
+    if (get().isDemo) {
+      set({ isInitializing: false, isSpaceLoading: false });
+      return;
+    }
     if (get().performanceMode) document.body.classList.add('low-perf');
+
     
     // Ensure DB is open and ready
     try {
@@ -530,7 +598,9 @@ export const useStore = create<CyberiaState>((set, get) => ({
   },
 
   refreshThoughts: async (spaceId) => {
+    if (get().isDemo) return;
     const targetId = spaceId || get().activeSpaceId;
+
     if (!targetId) return;
     const thoughts = await db.thoughts.where('spaceId').equals(targetId).toArray();
     set({ thoughts, isSpaceLoading: false });
@@ -539,7 +609,9 @@ export const useStore = create<CyberiaState>((set, get) => ({
   },
 
   refreshStacks: async (spaceId) => {
+    if (get().isDemo) return;
     const targetId = spaceId || get().activeSpaceId;
+
     if (!targetId) return;
     const stacks = await db.stacks.where('spaceId').equals(targetId).toArray();
     set({ stacks });
@@ -713,8 +785,9 @@ export const useStore = create<CyberiaState>((set, get) => ({
       newThoughts[index] = { ...newThoughts[index], ...updates };
       set({ thoughts: newThoughts });
     }
-    if (isReadOnly) return;
+    if (isReadOnly || get().isDemo) return;
     if (activeSpaceId) get().updateSpace(activeSpaceId, { updatedAt: new Date().toISOString() });
+
     const saveTimers = (window as any)._cyberia_save_timers || {};
     if (saveTimers[id]) clearTimeout(saveTimers[id]);
     saveTimers[id] = setTimeout(async () => {

@@ -16,6 +16,7 @@ interface WorldProps {
 const World: React.FC<WorldProps> = ({ canvasRef, physicsResults }) => {
   const thoughts = useStore((state) => state.thoughts);
   const { registerElement, registerWorld, handleMouseDown, handleTouchStart, isDragging } = physicsResults;
+  const isDemo = useStore((state) => state.isDemo);
 
   const [size, setSize] = useState({ w: window.innerWidth, h: window.innerHeight });
 
@@ -29,12 +30,20 @@ const World: React.FC<WorldProps> = ({ canvasRef, physicsResults }) => {
   useEffect(() => {
     const handleResize = () => {
       const s = getGlobalScale();
+      if (isDemo) {
+        const viewport = document.getElementById('viewport');
+        if (viewport) {
+          setSize({ w: viewport.clientWidth / s, h: viewport.clientHeight / s });
+          return;
+        }
+      }
       setSize({ w: window.innerWidth / s, h: window.innerHeight / s });
     };
-    handleResize(); // Initial call
+    handleResize();
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
-  }, []);
+  }, [isDemo]);
+
 
   return (
     <>

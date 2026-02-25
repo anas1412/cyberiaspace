@@ -1,16 +1,28 @@
 import React from 'react';
 import { useStore } from '../store/useStore';
 import { KanbanFilterBar } from './kanban/KanbanFilterBar';
+import { clsx, type ClassValue } from 'clsx';
+import { twMerge } from 'tailwind-merge';
+
+function cn(...inputs: ClassValue[]) {
+  return twMerge(clsx(inputs));
+}
+
 
 const KanbanOverlay: React.FC = () => {
   const activeSpaceId = useStore((state) => state.activeSpaceId);
   const spaces = useStore((state) => state.spaces);
   const activeSpace = spaces.find((s) => s.id === activeSpaceId);
+  const isDemo = useStore((state) => state.isDemo);
 
   if (activeSpace?.mode !== 'kanban') return null;
 
   return (
-    <div className="kanban-overlay fixed inset-0 flex flex-col pointer-events-none z-[50] opacity-100 transition-opacity duration-400">
+    <div className={cn(
+      "kanban-overlay inset-0 flex flex-col pointer-events-none z-[50] opacity-100 transition-opacity duration-400",
+      isDemo ? "absolute" : "fixed"
+    )}>
+
       {/* Top Section: Filters + Mask */}
       <div className="flex-shrink-0 h-[160px] md:h-[180px] bg-[var(--bg-page)] z-[60] flex flex-col justify-end pointer-events-auto">
         <KanbanFilterBar />

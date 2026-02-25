@@ -1,7 +1,9 @@
-import React from 'react';
+import React, { lazy, Suspense } from 'react';
 import { motion } from 'framer-motion';
 import { MousePointer2, Layout, Database, Sparkles, ArrowRight, Zap, Shield, Globe, Check, Rocket } from 'lucide-react';
 import { PLAN_CONFIG } from '../constants';
+
+const DemoWorkspace = lazy(() => import('./demo/DemoWorkspace'));
 
 const Homepage: React.FC = () => {
   const scrollToSection = (id: string) => {
@@ -88,16 +90,13 @@ const Homepage: React.FC = () => {
           viewport={{ once: true }}
           className="max-w-6xl mx-auto mt-24 relative"
         >
-          <div className="glass p-2 md:p-4 rounded-[2.5rem] md:rounded-[3.5rem] shadow-[0_0_100px_rgba(59,130,246,0.15)]">
-            <div className="relative rounded-[2rem] md:rounded-[3rem] overflow-hidden border border-white/5">
-              <div className="absolute inset-0 bg-gradient-to-t from-[#020408] via-transparent to-transparent z-10 pointer-events-none" />
-              <img 
-                src="/onboarding.jpg" 
-                alt="Cyberia Workspace"
-                className="w-full h-auto scale-[1.01] hover:scale-105 transition-transform duration-[2s] ease-out"
-              />
+          <Suspense fallback={
+            <div className="w-full h-[600px] glass rounded-[3rem] animate-pulse flex items-center justify-center">
+              <span className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-500">Initializing Core Engine...</span>
             </div>
-          </div>
+          }>
+            <DemoWorkspace />
+          </Suspense>
           
           <div className="absolute -top-10 -right-10 w-40 h-40 bg-blue-500/10 blur-[100px] rounded-full pointer-events-none" />
           <div className="absolute -bottom-10 -left-10 w-40 h-40 bg-blue-600/10 blur-[100px] rounded-full pointer-events-none" />

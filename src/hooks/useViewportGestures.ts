@@ -6,13 +6,15 @@ interface GestureConfig {
   setTransform: (t: { x: number; y: number; scale: number }) => void;
   kanbanHeight: number;
   getGlobalScale: () => number;
+  isDemo?: boolean;
 }
 
 export const useViewportGestures = (config: GestureConfig) => {
   const { 
     activeSpaceMode, transform, setTransform, kanbanHeight, 
-    getGlobalScale 
+    getGlobalScale, isDemo
   } = config;
+
 
   const isPanningRef = useRef(false);
   const isSelectingRef = useRef(false);
@@ -55,7 +57,14 @@ export const useViewportGestures = (config: GestureConfig) => {
     const isUnscheduledNode = target.closest('[data-unscheduled="true"]');
     const isSidebar = target.closest('#cal-sidebar-content');
 
+    // For Demo: Allow zoom/scroll if mouse is over the demo container OR the viewport
+    if (isDemo && !target.closest('[data-demo-workspace="true"], #viewport')) return;
+
+    // Prevent default scroll only if we are inside the intended interaction zone
+    if (isDemo && !target.closest('[data-demo-workspace="true"]')) return;
+
     // Calendar Sidebar Scroll
+
     if (activeSpaceMode === 'calendar' && (isUnscheduledNode || isSidebar)) {
       const sbContent = document.getElementById('cal-sidebar-content');
       if (sbContent) {
@@ -96,7 +105,8 @@ export const useViewportGestures = (config: GestureConfig) => {
     }
     
     setTransform(applyConstraints(newTransform));
-  }, [activeSpaceMode, transform, setTransform, applyConstraints, getGlobalScale]);
+  }, [activeSpaceMode, transform, setTransform, applyConstraints, getGlobalScale, isDemo]);
+
 
   const handleTouchStart = useCallback((e: TouchEvent) => {
     const target = e.target as HTMLElement;

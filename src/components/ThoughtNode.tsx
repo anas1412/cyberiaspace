@@ -39,7 +39,9 @@ const ThoughtNode: React.FC<ThoughtNodeProps> = React.memo(({ thought, registerE
   const isInspectorOpen = useStore((state) => state.isInspectorOpen);
   const layerActionTrigger = useStore((state) => state.layerActionTrigger);
   const isReadOnly = useStore((state) => state.isReadOnly);
+  const isDemo = useStore((state) => state.isDemo);
   const performanceMode = useStore((state) => state.performanceMode);
+
 
   const setSelectedThoughtId = useStore((state) => state.setSelectedThoughtId);
   const setInspectorOpen = useStore((state) => state.setInspectorOpen);
@@ -184,8 +186,9 @@ const ThoughtNode: React.FC<ThoughtNodeProps> = React.memo(({ thought, registerE
       className={cn(
         "thought-bulb absolute select-none touch-none will-change-transform w-[280px] pointer-events-auto",
         isDragging ? "z-[1000] cursor-grabbing" : "z-20 cursor-grab",
-        (isReadOnly && !isSpatial) || isDeleting && "cursor-default pointer-events-none"
+        ((isReadOnly && !isSpatial && !isDemo) || isDeleting) && "cursor-default pointer-events-none"
       )}
+
 
       onMouseDown={handleLocalMouseDown}
       onTouchStart={handleLocalTouchStart}

@@ -59,13 +59,17 @@ function App() {
   const [path, setPath] = useState(window.location.pathname);
 
   useEffect(() => {
-    if (path === '/') {
+    const hostname = window.location.hostname;
+    const isMainDomain = hostname === 'cyberia.tn' || hostname === 'www.cyberia.tn';
+    
+    if (path === '/' && !isMainDomain) {
       document.body.classList.add('app-body');
     } else {
       document.body.classList.remove('app-body');
     }
     return () => document.body.classList.remove('app-body');
   }, [path]);
+
 
   useEffect(() => {
     const handlePopState = () => setPath(window.location.pathname);
@@ -130,11 +134,15 @@ function App() {
   }, [spaces, activeSpaceId]);
 
   useEffect(() => {
-    if (path === '/' || path.startsWith('/s/')) {
+    const hostname = window.location.hostname;
+    const isMainDomain = hostname === 'cyberia.tn' || hostname === 'www.cyberia.tn';
+
+    if ((path === '/' || path.startsWith('/s/')) && !isMainDomain) {
       init();
     }
 
     const handleBeforeInstallPrompt = (e: Event) => {
+
       e.preventDefault();
       setDeferredPrompt(e);
     };
