@@ -40,7 +40,7 @@ export const serializeWorkspace = (
       fileInfo: t.type === 'file' || t.type === 'image' ? {
         extension: fileMeta.type?.split('/')[1] || t.text?.split('.').pop(),
         size: fileMeta.size ? `${(fileMeta.size / (1024 * 1024)).toFixed(2)}MB` : undefined,
-        isCloudSynced: !!t.driveFileId
+        isCloudSynced: !!t.storageUrl
       } : undefined,
       // REMOVED: preview - moving to strict tool-based retrieval for token efficiency
     };

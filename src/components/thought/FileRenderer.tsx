@@ -23,10 +23,10 @@ export const FileRenderer: React.FC<FileRendererProps> = ({ thought }) => {
 
   const fileMeta = thought.meta?.file || {};
   const isImage = fileMeta.type?.startsWith('image/') || thought.image || ['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg'].includes(thought.text?.toLowerCase().split('.').pop() || '');
-  const isStranded = !thought.driveFileId && thought.syncStatus !== 'synced';
+  const hasRemoteContent = thought.storageUrl && thought.syncStatus !== 'synced';
   const isSyncing = thought.syncStatus === 'syncing' || thought.syncStatus === 'pending';
 
-  if (isImage && (thought.image || isStranded)) {
+  if (isImage && (thought.image || hasRemoteContent)) {
     return (
       <div data-trigger="file" className="mt-2 relative group cursor-pointer overflow-hidden rounded-xl border border-white/10 bg-black/50 aspect-video flex items-center justify-center">
         {thought.image ? (
@@ -64,7 +64,7 @@ export const FileRenderer: React.FC<FileRendererProps> = ({ thought }) => {
         )}>
           <Maximize2 className="w-6 h-6 text-white" />
           <span className="text-[8px] font-black uppercase tracking-widest text-white/80">
-            {isStranded && !thought.image ? 'Device Link Required' : 'View Asset'}
+            {hasRemoteContent && !thought.image ? 'Device Link Required' : 'View Asset'}
           </span>
         </div>
         

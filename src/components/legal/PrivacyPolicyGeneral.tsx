@@ -2,7 +2,7 @@ import React from 'react';
 import { motion } from 'framer-motion';
 import { Shield, ArrowLeft } from 'lucide-react';
 
-const PrivacyPolicy: React.FC = () => {
+const PrivacyPolicyGeneral: React.FC = () => {
   const handleBack = () => {
     window.history.pushState({}, '', '/');
     window.dispatchEvent(new PopStateEvent('popstate'));
@@ -30,7 +30,7 @@ const PrivacyPolicy: React.FC = () => {
             </div>
             <h1 className="text-4xl md:text-6xl font-black text-white uppercase tracking-tighter leading-none">Privacy Policy</h1>
           </div>
-          <p className="text-slate-500 font-mono text-sm uppercase tracking-widest">Effective Date: February 21, 2026</p>
+          <p className="text-slate-500 font-mono text-sm uppercase tracking-widest">Effective Date: February 24, 2026</p>
         </header>
 
         <section className="space-y-12 pb-20">
@@ -55,21 +55,18 @@ const PrivacyPolicy: React.FC = () => {
             </p>
             <ul className="list-disc list-inside space-y-3 mt-4 ml-2 uppercase text-[10px] font-bold tracking-wide">
               <li>
-                <strong className="text-white">Google Drive (`drive.file`):</strong> We request access only to files created or opened by Cyberia. We use this to store your rich content and media assets in a private `/Cyberia` folder in your Drive.
+                <strong className="text-white">Supabase Storage:</strong> Your files and media are stored securely in Supabase cloud storage. This provides persistent storage for your research assets across all devices.
               </li>
               <li>
                 <strong className="text-white">Google Account Info:</strong> We access your basic profile strictly for identity management and to personalize your workspace.
               </li>
             </ul>
-            <p className="mt-6 p-4 bg-black/40 rounded-xl border border-white/5 text-sm italic">
-              <strong>Google Limited Use Disclosure:</strong> Cyberia's use and transfer to any other app of information received from Google APIs will adhere to the <a href="https://developers.google.com/terms/api-services-user-data-policy" target="_blank" rel="noreferrer" className="text-blue-400 underline underline-offset-4 hover:text-blue-300 transition-colors">Google API Services User Data Policy</a>, including the Limited Use requirements.
-            </p>
           </div>
 
           <div className="space-y-4">
             <h2 className="text-xl font-black text-white uppercase tracking-widest border-b border-white/5 pb-2">4. AI Data Protocol (The Oracle)</h2>
             <p className="leading-relaxed">
-              When interacting with The Oracle, relevant snippets of your workspace are processed in real-time via high-speed inference models (hosted by Groq/OpenAI). 
+              When interacting with The Oracle, relevant snippets of your workspace are processed in real-time via high-speed inference models (hosted by Groq/OpenAI/Google/Anthropic). 
             </p>
             <ul className="list-disc list-inside space-y-3 mt-4 ml-2">
               <li>Data is processed temporarily for the duration of the request.</li>
@@ -81,7 +78,7 @@ const PrivacyPolicy: React.FC = () => {
           <div className="space-y-4">
             <h2 className="text-xl font-black text-white uppercase tracking-widest border-b border-white/5 pb-2">5. Payment Security</h2>
             <p className="leading-relaxed">
-              Payments are handled securely by the **Konnect Network**. Cyberia does not collect or store your credit card numbers, CVVs, or billing addresses. We only receive a confirmation token to activate your Pro features.
+              Payments are handled securely by **Flouci**. Cyberia does not collect or store your credit card numbers, CVVs, or billing addresses. We only receive a confirmation token to activate your Pro features.
             </p>
           </div>
 
@@ -95,7 +92,7 @@ const PrivacyPolicy: React.FC = () => {
           <div className="space-y-4">
             <h2 className="text-xl font-black text-white uppercase tracking-widest border-b border-white/5 pb-2">7. Contact</h2>
             <p className="leading-relaxed">
-              If you have questions about this policy or your data, please contact the Architect at <span className="text-blue-400 font-mono">support@cyberia.tn</span>.
+              If you have questions about this policy or your data, please contact us at <a href="mailto:anas.bassoumi@gmail.com" className="text-blue-400 hover:text-white">anas.bassoumi@gmail.com</a>.
             </p>
           </div>
         </section>
@@ -104,4 +101,4 @@ const PrivacyPolicy: React.FC = () => {
   );
 };
 
-export default PrivacyPolicy;
+export default PrivacyPolicyGeneral;

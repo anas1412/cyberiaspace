@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useModalStore } from '../store/useModalStore';
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
+import { Cloud, HardDrive } from 'lucide-react';
 
 function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -66,9 +67,9 @@ const Modal: React.FC = () => {
             <div className="space-y-6">
               {[
                 { title: 'A. Data Ownership & Governance', desc: 'Everything you create in Cyberia is your property. We treat your thoughts as private, kinetic assets.' },
-                { title: 'B. Payments & Security', desc: 'We use the Konnect Network for payment processing. Cyberia never touches your sensitive card details.' },
+                { title: 'B. Payments & Security', desc: 'We use Flouci for payment processing. Cyberia never touches your sensitive card details.' },
                 { title: 'C. AI Interaction', desc: 'When communicating with The Oracle, relevant snippets of your space are processed by high-speed Llama models via Groq.' },
-                { title: 'D. Cloud Sync Protocol', desc: 'Sync is a convenience service. Data sent to our cloud (Vercel KV) is encrypted in-transit and isolated to your Google ID.' },
+                { title: 'D. Cloud Sync Protocol', desc: 'Sync is a convenience service. Data sent to our cloud (Supabase) is encrypted in-transit and isolated to your account.' },
                 { title: 'E. Ephemeral Sharing', desc: 'Publicly shared snapshots are temporary. They naturally expire and are purged from our servers 30 days after their last update.' },
                 { title: 'F. Portability Commitment', desc: "Cyberia will always provide a free, unrestricted way to export your data into standard formats like Markdown or JSON." }
               ].map((protocol, i) => (
@@ -80,21 +81,38 @@ const Modal: React.FC = () => {
             </div>
           </div>
         ) : type === 'conflict_resolver' ? (
-          <div className="flex flex-col gap-4 mt-8">
-            <button
-              onClick={() => handleConfirm('cloud')}
-              className="w-full py-4 bg-blue-500 hover:bg-blue-600 text-white rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all shadow-lg shadow-blue-500/20 active:scale-95"
-            >
-              Use Cloud Backup (Overwrite)
-            </button>
-            <button
-              onClick={() => handleConfirm('local')}
-              className="w-full py-4 bg-white/5 hover:bg-white/10 text-white rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all border border-white/10 active:scale-95"
-            >
-              Keep Local Data (Push to Cloud)
-            </button>
-            <p className="text-[8px] text-slate-500 uppercase font-bold tracking-widest text-center mt-2">
-              Choosing "Keep Local" will update your cloud account with this device's data.
+          <div className="mt-8">
+            <p className="text-[9px] text-slate-400 uppercase font-bold tracking-widest text-center mb-6">
+              Choose which data to keep
+            </p>
+            <div className="flex flex-row gap-3">
+              <button
+                onClick={() => handleConfirm('local')}
+                className="flex-1 flex flex-col items-center gap-3 py-5 px-3 bg-white/[0.03] hover:bg-white/[0.06] border border-white/5 rounded-2xl transition-all active:scale-95 group"
+              >
+                <div className="w-12 h-12 rounded-2xl bg-white/10 flex items-center justify-center group-hover:scale-105 transition-transform">
+                  <HardDrive className="w-5 h-5 text-slate-300" />
+                </div>
+                <div className="text-center">
+                  <span className="block text-[9px] font-black uppercase tracking-widest text-white mb-1">Local Data</span>
+                  <span className="text-[10px] text-slate-500 font-medium">Keep this device</span>
+                </div>
+              </button>
+              <button
+                onClick={() => handleConfirm('cloud')}
+                className="flex-1 flex flex-col items-center gap-3 py-5 px-3 bg-indigo-500/10 hover:bg-indigo-500/20 border border-indigo-500/20 rounded-2xl transition-all active:scale-95 group"
+              >
+                <div className="w-12 h-12 rounded-2xl bg-indigo-500/20 flex items-center justify-center group-hover:scale-105 transition-transform">
+                  <Cloud className="w-5 h-5 text-indigo-400" />
+                </div>
+                <div className="text-center">
+                  <span className="block text-[9px] font-black uppercase tracking-widest text-indigo-300 mb-1">Cloud Backup</span>
+                  <span className="text-[10px] text-slate-500 font-medium">Restore from cloud</span>
+                </div>
+              </button>
+            </div>
+            <p className="text-[10px] text-slate-500 font-medium text-center mt-4">
+              Cloud sync will update with your choice
             </p>
           </div>
         ) : type === 'custom' ? (

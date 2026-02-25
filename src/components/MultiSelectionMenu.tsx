@@ -170,22 +170,27 @@ const MultiSelectionMenu: React.FC = () => {
 
           {/* 4. Stack Management */}
           <div className="space-y-3 pt-4 border-t border-white/5">
-            <label className="text-[9px] uppercase font-bold tracking-widest text-slate-500 ml-1">Clustering</label>
+            <label className="text-[9px] uppercase font-bold tracking-widest text-slate-500 ml-1">Collection</label>
             <div className="p-4 bg-[var(--bg-page)]/20 border border-white/10 rounded-2xl space-y-4">
               <input
                 type="text"
                 value={localStackName}
                 onChange={(e) => setLocalStackName(e.target.value)}
-                placeholder="Name your stack..."
+                placeholder="Name your collection..."
                 className="w-full bg-transparent text-[10px] font-black uppercase tracking-widest text-white outline-none border-b border-white/5 pb-2"
               />
               <button
                 onClick={async () => {
-                  await linkSelectedThoughts(localStackName.trim());
+                  if (sharedStack && localStackName.trim() !== sharedStack.name) {
+                    await linkSelectedThoughts(localStackName.trim());
+                  } else if (!sharedStack) {
+                    await linkSelectedThoughts(localStackName.trim());
+                  }
                 }}
-                className="w-full py-3 bg-blue-500/10 hover:bg-blue-500/20 border border-blue-500/30 text-blue-400 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all"
+                disabled={!!sharedStack && localStackName.trim() === sharedStack.name}
+                className="w-full py-3 bg-blue-500/10 hover:bg-blue-500/20 border border-blue-500/30 text-blue-400 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all disabled:opacity-30 disabled:cursor-not-allowed"
               >
-                {sharedStack ? 'Re-align Stack' : 'Link into New Stack'}
+                {sharedStack ? 'Rename Collection' : 'Link into New Collection'}
               </button>
 
               {stacks.length > 0 && !sharedStack && (
@@ -207,7 +212,7 @@ const MultiSelectionMenu: React.FC = () => {
               )}
 
               {sharedStack && (
-                <button onClick={unlinkSelectedThoughts} className="w-full py-2 bg-white/5 hover:bg-red-500/10 text-slate-500 hover:text-red-400 border border-white/5 rounded-xl text-[8px] font-black uppercase tracking-widest transition-all">Dissolve Stack</button>
+                <button onClick={unlinkSelectedThoughts} className="w-full py-2 bg-white/5 hover:bg-red-500/10 text-slate-500 hover:text-red-400 border border-white/5 rounded-xl text-[8px] font-black uppercase tracking-widest transition-all">Dissolve Collection</button>
               )}
             </div>
           </div>

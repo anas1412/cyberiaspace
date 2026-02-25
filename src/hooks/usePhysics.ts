@@ -158,8 +158,11 @@ export const usePhysics = (
           }
         }
       } else if (moved) {
-        const isReadOnly = useStore.getState().isReadOnly; const mode = activeSpace?.mode || 'spatial';
+        const store = useStore.getState();
+        const isReadOnly = store.isReadOnly && !store.isDemo;
+        const mode = activeSpace?.mode || 'spatial';
         if (mode === 'kanban' && !isReadOnly) {
+
           const colWidth = logicalWidth / 4; let status: 'none' | 'todo' | 'doing' | 'done' = 'none';
           if (lastMouseX > colWidth && lastMouseX < colWidth * 2) status = 'todo';
           else if (lastMouseX >= colWidth * 2 && lastMouseX < colWidth * 3) status = 'doing';

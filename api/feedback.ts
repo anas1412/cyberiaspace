@@ -1,160 +1,196 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { kv } from '@vercel/kv';
-import fs from 'fs';
-import path from 'path';
+import { createClient } from '@supabase/supabase-js';
+
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.VITE_PUBLIC_SUPABASE_URL;
+const supabaseKey = process.env.VITE_SUPABASE_ANON_KEY || process.env.VITE_PUBLIC_SUPABASE_ANON_KEY;
+
+const supabase = createClient(supabaseUrl!, supabaseKey!, {
+  auth: { autoRefreshToken: false, persistSession: false }
+});
+
+const ADMIN_PASSWORD = process.env.FEEDBACK_ADMIN_PASSWORD;
+
+// Helper to verify admin token
+const isAdminToken = (token: string): boolean => {
+  if (!token || !ADMIN_PASSWORD) return false;
+  // Token is base64 encoded password - compare decoded token to password
+  try {
+    const decoded = Buffer.from(token, 'base64').toString('utf8');
+    return decoded === ADMIN_PASSWORD;
+  } catch {
+    return false;
+  }
+};
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
-  const { action } = req.query;
-
-  if (action === 'contact') {
-    return handleContact(req, res);
+  if (req.method === 'OPTIONS') {
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('Access-Control-Allow-Headers', 'authorization, x-client-info, apikey, content-type');
+    return res.status(200).end();
   }
 
-  const feedbackKey = 'cyberia_feedback_list';
+  // Support both x-admin-key and Authorization Bearer token for admin
+  const adminKey = req.headers['x-admin-key'] as string || 
+                   req.headers['authorization']?.replace('Bearer ', '') as string;
+  const isAdmin = adminKey ? isAdminToken(adminKey) : false;
 
-  // Native Fallback for Local Development
-  if (!process.env.FEEDBACK_ADMIN_PASSWORD) {
-    try {
-      const envPath = path.resolve(process.cwd(), '.env.local');
-      if (fs.existsSync(envPath)) {
-        const envContent = fs.readFileSync(envPath, 'utf8');
-        const match = envContent.match(/FEEDBACK_ADMIN_PASSWORD=["']?([^"'\n\r]+)["']?/);
-        if (match) process.env.FEEDBACK_ADMIN_PASSWORD = match[1];
-      }
-    } catch (err) { }
-  }
-
-  const authHeader = req.headers.authorization;
-  const adminPassword = process.env.FEEDBACK_ADMIN_PASSWORD;
-  const expectedToken = adminPassword ? Buffer.from(adminPassword).toString('base64') : null;
-  const isAdmin = expectedToken && authHeader === `Bearer ${expectedToken}`;
-
+  // CREATE - Submit new feedback
   if (req.method === 'POST') {
-    const { message, email, type } = req.body;
-    if (!message) return res.status(400).json({ error: 'Message is required' });
+    const { action, message, email, type, userId, content, metadata, name } = req.body;
 
-    const entry = {
-      id: Date.now().toString(),
-      type: type || 'issue',
-      message: message.substring(0, 2000),
-      email: email ? email.substring(0, 200) : 'anonymous',
-      timestamp: Date.now()
-    };
+    // Handle contact form submission
+    if (action === 'contact' || (!type && message)) {
+      const { error } = await supabase
+        .from('feedback')
+        .insert({
+          user_id: null, // Contact submissions are anonymous
+          type: 'issue', // Default to issue for contact
+          content: message,
+          metadata: { name, email, isContact: true },
+          status: 'todo'
+        });
 
-    try {
-      await kv.lpush(feedbackKey, entry);
-      return res.status(200).json({ success: true });
-    } catch (error) {
-      console.error('Feedback submission error:', error);
-      return res.status(500).json({ error: 'Failed to save feedback' });
-    }
-  }
-
-  if (req.method === 'GET') {
-    try {
-      const list: any[] = await kv.lrange(feedbackKey, 0, 100);
-      const sanitizedList = isAdmin ? list : list.map(({ email: _, ...rest }) => ({
-        ...rest,
-        email: 'protected@cyberia.net'
-      }));
-      return res.status(200).json({ feedback: sanitizedList, isAdmin });
-    } catch (error) {
-      return res.status(500).json({ error: 'Internal server error' });
-    }
-  }
-
-  if (req.method === 'DELETE') {
-    if (!isAdmin) return res.status(401).json({ error: 'Unauthorized' });
-    const { id } = req.query;
-    if (!id) return res.status(400).json({ error: 'ID required' });
-    try {
-      const list: any[] = await kv.lrange(feedbackKey, 0, -1);
-      const filteredList = list.filter(item => item.id !== id);
-      await kv.del(feedbackKey);
-      if (filteredList.length > 0) await kv.rpush(feedbackKey, ...filteredList);
-      return res.status(200).json({ success: true });
-    } catch (error) {
-      return res.status(500).json({ error: 'Delete failed' });
-    }
-  }
-
-  if (req.method === 'PATCH') {
-    if (!isAdmin) return res.status(401).json({ error: 'Unauthorized' });
-    const { id, status, adminReply } = req.body;
-    if (!id) return res.status(400).json({ error: 'ID required' });
-    try {
-      const list: any[] = await kv.lrange(feedbackKey, 0, -1);
-      const index = list.findIndex(item => item.id === id);
-      if (index === -1) return res.status(404).json({ error: 'Entry not found' });
-      if (status) list[index].status = status;
-      if (adminReply !== undefined) list[index].adminReply = adminReply;
-      await kv.del(feedbackKey);
-      await kv.rpush(feedbackKey, ...list);
-      return res.status(200).json({ success: true });
-    } catch (error) {
-      return res.status(500).json({ error: 'Update failed' });
-    }
-  }
-
-  return res.status(405).json({ error: 'Method not allowed' });
-}
-
-async function handleContact(req: VercelRequest, res: VercelResponse) {
-  if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
-
-  if (!process.env.RESEND_API_KEY) {
-    try {
-      const envPath = path.join(process.cwd(), '.env.local');
-      if (fs.existsSync(envPath)) {
-        const envContent = fs.readFileSync(envPath, 'utf8');
-        const lines = envContent.split(/\r?\n/);
-        for (const line of lines) {
-          const [key, ...valueParts] = line.split('=');
-          if (key && valueParts.length > 0) {
-            const value = valueParts.join('=').replace(/^["']|["']$/g, '').trim();
-            if (key.trim() === 'RESEND_API_KEY') process.env.RESEND_API_KEY = value;
-            if (key.trim() === 'CONTACT_EMAIL') process.env.CONTACT_EMAIL = value;
-          }
-        }
+      if (error) {
+        console.error('[Feedback Contact] Error:', error.message);
+        return res.status(500).json({ error: error.message });
       }
-    } catch (err) { }
-  }
 
-  const { message, email, name } = req.body;
-  const resendKey = process.env.RESEND_API_KEY;
-  const destinationEmail = process.env.CONTACT_EMAIL;
+      return res.status(200).json({ success: true });
+    }
 
-  if (!resendKey || !destinationEmail) return res.status(500).json({ error: 'System configuration missing' });
+    // Handle regular feedback submission
+    if (!type || (!message && !content)) {
+      return res.status(400).json({ error: 'Missing type or content' });
+    }
 
-  try {
-    const response = await fetch('https://api.resend.com/emails', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${resendKey}`
-      },
-      body: JSON.stringify({
-        from: 'Cyberia System <onboarding@resend.dev>',
-        to: destinationEmail,
-        subject: `New Contact Message from ${name || 'User'}`,
-        reply_to: email,
-        html: `
-                    <div style="font-family: sans-serif; color: #333; padding: 20px;">
-                        <h2 style="color: #6366f1;">New Message from Cyberia</h2>
-                        <p><strong>Name:</strong> ${name || 'N/A'}</p>
-                        <p><strong>Email:</strong> ${email}</p>
-                        <div style="margin-top: 20px; padding: 15px; background: #f9f9f9; border-radius: 8px;">
-                            <p style="white-space: pre-wrap; margin: 0;">${message}</p>
-                        </div>
-                    </div>
-                `
+    const { data: feedback, error } = await supabase
+      .from('feedback')
+      .insert({
+        user_id: userId || email || null,
+        type,
+        content: content || message,
+        metadata: metadata || { email },
+        status: 'todo'
       })
-    });
+      .select()
+      .single();
 
-    if (response.ok) return res.status(200).json({ success: true });
-    const errorData = await response.json() as any;
-    return res.status(response.status).json({ error: errorData.message || 'Failed to send email' });
-  } catch {
-    return res.status(500).json({ error: 'Internal server error' });
+    if (error) {
+      console.error('[Feedback Create] Error:', error.message);
+      return res.status(500).json({ error: error.message });
+    }
+
+    return res.status(200).json({ feedback });
   }
+
+  // LIST - Get feedback (user's own or admin list)
+  if (req.method === 'GET') {
+    const { action, userId, status, limit = 50, offset = 0 } = req.query;
+
+    // If admin and action is listAll or no specific userId, return all feedback
+    if (isAdmin && (!userId || action === 'listAll')) {
+      let query = supabase
+        .from('feedback')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .range(Number(offset), Number(offset) + Number(limit) - 1);
+
+      if (status && status !== 'all') {
+        query = query.eq('status', status);
+      }
+
+      const { data: feedback, error } = await query;
+
+      if (error) {
+        console.error('[Feedback ListAll] Error:', error.message);
+        return res.status(500).json({ error: error.message });
+      }
+
+      return res.status(200).json({ feedback: feedback || [], isAdmin: true });
+    }
+
+    // Regular user listing
+    if (!userId) {
+      return res.status(400).json({ error: 'Missing userId' });
+    }
+
+    const { data: feedback, error } = await supabase
+      .from('feedback')
+      .select('*')
+      .eq('user_id', userId)
+      .order('created_at', { ascending: false })
+      .limit(100);
+
+    if (error) {
+      console.error('[Feedback List] Error:', error.message);
+      return res.status(500).json({ error: error.message });
+    }
+
+    return res.status(200).json({ feedback: feedback || [] });
+  }
+
+  // UPDATE - Update feedback status or reply (admin only)
+  if (req.method === 'PATCH') {
+    if (!isAdmin) {
+      return res.status(401).json({ error: 'Unauthorized' });
+    }
+
+    const { id, feedbackId, status, adminReply } = req.body;
+    const targetId = feedbackId || id;
+
+    if (!targetId) {
+      return res.status(400).json({ error: 'Missing feedbackId' });
+    }
+
+    const updateData: Record<string, unknown> = {};
+    
+    if (status) {
+      updateData.status = status;
+    }
+    if (adminReply) {
+      updateData.admin_reply = adminReply;
+      updateData.admin_reply_at = new Date().toISOString();
+    }
+
+    const { data: feedback, error } = await supabase
+      .from('feedback')
+      .update(updateData)
+      .eq('id', targetId)
+      .select()
+      .single();
+
+    if (error) {
+      console.error('[Feedback Update] Error:', error.message);
+      return res.status(500).json({ error: error.message });
+    }
+
+    return res.status(200).json({ feedback });
+  }
+
+  // DELETE - Delete feedback (admin only)
+  if (req.method === 'DELETE') {
+    if (!isAdmin) {
+      return res.status(401).json({ error: 'Unauthorized' });
+    }
+
+    const feedbackId = req.query.id || req.query.feedbackId;
+
+    if (!feedbackId) {
+      return res.status(400).json({ error: 'Missing feedbackId' });
+    }
+
+    const { error } = await supabase
+      .from('feedback')
+      .delete()
+      .eq('id', feedbackId);
+
+    if (error) {
+      console.error('[Feedback Delete] Error:', error.message);
+      return res.status(500).json({ error: error.message });
+    }
+
+    return res.status(200).json({ success: true });
+  }
+
+  return res.status(400).json({ error: 'Invalid request' });
 }

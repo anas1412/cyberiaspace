@@ -159,7 +159,7 @@ const LoginPage: React.FC = () => {
               By signing in, you agree to our policies<br/>
               and the storage of your profile data.
             </p>
-            <div className="flex items-center justify-center gap-4 opacity-40">
+            <div className="flex items-center justify-center gap-4 opacity-40 flex-wrap">
               <button 
                 onClick={() => {
                   window.history.pushState({}, '', '/privacy');
@@ -178,6 +178,36 @@ const LoginPage: React.FC = () => {
                 className="text-[8px] font-black uppercase tracking-widest text-slate-400 hover:text-white transition-colors"
               >
                 Terms of Service
+              </button>
+              <span className="w-0.5 h-0.5 rounded-full bg-white/20" />
+              <button 
+                onClick={() => {
+                  window.history.pushState({}, '', '/sales-conditions');
+                  window.dispatchEvent(new PopStateEvent('popstate'));
+                }}
+                className="text-[8px] font-black uppercase tracking-widest text-slate-400 hover:text-white transition-colors"
+              >
+                Terms of Sale & Refund Policy
+              </button>
+              <span className="w-0.5 h-0.5 rounded-full bg-white/20" />
+              <button 
+                onClick={() => {
+                  window.history.pushState({}, '', '/legal-notice');
+                  window.dispatchEvent(new PopStateEvent('popstate'));
+                }}
+                className="text-[8px] font-black uppercase tracking-widest text-slate-400 hover:text-white transition-colors"
+              >
+                Legal Notice
+              </button>
+              <span className="w-0.5 h-0.5 rounded-full bg-white/20" />
+              <button 
+                onClick={() => {
+                  window.history.pushState({}, '', '/contact');
+                  window.dispatchEvent(new PopStateEvent('popstate'));
+                }}
+                className="text-[8px] font-black uppercase tracking-widest text-slate-400 hover:text-white transition-colors"
+              >
+                Contact
               </button>
             </div>
           </div>

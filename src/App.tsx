@@ -29,10 +29,14 @@ const TasksFocusEditor = lazy(() => import('./components/editors/TasksFocusEdito
 const EmbedFocusEditor = lazy(() => import('./components/editors/EmbedFocusEditor'));
 const FileFocusEditor = lazy(() => import('./components/editors/FileFocusEditor'));
 const FeedbackPage = lazy(() => import('./components/FeedbackPage'));
-const PrivacyPolicy = lazy(() => import('./components/legal/PrivacyPolicy'));
+const PrivacyPolicyGeneral = lazy(() => import('./components/legal/PrivacyPolicyGeneral'));
 const TermsOfService = lazy(() => import('./components/legal/TermsOfService'));
-const LandingAbout = lazy(() => import('./components/LandingAbout'));
+const SalesConditions = lazy(() => import('./components/legal/SalesConditions'));
+const PrivacyPolicySales = lazy(() => import('./components/legal/PrivacyPolicySales'));
+const LegalNotice = lazy(() => import('./components/legal/LegalNotice'));
+const Contact = lazy(() => import('./components/legal/Contact'));
 const LoginPage = lazy(() => import('./components/auth/LoginPage'));
+const Homepage = lazy(() => import('./components/Homepage'));
 
 function App() {
   const init = useStore((state) => state.init);
@@ -43,24 +47,36 @@ function App() {
   const setInspectorOpen = useStore((state) => state.setInspectorOpen);
   const activeSpaceId = useStore((state) => state.activeSpaceId);
   const spaces = useStore((state) => state.spaces);
-  const onboardingDismissed = useStore((state) => state.onboardingDismissed);
 
   const { isPricingOpen, closePricing, openModal } = useModalStore();
-  const { status } = useAuthStore();
   const mouseWorldPos = useRef({ x: 0, y: 0 });
 
   const mouseScreenPos = useRef({ x: 0, y: 0 });
 
   const [path, setPath] = useState(window.location.pathname);
+  const hostname = typeof window !== 'undefined' ? window.location.hostname : '';
+  const isMainDomain = hostname === 'cyberia.tn' || hostname === 'www.cyberia.tn';
 
   useEffect(() => {
-    if (path === '/') {
+    if (path === '/' && !isMainDomain) {
       document.body.classList.add('app-body');
     } else {
       document.body.classList.remove('app-body');
     }
     return () => document.body.classList.remove('app-body');
-  }, [path]);
+  }, [path, isMainDomain]);
+
+  // Landing page routes - only on main domain
+  if (isMainDomain) {
+    if (path === '/' || path === '/home') {
+      return (
+        <Suspense fallback={<LoadingOverlay force />}>
+          <Homepage />
+        </Suspense>
+      );
+    }
+  }
+
 
   useEffect(() => {
     const handlePopState = () => setPath(window.location.pathname);
@@ -125,11 +141,15 @@ function App() {
   }, [spaces, activeSpaceId]);
 
   useEffect(() => {
-    if (path === '/' || path.startsWith('/s/')) {
+    const hostname = window.location.hostname;
+    const isMainDomain = hostname === 'cyberia.tn' || hostname === 'www.cyberia.tn';
+
+    if ((path === '/' || path.startsWith('/s/')) && !isMainDomain) {
       init();
     }
 
     const handleBeforeInstallPrompt = (e: Event) => {
+
       e.preventDefault();
       setDeferredPrompt(e);
     };
@@ -330,6 +350,14 @@ function App() {
     }
   }, [performanceMode, customBg]);
 
+  if (path === '/home') {
+    return (
+      <Suspense fallback={<LoadingOverlay force />}>
+        <Homepage />
+      </Suspense>
+    );
+  }
+
   if (path === '/feedback') {
     return (
       <Suspense fallback={<LoadingOverlay force />}>
@@ -339,10 +367,10 @@ function App() {
     );
   }
 
-  if (path === '/privacy') {
+if (path === '/privacy') {
     return (
       <Suspense fallback={<LoadingOverlay force />}>
-        <PrivacyPolicy />
+        <PrivacyPolicyGeneral />
       </Suspense>
     );
   }
@@ -351,6 +379,38 @@ function App() {
     return (
       <Suspense fallback={<LoadingOverlay force />}>
         <TermsOfService />
+      </Suspense>
+    );
+  }
+
+  if (path === '/sales-conditions') {
+    return (
+      <Suspense fallback={<LoadingOverlay force />}>
+        <SalesConditions />
+      </Suspense>
+    );
+  }
+
+  if (path === '/privacy-policy') {
+    return (
+      <Suspense fallback={<LoadingOverlay force />}>
+        <PrivacyPolicySales />
+      </Suspense>
+    );
+  }
+
+  if (path === '/legal-notice') {
+    return (
+      <Suspense fallback={<LoadingOverlay force />}>
+        <LegalNotice />
+      </Suspense>
+    );
+  }
+
+  if (path === '/contact') {
+    return (
+      <Suspense fallback={<LoadingOverlay force />}>
+        <Contact />
       </Suspense>
     );
   }
@@ -388,7 +448,6 @@ function App() {
 
       <Suspense fallback={null}>
         <Viewport />
-        {(status === 'unauthenticated' && !onboardingDismissed) && <LandingAbout />}
         <EmptyState />
         <KanbanOverlay />
 

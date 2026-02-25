@@ -3,6 +3,7 @@ import { db, type Space, type Thought, type Stack } from '../db';
 import { useAuthStore } from './useAuthStore';
 import { useModalStore } from './useModalStore';
 import { PLAN_CONFIG, type SubscriptionPlan } from '../constants';
+import { syncOrchestrator } from '../services/sync/syncOrchestrator';
 
 interface CyberiaState {
   activeSpaceId: string | null;
@@ -38,7 +39,10 @@ interface CyberiaState {
   lightboxThoughtId: number | null;
   transform: { x: number; y: number; scale: number };
   deletingThoughtIds: number[];
-  onboardingDismissed: boolean;
+  isDemo: boolean;
+  setDemoMode: (enabled: boolean) => void;
+  loadOnboardingData: () => void;
+
 
   getLimits: () => typeof PLAN_CONFIG['free'];
 
@@ -142,8 +146,9 @@ export const useStore = create<CyberiaState>((set, get) => ({
   linkingSourceId: null,
   theme: (localStorage.getItem('cyberia-theme') as any) || 'cyberia',
   customBg: null,
-  isSpaceLoading: true,
-  isInitializing: true,
+  isSpaceLoading: typeof window !== 'undefined' ? (window.location.hostname !== 'cyberia.tn' && window.location.hostname !== 'www.cyberia.tn') : true,
+  isInitializing: typeof window !== 'undefined' ? (window.location.hostname !== 'cyberia.tn' && window.location.hostname !== 'www.cyberia.tn') : true,
+
   performanceMode: typeof window !== 'undefined' ? (window.innerWidth < 763) : false,
   setPerformanceMode: (performanceMode) => {
     set({ performanceMode });
@@ -157,7 +162,76 @@ export const useStore = create<CyberiaState>((set, get) => ({
   lastUpdated: null,
   transform: { x: 0, y: 0, scale: 1 },
   deletingThoughtIds: [],
-  onboardingDismissed: localStorage.getItem('cyberia-onboarding-dismissed') === 'true',
+  isDemo: false,
+
+  setDemoMode: (enabled) => {
+    if (enabled) {
+      set({ isDemo: true, isReadOnly: true, isSpaceLoading: false, activeSpaceId: 'demo-space' });
+      get().loadOnboardingData();
+    } else {
+      set({ isDemo: false, isReadOnly: false });
+    }
+  },
+
+  loadOnboardingData: async () => {
+    const demoSpaceId = 'demo-space';
+    const s1 = 'demo-s1';
+    const s2 = 'demo-s2';
+    const s3 = 'demo-s3';
+
+    const demoSpaces: Space[] = [{
+      id: demoSpaceId,
+      name: 'Demo Workspace',
+      mode: 'spatial',
+      physics: true,
+      order: 0
+    }];
+
+    const demoStacks: Stack[] = [
+      { id: s1, name: 'Spatial Flux', color: '#6366f1', spaceId: demoSpaceId },
+      { id: s2, name: 'Dynamic Views', color: '#8b5cf6', spaceId: demoSpaceId },
+      { id: s3, name: 'Oracle AI', color: '#3b82f6', spaceId: demoSpaceId },
+    ];
+
+    const demoThoughts: Thought[] = [
+      // STACK 1
+      { id: 1001, text: 'Physical Thinking', type: 'text', content: 'Thoughts have mass and velocity. Drag them to interact with the engine.', x: 300, y: 200, vx: 0, vy: 0, stackId: s1, status: 'done', spaceId: demoSpaceId, layer: 1, priority: 'urgent', description: '', author: 'Cyberia', size: 1.2, order: 0, image: null, drawing: null, tasks: [], table: [], date: '2026-03-01' },
+      { id: 1002, text: 'Physical Links', type: 'text', content: 'Nodes in a stack physically orbit each other.', x: 300, y: 400, vx: 0, vy: 0, stackId: s1, status: 'doing', spaceId: demoSpaceId, layer: 2, priority: 'high', description: '', author: 'Cyberia', size: 1.0, order: 1, image: null, drawing: null, tasks: [], table: [], date: '2026-03-01' },
+      { id: 1003, text: 'Spatial Logic', type: 'label', x: 300, y: 100, vx: 0, vy: 0, stackId: s1, status: 'todo', spaceId: demoSpaceId, layer: 500, priority: 'none', description: '', author: 'Cyberia', size: 1.0, order: 2, image: null, drawing: null, tasks: [], table: [], content: '', date: '' },
+      
+      // STACK 2
+      { id: 1004, text: 'Infinite Canvas', type: 'image', image: '/onboarding.jpg', description: 'Visual mapping across infinite space.', x: 600, y: 300, vx: 0, vy: 0, stackId: s2, status: 'done', spaceId: demoSpaceId, layer: 3, priority: 'high', author: 'Cyberia', size: 1.3, order: 0, drawing: null, tasks: [], table: [], content: '', date: '2026-03-05' },
+      { id: 1005, text: 'Dynamic Stacks', type: 'tasks', tasks: [{ text: 'Move a node', done: true }, { text: 'Toggle View', done: false }], x: 600, y: 500, vx: 0, vy: 0, stackId: s2, status: 'doing', spaceId: demoSpaceId, layer: 4, priority: 'medium', description: '', author: 'Cyberia', size: 1.0, order: 1, image: null, drawing: null, table: [], content: '', date: '2026-03-05' },
+      { id: 1006, text: 'Morphing Views', type: 'label', x: 600, y: 200, vx: 0, vy: 0, stackId: s2, status: 'todo', spaceId: demoSpaceId, layer: 501, priority: 'none', description: '', author: 'Cyberia', size: 1.0, order: 2, image: null, drawing: null, tasks: [], table: [], content: '', date: '' },
+
+      // STACK 3
+      { id: 1007, text: 'Autonomous Agents', type: 'text', content: 'Deploy AI to research the web and automate connections.', x: 900, y: 200, vx: 0, vy: 0, stackId: s3, status: 'done', spaceId: demoSpaceId, layer: 5, priority: 'urgent', description: '', author: 'Cyberia', size: 1.4, order: 0, image: null, drawing: null, tasks: [], table: [], date: '2026-03-10' },
+      { id: 1008, text: 'Data Structures', type: 'table', table: [['Type', 'Function'], ['Text', 'Knowledge'], ['AI', 'Oracle']], x: 900, y: 400, vx: 0, vy: 0, stackId: s3, status: 'todo', spaceId: demoSpaceId, layer: 6, priority: 'high', description: '', author: 'Cyberia', size: 1.1, order: 1, image: null, drawing: null, tasks: [], content: '', date: '2026-03-10' },
+      { id: 1009, text: 'Cognitive Layer', type: 'label', x: 900, y: 100, vx: 0, vy: 0, stackId: s3, status: 'none', spaceId: demoSpaceId, layer: 502, priority: 'none', description: '', author: 'Cyberia', size: 1.0, order: 2, image: null, drawing: null, tasks: [], table: [], content: '', date: '' },
+    ];
+
+    // Save to database
+    try {
+      await db.transaction('rw', db.spaces, db.thoughts, db.stacks, async () => {
+        await db.spaces.bulkPut(demoSpaces);
+        await db.stacks.bulkPut(demoStacks);
+        await db.thoughts.bulkPut(demoThoughts);
+      });
+      localStorage.setItem('cyberia-active-space-id', demoSpaceId);
+    } catch (err) {
+      console.error('Failed to save onboarding data to DB:', err);
+    }
+
+    set({ 
+      spaces: demoSpaces, 
+      stacks: demoStacks, 
+      thoughts: demoThoughts, 
+      activeSpaceId: demoSpaceId,
+      isSpaceLoading: false,
+      transform: { x: 0, y: 0, scale: 0.8 } 
+    });
+  },
+
   history: [],
   historyIndex: -1,
 
@@ -371,6 +445,11 @@ export const useStore = create<CyberiaState>((set, get) => ({
     const updatedSpaces = spaces.map(s => s.id === activeSpaceId ? { ...s, customBg: bg } : s);
     set({ spaces: updatedSpaces });
     await db.spaces.update(activeSpaceId, { customBg: bg });
+    
+    const authStore = useAuthStore.getState();
+    if (authStore.status === 'authenticated') {
+      await syncOrchestrator.triggerSync();
+    }
   },
 
   setDeferredPrompt: (prompt) => set({ deferredPrompt: prompt }),
@@ -392,7 +471,12 @@ export const useStore = create<CyberiaState>((set, get) => ({
   setChatOpen: (isOpen) => set({ isChatOpen: isOpen }),
 
   init: async () => {
+    if (get().isDemo) {
+      set({ isInitializing: false, isSpaceLoading: false });
+      return;
+    }
     if (get().performanceMode) document.body.classList.add('low-perf');
+
     
     // Ensure DB is open and ready
     try {
@@ -465,8 +549,6 @@ export const useStore = create<CyberiaState>((set, get) => ({
   },
 
   completeOnboarding: async () => {
-    localStorage.setItem('cyberia-onboarding-dismissed', 'true');
-    set({ onboardingDismissed: true });
     const { spaces } = get();
     if (spaces.length === 0) {
       set({ isSpaceLoading: true });
@@ -524,7 +606,9 @@ export const useStore = create<CyberiaState>((set, get) => ({
   },
 
   refreshThoughts: async (spaceId) => {
+    if (get().isDemo) return;
     const targetId = spaceId || get().activeSpaceId;
+
     if (!targetId) return;
     const thoughts = await db.thoughts.where('spaceId').equals(targetId).toArray();
     set({ thoughts, isSpaceLoading: false });
@@ -533,7 +617,9 @@ export const useStore = create<CyberiaState>((set, get) => ({
   },
 
   refreshStacks: async (spaceId) => {
+    if (get().isDemo) return;
     const targetId = spaceId || get().activeSpaceId;
+
     if (!targetId) return;
     const stacks = await db.stacks.where('spaceId').equals(targetId).toArray();
     set({ stacks });
@@ -567,6 +653,11 @@ export const useStore = create<CyberiaState>((set, get) => ({
     await db.spaces.add({ id, name, mode: 'spatial', physics: true, order: spaces.length });
     await get().refreshSpaces();
     get().setActiveSpace(id);
+    
+    const authStore = useAuthStore.getState();
+    if (authStore.status === 'authenticated') {
+      await syncOrchestrator.triggerSync();
+    }
   },
 
   updateSpace: async (id, updates) => {
@@ -580,6 +671,11 @@ export const useStore = create<CyberiaState>((set, get) => ({
     if (get().isReadOnly) return;
     await db.spaces.update(id, updates);
     await get().refreshSpaces();
+    
+    const authStore = useAuthStore.getState();
+    if (authStore.status === 'authenticated') {
+      await syncOrchestrator.triggerSync();
+    }
   },
 
   deleteSpace: async (id) => {
@@ -592,7 +688,12 @@ export const useStore = create<CyberiaState>((set, get) => ({
     }
     const thoughtsInSpace = await db.thoughts.where('spaceId').equals(id).toArray();
     const authStore = useAuthStore.getState();
-    for (const t of thoughtsInSpace) { if (t.driveFileId) await authStore.deleteServiceContent(t); }
+    for (const t of thoughtsInSpace) { if (t.storageUrl || t.storagePath) await authStore.deleteServiceContent(t); }
+    
+    if (authStore.status === 'authenticated') {
+      await syncOrchestrator.triggerSync();
+    }
+    
     await db.spaces.delete(id);
     await db.thoughts.where('spaceId').equals(id).delete();
     await db.stacks.where('spaceId').equals(id).delete();
@@ -610,6 +711,11 @@ export const useStore = create<CyberiaState>((set, get) => ({
     if (get().isReadOnly) return;
     await Promise.all(newSpaces.map((s, i) => db.spaces.update(s.id, { order: i })));
     await get().refreshSpaces();
+    
+    const authStore = useAuthStore.getState();
+    if (authStore.status === 'authenticated') {
+      await syncOrchestrator.triggerSync();
+    }
   },
 
   saveSpaceTransform: async (id, transform) => {
@@ -623,6 +729,11 @@ export const useStore = create<CyberiaState>((set, get) => ({
       newSpaces[index] = { ...newSpaces[index], ...transform };
       set({ spaces: newSpaces });
     }
+    
+    const authStore = useAuthStore.getState();
+    if (authStore.status === 'authenticated') {
+      await syncOrchestrator.triggerSync();
+    }
   },
 
   addThought: async (partialThought) => {
@@ -630,6 +741,7 @@ export const useStore = create<CyberiaState>((set, get) => ({
     const { activeSpaceId } = get();
     const targetSpaceId = partialThought.spaceId || activeSpaceId;
     if (!targetSpaceId) throw new Error('No space');
+    
     const limits = get().getLimits();
     const isBlobType = partialThought.type === 'file' || partialThought.type === 'image';
     if (JSON.stringify(partialThought).length > 2 * 1024 * 1024 && !isBlobType) {
@@ -645,8 +757,9 @@ export const useStore = create<CyberiaState>((set, get) => ({
       }
       const randomTitle = QUIRKY_TITLES[Math.floor(Math.random() * QUIRKY_TITLES.length)];
       const maxLayer = await db.thoughts.where('spaceId').equals(targetSpaceId).reverse().sortBy('layer').then(t => t[0]?.layer || 0);
+      
       const thought: Thought = {
-        spaceId: targetSpaceId, stackId: null, x: window.innerWidth / 2, y: window.innerHeight / 2, vx: 0, vy: 0, text: '', placeholder: randomTitle, description: '', type: 'label', content: '', image: null, drawing: null, status: 'none', tasks: [], table: [['', ''], ['', '']], date: '', priority: 'none', size: 1.0, author: '', order: currentCount, layer: maxLayer + 1, syncStatus: 'local', ...partialThought
+        spaceId: targetSpaceId, stackId: null, x: window.innerWidth / 2, y: window.innerHeight / 2, vx: 0, vy: 0, text: '', placeholder: randomTitle, description: '', type: 'label', content: '', image: null, drawing: null, status: 'none', tasks: [], table: [['', ''], ['', '']], date: '', priority: 'none', size: 1.0, author: '', order: currentCount, layer: maxLayer + 1, ...partialThought
       } as Thought;
       return await db.thoughts.add(thought);
     });
@@ -655,8 +768,11 @@ export const useStore = create<CyberiaState>((set, get) => ({
       await get().refreshThoughts(targetSpaceId);
       await get().refreshTotalThoughtCount();
       get().pushHistory();
+      
       const authStore = (await import('./useAuthStore')).useAuthStore.getState();
-      if (authStore.autoSync && authStore.status === 'authenticated') authStore.syncData();
+      if (authStore.status === 'authenticated') {
+        await syncOrchestrator.triggerSync();
+      }
     }
     return result as number;
   },
@@ -674,25 +790,22 @@ export const useStore = create<CyberiaState>((set, get) => ({
     const index = thoughts.findIndex(t => t.id === id);
     if (index !== -1) {
       const newThoughts = [...thoughts];
-      const hasContentChange = Object.keys(updates).some(k => ['text', 'content', 'tasks', 'table', 'drawing', 'image', 'date'].includes(k));
-      const syncStatus = (updates.syncStatus || (hasContentChange ? 'pending' : newThoughts[index].syncStatus)) as any;
-      newThoughts[index] = { ...newThoughts[index], ...updates, syncStatus };
+      newThoughts[index] = { ...newThoughts[index], ...updates };
       set({ thoughts: newThoughts });
     }
-    if (isReadOnly) return;
+    if (isReadOnly || get().isDemo) return;
     if (activeSpaceId) get().updateSpace(activeSpaceId, { updatedAt: new Date().toISOString() });
+
     const saveTimers = (window as any)._cyberia_save_timers || {};
     if (saveTimers[id]) clearTimeout(saveTimers[id]);
     saveTimers[id] = setTimeout(async () => {
-      const hasContentChange = Object.keys(updates).some(k => ['text', 'content', 'tasks', 'table', 'drawing', 'image', 'date'].includes(k));
-      const syncStatus = (updates.syncStatus || (hasContentChange ? 'pending' : thought?.syncStatus)) as any;
-      await db.thoughts.update(id, { ...updates, syncStatus });
+      await db.thoughts.update(id, updates);
       delete saveTimers[id];
       get().pushHistory();
+      
       const authStore = (await import('./useAuthStore')).useAuthStore.getState();
-      if (authStore.autoSync && authStore.status === 'authenticated') {
-        if ((window as any)._cyberia_cloud_timer) clearTimeout((window as any)._cyberia_cloud_timer);
-        (window as any)._cyberia_cloud_timer = setTimeout(() => authStore.syncData(), 5000);
+      if (authStore.status === 'authenticated') {
+        await syncOrchestrator.triggerSync();
       }
     }, 500);
     (window as any)._cyberia_save_timers = saveTimers;
@@ -707,8 +820,7 @@ export const useStore = create<CyberiaState>((set, get) => ({
     get().pushHistory();
     const authStore = (await import('./useAuthStore')).useAuthStore.getState();
     if (authStore.autoSync && authStore.status === 'authenticated') {
-      if ((window as any)._cyberia_cloud_timer) clearTimeout((window as any)._cyberia_cloud_timer);
-      (window as any)._cyberia_cloud_timer = setTimeout(() => authStore.syncData(), 5000);
+      await syncOrchestrator.triggerSync();
     }
   },
 
@@ -731,7 +843,10 @@ export const useStore = create<CyberiaState>((set, get) => ({
     if (get().selectedThoughtIds.includes(id)) set({ selectedThoughtIds: get().selectedThoughtIds.filter(tid => tid !== id) });
     set(state => ({ deletingThoughtIds: state.deletingThoughtIds.filter(tid => tid !== id) }));
     get().pushHistory();
-    if (authStore.autoSync && authStore.status === 'authenticated') authStore.syncData();
+    
+    if (authStore.status === 'authenticated') {
+      setTimeout(() => syncOrchestrator.triggerSync(), 50);
+    }
   },
 
   deleteThoughts: async (ids) => {
@@ -754,7 +869,10 @@ export const useStore = create<CyberiaState>((set, get) => ({
     set({ selectedThoughtIds: selectedThoughtIds.filter(tid => !ids.includes(tid)) });
     set(state => ({ deletingThoughtIds: state.deletingThoughtIds.filter(tid => !ids.includes(tid)) }));
     get().pushHistory();
-    if (authStore.autoSync && authStore.status === 'authenticated') authStore.syncData();
+    
+    if (authStore.status === 'authenticated') {
+      await syncOrchestrator.triggerSync();
+    }
   },
 
   bringToFront: async (id) => {
@@ -771,6 +889,11 @@ export const useStore = create<CyberiaState>((set, get) => ({
     });
     set({ layerActionTrigger: { id, time: Date.now() } });
     await get().refreshThoughts(activeSpaceId);
+    
+    const authStore = useAuthStore.getState();
+    if (authStore.status === 'authenticated') {
+      await syncOrchestrator.triggerSync();
+    }
   },
 
   sendToBack: async (id) => {
@@ -787,6 +910,11 @@ export const useStore = create<CyberiaState>((set, get) => ({
     });
     set({ layerActionTrigger: { id, time: Date.now() } });
     await get().refreshThoughts(activeSpaceId);
+    
+    const authStore = useAuthStore.getState();
+    if (authStore.status === 'authenticated') {
+      await syncOrchestrator.triggerSync();
+    }
   },
 
   setSelectedThoughtId: (id) => set({ selectedThoughtId: id, selectedThoughtIds: id ? [id] : [] }),
@@ -820,7 +948,10 @@ export const useStore = create<CyberiaState>((set, get) => ({
     set({ selectedThoughtIds: [], selectedThoughtId: null, isInspectorOpen: false });
     set(state => ({ deletingThoughtIds: state.deletingThoughtIds.filter(tid => !deletedIds.includes(tid)) }));
     get().pushHistory();
-    if (authStore.autoSync && authStore.status === 'authenticated') authStore.syncData();
+    
+    if (authStore.status === 'authenticated') {
+      await syncOrchestrator.triggerSync();
+    }
   },
 
   linkSelectedThoughts: async (name) => {
@@ -830,12 +961,17 @@ export const useStore = create<CyberiaState>((set, get) => ({
     const thoughtsInSelection = thoughts.filter(t => selectedThoughtIds.includes(t.id));
     const existingStackIds = Array.from(new Set(thoughtsInSelection.map(t => t.stackId).filter(Boolean))) as string[];
     let targetStackId: string;
+    const authStore = useAuthStore.getState();
+    let allAffectedThoughtIds: number[] = [...selectedThoughtIds];
+    
     if (existingStackIds.length > 0) {
       targetStackId = existingStackIds[0];
       await db.transaction('rw', db.thoughts, db.stacks, async () => {
         await db.thoughts.where('id').anyOf(selectedThoughtIds).modify({ stackId: targetStackId });
         if (existingStackIds.length > 1) {
           const otherStackIds = existingStackIds.slice(1);
+          const otherStackThoughts = await db.thoughts.where('stackId').anyOf(otherStackIds).toArray();
+          allAffectedThoughtIds = [...allAffectedThoughtIds, ...otherStackThoughts.map(t => t.id)];
           await db.thoughts.where('stackId').anyOf(otherStackIds).modify({ stackId: targetStackId });
           await db.stacks.where('id').anyOf(otherStackIds).delete();
         }
@@ -849,6 +985,10 @@ export const useStore = create<CyberiaState>((set, get) => ({
     await get().refreshThoughts();
     await get().refreshStacks();
     get().pushHistory();
+    
+    if (authStore.status === 'authenticated') {
+      await syncOrchestrator.triggerSync();
+    }
   },
 
   unlinkSelectedThoughts: async () => {
@@ -860,24 +1000,39 @@ export const useStore = create<CyberiaState>((set, get) => ({
     await get().refreshThoughts();
     await get().refreshStacks();
     get().pushHistory();
+    
+    const authStore = useAuthStore.getState();
+    if (authStore.status === 'authenticated') {
+      await syncOrchestrator.triggerSync();
+    }
   },
 
   cleanupStacks: async () => {
     const { activeSpaceId } = get();
     if (!activeSpaceId) return;
+    const authStore = useAuthStore.getState();
+    const unlinkedThoughtIds: number[] = [];
+    
     await db.transaction('rw', db.thoughts, db.stacks, async () => {
       const allThoughts = await db.thoughts.where('spaceId').equals(activeSpaceId).toArray();
       const allStacks = await db.stacks.where('spaceId').equals(activeSpaceId).toArray();
       for (const stack of allStacks) {
         const stackThoughts = allThoughts.filter(t => t.stackId === stack.id);
         if (stackThoughts.length < 2) {
-          if (stackThoughts.length === 1) await db.thoughts.update(stackThoughts[0].id, { stackId: null });
+          if (stackThoughts.length === 1) {
+            unlinkedThoughtIds.push(stackThoughts[0].id);
+            await db.thoughts.update(stackThoughts[0].id, { stackId: null });
+          }
           await db.stacks.delete(stack.id);
         }
       }
     });
     await get().refreshThoughts();
     await get().refreshStacks();
+    
+    if (authStore.status === 'authenticated' && unlinkedThoughtIds.length > 0) {
+      await syncOrchestrator.triggerSync();
+    }
   },
 
   createStack: async (name, thoughtId) => {
@@ -885,17 +1040,28 @@ export const useStore = create<CyberiaState>((set, get) => ({
     if (!activeSpaceId) return;
     const trimmedName = name?.trim() || 'Unnamed Stack';
     const existingStack = stacks.find(s => s.name.toLowerCase() === trimmedName.toLowerCase() && s.spaceId === activeSpaceId);
+    const authStore = useAuthStore.getState();
+    
     if (existingStack) {
       await db.thoughts.update(thoughtId, { stackId: existingStack.id });
       await get().refreshThoughts();
+      
+      if (authStore.status === 'authenticated') {
+        await syncOrchestrator.triggerSync();
+      }
       return;
     }
+    
     const newStackId = 'st-' + Date.now();
     await db.stacks.add({ id: newStackId, name: trimmedName, color: `hsla(${Math.floor(Math.random() * 360)}, 70%, 50%, 1)`, spaceId: activeSpaceId });
     await db.thoughts.update(thoughtId, { stackId: newStackId });
     await get().refreshThoughts();
     await get().refreshStacks();
     get().pushHistory();
+    
+    if (authStore.status === 'authenticated') {
+      await syncOrchestrator.triggerSync();
+    }
   },
 
   updateStack: async (id, updates) => {
@@ -909,6 +1075,11 @@ export const useStore = create<CyberiaState>((set, get) => ({
     if (get().isReadOnly) return;
     await db.stacks.update(id, updates);
     await get().refreshStacks();
+    
+    const authStore = useAuthStore.getState();
+    if (authStore.status === 'authenticated') {
+      await syncOrchestrator.triggerSync();
+    }
   },
 
   deleteStack: async (id) => {
@@ -920,6 +1091,11 @@ export const useStore = create<CyberiaState>((set, get) => ({
     await get().refreshThoughts();
     await get().refreshStacks();
     get().pushHistory();
+    
+    const authStore = useAuthStore.getState();
+    if (authStore.status === 'authenticated') {
+      await syncOrchestrator.triggerSync();
+    }
   },
 
   setInspectorOpen: (open) => set({ isInspectorOpen: open }),
@@ -987,16 +1163,35 @@ export const useStore = create<CyberiaState>((set, get) => ({
   clearWorkspace: async () => {
     if (get().isReadOnly) return;
     try {
+      const authStore = (await import('./useAuthStore')).useAuthStore.getState();
+      const isAuthenticated = authStore.status === 'authenticated';
+      
+      const workspaceId = 's-workspace-' + Date.now();
+      
       await db.transaction('rw', db.spaces, db.thoughts, db.stacks, db.blobs, async () => {
         await db.spaces.clear();
         await db.thoughts.clear();
         await db.stacks.clear();
         await db.blobs.clear();
-        const workspaceId = 's-workspace-' + Date.now();
+        
+        // Create one empty workspace
         await db.spaces.add({ id: workspaceId, name: 'Workspace', mode: 'spatial', physics: true, order: 0 });
         localStorage.setItem('cyberia-active-space-id', workspaceId);
       });
-      window.location.reload();
+      
+      // Refresh state without reload
+      set({ 
+        spaces: [{ id: workspaceId, name: 'Workspace', mode: 'spatial', physics: true, order: 0 }], 
+        stacks: [], 
+        thoughts: [], 
+        activeSpaceId: workspaceId,
+        transform: { x: 0, y: 0, scale: 1 }
+      });
+      
+      if (isAuthenticated) {
+        await syncOrchestrator.triggerSync();
+      }
+      
     } catch (err) { console.error('Clear failed', err); }
   },
 
@@ -1008,15 +1203,15 @@ export const useStore = create<CyberiaState>((set, get) => ({
         // Clear and add only if data exists
         if (data.spaces && data.spaces.length > 0) {
           await db.spaces.clear();
-          await db.spaces.bulkAdd(data.spaces);
+          await db.spaces.bulkPut(data.spaces);
         }
         if (data.thoughts && data.thoughts.length > 0) {
           await db.thoughts.clear();
-          await db.thoughts.bulkAdd(data.thoughts);
+          await db.thoughts.bulkPut(data.thoughts);
         }
         if (data.stacks && data.stacks.length > 0) {
           await db.stacks.clear();
-          await db.stacks.bulkAdd(data.stacks);
+          await db.stacks.bulkPut(data.stacks);
         }
       });
 
@@ -1043,10 +1238,18 @@ export const useStore = create<CyberiaState>((set, get) => ({
 
   clearLocalData: async () => {
     try {
+      // Clear database
       await db.transaction('rw', db.spaces, db.thoughts, db.stacks, db.blobs, async () => {
-        await db.spaces.clear(); await db.thoughts.clear(); await db.stacks.clear(); await db.blobs.clear();
+        await db.spaces.clear();
+        await db.thoughts.clear();
+        await db.stacks.clear();
+        await db.blobs.clear();
       });
+      
+      // Clear localStorage
       localStorage.clear();
+      
+      // Clear cookies
       const cookies = document.cookie.split(";");
       for (let i = 0; i < cookies.length; i++) {
         const cookie = cookies[i];
@@ -1054,7 +1257,10 @@ export const useStore = create<CyberiaState>((set, get) => ({
         const name = eqPos > -1 ? cookie.substring(0, eqPos) : cookie;
         document.cookie = name + "=;expires=Thu, 01 Jan 1970 00:00:00 GMT;path=/";
       }
-      window.location.reload();
+      
+      // Load onboarding data into store (this populates the demo thoughts)
+      get().loadOnboardingData();
+      
     } catch (err) { console.error('Local data clear failed', err); }
   }
 }));

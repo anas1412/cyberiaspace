@@ -50,6 +50,16 @@ Cyberia is a spatial productivity platform for kinetic information architecture.
 
 -  can you use max ai daily use from @constrainst instead of hardcoding it in @chat
 
+export SUPABASE_ACCESS_TOKEN="sbp_0db3854d5896ef20e6f0598c43f7e61077718ab4"
+
+new google client id: 397779544798-fhbp1q886ngvosa5b40lk5f2er0835et.apps.googleusercontent.com
+new google client secret; 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
+api key: AIzaSyCORCQIu4LgXzPZVtDWAAa6GxNqZw91G_s
+
+FLOUCIAPI:
+public:ccdea37e-5736-4239-8d31-2f426d202ac2
+private:00c67e51-7088-462a-95c7-c5547fb1bbbf
+Test APP
 
 TODO:
 

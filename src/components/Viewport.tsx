@@ -40,8 +40,10 @@ const Viewport: React.FC = () => {
   const setTransform = useStore((state) => state.setTransform);
   const isSpaceLoading = useStore((state) => state.isSpaceLoading);
   const isReadOnly = useStore((state) => state.isReadOnly);
+  const isDemo = useStore((state) => state.isDemo);
 
   const { openModal } = useModalStore();
+
   const [isGrabbing, setIsGrabbing] = useState(false);
   const [isDraggingFile, setIsDraggingFile] = useState(false);
   const [selectionRect, setSelectionRect] = useState<{ x: number, y: number, w: number, h: number } | null>(null);
@@ -74,8 +76,10 @@ const Viewport: React.FC = () => {
     transform,
     setTransform,
     kanbanHeight: kanbanHeight.current,
-    getGlobalScale
+    getGlobalScale,
+    isDemo
   });
+
 
   useEffect(() => {
     if (activeSpace?.mode === 'spatial' && activeSpaceId) {
@@ -479,10 +483,12 @@ const Viewport: React.FC = () => {
     <div
       id="viewport"
       className={cn(
-        "fixed inset-0 z-[20] overflow-hidden",
+        isDemo ? "absolute" : "fixed",
+        "inset-0 z-[20] overflow-hidden",
         isGrabbing ? "pointer-events-auto cursor-grabbing" : "pointer-events-none"
       )}
     >
+
       {/* Selection Marquee */}
       {selectionRect && (
         <div
@@ -541,8 +547,9 @@ const Viewport: React.FC = () => {
 
       {/* Loading Overlay */}
       <AnimatePresence>
-        {isSpaceLoading && (
+        {(isSpaceLoading && !isDemo) && (
           <motion.div
+
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}

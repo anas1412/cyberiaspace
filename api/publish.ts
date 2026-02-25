@@ -1,152 +1,107 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { kv } from '@vercel/kv';
+import { createClient } from '@supabase/supabase-js';
 import { randomUUID } from 'crypto';
 
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.VITE_PUBLIC_SUPABASE_URL;
+const supabaseKey = process.env.VITE_SUPABASE_ANON_KEY || process.env.VITE_PUBLIC_SUPABASE_ANON_KEY;
+
+const supabase = createClient(supabaseUrl!, supabaseKey!, {
+  auth: { autoRefreshToken: false, persistSession: false }
+});
+
 export default async function handler(req: VercelRequest, res: VercelResponse) {
-    if (req.method === 'POST') {
-        return handlePublish(req, res);
-    } else if (req.method === 'GET') {
-        return handleFetchPublished(req, res);
-    } else if (req.method === 'DELETE') {
-        return handleUnpublish(req, res);
-    } else if (req.method === 'OPTIONS') {
-        res.setHeader('Access-Control-Allow-Origin', '*');
-        res.setHeader('Access-Control-Allow-Methods', 'GET, POST, DELETE, OPTIONS');
-        res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
-        return res.status(200).end();
+  if (req.method === 'OPTIONS') {
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('Access-Control-Allow-Headers', 'authorization, x-client-info, apikey, content-type');
+    return res.status(200).end();
+  }
+
+  const { action, ...data } = req.method === 'GET' ? req.query : req.body;
+  const publishedId = req.query.id || req.query.publishedId || data?.publishedId;
+
+  if (action === 'publish' || req.method === 'POST') {
+    const { space, thoughts, stacks, creatorName, publishedId: existingPublishedId } = req.body;
+
+    if (!space?.id) {
+      return res.status(400).json({ error: 'Missing space data' });
     }
 
-    return res.status(405).json({ error: 'Method not allowed' });
-}
+    // Get cloud UUID and user_id from local ID
+    const { data: cloudSpace } = await supabase
+      .from('spaces')
+      .select('id, user_id')
+      .eq('local_id', space.id)
+      .maybeSingle();
 
-async function handlePublish(req: VercelRequest, res: VercelResponse) {
-    const authHeader = req.headers.authorization;
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
-        return res.status(401).json({ error: 'Missing authorization header' });
+    const spaceId = cloudSpace?.id || space.id;
+    const userId = cloudSpace?.user_id || space.user_id || space.userId || '';
+    const snapshot = { space, thoughts, stacks, creatorName };
+    const newPublishedId = existingPublishedId || randomUUID();
+    const expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
+
+    const { error } = await supabase
+      .from('published_spaces')
+      .upsert({
+        id: newPublishedId,
+        space_id: spaceId,
+        user_id: userId,
+        snapshot,
+        last_published: new Date().toISOString(),
+        expires_at: expiresAt
+      }, { onConflict: 'id' });
+
+    if (error) {
+      console.error('[Publish] Error:', error.message);
+      return res.status(500).json({ error: error.message });
     }
 
-    const token = authHeader.split(' ')[1];
+    return res.status(200).json({ publishedId: newPublishedId, lastPublished: new Date().toISOString() });
+  }
 
-    try {
-        const tokenInfo = await fetch(`https://www.googleapis.com/oauth2/v3/tokeninfo?access_token=${token}`);
-        if (!tokenInfo.ok) {
-            return res.status(401).json({ error: 'Invalid token' });
-        }
-        const info = await tokenInfo.json() as any;
-        const userId = info.sub || info.user_id;
-
-        if (!userId) {
-            return res.status(401).json({ error: 'User ID not found in token' });
-        }
-
-        const { space, thoughts, stacks, publishedId, creatorName } = req.body;
-        if (!space || !thoughts) {
-            return res.status(400).json({ error: 'Invalid data provided' });
-        }
-
-        let finalPublishedId = publishedId;
-
-        if (finalPublishedId) {
-            const existing = await kv.get(`published_space_${finalPublishedId}`) as any;
-            if (existing && existing.creatorId !== userId) {
-                return res.status(403).json({ error: 'Ownership mismatch' });
-            }
-        } else {
-            finalPublishedId = randomUUID();
-        }
-
-        const snapshot = {
-            id: finalPublishedId,
-            creatorId: userId,
-            creatorName: creatorName || 'Anonymous',
-            lastUpdated: new Date().toISOString(),
-            space,
-            thoughts,
-            stacks: stacks || []
-        };
-
-        const storageKey = `published_space_${finalPublishedId}`;
-
-        if (JSON.stringify(snapshot).length > 15 * 1024 * 1024) {
-            return res.status(413).json({ error: 'Snapshot too large' });
-        }
-
-        await kv.set(storageKey, snapshot, { ex: 2592000 }); // Expires in 30 days
-
-        return res.status(200).json({
-            success: true,
-            publishedId: finalPublishedId,
-            lastPublished: snapshot.lastUpdated
-        });
-
-    } catch (error) {
-        console.error('Publish API Error:', error);
-        return res.status(500).json({ error: 'Internal server error' });
-    }
-}
-
-async function handleFetchPublished(req: VercelRequest, res: VercelResponse) {
-    const { id } = req.query;
-
-    if (!id || typeof id !== 'string') {
-        return res.status(400).json({ error: 'Missing ID parameter' });
+  if (action === 'get' || (req.method === 'GET' && publishedId)) {
+    if (!publishedId) {
+      return res.status(400).json({ error: 'Missing publishedId' });
     }
 
-    try {
-        const data = await kv.get(`published_space_${id}`);
+    const { data: published, error } = await supabase
+      .from('published_spaces')
+      .select('snapshot, expires_at, created_at, last_published')
+      .eq('id', publishedId)
+      .single();
 
-        if (!data) {
-            return res.status(404).json({ error: 'Space not found' });
-        }
-
-        res.setHeader('Access-Control-Allow-Origin', '*');
-        res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
-        res.setHeader('Cache-Control', 'public, s-maxage=1, stale-while-revalidate=5');
-
-        return res.status(200).json(data);
-    } catch (error) {
-        console.error('Published API Error:', error);
-        return res.status(500).json({ error: 'Internal server error' });
-    }
-}
-
-async function handleUnpublish(req: VercelRequest, res: VercelResponse) {
-    const authHeader = req.headers.authorization;
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
-        return res.status(401).json({ error: 'Missing authorization header' });
+    if (error || !published) {
+      return res.status(404).json({ error: 'Not found' });
     }
 
-    const token = authHeader.split(' ')[1];
-    const { id } = req.query;
-
-    if (!id || typeof id !== 'string') {
-        return res.status(400).json({ error: 'Missing ID parameter' });
+    if (new Date(published.expires_at) < new Date()) {
+      return res.status(410).json({ error: 'Expired' });
     }
 
-    try {
-        const tokenInfo = await fetch(`https://www.googleapis.com/oauth2/v3/tokeninfo?access_token=${token}`);
-        if (!tokenInfo.ok) {
-            return res.status(401).json({ error: 'Invalid token' });
-        }
-        const info = await tokenInfo.json() as any;
-        const userId = info.sub || info.user_id;
+    const snapshot = published.snapshot;
+    return res.status(200).json({
+      ...snapshot,
+      id: snapshot.space?.id || publishedId,
+      lastUpdated: published.last_published || published.created_at
+    });
+  }
 
-        const storageKey = `published_space_${id}`;
-        const existing = await kv.get(storageKey) as any;
-
-        if (!existing) {
-            return res.status(404).json({ error: 'Space not found' });
-        }
-
-        if (existing.creatorId !== userId) {
-            return res.status(403).json({ error: 'Ownership mismatch' });
-        }
-
-        await kv.del(storageKey);
-
-        return res.status(200).json({ success: true });
-    } catch (error) {
-        console.error('Unpublish API Error:', error);
-        return res.status(500).json({ error: 'Internal server error' });
+  if (action === 'unpublish' || (req.method === 'DELETE' && publishedId)) {
+    if (!publishedId) {
+      return res.status(400).json({ error: 'Missing publishedId' });
     }
+
+    const { error } = await supabase
+      .from('published_spaces')
+      .delete()
+      .eq('id', publishedId);
+
+    if (error) {
+      console.error('[Unpublish] Error:', error.message);
+      return res.status(500).json({ error: error.message });
+    }
+
+    return res.status(200).json({ success: true });
+  }
+
+  return res.status(400).json({ error: 'Invalid action' });
 }

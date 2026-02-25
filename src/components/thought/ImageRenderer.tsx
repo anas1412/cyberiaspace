@@ -16,15 +16,15 @@ export const ImageRenderer: React.FC<ImageRendererProps> = ({
   setInspectorOpen
 }) => {
   if (!thought.image) {
-    const isStranded = !thought.driveFileId && thought.syncStatus !== 'synced' && !isReadOnly;
+    const hasRemoteContent = thought.storageUrl && thought.syncStatus !== 'synced' && !isReadOnly;
     
     return (
       <div data-trigger="image" className="mt-1 flex flex-col items-center gap-2 py-6 bg-black/20 rounded-xl border border-white/5 group/image relative cursor-pointer transition-colors hover:bg-white/[0.05]">
         <ImageIcon className="w-6 h-6 text-white/20" />
         <span className="text-[10px] text-white/20 font-bold uppercase tracking-widest">
-          {isStranded ? 'Sync Pending' : 'Add Image'}
+          {hasRemoteContent ? 'Sync Pending' : 'Add Image'}
         </span>
-        {isStranded && (
+        {hasRemoteContent && (
           <p className="text-[7px] text-amber-500/40 font-black uppercase tracking-[0.2em] text-center px-4 animate-pulse">
             Content on other device
           </p>

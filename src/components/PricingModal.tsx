@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useModalStore } from '../store/useModalStore';
 import { PLAN_CONFIG, type AccessPeriod } from '../constants';
-import { Zap, Check, Star, X, Shield, Layout, CreditCard } from 'lucide-react';
-import { motion } from 'framer-motion';
+import { Zap, Check, Star, X, Shield, Layout, CreditCard, Rocket, Loader2 } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 
@@ -21,6 +21,8 @@ const PricingModal: React.FC<PricingModalProps> = ({ isOpen, onClose }) => {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<'features' | 'upgrade'>('features');
+  const [paymentStatus, setPaymentStatus] = useState<'idle' | 'verifying' | 'success' | 'failed'>('idle');
+  const [paymentMessage, setPaymentMessage] = useState<string>('');
   const { openModal } = useModalStore();
 
   useEffect(() => {
@@ -43,6 +45,40 @@ const PricingModal: React.FC<PricingModalProps> = ({ isOpen, onClose }) => {
           currency: isTunisiaLikely ? 'DT' : 'USD',
           isLocalPricing: isTunisiaLikely
         }));
+    }
+  }, [isOpen]);
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const success = params.get('success');
+    const fail = params.get('fail');
+    const paymentId = params.get('payment_id');
+
+    if ((success !== null || fail !== null) && isOpen) {
+      if (paymentId) {
+        setPaymentStatus('verifying');
+        fetch(`/api/pay?action=verify&payment_id=${paymentId}`)
+          .then(res => res.json())
+          .then(data => {
+            if (data.success && data.status === 'SUCCESS') {
+              setPaymentStatus('success');
+              setPaymentMessage(data.message || 'Payment successful! You are now a Pro member.');
+              setTimeout(() => {
+                window.history.replaceState({}, '', '/pricing');
+              }, 3000);
+            } else {
+              setPaymentStatus('failed');
+              setPaymentMessage(data.message || 'Payment failed. Please try again.');
+            }
+          })
+          .catch(() => {
+            setPaymentStatus('failed');
+            setPaymentMessage('Failed to verify payment. Please try again.');
+          });
+      } else if (fail !== null) {
+        setPaymentStatus('failed');
+        setPaymentMessage('Payment failed. Please try again.');
+      }
     }
   }, [isOpen]);
 
@@ -100,38 +136,44 @@ const PricingModal: React.FC<PricingModalProps> = ({ isOpen, onClose }) => {
   const savings = Math.round((proPrice.monthly.usd * 12 - proPrice.yearly.usd));
 
   return (
-    <div className="fixed inset-0 z-[10005] bg-black/95 backdrop-blur-xl flex items-center justify-center p-4 md:p-12 lg:p-20 animate-in fade-in duration-300 overflow-y-auto">
-      <div className="glass w-full max-w-5xl rounded-[2.5rem] md:rounded-[3rem] border border-white/10 overflow-hidden relative flex flex-col md:flex-row my-auto shadow-2xl">
+    <div className="fixed inset-0 z-[10005] bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 md:p-8 overflow-y-auto">
+      <motion.div 
+        initial={{ opacity: 0, scale: 0.95, y: 10 }}
+        animate={{ opacity: 1, scale: 1, y: 0 }}
+        transition={{ type: "spring", duration: 0.5, bounce: 0.3 }}
+        className="glass bg-[#0B0F19]/90 w-full max-w-5xl rounded-[2rem] border border-white/10 overflow-hidden relative flex flex-col md:flex-row my-auto shadow-2xl"
+      >
         
-        {/* Close Button - Premium Universal Positioning */}
+        {/* Close Button */}
         <button 
           onClick={onClose} 
-          className="absolute top-4 right-4 md:top-6 md:right-6 text-slate-500 hover:text-white transition-all z-[50] w-10 h-10 md:w-12 md:h-12 flex items-center justify-center hover:bg-white/10 rounded-full active:scale-90 backdrop-blur-md"
+          className="absolute top-4 right-4 md:top-6 md:right-6 text-slate-400 hover:text-white transition-all z-[50] w-10 h-10 flex items-center justify-center bg-white/5 hover:bg-white/10 rounded-full active:scale-95 backdrop-blur-md"
+          aria-label="Close modal"
         >
-          <X className="w-5 h-5 md:w-6 h-6" />
+          <X className="w-5 h-5" />
         </button>
 
         {/* Mobile Tab Switcher */}
-        <div className="flex md:hidden px-8 pt-16 pb-4 justify-center shrink-0">
-          <div className="flex p-1 bg-white/5 border border-white/10 rounded-2xl w-full">
+        <div className="flex md:hidden px-6 pt-16 pb-2 justify-center shrink-0">
+          <div className="flex p-1 bg-black/40 border border-white/5 rounded-2xl w-full">
             <button 
               onClick={() => setActiveTab('features')}
               className={cn(
-                "flex-1 flex items-center justify-center gap-2 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all",
-                activeTab === 'features' ? "bg-white/10 text-white shadow-lg border border-white/5" : "text-slate-500"
+                "flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-xs font-semibold transition-all",
+                activeTab === 'features' ? "bg-white/10 text-white shadow-sm" : "text-slate-400"
               )}
             >
-              <Layout className="w-3.5 h-3.5" />
+              <Layout className="w-4 h-4" />
               Features
             </button>
             <button 
               onClick={() => setActiveTab('upgrade')}
               className={cn(
-                "flex-1 flex items-center justify-center gap-2 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all",
-                activeTab === 'upgrade' ? "bg-blue-500 text-white shadow-lg shadow-blue-500/20" : "text-slate-500"
+                "flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-xs font-semibold transition-all",
+                activeTab === 'upgrade' ? "bg-blue-600 text-white shadow-sm" : "text-slate-400"
               )}
             >
-              <CreditCard className="w-3.5 h-3.5" />
+              <CreditCard className="w-4 h-4" />
               Upgrade
             </button>
           </div>
@@ -139,67 +181,94 @@ const PricingModal: React.FC<PricingModalProps> = ({ isOpen, onClose }) => {
 
         {/* LEFT: Benefits */}
         <div className={cn(
-          "flex-1 p-8 md:p-10 lg:p-16 md:border-r border-white/5 flex-col",
+          "flex-1 p-6 md:p-10 lg:p-14 flex-col",
           activeTab === 'features' ? 'flex' : 'hidden md:flex'
         )}>
-          <div className="flex items-center gap-5 mb-8 md:mb-12">
-            <div className="w-14 h-14 md:w-16 md:h-16 rounded-2xl bg-blue-500/20 flex items-center justify-center text-blue-400 shrink-0 shadow-lg shadow-blue-500/10">
-              <Zap className="w-7 h-7 md:w-8 md:h-8 animate-pulse" />
+          <div className="flex items-center gap-4 mb-8">
+            <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-blue-500/20 to-blue-600/20 border border-blue-500/20 flex items-center justify-center text-blue-400 shrink-0 shadow-lg shadow-blue-500/10">
+              <Zap className="w-7 h-7" />
             </div>
             <div>
-              <h2 className="text-2xl md:text-2xl font-black uppercase tracking-widest text-white leading-none mb-1.5">Go Pro</h2>
-              <p className="text-[10px] md:text-[11px] font-bold text-slate-500 uppercase tracking-[0.25em]">Unlimited Flow & More Space</p>
+              <h2 className="text-2xl font-bold text-white tracking-tight">Unlock Pro</h2>
+              <p className="text-sm font-medium text-blue-400">Unlimited flow & maximum space</p>
             </div>
           </div>
 
-          <div className="space-y-6 md:space-y-8 flex-1">
+          <div className="space-y-6 flex-1">
             {[
-              { title: 'Premium Oracle AI', desc: `Access advanced Premium models with ${PLAN_CONFIG.pro.AI_DAILY_LIMIT} daily interactions (Free uses mini models with ${PLAN_CONFIG.free.AI_DAILY_LIMIT} daily).` },
-              { title: 'Expanded Workspaces', desc: `Create up to ${PLAN_CONFIG.pro.MAX_SPACES} different spaces (Free only has ${PLAN_CONFIG.free.MAX_SPACES}).` },
-              { title: 'High Frequency Flow', desc: `Add up to ${PLAN_CONFIG.pro.MAX_THOUGHTS_PER_SPACE} thoughts in every single space.` },
-              { title: 'Heavy Cloud Sync', desc: `${PLAN_CONFIG.pro.MAX_CLOUD_THOUGHTS} Cloud Thoughts for power users (Free is ${PLAN_CONFIG.free.MAX_CLOUD_THOUGHTS}).` },
-              { title: 'Advanced Functionalities', desc: 'Exclusive access to future Premium architectures and future themes.' }
+              { title: 'Premium Oracle AI', desc: `Access advanced Premium models with ${PLAN_CONFIG.pro.AI_DAILY_LIMIT} daily interactions. Free tier uses mini models with ${PLAN_CONFIG.free.AI_DAILY_LIMIT} daily.` },
+              { title: 'Expanded Workspaces', desc: `Create up to ${PLAN_CONFIG.pro.MAX_SPACES} different spaces to organize your workflow. (Free limits to ${PLAN_CONFIG.free.MAX_SPACES})` },
+              { title: 'High Frequency Flow', desc: `Add up to ${PLAN_CONFIG.pro.MAX_THOUGHTS_PER_SPACE} thoughts in every single space without hitting limits.` },
+              { title: 'Expanded File Storage', desc: `Get ${Math.round(PLAN_CONFIG.pro.MAX_STORAGE_MB / 1024)}GB of secure cloud storage for your files and attachments (Free tier is limited to ${PLAN_CONFIG.free.MAX_STORAGE_MB}MB).` },
+              { title: 'Advanced Functionalities', desc: 'Gain exclusive early access to next-generation AI models, enhanced reasoning capabilities, and upcoming premium workflow tools.' }
             ].map((feature, i) => (
               <motion.div 
                 key={i} 
-                initial={activeTab === 'features' ? { opacity: 0, x: -10 } : false}
+                initial={{ opacity: 0, x: -10 }}
                 animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: i * 0.05 }}
-                className="flex gap-5 group"
+                transition={{ delay: i * 0.05 + 0.2 }}
+                className="flex gap-4 group"
               >
-                <div className="w-7 h-7 rounded-full bg-blue-500/10 border border-blue-500/20 flex items-center justify-center text-blue-400 shrink-0 mt-0.5 group-hover:scale-110 transition-transform">
-                  <Check className="w-4 h-4" />
+                <div className="w-6 h-6 rounded-full bg-blue-500/10 border border-blue-500/20 flex items-center justify-center text-blue-400 shrink-0 mt-0.5">
+                  <Check className="w-3.5 h-3.5" />
                 </div>
                 <div>
-                  <h4 className="text-xs md:text-xs font-black uppercase tracking-widest text-white group-hover:text-blue-400 transition-colors mb-1.5">{feature.title}</h4>
-                  <p className="text-[11px] md:text-[11px] font-medium text-slate-500 leading-relaxed uppercase tracking-wider">{feature.desc}</p>
+                  <h4 className="text-base font-semibold text-white mb-1">{feature.title}</h4>
+                  <p className="text-sm text-slate-400 leading-relaxed">{feature.desc}</p>
                 </div>
               </motion.div>
             ))}
           </div>
 
+          {/* ADD THIS NEW SECTION HERE */}
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.5 }}
+            className="mt-8 p-5 rounded-2xl bg-gradient-to-br from-indigo-500/5 to-purple-500/5 border border-indigo-500/10 flex gap-4 items-start relative overflow-hidden group"
+          >
+            {/* Subtle background glow */}
+            <div className="absolute top-0 right-0 w-32 h-32 bg-indigo-500/10 blur-3xl rounded-full -mr-16 -mt-16 transition-opacity group-hover:opacity-75" />
+            
+            <div className="w-10 h-10 rounded-xl bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center text-indigo-400 shrink-0 z-10 shadow-inner">
+              <Rocket className="w-5 h-5" />
+            </div>
+            <div className="z-10">
+              <div className="flex items-center gap-3 mb-1.5">
+                <h4 className="text-sm font-bold text-white">Teams & Mobile App</h4>
+                <span className="text-[9px] font-bold uppercase tracking-wider bg-indigo-500/20 text-indigo-300 px-2 py-0.5 rounded-full border border-indigo-500/20">
+                  Coming Soon
+                </span>
+              </div>
+              <p className="text-xs text-slate-400 leading-relaxed">
+                Invite friends to shared spaces, work together in real-time, and take your thoughts anywhere with our upcoming iOS & Android apps.
+              </p>
+            </div>
+          </motion.div>
+          {/* END NEW SECTION */}
+
           <div className="md:hidden pt-8 mt-auto">
             <button 
               onClick={() => setActiveTab('upgrade')}
-              className="w-full py-5 bg-blue-500/10 hover:bg-blue-500/20 text-blue-400 rounded-2xl text-[11px] font-black uppercase tracking-widest transition-all border border-blue-500/20 active:scale-[0.98]"
+              className="w-full py-4 bg-white/5 hover:bg-white/10 text-white rounded-2xl text-sm font-semibold transition-all border border-white/10 active:scale-95"
             >
-              Continue to Upgrade
+              View Pricing Details
             </button>
           </div>
         </div>
 
         {/* RIGHT: Pricing */}
         <div className={cn(
-          "w-full md:w-[340px] lg:w-[420px] p-8 md:p-10 lg:p-16 bg-white/[0.02] flex-col justify-center",
+          "w-full md:w-[380px] lg:w-[440px] p-6 md:p-10 lg:p-14 bg-white/[0.02] border-l border-white/5 flex-col justify-center",
           activeTab === 'upgrade' ? 'flex' : 'hidden md:flex'
         )}>
-          <div className="flex flex-col items-center text-center mb-8 md:mb-12">
-            <div className="flex p-1.5 bg-black/40 border border-white/5 rounded-2xl mb-10 w-full">
+          <div className="flex flex-col items-center text-center mb-8">
+            <div className="flex p-1 bg-black/40 border border-white/5 rounded-2xl mb-8 w-full">
               <button
                 onClick={() => setBillingCycle('monthly')}
                 className={cn(
-                  "flex-1 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all",
-                  billingCycle === 'monthly' ? "bg-white/10 text-white shadow-lg border border-white/5" : "text-slate-500 hover:text-slate-300"
+                  "flex-1 py-2.5 rounded-xl text-xs font-bold uppercase tracking-wide transition-all",
+                  billingCycle === 'monthly' ? "bg-white/15 text-white shadow-sm" : "text-slate-400 hover:text-slate-200"
                 )}
               >
                 Monthly
@@ -207,96 +276,143 @@ const PricingModal: React.FC<PricingModalProps> = ({ isOpen, onClose }) => {
               <button
                 onClick={() => setBillingCycle('yearly')}
                 className={cn(
-                  "flex-1 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all flex items-center justify-center gap-2",
-                  billingCycle === 'yearly' ? "bg-white/10 text-white shadow-lg border border-white/5" : "text-slate-500 hover:text-slate-300"
+                  "flex-1 py-2.5 rounded-xl text-xs font-bold uppercase tracking-wide transition-all flex items-center justify-center gap-2",
+                  billingCycle === 'yearly' ? "bg-white/15 text-white shadow-sm" : "text-slate-400 hover:text-slate-200"
                 )}
               >
                 Yearly
-                <span className="bg-green-500 text-black text-[8px] font-black px-1.5 py-0.5 rounded-md uppercase tracking-tighter shadow-lg shadow-green-500/20 whitespace-nowrap">Save ${savings}</span>
+                <span className="bg-emerald-500/15 text-emerald-400 border border-emerald-500/20 text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-tight shadow-sm whitespace-nowrap">
+                  Save ${savings}
+                </span>
               </button>
             </div>
 
-            <div className="mb-6">
+            <div className="mb-4">
               {location?.isLocalPricing ? (
-                <div className="flex flex-col items-center gap-2">
-                  <span className="text-[10px] md:text-[9px] font-black uppercase tracking-widest bg-green-500/20 text-green-400 px-3 py-1 rounded-full border border-green-500/20">Local Pricing</span>
+                <div className="flex flex-col items-center gap-3">
+                  <span className="text-[10px] font-bold uppercase tracking-widest bg-blue-500/10 text-blue-400 px-3 py-1 rounded-full border border-blue-500/20">
+                    Local Pricing Active
+                  </span>
                   <div className="flex items-baseline justify-center">
-                    <span className="text-5xl md:text-5xl lg:text-6xl font-black text-white">{currentPrice.tnd} DT</span>
+                    <span className="text-5xl md:text-6xl font-extrabold tracking-tight text-white">{currentPrice.tnd}</span>
+                    <span className="text-xl text-slate-400 ml-2 font-semibold">DT</span>
                   </div>
-                  <span className="text-[11px] md:text-[9px] font-bold text-slate-600 uppercase tracking-widest">Global Price: ${currentPrice.usd} USD</span>
+                  <span className="text-xs font-medium text-slate-500 bg-black/20 px-3 py-1 rounded-full">
+                    Global Price: ${currentPrice.usd} USD
+                  </span>
                 </div>
               ) : (
                 <div className="flex items-baseline justify-center">
-                  <span className="text-6xl md:text-6xl lg:text-7xl font-black text-white">${currentPrice.usd}</span>
+                  <span className="text-5xl md:text-6xl font-extrabold tracking-tight text-white">${currentPrice.usd}</span>
                 </div>
               )}
-              <span className="text-slate-500 font-bold uppercase tracking-widest text-xs md:text-[11px] block mt-4">
-                For 1 {billingCycle === 'monthly' ? 'Month' : 'Year'} of Access
+              
+              <span className="text-slate-400 font-medium text-sm block mt-4">
+                {billingCycle === 'monthly' ? 'Per Month' : 'Per Year'}
               </span>
             </div>
-            <p className="text-xs md:text-[11px] font-bold text-slate-500 uppercase tracking-widest px-6 leading-relaxed">
-              {billingCycle === 'yearly' ? `One-time payment of ${location?.isLocalPricing ? currentPrice.tnd + ' DT' : '$' + proPrice.yearly.usd} per year` : 'Manual renewal. No auto-charges.'}
+            <p className="text-xs text-slate-500 leading-relaxed px-4">
+              {billingCycle === 'yearly' ? `One-time payment of ${location?.isLocalPricing ? currentPrice.tnd + ' DT' : '$' + proPrice.yearly.usd} per year.` : 'Manual renewal. No surprise auto-charges.'}
             </p>
           </div>
 
-          {error && (
-            <p className="text-sm text-red-400 font-bold uppercase tracking-widest text-center mb-8 animate-shake">
-              {error}
-            </p>
-          )}
+          <AnimatePresence>
+            {error && (
+              <motion.p 
+                initial={{ opacity: 0, y: -10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0 }}
+                className="text-sm text-red-400 font-medium text-center mb-6 bg-red-400/10 p-3 rounded-xl border border-red-400/20"
+              >
+                {error}
+              </motion.p>
+            )}
+            
+            {paymentStatus === 'verifying' && (
+              <motion.div 
+                initial={{ opacity: 0, y: -10 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="text-center mb-6 bg-blue-500/10 p-4 rounded-xl border border-blue-500/20"
+              >
+                <Loader2 className="w-6 h-6 text-blue-400 animate-spin mx-auto mb-2" />
+                <p className="text-sm text-blue-400 font-medium">Verifying payment...</p>
+              </motion.div>
+            )}
+            
+            {paymentStatus === 'success' && (
+              <motion.div 
+                initial={{ opacity: 0, y: -10 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="text-center mb-6 bg-green-500/10 p-4 rounded-xl border border-green-500/20"
+              >
+                <Check className="w-6 h-6 text-green-400 mx-auto mb-2" />
+                <p className="text-sm text-green-400 font-medium">{paymentMessage}</p>
+                <p className="text-xs text-slate-500 mt-1">Refreshing your account...</p>
+              </motion.div>
+            )}
+            
+            {paymentStatus === 'failed' && (
+              <motion.p 
+                initial={{ opacity: 0, y: -10 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="text-sm text-red-400 font-medium text-center mb-6 bg-red-400/10 p-3 rounded-xl border border-red-400/20"
+              >
+                {paymentMessage}
+              </motion.p>
+            )}
+          </AnimatePresence>
 
           <button
             onClick={handleUpgrade}
-            disabled={isLoading || import.meta.env.PROD}
+            disabled={isLoading}
             className={cn(
-              "w-full h-16 md:h-16 rounded-[2rem] text-xs md:text-xs font-black uppercase tracking-[0.25em] transition-all flex items-center justify-center gap-4 mb-10 shadow-2xl shadow-blue-500/10",
-              (isLoading || import.meta.env.PROD)
-                ? "bg-slate-800 text-slate-500 cursor-not-allowed opacity-50"
-                : "bg-blue-600 hover:bg-blue-500 text-white active:scale-[0.98]"
+              "w-full h-14 rounded-2xl text-sm font-bold transition-all flex items-center justify-center gap-3 mb-8",
+              isLoading
+                ? "bg-slate-800 text-slate-400 cursor-not-allowed border border-white/5"
+                : "bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white shadow-lg shadow-blue-500/25 active:scale-95"
             )}
           >
             {isLoading ? (
-              <div className="w-6 h-6 rounded-full border-2 border-slate-500 border-t-white animate-spin" />
+              <div className="w-5 h-5 rounded-full border-2 border-white/30 border-t-white animate-spin" />
             ) : (
-              <Star className={cn("w-5 h-5", import.meta.env.PROD ? "fill-slate-500" : "fill-white")} />
+              <Star className="w-4 h-4 text-white" />
             )}
-            {import.meta.env.PROD ? 'Coming Soon' : (isLoading ? 'Processing...' : 'Upgrade Now')}
+            {isLoading ? 'Processing...' : 'Upgrade Now'}
           </button>
 
-          <div className="text-center space-y-8">
-            <div className="p-5 rounded-[2rem] bg-blue-500/5 border border-blue-500/10 flex items-start gap-4 text-left">
-              <div className="w-10 h-10 rounded-xl bg-blue-500/10 flex items-center justify-center shrink-0 mt-0.5">
-                <Shield className="w-5 h-5 text-blue-400" />
+          <div className="text-center space-y-6">
+            <div className="p-4 rounded-2xl bg-black/20 border border-white/5 flex items-center gap-3 text-left">
+              <div className="w-8 h-8 rounded-full bg-blue-500/10 flex items-center justify-center shrink-0">
+                <Shield className="w-4 h-4 text-blue-400" />
               </div>
-              <p className="text-[10px] md:text-[10px] text-slate-500 font-medium leading-relaxed uppercase tracking-wider">
-                Secure 256-bit payments via <span className="text-blue-400">Konnect</span>. Financial details never touch our servers.
+              <p className="text-xs text-slate-400 font-medium">
+                Secure local & global payments powered by <span className="text-white font-semibold">Flouci</span>.
               </p>
             </div>
             
-            <div className="flex items-center justify-center gap-8 opacity-40">
-              <button 
-                onClick={() => {
-                  window.history.pushState({}, '', '/privacy');
-                  window.dispatchEvent(new PopStateEvent('popstate'));
-                }}
-                className="text-[11px] md:text-[9px] font-black uppercase tracking-widest text-slate-500 hover:text-blue-400 transition-colors"
-              >
-                Privacy Policy
-              </button>
-              <span className="w-1 h-1 rounded-full bg-white/20" />
-              <button 
-                onClick={() => {
-                  window.history.pushState({}, '', '/terms');
-                  window.dispatchEvent(new PopStateEvent('popstate'));
-                }}
-                className="text-[11px] md:text-[9px] font-black uppercase tracking-widest text-slate-500 hover:text-blue-400 transition-colors"
-              >
-                Terms of Service
-              </button>
+            <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-2">
+              {[
+                { label: 'Privacy Policy', path: '/privacy' },
+                { label: 'Terms of Service', path: '/terms' },
+                { label: 'Legal Notice', path: '/legal-notice' },
+                { label: 'Terms of Sale & Refund Policy', path: '/sales-conditions' },
+                { label: 'Contact', path: '/contact' }
+              ].map((link, idx) => (
+                <button 
+                  key={idx}
+                  onClick={() => {
+                    window.history.pushState({}, '', link.path);
+                    window.dispatchEvent(new PopStateEvent('popstate'));
+                  }}
+                  className="text-[11px] font-medium text-slate-500 hover:text-slate-300 transition-colors"
+                >
+                  {link.label}
+                </button>
+              ))}
             </div>
           </div>
         </div>
-      </div>
+      </motion.div>
     </div>
   );
 };

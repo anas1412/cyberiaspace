@@ -4,7 +4,7 @@ import { useAuthStore } from '../store/useAuthStore';
 import { useModalStore } from '../store/useModalStore';
 import { db } from '../db';
 import { generateThumbnail } from '../utils/image';
-import { X, Maximize2, Image as ImageIcon, Trash2, Youtube, Type, ListTodo, Palette, Table, Calendar, ChevronLeft, ChevronRight, Layers, ArrowDown, Share2, File as FileIcon, Upload, Tag } from 'lucide-react';
+import { X, Maximize2, Image as ImageIcon, Trash2, Youtube, Type, ListTodo, Palette, Table, Calendar, ChevronLeft, ChevronRight, ArrowUp, ArrowDown, Share2, File as FileIcon, Upload, Tag } from 'lucide-react';
 import { MAX_FILE_SIZE_MB } from '../constants';
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
@@ -291,7 +291,7 @@ const Inspector: React.FC = () => {
                   "w-full bg-[var(--bg-page)]/20 border border-white/10 rounded-xl p-3 text-sm outline-none focus:border-[var(--accent)] text-[var(--text-primary)] placeholder:text-slate-500",
                   isReadOnly && "pointer-events-none opacity-80"
                 )}
-                placeholder={thought.placeholder || "Name"}
+                placeholder={"Title"}
               />
               <textarea
                 readOnly={isReadOnly}
@@ -664,7 +664,7 @@ const Inspector: React.FC = () => {
               </div>
 
               <div className="space-y-3 pt-4 border-t border-white/5">
-                <label className="text-[9px] uppercase font-bold tracking-widest text-slate-500 ml-1">Stack</label>
+                <label className="text-[9px] uppercase font-bold tracking-widest text-slate-500 ml-1">Collection</label>
 
                 {stack ? (
                   <div className="p-4 bg-[var(--bg-page)]/20 border border-white/10 rounded-2xl space-y-4">
@@ -718,7 +718,7 @@ const Inspector: React.FC = () => {
 
                     {stacks.length > 0 && (
                       <div className="space-y-1.5">
-                        <label className="text-[7px] uppercase font-black tracking-[0.2em] text-slate-600 ml-1">Existing Stacks</label>
+                        <label className="text-[7px] uppercase font-black tracking-[0.2em] text-slate-600 ml-1">Existing Collections</label>
                         <div className="flex flex-col gap-1 max-h-[160px] overflow-y-auto custom-scroll pr-1">
                           {stacks.map(s => (
                             <div key={s.id} className="relative group/s">
@@ -766,7 +766,7 @@ const Inspector: React.FC = () => {
                       isReadOnly && "opacity-30 cursor-default"
                     )}
                   >
-                    <Layers className="w-3 h-3" /> Bring to Front
+                    <ArrowUp className="w-3 h-3" /> Bring to Front
                   </button>
                   <button
                     disabled={isReadOnly}
