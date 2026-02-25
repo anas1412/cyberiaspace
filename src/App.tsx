@@ -35,7 +35,6 @@ const SalesConditions = lazy(() => import('./components/legal/SalesConditions'))
 const PrivacyPolicySales = lazy(() => import('./components/legal/PrivacyPolicySales'));
 const LegalNotice = lazy(() => import('./components/legal/LegalNotice'));
 const Contact = lazy(() => import('./components/legal/Contact'));
-const LandingAbout = lazy(() => import('./components/LandingAbout'));
 const LoginPage = lazy(() => import('./components/auth/LoginPage'));
 const Homepage = lazy(() => import('./components/Homepage'));
 
@@ -48,10 +47,8 @@ function App() {
   const setInspectorOpen = useStore((state) => state.setInspectorOpen);
   const activeSpaceId = useStore((state) => state.activeSpaceId);
   const spaces = useStore((state) => state.spaces);
-  const onboardingDismissed = useStore((state) => state.onboardingDismissed);
 
   const { isPricingOpen, closePricing, openModal } = useModalStore();
-  const { status } = useAuthStore();
   const mouseWorldPos = useRef({ x: 0, y: 0 });
 
   const mouseScreenPos = useRef({ x: 0, y: 0 });
@@ -451,7 +448,6 @@ if (path === '/privacy') {
 
       <Suspense fallback={null}>
         <Viewport />
-        {(status === 'unauthenticated' && !onboardingDismissed) && <LandingAbout />}
         <EmptyState />
         <KanbanOverlay />
 

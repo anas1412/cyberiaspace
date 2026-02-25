@@ -1,5 +1,14 @@
 import { useState, useEffect } from 'react';
-import { registerSW } from 'virtual:pwa-register';
+
+let registerSW: ((options?: any) => any) | null = null;
+
+try {
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const pwaRegister = require('virtual:pwa-register');
+  registerSW = pwaRegister.registerSW;
+} catch (e) {
+  // PWA not enabled - this is fine for marketing site
+}
 
 export function usePWAUpdate() {
   const [needRefresh, setNeedRefresh] = useState(false);
@@ -7,27 +16,25 @@ export function usePWAUpdate() {
   const [updateServiceWorker, setUpdateServiceWorker] = useState<((reload?: boolean) => Promise<void>) | null>(null);
 
   useEffect(() => {
-    // Add logs to debug why it's not working
+    if (!registerSW) return;
+
     console.log('[PWA] Registering service worker...');
     const updateSW = registerSW({
       onNeedRefresh() {
         console.log('[PWA] New content available, refreshing...');
         setNeedRefresh(true);
-        // Automatically refresh after a short delay for autoUpdate type
-        // This makes the autoUpdate seamless as requested.
-        // The user will still see the toast for a moment.
         setTimeout(() => {
           setIsUpdating(true);
-          updateSW(true); // Force update and reload
-        }, 3000); 
+          updateSW(true);
+        }, 3000);
       },
       onOfflineReady() {
         console.log('[PWA] App ready for offline use.');
       },
-      onRegistered(registration) {
+      onRegistered(registration: any) {
         console.log('[PWA] Service Worker Registered:', registration);
       },
-      onRegisterError(error) {
+      onRegisterError(error: any) {
         console.error('[PWA] Service Worker registration error:', error);
       }
     });
@@ -39,4 +46,3 @@ export function usePWAUpdate() {
 
   return { needRefresh, isUpdating, updateServiceWorker };
 }
-

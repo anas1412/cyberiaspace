@@ -39,7 +39,6 @@ interface CyberiaState {
   lightboxThoughtId: number | null;
   transform: { x: number; y: number; scale: number };
   deletingThoughtIds: number[];
-  onboardingDismissed: boolean;
   isDemo: boolean;
   setDemoMode: (enabled: boolean) => void;
   loadOnboardingData: () => void;
@@ -163,7 +162,6 @@ export const useStore = create<CyberiaState>((set, get) => ({
   lastUpdated: null,
   transform: { x: 0, y: 0, scale: 1 },
   deletingThoughtIds: [],
-  onboardingDismissed: localStorage.getItem('cyberia-onboarding-dismissed') === 'true',
   isDemo: false,
 
   setDemoMode: (enabled) => {
@@ -539,8 +537,6 @@ export const useStore = create<CyberiaState>((set, get) => ({
   },
 
   completeOnboarding: async () => {
-    localStorage.setItem('cyberia-onboarding-dismissed', 'true');
-    set({ onboardingDismissed: true });
     const { spaces } = get();
     if (spaces.length === 0) {
       set({ isSpaceLoading: true });
