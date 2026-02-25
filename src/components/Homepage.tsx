@@ -65,7 +65,7 @@ const Homepage: React.FC = () => {
 
       <nav className={`fixed top-0 left-0 right-0 z-[100] transition-all duration-500 ${
         isScrolled 
-          ? 'bg-[#020408]/80 backdrop-blur-2xl border-b border-white/10 py-3' 
+          ? 'bg-[#020408]/10 backdrop-blur-3xl border-b border-white/10 py-3' 
           : 'bg-transparent py-5'
       }`}>
         <div className="max-w-7xl mx-auto px-6 flex items-center justify-between">
