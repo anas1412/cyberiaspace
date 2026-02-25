@@ -35,14 +35,26 @@ const LegalNotice: React.FC = () => {
 
         <section className="space-y-12 pb-20">
           <div className="space-y-4">
-            <h2 className="text-xl font-black text-white uppercase tracking-widest border-b border-white/5 pb-2">1. Company Information</h2>
-            <p className="leading-relaxed">
-              Cyberia is developed and operated by Cyberia AI Studio, a registered company in <strong className="text-white">Tunisia</strong>.
-            </p>
-            <p className="leading-relaxed">
-              <strong className="text-white">Website:</strong> <a href="https://cyberia.tn" className="text-blue-400 hover:text-white">https://cyberia.tn</a>
-            </p>
-          </div>
+        <h2 className="text-xl font-black text-white uppercase tracking-widest border-b border-white/5 pb-2">1. Legal Information</h2>
+        <p className="leading-relaxed">
+          Cyberia is developed and operated by <strong className="text-white">Anas Bassoumi</strong>, registered as an auto-entrepreneur operating under the trade name <strong className="text-white">Cyberia AI Studio</strong> in Tunisia.
+        </p>
+        <ul className="space-y-2 mt-4">
+          <li><strong className="text-white">Tax ID (Matricule Fiscal):</strong> 1970272D</li>
+          <li><strong className="text-white">Registered Address:</strong> Rue Taieb El Azzabi, Hammamet, 8050, Nabeul, Tunisia</li>
+          <li><strong className="text-white">Website:</strong> <a href="https://cyberia.tn" className="text-blue-400 hover:text-white">https://cyberia.tn</a></li>
+          <li><strong className="text-white">Contact:</strong> <a href="mailto:anas.bassoumi@gmail.com" className="text-blue-400 hover:text-white">anas.bassoumi@gmail.com</a></li>
+        </ul>
+
+        <div className="pt-4">
+          <h3 className="text-lg font-bold text-white mb-2">Website Hosting</h3>
+          <p className="leading-relaxed">
+            This website is hosted by <strong className="text-white">Vercel Inc.</strong><br />
+            Address: 440 N Barranca Ave #4133, Covina, CA 91723, United States.<br />
+            Website: <a href="https://vercel.com" target="_blank" rel="noreferrer" className="text-blue-400 hover:text-white">https://vercel.com</a>
+          </p>
+        </div>
+      </div>
 
           <div className="space-y-4">
             <h2 className="text-xl font-black text-white uppercase tracking-widest border-b border-white/5 pb-2">2. Intellectual Property</h2>

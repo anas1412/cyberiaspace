@@ -37,6 +37,7 @@ const LegalNotice = lazy(() => import('./components/legal/LegalNotice'));
 const Contact = lazy(() => import('./components/legal/Contact'));
 const LandingAbout = lazy(() => import('./components/LandingAbout'));
 const LoginPage = lazy(() => import('./components/auth/LoginPage'));
+const Homepage = lazy(() => import('./components/Homepage'));
 
 function App() {
   const init = useStore((state) => state.init);
@@ -333,6 +334,14 @@ function App() {
       setStaticBg(null);
     }
   }, [performanceMode, customBg]);
+
+  if (path === '/home') {
+    return (
+      <Suspense fallback={<LoadingOverlay force />}>
+        <Homepage />
+      </Suspense>
+    );
+  }
 
   if (path === '/feedback') {
     return (

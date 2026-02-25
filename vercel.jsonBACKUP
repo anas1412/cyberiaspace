@@ -1,6 +1,7 @@
 {
   "version": 2,
   "redirects": [
+    { "source": "/home", "destination": "/index.html" },
     { "source": "/terms", "destination": "/terms" },
     { "source": "/privacy", "destination": "/privacy" },
     { "source": "/sales-conditions", "destination": "/sales-conditions.html" },

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useModalStore } from '../store/useModalStore';
 import { PLAN_CONFIG, type AccessPeriod } from '../constants';
-import { Zap, Check, Star, X, Shield, Layout, CreditCard, Rocket } from 'lucide-react';
+import { Zap, Check, Star, X, Shield, Layout, CreditCard, Rocket, Loader2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
@@ -21,6 +21,8 @@ const PricingModal: React.FC<PricingModalProps> = ({ isOpen, onClose }) => {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<'features' | 'upgrade'>('features');
+  const [paymentStatus, setPaymentStatus] = useState<'idle' | 'verifying' | 'success' | 'failed'>('idle');
+  const [paymentMessage, setPaymentMessage] = useState<string>('');
   const { openModal } = useModalStore();
 
   useEffect(() => {
@@ -43,6 +45,40 @@ const PricingModal: React.FC<PricingModalProps> = ({ isOpen, onClose }) => {
           currency: isTunisiaLikely ? 'DT' : 'USD',
           isLocalPricing: isTunisiaLikely
         }));
+    }
+  }, [isOpen]);
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const success = params.get('success');
+    const fail = params.get('fail');
+    const paymentId = params.get('payment_id');
+
+    if ((success !== null || fail !== null) && isOpen) {
+      if (paymentId) {
+        setPaymentStatus('verifying');
+        fetch(`/api/pay?action=verify&payment_id=${paymentId}`)
+          .then(res => res.json())
+          .then(data => {
+            if (data.success && data.status === 'SUCCESS') {
+              setPaymentStatus('success');
+              setPaymentMessage(data.message || 'Payment successful! You are now a Pro member.');
+              setTimeout(() => {
+                window.history.replaceState({}, '', '/pricing');
+              }, 3000);
+            } else {
+              setPaymentStatus('failed');
+              setPaymentMessage(data.message || 'Payment failed. Please try again.');
+            }
+          })
+          .catch(() => {
+            setPaymentStatus('failed');
+            setPaymentMessage('Failed to verify payment. Please try again.');
+          });
+      } else if (fail !== null) {
+        setPaymentStatus('failed');
+        setPaymentMessage('Payment failed. Please try again.');
+      }
     }
   }, [isOpen]);
 
@@ -291,14 +327,47 @@ const PricingModal: React.FC<PricingModalProps> = ({ isOpen, onClose }) => {
                 {error}
               </motion.p>
             )}
+            
+            {paymentStatus === 'verifying' && (
+              <motion.div 
+                initial={{ opacity: 0, y: -10 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="text-center mb-6 bg-blue-500/10 p-4 rounded-xl border border-blue-500/20"
+              >
+                <Loader2 className="w-6 h-6 text-blue-400 animate-spin mx-auto mb-2" />
+                <p className="text-sm text-blue-400 font-medium">Verifying payment...</p>
+              </motion.div>
+            )}
+            
+            {paymentStatus === 'success' && (
+              <motion.div 
+                initial={{ opacity: 0, y: -10 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="text-center mb-6 bg-green-500/10 p-4 rounded-xl border border-green-500/20"
+              >
+                <Check className="w-6 h-6 text-green-400 mx-auto mb-2" />
+                <p className="text-sm text-green-400 font-medium">{paymentMessage}</p>
+                <p className="text-xs text-slate-500 mt-1">Refreshing your account...</p>
+              </motion.div>
+            )}
+            
+            {paymentStatus === 'failed' && (
+              <motion.p 
+                initial={{ opacity: 0, y: -10 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="text-sm text-red-400 font-medium text-center mb-6 bg-red-400/10 p-3 rounded-xl border border-red-400/20"
+              >
+                {paymentMessage}
+              </motion.p>
+            )}
           </AnimatePresence>
 
           <button
             onClick={handleUpgrade}
-            disabled={isLoading || import.meta.env.PROD}
+            disabled={isLoading}
             className={cn(
               "w-full h-14 rounded-2xl text-sm font-bold transition-all flex items-center justify-center gap-3 mb-8",
-              (isLoading || import.meta.env.PROD)
+              isLoading
                 ? "bg-slate-800 text-slate-400 cursor-not-allowed border border-white/5"
                 : "bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white shadow-lg shadow-blue-500/25 active:scale-95"
             )}
@@ -306,9 +375,9 @@ const PricingModal: React.FC<PricingModalProps> = ({ isOpen, onClose }) => {
             {isLoading ? (
               <div className="w-5 h-5 rounded-full border-2 border-white/30 border-t-white animate-spin" />
             ) : (
-              <Star className={cn("w-4 h-4", import.meta.env.PROD ? "text-slate-400" : "text-white")} />
+              <Star className="w-4 h-4 text-white" />
             )}
-            {import.meta.env.PROD ? 'Coming Soon' : (isLoading ? 'Processing...' : 'Upgrade Now')}
+            {isLoading ? 'Processing...' : 'Upgrade Now'}
           </button>
 
           <div className="text-center space-y-6">
