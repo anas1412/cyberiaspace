@@ -536,10 +536,22 @@ export const useStore = create<CyberiaState>((set, get) => ({
     set({ isSpaceLoading: true });
     const savedTheme = localStorage.getItem('cyberia-theme') || 'cyberia';
     document.body.setAttribute('data-theme', savedTheme);
-    await get().refreshSpaces();
-    await get().refreshTotalThoughtCount();
+    
+    try {
+      await get().refreshSpaces();
+      await get().refreshTotalThoughtCount();
+    } catch (err) {
+      console.error('Failed to load data, resetting to onboarding:', err);
+      get().loadOnboardingData();
+      set({ isInitializing: false });
+      return;
+    }
+    
     const { spaces } = get();
-    if (spaces.length > 0) {
+    if (spaces.length === 0) {
+      // No data in DB, load onboarding
+      get().loadOnboardingData();
+    } else {
       const savedSpaceId = localStorage.getItem('cyberia-active-space-id');
       const spaceExists = savedSpaceId ? spaces.find(s => s.id === savedSpaceId) : null;
       if (spaceExists) get().setActiveSpace(savedSpaceId!);
