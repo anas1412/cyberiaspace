@@ -173,7 +173,7 @@ export const useStore = create<CyberiaState>((set, get) => ({
     }
   },
 
-  loadOnboardingData: () => {
+  loadOnboardingData: async () => {
     const demoSpaceId = 'demo-space';
     const s1 = 'demo-s1';
     const s2 = 'demo-s2';
@@ -209,6 +209,18 @@ export const useStore = create<CyberiaState>((set, get) => ({
       { id: 1008, text: 'Data Structures', type: 'table', table: [['Type', 'Function'], ['Text', 'Knowledge'], ['AI', 'Oracle']], x: 900, y: 400, vx: 0, vy: 0, stackId: s3, status: 'todo', spaceId: demoSpaceId, layer: 6, priority: 'high', description: '', author: 'Cyberia', size: 1.1, order: 1, image: null, drawing: null, tasks: [], content: '', date: '2026-03-10' },
       { id: 1009, text: 'Cognitive Layer', type: 'label', x: 900, y: 100, vx: 0, vy: 0, stackId: s3, status: 'none', spaceId: demoSpaceId, layer: 502, priority: 'none', description: '', author: 'Cyberia', size: 1.0, order: 2, image: null, drawing: null, tasks: [], table: [], content: '', date: '' },
     ];
+
+    // Save to database
+    try {
+      await db.transaction('rw', db.spaces, db.thoughts, db.stacks, async () => {
+        await db.spaces.bulkPut(demoSpaces);
+        await db.stacks.bulkPut(demoStacks);
+        await db.thoughts.bulkPut(demoThoughts);
+      });
+      localStorage.setItem('cyberia-active-space-id', demoSpaceId);
+    } catch (err) {
+      console.error('Failed to save onboarding data to DB:', err);
+    }
 
     set({ 
       spaces: demoSpaces, 
@@ -1154,21 +1166,32 @@ export const useStore = create<CyberiaState>((set, get) => ({
       const authStore = (await import('./useAuthStore')).useAuthStore.getState();
       const isAuthenticated = authStore.status === 'authenticated';
       
+      const workspaceId = 's-workspace-' + Date.now();
+      
       await db.transaction('rw', db.spaces, db.thoughts, db.stacks, db.blobs, async () => {
         await db.spaces.clear();
         await db.thoughts.clear();
         await db.stacks.clear();
         await db.blobs.clear();
-        const workspaceId = 's-workspace-' + Date.now();
+        
+        // Create one empty workspace
         await db.spaces.add({ id: workspaceId, name: 'Workspace', mode: 'spatial', physics: true, order: 0 });
         localStorage.setItem('cyberia-active-space-id', workspaceId);
+      });
+      
+      // Refresh state without reload
+      set({ 
+        spaces: [{ id: workspaceId, name: 'Workspace', mode: 'spatial', physics: true, order: 0 }], 
+        stacks: [], 
+        thoughts: [], 
+        activeSpaceId: workspaceId,
+        transform: { x: 0, y: 0, scale: 1 }
       });
       
       if (isAuthenticated) {
         await syncOrchestrator.triggerSync();
       }
       
-      window.location.reload();
     } catch (err) { console.error('Clear failed', err); }
   },
 
@@ -1215,10 +1238,18 @@ export const useStore = create<CyberiaState>((set, get) => ({
 
   clearLocalData: async () => {
     try {
+      // Clear database
       await db.transaction('rw', db.spaces, db.thoughts, db.stacks, db.blobs, async () => {
-        await db.spaces.clear(); await db.thoughts.clear(); await db.stacks.clear(); await db.blobs.clear();
+        await db.spaces.clear();
+        await db.thoughts.clear();
+        await db.stacks.clear();
+        await db.blobs.clear();
       });
+      
+      // Clear localStorage
       localStorage.clear();
+      
+      // Clear cookies
       const cookies = document.cookie.split(";");
       for (let i = 0; i < cookies.length; i++) {
         const cookie = cookies[i];
@@ -1226,7 +1257,10 @@ export const useStore = create<CyberiaState>((set, get) => ({
         const name = eqPos > -1 ? cookie.substring(0, eqPos) : cookie;
         document.cookie = name + "=;expires=Thu, 01 Jan 1970 00:00:00 GMT;path=/";
       }
-      window.location.reload();
+      
+      // Load onboarding data into store (this populates the demo thoughts)
+      get().loadOnboardingData();
+      
     } catch (err) { console.error('Local data clear failed', err); }
   }
 }));
