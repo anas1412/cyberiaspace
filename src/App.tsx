@@ -57,18 +57,28 @@ function App() {
   const mouseScreenPos = useRef({ x: 0, y: 0 });
 
   const [path, setPath] = useState(window.location.pathname);
+  const hostname = typeof window !== 'undefined' ? window.location.hostname : '';
+  const isMainDomain = hostname === 'cyberia.tn' || hostname === 'www.cyberia.tn';
 
   useEffect(() => {
-    const hostname = window.location.hostname;
-    const isMainDomain = hostname === 'cyberia.tn' || hostname === 'www.cyberia.tn';
-    
     if (path === '/' && !isMainDomain) {
       document.body.classList.add('app-body');
     } else {
       document.body.classList.remove('app-body');
     }
     return () => document.body.classList.remove('app-body');
-  }, [path]);
+  }, [path, isMainDomain]);
+
+  // Landing page routes - only on main domain
+  if (isMainDomain) {
+    if (path === '/' || path === '/home') {
+      return (
+        <Suspense fallback={<LoadingOverlay force />}>
+          <Homepage />
+        </Suspense>
+      );
+    }
+  }
 
 
   useEffect(() => {

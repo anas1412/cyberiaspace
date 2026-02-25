@@ -14,10 +14,6 @@ export default defineConfig({
       },
       workbox: {
         navigateFallbackDenylist: [/^\/api/],
-        // Aggressive update strategy
-        // This ensures the new service worker takes control immediately
-        // which helps prevent "stuck" versions on updates.
-        // For autoUpdate, it effectively means the user gets the new version on next load.
         skipWaiting: true,
         clientsClaim: true,
       },
@@ -36,6 +32,8 @@ export default defineConfig({
         'icon-512x512.png'
       ],
       manifest: {
+        scope: '/',
+        start_url: '/',
         name: 'Cyberia Workspace',
         short_name: 'Cyberia Workspace',
         description: 'Kinetic Information Architecture & Spatial Thinking',
