@@ -11,7 +11,6 @@ try {
 }
 
 export function usePWAUpdate() {
-  const [needRefresh, setNeedRefresh] = useState(false);
   const [isUpdating, setIsUpdating] = useState(false);
   const [updateServiceWorker, setUpdateServiceWorker] = useState<((reload?: boolean) => Promise<void>) | null>(null);
 
@@ -21,12 +20,9 @@ export function usePWAUpdate() {
     console.log('[PWA] Registering service worker...');
     const updateSW = registerSW({
       onNeedRefresh() {
-        console.log('[PWA] New content available, refreshing...');
-        setNeedRefresh(true);
-        setTimeout(() => {
-          setIsUpdating(true);
-          updateSW(true);
-        }, 3000);
+        console.log('[PWA] New content available, refreshing immediately...');
+        setIsUpdating(true);
+        updateSW(true);
       },
       onOfflineReady() {
         console.log('[PWA] App ready for offline use.');
@@ -44,5 +40,5 @@ export function usePWAUpdate() {
     });
   }, []);
 
-  return { needRefresh, isUpdating, updateServiceWorker };
+  return { needRefresh: false, isUpdating, updateServiceWorker };
 }
