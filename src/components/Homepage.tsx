@@ -489,7 +489,7 @@ const Homepage: React.FC = () => {
           <div className="flex flex-wrap items-center justify-center gap-x-8 gap-y-4 text-[10px] font-black uppercase tracking-[0.2em] text-slate-500">
             <a href="https://cyberia.tn/privacy" className="hover:text-white transition-colors">Privacy Policy</a>
             <a href="https://cyberia.tn/terms" className="hover:text-white transition-colors">Terms of Service</a>
-            <a href="https://cyberia.tn/sales-conditions" className="hover:text-white transition-colors">Refund Policy</a>
+            <a href="https://cyberia.tn/sales-conditions" className="hover:text-white transition-colors">Terms of Sale & Refund Policy</a>
             <a href="https://cyberia.tn/legal-notice" className="hover:text-white transition-colors">Legal Notice</a>
             <a href="https://cyberia.tn/contact" className="hover:text-white transition-colors">Contact</a>
           </div>

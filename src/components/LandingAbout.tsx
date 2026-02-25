@@ -17,7 +17,7 @@ const LandingAbout: React.FC = () => {
         >
           <div className="text-center space-y-4">
             <h1 className="text-3xl md:text-5xl font-black text-white uppercase tracking-tighter leading-none">
-              Cyber<span className="text-blue-500">ia</span>
+              Cyberia<span className="text-blue-500">Workspace</span>
             </h1>
             <p className="text-[10px] md:text-xs font-bold text-slate-500 uppercase tracking-[0.3em]">
               Kinetic Information Workspace
