@@ -3,7 +3,7 @@
   "rewrites": [
     { "source": "/api/:path*", "destination": "/api/:path*" },
     { 
-      "source": "/((?!.*\\.(?:js|css|png|jpg|svg|ico|tsx|ts|json|webmanifest)$|api/).*)", 
+      "source": "/((?!api/|@|.*\\.).*)", 
       "destination": "/index.html" 
     }
   ]

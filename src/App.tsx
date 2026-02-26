@@ -1,4 +1,4 @@
-import { useEffect, useRef, Suspense, lazy, useState, useCallback } from 'react';
+import { useEffect, useRef, Suspense, lazy, useState } from 'react';
 import { Analytics } from '@vercel/analytics/react';
 import { SpeedInsights } from '@vercel/speed-insights/react';
 import { useStore } from './store/useStore';
@@ -41,6 +41,8 @@ const Homepage = lazy(() => import('./components/Homepage'));
 const NotFound = lazy(() => import('./components/NotFound'));
 
 function App() {
+  // ========== ALL HOOKS AT TOP ==========
+  
   const init = useStore((state) => state.init);
   const setDeferredPrompt = useStore((state) => state.setDeferredPrompt);
   const thoughts = useStore((state) => state.thoughts);
@@ -49,16 +51,22 @@ function App() {
   const setInspectorOpen = useStore((state) => state.setInspectorOpen);
   const activeSpaceId = useStore((state) => state.activeSpaceId);
   const spaces = useStore((state) => state.spaces);
+  const theme = useStore((state) => state.theme);
+  const performanceMode = useStore((state) => state.performanceMode);
+  const customBg = useStore((state) => state.customBg);
 
   const { isPricingOpen, closePricing, openModal } = useModalStore();
+  
   const mouseWorldPos = useRef({ x: 0, y: 0 });
-
   const mouseScreenPos = useRef({ x: 0, y: 0 });
-
+  
   const [path, setPath] = useState(window.location.pathname);
+  const [staticBg, setStaticBg] = useState<string | null>(null);
+
   const hostname = typeof window !== 'undefined' ? window.location.hostname : '';
   const isMainDomain = hostname === 'cyberia.tn' || hostname === 'www.cyberia.tn';
 
+  // Hook: Body class
   useEffect(() => {
     if (path === '/' && !isMainDomain) {
       document.body.classList.add('app-body');
@@ -68,24 +76,14 @@ function App() {
     return () => document.body.classList.remove('app-body');
   }, [path, isMainDomain]);
 
-  // Landing page routes - only on main domain
-  if (isMainDomain) {
-    if (path === '/' || path === '/home') {
-      return (
-        <Suspense fallback={<LoadingOverlay force />}>
-          <Homepage />
-        </Suspense>
-      );
-    }
-  }
-
-
+  // Hook: Popstate
   useEffect(() => {
     const handlePopState = () => setPath(window.location.pathname);
     window.addEventListener('popstate', handlePopState);
     return () => window.removeEventListener('popstate', handlePopState);
   }, []);
 
+  // Hook: Mouse move
   useEffect(() => {
     const getGlobalScale = () => {
       const body = document.querySelector('.app-body') || document.body;
@@ -118,30 +116,7 @@ function App() {
     return () => window.removeEventListener('mousemove', handleMouseMove);
   }, []);
 
-  const getPlacementProps = useCallback(() => {
-    const activeSpace = spaces.find(s => s.id === activeSpaceId);
-    const props: any = {
-      x: mouseWorldPos.current.x,
-      y: mouseWorldPos.current.y
-    };
-
-    if (activeSpace?.mode === 'kanban') {
-      const x = mouseScreenPos.current.x;
-      const width = window.innerWidth;
-      if (x < width * 0.25) props.status = 'none';
-      else if (x < width * 0.50) props.status = 'todo';
-      else if (x < width * 0.75) props.status = 'doing';
-      else props.status = 'done';
-    } else if (activeSpace?.mode === 'calendar') {
-      const elements = document.elementsFromPoint(mouseScreenPos.current.x, mouseScreenPos.current.y);
-      const cell = elements.find(el => (el as HTMLElement).classList.contains('cal-cell'));
-      if (cell) {
-        props.date = (cell as HTMLElement).dataset.date;
-      }
-    }
-    return props;
-  }, [spaces, activeSpaceId]);
-
+  // Hook: Init and PWA
   useEffect(() => {
     const hostname = window.location.hostname;
     const isMainDomain = hostname === 'cyberia.tn' || hostname === 'www.cyberia.tn';
@@ -151,7 +126,6 @@ function App() {
     }
 
     const handleBeforeInstallPrompt = (e: Event) => {
-
       e.preventDefault();
       setDeferredPrompt(e);
     };
@@ -160,7 +134,32 @@ function App() {
     return () => window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
   }, [init, setDeferredPrompt, path]);
 
+  // Hook: Paste
   useEffect(() => {
+    const getPlacementProps = () => {
+      const activeSpace = spaces.find(s => s.id === activeSpaceId);
+      const props: any = {
+        x: mouseWorldPos.current.x,
+        y: mouseWorldPos.current.y
+      };
+
+      if (activeSpace?.mode === 'kanban') {
+        const x = mouseScreenPos.current.x;
+        const width = window.innerWidth;
+        if (x < width * 0.25) props.status = 'none';
+        else if (x < width * 0.50) props.status = 'todo';
+        else if (x < width * 0.75) props.status = 'doing';
+        else props.status = 'done';
+      } else if (activeSpace?.mode === 'calendar') {
+        const elements = document.elementsFromPoint(mouseScreenPos.current.x, mouseScreenPos.current.y);
+        const cell = elements.find(el => (el as HTMLElement).classList.contains('cal-cell'));
+        if (cell) {
+          props.date = (cell as HTMLElement).dataset.date;
+        }
+      }
+      return props;
+    };
+
     const processPasteData = async (clipboardData: DataTransfer | null, textFallback?: string) => {
       const authStore = useAuthStore.getState();
       const currentLimits = PLAN_CONFIG[authStore.user?.plan || 'free'];
@@ -174,7 +173,6 @@ function App() {
         return;
       }
 
-      // 1. Handle Image/File Data from clipboard
       if (clipboardData) {
         const items = clipboardData.items;
         let bestFile: File | null = null;
@@ -191,7 +189,6 @@ function App() {
             if (file) {
               const actualType = await detectImageType(file);
               if (!bestFile || priority.indexOf(actualType) < priority.indexOf(bestFile.type)) {
-                // If it's a GIF but labeled as PNG, we create a new file with the correct type
                 if (actualType !== file.type) {
                   bestFile = new File([file], file.name, { type: actualType });
                 } else {
@@ -202,7 +199,6 @@ function App() {
           }
         }
 
-        // GIF RECOVERY: If we have HTML but the image found is not a GIF
         if (htmlContent && (!bestFile || bestFile.type !== 'image/gif')) {
           const doc = new DOMParser().parseFromString(htmlContent, 'text/html');
           const img = doc.querySelector('img');
@@ -228,7 +224,7 @@ function App() {
           const id = await addThought({
             ...getPlacementProps(),
             type: 'image',
-            image: thumbnail, // Compressed preview
+            image: thumbnail,
             text: 'Pasted Image',
             meta: {
               file: {
@@ -257,7 +253,6 @@ function App() {
         }
       }
 
-      // 2. Handle Text Paste
       const text = clipboardData ? clipboardData.getData('text') : textFallback;
       if (text && text.trim()) {
         const cleanText = text.trim();
@@ -321,13 +316,9 @@ function App() {
       window.removeEventListener('paste', handlePaste);
       window.removeEventListener('cyberia-paste-triggered', handleCustomPaste);
     };
-  }, [addThought, setSelectedThoughtId, setInspectorOpen, thoughts.length, openModal, path, getPlacementProps]);
+  }, [addThought, setSelectedThoughtId, setInspectorOpen, thoughts.length, openModal, path, spaces, activeSpaceId]);
 
-  const theme = useStore((state) => state.theme);
-  const performanceMode = useStore((state) => state.performanceMode);
-  const customBg = useStore((state) => state.customBg);
-  const [staticBg, setStaticBg] = useState<string | null>(null);
-
+  // Hook: Static background
   useEffect(() => {
     if (performanceMode && customBg && (customBg.includes('image/gif') || customBg.toLowerCase().endsWith('.gif'))) {
       const img = new Image();
@@ -352,6 +343,8 @@ function App() {
     }
   }, [performanceMode, customBg]);
 
+  // ========== RENDER BASED ON PATH ==========
+  
   if (path === '/home') {
     return (
       <Suspense fallback={<LoadingOverlay force />}>
@@ -369,7 +362,7 @@ function App() {
     );
   }
 
-if (path === '/privacy') {
+  if (path === '/privacy') {
     return (
       <Suspense fallback={<LoadingOverlay force />}>
         <PrivacyPolicyGeneral />
@@ -425,8 +418,15 @@ if (path === '/privacy') {
     );
   }
 
-  // 404 Catch-all for undefined routes on main domain only
+  // Landing page routes - only on main domain
   if (isMainDomain) {
+    if (path === '/' || path === '/home') {
+      return (
+        <Suspense fallback={<LoadingOverlay force />}>
+          <Homepage />
+        </Suspense>
+      );
+    }
     return (
       <Suspense fallback={<LoadingOverlay force />}>
         <NotFound />
@@ -460,7 +460,6 @@ if (path === '/privacy') {
         <Viewport />
         <EmptyState />
         <KanbanOverlay />
-
         <CalendarOverlay />
         <Toolbar />
         <Inspector />
