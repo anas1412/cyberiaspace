@@ -1,12 +1,10 @@
 {
   "version": 2,
   "rewrites": [
-    { "source": "/home", "destination": "/index.html" },
-    { "source": "/terms", "destination": "/terms" },
-    { "source": "/privacy", "destination": "/privacy" },
-    { "source": "/sales-conditions", "destination": "/sales-conditions" },
-    { "source": "/privacy-policy", "destination": "/privacy-policy" },
-    { "source": "/legal-notice", "destination": "/legal-notice" },
-    { "source": "/contact", "destination": "/contact" }
+    { "source": "/api/:path*", "destination": "/api/:path*" },
+    { 
+      "source": "/((?!.*\\.(?:js|css|png|jpg|svg|ico|tsx|ts|json|webmanifest)$|api/).*)", 
+      "destination": "/index.html" 
+    }
   ]
 }
