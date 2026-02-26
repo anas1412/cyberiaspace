@@ -13,7 +13,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Upload } from 'lucide-react';
 
 import { db } from '../db';
-import { generateThumbnail } from '../utils/image';
+import { generateThumbnail, generateVideoThumbnail } from '../utils/image';
 
 function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -324,18 +324,24 @@ const Viewport: React.FC = () => {
         }
 
         const isImage = file.type.startsWith('image/') || /\.(jpg|jpeg|png|gif|webp|svg)$/i.test(file.name);
+        const isVideo = file.type.startsWith('video/') || /\.(mp4|webm|mov|m4v)$/i.test(file.name);
         const isText = file.name.endsWith('.txt') || file.type === 'text/plain';
         const isCSV = file.name.endsWith('.csv') || file.type === 'text/csv';
         const isLarge = file.size > 2 * 1024 * 1024;
 
-        if (isImage) {
-          const thumbnail = await generateThumbnail(file).catch(err => {
-            console.warn('Thumbnail generation failed:', err);
-            return null;
-          });
+        if (isImage || isVideo) {
+          const thumbnail = isImage 
+            ? await generateThumbnail(file).catch(err => {
+                console.warn('Thumbnail generation failed:', err);
+                return null;
+              })
+            : await generateVideoThumbnail(file).catch(err => {
+                console.warn('Video thumbnail generation failed:', err);
+                return null;
+              });
 
           const id = await addThought({
-            type: 'image',
+            type: isImage ? 'image' : 'file',
             text: file.name,
             image: thumbnail,
             syncStatus: 'local',
