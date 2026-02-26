@@ -15,6 +15,7 @@ import PricingModal from './components/PricingModal';
 import Lightbox from './components/Lightbox';
 import LoadingOverlay from './components/LoadingOverlay';
 import UpdateToast from './components/UpdateToast';
+import ExternalScripts from './components/ExternalScripts';
 import { fetchEmbedMeta } from './utils/embeds';
 
 // Lazy Loaded Components
@@ -476,6 +477,7 @@ if (path === '/privacy') {
         <FileFocusEditor />
         <LoadingOverlay />
         <UpdateToast />
+        <ExternalScripts />
       </Suspense>
       <Analytics />
       <SpeedInsights />
