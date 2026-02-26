@@ -25,20 +25,7 @@ const LoadingOverlay: React.FC<LoadingOverlayProps> = ({ force }) => {
   }, [show]);
 
   const handleForceReset = () => {
-    // Clear all PWA caches and local storage items related to the app
-    if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.getRegistrations().then(registrations => {
-        for (const registration of registrations) {
-          registration.unregister();
-        }
-      });
-    }
-    // Clear localStorage (careful not to clear critical browser settings)
-    localStorage.clear(); 
-    // Clear IndexedDB
-    indexedDB.deleteDatabase('CyberiaDB');
-    // Force reload
-    window.location.reload();
+    window.location.href = '/';
   };
 
   return (
@@ -128,7 +115,7 @@ const LoadingOverlay: React.FC<LoadingOverlayProps> = ({ force }) => {
                 className="mt-8 flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-slate-500 hover:text-white transition-colors group"
               >
                 <RefreshCw className="w-3 h-3 group-hover:rotate-45 transition-transform" />
-                <span>Loading taking too long? <span className="text-blue-400">Force Reset Workspace</span></span>
+                <span>Loading taking too long? <span className="text-blue-400">Go Back to Workspace</span></span>
               </motion.button>
             )}
           </div>

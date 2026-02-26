@@ -446,6 +446,18 @@ function App() {
     );
   }
 
+  // App domain: check for valid routes, otherwise show NotFound
+  const validAppRoutes = ['/feedback', '/privacy', '/terms', '/sales-conditions', '/privacy-policy', '/legal-notice', '/contact', '/login'];
+  const isValidAppRoute = path === '/' || path.startsWith('/s/') || validAppRoutes.includes(path) || (path === '/home' && canSeeLanding);
+  
+  if (!isValidAppRoute) {
+    return (
+      <Suspense fallback={<LoadingOverlay force />}>
+        <NotFound />
+      </Suspense>
+    );
+  }
+
   return (
     <div className="w-full h-full relative overflow-hidden bg-black">
       {customBg && (
