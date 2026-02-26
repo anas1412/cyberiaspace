@@ -4,8 +4,12 @@ import { FileText, ArrowLeft } from 'lucide-react';
 
 const SalesConditions: React.FC = () => {
   const handleBack = () => {
-    window.history.pushState({}, '', '/');
-    window.dispatchEvent(new PopStateEvent('popstate'));
+    if (window.history.length > 1) {
+      window.history.back();
+    } else {
+      window.history.pushState({}, '', '/');
+      window.dispatchEvent(new PopStateEvent('popstate'));
+    }
   };
 
   return (
@@ -20,7 +24,7 @@ const SalesConditions: React.FC = () => {
           className="flex items-center gap-2 text-blue-400 hover:text-white transition-colors mb-12 group"
         >
           <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
-          <span className="text-xs font-black uppercase tracking-widest">Back to Workspace</span>
+          <span className="text-xs font-black uppercase tracking-widest">Back</span>
         </button>
 
         <header className="mb-16">

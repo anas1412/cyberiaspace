@@ -76,8 +76,12 @@ const LoginPage: React.FC = () => {
   };
 
   const handleBack = () => {
-    window.history.pushState({}, '', '/');
-    window.dispatchEvent(new PopStateEvent('popstate'));
+    if (window.history.length > 1) {
+      window.history.back();
+    } else {
+      window.history.pushState({}, '', '/');
+      window.dispatchEvent(new PopStateEvent('popstate'));
+    }
   };
 
   return (
@@ -101,7 +105,7 @@ const LoginPage: React.FC = () => {
           className="mb-8 flex items-center gap-2 text-slate-500 hover:text-white transition-colors group"
         >
           <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
-          <span className="text-[10px] font-black uppercase tracking-widest">Back to Space</span>
+          <span className="text-[10px] font-black uppercase tracking-widest">Back</span>
         </button>
 
         <div className="glass p-8 md:p-16 rounded-[3rem] border border-white/10 shadow-2xl space-y-10 text-center">
