@@ -87,7 +87,7 @@ const Homepage: React.FC = () => {
       <button 
         key={item}
         onClick={() => scrollToSection(item)} 
-        className="px-4 h-full rounded-xl transition-all duration-300 flex items-center group/nav hover:bg-white/5"
+        className="px-4 h-full rounded-xl transition-all duration-300 flex items-center group/nav"
       >
         <span className="text-[10px] font-black uppercase tracking-[0.15em] text-slate-400 group-hover/nav:text-white transition-colors">
           {item}
