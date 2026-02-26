@@ -8,6 +8,7 @@ const DemoWorkspace = lazy(() => import('./demo/DemoWorkspace'));
 const Homepage: React.FC = () => {
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [location, setLocation] = useState<{ country: string; currency: string; isLocalPricing: boolean } | null>(null);
   
   const [contactName, setContactName] = useState('');
   const [contactEmail, setContactEmail] = useState('');
@@ -44,6 +45,27 @@ const Homepage: React.FC = () => {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
+  useEffect(() => {
+    const userTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+    const userLanguage = navigator.language;
+    const isTunisiaLikely = userTimezone === 'Africa/Tunis' || userLanguage.includes('ar-TN') || userLanguage.includes('fr-TN');
+
+    fetch('/api/pay?action=pricing')
+      .then(res => res.json())
+      .then(data => {
+        if (data.country === 'US' && isTunisiaLikely) {
+          setLocation({ country: 'TN', currency: 'DT', isLocalPricing: true });
+        } else {
+          setLocation(data);
+        }
+      })
+      .catch(() => setLocation({
+        country: isTunisiaLikely ? 'TN' : 'US',
+        currency: isTunisiaLikely ? 'DT' : 'USD',
+        isLocalPricing: isTunisiaLikely
+      }));
+  }, []);
+
   const scrollToSection = (id: string) => {
     const element = document.getElementById(id);
     element?.scrollIntoView({ behavior: 'smooth' });
@@ -52,6 +74,7 @@ const Homepage: React.FC = () => {
 
   const proPrice = PLAN_CONFIG.pro.PRICE!;
   const savingsUsd = proPrice.monthly.usd * 12 - proPrice.yearly.usd;
+  const savingsTnd = proPrice.monthly.tnd * 12 - proPrice.yearly.tnd;
 
   return (
     <div className="min-h-screen bg-[#020408] text-[#e2e8f0] overflow-y-auto selection:bg-[var(--accent)]/30">
@@ -315,13 +338,32 @@ className="glass p-10 rounded-[3rem] border-[var(--accent)]/30 bg-[var(--accent)
 
               <div className="mb-8 relative z-10">
                 <h3 className="text-xl font-black uppercase tracking-[0.2em] text-[var(--accent-secondary)] mb-2">Cyberia Pro</h3>
-                <div className="flex items-baseline gap-2 group-hover:scale-105 transition-transform origin-left duration-500">
-                  <div className="text-4xl font-black text-white">${proPrice.monthly.usd}</div>
-                  <div className="text-xl text-slate-500 font-bold uppercase tracking-widest">/ Month</div>
-                </div>
-                <div className="mt-2 text-[10px] font-bold text-[var(--accent-secondary)]/60 uppercase tracking-widest">
-                  Save ${savingsUsd} Yearly — Local Price: {proPrice.monthly.tnd} DT
-                </div>
+                
+                {location?.isLocalPricing ? (
+                  <div className="flex flex-col gap-2 mb-2">
+                    <span className="text-[9px] font-bold uppercase tracking-widest bg-[var(--accent)]/20 text-[var(--accent-secondary)] px-3 py-1 rounded-full border border-[var(--accent)]/30 w-fit">
+                      Local Pricing Active
+                    </span>
+                    <div className="flex items-baseline gap-2 group-hover:scale-105 transition-transform origin-left duration-500">
+                      <div className="text-4xl font-black text-white">{proPrice.monthly.tnd}</div>
+                      <div className="text-xl text-slate-500 font-bold uppercase tracking-widest">DT / Month</div>
+                    </div>
+                    <div className="text-[10px] font-bold text-[var(--accent-secondary)]/60 uppercase tracking-widest">
+                      Save {savingsTnd} DT Yearly — Global: ${proPrice.monthly.usd} USD
+                    </div>
+                  </div>
+                ) : (
+                  <div className="flex items-baseline gap-2 group-hover:scale-105 transition-transform origin-left duration-500">
+                    <div className="text-4xl font-black text-white">${proPrice.monthly.usd}</div>
+                    <div className="text-xl text-slate-500 font-bold uppercase tracking-widest">/ Month</div>
+                  </div>
+                )}
+                
+                {!location?.isLocalPricing && (
+                  <div className="mt-2 text-[10px] font-bold text-[var(--accent-secondary)]/60 uppercase tracking-widest">
+                    Save ${savingsUsd} Yearly
+                  </div>
+                )}
               </div>
 
               <div className="space-y-4 mb-10 flex-1">
