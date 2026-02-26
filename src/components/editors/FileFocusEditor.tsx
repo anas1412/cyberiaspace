@@ -4,7 +4,7 @@ import { useAuthStore } from '../../store/useAuthStore';
 import { File as FileIcon, Upload, Download, Loader2, FileAudio, Shield, Database, CloudOff, Cloud } from 'lucide-react';
 import { FocusEditorShell } from './FocusEditorShell';
 import { MAX_FILE_SIZE_MB } from '../../constants';
-import { generateThumbnail } from '../../utils/image';
+import { generateThumbnail, generateVideoThumbnail } from '../../utils/image';
 import { supabaseStorage } from '../../services/supabaseStorage';
 import { motion, AnimatePresence } from 'framer-motion';
 import { clsx, type ClassValue } from 'clsx';
@@ -75,21 +75,37 @@ const EditorContent: React.FC<{
                   />
                 </div>
               </div>
-            ) : fileMeta.type?.includes('audio') || thought.text?.toLowerCase().endsWith('.mp3') || thought.text?.toLowerCase().endsWith('.wav') || thought.text?.toLowerCase().endsWith('.ogg') ? (
-              <div className="flex flex-col items-center justify-center w-full h-full p-8 bg-[#020408]">
-                <div className="relative mb-12">
-                  <div className="absolute inset-0 bg-blue-500/10 rounded-full blur-3xl animate-pulse scale-150" />
-                  <div className="relative w-32 h-32 md:w-40 md:h-40 bg-blue-500/5 rounded-full flex items-center justify-center border border-blue-500/10 shadow-[0_0_80px_rgba(99,102,241,0.2)]">
-                    <FileAudio className="w-16 h-12 md:w-20 md:h-16 text-blue-400 opacity-60" />
-                  </div>
-                </div>
-                <div className="w-full max-w-lg glass p-4 md:p-6 rounded-[2.5rem] border border-white/5 shadow-2xl relative z-10">
-                  <audio 
-                    controls 
-                    autoPlay 
-                    className="w-full h-10 invert brightness-200 hue-rotate-[240deg]"
+            ) : fileMeta.type?.includes('video') || ['mp4', 'webm', 'mov', 'm4v'].includes(thought.text?.toLowerCase().split('.').pop() || '') ? (
+              <div className="flex flex-col items-center justify-center w-full h-full p-4 md:p-8">
+                <div className="relative w-full h-full flex items-center justify-center overflow-hidden rounded-2xl bg-black shadow-2xl">
+                  <video 
                     src={localPreviewUrl || thought.storageUrl}
+                    poster={thought.image || undefined}
+                    controls
+                    playsInline
+                    className="w-full h-full object-contain"
                   />
+                </div>
+              </div>
+            ) : fileMeta.type?.includes('audio') || thought.text?.toLowerCase().endsWith('.mp3') || thought.text?.toLowerCase().endsWith('.wav') || thought.text?.toLowerCase().endsWith('.ogg') ? (
+              <div className="flex flex-col items-center justify-center w-full h-full p-4 md:p-8">
+                <div className="relative w-full h-full flex flex-col items-center justify-center overflow-hidden rounded-2xl bg-[#020408] shadow-2xl">
+                  <div className="flex-1 flex items-center justify-center">
+                    <div className="relative">
+                      <div className="absolute inset-0 bg-blue-500/10 rounded-full blur-3xl animate-pulse scale-150" />
+                      <div className="relative w-32 h-32 md:w-40 md:h-40 bg-blue-500/5 rounded-full flex items-center justify-center border border-blue-500/10">
+                        <FileAudio className="w-16 h-12 md:w-20 md:h-16 text-blue-400 opacity-60" />
+                      </div>
+                    </div>
+                  </div>
+                  <div className="w-full p-6 md:p-10 bg-black/40 backdrop-blur-xl border-t border-white/5">
+                    <audio 
+                      controls 
+                      autoPlay 
+                      className="w-full h-10 invert brightness-200 hue-rotate-[240deg]"
+                      src={localPreviewUrl || thought.storageUrl}
+                    />
+                  </div>
                 </div>
               </div>
             ) : (
@@ -230,7 +246,11 @@ const FileFocusEditor: React.FC = () => {
   useEffect(() => {
     const loadLocalBlob = async () => {
       if (!thought) return;
-      if (thought.storageUrl || localPreviewUrl) return;
+      
+      // Reset preview for new thought to avoid stale previews (e.g. MP4 audio on MP3)
+      setLocalPreviewUrl(null);
+
+      if (thought.storageUrl) return;
       if (thought.type !== 'file' && thought.type !== 'image') return;
       
       try {
@@ -247,6 +267,13 @@ const FileFocusEditor: React.FC = () => {
     };
     
     loadLocalBlob();
+
+    // Cleanup: revoke URL to prevent memory leaks and collisions
+    return () => {
+      if (localPreviewUrl) {
+        URL.revokeObjectURL(localPreviewUrl);
+      }
+    };
   }, [thought?.id, thought?.storageUrl, thought?.type]);
 
   const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -278,7 +305,13 @@ const FileFocusEditor: React.FC = () => {
       const result = await supabaseStorage.uploadFile(user.id, file, file.name);
       
       const isImage = file.type.startsWith('image/') || /\.(jpg|jpeg|png|gif|webp|svg)$/i.test(file.name);
-      const thumbnail = isImage ? await generateThumbnail(file).catch(() => null) : null;
+      const isVideo = file.type.startsWith('video/') || /\.(mp4|webm|mov|m4v)$/i.test(file.name);
+      
+      const thumbnail = isImage 
+        ? await generateThumbnail(file).catch(() => null)
+        : isVideo 
+          ? await generateVideoThumbnail(file).catch(() => null)
+          : null;
       
       await updateThought(thought.id, {
         text: file.name,

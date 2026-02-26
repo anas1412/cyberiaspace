@@ -3,7 +3,7 @@ import { useStore } from '../store/useStore';
 import { useAuthStore } from '../store/useAuthStore';
 import { useModalStore } from '../store/useModalStore';
 import { db } from '../db';
-import { generateThumbnail } from '../utils/image';
+import { generateThumbnail, generateVideoThumbnail } from '../utils/image';
 import { X, Maximize2, Image as ImageIcon, Trash2, Youtube, Type, ListTodo, Palette, Table, Calendar, ChevronLeft, ChevronRight, ArrowUp, ArrowDown, Share2, File as FileIcon, Upload, Tag } from 'lucide-react';
 import { MAX_FILE_SIZE_MB } from '../constants';
 import { clsx, type ClassValue } from 'clsx';
@@ -566,9 +566,15 @@ const Inspector: React.FC = () => {
                                 return;
                               }
                               
-                              // 1. Update metadata and type if image
+                              // 1. Update metadata and type if image/video
                               const isImage = file.type.startsWith('image/') || /\.(jpg|jpeg|png|gif|webp|svg)$/i.test(file.name);
-                              const thumbnail = isImage ? await generateThumbnail(file).catch(() => null) : null;
+                              const isVideo = file.type.startsWith('video/') || /\.(mp4|webm|mov|m4v)$/i.test(file.name);
+                              
+                              const thumbnail = isImage 
+                                ? await generateThumbnail(file).catch(() => null)
+                                : isVideo 
+                                  ? await generateVideoThumbnail(file).catch(() => null)
+                                  : null;
 
                               await updateThought(thought.id, { 
                                 text: file.name,

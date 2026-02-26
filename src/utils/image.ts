@@ -79,3 +79,71 @@ export const generateThumbnail = async (file: File | Blob, maxWidth = 400, maxHe
     reader.readAsDataURL(file);
   });
 };
+
+/**
+ * Generates a compressed static thumbnail for a video file by capturing a frame.
+ */
+export const generateVideoThumbnail = async (file: File | Blob, seekSeconds = 1, maxWidth = 400, maxHeight = 400, quality = 0.6): Promise<string> => {
+  return new Promise((resolve, reject) => {
+    const video = document.createElement('video');
+    const url = URL.createObjectURL(file);
+    
+    video.preload = 'metadata';
+    video.muted = true;
+    video.playsInline = true;
+    video.src = url;
+
+    const cleanup = () => {
+      URL.revokeObjectURL(url);
+      video.remove();
+    };
+
+    video.onloadedmetadata = () => {
+      // Seek to the requested time (or the start if the video is short)
+      video.currentTime = Math.min(seekSeconds, video.duration);
+    };
+
+    video.onseeked = () => {
+      const canvas = document.createElement('canvas');
+      let width = video.videoWidth;
+      let height = video.videoHeight;
+
+      if (width > height) {
+        if (width > maxWidth) {
+          height *= maxWidth / width;
+          width = maxWidth;
+        }
+      } else {
+        if (height > maxHeight) {
+          width *= maxHeight / height;
+          height = maxHeight;
+        }
+      }
+
+      canvas.width = width;
+      canvas.height = height;
+      const ctx = canvas.getContext('2d');
+      if (!ctx) {
+        cleanup();
+        reject(new Error('Failed to get canvas context'));
+        return;
+      }
+
+      ctx.drawImage(video, 0, 0, width, height);
+      const dataUrl = canvas.toDataURL('image/jpeg', quality);
+      cleanup();
+      resolve(dataUrl);
+    };
+
+    video.onerror = () => {
+      cleanup();
+      reject(new Error('Failed to load video for thumbnail'));
+    };
+    
+    // Timeout if video fails to seek/load in 5 seconds
+    setTimeout(() => {
+      cleanup();
+      reject(new Error('Video thumbnail generation timed out'));
+    }, 5000);
+  });
+};

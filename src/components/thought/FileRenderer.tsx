@@ -23,10 +23,11 @@ export const FileRenderer: React.FC<FileRendererProps> = ({ thought }) => {
 
   const fileMeta = thought.meta?.file || {};
   const isImage = fileMeta.type?.startsWith('image/') || thought.image || ['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg'].includes(thought.text?.toLowerCase().split('.').pop() || '');
+  const isVideo = fileMeta.type?.startsWith('video/') || ['mp4', 'webm', 'mov', 'm4v'].includes(thought.text?.toLowerCase().split('.').pop() || '');
   const hasRemoteContent = thought.storageUrl && thought.syncStatus !== 'synced';
   const isSyncing = thought.syncStatus === 'syncing' || thought.syncStatus === 'pending';
 
-  if (isImage && (thought.image || hasRemoteContent)) {
+  if ((isImage || isVideo) && (thought.image || hasRemoteContent)) {
     return (
       <div data-trigger="file" className="mt-2 relative group cursor-pointer overflow-hidden rounded-xl border border-white/10 bg-black/50 aspect-video flex items-center justify-center">
         {thought.image ? (
@@ -45,6 +46,14 @@ export const FileRenderer: React.FC<FileRendererProps> = ({ thought }) => {
             <span className="text-[8px] font-black uppercase tracking-widest text-amber-500 text-center px-4">
               Pending Sync...
             </span>
+          </div>
+        )}
+
+        {isVideo && thought.image && !isSyncing && (
+          <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+            <div className="w-10 h-10 rounded-full bg-black/40 backdrop-blur-sm border border-white/20 flex items-center justify-center group-hover:scale-110 group-hover:bg-purple-500/40 transition-all duration-300">
+              <FileVideo className="w-5 h-5 text-white shadow-2xl" />
+            </div>
           </div>
         )}
 
