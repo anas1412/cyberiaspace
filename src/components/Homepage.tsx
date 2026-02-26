@@ -494,7 +494,9 @@ const Homepage: React.FC = () => {
             <a href="https://cyberia.tn/contact" className="hover:text-white transition-colors">Contact</a>
           </div>
           <div className="text-[10px] font-black uppercase tracking-widest text-slate-600">
-            © 2026 CYBERIA WORKSPACE
+            <div className="text-[10px] font-black uppercase tracking-widest text-slate-600">
+              © {new Date().getFullYear()} CYBERIA WORKSPACE
+            </div>
           </div>
         </div>
       </footer>
