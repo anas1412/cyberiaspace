@@ -352,9 +352,12 @@ function App() {
     }
   }, [performanceMode, customBg]);
 
+  // Landing page is only available on main domain or localhost (for dev)
+  const canSeeLanding = isMainDomain || hostname === 'localhost' || hostname === '127.0.0.1';
+
   // ========== RENDER BASED ON PATH ==========
   
-  if (path === '/home') {
+  if (path === '/home' && canSeeLanding) {
     return (
       <Suspense fallback={<LoadingOverlay force />}>
         <Homepage />
