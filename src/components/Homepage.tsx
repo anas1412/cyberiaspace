@@ -289,7 +289,7 @@ className="glass p-8 rounded-[2.5rem] border-white/5 hover:border-[var(--accent)
         <div className="max-w-6xl mx-auto">
           <div className="text-center mb-20">
 <h2 className="text-4xl md:text-5xl font-black tracking-tighter uppercase mb-6">
-              Unlock <span style={{ color: 'var(--accent)' }}>Maximum Flow</span>
+              Unlock <span style={{ color: 'var(--accent)' }}>Your Potential</span>
             </h2>
             <p className="text-slate-400 font-medium">Start for free, upgrade when you're ready.</p>
           </div>
@@ -540,7 +540,7 @@ className="glass p-10 rounded-[3rem] border-[var(--accent)]/30 bg-[var(--accent)
           >
 <Rocket className="w-12 h-12 text-[var(--accent)] mx-auto mb-8 animate-pulse" />
             <h2 className="text-4xl md:text-6xl font-black tracking-tighter uppercase mb-8">
-              Begin Your <br /><span style={{ color: 'var(--accent)' }}>Cognitive Journey</span>
+              Start <span style={{ color: 'var(--accent)' }}>Now</span>
             </h2>
             <p className="text-slate-400 mb-12 font-medium">
               Join a new generation of thinkers who are mapping the future in Cyberia Workspace.
@@ -549,7 +549,7 @@ className="glass p-10 rounded-[3rem] border-[var(--accent)]/30 bg-[var(--accent)
               href="https://app.cyberia.tn"
               className="inline-flex items-center gap-4 px-12 py-6 bg-[var(--accent)] hover:bg-[var(--accent-secondary)] text-white rounded-[2rem] text-xs font-black uppercase tracking-[0.4em] transition-all shadow-[0_20px_50px_rgba(99,102,241,0.3)] hover:-translate-y-1 active:translate-y-0"
             >
-              Start Thinking Spatial
+              Try for Free
               <ArrowRight className="w-5 h-5" />
             </a>
           </motion.div>
