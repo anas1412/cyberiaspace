@@ -1,6 +1,6 @@
 import React, { lazy, Suspense, useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { MousePointer2, Layout, Database, Sparkles, ArrowRight, Check, Rocket, Menu, X, Send, Loader2, CheckCircle, Shield } from 'lucide-react';
+import { MousePointer2, Layout, Database, Sparkles, ArrowRight, Zap, Shield, Globe, Check, Rocket, Menu, X, Send, Loader2, CheckCircle } from 'lucide-react';
 import { PLAN_CONFIG } from '../constants';
 
 const DemoWorkspace = lazy(() => import('./demo/DemoWorkspace'));
@@ -54,7 +54,7 @@ const Homepage: React.FC = () => {
   const savingsUsd = proPrice.monthly.usd * 12 - proPrice.yearly.usd;
 
   return (
-    <div className="min-h-screen bg-[#020408] text-[#e2e8f0] overflow-y-auto selection:bg-[var(--accent)]/30">
+    <div className="min-h-screen bg-[#020408] text-[#e2e8f0] overflow-y-auto selection:bg-blue-500/30">
       <div className="fixed inset-0 z-0 pointer-events-none">
         <div className="stars-layer stars-1" />
         <div className="stars-layer stars-2" />
@@ -65,42 +65,36 @@ const Homepage: React.FC = () => {
 
       <nav className={`fixed top-0 left-0 right-0 z-[100] transition-all duration-500 ${
         isScrolled 
-          ? 'bg-[#020408]/10 backdrop-blur-3xl border-b border-white/10 py-3' 
+          ? 'bg-[#020408]/80 backdrop-blur-2xl border-b border-white/10 py-3' 
           : 'bg-transparent py-5'
       }`}>
         <div className="max-w-7xl mx-auto px-6 flex items-center justify-between">
           <div className="flex items-center gap-3 group cursor-pointer" onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}>
-            <img src="/logo.png" alt="Cyberia Workspace" className="w-8 h-8 md:w-10 md:h-10 object-contain" />
-            <span className="text-lg md:text-2xl font-black tracking-tighter uppercase">
-              Cyberia <span style={{ color: 'var(--accent)' }}>Workspace</span>
+            <div className="relative">
+              <img src="/logo.png" alt="Cyberia Workspace" className="w-10 h-10 object-contain relative z-10 group-hover:scale-110 transition-transform duration-500" />
+              <div className="absolute inset-0 bg-blue-500/20 blur-xl rounded-full scale-0 group-hover:scale-150 transition-transform duration-700" />
+            </div>
+            <span className="text-2xl font-black tracking-tighter uppercase">
+              Cyberia <span className="text-blue-500">Workspace</span>
             </span>
           </div>
 
-          {/* Desktop Nav - ViewSwitcher Style */}
-          <div className="hidden md:flex items-center gap-3"> {/* Increased gap slightly to 3 */}
-  {/* The Nav Container */}
-  <div className="flex items-center h-12 p-1.5 glass rounded-2xl shadow-xl border border-white/5">
-    {['features', 'pricing', 'about', 'contact'].map((item) => (
-      <button 
-        key={item}
-        onClick={() => scrollToSection(item)} 
-        className="px-4 h-full rounded-xl transition-all duration-300 flex items-center group/nav hover:bg-white/5"
-      >
-        <span className="text-[10px] font-black uppercase tracking-[0.15em] text-slate-400 group-hover/nav:text-white transition-colors">
-          {item}
-        </span>
-      </button>
-    ))}
-  </div>
-
-  {/* The CTA Button - Now height matched and radius matched */}
-  <a 
-    href="https://app.cyberia.tn" 
-    className="h-11 px-6 bg-[var(--accent)] hover:bg-[var(--accent-secondary)] text-white rounded-2xl text-[10px] font-black uppercase tracking-[0.15em] transition-all shadow-lg shadow-[var(--accent)]/20 hover:shadow-[var(--accent)]/40 flex items-center justify-center border border-white/10"
-  >
-    Open Workspace
-  </a>
-</div>
+          {/* Desktop Nav */}
+          <div className="hidden md:flex items-center gap-10">
+            {['features', 'pricing', 'about', 'contact'].map((item) => (
+              <button 
+                key={item}
+                onClick={() => scrollToSection(item)} 
+                className="text-[11px] font-black uppercase tracking-[0.25em] text-slate-400 hover:text-blue-400 transition-all relative group"
+              >
+                {item}
+                <span className="absolute -bottom-1 left-0 w-0 h-px bg-blue-500 transition-all duration-300 group-hover:w-full" />
+              </button>
+            ))}
+            <a href="https://app.cyberia.tn" className="px-8 py-3 bg-blue-600 hover:bg-blue-500 text-white rounded-xl text-[11px] font-black uppercase tracking-[0.2em] transition-all shadow-lg shadow-blue-500/20 hover:shadow-blue-500/40 active:scale-95">
+              Launch App
+            </a>
+          </div>
 
           {/* Mobile Toggle */}
           <button 
@@ -125,12 +119,12 @@ const Homepage: React.FC = () => {
                   <button 
                     key={item}
                     onClick={() => scrollToSection(item)} 
-                    className="text-left text-[12px] font-black uppercase tracking-[0.3em] text-slate-400 hover:text-[var(--accent-secondary)] transition-colors"
+                    className="text-left text-[12px] font-black uppercase tracking-[0.3em] text-slate-400 hover:text-blue-400 transition-colors"
                   >
                     {item}
                   </button>
                 ))}
-                <a href="https://app.cyberia.tn" className="w-full py-3 bg-[var(--accent)] text-white rounded-xl text-[10px] font-black uppercase tracking-[0.2em] transition-all text-center">
+                <a href="https://app.cyberia.tn" className="w-full py-4 bg-blue-600 text-white rounded-xl text-[11px] font-black uppercase tracking-[0.2em] transition-all text-center">
                   Launch App
                 </a>
               </div>
@@ -146,25 +140,25 @@ const Homepage: React.FC = () => {
             animate={{ opacity: 1, scale: 1, y: 0 }}
             transition={{ type: 'spring', damping: 25, stiffness: 120 }}
           >
-            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-[var(--accent)]/10 border border-[var(--accent)]/20 text-[var(--accent-secondary)] text-[10px] font-black uppercase tracking-[0.3em] mb-8">
+            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-blue-500/10 border border-blue-500/20 text-blue-400 text-[10px] font-black uppercase tracking-[0.3em] mb-8">
               <Sparkles className="w-3 h-3" />
               Kinetic Information Workspace
             </div>
             
             <h1 className="text-6xl md:text-8xl font-black tracking-tighter leading-[0.9] mb-8 uppercase">
               Your Mind, <br />
-              <span style={{ color: 'var(--accent)' }}>In Motion</span>
+              <span className="text-blue-500">In Motion</span>
             </h1>
             
             <p className="text-lg md:text-xl text-slate-400 max-w-2xl mx-auto mb-12 leading-relaxed font-medium">
               Organize your mind in an infinite workspace where thoughts have <span className="text-white font-bold">mass and gravity</span>. 
-              Feel the inertia as you map your ideas across dimensions. <span style={{ color: 'var(--accent-secondary)' }}>Powered by AI agents that research and connect your thoughts.</span>
+              Feel the inertia as you map your ideas across dimensions. <span className="text-blue-400">Powered by AI agents that research and connect your thoughts.</span>
             </p>
 
             <div className="flex flex-col sm:flex-row items-center justify-center gap-5">
-<a 
+              <a 
                 href="https://app.cyberia.tn"
-                className="w-full sm:w-auto px-10 py-5 bg-[var(--accent)] hover:bg-[var(--accent-secondary)] text-white rounded-[1.5rem] text-xs font-black uppercase tracking-[0.3em] transition-all shadow-2xl shadow-[var(--accent)]/30 active:scale-[0.98] flex items-center justify-center gap-3 group"
+                className="w-full sm:w-auto px-10 py-5 bg-blue-600 hover:bg-blue-500 text-white rounded-[1.5rem] text-xs font-black uppercase tracking-[0.3em] transition-all shadow-2xl shadow-blue-500/30 active:scale-[0.98] flex items-center justify-center gap-3 group"
               >
                 Access Workspace
                 <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
@@ -194,8 +188,8 @@ const Homepage: React.FC = () => {
             <DemoWorkspace />
           </Suspense>
           
-              <div className="absolute inset-0 bg-[var(--accent)]/10 blur-[100px] rounded-full pointer-events-none" />
-              <div className="absolute -bottom-10 -left-10 w-40 h-40 bg-[var(--accent)]/10 blur-[100px] rounded-full pointer-events-none" />
+          <div className="absolute -top-10 -right-10 w-40 h-40 bg-blue-500/10 blur-[100px] rounded-full pointer-events-none" />
+          <div className="absolute -bottom-10 -left-10 w-40 h-40 bg-blue-600/10 blur-[100px] rounded-full pointer-events-none" />
         </motion.div>
       </section>
 
@@ -203,8 +197,8 @@ const Homepage: React.FC = () => {
         <div className="max-w-7xl mx-auto">
           <div className="mb-20">
             <div className="max-w-2xl">
-<h2 className="text-4xl md:text-5xl font-black tracking-tighter uppercase mb-6">
-                Redefining <br /><span style={{ color: 'var(--accent)' }}>Thinking Architecture</span>
+              <h2 className="text-4xl md:text-5xl font-black tracking-tighter uppercase mb-6">
+                Redefining <br /><span className="text-blue-500">Thinking Architecture</span>
               </h2>
               <p className="text-slate-400 font-medium leading-relaxed">
                 Designed for non-linear thinkers, visionaries, and digital architects. We believe that productivity shouldn't feel like a spreadsheet. It should feel like a world.
@@ -245,30 +239,30 @@ const Homepage: React.FC = () => {
                   ease: [0.21, 0.47, 0.32, 0.98]
                 }}
                 viewport={{ once: true, margin: "-50px" }}
-className="glass p-8 rounded-[2.5rem] border-white/5 hover:border-[var(--accent)]/40 transition-all duration-500 group relative overflow-hidden hover:-translate-y-2"
+                className="glass p-8 rounded-[2.5rem] border-white/5 hover:border-blue-500/40 transition-all duration-500 group relative overflow-hidden hover:-translate-y-2"
               >
-                <div className="absolute inset-0 bg-gradient-to-br from-[var(--accent)]/10 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-700" />
+                <div className="absolute inset-0 bg-gradient-to-br from-blue-500/10 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-700" />
                 
                 <div className="relative z-10">
-                  <div className="w-14 h-14 rounded-2xl bg-[var(--accent)]/10 flex items-center justify-center text-[var(--accent-secondary)] mb-8 group-hover:scale-110 group-hover:bg-[var(--accent)]/20 transition-all duration-500 shadow-lg shadow-[var(--accent)]/0 group-hover:shadow-[var(--accent)]/10">
+                  <div className="w-14 h-14 rounded-2xl bg-blue-500/10 flex items-center justify-center text-blue-400 mb-8 group-hover:scale-110 group-hover:bg-blue-500/20 transition-all duration-500 shadow-lg shadow-blue-500/0 group-hover:shadow-blue-500/10">
                     <feature.icon className="w-7 h-7" />
                   </div>
-                  <h3 className="text-[14px] font-black uppercase tracking-[0.2em] text-white mb-4 group-hover:text-[var(--accent-secondary)] transition-colors">{feature.title}</h3>
+                  <h3 className="text-[14px] font-black uppercase tracking-[0.2em] text-white mb-4 group-hover:text-blue-400 transition-colors">{feature.title}</h3>
                   <p className="text-[11px] text-slate-500 leading-relaxed uppercase font-bold tracking-widest opacity-80 group-hover:opacity-100 transition-opacity">{feature.description}</p>
                 </div>
 
-                <div className="absolute bottom-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-[var(--accent)]/20 to-transparent translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-1000" />
+                <div className="absolute bottom-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-blue-500/20 to-transparent translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-1000" />
               </motion.div>
             ))}
           </div>
         </div>
       </section>
 
-      <section id="pricing" className="py-32 px-6 relative z-10 bg-[var(--accent)]/[0.02]">
+      <section id="pricing" className="py-32 px-6 relative z-10 bg-blue-500/[0.02]">
         <div className="max-w-6xl mx-auto">
           <div className="text-center mb-20">
-<h2 className="text-4xl md:text-5xl font-black tracking-tighter uppercase mb-6">
-              Unlock <span style={{ color: 'var(--accent)' }}>Maximum Flow</span>
+            <h2 className="text-4xl md:text-5xl font-black tracking-tighter uppercase mb-6">
+              Unlock <span className="text-blue-500">Maximum Flow</span>
             </h2>
             <p className="text-slate-400 font-medium">Start for free, upgrade when you're ready.</p>
           </div>
@@ -281,7 +275,7 @@ className="glass p-8 rounded-[2.5rem] border-white/5 hover:border-[var(--accent)
               className="glass p-10 rounded-[3rem] border-white/5 flex flex-col hover:-translate-y-2 transition-all duration-500 group"
             >
               <div className="mb-8">
-                <h3 className="text-xl font-black uppercase tracking-[0.2em] text-white mb-2 group-hover:text-[var(--accent-secondary)] transition-colors">Explorer</h3>
+                <h3 className="text-xl font-black uppercase tracking-[0.2em] text-white mb-2 group-hover:text-blue-400 transition-colors">Explorer</h3>
                 <div className="text-4xl font-black text-white group-hover:scale-105 transition-transform origin-left duration-500">$0 <span className="text-sm text-slate-500 font-bold uppercase tracking-widest">/ Forever</span></div>
               </div>
               <div className="space-y-4 mb-10 flex-1">
@@ -300,23 +294,23 @@ className="glass p-8 rounded-[2.5rem] border-white/5 hover:border-[var(--accent)
               initial={{ opacity: 0, x: 20 }}
               whileInView={{ opacity: 1, x: 0 }}
               viewport={{ once: true }}
-className="glass p-10 rounded-[3rem] border-[var(--accent)]/30 bg-[var(--accent)]/5 flex flex-col relative overflow-hidden hover:-translate-y-2 transition-all duration-500 group"
+              className="glass p-10 rounded-[3rem] border-blue-500/30 bg-blue-500/5 flex flex-col relative overflow-hidden hover:-translate-y-2 transition-all duration-500 group"
             >
-              <div className="absolute top-0 right-0 w-32 h-32 bg-[var(--accent)]/10 blur-[50px] rounded-full translate-x-10 -translate-y-10 group-hover:scale-150 transition-transform duration-1000" />
+              <div className="absolute top-0 right-0 w-32 h-32 bg-blue-500/10 blur-[50px] rounded-full translate-x-10 -translate-y-10 group-hover:scale-150 transition-transform duration-1000" />
 
               <div className="absolute top-6 right-6 z-10">
-                <div className="px-3 py-1 bg-[var(--accent)] text-white text-[9px] font-black uppercase tracking-[0.2em] rounded-full shadow-lg shadow-[var(--accent)]/20 group-hover:scale-110 transition-transform">
+                <div className="px-3 py-1 bg-blue-500 text-white text-[9px] font-black uppercase tracking-[0.2em] rounded-full shadow-lg shadow-blue-500/20 group-hover:scale-110 transition-transform">
                   Recommended
                 </div>
               </div>
 
               <div className="mb-8 relative z-10">
-                <h3 className="text-xl font-black uppercase tracking-[0.2em] text-[var(--accent-secondary)] mb-2">Cyberia Pro</h3>
+                <h3 className="text-xl font-black uppercase tracking-[0.2em] text-blue-400 mb-2">Cyberia Pro</h3>
                 <div className="flex items-baseline gap-2 group-hover:scale-105 transition-transform origin-left duration-500">
                   <div className="text-4xl font-black text-white">${proPrice.monthly.usd}</div>
                   <div className="text-xl text-slate-500 font-bold uppercase tracking-widest">/ Month</div>
                 </div>
-                <div className="mt-2 text-[10px] font-bold text-[var(--accent-secondary)]/60 uppercase tracking-widest">
+                <div className="mt-2 text-[10px] font-bold text-blue-400/60 uppercase tracking-widest">
                   Save ${savingsUsd} Yearly — Local Price: {proPrice.monthly.tnd} DT
                 </div>
               </div>
@@ -330,12 +324,12 @@ className="glass p-10 rounded-[3rem] border-[var(--accent)]/30 bg-[var(--accent)
                 <PricingFeature text="Shared Team Spaces (Coming Soon)" pro />
               </div>
 
-              <a href="https://app.cyberia.tn" className="w-full py-5 bg-[var(--accent)] hover:bg-[var(--accent-secondary)] text-white rounded-2xl text-[10px] font-black uppercase tracking-[0.3em] transition-all text-center shadow-xl shadow-[var(--accent)]/20 active:scale-95">
+              <a href="https://app.cyberia.tn" className="w-full py-5 bg-blue-600 hover:bg-blue-500 text-white rounded-2xl text-[10px] font-black uppercase tracking-[0.3em] transition-all text-center shadow-xl shadow-blue-500/20 active:scale-95">
                 Unlock in App
               </a>
 
-<div className="mt-6 flex items-center justify-center gap-3 opacity-60">
-                <Shield className="w-4 h-4 text-[var(--accent-secondary)]" />
+              <div className="mt-6 flex items-center justify-center gap-3 opacity-60">
+                <Shield className="w-4 h-4 text-blue-400" />
                 <span className="text-[9px] font-black uppercase tracking-widest text-slate-500">
                   Secure local & global payments via Flouci
                 </span>
@@ -347,72 +341,41 @@ className="glass p-10 rounded-[3rem] border-[var(--accent)]/30 bg-[var(--accent)
 
       <section id="about" className="py-32 px-6 relative z-10">
         <div className="max-w-4xl mx-auto">
-          <div className="text-center mb-12">
-            <h2 className="text-4xl md:text-5xl font-black tracking-tighter uppercase mb-4">
-              Why <span style={{ color: 'var(--accent)' }}>Cyberia Workspace</span>?
-            </h2>
-            <p className="text-slate-400">Simple. Your brain isn't a spreadsheet.</p>
-          </div>
-          
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <motion.div 
-              initial={{ opacity: 0, x: -20 }}
-              whileInView={{ opacity: 1, x: 0 }}
-              viewport={{ once: true }}
-              className="glass rounded-3xl p-6 shadow-[0_10px_40px_rgba(0,0,0,0.5)]"
-            >
-              <h3 className="text-[14px] font-black uppercase tracking-[0.2em] text-white mb-4">The Problem</h3>
-              <p className="text-sm text-[var(--text-dimmed)] leading-relaxed">
-                <span className="text-white font-semibold">Spreadsheets kill creativity.</span> Your brain doesn't think in rows and columns—so why should your tools?
-              </p>
-            </motion.div>
-
-            <motion.div 
-              initial={{ opacity: 0, x: 20 }}
-              whileInView={{ opacity: 1, x: 0 }}
-              viewport={{ once: true }}
-              className="glass rounded-3xl p-6 shadow-[0_10px_40px_rgba(0,0,0,0.5)]"
-            >
-              <h3 className="text-[14px] font-black uppercase tracking-[0.2em] text-white mb-4">The Physics</h3>
-              <p className="text-sm text-[var(--text-dimmed)] leading-relaxed">
-                Your thoughts <span className="text-white font-semibold">drift, collide, and cluster</span> like galaxies. We built a workspace that respects that.
-              </p>
-            </motion.div>
-
-            <motion.div 
-              initial={{ opacity: 0, x: -20 }}
-              whileInView={{ opacity: 1, x: 0 }}
-              viewport={{ once: true }}
-              transition={{ delay: 0.1 }}
-              className="glass rounded-3xl p-6 shadow-[0_10px_40px_rgba(0,0,0,0.5)]"
-            >
-              <h3 className="text-[14px] font-black uppercase tracking-[0.2em] text-white mb-4">The AI</h3>
-              <p className="text-sm text-[var(--text-dimmed)] leading-relaxed">
-                Oracle doesn't just chat. It <span className="text-white font-semibold">lives in your space</span>, reading docs and connecting dots.
-              </p>
-            </motion.div>
-
-            <motion.div 
-              initial={{ opacity: 0, x: 20 }}
-              whileInView={{ opacity: 1, x: 0 }}
-              viewport={{ once: true }}
-              transition={{ delay: 0.1 }}
-              className="glass rounded-3xl p-6 shadow-[0_10px_40px_rgba(0,0,0,0.5)]"
-            >
-              <h3 className="text-[14px] font-black uppercase tracking-[0.2em] text-white mb-4">The Ownership</h3>
-              <p className="text-sm text-[var(--text-dimmed)] leading-relaxed">
-                <span className="text-white font-semibold">Your data stays local.</span> No cloud lock-in. You own your mind.
-              </p>
-            </motion.div>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-12 text-center">
+            {[
+              {
+                icon: Zap,
+                title: 'High Inertia',
+                description: 'Lightning-fast performance that keeps up with your thoughts. No lag, no waiting.'
+              },
+              {
+                icon: Shield,
+                title: 'Data Sovereignty',
+                description: 'Your thoughts stay yours. Complete privacy with military-grade encryption.'
+              },
+              {
+                icon: Globe,
+                title: 'Works Everywhere',
+                description: 'Seamless experience across all your devices. Works offline, syncs everywhere.'
+              }
+            ].map((item) => (
+              <div key={item.title} className="group">
+                <div className="w-20 h-20 mx-auto mb-6 rounded-3xl bg-blue-500/5 border border-white/5 flex items-center justify-center group-hover:bg-blue-500/10 transition-all">
+                  <item.icon className="w-8 h-8 text-blue-400" />
+                </div>
+                <h3 className="text-sm font-black uppercase tracking-[0.2em] text-white mb-4">{item.title}</h3>
+                <p className="text-xs text-slate-400 leading-relaxed font-medium">{item.description}</p>
+              </div>
+            ))}
           </div>
         </div>
       </section>
 
-      <section id="contact" className="py-32 px-6 relative z-10 bg-[var(--accent)]/[0.02]">
+      <section id="contact" className="py-32 px-6 relative z-10 bg-blue-500/[0.02]">
         <div className="max-w-3xl mx-auto">
           <div className="text-center mb-12">
-<h2 className="text-4xl md:text-5xl font-black tracking-tighter uppercase mb-6">
-              Get In <span style={{ color: 'var(--accent)' }}>Touch</span>
+            <h2 className="text-4xl md:text-5xl font-black tracking-tighter uppercase mb-6">
+              Get In <span className="text-blue-500">Touch</span>
             </h2>
             <p className="text-slate-400 font-medium">Have questions or feedback? We'd love to hear from you.</p>
           </div>
@@ -441,7 +404,7 @@ className="glass p-10 rounded-[3rem] border-[var(--accent)]/30 bg-[var(--accent)
                       placeholder="Your Name" 
                       value={contactName} 
                       onChange={(e) => setContactName(e.target.value)} 
-                      className="w-full h-14 bg-black/40 border border-white/5 rounded-2xl px-5 text-sm text-white outline-none focus:border-[var(--accent)]/50 transition-all" 
+                      className="w-full h-14 bg-black/40 border border-white/5 rounded-2xl px-5 text-sm text-white outline-none focus:border-blue-500/50 transition-all" 
                     />
                   </div>
                   <div className="space-y-3">
@@ -452,7 +415,7 @@ className="glass p-10 rounded-[3rem] border-[var(--accent)]/30 bg-[var(--accent)
                       placeholder="your@email.com" 
                       value={contactEmail} 
                       onChange={(e) => setContactEmail(e.target.value)} 
-                      className="w-full h-14 bg-black/40 border border-white/5 rounded-2xl px-5 text-sm text-white outline-none focus:border-[var(--accent)]/50 transition-all" 
+                      className="w-full h-14 bg-black/40 border border-white/5 rounded-2xl px-5 text-sm text-white outline-none focus:border-blue-500/50 transition-all" 
                     />
                   </div>
                 </div>
@@ -463,7 +426,7 @@ className="glass p-10 rounded-[3rem] border-[var(--accent)]/30 bg-[var(--accent)
                     value={contactMessage} 
                     onChange={(e) => setContactMessage(e.target.value)} 
                     placeholder="How can we help?" 
-                    className="w-full h-32 bg-black/40 border border-white/5 rounded-2xl p-5 text-sm text-white outline-none focus:border-[var(--accent)]/50 transition-all resize-none" 
+                    className="w-full h-32 bg-black/40 border border-white/5 rounded-2xl p-5 text-sm text-white outline-none focus:border-blue-500/50 transition-all resize-none" 
                   />
                 </div>
                 {contactSubmitStatus === 'error' && (
@@ -474,7 +437,7 @@ className="glass p-10 rounded-[3rem] border-[var(--accent)]/30 bg-[var(--accent)
                 <button 
                   type="submit" 
                   disabled={isContactSubmitting || !contactMessage.trim()} 
-                  className="w-full h-14 bg-[var(--accent)] hover:bg-[var(--accent-secondary)] disabled:opacity-50 text-white rounded-2xl font-black uppercase text-xs tracking-[0.2em] transition-all flex items-center justify-center gap-3 shadow-lg shadow-[var(--accent)]/20 hover:shadow-[var(--accent)]/40"
+                  className="w-full h-14 bg-blue-600 hover:bg-blue-500 disabled:opacity-50 text-white rounded-2xl font-black uppercase text-xs tracking-[0.2em] transition-all flex items-center justify-center gap-3 shadow-lg shadow-blue-500/20 hover:shadow-blue-500/40"
                 >
                   {isContactSubmitting ? (
                     <Loader2 className="w-5 h-5 animate-spin" />
@@ -498,23 +461,23 @@ className="glass p-10 rounded-[3rem] border-[var(--accent)]/30 bg-[var(--accent)
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
           >
-<Rocket className="w-12 h-12 text-[var(--accent)] mx-auto mb-8 animate-pulse" />
+            <Rocket className="w-12 h-12 text-blue-500 mx-auto mb-8 animate-pulse" />
             <h2 className="text-4xl md:text-6xl font-black tracking-tighter uppercase mb-8">
-              Begin Your <br /><span style={{ color: 'var(--accent)' }}>Cognitive Journey</span>
+              Begin Your <br /><span className="text-blue-500">Cognitive Journey</span>
             </h2>
             <p className="text-slate-400 mb-12 font-medium">
               Join a new generation of thinkers who are mapping the future in Cyberia Workspace.
             </p>
             <a 
               href="https://app.cyberia.tn"
-              className="inline-flex items-center gap-4 px-12 py-6 bg-[var(--accent)] hover:bg-[var(--accent-secondary)] text-white rounded-[2rem] text-xs font-black uppercase tracking-[0.4em] transition-all shadow-[0_20px_50px_rgba(99,102,241,0.3)] hover:-translate-y-1 active:translate-y-0"
+              className="inline-flex items-center gap-4 px-12 py-6 bg-blue-600 hover:bg-blue-500 text-white rounded-[2rem] text-xs font-black uppercase tracking-[0.4em] transition-all shadow-[0_20px_50px_rgba(59,130,246,0.3)] hover:-translate-y-1 active:translate-y-0"
             >
               Start Thinking Spatial
               <ArrowRight className="w-5 h-5" />
             </a>
           </motion.div>
         </div>
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-lg h-64 bg-[var(--accent)]/10 blur-[120px] rounded-full z-0" />
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-lg h-64 bg-blue-600/10 blur-[120px] rounded-full z-0" />
       </section>
 
       <footer className="py-20 px-6 border-t border-white/5 relative z-10">
@@ -541,7 +504,7 @@ className="glass p-10 rounded-[3rem] border-[var(--accent)]/30 bg-[var(--accent)
 
 const PricingFeature: React.FC<{ text: string; pro?: boolean }> = ({ text, pro }) => (
   <div className="flex items-center gap-3">
-    <div className={`w-5 h-5 rounded-full flex items-center justify-center border ${pro ? 'bg-[var(--accent)]/20 border-[var(--accent)]/30 text-[var(--accent-secondary)]' : 'bg-white/5 border-white/10 text-slate-500'}`}>
+    <div className={`w-5 h-5 rounded-full flex items-center justify-center border ${pro ? 'bg-blue-500/20 border-blue-500/30 text-blue-400' : 'bg-white/5 border-white/10 text-slate-500'}`}>
       <Check className="w-3 h-3" />
     </div>
     <span className={`text-[10px] font-bold uppercase tracking-widest ${pro ? 'text-slate-300' : 'text-slate-500'}`}>{text}</span>

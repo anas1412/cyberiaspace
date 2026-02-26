@@ -12,7 +12,7 @@ export default defineConfig(({ mode }) => {
       react(),
       ...(isApp ? [VitePWA({
         registerType: 'autoUpdate',
-        injectRegister: 'auto',
+        injectRegister: false,
         devOptions: {
           enabled: false
         },

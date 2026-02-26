@@ -65,6 +65,15 @@ function App() {
 
   const hostname = typeof window !== 'undefined' ? window.location.hostname : '';
   const isMainDomain = hostname === 'cyberia.tn' || hostname === 'www.cyberia.tn';
+  const isApp = hostname === 'app.cyberia.tn' || hostname === 'localhost' || hostname === '127.0.0.1';
+
+  // Hook: Remove PWA manifest on non-app domains
+  useEffect(() => {
+    if (!isApp) {
+      const manifest = document.querySelector('link[rel="manifest"]');
+      if (manifest) manifest.remove();
+    }
+  }, [isApp]);
 
   // Hook: Body class
   useEffect(() => {
