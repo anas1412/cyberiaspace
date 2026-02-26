@@ -172,11 +172,6 @@ const Homepage: React.FC = () => {
             animate={{ opacity: 1, scale: 1, y: 0 }}
             transition={{ type: 'spring', damping: 25, stiffness: 120 }}
           >
-            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-[var(--accent)]/10 border border-[var(--accent)]/20 text-[var(--accent-secondary)] text-[10px] font-black uppercase tracking-[0.3em] mb-8">
-              <Sparkles className="w-3 h-3" />
-              Kinetic Information Workspace
-            </div>
-            
             <h1 className="text-6xl md:text-8xl font-black tracking-tighter leading-[0.9] mb-8 uppercase">
               Your Mind, <br />
               <span style={{ color: 'var(--accent)' }}>In Motion</span>
@@ -199,7 +194,7 @@ const Homepage: React.FC = () => {
                 onClick={() => scrollToSection('features')}
                 className="w-full sm:w-auto px-10 py-5 glass hover:bg-white/10 rounded-[1.5rem] text-xs font-black uppercase tracking-[0.3em] transition-all flex items-center justify-center gap-3"
               >
-                Explore Flux
+                Explore Features
               </button>
             </div>
           </motion.div>
