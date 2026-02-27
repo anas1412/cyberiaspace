@@ -16,6 +16,7 @@ interface PricingModalProps {
 }
 
 const PricingModal: React.FC<PricingModalProps> = ({ isOpen, onClose }) => {
+  const isProd = import.meta.env.PROD;
   const [billingCycle, setBillingCycle] = useState<AccessPeriod>('monthly');
   const [location, setLocation] = useState<{ country: string; currency: string; isLocalPricing: boolean } | null>(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -362,22 +363,24 @@ const PricingModal: React.FC<PricingModalProps> = ({ isOpen, onClose }) => {
             )}
           </AnimatePresence>
 
-          <button
-            onClick={handleUpgrade}
-            disabled={isLoading}
+<button
+            onClick={isProd ? undefined : handleUpgrade}
+            disabled={isLoading || isProd}
             className={cn(
               "w-full h-14 rounded-2xl text-sm font-bold transition-all flex items-center justify-center gap-3 mb-8",
-              isLoading
+              isLoading || isProd
                 ? "bg-slate-800 text-slate-400 cursor-not-allowed border border-white/5"
                 : "bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white shadow-lg shadow-blue-500/25 active:scale-95"
             )}
           >
             {isLoading ? (
               <div className="w-5 h-5 rounded-full border-2 border-white/30 border-t-white animate-spin" />
+            ) : isProd ? (
+              <Rocket className="w-4 h-4 text-white" />
             ) : (
               <Star className="w-4 h-4 text-white" />
             )}
-            {isLoading ? 'Processing...' : 'Upgrade Now'}
+            {isLoading ? 'Processing...' : isProd ? 'Coming Soon' : 'Upgrade Now'}
           </button>
 
           <div className="text-center space-y-6">
