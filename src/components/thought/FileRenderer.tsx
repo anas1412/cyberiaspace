@@ -35,7 +35,7 @@ export const FileRenderer: React.FC<FileRendererProps> = ({ thought }) => {
             src={thought.image}
             draggable="false"
             className={cn(
-              "w-full h-full object-cover cursor-zoom-in group-hover:scale-105 transition-transform duration-500",
+              "w-full h-full object-cover group-hover:scale-105 transition-transform duration-500",
               isSyncing && "opacity-40 grayscale"
             )}
             alt={thought.text}
@@ -49,11 +49,23 @@ export const FileRenderer: React.FC<FileRendererProps> = ({ thought }) => {
           </div>
         )}
 
-        {isVideo && thought.image && !isSyncing && (
+        {isVideo && (
           <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
             <div className="w-10 h-10 rounded-full bg-black/40 backdrop-blur-sm border border-white/20 flex items-center justify-center group-hover:scale-110 group-hover:bg-purple-500/40 transition-all duration-300">
               <FileVideo className="w-5 h-5 text-white shadow-2xl" />
             </div>
+          </div>
+        )}
+
+        {!isVideo && (
+          <div className={cn(
+            "absolute inset-0 bg-black/40 flex flex-col items-center justify-center gap-2 transition-opacity",
+            (thought.image && !isSyncing) ? "opacity-0 group-hover:opacity-100" : isSyncing ? "opacity-0" : "opacity-100"
+          )}>
+            <Maximize2 className="w-6 h-6 text-white" />
+            <span className="text-[8px] font-black uppercase tracking-widest text-white/80">
+              {hasRemoteContent && !thought.image ? 'Device Link Required' : 'View Asset'}
+            </span>
           </div>
         )}
 
@@ -67,16 +79,6 @@ export const FileRenderer: React.FC<FileRendererProps> = ({ thought }) => {
           </div>
         )}
 
-        <div className={cn(
-          "absolute inset-0 bg-black/40 flex flex-col items-center justify-center gap-2 transition-opacity",
-          (thought.image && !isSyncing) ? "opacity-0 group-hover:opacity-100" : isSyncing ? "opacity-0" : "opacity-100"
-        )}>
-          <Maximize2 className="w-6 h-6 text-white" />
-          <span className="text-[8px] font-black uppercase tracking-widest text-white/80">
-            {hasRemoteContent && !thought.image ? 'Device Link Required' : 'View Asset'}
-          </span>
-        </div>
-        
         {/* Type Badge */}
         <div className="absolute bottom-2 right-2 px-2 py-0.5 rounded-md bg-black/60 backdrop-blur-md border border-white/10 text-[7px] font-black text-white/60 uppercase tracking-widest">
           {fileMeta.type?.split('/')[1]?.toUpperCase() || thought.text?.split('.').pop()?.toUpperCase() || 'IMG'}
