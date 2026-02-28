@@ -20,19 +20,3 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
     },
   },
 })
-
-export const invokeFunction = async (functionName: string, body: Record<string, unknown>) => {
-  if (!supabaseUrl || !supabaseAnonKey) {
-    throw new Error('Supabase not configured')
-  }
-  
-  const { data, error } = await supabase.functions.invoke(functionName, {
-    body,
-  })
-
-  if (error) {
-    throw new Error(error.message)
-  }
-
-  return data
-}
