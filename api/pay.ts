@@ -421,28 +421,28 @@ async function handlePolarWebhook(req: VercelRequest, res: VercelResponse, rawBo
 
     const processWebhook = async () => {
         const event = validateEvent(rawBody, req.headers as Record<string, string>, webhookSecret);
-        console.log(`[Polar Webhook] Event Type: ${event.type}`);
+        const eventType = event.type;
+        console.log(`[Polar Webhook] Event Type: ${eventType}`);
 
-        if (event.type === 'order.created' || event.type === 'order.paid' || event.type === 'subscription.created') {
-            const data = event.data as any;
-            
-            const userId = data.metadata?.userId || data.metadata?.user_id || data.customFieldData?.userId;
-            
-            if (!userId) {
-                console.error('[Polar Webhook] No userId found in Polar webhook metadata. Full data object:', JSON.stringify(data, null, 2));
-                return;
-            }
+        const data = event.data as any;
+        const userId = data.metadata?.userId || data.metadata?.user_id || data.customFieldData?.userId;
 
+        if (!userId) {
+            console.error(`[Polar Webhook] [${eventType}] No userId found in Polar webhook metadata. Full data object:`, JSON.stringify(data, null, 2));
+            return;
+        }
+
+        if (eventType === 'order.created' || eventType === 'order.paid' || eventType === 'subscription.created') {
             const productId = data.productId;
             const isYearly = productId === process.env.POLAR_PRODUCT_ID_PRO_YEARLY;
             const billingCycle = isYearly ? 'yearly' : 'monthly';
-            console.log(`[Polar Webhook] ProductId: ${productId}, BillingCycle: ${billingCycle}`);
+            console.log(`[Polar Webhook] [${eventType}] User: ${userId}, ProductId: ${productId}, BillingCycle: ${billingCycle}`);
 
             const additionalData: any = {
                 polar_customer_id: data.customerId
             };
             
-            if (event.type === 'subscription.created') {
+            if (eventType === 'subscription.created') {
                 additionalData.polar_subscription_id = data.id;
             } else if (data.subscriptionId) {
                 additionalData.polar_subscription_id = data.subscriptionId;
@@ -457,7 +457,7 @@ async function handlePolarWebhook(req: VercelRequest, res: VercelResponse, rawBo
                 .maybeSingle();
 
             if (!existingPayment) {
-                console.log(`[Polar Webhook] Inserting new payment record for ${paymentRef}`);
+                console.log(`[Polar Webhook] [${eventType}] Inserting new payment record for ${paymentRef}`);
                 await supabase.from('payments').insert({
                     payment_ref: paymentRef,
                     user_id: userId,
@@ -468,12 +468,49 @@ async function handlePolarWebhook(req: VercelRequest, res: VercelResponse, rawBo
                         productId,
                         billingCycle,
                         provider: 'polar',
-                        eventType: event.type
+                        eventType: eventType
                     }
                 });
             }
 
-            await updateUserPlan(userId, billingCycle, paymentRef, 'polar_webhook', additionalData);
+            await updateUserPlan(userId, billingCycle, paymentRef, `polar_webhook_${eventType}`, additionalData);
+        } else if (['subscription.updated', 'subscription.deleted', 'subscription.revoked'].includes(eventType)) {
+            const status = data.status;
+            console.log(`[Polar Webhook] [${eventType}] User: ${userId}, Status: ${status}`);
+
+            if (['canceled', 'revoked', 'incomplete_expired'].includes(status)) {
+                console.log(`[Polar Webhook] Downgrading user ${userId} to Free due to subscription status: ${status} (Event: ${eventType})`);
+                await supabase
+                    .from('users')
+                    .update({
+                        plan: 'free',
+                        subscription_status: 'canceled',
+                        polar_subscription_id: null,
+                        updated_at: new Date().toISOString()
+                    })
+                    .eq('id', userId);
+            } else if (['active', 'trialing'].includes(status)) {
+                console.log(`[Polar Webhook] [${eventType}] Ensuring user ${userId} is Pro (Status: ${status})`);
+                await supabase
+                    .from('users')
+                    .update({
+                        plan: 'pro',
+                        subscription_status: 'active',
+                        updated_at: new Date().toISOString()
+                    })
+                    .eq('id', userId);
+            }
+        } else if (eventType === 'order.refunded') {
+            console.log(`[Polar Webhook] [${eventType}] Downgrading user ${userId} to Free due to refund`);
+            await supabase
+                .from('users')
+                .update({
+                    plan: 'free',
+                    subscription_status: 'canceled',
+                    polar_subscription_id: null,
+                    updated_at: new Date().toISOString()
+                })
+                .eq('id', userId);
         }
     };
 
