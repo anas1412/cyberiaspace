@@ -1,39 +1,27 @@
-[Polar Webhook] Error: SDKValidationError: Failed to parse event: SDKValidationError: Unknown event type: member.created: member.created
-    at parseEvent (file:///var/task/node_modules/@polar-sh/sdk/dist/esm/webhooks.js:107:15)
-    at validateEvent (file:///var/task/node_modules/@polar-sh/sdk/dist/esm/webhooks.js:115:16)
-    ... 6 lines matching cause stack trace ...
-    at async Server.<anonymous> (/opt/rust/nodejs.js:17:10190) {
-  cause: SDKValidationError: Unknown event type: member.created: member.created
-      at parseEvent (file:///var/task/node_modules/@polar-sh/sdk/dist/esm/webhooks.js:103:23)
-      at validateEvent (file:///var/task/node_modules/@polar-sh/sdk/dist/esm/webhooks.js:115:16)
-      at processWebhook (/vercel/path0/api/pay.ts:485:23)
-      at handlePolarWebhook (/vercel/path0/api/pay.ts:613:29)
-      at Object.handler (/vercel/path0/api/pay.ts:73:20)
-      at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
-      at async r (/opt/rust/nodejs.js:2:15572)
-      at async Server.<anonymous> (/opt/rust/nodejs.js:2:11594)
-      at async Server.<anonymous> (/opt/rust/nodejs.js:17:10190) {
-    cause: 'member.created',
-    rawValue: {
-      type: 'member.created',
-      timestamp: '2026-03-01T18:40:16.687698Z',
-      data: [Object]
-    },
-    rawMessage: 'Unknown event type: member.created'
+[Polar Webhook] [customer.state_changed] No userId found in Polar webhook metadata. Full data object: {
+  "id": "ef244a2e-cbde-4eae-9d6e-9ee4b1081b55",
+  "createdAt": "2026-03-01T18:49:04.269Z",
+  "modifiedAt": null,
+  "metadata": {},
+  "externalId": null,
+  "email": "mayoshizaky@gmail.com",
+  "emailVerified": false,
+  "type": "individual",
+  "name": "NASTYA SVOBODINA",
+  "billingAddress": {
+    "line1": null,
+    "line2": null,
+    "postalCode": null,
+    "city": null,
+    "state": null,
+    "country": "TN"
   },
-  rawValue: {
-    type: 'member.created',
-    timestamp: '2026-03-01T18:40:16.687698Z',
-    data: {
-      id: '2a1aecde-5546-4e93-89e4-7877063fa92f',
-      created_at: '2026-03-01T18:40:16.682442Z',
-      modified_at: null,
-      customer_id: 'e565ccb2-73b4-4294-a159-3acaef1a9cfc',
-      email: 'mayoshizaky@gmail.com',
-      name: 'NASTYA SVOBODINA',
-      external_id: null,
-      role: 'owner'
-    }
-  },
-  rawMessage: 'Failed to parse event'
+  "taxId": null,
+  "locale": "en-US",
+  "organizationId": "4c727e1d-d12c-41fa-9677-d17b1c79528d",
+  "deletedAt": null,
+  "activeSubscriptions": [],
+  "grantedBenefits": [],
+  "activeMeters": [],
+  "avatarUrl": "https://www.gravatar.com/avatar/c562c0095fc277051e9600fb2a15ff523572188537e518800e3f62fc06016bb6?d=404"
 }
