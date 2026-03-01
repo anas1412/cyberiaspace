@@ -614,6 +614,7 @@ async function updateUserPlan(
     }
 
     console.log(`[updateUserPlan] Upgrading user ${userId} (${billingCycle}) via ${provider}. Expiry: ${expiry.toISOString()}`);
+    console.log(`[updateUserPlan] Target userId: ${userId}`);
 
     const updatePayload: any = {
         plan: 'pro',
@@ -623,7 +624,10 @@ async function updateUserPlan(
         ...additionalData
     };
 
+    console.log('[updateUserPlan] Payload:', JSON.stringify(updatePayload));
+
     const { data: updateData, error: updateError, status: updateStatus } = await supabase
+
         .from('users')
         .update(updatePayload)
         .eq('id', userId)

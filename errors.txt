@@ -1,0 +1,38 @@
+Polar Webhook Error: SDKValidationError: Failed to parse event: SDKValidationError: Unknown event type: member.created: member.created
+    at parseEvent (file:///var/task/node_modules/@polar-sh/sdk/dist/esm/webhooks.js:107:15)
+    at validateEvent (file:///var/task/node_modules/@polar-sh/sdk/dist/esm/webhooks.js:115:16)
+    ... 5 lines matching cause stack trace ...
+    at async Server.<anonymous> (/opt/rust/nodejs.js:17:10190) {
+  cause: SDKValidationError: Unknown event type: member.created: member.created
+      at parseEvent (file:///var/task/node_modules/@polar-sh/sdk/dist/esm/webhooks.js:103:23)
+      at validateEvent (file:///var/task/node_modules/@polar-sh/sdk/dist/esm/webhooks.js:115:16)
+      at handlePolarWebhook (/vercel/path0/api/pay.ts:412:23)
+      at Object.handler (/vercel/path0/api/pay.ts:65:20)
+      at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+      at async r (/opt/rust/nodejs.js:2:15572)
+      at async Server.<anonymous> (/opt/rust/nodejs.js:2:11594)
+      at async Server.<anonymous> (/opt/rust/nodejs.js:17:10190) {
+    cause: 'member.created',
+    rawValue: {
+      type: 'member.created',
+      timestamp: '2026-03-01T07:17:49.052144Z',
+      data: [Object]
+    },
+    rawMessage: 'Unknown event type: member.created'
+  },
+  rawValue: {
+    type: 'member.created',
+    timestamp: '2026-03-01T07:17:49.052144Z',
+    data: {
+      id: '7508da7a-bd21-44ff-8f75-533d528f9777',
+      created_at: '2026-03-01T07:17:49.047105Z',
+      modified_at: null,
+      customer_id: '5f69d14e-bc6b-4bcd-8158-ae48ea5399c3',
+      email: 'mayoshizaky@gmail.com',
+      name: 'NASTYA SVOBODINA',
+      external_id: null,
+      role: 'owner'
+    }
+  },
+  rawMessage: 'Failed to parse event'
+}
