@@ -10,6 +10,7 @@ export interface User {
   subscriptionStatus: 'active' | 'trialing' | 'past_due' | 'unpaid' | 'canceled' | 'none';
   expiryDate: string | null;
   polarCustomerId?: string | null;
+  paymentProvider?: 'polar' | 'flouci';
   usage: {
     ai_daily_count: number;
     sync_thoughts: number;
