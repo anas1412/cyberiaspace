@@ -7,7 +7,7 @@ const CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET;
 const REDIRECT_URI = 'postmessage';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.VITE_SUPABASE_URL || process.env.VITE_PUBLIC_SUPABASE_URL;
-const supabaseKey = process.env.VITE_SUPABASE_ANON_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || process.env.VITE_PUBLIC_SUPABASE_ANON_KEY;
+const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.VITE_SUPABASE_ANON_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || process.env.VITE_PUBLIC_SUPABASE_ANON_KEY;
 const supabase = supabaseUrl && supabaseKey 
     ? createClient(supabaseUrl, supabaseKey, { auth: { autoRefreshToken: false, persistSession: false } })
     : null;
@@ -69,58 +69,74 @@ async function handleExchange(req: VercelRequest, res: VercelResponse) {
         if (!payload) throw new Error('Invalid ID Token payload');
 
         const userId = payload.sub;
+        console.log('[Google Auth] Exchange for User:', userId);
         const grantedScopes = tokens.scope || '';
         const hasDriveScope = grantedScopes.includes('drive.file') || grantedScopes.includes('https://www.googleapis.com/auth/drive.file');
 
-        let existingUser = null;
-        if (supabase) {
-            const { data } = await supabase.from('users').select('*').eq('id', userId).maybeSingle();
-            existingUser = data;
+        if (!supabase) {
+            throw new Error('Supabase client not initialized');
         }
 
-        const today = new Date().toISOString().split('T')[0];
-        const profile = {
-            id: userId,
-            email: payload.email || '',
-            name: payload.name || '',
-            avatar: payload.picture || '',
-            plan: existingUser?.plan || 'free',
-            subscriptionStatus: existingUser?.subscription_status || 'none',
-            expiryDate: existingUser?.expiry_date || null,
-            polarCustomerId: existingUser?.polar_customer_id || null,
-            polarSubscriptionId: existingUser?.polar_subscription_id || null,
-            usage: existingUser?.usage || { ai_daily_count: 0, sync_thoughts: 0, last_ai_reset: today },
-            settings: existingUser?.settings || { theme: 'cyberia', autoSync: true, driveEnabled: hasDriveScope },
-            lastSeen: new Date().toISOString()
-        };
+        // Attempt to fetch the user: ensure we have existing data to prevent resets
+        const { data: existingUser } = await supabase.from('users').select('*').eq('id', userId).maybeSingle();
+        console.log('[Google Auth] Existing user state:', JSON.stringify(existingUser));
 
-        // If we have an existing user, we update their driveEnabled setting based on the new tokens
+        let profile;
         if (existingUser) {
-            profile.settings = { ...existingUser.settings, driveEnabled: hasDriveScope };
+            // Update ONLY the basic fields and drive settings to prevent "Free reset" bug
+            const updatePayload = {
+                email: payload.email,
+                name: payload.name,
+                avatar: payload.picture,
+                settings: { ...(existingUser.settings || {}), driveEnabled: hasDriveScope },
+                updated_at: new Date().toISOString()
+            };
+            console.log('[Google Auth] Update payload:', JSON.stringify(updatePayload));
+
+            const { data: updatedUser, error: updateError } = await supabase.from('users').update(updatePayload).eq('id', userId).select().single();
+
+            if (updateError) throw updateError;
+            profile = updatedUser;
+        } else {
+            // Create the new profile with defaults
+            const { data: newUser, error: insertError } = await supabase.from('users').insert({
+                id: userId,
+                email: payload.email,
+                name: payload.name,
+                avatar: payload.picture,
+                plan: 'free',
+                subscription_status: 'none',
+                settings: { theme: 'cyberia', autoSync: true, driveEnabled: hasDriveScope },
+                usage: { ai_daily_count: 0, sync_thoughts: 0, last_ai_reset: new Date().toISOString().split('T')[0] },
+                updated_at: new Date().toISOString()
+            }).select().single();
+
+            if (insertError) throw insertError;
+            profile = newUser;
         }
 
-        // Save to Supabase only
-        if (supabase) {
-            await supabase.from('users').upsert({
-                id: userId,
-                email: profile.email,
-                name: profile.name,
-                avatar: profile.avatar,
-                plan: profile.plan,
-                subscription_status: profile.subscriptionStatus,
-                expiry_date: profile.expiryDate,
-                polar_customer_id: profile.polarCustomerId,
-                polar_subscription_id: profile.polarSubscriptionId,
-                settings: profile.settings,
-                usage: profile.usage,
-                updated_at: profile.lastSeen
-            }, { onConflict: 'id' });
-        }
+        console.log('[Google Auth] Profile before mapping:', JSON.stringify(profile));
+
+        // Map the database keys (snake_case) to the frontend keys (camelCase)
+        const userProfile = {
+            id: profile.id,
+            email: profile.email,
+            name: profile.name,
+            avatar: profile.avatar,
+            plan: profile.plan,
+            subscriptionStatus: profile.subscription_status,
+            expiryDate: profile.expiry_date,
+            polarCustomerId: profile.polar_customer_id,
+            polarSubscriptionId: profile.polar_subscription_id,
+            usage: profile.usage,
+            settings: profile.settings,
+            lastSeen: profile.updated_at
+        };
 
         return res.status(200).json({
             access_token: tokens.access_token,
             expires_in: tokens.expiry_date ? Math.floor((tokens.expiry_date - Date.now()) / 1000) : 3600,
-            user: profile
+            user: userProfile
         });
     } catch (e: any) {
         console.error('[Google Auth] Exchange error:', e);

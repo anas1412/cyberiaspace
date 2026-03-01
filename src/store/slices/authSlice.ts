@@ -97,15 +97,10 @@ export const createAuthSlice: StateCreator<AuthState, [], [], any> = (set, get, 
       localStorage.setItem('cyberia-scopes', JSON.stringify(scopes));
     }
 
-    // Sync user to Supabase on login
-    console.log('[Supabase] Starting user sync to Supabase...')
-    try {
-      console.log('[Supabase] Syncing user to Supabase:', user.id, user.email)
-      const result = await supabaseSync.upsertProfile(user.id, user.email, user.name, user.avatar || '')
-      console.log('[Supabase] User synced successfully:', result)
-    } catch (e) {
-      console.error('[Supabase] ❌ Failed to sync user:', e)
-    }
+    // Backend /api/google-auth?action=exchange already handles the initial sync and merging.
+    // Calling it again from the frontend with only 4 fields is potentially risky and unnecessary.
+    console.log('[Supabase] Authenticated via Google, backend sync already handled by exchange action.')
+
 
     const { useStore } = await import('../useStore');
     useStore.getState().isInitializing = true;
@@ -239,7 +234,10 @@ export const createAuthSlice: StateCreator<AuthState, [], [], any> = (set, get, 
       }
 
       // 2. Fetch profile from Supabase
+      console.log('[Auth] Refreshing profile for:', user.id);
       const supabaseProfile = await supabaseSync.getProfile(user.id);
+      console.log('[Auth] Supabase profile result:', JSON.stringify(supabaseProfile));
+
       if (supabaseProfile?.user) {
         const supabaseUser = supabaseProfile.user;
         
