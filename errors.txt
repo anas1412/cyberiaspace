@@ -1,13 +1,42 @@
-Polar Webhook Error: SDKValidationError: Failed to parse event: SDKValidationError: Unknown event type: member.created: member.created
+[Polar Webhook] [customer.state_changed] No userId found in Polar webhook metadata. Full data object: {
+  "id": "72850789-f87d-49c6-87a0-8956e1d31ff6",
+  "createdAt": "2026-03-01T18:17:34.736Z",
+  "modifiedAt": null,
+  "metadata": {},
+  "externalId": null,
+  "email": "mayoshizaky@gmail.com",
+  "emailVerified": false,
+  "type": "individual",
+  "name": "NASTYA SVOBODINA",
+  "billingAddress": {
+    "line1": null,
+    "line2": null,
+    "postalCode": null,
+    "city": null,
+    "state": null,
+    "country": "TN"
+  },
+  "taxId": null,
+  "locale": "en-US",
+  "organizationId": "4c727e1d-d12c-41fa-9677-d17b1c79528d",
+  "deletedAt": null,
+  "activeSubscriptions": [],
+  "grantedBenefits": [],
+  "activeMeters": [],
+  "avatarUrl": "https://www.gravatar.com/avatar/c562c0095fc277051e9600fb2a15ff523572188537e518800e3f62fc06016bb6?d=404"
+}
+
+[Polar Webhook] Error: SDKValidationError: Failed to parse event: SDKValidationError: Unknown event type: member.created: member.created
     at parseEvent (file:///var/task/node_modules/@polar-sh/sdk/dist/esm/webhooks.js:107:15)
     at validateEvent (file:///var/task/node_modules/@polar-sh/sdk/dist/esm/webhooks.js:115:16)
-    ... 5 lines matching cause stack trace ...
+    ... 6 lines matching cause stack trace ...
     at async Server.<anonymous> (/opt/rust/nodejs.js:17:10190) {
   cause: SDKValidationError: Unknown event type: member.created: member.created
       at parseEvent (file:///var/task/node_modules/@polar-sh/sdk/dist/esm/webhooks.js:103:23)
       at validateEvent (file:///var/task/node_modules/@polar-sh/sdk/dist/esm/webhooks.js:115:16)
-      at handlePolarWebhook (/vercel/path0/api/pay.ts:412:23)
-      at Object.handler (/vercel/path0/api/pay.ts:65:20)
+      at processWebhook (/vercel/path0/api/pay.ts:485:23)
+      at handlePolarWebhook (/vercel/path0/api/pay.ts:584:29)
+      at Object.handler (/vercel/path0/api/pay.ts:73:20)
       at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
       at async r (/opt/rust/nodejs.js:2:15572)
       at async Server.<anonymous> (/opt/rust/nodejs.js:2:11594)
@@ -15,19 +44,19 @@ Polar Webhook Error: SDKValidationError: Failed to parse event: SDKValidationErr
     cause: 'member.created',
     rawValue: {
       type: 'member.created',
-      timestamp: '2026-03-01T07:17:49.052144Z',
+      timestamp: '2026-03-01T18:17:34.747058Z',
       data: [Object]
     },
     rawMessage: 'Unknown event type: member.created'
   },
   rawValue: {
     type: 'member.created',
-    timestamp: '2026-03-01T07:17:49.052144Z',
+    timestamp: '2026-03-01T18:17:34.747058Z',
     data: {
-      id: '7508da7a-bd21-44ff-8f75-533d528f9777',
-      created_at: '2026-03-01T07:17:49.047105Z',
+      id: '91af3a1e-125b-49a9-836e-ac6dcf3e1aac',
+      created_at: '2026-03-01T18:17:34.743855Z',
       modified_at: null,
-      customer_id: '5f69d14e-bc6b-4bcd-8158-ae48ea5399c3',
+      customer_id: '72850789-f87d-49c6-87a0-8956e1d31ff6',
       email: 'mayoshizaky@gmail.com',
       name: 'NASTYA SVOBODINA',
       external_id: null,
@@ -36,3 +65,94 @@ Polar Webhook Error: SDKValidationError: Failed to parse event: SDKValidationErr
   },
   rawMessage: 'Failed to parse event'
 }
+
+
+Mar 01 19:19:16.60
+POST
+200
+app.cyberia.tn
+/api/google-auth
+Mar 01 19:19:15.47
+GET
+200
+app.cyberia.tn
+/api/auth/callback
+[Auth Callback] Host: app.cyberia.tn | Redirect: https://app.cyberia.tn/api/auth/callback
+Mar 01 19:19:05.92
+GET
+304
+app.cyberia.tn
+/api/pay
+[Pay Handler] Incoming request: GET Action: pricing
+Mar 01 19:17:58.94
+GET
+200
+app.cyberia.tn
+/api/pay
+7
+[Polar Portal] Session created: https://sandbox.polar.sh/cyberia-ai-studio/portal?customer_session_token=polar_mst_zEOwC7lBSJWcSRRlNDOEXIwad4ECBa8RKNo5y2jj9Ss&email=mayoshizaky%40gmail.com
+Mar 01 19:17:55.45
+POST
+500
+app.cyberia.tn
+/api/pay
+5
+[Polar Webhook] Error: SDKValidationError: Failed to parse event: SDKValidationError: Unknown event type: member.created: member.created at parseEvent (file:///var/task/node_modules/@polar-sh/sdk/dist/esm/webhooks.js:107:15) at validateEvent (file:///var/task/node_modules/@polar-sh/sdk/dist/esm/webhooks.js:115:16) ... 6 lines matching cause stack trace ... at async Server.<anonymous> (/opt/rust/nodejs.js:17:10190) { cause: SDKValidationError: Unknown event type: member.created: member.created at parseEvent (file:///var/task/node_modules/@polar-sh/sdk/dist/esm/webhooks.js:103:23) at validateEvent (file:///var/task/node_modules/@polar-sh/sdk/dist/esm/webhooks.js:115:16) at processWebhook (/vercel/path0/api/pay.ts:485:23) at handlePolarWebhook (/vercel/path0/api/pay.ts:584:29) at Object.handler (/vercel/path0/api/pay.ts:73:20) at process.processTicksAndRejections (node:internal/process/task_queues:103:5) at async r (/opt/rust/nodejs.js:2:15572) at async Server.<anonymous> (/opt/rust/nodejs.js:2:11594) at async Server.<anonymous> (/opt/rust/nodejs.js:17:10190) { cause: 'member.created', rawValue: { type: 'member.created', timestamp: '2026-03-01T18:17:34.747058Z', data: [Object] }, rawMessage: 'Unknown event type: member.created' }, rawValue: { type: 'member.created', timestamp: '2026-03-01T18:17:34.747058Z', data: { id: '91af3a1e-125b-49a9-836e-ac6dcf3e1aac', created_at: '2026-03-01T18:17:34.743855Z', modified_at: null, customer_id: '72850789-f87d-49c6-87a0-8956e1d31ff6', email: 'mayoshizaky@gmail.com', name: 'NASTYA SVOBODINA', external_id: null, role: 'owner' } }, rawMessage: 'Failed to parse event' }
+Mar 01 19:17:53.32
+POST
+500
+app.cyberia.tn
+/api/pay
+5
+[Polar Webhook] Error: SDKValidationError: Failed to parse event: SDKValidationError: Unknown event type: member.created: member.created at parseEvent (file:///var/task/node_modules/@polar-sh/sdk/dist/esm/webhooks.js:107:15) at validateEvent (file:///var/task/node_modules/@polar-sh/sdk/dist/esm/webhooks.js:115:16) ... 6 lines matching cause stack trace ... at async Server.<anonymous> (/opt/rust/nodejs.js:17:10190) { cause: SDKValidationError: Unknown event type: member.created: member.created at parseEvent (file:///var/task/node_modules/@polar-sh/sdk/dist/esm/webhooks.js:103:23) at validateEvent (file:///var/task/node_modules/@polar-sh/sdk/dist/esm/webhooks.js:115:16) at processWebhook (/vercel/path0/api/pay.ts:485:23) at handlePolarWebhook (/vercel/path0/api/pay.ts:584:29) at Object.handler (/vercel/path0/api/pay.ts:73:20) at process.processTicksAndRejections (node:internal/process/task_queues:103:5) at async r (/opt/rust/nodejs.js:2:15572) at async Server.<anonymous> (/opt/rust/nodejs.js:2:11594) at async Server.<anonymous> (/opt/rust/nodejs.js:17:10190) { cause: 'member.created', rawValue: { type: 'member.created', timestamp: '2026-03-01T18:17:34.747058Z', data: [Object] }, rawMessage: 'Unknown event type: member.created' }, rawValue: { type: 'member.created', timestamp: '2026-03-01T18:17:34.747058Z', data: { id: '91af3a1e-125b-49a9-836e-ac6dcf3e1aac', created_at: '2026-03-01T18:17:34.743855Z', modified_at: null, customer_id: '72850789-f87d-49c6-87a0-8956e1d31ff6', email: 'mayoshizaky@gmail.com', name: 'NASTYA SVOBODINA', external_id: null, role: 'owner' } }, rawMessage: 'Failed to parse event' }
+Mar 01 19:17:52.35
+GET
+200
+app.cyberia.tn
+/api/chat
+Mar 01 19:17:51.78
+POST
+500
+app.cyberia.tn
+/api/pay
+5
+[Polar Webhook] Error: SDKValidationError: Failed to parse event: SDKValidationError: Unknown event type: member.created: member.created at parseEvent (file:///var/task/node_modules/@polar-sh/sdk/dist/esm/webhooks.js:107:15) at validateEvent (file:///var/task/node_modules/@polar-sh/sdk/dist/esm/webhooks.js:115:16) ... 6 lines matching cause stack trace ... at async Server.<anonymous> (/opt/rust/nodejs.js:17:10190) { cause: SDKValidationError: Unknown event type: member.created: member.created at parseEvent (file:///var/task/node_modules/@polar-sh/sdk/dist/esm/webhooks.js:103:23) at validateEvent (file:///var/task/node_modules/@polar-sh/sdk/dist/esm/webhooks.js:115:16) at processWebhook (/vercel/path0/api/pay.ts:485:23) at handlePolarWebhook (/vercel/path0/api/pay.ts:584:29) at Object.handler (/vercel/path0/api/pay.ts:73:20) at process.processTicksAndRejections (node:internal/process/task_queues:103:5) at async r (/opt/rust/nodejs.js:2:15572) at async Server.<anonymous> (/opt/rust/nodejs.js:2:11594) at async Server.<anonymous> (/opt/rust/nodejs.js:17:10190) { cause: 'member.created', rawValue: { type: 'member.created', timestamp: '2026-03-01T18:17:34.747058Z', data: [Object] }, rawMessage: 'Unknown event type: member.created' }, rawValue: { type: 'member.created', timestamp: '2026-03-01T18:17:34.747058Z', data: { id: '91af3a1e-125b-49a9-836e-ac6dcf3e1aac', created_at: '2026-03-01T18:17:34.743855Z', modified_at: null, customer_id: '72850789-f87d-49c6-87a0-8956e1d31ff6', email: 'mayoshizaky@gmail.com', name: 'NASTYA SVOBODINA', external_id: null, role: 'owner' } }, rawMessage: 'Failed to parse event' }
+Mar 01 19:17:49.48
+POST
+500
+app.cyberia.tn
+/api/pay
+5
+[Polar Webhook] Error: SDKValidationError: Failed to parse event: SDKValidationError: Unknown event type: member.created: member.created at parseEvent (file:///var/task/node_modules/@polar-sh/sdk/dist/esm/webhooks.js:107:15) at validateEvent (file:///var/task/node_modules/@polar-sh/sdk/dist/esm/webhooks.js:115:16) ... 6 lines matching cause stack trace ... at async Server.<anonymous> (/opt/rust/nodejs.js:17:10190) { cause: SDKValidationError: Unknown event type: member.created: member.created at parseEvent (file:///var/task/node_modules/@polar-sh/sdk/dist/esm/webhooks.js:103:23) at validateEvent (file:///var/task/node_modules/@polar-sh/sdk/dist/esm/webhooks.js:115:16) at processWebhook (/vercel/path0/api/pay.ts:485:23) at handlePolarWebhook (/vercel/path0/api/pay.ts:584:29) at Object.handler (/vercel/path0/api/pay.ts:73:20) at process.processTicksAndRejections (node:internal/process/task_queues:103:5) at async r (/opt/rust/nodejs.js:2:15572) at async Server.<anonymous> (/opt/rust/nodejs.js:2:11594) at async Server.<anonymous> (/opt/rust/nodejs.js:17:10190) { cause: 'member.created', rawValue: { type: 'member.created', timestamp: '2026-03-01T18:17:34.747058Z', data: [Object] }, rawMessage: 'Unknown event type: member.created' }, rawValue: { type: 'member.created', timestamp: '2026-03-01T18:17:34.747058Z', data: { id: '91af3a1e-125b-49a9-836e-ac6dcf3e1aac', created_at: '2026-03-01T18:17:34.743855Z', modified_at: null, customer_id: '72850789-f87d-49c6-87a0-8956e1d31ff6', email: 'mayoshizaky@gmail.com', name: 'NASTYA SVOBODINA', external_id: null, role: 'owner' } }, rawMessage: 'Failed to parse event' }
+Mar 01 19:17:46.86
+POST
+500
+app.cyberia.tn
+/api/pay
+5
+[Polar Webhook] Error: SDKValidationError: Failed to parse event: SDKValidationError: Unknown event type: member.created: member.created at parseEvent (file:///var/task/node_modules/@polar-sh/sdk/dist/esm/webhooks.js:107:15) at validateEvent (file:///var/task/node_modules/@polar-sh/sdk/dist/esm/webhooks.js:115:16) ... 6 lines matching cause stack trace ... at async Server.<anonymous> (/opt/rust/nodejs.js:17:10190) { cause: SDKValidationError: Unknown event type: member.created: member.created at parseEvent (file:///var/task/node_modules/@polar-sh/sdk/dist/esm/webhooks.js:103:23) at validateEvent (file:///var/task/node_modules/@polar-sh/sdk/dist/esm/webhooks.js:115:16) at processWebhook (/vercel/path0/api/pay.ts:485:23) at handlePolarWebhook (/vercel/path0/api/pay.ts:584:29) at Object.handler (/vercel/path0/api/pay.ts:73:20) at process.processTicksAndRejections (node:internal/process/task_queues:103:5) at async r (/opt/rust/nodejs.js:2:15572) at async Server.<anonymous> (/opt/rust/nodejs.js:2:11594) at async Server.<anonymous> (/opt/rust/nodejs.js:17:10190) { cause: 'member.created', rawValue: { type: 'member.created', timestamp: '2026-03-01T18:17:34.747058Z', data: [Object] }, rawMessage: 'Unknown event type: member.created' }, rawValue: { type: 'member.created', timestamp: '2026-03-01T18:17:34.747058Z', data: { id: '91af3a1e-125b-49a9-836e-ac6dcf3e1aac', created_at: '2026-03-01T18:17:34.743855Z', modified_at: null, customer_id: '72850789-f87d-49c6-87a0-8956e1d31ff6', email: 'mayoshizaky@gmail.com', name: 'NASTYA SVOBODINA', external_id: null, role: 'owner' } }, rawMessage: 'Failed to parse event' }
+Mar 01 19:17:45.21
+POST
+500
+app.cyberia.tn
+/api/pay
+5
+[Polar Webhook] Error: SDKValidationError: Failed to parse event: SDKValidationError: Unknown event type: member.created: member.created at parseEvent (file:///var/task/node_modules/@polar-sh/sdk/dist/esm/webhooks.js:107:15) at validateEvent (file:///var/task/node_modules/@polar-sh/sdk/dist/esm/webhooks.js:115:16) ... 6 lines matching cause stack trace ... at async Server.<anonymous> (/opt/rust/nodejs.js:17:10190) { cause: SDKValidationError: Unknown event type: member.created: member.created at parseEvent (file:///var/task/node_modules/@polar-sh/sdk/dist/esm/webhooks.js:103:23) at validateEvent (file:///var/task/node_modules/@polar-sh/sdk/dist/esm/webhooks.js:115:16) at processWebhook (/vercel/path0/api/pay.ts:485:23) at handlePolarWebhook (/vercel/path0/api/pay.ts:584:29) at Object.handler (/vercel/path0/api/pay.ts:73:20) at process.processTicksAndRejections (node:internal/process/task_queues:103:5) at async r (/opt/rust/nodejs.js:2:15572) at async Server.<anonymous> (/opt/rust/nodejs.js:2:11594) at async Server.<anonymous> (/opt/rust/nodejs.js:17:10190) { cause: 'member.created', rawValue: { type: 'member.created', timestamp: '2026-03-01T18:17:34.747058Z', data: [Object] }, rawMessage: 'Unknown event type: member.created' }, rawValue: { type: 'member.created', timestamp: '2026-03-01T18:17:34.747058Z', data: { id: '91af3a1e-125b-49a9-836e-ac6dcf3e1aac', created_at: '2026-03-01T18:17:34.743855Z', modified_at: null, customer_id: '72850789-f87d-49c6-87a0-8956e1d31ff6', email: 'mayoshizaky@gmail.com', name: 'NASTYA SVOBODINA', external_id: null, role: 'owner' } }, rawMessage: 'Failed to parse event' }
+Mar 01 19:17:44.62
+POST
+---
+app.cyberia.tn
+/api/google-auth
+Mar 01 19:17:42.64
+POST
+200
+app.cyberia.tn
+/api/pay
+6
+[Polar Webhook] [customer.state_changed] No userId found in Polar webhook metadata. Full data object: { "id": "72850789-f87d-49c6-87a0-8956e1d31ff6", "createdAt": "2026-03-01T18:17:34.736Z", "modifiedAt": "2026-03-01T18:17:38.118Z", "metadata": {}, "externalId": null, "email": "mayoshizaky@gmail.com", "emailVerified": false, "type": "individual", "name": "NASTYA SVOBODINA", "billingAddress": { "line1": null, "line2": null, "postalCode": null, "city": null, "state": null, "country": "TN" }, "taxId": null, "locale": "en-US", "organizationId": "4c727e1d-d12c-41fa-9677-d17b1c79528d", "deletedAt": null, "activeSubscriptions": [ { "id": "d5cdab41-c0d0-401d-8a4d-aa2000a3ddd3", "createdAt": "2026-03-01T18:17:37.892Z", "modifiedAt": null, "customFieldData": {}, "metadata": { "userId": "100085844736539695609" }, "status": "active", "amount": 8000, "currency": "usd", "recurringInterval": "year", "currentPeriodStart": "2026-03-01T18:17:37.885Z", "currentPeriodEnd": "2027-03-01T18:17:37.885Z", "trialStart": null, "trialEnd": null, "cancelAtPeriodEnd": false, "canceledAt": null, "startedAt": "2026-03-01T18:17:37.885Z", "endsAt": null, "productId": "0d534e5b-e6a4-42f5-8adc-87ae163487b5", "discountId": null, "meters": [] } ], "grantedBenefits": [], "activeMeters": [], "avatarUrl": "https://www.gravatar.com/avatar/c562c0095fc277051e9600fb2a15ff523572188537e518800e3f62fc06016bb6?d=404" }
+Mar 01 19:17:42.61
+GET
+304
+app.cyberia.tn
+/api/pay
+[Pay Handler] Incoming request: GET Action: pricing

@@ -63,8 +63,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         }
 
         const userId = payload.sub;
-        const grantedScopes = tokens.scope || '';
-        const hasDriveScope = grantedScopes.includes('drive.file') || grantedScopes.includes('https://www.googleapis.com/auth/drive.file');
 
         const today = new Date().toISOString().split('T')[0];
         const profile = {
@@ -75,7 +73,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             plan: 'free',
             subscriptionStatus: 'none',
             usage: { ai_daily_count: 0, sync_thoughts: 0, last_ai_reset: today },
-            settings: { theme: 'cyberia', autoSync: true, driveEnabled: hasDriveScope },
+            settings: { theme: 'cyberia', autoSync: true },
             lastSeen: new Date().toISOString()
         };
 
@@ -106,7 +104,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         const responseData = {
             token: tokens.access_token,
             user: profile,
-            scopes: ['openid', 'email', 'profile', ...(hasDriveScope ? ['https://www.googleapis.com/auth/drive.file'] : [])]
+            scopes: ['openid', 'email', 'profile']
         };
 
         const html = `
