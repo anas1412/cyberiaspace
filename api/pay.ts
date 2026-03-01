@@ -22,6 +22,7 @@ export const config = {
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
     const { action } = req.query;
+    console.log('[Pay Handler] Incoming request:', req.method, 'Action:', action);
 
     let rawBodyStr = '';
     if (req.method === 'POST') {
@@ -393,11 +394,15 @@ async function handlePolarInit(req: VercelRequest, res: VercelResponse) {
 }
 
 async function handlePolarWebhook(req: VercelRequest, res: VercelResponse, rawBody: string) {
+    console.log('[Polar Webhook] Triggered');
     const polar = getPolarClient(res);
     if (!polar) return;
 
     const signature = req.headers['webhook-signature'] as string;
     const webhookSecret = process.env.POLAR_WEBHOOK_SECRET || '';
+
+    console.log('[Polar Webhook] Signature:', signature ? `${signature.substring(0, 10)}...` : 'MISSING');
+    console.log('[Polar Webhook] Secret:', webhookSecret ? `${webhookSecret.substring(0, 5)}...` : 'MISSING');
 
     if (!signature) {
         return res.status(401).json({ error: 'Missing signature' });
@@ -405,10 +410,12 @@ async function handlePolarWebhook(req: VercelRequest, res: VercelResponse, rawBo
 
     try {
         const event = validateEvent(rawBody, req.headers as Record<string, string>, webhookSecret);
+        console.log('[Polar Webhook] Event validated:', JSON.stringify(event, null, 2));
 
         if (event.type === 'order.created' || event.type === 'subscription.created') {
             const data = event.data as any;
             const userId = data.metadata?.userId;
+            console.log('[Polar Webhook] Metadata userId:', userId);
 
             if (!userId) {
                 console.error('No userId in Polar webhook metadata');
@@ -418,6 +425,7 @@ async function handlePolarWebhook(req: VercelRequest, res: VercelResponse, rawBo
             const productId = data.productId;
             const isYearly = productId === process.env.POLAR_PRODUCT_ID_PRO_YEARLY;
             const billingCycle = isYearly ? 'yearly' : 'monthly';
+            console.log(`[Polar Webhook] ProductId: ${productId}, BillingCycle: ${billingCycle}`);
 
             const additionalData: any = {
                 polar_customer_id: data.customerId
@@ -426,6 +434,7 @@ async function handlePolarWebhook(req: VercelRequest, res: VercelResponse, rawBo
                 additionalData.polar_subscription_id = data.id;
             }
 
+            console.log('[Polar Webhook] Additional data for updateUserPlan:', JSON.stringify(additionalData, null, 2));
             await updateUserPlan(userId, billingCycle, undefined, 'polar_webhook', additionalData);
         }
 
