@@ -117,6 +117,14 @@ const AccountMenu: React.FC = () => {
 
   
 
+  const [now] = useState(() => new Date());
+  const expiryDate = user?.expiryDate ? new Date(user.expiryDate) : null;
+  const daysRemaining = expiryDate 
+    ? Math.ceil((expiryDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24))
+    : null;
+  const isExpiringSoon = daysRemaining !== null && daysRemaining > 0 && daysRemaining <= 3;
+  const isExpired = daysRemaining !== null && daysRemaining <= 0;
+
   return (
     <div className="relative pointer-events-auto" ref={menuRef}>
       <button
@@ -177,13 +185,29 @@ const AccountMenu: React.FC = () => {
                 </div>
                 <span className={cn(
                   "text-[9px] font-black uppercase px-1.5 py-0.5 rounded-md",
-                  user?.subscriptionStatus === 'active' ? "bg-green-500/10 text-green-400" : "bg-red-500/10 text-red-400"
-                )}>{user?.subscriptionStatus}</span>
+                  (user?.subscriptionStatus === 'active' || user?.subscriptionStatus === 'trialing') 
+                    ? "bg-green-500/10 text-green-400" 
+                    : (user?.subscriptionStatus === 'past_due' || user?.subscriptionStatus === 'unpaid')
+                      ? "bg-amber-500/10 text-amber-400"
+                      : "bg-red-500/10 text-red-400"
+                )}>
+                  {user?.subscriptionStatus || 'None'}
+                </span>
               </div>
               <div className="flex items-center gap-2 mb-3">
-                <Calendar className="w-3 h-3 text-slate-500" />
-                <span className="text-[9px] font-bold text-slate-500 uppercase tracking-widest">
-                  Expires: {user?.expiryDate ? new Date(user?.expiryDate).toLocaleDateString() : 'N/A'}
+                <Calendar className={cn("w-3 h-3", isExpired ? "text-red-400" : isExpiringSoon ? "text-amber-400" : "text-slate-500")} />
+                <span className={cn(
+                  "text-[9px] font-bold uppercase tracking-widest",
+                  isExpired ? "text-red-400" : isExpiringSoon ? "text-amber-400" : "text-slate-500"
+                )}>
+                  {user?.expiryDate 
+                    ? `Expires: ${new Date(user.expiryDate).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' })}` 
+                    : 'Lifetime Access'}
+                  {(isExpiringSoon || isExpired) && daysRemaining !== null && (
+                    <span className="ml-1 text-[7px] opacity-80">
+                      ({isExpired ? 'Expired' : `${daysRemaining}d left`})
+                    </span>
+                  )}
                 </span>
               </div>
               <button 
@@ -193,7 +217,7 @@ const AccountMenu: React.FC = () => {
                 }}
                 className="w-full py-2 bg-blue-500/10 hover:bg-blue-500/20 text-blue-400 rounded-xl text-[7px] font-black uppercase tracking-widest transition-all border border-blue-500/20"
               >
-                Extend Access
+                {isExpired ? 'Renew Access' : 'Extend Access'}
               </button>
             </div>
           ) : (

@@ -47,7 +47,7 @@ export const supabaseSync = {
       console.error('[Supabase] getProfile error:', error.message)
       throw new Error(error.message)
     }
-    return { user: data }
+    return { user: toCamelCase(data) }
   },
 
   async upsertProfile(userId: string, email: string, name: string, avatar: string) {
@@ -61,7 +61,7 @@ export const supabaseSync = {
       throw new Error(error.message)
     }
     console.log('[Supabase] upsertProfile success:', data)
-    return { user: data }
+    return { user: toCamelCase(data) }
   },
 
   async updateSettings(userId: string, settings: Record<string, unknown>) {
@@ -89,7 +89,7 @@ export const supabaseSync = {
       console.error('[Supabase] updateSettings error:', error.message)
       throw new Error(error.message)
     }
-    return { user: data }
+    return { user: toCamelCase(data) }
   },
 
   async getSpaces(userId: string) {

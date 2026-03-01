@@ -89,11 +89,11 @@ const PricingModal: React.FC<PricingModalProps> = ({ isOpen, onClose }) => {
             setPaymentMessage('Failed to verify payment. Please try again.');
           });
       } else if (checkoutId || success !== null) {
-        setPaymentStatus('success');
-        setPaymentMessage('Verifying your upgrade...');
+        setPaymentStatus('verifying');
+        setPaymentMessage('Verifying your upgrade and unlocking Pro features...');
         
         let attempts = 0;
-        const maxAttempts = 8; // 15-16 seconds total
+        const maxAttempts = 10; // ~20 seconds total
 
         pollInterval = setInterval(async () => {
           attempts++;
@@ -102,7 +102,8 @@ const PricingModal: React.FC<PricingModalProps> = ({ isOpen, onClose }) => {
           
           if (useAuthStore.getState().user?.plan === 'pro') {
             clearInterval(pollInterval);
-            setPaymentMessage('Payment successful! You are now a Pro member.');
+            setPaymentStatus('success');
+            setPaymentMessage('Upgrade successful! Welcome to Cyberia Pro.');
             
             // Confetti effect
             import('canvas-confetti').then(confetti => {
@@ -116,13 +117,16 @@ const PricingModal: React.FC<PricingModalProps> = ({ isOpen, onClose }) => {
 
             setTimeout(() => {
               window.history.replaceState({}, '', '/pricing');
-            }, 5000);
+              onClose();
+            }, 4000);
           } else if (attempts >= maxAttempts) {
             clearInterval(pollInterval);
-            setPaymentMessage('Processing... Your account will update shortly.');
+            setPaymentStatus('idle');
+            setPaymentMessage('We are still processing your upgrade. It will appear shortly!');
             setTimeout(() => {
               window.history.replaceState({}, '', '/pricing');
-            }, 5000);
+              onClose();
+            }, 4000);
           }
         }, 2000);
       } else if (fail !== null) {
@@ -385,24 +389,42 @@ const PricingModal: React.FC<PricingModalProps> = ({ isOpen, onClose }) => {
             
             {paymentStatus === 'verifying' && (
               <motion.div 
-                initial={{ opacity: 0, y: -10 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="text-center mb-6 bg-blue-500/10 p-4 rounded-xl border border-blue-500/20"
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                className="text-center mb-6 bg-blue-500/10 p-8 rounded-[2rem] border border-blue-500/20 backdrop-blur-md"
               >
-                <Loader2 className="w-6 h-6 text-blue-400 animate-spin mx-auto mb-2" />
-                <p className="text-sm text-blue-400 font-medium">Verifying payment...</p>
+                <div className="relative w-16 h-16 mx-auto mb-4">
+                  <div className="absolute inset-0 rounded-full border-2 border-blue-500/20" />
+                  <Loader2 className="w-16 h-16 text-blue-400 animate-spin" />
+                </div>
+                <p className="text-base font-bold text-white mb-1">Verifying Upgrade</p>
+                <p className="text-sm text-blue-400/80 font-medium leading-relaxed">{paymentMessage}</p>
               </motion.div>
             )}
             
             {paymentStatus === 'success' && (
               <motion.div 
+                initial={{ opacity: 0, scale: 0.9, y: 10 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                className="text-center mb-6 bg-gradient-to-br from-green-500/20 to-emerald-500/20 p-8 rounded-[2rem] border border-green-500/30 shadow-xl shadow-green-500/10"
+              >
+                <div className="w-16 h-16 bg-green-500/20 rounded-full flex items-center justify-center mx-auto mb-4 border border-green-500/30">
+                  <Check className="w-8 h-8 text-green-400" />
+                </div>
+                <h3 className="text-xl font-bold text-white mb-2">You're Pro!</h3>
+                <p className="text-sm text-green-400 font-medium leading-relaxed">{paymentMessage}</p>
+                <p className="text-xs text-slate-400 mt-4 animate-pulse">Closing in a few seconds...</p>
+              </motion.div>
+            )}
+
+            {paymentStatus === 'idle' && paymentMessage && (
+               <motion.div 
                 initial={{ opacity: 0, y: -10 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="text-center mb-6 bg-green-500/10 p-4 rounded-xl border border-green-500/20"
+                className="text-center mb-6 bg-white/5 p-8 rounded-[2rem] border border-white/10"
               >
-                <Check className="w-6 h-6 text-green-400 mx-auto mb-2" />
-                <p className="text-sm text-green-400 font-medium">{paymentMessage}</p>
-                <p className="text-xs text-slate-500 mt-1">Refreshing your account...</p>
+                <Loader2 className="w-12 h-12 text-slate-400 animate-spin mx-auto mb-4 opacity-50" />
+                <p className="text-sm text-slate-300 font-medium leading-relaxed">{paymentMessage}</p>
               </motion.div>
             )}
             
