@@ -17,6 +17,7 @@ interface PricingModalProps {
 }
 
 const PricingModal: React.FC<PricingModalProps> = ({ isOpen, onClose }) => {
+  const { user } = useAuthStore();
   const [billingCycle, setBillingCycle] = useState<AccessPeriod>('monthly');
   const [location, setLocation] = useState<{ country: string; currency: string; isLocalPricing: boolean } | null>(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -36,6 +37,17 @@ const PricingModal: React.FC<PricingModalProps> = ({ isOpen, onClose }) => {
       fetch('/api/pay?action=pricing')
         .then(res => res.json())
         .then(data => {
+          // Force currency if user is already Pro and has a payment provider
+          if (user?.plan === 'pro' && user?.paymentProvider) {
+            if (user.paymentProvider === 'polar') {
+              setLocation({ ...data, currency: 'USD', isLocalPricing: false });
+              return;
+            } else if (user.paymentProvider === 'flouci') {
+              setLocation({ ...data, currency: 'DT', isLocalPricing: true });
+              return;
+            }
+          }
+
           if (forceGlobal) {
             setLocation({ ...data, currency: 'USD', isLocalPricing: false });
           } else if (data.country === 'US' && isTunisiaLikely) {
@@ -45,6 +57,16 @@ const PricingModal: React.FC<PricingModalProps> = ({ isOpen, onClose }) => {
           }
         })
         .catch(() => {
+          if (user?.plan === 'pro' && user?.paymentProvider) {
+            if (user.paymentProvider === 'polar') {
+              setLocation({ country: 'US', currency: 'USD', isLocalPricing: false });
+              return;
+            } else if (user.paymentProvider === 'flouci') {
+              setLocation({ country: 'TN', currency: 'DT', isLocalPricing: true });
+              return;
+            }
+          }
+
           if (forceGlobal) {
             setLocation({ country: 'US', currency: 'USD', isLocalPricing: false });
           } else {
@@ -56,7 +78,7 @@ const PricingModal: React.FC<PricingModalProps> = ({ isOpen, onClose }) => {
           }
         });
     }
-  }, [isOpen]);
+  }, [isOpen, user?.plan, user?.paymentProvider]);
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);

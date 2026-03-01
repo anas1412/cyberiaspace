@@ -237,7 +237,7 @@ async function handleWebhook(req: VercelRequest, res: VercelResponse) {
 
             if (paymentRecord && paymentRecord.status !== 'completed') {
                 const billingCycle = paymentRecord.metadata?.billingCycle || 'monthly';
-                await updateUserPlan(paymentRecord.user_id, billingCycle, payment_id, 'flouci_webhook');
+                await updateUserPlan(paymentRecord.user_id, billingCycle, payment_id, 'flouci');
             }
         }
 
@@ -288,7 +288,7 @@ async function handleVerify(req: VercelRequest, res: VercelResponse) {
 
             if (paymentRecord && paymentRecord.status !== 'completed') {
                 const billingCycle = paymentRecord.metadata?.billingCycle || 'monthly';
-                await updateUserPlan(paymentRecord.user_id, billingCycle, paymentId, 'flouci_verify');
+                await updateUserPlan(paymentRecord.user_id, billingCycle, paymentId, 'flouci');
 
                 return res.status(200).json({
                     success: true,
@@ -580,19 +580,30 @@ async function handlePolarWebhook(req: VercelRequest, res: VercelResponse, rawBo
                 });
             }
 
-            await updateUserPlan(userId, billingCycle, paymentRef, `polar_webhook_${eventType}`, additionalData);
+            await updateUserPlan(userId, billingCycle, paymentRef, 'polar', additionalData, data.status || 'active');
         } else if (['subscription.updated', 'subscription.deleted', 'subscription.revoked'].includes(eventType)) {
             const status = data.status;
-            console.log(`[Polar Webhook] [${eventType}] User: ${userId}, Status: ${status}`);
+            const cancelAtPeriodEnd = data.cancelAtPeriodEnd;
+            console.log(`[Polar Webhook] [${eventType}] User: ${userId}, Status: ${status}, CancelAtPeriodEnd: ${cancelAtPeriodEnd}`);
 
             // Downgrade rules:
-            // 1. If subscription.deleted or subscription.revoked, we always downgrade.
-            // 2. If subscription.updated, ONLY downgrade if status is explicitly canceled, revoked, or incomplete_expired.
+            // 1. If cancelAtPeriodEnd is true, keep Pro but mark as canceled.
+            // 2. If subscription.deleted or subscription.revoked, we always downgrade.
+            // 3. If subscription.updated, ONLY downgrade if status is explicitly canceled, revoked, or incomplete_expired.
             // IMPORTANT: If status is 'incomplete', we do NOT downgrade (often sent before first payment).
             const isExplicitDowngradeStatus = ['canceled', 'revoked', 'incomplete_expired'].includes(status);
             const isDeletionEvent = eventType === 'subscription.deleted' || eventType === 'subscription.revoked';
 
-            if (isDeletionEvent || isExplicitDowngradeStatus) {
+            if (cancelAtPeriodEnd) {
+                console.log(`[Polar Webhook] Marking user ${userId} as Canceled but keeping Pro (Status: ${status})`);
+                await supabase
+                    .from('users')
+                    .update({
+                        subscription_status: 'canceled',
+                        updated_at: new Date().toISOString()
+                    })
+                    .eq('id', userId);
+            } else if (isDeletionEvent || isExplicitDowngradeStatus) {
                 console.log(`[Polar Webhook] Downgrading user ${userId} to Free (Status: ${status}, Event: ${eventType})`);
                 await supabase
                     .from('users')
@@ -610,6 +621,7 @@ async function handlePolarWebhook(req: VercelRequest, res: VercelResponse, rawBo
                     .update({
                         plan: 'pro',
                         subscription_status: 'active',
+                        payment_provider: 'polar',
                         updated_at: new Date().toISOString()
                     })
                     .eq('id', userId);
@@ -652,7 +664,8 @@ async function updateUserPlan(
     billingCycle: 'monthly' | 'yearly',
     paymentRef?: string,
     provider?: string,
-    additionalData: any = {}
+    additionalData: any = {},
+    status: string = 'active'
 ) {
     const now = new Date();
     const expiry = new Date();
@@ -667,8 +680,9 @@ async function updateUserPlan(
 
     const updatePayload: any = {
         plan: 'pro',
-        subscription_status: 'active',
+        subscription_status: status,
         expiry_date: expiry.toISOString(),
+        payment_provider: provider,
         updated_at: now.toISOString(),
         ...additionalData
     };

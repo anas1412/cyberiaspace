@@ -16,6 +16,7 @@ CREATE TABLE IF NOT EXISTS users (
     usage JSONB DEFAULT '{"ai_daily_count": 0}',
     polar_customer_id TEXT,
     polar_subscription_id TEXT,
+    payment_provider TEXT,
     created_at TIMESTAMP DEFAULT NOW(),
     updated_at TIMESTAMP DEFAULT NOW()
 );

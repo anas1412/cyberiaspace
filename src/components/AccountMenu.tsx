@@ -221,7 +221,7 @@ const AccountMenu: React.FC = () => {
                       ? "bg-amber-500/10 text-amber-400"
                       : "bg-red-500/10 text-red-400"
                 )}>
-                  {user?.subscriptionStatus || 'None'}
+                  {user?.subscriptionStatus ? (user.subscriptionStatus.charAt(0).toUpperCase() + user.subscriptionStatus.slice(1)) : 'None'}
                 </span>
               </div>
               <div className="flex items-center gap-2 mb-3">
@@ -240,7 +240,7 @@ const AccountMenu: React.FC = () => {
                   )}
                 </span>
               </div>
-              {user?.polarCustomerId ? (
+              {user?.paymentProvider === 'polar' ? (
                 <button 
                   onClick={() => {
                     handleManageSubscription();

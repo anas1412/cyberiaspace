@@ -116,6 +116,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             expiryDate: dbProfile.expiry_date,
             polarCustomerId: dbProfile.polar_customer_id,
             polarSubscriptionId: dbProfile.polar_subscription_id,
+            paymentProvider: dbProfile.payment_provider,
             usage: dbProfile.usage,
             settings: dbProfile.settings,
             lastSeen: dbProfile.updated_at

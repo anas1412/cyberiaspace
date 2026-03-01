@@ -76,6 +76,7 @@
 | spaces           | published_id          | text                        |
 | users            | plan                  | text                        |
 | users            | subscription_status   | text                        |
+| users            | payment_provider     | text                        |
 | thoughts         | user_id               | text                        |
 | thoughts         | space_id              | text                        |
 | thoughts         | stack_id              | text                        |

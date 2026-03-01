@@ -108,6 +108,7 @@ async function handleExchange(req: VercelRequest, res: VercelResponse) {
             expiryDate: profile.expiry_date,
             polarCustomerId: profile.polar_customer_id,
             polarSubscriptionId: profile.polar_subscription_id,
+            paymentProvider: profile.payment_provider,
             usage: profile.usage,
             settings: profile.settings,
             lastSeen: profile.updated_at
