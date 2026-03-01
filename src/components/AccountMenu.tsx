@@ -246,7 +246,7 @@ const AccountMenu: React.FC = () => {
                     handleManageSubscription();
                     setIsOpen(false);
                   }}
-                  className="w-full py-2 bg-blue-500/10 hover:bg-blue-500/20 text-blue-400 rounded-xl text-[7px] font-black uppercase tracking-widest transition-all border border-blue-500/20"
+                  className="w-full py-2 bg-blue-500/10 hover:bg-blue-500/20 text-blue-400 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all border border-blue-500/20"
                 >
                   Manage Subscription
                 </button>
@@ -256,7 +256,7 @@ const AccountMenu: React.FC = () => {
                     openPricing();
                     setIsOpen(false);
                   }}
-                  className="w-full py-2 bg-blue-500/10 hover:bg-blue-500/20 text-blue-400 rounded-xl text-[7px] font-black uppercase tracking-widest transition-all border border-blue-500/20"
+                  className="w-full py-2 bg-blue-500/10 hover:bg-blue-500/20 text-blue-400 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all border border-blue-500/20"
                 >
                   {isExpired ? 'Renew Access' : 'Extend Access'}
                 </button>
