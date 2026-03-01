@@ -72,18 +72,32 @@ async function handleExchange(req: VercelRequest, res: VercelResponse) {
         const grantedScopes = tokens.scope || '';
         const hasDriveScope = grantedScopes.includes('drive.file') || grantedScopes.includes('https://www.googleapis.com/auth/drive.file');
 
+        let existingUser = null;
+        if (supabase) {
+            const { data } = await supabase.from('users').select('*').eq('id', userId).maybeSingle();
+            existingUser = data;
+        }
+
         const today = new Date().toISOString().split('T')[0];
         const profile = {
             id: userId,
             email: payload.email || '',
             name: payload.name || '',
             avatar: payload.picture || '',
-            plan: 'free',
-            subscriptionStatus: 'none',
-            usage: { ai_daily_count: 0, sync_thoughts: 0, last_ai_reset: today },
-            settings: { theme: 'cyberia', autoSync: true, driveEnabled: hasDriveScope },
+            plan: existingUser?.plan || 'free',
+            subscriptionStatus: existingUser?.subscription_status || 'none',
+            expiryDate: existingUser?.expiry_date || null,
+            polarCustomerId: existingUser?.polar_customer_id || null,
+            polarSubscriptionId: existingUser?.polar_subscription_id || null,
+            usage: existingUser?.usage || { ai_daily_count: 0, sync_thoughts: 0, last_ai_reset: today },
+            settings: existingUser?.settings || { theme: 'cyberia', autoSync: true, driveEnabled: hasDriveScope },
             lastSeen: new Date().toISOString()
         };
+
+        // If we have an existing user, we update their driveEnabled setting based on the new tokens
+        if (existingUser) {
+            profile.settings = { ...existingUser.settings, driveEnabled: hasDriveScope };
+        }
 
         // Save to Supabase only
         if (supabase) {
@@ -94,9 +108,12 @@ async function handleExchange(req: VercelRequest, res: VercelResponse) {
                 avatar: profile.avatar,
                 plan: profile.plan,
                 subscription_status: profile.subscriptionStatus,
+                expiry_date: profile.expiryDate,
+                polar_customer_id: profile.polarCustomerId,
+                polar_subscription_id: profile.polarSubscriptionId,
                 settings: profile.settings,
                 usage: profile.usage,
-                updated_at: new Date().toISOString()
+                updated_at: profile.lastSeen
             }, { onConflict: 'id' });
         }
 
