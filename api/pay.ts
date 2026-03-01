@@ -71,6 +71,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         case 'polar_webhook':
             if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
             return handlePolarWebhook(req, res, rawBodyStr);
+        case 'polar_portal':
+            if (req.method !== 'GET') return res.status(405).json({ error: 'Method not allowed' });
+            return handlePolarPortal(req, res);
         default:
             return res.status(400).json({ error: 'Invalid action' });
     }
@@ -400,6 +403,65 @@ async function handlePolarInit(req: VercelRequest, res: VercelResponse) {
         return res.status(500).json({ error: 'Internal server error during payment initialization' });
     }
 }
+
+async function handlePolarPortal(req: VercelRequest, res: VercelResponse) {
+    console.log('[Polar Portal] Request received');
+    const authHeader = req.headers.authorization;
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+        return res.status(401).json({ error: 'Unauthorized: Missing or invalid Authorization header' });
+    }
+
+    const token = authHeader.split(' ')[1];
+
+    try {
+        console.log('[Polar Portal] Verifying Google token...');
+        const tokenInfoRes = await fetch(`https://www.googleapis.com/oauth2/v3/tokeninfo?access_token=${token}`);
+        if (!tokenInfoRes.ok) {
+            const errText = await tokenInfoRes.text();
+            console.error('[Polar Portal] Google token verification failed:', errText);
+            return res.status(401).json({ error: 'Invalid Google token' });
+        }
+        const info = await tokenInfoRes.json() as any;
+        const userId = info.sub || info.user_id;
+
+        if (!userId) {
+            return res.status(401).json({ error: 'User identity not found in token' });
+        }
+
+        // Retrieve user from Supabase to get polar_customer_id
+        const { data: user, error: userError } = await supabase
+            .from('users')
+            .select('polar_customer_id')
+            .eq('id', userId)
+            .maybeSingle();
+
+        if (userError || !user) {
+            console.error('[Polar Portal] User not found in database:', userId);
+            return res.status(404).json({ error: 'User not found in database' });
+        }
+
+        if (!user.polar_customer_id) {
+            console.warn('[Polar Portal] No Polar customer ID for user:', userId);
+            return res.status(400).json({ error: 'No Polar customer ID found. Please upgrade your plan first.' });
+        }
+
+        const polar = getPolarClient(res);
+        if (!polar) return;
+
+        console.log('[Polar Portal] Creating customer session for:', user.polar_customer_id);
+        const session = await polar.customerSessions.create({
+            customerId: user.polar_customer_id
+        });
+
+        console.log('[Polar Portal] Session created:', session.customerPortalUrl);
+        return res.status(200).json({ customerPortalUrl: session.customerPortalUrl });
+
+    } catch (error: any) {
+        console.error('[Polar Portal] Critical Error:', error.message, error.stack);
+        return res.status(500).json({ error: 'Internal server error' });
+    }
+}
+
 
 async function handlePolarWebhook(req: VercelRequest, res: VercelResponse, rawBody: string) {
     console.log('[Polar Webhook] Triggered');
