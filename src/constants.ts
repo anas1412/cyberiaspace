@@ -7,7 +7,7 @@ export interface User {
   email: string;
   avatar: string;
   plan: SubscriptionPlan;
-  subscriptionStatus: 'active' | 'canceled' | 'none';
+  subscriptionStatus: 'active' | 'trialing' | 'past_due' | 'unpaid' | 'canceled' | 'none';
   expiryDate: string | null;
   usage: {
     ai_daily_count: number;
