@@ -71,7 +71,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 async function handlePricing(req: VercelRequest, res: VercelResponse) {
     const forceCountry = req.query.country as string;
     const country = forceCountry || (req.headers['x-vercel-ip-country'] as string) || 'US';
-    const isTunisia = country.toUpperCase() === 'TN';
+    let isLocalPricing = country.toUpperCase() === 'TN';
+
+    if (process.env.ENABLE_LOCAL_PRICING === 'false') {
+        isLocalPricing = false;
+    }
 
     const polarMonthly = process.env.POLAR_PRODUCT_ID_PRO_MONTHLY;
     const polarYearly = process.env.POLAR_PRODUCT_ID_PRO_YEARLY;
@@ -82,8 +86,8 @@ async function handlePricing(req: VercelRequest, res: VercelResponse) {
 
     return res.status(200).json({
         country,
-        currency: isTunisia ? 'DT' : 'USD',
-        isLocalPricing: isTunisia,
+        currency: isLocalPricing ? 'DT' : 'USD',
+        isLocalPricing: isLocalPricing,
         polar: {
             monthlyProductId: polarMonthly || null,
             yearlyProductId: polarYearly || null,

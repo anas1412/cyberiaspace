@@ -31,21 +31,30 @@ const PricingModal: React.FC<PricingModalProps> = ({ isOpen, onClose }) => {
       const userTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
       const userLanguage = navigator.language;
       const isTunisiaLikely = userTimezone === 'Africa/Tunis' || userLanguage.includes('ar-TN') || userLanguage.includes('fr-TN');
+      const forceGlobal = import.meta.env.VITE_ENABLE_LOCAL_PRICING === 'false';
 
       fetch('/api/pay?action=pricing')
         .then(res => res.json())
         .then(data => {
-          if (data.country === 'US' && isTunisiaLikely) {
+          if (forceGlobal) {
+            setLocation({ ...data, currency: 'USD', isLocalPricing: false });
+          } else if (data.country === 'US' && isTunisiaLikely) {
             setLocation({ country: 'TN', currency: 'DT', isLocalPricing: true });
           } else {
             setLocation(data);
           }
         })
-        .catch(() => setLocation({
-          country: isTunisiaLikely ? 'TN' : 'US',
-          currency: isTunisiaLikely ? 'DT' : 'USD',
-          isLocalPricing: isTunisiaLikely
-        }));
+        .catch(() => {
+          if (forceGlobal) {
+            setLocation({ country: 'US', currency: 'USD', isLocalPricing: false });
+          } else {
+            setLocation({
+              country: isTunisiaLikely ? 'TN' : 'US',
+              currency: isTunisiaLikely ? 'DT' : 'USD',
+              isLocalPricing: isTunisiaLikely
+            });
+          }
+        });
     }
   }, [isOpen]);
 
