@@ -130,8 +130,11 @@ function App() {
     const hostname = window.location.hostname;
     const isMainDomain = hostname === 'cyberia.tn' || hostname === 'www.cyberia.tn';
 
-    if ((path === '/' || path.startsWith('/s/')) && !isMainDomain) {
+    if ((path === '/' || path.startsWith('/s/') || path === '/pricing') && !isMainDomain) {
       init();
+      if (path === '/pricing') {
+        useModalStore.getState().openPricing();
+      }
     }
 
     const handleBeforeInstallPrompt = (e: Event) => {
@@ -430,6 +433,12 @@ function App() {
     );
   }
 
+  if (path === '/pricing') {
+    // If we're on /pricing, we stay on the app root but open the pricing modal
+    // Actually, we can just let it fall through to the App render but ensure the modal is open.
+    // But to prevent 404, we must mark it as valid.
+  }
+
   // Landing page routes - only on main domain
   if (isMainDomain) {
     if (path === '/' || path === '/home') {
@@ -447,7 +456,7 @@ function App() {
   }
 
   // App domain: check for valid routes, otherwise show NotFound
-  const validAppRoutes = ['/feedback', '/privacy', '/terms', '/sales-conditions', '/privacy-policy', '/legal-notice', '/contact', '/login'];
+  const validAppRoutes = ['/feedback', '/privacy', '/terms', '/sales-conditions', '/privacy-policy', '/legal-notice', '/contact', '/login', '/pricing'];
   const isValidAppRoute = path === '/' || path.startsWith('/s/') || validAppRoutes.includes(path) || (path === '/home' && canSeeLanding);
   
   if (!isValidAppRoute) {
