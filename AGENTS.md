@@ -10,12 +10,9 @@ Welcome to the Cyberia codebase! This project is a modern, high-performance spat
 - **Dev:** `npm run dev` (Starts the Vite development server)
 
 ### Testing
-- **Vitest:** Configured for unit, integration, and component testing.
-- **Commands:**
-    - `npm run test`: Starts tests in watch mode.
-    - `npm run test:run`: Executes all tests once (CI mode).
-- **Location:** Tests are located in `src/tests/` and cover stores, sync, utils, and components.
-- **Self-Verification:** When adding new functionality, add corresponding tests in `src/tests/` to ensure stability.
+- No standard test suite (Jest/Vitest) is currently configured.
+- **Experimental Scripts:** Located in `scripts/` (e.g., `node scripts/test-tavily.cjs`).
+- When adding new functionality, it's highly recommended to add self-verifying logic or console logs since there is no automated test harness.
 
 ---
 
@@ -24,11 +21,12 @@ Welcome to the Cyberia codebase! This project is a modern, high-performance spat
 ###  Data Flow & Synchronization
 1.  **Local First:** All user data (Spaces, Thoughts, Stacks) is stored in **IndexedDB** using **Dexie**. This ensures offline functionality and low latency.
 2.  **Cloud Sync:** Synchronization with Supabase is managed by `src/services/sync/syncOrchestrator.ts`.
-3.  **User Plans:** Subscription plans and user status are synced between the Supabase `users` table and the local `useAuthStore` state.
-4.  **Backend Services:**
-    *   **Vercel Serverless Functions:** Primary API layer located in `api/`. Hobby tier constraints (max 12 functions) apply.
-    *   **Supabase:** Acts as a "Backend-as-a-Service" (BaaS) for PostgreSQL (storage for all state), Storage (binary assets), and Realtime.
-    *   **Note:** `@vercel/kv` has been removed and replaced by Supabase for all state storage. Supabase Edge Functions (`supabase/functions/`) are deprecated.
+3.  **Backend Services:**
+    *   **Vercel Serverless Functions:** Primary API layer located in `api/` (e.g., `api/feedback.ts`, `api/publish.ts`), keep in mind that we are using hobby ter 12 functions max. These are the source of truth for custom backend functionality.
+    *   **Supabase:** Acts as a "Backend-as-a-Service" (BaaS) for:
+        *   **PostgreSQL Database:** Cloud storage for synced Dexie data.
+        *   **Storage (Buckets):** Storage for binary assets like images and files.
+    *   **Note:** Supabase Edge Functions (`supabase/functions/`) are deprecated/unused in favor of Vercel functions.
 
 ###  Spatial Thinking Engine
 - Thoughts are not just static entries; they are physical entities with `x, y` (position) and `vx, vy` (velocity) properties.
@@ -36,10 +34,23 @@ Welcome to the Cyberia codebase! This project is a modern, high-performance spat
 - **Canvas Scaling:** Managed via `DOMMatrix` transforms. Avoid direct DOM manipulation for the canvas; use the `useStore` transform state.
 
 ###  State Management (Zustand)
-Split into specific stores to prevent massive re-renders:
-- `useStore`: Core application state (thoughts, spaces, stacks, canvas transform).
-- `useModalStore`: UI-wide modal and alert management.
-- `useAuthStore`: User profile, authentication state, and sync status.
+The application uses a modular, slice-based architecture for state management to maintain readability and prevent circular dependencies.
+
+- **Main Store (`useStore.ts`):** Composed of multiple slices in `src/store/slices/`:
+  - `canvasSlice`: Spatial transforms, performance mode, and lightbox.
+  - `thoughtSlice`: Entity CRUD, selection, and layering logic.
+  - `spaceSlice`: Space management and publishing.
+  - `stackSlice`: Linking and collection logic.
+  - `historySlice`: Undo/Redo state and logic.
+  - `dataSlice`: Initialization, onboarding, and data import/export.
+  - `uiSlice`: Themes and interface search/filters.
+- **Auth Store (`useAuthStore.ts`):** Composed of:
+  - `authSlice`: User session and profile.
+  - `syncSlice`: Cloud synchronization orchestration.
+  - `storageSlice`: Media/Blob storage and usage calculation.
+- **Other Stores:**
+  - `useModalStore`: UI-wide modal and alert management.
+  - `useSyncStore`: Visual synchronization status.
 
 ---
 
@@ -55,11 +66,12 @@ Split into specific stores to prevent massive re-renders:
   5. Types and constants (`./db`, `./constants`).
   6. Styles (`./index.css`).
 - **Circular Dependencies:** For services needing stores, use dynamic imports (`const { useStore } = await import('./store/useStore')`) inside functions to avoid circular issues during store initialization.
+- **Store Slices:** When creating or modifying state, ensure you are working in the correct slice in `src/store/slices/`.
 
 ###  TypeScript & Typing
 - **Strict Mode:** TypeScript is configured in strict mode. Avoid `any` where possible.
 - **Interfaces:** Prefer `interface` over `type` for data structures.
-- **Location:** Core entity types (Space, Thought, Stack) are defined in `src/db.ts`.
+- **Location:** Core entity types (Space, Thought, Stack) are defined in `src/db.ts`. Store-specific interfaces are defined in `src/store/types.ts`.
 
 ###  Naming Conventions
 - **Components:** `PascalCase`.
@@ -85,9 +97,7 @@ Split into specific stores to prevent massive re-renders:
 ##  Backend (Vercel & Supabase)
 - **API Endpoints:** Located in `api/`. These are Vercel Serverless Functions.
 - **Supabase Schema:** `supabase/schema.sql` is the primary source of truth for the database schema.
-- **Payments:** Handled via **Flouci** (Local/Tunisia) and **Polar.sh** (International).
-  - `api/pay.ts` is the central hub for payments and webhooks.
-  - Polar integration uses raw body validation for security.
+- **RLS:** RLS is is disabled for the supabase database
 
 ---
 
