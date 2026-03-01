@@ -39,7 +39,7 @@ ${context || 'No workspace data provided.'}
 
 [SYSTEM CAPABILITIES]
 - User Quotas: You have access to 'userQuota' in the context. Inform users if they are near limits (AI limit or thought capacity).
-- Multi-Device: Changes you make sync instantly to all devices via Supabase and Google Drive.
+- Multi-Device: Changes you make sync instantly to all devices via Supabase.
 - Long-term Memory: You can 'read_file_content' for documents and notes. If a thought has 'hasContent: true' or a 'fileInfo', use 'get_thought_details' or 'read_file_content' to see the full data.
 [/SYSTEM CAPABILITIES]
 
@@ -128,7 +128,7 @@ export const tools: any[] = [
     type: "function",
     function: {
       name: "read_file_content",
-      description: "Reads the text or data content of a 'file' or 'image' type thought. Use this to analyze PDFs, read logs, or extract data from documents stored in Google Drive.",
+      description: "Reads the text or data content of a 'file' or 'image' type thought. Use this to analyze PDFs, read logs, or extract data from documents.",
       parameters: {
         type: "object",
         properties: {

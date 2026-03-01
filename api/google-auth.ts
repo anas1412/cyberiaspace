@@ -21,27 +21,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         return handleRefresh(req, res);
     } else if (action === 'revoke') {
         return handleRevoke(req, res);
-    } else if (action === 'disable-drive') {
-        return handleDisableDrive(req, res);
     }
 
     return res.status(400).json({ error: 'Invalid action' });
-}
-
-async function handleDisableDrive(req: VercelRequest, res: VercelResponse) {
-    const userId = await getUserIdFromAuthHeader(req.headers.authorization);
-    if (!userId) return res.status(401).json({ error: 'Unauthorized' });
-
-    if (supabase) {
-        const { data } = await supabase.from('users').select('settings').eq('id', userId).maybeSingle();
-        if (data) {
-            await supabase.from('users').update({
-                settings: { ...data.settings, driveEnabled: false }
-            }).eq('id', userId);
-        }
-    }
-
-    return res.status(200).json({ success: true });
 }
 
 async function handleExchange(req: VercelRequest, res: VercelResponse) {
@@ -70,8 +52,6 @@ async function handleExchange(req: VercelRequest, res: VercelResponse) {
 
         const userId = payload.sub;
         console.log('[Google Auth] Exchange for User:', userId);
-        const grantedScopes = tokens.scope || '';
-        const hasDriveScope = grantedScopes.includes('drive.file') || grantedScopes.includes('https://www.googleapis.com/auth/drive.file');
 
         if (!supabase) {
             throw new Error('Supabase client not initialized');
@@ -83,12 +63,12 @@ async function handleExchange(req: VercelRequest, res: VercelResponse) {
 
         let profile;
         if (existingUser) {
-            // Update ONLY the basic fields and drive settings to prevent "Free reset" bug
+            // Update ONLY the basic fields to prevent "Free reset" bug
             const updatePayload = {
                 email: payload.email,
                 name: payload.name,
                 avatar: payload.picture,
-                settings: { ...(existingUser.settings || {}), driveEnabled: hasDriveScope },
+                settings: existingUser.settings || {},
                 updated_at: new Date().toISOString()
             };
             console.log('[Google Auth] Update payload:', JSON.stringify(updatePayload));
@@ -106,7 +86,7 @@ async function handleExchange(req: VercelRequest, res: VercelResponse) {
                 avatar: payload.picture,
                 plan: 'free',
                 subscription_status: 'none',
-                settings: { theme: 'cyberia', autoSync: true, driveEnabled: hasDriveScope },
+                settings: { theme: 'cyberia', autoSync: true },
                 usage: { ai_daily_count: 0, sync_thoughts: 0, last_ai_reset: new Date().toISOString().split('T')[0] },
                 updated_at: new Date().toISOString()
             }).select().single();
@@ -158,15 +138,6 @@ async function handleRefresh(req: VercelRequest, res: VercelResponse) {
 async function handleRevoke(req: VercelRequest, res: VercelResponse) {
     const userId = await getUserIdFromAuthHeader(req.headers.authorization);
     if (!userId) return res.status(401).json({ error: 'Unauthorized' });
-
-    if (supabase) {
-        const { data } = await supabase.from('users').select('settings').eq('id', userId).maybeSingle();
-        if (data) {
-            await supabase.from('users').update({
-                settings: { ...data.settings, driveEnabled: false }
-            }).eq('id', userId);
-        }
-    }
 
     return res.status(200).json({ success: true });
 }

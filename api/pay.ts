@@ -483,11 +483,33 @@ async function handlePolarWebhook(req: VercelRequest, res: VercelResponse, rawBo
 
     const processWebhook = async () => {
         const event = validateEvent(rawBody, req.headers as Record<string, string>, webhookSecret);
-        const eventType = event.type;
-        console.log(`[Polar Webhook] Event Type: ${eventType}`);
+        const eventType = event.type as string;
+        console.log('[Polar Webhook] Processing event:', eventType, 'for User ID extraction...');
 
         const data = event.data as any;
-        const userId = data.metadata?.userId || data.metadata?.user_id || data.customFieldData?.userId;
+        let userId = data.metadata?.userId;
+        let foundSource = 'metadata.userId';
+
+        if (!userId && data.metadata?.user_id) {
+            userId = data.metadata.user_id;
+            foundSource = 'metadata.user_id';
+        }
+        if (!userId && data.customFieldData?.userId) {
+            userId = data.customFieldData.userId;
+            foundSource = 'customFieldData.userId';
+        }
+        if (!userId && data.activeSubscriptions?.[0]?.metadata?.userId) {
+            userId = data.activeSubscriptions[0].metadata.userId;
+            foundSource = 'activeSubscriptions[0].metadata.userId';
+        }
+        if (!userId && data.customer?.metadata?.userId) {
+            userId = data.customer.metadata.userId;
+            foundSource = 'customer.metadata.userId';
+        }
+
+        if (userId) {
+            console.log(`[Polar Webhook] Found userId: ${userId} via ${foundSource}`);
+        }
 
         if (!userId) {
             console.error(`[Polar Webhook] [${eventType}] No userId found in Polar webhook metadata. Full data object:`, JSON.stringify(data, null, 2));
@@ -540,8 +562,15 @@ async function handlePolarWebhook(req: VercelRequest, res: VercelResponse, rawBo
             const status = data.status;
             console.log(`[Polar Webhook] [${eventType}] User: ${userId}, Status: ${status}`);
 
-            if (['canceled', 'revoked', 'incomplete_expired'].includes(status)) {
-                console.log(`[Polar Webhook] Downgrading user ${userId} to Free due to subscription status: ${status} (Event: ${eventType})`);
+            // Downgrade rules:
+            // 1. If subscription.deleted or subscription.revoked, we always downgrade.
+            // 2. If subscription.updated, ONLY downgrade if status is explicitly canceled, revoked, or incomplete_expired.
+            // IMPORTANT: If status is 'incomplete', we do NOT downgrade (often sent before first payment).
+            const isExplicitDowngradeStatus = ['canceled', 'revoked', 'incomplete_expired'].includes(status);
+            const isDeletionEvent = eventType === 'subscription.deleted' || eventType === 'subscription.revoked';
+
+            if (isDeletionEvent || isExplicitDowngradeStatus) {
+                console.log(`[Polar Webhook] Downgrading user ${userId} to Free (Status: ${status}, Event: ${eventType})`);
                 await supabase
                     .from('users')
                     .update({

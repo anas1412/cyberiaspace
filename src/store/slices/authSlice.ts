@@ -207,6 +207,7 @@ export const createAuthSlice: StateCreator<AuthState, [], [], any> = (set, get, 
     const { user } = get();
     if (!user || user.plan === 'free' || !user.expiryDate) return;
     if (new Date(user.expiryDate) < new Date()) {
+      console.warn('[Auth] Plan expired. Reverting to free plan for user:', user.id);
       set({ user: { ...user, plan: 'free' } });
       localStorage.setItem('cyberia-user', JSON.stringify({ ...user, plan: 'free' }));
     }
@@ -264,9 +265,7 @@ export const createAuthSlice: StateCreator<AuthState, [], [], any> = (set, get, 
         set({ user: updatedUser });
         localStorage.setItem('cyberia-user', JSON.stringify(updatedUser));
       } else {
-        // User doesn't exist in Supabase - create them
-        console.log('[Auth] Creating new user in Supabase...');
-        await supabaseSync.upsertProfile(user.id, user.email || '', user.name || '', user.avatar || '');
+        console.warn('[Auth] No profile found in Supabase for user:', user.id);
       }
     } catch (e) {
       console.warn('Failed to refresh profile', e);
