@@ -5,7 +5,10 @@ import { Polar } from "@polar-sh/sdk";
 import { validateEvent, WebhookVerificationError } from "@polar-sh/sdk/webhooks";
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.VITE_SUPABASE_URL || process.env.VITE_PUBLIC_SUPABASE_URL;
-const supabaseKey = process.env.VITE_SUPABASE_ANON_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || process.env.VITE_PUBLIC_SUPABASE_ANON_KEY;
+// Use service_role key for backend operations to bypass RLS.
+// If you haven't already, set SUPABASE_SERVICE_ROLE_KEY in your environment.
+const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.VITE_SUPABASE_ANON_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || process.env.VITE_PUBLIC_SUPABASE_ANON_KEY;
+
 
 const supabase = createClient(supabaseUrl!, supabaseKey!, {
   auth: { autoRefreshToken: false, persistSession: false }
@@ -26,8 +29,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     let rawBodyStr = '';
     if (req.method === 'POST') {
-        const rawBody = await buffer(req);
-        rawBodyStr = rawBody.toString();
+        try {
+            const rawBody = await buffer(req);
+            rawBodyStr = rawBody.toString();
+        } catch (err) {
+            console.error('[Pay Handler] Failed to read request buffer:', err);
+            return res.status(500).json({ error: 'Failed to read request body' });
+        }
         
         if (action !== 'polar_webhook') {
             const contentType = req.headers['content-type'] || '';
@@ -35,15 +43,15 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                 try {
                     req.body = JSON.parse(rawBodyStr);
                 } catch (err) {
-                    console.error('Failed to parse JSON body:', err, 'Body snippet:', rawBodyStr.substring(0, 100));
+                    console.error('[Pay Handler] Failed to parse JSON body:', err, 'Body snippet:', rawBodyStr.substring(0, 100));
                     return res.status(400).json({ error: 'Invalid JSON body' });
                 }
             } else {
-                // If not JSON or empty, initialize as empty object or handle accordingly
                 req.body = {};
             }
         }
     }
+
 
     switch (action) {
         case 'pricing':
@@ -401,25 +409,28 @@ async function handlePolarWebhook(req: VercelRequest, res: VercelResponse, rawBo
     const signature = req.headers['webhook-signature'] as string;
     const webhookSecret = process.env.POLAR_WEBHOOK_SECRET || '';
 
-    console.log('[Polar Webhook] Signature:', signature ? `${signature.substring(0, 10)}...` : 'MISSING');
-    console.log('[Polar Webhook] Secret:', webhookSecret ? `${webhookSecret.substring(0, 5)}...` : 'MISSING');
-
     if (!signature) {
+        console.warn('[Polar Webhook] Missing signature header');
         return res.status(401).json({ error: 'Missing signature' });
     }
 
-    try {
+    if (!webhookSecret) {
+        console.error('[Polar Webhook] Missing POLAR_WEBHOOK_SECRET env var');
+        return res.status(500).json({ error: 'Webhook secret not configured' });
+    }
+
+    const processWebhook = async () => {
         const event = validateEvent(rawBody, req.headers as Record<string, string>, webhookSecret);
-        console.log('[Polar Webhook] Event validated:', JSON.stringify(event, null, 2));
+        console.log(`[Polar Webhook] Event Type: ${event.type}`);
 
-        if (event.type === 'order.created' || event.type === 'subscription.created') {
+        if (event.type === 'order.created' || event.type === 'order.paid' || event.type === 'subscription.created') {
             const data = event.data as any;
-            const userId = data.metadata?.userId;
-            console.log('[Polar Webhook] Metadata userId:', userId);
-
+            
+            const userId = data.metadata?.userId || data.metadata?.user_id || data.customFieldData?.userId;
+            
             if (!userId) {
-                console.error('No userId in Polar webhook metadata');
-                return res.status(200).json({ received: true });
+                console.error('[Polar Webhook] No userId found in Polar webhook metadata. Full data object:', JSON.stringify(data, null, 2));
+                return;
             }
 
             const productId = data.productId;
@@ -430,24 +441,63 @@ async function handlePolarWebhook(req: VercelRequest, res: VercelResponse, rawBo
             const additionalData: any = {
                 polar_customer_id: data.customerId
             };
+            
             if (event.type === 'subscription.created') {
                 additionalData.polar_subscription_id = data.id;
+            } else if (data.subscriptionId) {
+                additionalData.polar_subscription_id = data.subscriptionId;
             }
 
-            console.log('[Polar Webhook] Additional data for updateUserPlan:', JSON.stringify(additionalData, null, 2));
-            await updateUserPlan(userId, billingCycle, undefined, 'polar_webhook', additionalData);
+            // Insert payment record if it doesn't exist
+            const paymentRef = data.id || data.orderId;
+            const { data: existingPayment } = await supabase
+                .from('payments')
+                .select('id')
+                .eq('payment_ref', paymentRef)
+                .maybeSingle();
+
+            if (!existingPayment) {
+                console.log(`[Polar Webhook] Inserting new payment record for ${paymentRef}`);
+                await supabase.from('payments').insert({
+                    payment_ref: paymentRef,
+                    user_id: userId,
+                    amount: data.amount || 0,
+                    currency: data.currency || 'USD',
+                    status: 'completed',
+                    metadata: {
+                        productId,
+                        billingCycle,
+                        provider: 'polar',
+                        eventType: event.type
+                    }
+                });
+            }
+
+            await updateUserPlan(userId, billingCycle, paymentRef, 'polar_webhook', additionalData);
         }
+    };
 
+    const timeout = new Promise((_, reject) =>
+        setTimeout(() => reject(new Error('Webhook processing timeout')), 8000)
+    );
+
+    try {
+        await Promise.race([processWebhook(), timeout]);
         return res.status(200).json({ received: true });
-
-    } catch (error) {
+    } catch (error: any) {
         if (error instanceof WebhookVerificationError) {
+            console.warn('[Polar Webhook] Signature verification failed');
             return res.status(401).json({ error: 'Invalid signature' });
         }
-        console.error('Polar Webhook Error:', error);
+        if (error.message === 'Webhook processing timeout') {
+            console.error('[Polar Webhook] Processing timed out (8s)');
+            return res.status(504).json({ error: 'Processing timeout' });
+        }
+        console.error('[Polar Webhook] Error:', error);
         return res.status(500).json({ error: 'Internal server error' });
     }
 }
+
 
 async function updateUserPlan(
     userId: string,
@@ -466,20 +516,29 @@ async function updateUserPlan(
 
     console.log(`[updateUserPlan] Upgrading user ${userId} (${billingCycle}) via ${provider}. Expiry: ${expiry.toISOString()}`);
 
-    const { error: userError } = await supabase
-        .from('users')
-        .update({
-            plan: 'pro',
-            subscription_status: 'active',
-            expiry_date: expiry.toISOString(),
-            updated_at: now.toISOString(),
-            ...additionalData
-        })
-        .eq('id', userId);
+    const updatePayload: any = {
+        plan: 'pro',
+        subscription_status: 'active',
+        expiry_date: expiry.toISOString(),
+        updated_at: now.toISOString(),
+        ...additionalData
+    };
 
-    if (userError) {
-        console.error(`[updateUserPlan] Error updating user ${userId}:`, userError);
-        throw userError;
+    const { data: updateData, error: updateError, status: updateStatus } = await supabase
+        .from('users')
+        .update(updatePayload)
+        .eq('id', userId)
+        .select();
+
+    if (updateError) {
+        console.error(`[updateUserPlan] Failed to update user ${userId}. Status: ${updateStatus}, Error:`, JSON.stringify(updateError, null, 2));
+        throw updateError;
+    }
+
+    if (!updateData || updateData.length === 0) {
+        console.warn(`[updateUserPlan] 0 rows updated for userId ${userId}. User record might not exist in Supabase.`);
+    } else {
+        console.log(`[updateUserPlan] Successfully updated user ${userId} to Pro.`);
     }
 
     if (paymentRef) {
@@ -492,10 +551,11 @@ async function updateUserPlan(
             .eq('payment_ref', paymentRef);
 
         if (paymentError) {
-            console.error(`[updateUserPlan] Error updating payment record ${paymentRef}:`, paymentError);
+            console.error(`[updateUserPlan] Error updating payment record ${paymentRef}:`, JSON.stringify(paymentError, null, 2));
         }
     }
 
     return { success: true, expiry };
 }
+
 
