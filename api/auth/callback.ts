@@ -6,7 +6,7 @@ const CLIENT_ID = process.env.VITE_GOOGLE_CLIENT_ID || process.env.GOOGLE_CLIENT
 const CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET;
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.VITE_SUPABASE_URL || process.env.VITE_PUBLIC_SUPABASE_URL;
-const supabaseKey = process.env.VITE_SUPABASE_ANON_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || process.env.VITE_PUBLIC_SUPABASE_ANON_KEY;
+const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.VITE_SUPABASE_ANON_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || process.env.VITE_PUBLIC_SUPABASE_ANON_KEY;
 const supabase = supabaseUrl && supabaseKey 
     ? createClient(supabaseUrl, supabaseKey, { auth: { autoRefreshToken: false, persistSession: false } })
     : null;
@@ -64,37 +64,62 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
         const userId = payload.sub;
 
-        const today = new Date().toISOString().split('T')[0];
-        const profile = {
-            id: userId,
-            email: payload.email || '',
-            name: payload.name || '',
-            avatar: payload.picture || '',
-            plan: 'free',
-            subscriptionStatus: 'none',
-            usage: { ai_daily_count: 0, sync_thoughts: 0, last_ai_reset: today },
-            settings: { theme: 'cyberia', autoSync: true },
-            lastSeen: new Date().toISOString()
-        };
-
-        // Save to Supabase only
-        if (supabase) {
-            const { error: supabaseError } = await supabase.from('users').upsert({
-                id: userId,
-                email: profile.email,
-                name: profile.name,
-                avatar: profile.avatar,
-                plan: profile.plan,
-                subscription_status: profile.subscriptionStatus,
-                settings: profile.settings,
-                usage: profile.usage,
-                updated_at: new Date().toISOString()
-            }, { onConflict: 'id' });
-            
-            if (supabaseError) {
-                console.error('[Auth Callback] Supabase error:', supabaseError.message);
-            }
+        if (!supabase) {
+            throw new Error('Supabase client not initialized');
         }
+
+        // Attempt to fetch the user: ensure we have existing data to prevent resets
+        const { data: existingUser } = await supabase.from('users').select('*').eq('id', userId).maybeSingle();
+        console.log('[Auth Callback] Existing user state:', JSON.stringify(existingUser));
+
+        let dbProfile;
+        if (existingUser) {
+            // Update ONLY the basic fields to prevent "Free reset" bug
+            const updatePayload = {
+                email: payload.email,
+                name: payload.name,
+                avatar: payload.picture,
+                updated_at: new Date().toISOString()
+            };
+            console.log('[Auth Callback] Update payload:', JSON.stringify(updatePayload));
+
+            const { data: updatedUser, error: updateError } = await supabase.from('users').update(updatePayload).eq('id', userId).select().single();
+
+            if (updateError) throw updateError;
+            dbProfile = updatedUser;
+        } else {
+            // Create the new profile with defaults
+            const { data: newUser, error: insertError } = await supabase.from('users').insert({
+                id: userId,
+                email: payload.email,
+                name: payload.name,
+                avatar: payload.picture,
+                plan: 'free',
+                subscription_status: 'none',
+                settings: { theme: 'cyberia', autoSync: true },
+                usage: { ai_daily_count: 0, sync_thoughts: 0, last_ai_reset: new Date().toISOString().split('T')[0] },
+                updated_at: new Date().toISOString()
+            }).select().single();
+
+            if (insertError) throw insertError;
+            dbProfile = newUser;
+        }
+
+        // Map the database keys (snake_case) to the frontend keys (camelCase)
+        const profile = {
+            id: dbProfile.id,
+            email: dbProfile.email,
+            name: dbProfile.name,
+            avatar: dbProfile.avatar,
+            plan: dbProfile.plan,
+            subscriptionStatus: dbProfile.subscription_status,
+            expiryDate: dbProfile.expiry_date,
+            polarCustomerId: dbProfile.polar_customer_id,
+            polarSubscriptionId: dbProfile.polar_subscription_id,
+            usage: dbProfile.usage,
+            settings: dbProfile.settings,
+            lastSeen: dbProfile.updated_at
+        };
 
         res.setHeader('Set-Cookie', [
             'auth_state=; Path=/; Max-Age=0; SameSite=Lax; Secure',
