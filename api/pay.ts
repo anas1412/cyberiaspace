@@ -481,10 +481,33 @@ async function handlePolarWebhook(req: VercelRequest, res: VercelResponse, rawBo
         return res.status(500).json({ error: 'Webhook secret not configured' });
     }
 
-    const processWebhook = async () => {
-        const event = validateEvent(rawBody, req.headers as Record<string, string>, webhookSecret);
+    let event: any;
+    try {
+        event = validateEvent(rawBody, req.headers as Record<string, string>, webhookSecret);
+    } catch (error: any) {
+        if (error instanceof WebhookVerificationError) {
+            console.warn('[Polar Webhook] Signature verification failed');
+            return res.status(401).json({ error: 'Invalid signature' });
+        }
+        
+        // Handle other validation errors (like unknown event types / SDKValidationError) gracefully
+        let eventType = 'unknown';
+        try {
+            const parsed = JSON.parse(rawBody);
+            eventType = parsed.type || 'unknown';
+        } catch {
+            // Ignore parsing error
+        }
+        
+        console.warn(`[Polar Webhook] Validation error for event type "${eventType}":`, error.message || error);
+        // Return 200 OK so Polar stops retrying unknown/invalid events that aren't signature issues
+        return res.status(200).json({ received: true, ignored: true, reason: error.message });
+    }
+
+    const processWebhook = async (event: any) => {
         const eventType = event.type as string;
         console.log('[Polar Webhook] Processing event:', eventType, 'for User ID extraction...');
+
 
         const data = event.data as any;
         let userId = data.metadata?.userId;
@@ -610,13 +633,9 @@ async function handlePolarWebhook(req: VercelRequest, res: VercelResponse, rawBo
     );
 
     try {
-        await Promise.race([processWebhook(), timeout]);
+        await Promise.race([processWebhook(event), timeout]);
         return res.status(200).json({ received: true });
     } catch (error: any) {
-        if (error instanceof WebhookVerificationError) {
-            console.warn('[Polar Webhook] Signature verification failed');
-            return res.status(401).json({ error: 'Invalid signature' });
-        }
         if (error.message === 'Webhook processing timeout') {
             console.error('[Polar Webhook] Processing timed out (8s)');
             return res.status(504).json({ error: 'Processing timeout' });
@@ -625,6 +644,7 @@ async function handlePolarWebhook(req: VercelRequest, res: VercelResponse, rawBo
         return res.status(500).json({ error: 'Internal server error' });
     }
 }
+
 
 
 async function updateUserPlan(
