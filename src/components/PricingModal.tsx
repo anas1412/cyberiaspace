@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useModalStore } from '../store/useModalStore';
+import { useAuthStore } from '../store/useAuthStore';
 import { PLAN_CONFIG, type AccessPeriod } from '../constants';
 import { Zap, Check, Star, X, Shield, Layout, CreditCard, Rocket, Loader2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -16,7 +17,6 @@ interface PricingModalProps {
 }
 
 const PricingModal: React.FC<PricingModalProps> = ({ isOpen, onClose }) => {
-  const isProd = import.meta.env.PROD;
   const [billingCycle, setBillingCycle] = useState<AccessPeriod>('monthly');
   const [location, setLocation] = useState<{ country: string; currency: string; isLocalPricing: boolean } | null>(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -54,8 +54,11 @@ const PricingModal: React.FC<PricingModalProps> = ({ isOpen, onClose }) => {
     const success = params.get('success');
     const fail = params.get('fail');
     const paymentId = params.get('payment_id');
+    const checkoutId = params.get('checkout_id');
 
-    if ((success !== null || fail !== null) && isOpen) {
+    let pollInterval: any;
+
+    if ((success !== null || fail !== null || checkoutId !== null) && isOpen) {
       if (paymentId) {
         setPaymentStatus('verifying');
         fetch(`/api/pay?action=verify&payment_id=${paymentId}`)
@@ -76,11 +79,52 @@ const PricingModal: React.FC<PricingModalProps> = ({ isOpen, onClose }) => {
             setPaymentStatus('failed');
             setPaymentMessage('Failed to verify payment. Please try again.');
           });
+      } else if (checkoutId || success !== null) {
+        setPaymentStatus('success');
+        setPaymentMessage('Verifying your upgrade...');
+        
+        let attempts = 0;
+        const maxAttempts = 8; // 15-16 seconds total
+
+        pollInterval = setInterval(async () => {
+          attempts++;
+          const authStore = useAuthStore.getState();
+          await authStore.refreshProfile();
+          
+          if (useAuthStore.getState().user?.plan === 'pro') {
+            clearInterval(pollInterval);
+            setPaymentMessage('Payment successful! You are now a Pro member.');
+            
+            // Confetti effect
+            import('canvas-confetti').then(confetti => {
+              confetti.default({
+                particleCount: 150,
+                spread: 70,
+                origin: { y: 0.6 },
+                zIndex: 20000
+              });
+            });
+
+            setTimeout(() => {
+              window.history.replaceState({}, '', '/pricing');
+            }, 5000);
+          } else if (attempts >= maxAttempts) {
+            clearInterval(pollInterval);
+            setPaymentMessage('Processing... Your account will update shortly.');
+            setTimeout(() => {
+              window.history.replaceState({}, '', '/pricing');
+            }, 5000);
+          }
+        }, 2000);
       } else if (fail !== null) {
         setPaymentStatus('failed');
         setPaymentMessage('Payment failed. Please try again.');
       }
     }
+
+    return () => {
+      if (pollInterval) clearInterval(pollInterval);
+    };
   }, [isOpen]);
 
   const handleUpgrade = async () => {
@@ -88,7 +132,7 @@ const PricingModal: React.FC<PricingModalProps> = ({ isOpen, onClose }) => {
     setError(null);
 
     try {
-      const authStore = (await import('../store/useAuthStore')).useAuthStore.getState();
+      const authStore = useAuthStore.getState();
       if (authStore.status !== 'authenticated') {
         openModal({
           title: 'Sign In Required',
@@ -101,7 +145,8 @@ const PricingModal: React.FC<PricingModalProps> = ({ isOpen, onClose }) => {
         return;
       }
 
-      const response = await fetch('/api/pay?action=init', {
+      const action = location?.isLocalPricing ? 'init' : 'polar_init';
+      const response = await fetch(`/api/pay?action=${action}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -363,24 +408,22 @@ const PricingModal: React.FC<PricingModalProps> = ({ isOpen, onClose }) => {
             )}
           </AnimatePresence>
 
-<button
-            onClick={isProd ? undefined : handleUpgrade}
-            disabled={isLoading || isProd}
+          <button
+            onClick={handleUpgrade}
+            disabled={isLoading}
             className={cn(
               "w-full h-14 rounded-2xl text-sm font-bold transition-all flex items-center justify-center gap-3 mb-8",
-              isLoading || isProd
+              isLoading
                 ? "bg-slate-800 text-slate-400 cursor-not-allowed border border-white/5"
                 : "bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white shadow-lg shadow-blue-500/25 active:scale-95"
             )}
           >
             {isLoading ? (
               <div className="w-5 h-5 rounded-full border-2 border-white/30 border-t-white animate-spin" />
-            ) : isProd ? (
-              <Rocket className="w-4 h-4 text-white" />
             ) : (
               <Star className="w-4 h-4 text-white" />
             )}
-            {isLoading ? 'Processing...' : isProd ? 'Coming Soon' : 'Upgrade Now'}
+            {isLoading ? 'Processing...' : 'Upgrade Now'}
           </button>
 
           <div className="text-center space-y-6">
@@ -389,7 +432,7 @@ const PricingModal: React.FC<PricingModalProps> = ({ isOpen, onClose }) => {
                 <Shield className="w-4 h-4 text-blue-400" />
               </div>
               <p className="text-xs text-slate-400 font-medium">
-                Secure local & global payments powered by <span className="text-white font-semibold">Flouci</span>.
+                Secure local & global payments powered by <span className="text-white font-semibold">{location?.isLocalPricing ? 'Flouci' : 'Polar.sh'}</span>.
               </p>
             </div>
             

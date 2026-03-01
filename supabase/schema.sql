@@ -14,6 +14,8 @@ CREATE TABLE IF NOT EXISTS users (
     expiry_date TIMESTAMP,
     settings JSONB DEFAULT '{}',
     usage JSONB DEFAULT '{"ai_daily_count": 0}',
+    polar_customer_id TEXT,
+    polar_subscription_id TEXT,
     created_at TIMESTAMP DEFAULT NOW(),
     updated_at TIMESTAMP DEFAULT NOW()
 );
@@ -125,5 +127,6 @@ CREATE INDEX IF NOT EXISTS idx_thoughts_space ON thoughts(space_id);
 CREATE INDEX IF NOT EXISTS idx_thoughts_user ON thoughts(user_id);
 CREATE INDEX IF NOT EXISTS idx_thoughts_type ON thoughts(type);
 CREATE INDEX IF NOT EXISTS idx_thoughts_status ON thoughts(status);
+CREATE INDEX IF NOT EXISTS idx_users_polar_customer ON users(polar_customer_id);
 
 SELECT 'Schema v3 created successfully!' as result;

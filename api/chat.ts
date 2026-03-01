@@ -39,7 +39,7 @@ ${context || 'No workspace data provided.'}
 
 [SYSTEM CAPABILITIES]
 - User Quotas: You have access to 'userQuota' in the context. Inform users if they are near limits (AI limit or thought capacity).
-- Multi-Device: Changes you make sync instantly to all devices via Vercel KV and Google Drive.
+- Multi-Device: Changes you make sync instantly to all devices via Supabase and Google Drive.
 - Long-term Memory: You can 'read_file_content' for documents and notes. If a thought has 'hasContent: true' or a 'fileInfo', use 'get_thought_details' or 'read_file_content' to see the full data.
 [/SYSTEM CAPABILITIES]
 

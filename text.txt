@@ -1,0 +1,84 @@
+> ## Documentation Index
+> Fetch the complete documentation index at: https://polar.sh/docs/llms.txt
+> Use this file to discover all available pages before exploring further.
+
+# TypeScript SDK
+
+> SDK for JavaScript runtimes (Node.js and Browser)
+
+## Examples
+
+* [With Node.js](https://github.com/polarsource/examples/tree/main/with-nodejs)
+
+## Installation
+
+<Tabs>
+  <Tab title="npm">
+    ```bash Terminal theme={null}
+    npm install @polar-sh/sdk
+    ```
+  </Tab>
+
+  <Tab title="yarn">
+    ```bash Terminal theme={null}
+    yarn add @polar-sh/sdk
+    ```
+  </Tab>
+
+  <Tab title="pnpm">
+    ```bash Terminal theme={null}
+    pnpm add @polar-sh/sdk
+    ```
+  </Tab>
+</Tabs>
+
+## Quickstart
+
+```typescript icon="square-js" index.js theme={null}
+import { Polar } from '@polar-sh/sdk'
+
+const polar = new Polar({
+  accessToken: process.env.POLAR_ACCESS_TOKEN,
+  server: process.env.POLAR_MODE || 'sandbox' // sandbox or production
+})
+
+async function run() {
+  const result = await polar.users.benefits.list({})
+  for await (const page of result) {
+    // Handle the page
+    console.log(page)
+  }
+}
+
+run()
+```
+
+<Note>
+  **camelCase vs. snake\_case**
+
+  Our API (and docs) is designed with `snake_case`. However, our TS SDK currently
+  converts this to camelCase to follow JS/TS convention. You should automatically
+  see the camelCase parameters suggested in modern IDEs due to typing, but it's
+  worth keeping in mind switching between code & docs.
+
+  We aim to introduce the ability to toggle this in the future, i.e using
+  `snake_case` even in TypeScript to more easily map it to our documentation and
+  design of the API itself.
+</Note>
+
+### Framework Adapters
+
+Implement Checkout & Webhook handlers in few lines of code.
+
+* [Astro](/integrate/sdk/adapters/astro)
+* [Better Auth](/integrate/sdk/adapters/better-auth)
+* [Deno](/integrate/sdk/adapters/deno)
+* [Elysia](/integrate/sdk/adapters/elysia)
+* [Express](/integrate/sdk/adapters/express)
+* [Hono](/integrate/sdk/adapters/hono)
+* [Fastify](/integrate/sdk/adapters/fastify)
+* [Next.js](/integrate/sdk/adapters/nextjs)
+* [Nuxt](/integrate/sdk/adapters/nuxt)
+* [Remix](/integrate/sdk/adapters/remix)
+* [Sveltekit](/integrate/sdk/adapters/sveltekit)
+* [TanStack Start](/integrate/sdk/adapters/tanstack-start)
