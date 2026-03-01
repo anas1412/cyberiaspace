@@ -99,6 +99,40 @@ const AccountMenu: React.FC = () => {
       }
     });
   };
+  
+  const handleManageSubscription = async () => {
+    try {
+      const accessToken = authStore.accessToken;
+      if (!accessToken) return;
+      
+      const res = await fetch('/api/pay?action=polar_portal', {
+        headers: {
+          'Authorization': `Bearer ${accessToken}`
+        }
+      });
+      const data = await res.json();
+      if (data.customerPortalUrl) {
+        window.open(data.customerPortalUrl, '_blank');
+      } else {
+        openModal({
+          title: 'Error',
+          description: data.error || 'Failed to open management portal',
+          type: 'alert',
+          confirmText: 'Got it'
+        });
+      }
+    } catch (err) {
+      console.error('Failed to open portal:', err);
+      openModal({
+        title: 'Error',
+        description: 'Failed to connect to payment system. Please try again later.',
+        type: 'alert',
+        confirmText: 'Got it'
+      });
+    }
+  };
+
+  const [now] = useState(() => new Date());
 
   if (status === 'unauthenticated' || !user) {
     return (
@@ -114,10 +148,6 @@ const AccountMenu: React.FC = () => {
     );
   }
 
-
-  
-
-  const [now] = useState(() => new Date());
   const expiryDate = user?.expiryDate ? new Date(user.expiryDate) : null;
   const daysRemaining = expiryDate 
     ? Math.ceil((expiryDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24))
@@ -210,16 +240,29 @@ const AccountMenu: React.FC = () => {
                   )}
                 </span>
               </div>
-              <button 
-                onClick={() => {
-                  openPricing();
-                  setIsOpen(false);
-                }}
-                className="w-full py-2 bg-blue-500/10 hover:bg-blue-500/20 text-blue-400 rounded-xl text-[7px] font-black uppercase tracking-widest transition-all border border-blue-500/20"
-              >
-                {isExpired ? 'Renew Access' : 'Extend Access'}
-              </button>
+              {user?.polarCustomerId ? (
+                <button 
+                  onClick={() => {
+                    handleManageSubscription();
+                    setIsOpen(false);
+                  }}
+                  className="w-full py-2 bg-blue-500/10 hover:bg-blue-500/20 text-blue-400 rounded-xl text-[7px] font-black uppercase tracking-widest transition-all border border-blue-500/20"
+                >
+                  Manage Subscription
+                </button>
+              ) : (
+                <button 
+                  onClick={() => {
+                    openPricing();
+                    setIsOpen(false);
+                  }}
+                  className="w-full py-2 bg-blue-500/10 hover:bg-blue-500/20 text-blue-400 rounded-xl text-[7px] font-black uppercase tracking-widest transition-all border border-blue-500/20"
+                >
+                  {isExpired ? 'Renew Access' : 'Extend Access'}
+                </button>
+              )}
             </div>
+
           ) : (
             <button 
               onClick={() => {
