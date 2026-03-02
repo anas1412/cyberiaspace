@@ -1,6 +1,6 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { createClient } from '@supabase/supabase-js';
-import { PLAN_CONFIG, BASIC_MODELS, PREMIUM_MODELS } from '../src/constants';
+import { BASIC_MODELS, PREMIUM_MODELS, AI_PLAN_CONFIG } from './ai-config';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.VITE_SUPABASE_URL || process.env.VITE_PUBLIC_SUPABASE_URL;
 const supabaseKey = process.env.VITE_SUPABASE_ANON_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || process.env.VITE_PUBLIC_SUPABASE_ANON_KEY;
@@ -687,7 +687,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   const plan = profile.plan || 'free';
-  const config = PLAN_CONFIG[plan as keyof typeof PLAN_CONFIG] || PLAN_CONFIG.free;
+  const config = AI_PLAN_CONFIG[plan as keyof typeof AI_PLAN_CONFIG] || AI_PLAN_CONFIG.free;
   const limit = config.AI_DAILY_LIMIT || 15;
 
   if (req.method === 'GET') {

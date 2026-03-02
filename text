@@ -1,15 +1,15 @@
-[OpenRouter API] Model openrouter/free failed: OpenRouter API error: 429 - {"error":{"message":"Provider returned error","code":429,"metadata":{"raw":"qwen/qwen3-next-80b-a3b-instruct:free is temporarily rate-limited upstream. Please retry shortly, or add your own key to accumulate your rate limits: https://openrouter.ai/settings/integrations","provider_name":"Venice","is_byok":false}},"user_id":"user_2usiYlt09vEIm53L609GKjWfLTN"}
-node:events:486
-      throw er; // Unhandled 'error' event
-      ^
-
-Error [ERR_STREAM_WRITE_AFTER_END]: write after end
-    at write_ (node:_http_outgoing:900:11)
-    at ServerResponse.write (node:_http_outgoing:849:15)
-    at handler (C:\cyberia\api\chat.ts:883:9)
-    at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
-Emitted 'error' event on ServerResponse instance at:
-    at emitErrorNt (node:_http_outgoing:872:9)
-    at process.processTicksAndRejections (node:internal/process/task_queues:90:21) {
-  code: 'ERR_STREAM_WRITE_AFTER_END'
+Error [ERR_MODULE_NOT_FOUND]: Cannot find module '/var/task/src/constants' imported from /var/task/api/chat.js
+    at finalizeResolution (node:internal/modules/esm/resolve:280:11)
+    at moduleResolve (node:internal/modules/esm/resolve:870:10)
+    at moduleResolveWithNodePath (node:internal/modules/esm/resolve:996:14)
+    at defaultResolve (node:internal/modules/esm/resolve:1039:79)
+    at #cachedDefaultResolve (node:internal/modules/esm/loader:718:20)
+    at #resolveAndMaybeBlockOnLoaderThread (node:internal/modules/esm/loader:735:38)
+    at ModuleLoader.resolveSync (node:internal/modules/esm/loader:764:52)
+    at #resolve (node:internal/modules/esm/loader:700:17)
+    at ModuleLoader.getOrCreateModuleJob (node:internal/modules/esm/loader:620:35)
+    at ModuleJob.syncLink (node:internal/modules/esm/module_job:143:33) {
+  code: 'ERR_MODULE_NOT_FOUND',
+  url: 'file:///var/task/src/constants'
 }
+Node.js process exited with exit status: 1. The logs above can help with debugging the issue.
