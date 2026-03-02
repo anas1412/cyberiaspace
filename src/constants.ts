@@ -1,4 +1,3 @@
-import { BASIC_MODELS as AI_BASIC, PREMIUM_MODELS as AI_PREMIUM } from '../api/ai-config';
 export type SubscriptionPlan = 'free' | 'pro';
 export type AccessPeriod = 'monthly' | 'yearly';
 
@@ -80,8 +79,8 @@ const getDefaultModel = () => {
 export const DEFAULT_MODEL = getDefaultModel();
 
 
-export const BASIC_MODELS = AI_BASIC;
-export const PREMIUM_MODELS = AI_PREMIUM;
+export const BASIC_MODELS = ['openrouter/free'];
+export const PREMIUM_MODELS = ['google/gemini-2.5-flash'];
 
 export const AVAILABLE_MODELS = [
   ...BASIC_MODELS,
