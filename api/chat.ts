@@ -1,6 +1,13 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { createClient } from '@supabase/supabase-js';
-import { BASIC_MODELS, PREMIUM_MODELS, AI_PLAN_CONFIG } from './ai-config';
+const BASIC_MODELS = ['openrouter/free'];
+const PREMIUM_MODELS = ['google/gemini-2.5-flash'];
+const AI_PLAN_CONFIG = {
+  free: { AI_DAILY_LIMIT: 15 },
+  pro: { AI_DAILY_LIMIT: 120 }
+};
+
+
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.VITE_SUPABASE_URL || process.env.VITE_PUBLIC_SUPABASE_URL;
 const supabaseKey = process.env.VITE_SUPABASE_ANON_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || process.env.VITE_PUBLIC_SUPABASE_ANON_KEY;
