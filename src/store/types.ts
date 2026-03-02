@@ -44,6 +44,7 @@ export interface CyberiaState {
 
   oracleMode: boolean;
   isChatOpen: boolean;
+  oracleChatMode: 'chat' | 'action';
 
   init: () => Promise<void>;
   refreshTotalThoughtCount: () => Promise<void>;
@@ -68,6 +69,7 @@ export interface CyberiaState {
 
   toggleOracleMode: () => void;
   setChatOpen: (isOpen: boolean) => void;
+  setOracleChatMode: (mode: 'chat' | 'action') => void;
 
   setActiveSpace: (id: string) => void;
   setCalendarViewDate: (date: Date) => void;

@@ -1,8 +1,8 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState, useMemo } from 'react';
 import { useStore } from '../store/useStore';
 import { useAuthStore } from '../store/useAuthStore';
 import { serializeWorkspace } from '../utils/contextBuilder';
-import { X, Send, Shield, Loader2, Bot, History, Zap, Square } from 'lucide-react';
+import { X, Send, Shield, Loader2, History, Zap, Square } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
@@ -16,24 +16,28 @@ function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
 
-const SUGGESTIONS = [
-  "Summarize my recent thoughts...",
-  "Create a task list for my project...",
-  "Find me the top 3 lo-fi tracks...",
-  "Group all my notes about AI...",
-  "Research the history of Cyberpunk...",
-  "Build a table for my expenses...",
-  "Add 3 inspirational quotes about tech...",
-  "Link all my urgent tasks together...",
-  "Clear all the thoughts in this space...",
-  "Brainstorm 5 features for a new app..."
-];
-
 interface Message {
   id: string;
   role: 'user' | 'assistant';
   content: string;
 }
+
+const CHAT_SUGGESTIONS = [
+  "Summarize my recent thoughts...",
+  "Research the history of Cyberpunk...",
+  "Brainstorm 5 features for a new app...",
+  "Analyze the files in this space...",
+  "Find me the top 3 lo-fi tracks..."
+];
+
+const ACTION_SUGGESTIONS = [
+  "Create a task list for my project...",
+  "Build a table for my expenses...",
+  "Link all my urgent tasks together...",
+  "Clear all the thoughts in this space...",
+  "Group all my notes about AI...",
+  "Add 3 inspirational quotes about tech..."
+];
 
 const ChatOverlay: React.FC = () => {
   const isChatOpen = useStore((state) => state.isChatOpen);
@@ -50,6 +54,11 @@ const ChatOverlay: React.FC = () => {
   const [status, setStatus] = useState<string>('');
   const [activeTool, setActiveTool] = useState<{ name: string; args: any } | null>(null);
   const [dailyUsage, setDailyUsage] = useState(user?.usage?.ai_daily_count || 0);
+
+  const suggestion = useMemo(() => {
+    const list = store.oracleChatMode === 'chat' ? CHAT_SUGGESTIONS : ACTION_SUGGESTIONS;
+    return list[Math.floor(Math.random() * list.length)];
+  }, [store.oracleChatMode, isChatOpen]);
 
 
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -99,10 +108,6 @@ const ChatOverlay: React.FC = () => {
       default: return 'Working...';
     }
   };
-
-  const suggestion = React.useMemo(() => 
-    SUGGESTIONS[Math.floor(Math.random() * SUGGESTIONS.length)], 
-  [isChatOpen]);
 
   useEffect(() => {
     if (isChatOpen && user) {
@@ -175,6 +180,7 @@ const ChatOverlay: React.FC = () => {
           messages: [...messages.slice(-5), userMessage],
           model: activeModel,
           plan: plan,
+          mode: store.oracleChatMode,
           context: serializeWorkspace(
             store.activeSpaceId, 
             store.thoughts, 
@@ -272,10 +278,7 @@ function getFollowUpMessageContent(toolName: string, result: any) {
       ];
     }
     if (result?.type === 'pdf' && result?.url) {
-      return [
-        { type: 'text', text: 'Analyze this PDF and summarize its contents.' },
-        { type: 'image_url', image_url: { url: result.url } }
-      ];
+      return `Analyze this PDF: ${result.url}. Summarize its contents.`;
     }
   }
   return 'Continue with the details I provided.';
@@ -387,10 +390,6 @@ const minimalContext = JSON.stringify({
           {/* Header */}
           <div className="p-4 md:p-5 border-b border-white/5 flex items-center justify-between bg-black/20 backdrop-blur-md sticky top-0 z-20">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-blue-500/10 rounded-xl flex items-center justify-center border border-blue-500/20 shadow-[0_0_20px_rgba(99,102,241,0.15)] relative overflow-hidden group">
-                <div className="absolute inset-0 bg-blue-500/5 animate-pulse" />
-                <Bot className="w-5 h-5 text-blue-400 relative z-10" />
-              </div>
               <div>
                 <div className="flex items-center gap-2">
                   <h3 className="text-xs font-black uppercase tracking-[0.2em] text-white leading-none">Oracle</h3>
@@ -524,7 +523,7 @@ const minimalContext = JSON.stringify({
                     if (!isLoading) e.currentTarget.form?.requestSubmit();
                   }
                 }}
-                placeholder={suggestion}
+                placeholder={(store.oracleChatMode === 'chat' ? "Inquiry: " : "Command: ") + suggestion}
                 rows={1}
                 className="flex-1 bg-transparent border-none py-2.5 pl-3 pr-2 text-xs text-white placeholder:text-slate-600 focus:outline-none resize-none min-h-[36px] max-h-32 custom-scroll leading-relaxed"
               />
@@ -547,6 +546,28 @@ const minimalContext = JSON.stringify({
                 </button>
               )}
             </form>
+
+            {/* Mode Toggle */}
+            <div className="flex items-center justify-center gap-6 pb-2">
+              <button
+                onClick={() => store.setOracleChatMode('chat')}
+                className={cn(
+                  "text-[9px] font-black uppercase tracking-[0.2em] transition-all",
+                  store.oracleChatMode === 'chat' ? "text-blue-400" : "text-slate-600 hover:text-slate-400"
+                )}
+              >
+                Chat
+              </button>
+              <button
+                onClick={() => store.setOracleChatMode('action')}
+                className={cn(
+                  "text-[9px] font-black uppercase tracking-[0.2em] transition-all",
+                  store.oracleChatMode === 'action' ? "text-amber-400" : "text-slate-600 hover:text-slate-400"
+                )}
+              >
+                Action
+              </button>
+            </div>
           </div>
         </motion.div>
       )}
