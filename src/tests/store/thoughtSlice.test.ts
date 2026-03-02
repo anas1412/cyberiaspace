@@ -104,7 +104,7 @@ describe('thoughtSlice', () => {
     
     // Check if modal was opened
     expect(mockOpenModal).toHaveBeenCalledWith(
-      expect.objectContaining({ title: 'Space is Full' })
+      expect.objectContaining({ title: 'Thinking Limit Reached' })
     );
   });
 

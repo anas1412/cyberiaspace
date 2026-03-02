@@ -230,12 +230,17 @@ const Viewport: React.FC = () => {
         e.preventDefault();
         if (e.repeat) return;
 
-        if (thoughts.length >= 40) {
+        const limits = useStore.getState().getLimits();
+        if (thoughts.length >= limits.MAX_THOUGHTS_PER_SPACE) {
+          const isPro = useAuthStore.getState().user?.plan === 'pro';
           openModal({
-            title: 'Limit Reached',
-            description: 'You have reached the maximum of 40 thoughts per space.',
+            title: isPro ? 'Space Limit Reached' : 'Thinking Limit Reached',
+            description: isPro 
+              ? `You’ve reached the pro limit of ${limits.MAX_THOUGHTS_PER_SPACE} thoughts for this space.` 
+              : `You’ve reached the free limit of ${limits.MAX_THOUGHTS_PER_SPACE} thoughts for this space. Upgrade to Cyberia Pro to unlock unlimited mapping and premium Oracle AI features.`,
             type: 'limit_thought',
-            confirmText: 'Okay'
+            confirmText: isPro ? 'Acknowledged' : 'Upgrade to Pro',
+            onConfirm: isPro ? undefined : () => useModalStore.getState().openPricing()
           });
           return;
         }

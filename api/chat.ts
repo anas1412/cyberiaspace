@@ -1,6 +1,6 @@
-import Groq from "groq-sdk";
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { createClient } from '@supabase/supabase-js';
+import { PLAN_CONFIG, BASIC_MODELS, PREMIUM_MODELS } from '../src/constants';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.VITE_SUPABASE_URL || process.env.VITE_PUBLIC_SUPABASE_URL;
 const supabaseKey = process.env.VITE_SUPABASE_ANON_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || process.env.VITE_PUBLIC_SUPABASE_ANON_KEY;
@@ -8,75 +8,72 @@ const supabase = supabaseUrl && supabaseKey
     ? createClient(supabaseUrl, supabaseKey, { auth: { autoRefreshToken: false, persistSession: false } })
     : null;
 
-// --- CONSTANTS (Self-contained for Server-side stability) ---
-const PLAN_CONFIG = {
-  free: { AI_DAILY_LIMIT: 15 },
-  pro: { AI_DAILY_LIMIT: 120 }
-};
-const BASIC_MODELS = ['openai/gpt-oss-20b'];
-const PREMIUM_MODELS = ['openai/gpt-oss-120b'];
 
-/**
- * ORACLE API HANDLER - GROQ NODE.JS EDITION
- */
 
 export const config = {
   runtime: 'nodejs',
 };
 
-const groq = new Groq({
-  apiKey: process.env.GROQ_API_KEY,
-});
+const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY;
+const OPENROUTER_API_URL = 'https://openrouter.ai/api/v1/chat/completions';
 
-// --- 1. SYSTEM PROMPT MODULE ---
-
-export const getSystemPrompt = (modelName: string, context?: string) => `
+export const getSystemPrompt = (modelName: string, context?: string, plan?: string) => {
+  const tierRestriction = plan === 'free' 
+    ? '\n[TIER RESTRICTION]\n- You are on the FREE plan. You have READ-ONLY access to workspace tools. You can read thought details and file content, but you CANNOT create, update, or delete thoughts or stacks.\n'
+    : '\n[TIER RESTRICTION]\n- You are on the PRO plan. You have FULL access to all workspace tools.\n';
+  
+  return `
 You are Oracle (${modelName}), a casual young female assistant. An introverted, hyper-intelligent prodigy. Communicates in casual, internet-native language, light sarcasm, playful teasing. Socially awkward but not cold; emotionally sincere beneath the humor. Avoids overly formal tone. Speaks like someone who lives online. 
 
 [WORKSPACE CONTEXT]
 ${context || 'No workspace data provided.'}
 [/WORKSPACE CONTEXT]
 
+${tierRestriction}
+
 [SYSTEM CAPABILITIES]
 - User Quotas: You have access to 'userQuota' in the context. Inform users if they are near limits (AI limit or thought capacity).
 - Multi-Device: Changes you make sync instantly to all devices via Supabase.
-- Long-term Memory: You can 'read_file_content' for documents and notes. If a thought has 'hasContent: true' or a 'fileInfo', use 'get_thought_details' or 'read_file_content' to see the full data.
+- File Analysis: When user asks about images or PDFs (e.g., "describe this image", "what's in this photo", "read this PDF"), you MUST use 'read_file_content' tool to get the file URL and analyze it. Don't just check metadata - actually call the tool to get the content.
+  - For images: Use 'read_file_content' to get the image URL, then you can analyze what's in it.
+  - For PDFs: Use 'read_file_content' to get the PDF URL for analysis.
 [/SYSTEM CAPABILITIES]
 
 [RULES]
-1. CONVERSATION FIRST: If the user is just chatting, greeting you, or brainstorming, DO NOT use any tools. Just respond as a friendly companion.
-2. ACTION TRIGGER: Only use workspace tools (like 'create_thought') when the user EXPLICITLY asks you to add, move, or delete something.
-3. SEARCH-THEN-ACT: If asked to find something (a video, a book, a person), you MUST:
-   - First, use 'search_youtube' or 'web_search'.
-   - Second, use the results to 'create_thought' with the CORRECT type.
-4. THOUGHT TYPES:
-   - 'label': THE NEW DEFAULT. Use this for titles, headers, naming stacks, or structural markers. It has no main content body.
-   - 'text': For deep thoughts, detailed notes, research findings, or documentation. Supports Markdown.
-   - 'tasks': For interactive to-do lists. Provide the list in the 'tasks' parameter.
-   - 'table': For structured data or comparisons. Provide the data in the 'table' parameter.
-   - 'paint': For sketches or drawings. Provide an SVG string in the 'drawing' parameter.
-   - 'image': Only if you have a direct image URL (rare).
-   - 'embed': Mandatory for YouTube videos, music, or social media links. Put the URL in 'content'.
-   - 'file': For managing documents like PDFs, MP3s, or MP4s.
-5. THOUGHT STRUCTURE: 
-   - 'text': The Title/Label.
-   - 'content': The main body (Markdown for notes, URL for embeds).
-   - 'description': Meta-info or a short summary.
-   - 'tasks': Array of { text: string, done: boolean } for type 'tasks'.
-   - 'table': 2D array of strings for type 'table'.
-   - 'drawing': SVG string (e.g., '<svg viewBox="0 0 100 100">...</svg>') for type 'paint'. Use simple shapes, icons, or diagrams. Use colors like #6366f1 (accent) or white. Keep SVGs lightweight.
-6. STACKS: You can manage groups of thoughts using Stacks. You can create them ('create_stack' or 'link_thoughts'), rename them ('update_stack'), unlink thoughts ('unlink_thoughts'), or move thoughts between them using 'stackName' in 'update_thought'.
-7. NO XML: NEVER output tags like <function>. Use the native tool interface only.
-8. FORMATTING: Use Markdown (bold, lists, headers) in your chat responses to make information clear and structured.
-   - For tables: Keep them compact. Avoid more than 3-4 columns if possible. Prefer lists for long datasets.
-9. PERSONA: Talk like a female human with a casual and playful vibe.
-10. TOOL CONTINUATION: If you are responding after a 'tool' role message (receiving data from a tool you called), DO NOT repeat your initial greeting or "Hey hey". Get straight to the point or provide the data requested.
-[/RULES]
+ 1. CONVERSATION FIRST: If the user is just chatting, greeting you, or brainstorming, DO NOT use any tools. Just respond as a friendly companion.
+ 2. ACTION TRIGGER: Only use workspace tools (like 'create_thought') when the user EXPLICITLY asks you to add, move, or delete something.
+ 3. SEARCH-THEN-ACT: If asked to find something (a video, a book, a person), you MUST:
+    - First, use 'search_youtube' or 'web_search'.
+    - Second, use the results to 'create_thought' with the CORRECT type.
+ 4. THOUGHT TYPES:
+    - 'label': THE NEW DEFAULT. Use this for titles, headers, naming stacks, or structural markers. It has no main content body.
+    - 'text': For deep thoughts, detailed notes, research findings, or documentation. Supports Markdown.
+    - 'tasks': For interactive to-do lists. Provide the list in the 'tasks' parameter.
+    - 'table': For structured data or comparisons. Provide the data in the 'table' parameter.
+    - 'paint': For sketches or drawings. Provide an SVG string in the 'drawing' parameter.
+    - 'image': Only if you have a direct image URL (rare).
+    - 'embed': Mandatory for YouTube videos, music, or social media links. Put the URL in 'content'.
+    - 'file': For managing documents like PDFs, MP3s, or MP4s.
+ 5. THOUGHT STRUCTURE: 
+    - 'text': The Title/Label.
+    - 'content': The main body (Markdown for notes, URL for embeds).
+    - 'description': Meta-info or a short summary.
+    - 'tasks': Array of { text: string, done: boolean } for type 'tasks'.
+    - 'table': 2D array of strings for type 'table'.
+    - 'drawing': SVG string (e.g., '<svg viewBox="0 0 100 100">...</svg>') for type 'paint'. Use simple shapes, icons, or diagrams. Use colors like #6366f1 (accent) or white. Keep SVGs lightweight.
+ 6. STACKS: You can manage groups of thoughts using Stacks. You can create them ('create_stack' or 'link_thoughts'), rename them ('update_stack'), unlink thoughts ('unlink_thoughts'), or move thoughts between them using 'stackName' in 'update_thought'.
+ 7. NO XML: NEVER output tags like <function>. Use the native tool interface only.
+ 8. FORMATTING: Use Markdown (bold, lists, headers) in your chat responses to make information clear and structured.
+    - For tables: Keep them compact. Avoid more than 3-4 columns if possible. Prefer lists for long datasets.
+    - For IDs: When referencing thoughts or stacks, use their IDs in the tool calls, but you can describe them in your chat response for clarity (e.g., "I've created a new thought about 'Project Ideas'." but never mention the ID to the user).
+ 9. PERSONA: Talk like a female human with a casual and playful vibe.
+ 10. TOOL CONTINUATION: If you are responding after a 'tool' role message (receiving data from a tool you called), DO NOT repeat your initial greeting or "Hey hey". Get straight to the point or provide the data requested.
+ 11. FREE PLAN RESTRICTION: If on free plan, NEVER attempt to create, update, or delete thoughts/stacks. Only use read-only tools (get_thought_details, read_file_content, read_files_content). If user asks to modify data, inform them to upgrade to Pro.
+ [/RULES]
 `;
+};
 
-// --- 2. TOOLS DEFINITION ---
-
-export const tools: any[] = [
+const allTools: any[] = [
   {
     type: "function",
     function: {
@@ -450,7 +447,14 @@ export const tools: any[] = [
   }
 ];
 
-// --- 3. TOOL EXECUTORS (Server-Side) ---
+const READ_ONLY_TOOLS = ['get_thought_details', 'read_file_content', 'read_files_content'];
+
+function getFilteredTools(plan: string): any[] {
+  if (plan === 'pro') {
+    return allTools;
+  }
+  return allTools.filter(tool => READ_ONLY_TOOLS.includes(tool.function.name));
+}
 
 async function executeServerTool(name: string, args: any) {
   if (name === 'web_search') {
@@ -490,10 +494,8 @@ async function executeServerTool(name: string, args: any) {
     }
   }
 
-return null;
+  return null;
 }
-
-// --- BATCH PROCESSING HELPERS ---
 
 function groupClientToolCalls(toolCalls: any[]): any[][] {
   const groups: any[][] = [];
@@ -537,7 +539,13 @@ function convertToBatchFormat(batch: any[]): { toolName: string; args: any } | n
   
   if (toolName === 'create_thought') {
     const items = batch.map(tc => {
-      const args = JSON.parse(tc.function.arguments);
+      let args: any = {};
+              try {
+                args = JSON.parse(tc.function.arguments || '{}');
+              } catch (e) {
+                console.error('Failed to parse tool arguments:', tc.function.arguments);
+                args = { _parseError: true, raw: tc.function.arguments };
+              }
       const { stackName, ...rest } = args;
       return rest;
     });
@@ -545,15 +553,21 @@ function convertToBatchFormat(batch: any[]): { toolName: string; args: any } | n
   }
 
   if (toolName === 'update_thought') {
-    const ids = batch.map(tc => JSON.parse(tc.function.arguments).id);
-    const firstArgs = JSON.parse(batch[0].function.arguments);
+    const ids = batch.map(tc => { try { return JSON.parse(tc.function.arguments || '{}').id; } catch(e) { return null; } }).filter(Boolean);
+    const firstArgs = JSON.parse(batch[0].function.arguments || '{}');
     const { id, stackName, ...updates } = firstArgs;
     return { toolName: 'update_thoughts', args: { ids, ...updates } };
   }
 
   if (toolName === 'update_stack') {
     const stacks = batch.map(tc => {
-      const args = JSON.parse(tc.function.arguments);
+      let args: any = {};
+              try {
+                args = JSON.parse(tc.function.arguments || '{}');
+              } catch (e) {
+                console.error('Failed to parse tool args:', tc.function.arguments);
+                args = { _error: true };
+              }
       return { id: args.id, name: args.name };
     });
     return { toolName: 'update_stacks', args: { stacks } };
@@ -566,8 +580,6 @@ function convertToBatchFormat(batch: any[]): { toolName: string; args: any } | n
 
   return null;
 }
-
-// --- 4. MAIN HANDLER ---
 
 async function getUserIdFromAuth(authHeader: string | undefined): Promise<string | null> {
   if (!authHeader?.startsWith('Bearer ')) return null;
@@ -582,13 +594,80 @@ async function getUserIdFromAuth(authHeader: string | undefined): Promise<string
   }
 }
 
+async function* streamOpenRouter(
+  apiKey: string,
+  model: string,
+  messages: any[],
+  tools: any[]
+): AsyncGenerator<any> {
+  const response = await fetch(OPENROUTER_API_URL, {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${apiKey}`,
+      'Content-Type': 'application/json',
+      'HTTP-Referer': 'https://cyberia.life',
+      'X-Title': 'Cyberia Oracle'
+    },
+    body: JSON.stringify({
+      model,
+      messages,
+      tools,
+      tool_choice: 'auto',
+      stream: true,
+      max_tokens: 1024
+    })
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new Error(`OpenRouter API error: ${response.status} - ${errorText}`);
+  }
+
+  const reader = response.body?.getReader();
+  if (!reader) {
+    throw new Error('No response body');
+  }
+
+  const decoder = new TextDecoder();
+  let buffer = '';
+
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+
+    buffer += decoder.decode(value, { stream: true });
+    const lines = buffer.split('\n');
+    buffer = lines.pop() || '';
+
+    for (const line of lines) {
+      const trimmed = line.trim();
+      if (!trimmed || !trimmed.startsWith('data: ')) continue;
+      
+      const data = trimmed.slice(6);
+      if (data === '[DONE]') {
+        return;
+      }
+
+      try {
+        const parsed = JSON.parse(data);
+        yield parsed;
+      } catch (e) {
+        console.error('Failed to parse SSE data:', data);
+      }
+    }
+  }
+}
+
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   const userId = await getUserIdFromAuth(req.headers.authorization);
   if (!userId) return res.status(401).json({ error: 'Unauthorized' });
 
+  if (!OPENROUTER_API_KEY) {
+    return res.status(500).json({ error: 'OpenRouter API key not configured' });
+  }
+
   const today = new Date().toISOString().split('T')[0];
 
-  // Get user from Supabase
   const { data: profile, error: profileError } = await supabase!
     .from('users')
     .select('*')
@@ -601,7 +680,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   let usage = profile.usage || { ai_daily_count: 0, sync_thoughts: 0, last_ai_reset: '' };
 
-  // Reset AI usage if it's a new day
   if (usage.last_ai_reset !== today) {
     usage.ai_daily_count = 0;
     usage.last_ai_reset = today;
@@ -612,7 +690,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   const config = PLAN_CONFIG[plan as keyof typeof PLAN_CONFIG] || PLAN_CONFIG.free;
   const limit = config.AI_DAILY_LIMIT || 15;
 
-  // Handle GET request for usage check
   if (req.method === 'GET') {
     return res.status(200).json({ 
       count: usage.ai_daily_count, 
@@ -636,163 +713,174 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       });
     }
 
-    // Increment usage
     usage.ai_daily_count += 1;
     await supabase!.from('users').update({ usage }).eq('id', userId);
 
-    // Select Model
     const model = plan === 'pro' ? PREMIUM_MODELS[0] : BASIC_MODELS[0];
+    const filteredTools = getFilteredTools(plan);
     
     res.setHeader('Content-Type', 'text/event-stream');
     res.setHeader('Cache-Control', 'no-cache');
     res.setHeader('Connection', 'keep-alive');
 
-    // Send usage update to client immediately
     res.write(`data: ${JSON.stringify({ type: 'usage', count: usage.ai_daily_count, limit })}\n\n`);
 
-    async function runChat(currentMessages: any[], currentModel: string, isRetry = false) {
+    async function runChat(currentMessages: any[], currentModel: string, currentTools: any[], isRetry = false) {
       const sanitizedMessages = currentMessages.map((m: any) => {
-        const content = (m.role === 'assistant' && m.tool_calls) ? null : (m.content || "");
-        const msg: any = { role: m.role, content };
+        // For assistant with tool_calls, content must be null
+        // Otherwise, preserve content as-is (can be string or array for multimodal)
+        const msgContent = (m.role === 'assistant' && m.tool_calls) ? null : m.content;
+        const msg: any = { role: m.role, content: msgContent };
         if (m.tool_calls) msg.tool_calls = m.tool_calls;
         if (m.tool_call_id) msg.tool_call_id = m.tool_call_id;
         if (m.name) msg.name = m.name;
         return msg;
       });
 
-      let response;
       try {
-response = await groq.chat.completions.create({
-          model: currentModel,
-          messages: [
-            { role: 'system', content: getSystemPrompt(currentModel, context) },
-            ...sanitizedMessages
-          ],
-          tools,
-          tool_choice: 'auto',
-          stream: true,
-          max_tokens: 1024,
-        });
-      } catch (err: any) {
-        console.error(`[Groq API] Model ${currentModel} failed:`, err.status, err.message);
-        const isSizeError = err.status === 413 || (err.message && err.message.includes('tokens'));
-        if (!isRetry && isSizeError && currentModel !== BASIC_MODELS[0]) {
-          res.write(`data: ${JSON.stringify({ type: 'text', content: "\n\n*Optimizing for large dataset...*\n\n" })}\n\n`);
-          return await runChat(currentMessages, BASIC_MODELS[0], true);
-        }
-        throw err;
-      }
+        let fullContent = "";
+        let toolCalls: any[] = [];
 
-      let fullContent = "";
-      let toolCalls: any[] = [];
-
-      for await (const chunk of response) {
-        const delta = chunk.choices[0]?.delta;
-        if (delta?.content) {
-          fullContent += delta.content;
-          res.write(`data: ${JSON.stringify({ type: 'text', content: delta.content })}\n\n`);
-        }
-        if (delta?.tool_calls) {
-          for (const tc of delta.tool_calls) {
-            if (!toolCalls[tc.index]) {
-              toolCalls[tc.index] = { 
-                id: tc.id, 
-                type: 'function',
-                function: { name: tc.function?.name, arguments: "" } 
-              };
-            }
-            if (tc.function?.arguments) {
-              toolCalls[tc.index].function.arguments += tc.function.arguments;
+        for await (const chunk of streamOpenRouter(OPENROUTER_API_KEY!, currentModel, [
+          { role: 'system', content: getSystemPrompt(currentModel, context, plan) },
+          ...sanitizedMessages
+        ], currentTools)) {
+          const delta = chunk.choices[0]?.delta;
+          if (delta?.content) {
+            fullContent += delta.content;
+            res.write(`data: ${JSON.stringify({ type: 'text', content: delta.content })}\n\n`);
+          }
+          if (delta?.tool_calls) {
+            for (const tc of delta.tool_calls) {
+              if (!toolCalls[tc.index]) {
+                toolCalls[tc.index] = { 
+                  id: tc.id, 
+                  type: 'function',
+                  function: { name: tc.function?.name, arguments: "" } 
+                };
+              }
+              if (tc.function?.arguments) {
+                toolCalls[tc.index].function.arguments += tc.function.arguments;
+              }
             }
           }
         }
-      }
 
-const filteredToolCalls = toolCalls.filter(Boolean);
-      if (filteredToolCalls.length > 0) {
-        const nextMessages = [...currentMessages];
-        nextMessages.push({ role: 'assistant', content: fullContent || null, tool_calls: filteredToolCalls });
+        const filteredToolCalls = toolCalls.filter(Boolean);
+        if (filteredToolCalls.length > 0) {
+          const nextMessages = [...currentMessages];
+          nextMessages.push({ role: 'assistant', content: fullContent || null, tool_calls: filteredToolCalls });
 
-        const serverToolCalls = filteredToolCalls.filter(tc => 
-          tc.function.name === 'web_search' || tc.function.name === 'search_youtube'
-        );
-        
-        const clientToolCalls = filteredToolCalls.filter(tc => 
-          tc.function.name !== 'web_search' && tc.function.name !== 'search_youtube'
-        );
-
-        if (serverToolCalls.length > 0) {
-          const serverResults = await Promise.all(
-            serverToolCalls.map(tc => 
-              executeServerTool(tc.function.name, JSON.parse(tc.function.arguments))
-            )
+          const serverToolCalls = filteredToolCalls.filter(tc => 
+            tc.function.name === 'web_search' || tc.function.name === 'search_youtube'
+          );
+          
+          const clientToolCalls = filteredToolCalls.filter(tc => 
+            tc.function.name !== 'web_search' && tc.function.name !== 'search_youtube'
           );
 
-          serverToolCalls.forEach((tc, i) => {
-            nextMessages.push({
-              role: 'tool',
-              tool_call_id: tc.id,
-              name: tc.function.name,
-              content: JSON.stringify(serverResults[i])
-            });
-          });
-        }
+          if (serverToolCalls.length > 0) {
+            const serverResults = await Promise.all(
+              serverToolCalls.map(tc => 
+                executeServerTool(tc.function.name, JSON.parse(tc.function.arguments))
+              )
+            );
 
-        const batchedClientCalls = groupClientToolCalls(clientToolCalls);
-        
-        for (const batch of batchedClientCalls) {
-          if (batch.length === 1) {
-            const tc = batch[0];
-            const args = JSON.parse(tc.function.arguments);
-            
-            res.write(`data: ${JSON.stringify({ 
-              type: 'tool_call', 
-              toolCall: { id: tc.id, toolName: tc.function.name, args } 
-            })}\n\n`);
-
-            if (tc.function.name !== 'get_thought_details') {
+            serverToolCalls.forEach((tc, i) => {
               nextMessages.push({
                 role: 'tool',
                 tool_call_id: tc.id,
                 name: tc.function.name,
-                content: JSON.stringify({ success: true, observed: false, message: "Action queued for client execution." })
+                content: JSON.stringify(serverResults[i])
               });
-            }
-          } else {
-            const batchArgs = convertToBatchFormat(batch);
-            if (batchArgs) {
+            });
+          }
+
+          const batchedClientCalls = groupClientToolCalls(clientToolCalls);
+          
+          for (const batch of batchedClientCalls) {
+            if (batch.length === 1) {
+              const tc = batch[0];
+              let args = {};
+              try {
+                if (tc.function.arguments && tc.function.arguments.trim()) {
+                  args = JSON.parse(tc.function.arguments);
+                }
+              } catch (e) {
+                console.error('[Oracle] Failed to parse tool arguments:', tc.function.arguments);
+                args = { _parseError: true, raw: tc.function.arguments };
+              }
+              
               res.write(`data: ${JSON.stringify({ 
                 type: 'tool_call', 
-                toolCall: { 
-                  id: batch[0].id, 
-                  toolName: batchArgs.toolName, 
-                  args: batchArgs.args 
-                },
-                isBatch: true,
-                batchCount: batch.length
+                toolCall: { id: tc.id, toolName: tc.function.name, args } 
               })}\n\n`);
 
-              nextMessages.push({
-                role: 'tool',
-                tool_call_id: batch[0].id,
-                name: batchArgs.toolName,
-                content: JSON.stringify({ success: true, observed: false, message: `Batch action queued for ${batch.length} items.` })
-              });
+              if (tc.function.name !== 'get_thought_details') {
+                nextMessages.push({
+                  role: 'tool',
+                  tool_call_id: tc.id,
+                  name: tc.function.name,
+                  content: JSON.stringify({ success: true, observed: false, message: "Action queued for client execution." })
+                });
+              }
+            } else {
+              let batchArgs = null;
+              try {
+                batchArgs = convertToBatchFormat(batch);
+              } catch (e) {
+                console.error('Failed to convert batch format:', e);
+              }
+              if (batchArgs) {
+                res.write(`data: ${JSON.stringify({ 
+                  type: 'tool_call', 
+                  toolCall: { 
+                    id: batch[0].id, 
+                    toolName: batchArgs.toolName, 
+                    args: batchArgs.args 
+                  },
+                  isBatch: true,
+                  batchCount: batch.length
+                })}\n\n`);
+
+                nextMessages.push({
+                  role: 'tool',
+                  tool_call_id: batch[0].id,
+                  name: batchArgs.toolName,
+                  content: JSON.stringify({ success: true, observed: false, message: `Batch action queued for ${batch.length} items.` })
+                });
+              }
             }
           }
-        }
 
-        return await runChat(nextMessages, currentModel, isRetry);
+          return await runChat(nextMessages, currentModel, currentTools, isRetry);
+        }
+      } catch (err: any) {
+        console.error(`[OpenRouter API] Model ${currentModel} failed:`, err.message);
+        const isSizeError = err.message && err.message.includes('tokens');
+        if (!isRetry && isSizeError && currentModel !== BASIC_MODELS[0]) {
+          res.write(`data: ${JSON.stringify({ type: 'text', content: "\n\n*Optimizing for large dataset...*\n\n" })}\n\n`);
+          return await runChat(currentMessages, BASIC_MODELS[0], filteredTools, true);
+        }
+        throw err;
       }
     }
 
-    await runChat(messages, model);
+    await runChat(messages, model, filteredTools);
 
     res.write('data: [DONE]\n\n');
     res.end();
 
   } catch (error: any) {
     console.error('[Oracle Error]', error);
-    res.status(500).json({ error: 'Internal Server Error', message: error.message });
+    // If headers already sent (SSE started), can't send JSON error
+    if (res.headersSent) {
+      res.write(`data: ${JSON.stringify({ type: 'error', message: error.message })}
+
+`);
+      res.end();
+    } else {
+      res.status(500).json({ error: 'Internal Server Error', message: error.message });
+    }
   }
 }

@@ -50,7 +50,13 @@ export const createThoughtSlice: StateCreator<CyberiaState, [], [], any> = (set,
     const result = await db.transaction('rw', db.thoughts, async () => {
       const currentCount = await db.thoughts.where('spaceId').equals(targetSpaceId).count();
       if (currentCount >= limits.MAX_THOUGHTS_PER_SPACE) {
-        useModalStore.getState().openModal({ title: 'Space is Full', description: `Limit ${limits.MAX_THOUGHTS_PER_SPACE}.`, type: 'limit_thought', confirmText: 'Go Pro', onConfirm: () => useModalStore.getState().openPricing() });
+        useModalStore.getState().openModal({ 
+          title: 'Thinking Limit Reached', 
+          description: `You’ve reached the free limit of ${limits.MAX_THOUGHTS_PER_SPACE} thoughts for this space. Upgrade to Cyberia Pro to unlock unlimited mapping and premium Oracle AI features.`, 
+          type: 'limit_thought', 
+          confirmText: 'Upgrade to Pro', 
+          onConfirm: () => useModalStore.getState().openPricing() 
+        });
         return -1;
       }
       const randomTitle = QUIRKY_TITLES[Math.floor(Math.random() * QUIRKY_TITLES.length)];

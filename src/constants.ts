@@ -67,15 +67,25 @@ export const MAX_FILE_SIZE_MB = 10;
 
 export const APP_VERSION = '1.0.5';
 
-export const DEFAULT_MODEL = import.meta.env.VITE_GROQ_MODEL || 'openai/gpt-oss-120b';
+// Use process.env for server-side (Vercel), import.meta.env for client-side
+const getDefaultModel = () => {
+  if (typeof process !== 'undefined' && process.env?.VITE_OPENROUTER_MODEL) {
+    return process.env.VITE_OPENROUTER_MODEL;
+  }
+  // @ts-ignore - import.meta.env is available in Vite client
+  return (typeof import.meta !== 'undefined' && import.meta?.env?.VITE_OPENROUTER_MODEL) 
+    || 'openrouter/free';
+};
+export const DEFAULT_MODEL = getDefaultModel();
 
 
 export const BASIC_MODELS = [
-  'openai/gpt-oss-20b',
+  //'openrouter/free',
+  'openrouter/free',
 ];
 
 export const PREMIUM_MODELS = [
-  'openai/gpt-oss-120b',
+  'openrouter/free',
 ];
 
 export const AVAILABLE_MODELS = [

@@ -12,6 +12,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@openrouter/sdk": "^0.9.11",
     "@polar-sh/sdk": "^0.45.1",
     "@react-oauth/google": "^0.13.4",
     "@supabase/supabase-js": "^2.97.0",
