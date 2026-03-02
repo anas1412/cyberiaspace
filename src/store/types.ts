@@ -122,6 +122,7 @@ export interface CyberiaState {
 export interface AuthState {
   user: User | null;
   accessToken: string | null;
+  refreshSecret: string | null;
   grantedScopes: string[];
   status: 'idle' | 'loading' | 'authenticated' | 'unauthenticated';
   syncStatus: 'synced' | 'syncing' | 'error' | 'offline';
@@ -131,7 +132,7 @@ export interface AuthState {
   storageUsageMB: number;
   isOnline: boolean;
 
-  setAuthenticatedUser: (user: User, token: string, scopes?: string[]) => Promise<void>;
+  setAuthenticatedUser: (user: User, token: string, refreshSecret?: string, scopes?: string[]) => Promise<void>;
   handleAuthCode: (code: string) => Promise<void>;
   requestServiceAccess: (scope: string, token: string) => void;
   signOut: () => Promise<void>;

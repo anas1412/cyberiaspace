@@ -1,6 +1,7 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { OAuth2Client } from 'google-auth-library';
 import { createClient } from '@supabase/supabase-js';
+import crypto from 'crypto';
 
 const CLIENT_ID = process.env.VITE_GOOGLE_CLIENT_ID || process.env.GOOGLE_CLIENT_ID;
 const CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET;
@@ -62,15 +63,23 @@ async function handleExchange(req: VercelRequest, res: VercelResponse) {
         console.log('[Google Auth] Existing user state:', JSON.stringify(existingUser));
 
         let profile;
+        const refreshSecret = existingUser?.refresh_secret || crypto.randomUUID();
+
         if (existingUser) {
             // Update ONLY the basic fields to prevent "Free reset" bug
-            const updatePayload = {
+            const updatePayload: any = {
                 email: payload.email,
                 name: payload.name,
                 avatar: payload.picture,
                 settings: existingUser.settings || {},
-                updated_at: new Date().toISOString()
+                updated_at: new Date().toISOString(),
+                refresh_secret: refreshSecret
             };
+
+            if (tokens.refresh_token) {
+                updatePayload.refresh_token = tokens.refresh_token;
+            }
+
             console.log('[Google Auth] Update payload:', JSON.stringify(updatePayload));
 
             const { data: updatedUser, error: updateError } = await supabase.from('users').update(updatePayload).eq('id', userId).select().single();
@@ -88,7 +97,9 @@ async function handleExchange(req: VercelRequest, res: VercelResponse) {
                 subscription_status: 'none',
                 settings: { theme: 'cyberia', autoSync: true },
                 usage: { ai_daily_count: 0, sync_thoughts: 0, last_ai_reset: new Date().toISOString().split('T')[0] },
-                updated_at: new Date().toISOString()
+                updated_at: new Date().toISOString(),
+                refresh_token: tokens.refresh_token,
+                refresh_secret: refreshSecret
             }).select().single();
 
             if (insertError) throw insertError;
@@ -117,6 +128,7 @@ async function handleExchange(req: VercelRequest, res: VercelResponse) {
         return res.status(200).json({
             access_token: tokens.access_token,
             expires_in: tokens.expiry_date ? Math.floor((tokens.expiry_date - Date.now()) / 1000) : 3600,
+            refresh_secret: refreshSecret,
             user: userProfile
         });
     } catch (e: any) {
@@ -126,14 +138,56 @@ async function handleExchange(req: VercelRequest, res: VercelResponse) {
 }
 
 async function handleRefresh(req: VercelRequest, res: VercelResponse) {
-    const userId = await getUserIdFromAuthHeader(req.headers.authorization);
-    if (!userId) return res.status(401).json({ error: 'Unauthorized' });
+    if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
+    const { userId, refreshSecret } = req.body;
 
-    // For now, just return success - Google tokens are handled client-side
-    return res.status(200).json({
-        access_token: req.headers.authorization?.split(' ')[1],
-        expires_in: 3600
-    });
+    if (!userId || !refreshSecret) {
+        return res.status(400).json({ error: 'userId and refreshSecret are required' });
+    }
+
+    if (!supabase) {
+        return res.status(500).json({ error: 'Supabase client not initialized' });
+    }
+
+    try {
+        const { data: user, error: fetchError } = await supabase
+            .from('users')
+            .select('refresh_token, refresh_secret')
+            .eq('id', userId)
+            .single();
+
+        if (fetchError || !user) {
+            return res.status(401).json({ error: 'User not found' });
+        }
+
+        if (user.refresh_secret !== refreshSecret) {
+            return res.status(401).json({ error: 'Invalid refresh secret' });
+        }
+
+        if (!user.refresh_token) {
+            return res.status(401).json({ error: 'No refresh token available' });
+        }
+
+        const client = new OAuth2Client(CLIENT_ID, CLIENT_SECRET);
+        client.setCredentials({ refresh_token: user.refresh_token });
+
+        const { credentials } = await client.refreshAccessToken();
+        
+        if (credentials.refresh_token && credentials.refresh_token !== user.refresh_token) {
+            await supabase
+                .from('users')
+                .update({ refresh_token: credentials.refresh_token })
+                .eq('id', userId);
+        }
+
+        return res.status(200).json({
+            access_token: credentials.access_token,
+            expires_in: credentials.expiry_date ? Math.floor((credentials.expiry_date - Date.now()) / 1000) : 3600
+        });
+    } catch (e: any) {
+        console.error('[Google Auth] Refresh error:', e);
+        return res.status(401).json({ error: 'Token refresh failed' });
+    }
 }
 
 async function handleRevoke(req: VercelRequest, res: VercelResponse) {
