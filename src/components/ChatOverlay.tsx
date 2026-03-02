@@ -75,7 +75,7 @@ const ChatOverlay: React.FC = () => {
   }, [input]);
 
   // Strict plan-based model selection
-  const activeModel = plan === 'pro' ? 'openai/gpt-oss-120b' : 'openai/gpt-oss-20b';
+  const activeModel = plan === 'pro' ? 'premium models' : 'free models';
 
   const getFriendlyToolName = (name: string) => {
     switch (name) {
@@ -259,9 +259,29 @@ const ChatOverlay: React.FC = () => {
                   // We store retrieval results to send them all at once after the tool loop finishes if needed,
                   // but for now, we'll keep the immediate follow-up logic but make it more robust.
                   
-if (data.toolCall.toolName === 'get_thought_details' && result.success) {
+if (['get_thought_details', 'read_file_content'].includes(data.toolCall.toolName) && result.success) {
                     // Optimized: Continue with minimal context to avoid re-sending full workspace
-                    const minimalContext = JSON.stringify({
+                    
+// Build message content for follow-up - handle multimodal for images/PDFs
+function getFollowUpMessageContent(toolName: string, result: any) {
+  if (toolName === 'read_file_content') {
+    if (result?.type === 'image' && result?.url) {
+      return [
+        { type: 'text', text: 'Analyze this image and describe what you see in detail.' },
+        { type: 'image_url', image_url: { url: result.url } }
+      ];
+    }
+    if (result?.type === 'pdf' && result?.url) {
+      return [
+        { type: 'text', text: 'Analyze this PDF and summarize its contents.' },
+        { type: 'image_url', image_url: { url: result.url } }
+      ];
+    }
+  }
+  return 'Continue with the details I provided.';
+}
+
+const minimalContext = JSON.stringify({
                       currentTime: {
                         date: new Date().toLocaleDateString('en-CA'),
                         full: new Date().toLocaleString(),
@@ -287,8 +307,8 @@ if (data.toolCall.toolName === 'get_thought_details' && result.success) {
                       signal: controller.signal,
                       body: JSON.stringify({
                         messages: [
-                          { role: 'user', content: 'Continue with the thought details I provided.' },
-                          { role: 'tool', tool_call_id: data.toolCall.id, name: 'get_thought_details', content: JSON.stringify(result) }
+                          { role: 'user', content: getFollowUpMessageContent(data.toolCall.toolName, result) },
+                          { role: 'tool', tool_call_id: data.toolCall.id, name: data.toolCall.toolName, content: JSON.stringify(result) }
                         ],
                         model: activeModel,
                         plan: plan,
@@ -379,7 +399,7 @@ if (data.toolCall.toolName === 'get_thought_details' && result.success) {
                 <div className="flex items-center gap-2 mt-1">
                   <span className="w-1 h-1 rounded-full bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.6)]" />
                   <span className="text-[8px] font-bold text-slate-500 uppercase tracking-widest leading-none">
-                    {activeModel === 'openai/gpt-oss-120b' ? 'PRO 120B ACTIVE' : 'MINI 20B ACTIVE'}
+                    {activeModel}
                   </span>
                 </div>
               </div>

@@ -6,6 +6,16 @@
       "sourceType": "github",
       "computedHash": "516bd2154eb843a8240e43d5b285229129853114ad7075a5e141e1c08e408c84"
     },
+    "openrouter-typescript-sdk": {
+      "source": "openrouterteam/agent-skills",
+      "sourceType": "github",
+      "computedHash": "d6effb9c0f5f5361ed95976936845fd3c9e8eeef53f9214aa2e82845c708fd3f"
+    },
+    "parallel-task": {
+      "source": "am-will/codex-skills",
+      "sourceType": "github",
+      "computedHash": "766cb30f18de3a5cf7b3e8af2d18ddb70e8e5d0fb35cb2d796f5e64894adc48b"
+    },
     "react-doctor": {
       "source": "millionco/react-doctor",
       "sourceType": "github",

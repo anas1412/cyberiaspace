@@ -262,8 +262,16 @@ export const executeOracleTool = async (toolCall: any, store: any) => {
           const isPDF = blob.type.includes('pdf');
           
           if (isPDF) {
-            // For now, we can't parse PDF on client easily, but we can return the metadata
-            return { success: true, type: 'pdf', message: "This is a PDF file. Direct text extraction is pending implementation, but I can see it's a valid document." };
+            // Return signed URL - OpenRouter can process PDFs directly
+            let pdfUrl = '';
+            if (thought.storagePath) {
+              pdfUrl = await supabaseStorage.getSignedUrl(thought.storagePath);
+            } else if (blobEntry) {
+              const buffer = await blob.arrayBuffer();
+              const base64 = btoa(String.fromCharCode(...new Uint8Array(buffer)));
+              pdfUrl = "data:application/pdf;base64," + base64;
+            }
+            return { success: true, type: 'pdf', url: pdfUrl, name: thought.text };
           }
 
           const isText = readableTypes.some(t => blob!.type.startsWith(t)) || thought.text?.endsWith('.md') || thought.text?.endsWith('.txt');
@@ -273,6 +281,19 @@ export const executeOracleTool = async (toolCall: any, store: any) => {
             return { success: true, type: 'text', content: text.substring(0, 10000) }; // Limit to 10k chars for safety
           }
 
+          // Handle images - return signed URL for vision model
+          if (blob.type.startsWith('image/')) {
+            let imageUrl = '';
+            if (thought.storagePath) {
+              imageUrl = await supabaseStorage.getSignedUrl(thought.storagePath);
+            } else if (blobEntry) {
+              const buffer = await blob.arrayBuffer();
+              const base64 = btoa(String.fromCharCode(...new Uint8Array(buffer)));
+              imageUrl = "data:" + blob.type + ";base64," + base64;
+            }
+            return { success: true, type: 'image', url: imageUrl, name: thought.text };
+          }
+          
           return { success: false, error: 'File type is not readable as text.' };
         } catch (e: any) {
           return { success: false, error: e.message };

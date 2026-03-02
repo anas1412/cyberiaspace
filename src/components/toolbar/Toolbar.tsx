@@ -207,8 +207,13 @@ const Toolbar: React.FC = () => {
     if (thoughts.length >= limits.MAX_THOUGHTS_PER_SPACE) {
       const isPro = user?.plan === 'pro';
       openModal({
-        title: 'Space is Full', description: isPro ? `Capacity of ${limits.MAX_THOUGHTS_PER_SPACE} reached.` : `Reached Free limit of ${limits.MAX_THOUGHTS_PER_SPACE}.`,
-        type: 'limit_thought', confirmText: isPro ? 'Okay' : 'Upgrade Now', onConfirm: isPro ? undefined : () => openPricing()
+        title: isPro ? 'Space Limit Reached' : 'Thinking Limit Reached',
+        description: isPro 
+          ? `You’ve reached the pro limit of ${limits.MAX_THOUGHTS_PER_SPACE} thoughts for this space. Need more capacity? Contact us for specialized plans.` 
+          : `You’ve reached the free limit of ${limits.MAX_THOUGHTS_PER_SPACE} thoughts for this space. Upgrade to Cyberia Pro to unlock unlimited mapping and premium Oracle AI features.`,
+        type: 'limit_thought', 
+        confirmText: isPro ? 'Acknowledged' : 'Upgrade to Pro', 
+        onConfirm: isPro ? undefined : () => openPricing()
       });
       return;
     }
@@ -228,7 +233,15 @@ const Toolbar: React.FC = () => {
   const handleCreateSpace = () => {
     if (spaces.length >= limits.MAX_SPACES) {
       const isPro = user?.plan === 'pro';
-      openModal({ title: 'Limit Reached', description: isPro ? `Max limit of ${limits.MAX_SPACES} spaces reached.` : `Free plan limited to ${limits.MAX_SPACES} spaces.`, type: 'limit_space', confirmText: isPro ? 'Okay' : 'Upgrade Now', onConfirm: isPro ? undefined : () => openPricing() });
+      openModal({ 
+        title: 'Space Limit Reached', 
+        description: isPro 
+          ? `You’ve reached the pro limit of ${limits.MAX_SPACES} spaces. Contact us if you need higher workspace capacity.` 
+          : `You’ve reached the free limit of ${limits.MAX_SPACES} spaces. Upgrade to Cyberia Pro to create more workspaces and unlock premium features.`, 
+        type: 'limit_space', 
+        confirmText: isPro ? 'Acknowledged' : 'Upgrade to Pro', 
+        onConfirm: isPro ? undefined : () => openPricing() 
+      });
       return;
     }
     openModal({ title: 'Create New Space', type: 'new_space', confirmText: 'Create Space', onConfirm: (n) => addSpace(n && (n as string).trim() ? (n as string).substring(0, 15) : 'New Space') });

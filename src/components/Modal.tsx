@@ -120,7 +120,14 @@ const Modal: React.FC = () => {
             {content}
           </div>
         ) : (
-          description && <p className="text-[10px] md:text-xs text-slate-400 mb-6 md:mb-8 uppercase tracking-widest leading-relaxed">{description}</p>
+          description && (
+            <p className={cn(
+              "text-[10px] md:text-xs text-slate-400 mb-6 md:mb-8 leading-relaxed",
+              !['limit_thought', 'limit_space'].includes(type) ? "uppercase tracking-widest" : "tracking-wide"
+            )}>
+              {description}
+            </p>
+          )
         )}
 
         {showInput && (

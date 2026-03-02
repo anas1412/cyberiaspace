@@ -177,10 +177,11 @@ function App() {
       const currentLimits = PLAN_CONFIG[authStore.user?.plan || 'free'];
       if (thoughts.length >= currentLimits.MAX_THOUGHTS_PER_SPACE) {
         openModal({
-          title: 'Space is Full',
-          description: `Capacity reached. Free limit is ${currentLimits.MAX_THOUGHTS_PER_SPACE}.`,
+          title: 'Thinking Limit Reached',
+          description: `You’ve reached the free limit of ${currentLimits.MAX_THOUGHTS_PER_SPACE} thoughts for this space. Upgrade to Cyberia Pro to unlock unlimited mapping and premium Oracle AI features.`,
           type: 'limit_thought',
-          confirmText: 'Okay'
+          confirmText: 'Upgrade to Pro',
+          onConfirm: () => useModalStore.getState().openPricing()
         });
         return;
       }
