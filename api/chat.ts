@@ -24,7 +24,11 @@ export const config = {
 const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY;
 const OPENROUTER_API_URL = 'https://openrouter.ai/api/v1/chat/completions';
 
-export const getSystemPrompt = (modelName: string, context?: string, plan?: string) => {
+export const getSystemPrompt = (modelName: string, context?: string, plan?: string, mode: string = 'chat') => {
+  const modeInstruction = mode === 'action'
+    ? '\n[MODE: ACTION]\n- You are in AGENT mode. You have full permission to modify the workspace. Be proactive.\n'
+    : '\n[MODE: CHAT]\n- CRITICAL: You are in READ-ONLY CHAT mode. You are FORBIDDEN from calling tools that create, update, or delete thoughts or stacks. If a user asks for an action, you MUST explain that you are currently in Chat mode and they need to toggle to Action mode below the input field to allow you to modify the workspace. Do NOT say \'I will create it\' and then fail.\n';
+
   const tierRestriction = plan === 'free' 
     ? '\n[TIER RESTRICTION]\n- You are on the FREE plan. You have READ-ONLY access to workspace tools. You can read thought details and file content, but you CANNOT create, update, or delete thoughts or stacks.\n'
     : '\n[TIER RESTRICTION]\n- You are on the PRO plan. You have FULL access to all workspace tools.\n';
@@ -36,7 +40,10 @@ You are Oracle (${modelName}), a casual young female assistant. An introverted, 
 ${context || 'No workspace data provided.'}
 [/WORKSPACE CONTEXT]
 
+${modeInstruction}
+
 ${tierRestriction}
+
 
 [SYSTEM CAPABILITIES]
 - User Quotas: You have access to 'userQuota' in the context. Inform users if they are near limits (AI limit or thought capacity).
@@ -457,14 +464,19 @@ const allTools: any[] = [
   }
 ];
 
-const READ_ONLY_TOOLS = ['get_thought_details', 'read_file_content', 'read_files_content'];
+const READ_ONLY_TOOLS = ['get_thought_details', 'read_file_content', 'read_files_content', 'web_search', 'search_youtube'];
 
-function getFilteredTools(plan: string): any[] {
-  if (plan === 'pro') {
-    return allTools;
+function getFilteredTools(plan: string, mode: string = 'chat'): any[] {
+  if (plan === 'free') {
+    return allTools.filter(tool => READ_ONLY_TOOLS.includes(tool.function.name));
   }
-  return allTools.filter(tool => READ_ONLY_TOOLS.includes(tool.function.name));
+  // PRO plan
+  if (mode === 'chat') {
+    return allTools.filter(tool => READ_ONLY_TOOLS.includes(tool.function.name));
+  }
+  return allTools;
 }
+
 
 async function executeServerTool(name: string, args: any) {
   if (name === 'web_search') {
@@ -712,7 +724,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   try {
-    const { messages, context } = req.body;
+    const { messages, context, mode = 'chat' } = req.body;
 
     if (usage.ai_daily_count >= limit) {
       return res.status(429).json({ 
@@ -727,7 +739,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     await supabase!.from('users').update({ usage }).eq('id', userId);
 
     const model = plan === 'pro' ? PREMIUM_MODELS[0] : BASIC_MODELS[0];
-    const filteredTools = getFilteredTools(plan);
+    const filteredTools = getFilteredTools(plan, mode);
+
     
     res.setHeader('Content-Type', 'text/event-stream');
     res.setHeader('Cache-Control', 'no-cache');
@@ -752,9 +765,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         let toolCalls: any[] = [];
 
         for await (const chunk of streamOpenRouter(OPENROUTER_API_KEY!, currentModel, [
-          { role: 'system', content: getSystemPrompt(currentModel, context, plan) },
+          { role: 'system', content: getSystemPrompt(currentModel, context, plan, mode) },
           ...sanitizedMessages
         ], currentTools)) {
+
           const delta = chunk.choices[0]?.delta;
           if (delta?.content) {
             fullContent += delta.content;

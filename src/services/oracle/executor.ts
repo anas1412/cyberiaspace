@@ -36,6 +36,20 @@ export const executeOracleTool = async (toolCall: any, store: any) => {
   const { toolName, args } = toolCall;
   console.log(`[Oracle] Executing Tool: ${toolName}`, args);
 
+  // Security check: restrict write actions in chat mode
+  const writeActions = [
+    'create_thought', 'create_thoughts', 'update_thought', 'update_thoughts', 'delete_thoughts',
+    'create_stack', 'link_thoughts', 'unlink_thoughts', 'update_stack', 'update_stacks',
+    'delete_stack', 'delete_stacks'
+  ];
+
+  if (store.oracleChatMode === 'chat' && writeActions.includes(toolName)) {
+    return {
+      success: false,
+      error: 'Write actions are disabled in Chat mode. Switch to Action mode to modify the workspace.'
+    };
+  }
+
   try {
     switch (toolName) {
       case 'get_thought_details': {

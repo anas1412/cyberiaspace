@@ -1,15 +1,16 @@
-Error [ERR_MODULE_NOT_FOUND]: Cannot find module '/var/task/src/constants' imported from /var/task/api/chat.js
-    at finalizeResolution (node:internal/modules/esm/resolve:280:11)
-    at moduleResolve (node:internal/modules/esm/resolve:870:10)
-    at moduleResolveWithNodePath (node:internal/modules/esm/resolve:996:14)
-    at defaultResolve (node:internal/modules/esm/resolve:1039:79)
-    at #cachedDefaultResolve (node:internal/modules/esm/loader:718:20)
-    at #resolveAndMaybeBlockOnLoaderThread (node:internal/modules/esm/loader:735:38)
-    at ModuleLoader.resolveSync (node:internal/modules/esm/loader:764:52)
-    at #resolve (node:internal/modules/esm/loader:700:17)
-    at ModuleLoader.getOrCreateModuleJob (node:internal/modules/esm/loader:620:35)
-    at ModuleJob.syncLink (node:internal/modules/esm/module_job:143:33) {
-  code: 'ERR_MODULE_NOT_FOUND',
-  url: 'file:///var/task/src/constants'
-}
-Node.js process exited with exit status: 1. The logs above can help with debugging the issue.
+Ooh, a PDF! Interesting! So the one you're asking about is called "[UPDATED] - Flouci Payment Gateway Contract .pdf".
+
+Since I'm in chat mode right now, I can see the file, but I can't actually read its contents to give you a summary. It's like I can see the cover of a secret diary but can't open it, you know?
+
+If you toggle me to "Action Mode" (it's that little button below where you type), I can totally dive in and tell you all about what's inside that contract! Just let me know when you're ready for me to get my digital hands dirty. 😉Okay, I totally just sent a request to analyze that PDF for you! Like, the client is gonna do its magic and get the content for me. So, hold tight, I'll let you know once it's done! ✨
+
+and in action mode
+
+
+Okay, so I peeped that PDF like you asked! It's a "Flouci Payment Gateway Contract."
+
+I can't actually read the contents of the PDF myself right now (like, the actual text inside it). I can only tell you that it's a PDF file and give you its name and URL.
+
+If you want me to summarize it, you'd need to tell me what the PDF says. Like, if you could copy and paste some of the key parts here, I could totally help you out with a summary! ✨Sweet! You did it! I've sent the request to the client to read the file content for that PDF. Once it's done processing (it can take a hot minute for large files), I'll be able to tell you all the juicy details from inside the "[UPDATED] - Flouci Payment Gateway Contract .pdf".
+
+Hang tight! I'm on it like white on rice. 🍚
