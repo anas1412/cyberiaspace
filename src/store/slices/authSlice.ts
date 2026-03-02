@@ -33,8 +33,10 @@ const getInitialUser = (): User | null => {
 export const createAuthSlice: StateCreator<AuthState, [], [], any> = (set, get, _api) => ({
   user: getInitialUser(),
   accessToken: localStorage.getItem('cyberia-token'),
+  refreshSecret: localStorage.getItem('cyberia-refresh-secret'),
   grantedScopes: JSON.parse(localStorage.getItem('cyberia-scopes') || '[]'),
   status: localStorage.getItem('cyberia-user') ? 'authenticated' : 'unauthenticated' as 'idle' | 'loading' | 'authenticated' | 'unauthenticated',
+
 
   initAuth: async () => {
     window.addEventListener('online', async () => { 
@@ -73,7 +75,7 @@ export const createAuthSlice: StateCreator<AuthState, [], [], any> = (set, get, 
     }
   },
 
-  setAuthenticatedUser: async (user: User, token: string, scopes?: string[]) => {
+  setAuthenticatedUser: async (user: User, token: string, refreshSecret?: string, scopes?: string[]) => {
     const today = new Date().toISOString().split('T')[0];
     const userWithDefaults: User = { 
       ...user, 
@@ -93,6 +95,10 @@ export const createAuthSlice: StateCreator<AuthState, [], [], any> = (set, get, 
     localStorage.setItem('cyberia-user', JSON.stringify(userWithDefaults));
     localStorage.setItem('cyberia-token', token);
     
+    if (refreshSecret) {
+      localStorage.setItem('cyberia-refresh-secret', refreshSecret);
+    }
+
     if (scopes) {
       localStorage.setItem('cyberia-scopes', JSON.stringify(scopes));
     }
@@ -108,6 +114,7 @@ export const createAuthSlice: StateCreator<AuthState, [], [], any> = (set, get, 
     set({
       user: userWithDefaults,
       accessToken: token,
+      refreshSecret: refreshSecret || get().refreshSecret,
       grantedScopes: scopes || get().grantedScopes,
       status: 'authenticated',
       syncStatus: 'syncing'
@@ -141,7 +148,7 @@ export const createAuthSlice: StateCreator<AuthState, [], [], any> = (set, get, 
 
       const scopes = ['openid', 'email', 'profile'];
 
-      await get().setAuthenticatedUser(data.user, data.access_token, scopes);
+      await get().setAuthenticatedUser(data.user, data.access_token, data.refresh_secret, scopes);
     } catch (err: any) {
       console.error('Auth code handling failed:', err);
       const { useModalStore } = await import('../useModalStore');
@@ -177,9 +184,11 @@ export const createAuthSlice: StateCreator<AuthState, [], [], any> = (set, get, 
     localStorage.removeItem('cyberia-token');
     localStorage.removeItem('cyberia-last-sync');
     localStorage.removeItem('cyberia-scopes');
+    localStorage.removeItem('cyberia-refresh-secret');
     set({ 
       user: null, 
       accessToken: null, 
+      refreshSecret: null,
       grantedScopes: [],
       status: 'unauthenticated', 
       syncStatus: 'offline', 
@@ -214,13 +223,14 @@ export const createAuthSlice: StateCreator<AuthState, [], [], any> = (set, get, 
   },
 
   refreshProfile: async () => {
-    const { accessToken, user } = get();
+    const { accessToken, user, refreshSecret } = get();
     if (!accessToken || !user) return;
     try {
-      // 1. First try a silent refresh if token might be expired
+      // 1. Try a silent refresh using refreshSecret
       const refreshRes = await fetch('/api/google-auth?action=refresh', {
         method: 'POST',
-        headers: { Authorization: `Bearer ${accessToken}` }
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId: user.id, refreshSecret })
       });
       
       let currentToken = accessToken;
@@ -230,6 +240,7 @@ export const createAuthSlice: StateCreator<AuthState, [], [], any> = (set, get, 
         set({ accessToken: currentToken });
         localStorage.setItem('cyberia-token', currentToken);
       } else if (refreshRes.status === 401) {
+        console.warn('[Auth] Refresh failed (401), signing out...');
         get().signOut();
         return;
       }
@@ -238,6 +249,7 @@ export const createAuthSlice: StateCreator<AuthState, [], [], any> = (set, get, 
       console.log('[Auth] Refreshing profile for:', user.id);
       const supabaseProfile = await supabaseSync.getProfile(user.id);
       console.log('[Auth] Supabase profile result:', JSON.stringify(supabaseProfile));
+
 
       if (supabaseProfile?.user) {
         const supabaseUser = supabaseProfile.user;
