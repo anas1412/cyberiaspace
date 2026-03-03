@@ -2,7 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { useStore } from '../store/useStore';
 import { useAuthStore } from '../store/useAuthStore';
 import { serializeWorkspace } from '../utils/contextBuilder';
-import { X, Send, Shield, Loader2, History, Zap, Square } from 'lucide-react';
+import { X, Send, Shield, Loader2, History, Square } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
@@ -228,7 +228,7 @@ const ChatOverlay: React.FC = () => {
         const errorMsg: Message = { 
           id: Date.now().toString(), 
           role: 'assistant', 
-          content: `### Connection Expired\nChoom, your session has timed out. Please sign in again to continue your data stream.\n\n<button onclick="window._cyberia_reauth()" class="px-4 py-2 bg-blue-500 text-white rounded-xl text-xs font-black uppercase tracking-widest hover:bg-blue-600 transition-all mt-2">Refresh Session</button>` 
+          content: `### Connection Expired\nChoom, your session has timed out. Please sign in again to continue your data stream.` 
         };
         setMessages(prev => [...prev, errorMsg]);
         useAuthStore.getState().signOut(); // Graceful cleanup
@@ -279,6 +279,15 @@ const ChatOverlay: React.FC = () => {
                 
                 try {
                   const result = await executeOracleTool(data.toolCall, store);
+                  
+                  // If there's an error in the result, display it
+                  if (!result.success && result.error) {
+                    setMessages(prev => [...prev, {
+                      id: Date.now().toString(),
+                      role: 'assistant',
+                      content: `⚠️ ${result.error}`
+                    }]);
+                  }
                   
                   // DATA ROUND-TRIP: If the tool returned data (Retrieval), we need to send it back to Oracle
                   // We store retrieval results to send them all at once after the tool loop finishes if needed,
@@ -346,7 +355,15 @@ if (['get_thought_details', 'read_file_content', 'read_files_content'].includes(
                                   // We handle it by calling this same logic recursively or triggering a secondary execution
                                   setActiveTool({ name: fData.toolCall.toolName, args: fData.toolCall.args });
                                   setStatus(getFriendlyToolName(fData.toolCall.toolName));
-                                  await executeOracleTool(fData.toolCall, store);
+                                  const toolResult = await executeOracleTool(fData.toolCall, store);
+                                  // If there's an error in the result, display it
+                                  if (!toolResult.success && toolResult.error) {
+                                    setMessages(prev => [...prev, {
+                                      id: Date.now().toString(),
+                                      role: 'assistant',
+                                      content: `⚠️ ${toolResult.error}`
+                                    }]);
+                                  }
                                 }
                               } catch (e) {}
                             }
@@ -393,22 +410,38 @@ if (['get_thought_details', 'read_file_content', 'read_files_content'].includes(
 
           {/* Header */}
           <div className="p-4 md:p-5 border-b border-white/5 flex items-center justify-between bg-black/20 backdrop-blur-md sticky top-0 z-20">
-            <div className="flex items-center gap-3">
+            <div className="ml-3 flex items-center gap-3">
               <div>
                 <div className="flex items-center gap-2">
-                  <h3 className="text-xs font-black uppercase tracking-[0.2em] text-white leading-none">Oracle</h3>
-                  {plan === 'pro' && <Zap className="w-2.5 h-2.5 text-amber-400 fill-amber-400" />}
+                  <h3 className="text-sm font-black uppercase tracking-[0.2em] text-white leading-none">Oracle AI</h3>
                 </div>
                 <div className="flex items-center gap-2 mt-1">
                   <span className="w-1 h-1 rounded-full bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.6)]" />
-                  <span className="text-[8px] font-bold text-slate-500 uppercase tracking-widest leading-none">
+                  <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest leading-none">
                     {activeModel}
                   </span>
                 </div>
               </div>
             </div>
             
-            <div className="flex items-center gap-1">
+            
+            <div className="flex items-center gap-3">
+              {user && (
+                <div className="flex items-center gap-2">
+                  <div className="flex flex-col items-end gap-0.5">
+                    <span className="text-[11px] font-black uppercase tracking-widest text-blue-400/80">
+                      {dailyUsage} / {limits.AI_DAILY_LIMIT} REQUESTS DAILY LIMIT
+                    </span>
+                    <div className="w-48 h-0.5 bg-white/10 rounded-full overflow-hidden">
+                      <motion.div 
+                        initial={{ width: 0 }}
+                        animate={{ width: `${Math.min(100, (dailyUsage / (limits.AI_DAILY_LIMIT || 1)) * 100)}%` }}
+                        className="h-full bg-blue-500 shadow-[0_0_6px_rgba(59,130,246,0.4)]" 
+                      />
+                    </div>
+                  </div>
+                </div>
+              )}
               <button 
                 onClick={handleClear}
                 className="p-2 hover:bg-white/5 rounded-lg text-slate-500 hover:text-white transition-all group"
@@ -425,25 +458,6 @@ if (['get_thought_details', 'read_file_content', 'read_files_content'].includes(
             </div>
           </div>
 
-          {/* AI Usage Progress Bar */}
-          {user && (
-            <div className="px-5 py-2 bg-black/10 border-b border-white/5">
-              <div className="flex justify-between items-center mb-1">
-                <span className="text-[7px] font-black uppercase tracking-widest text-slate-500">Daily Quota</span>
-                <span className="text-[7px] font-black text-blue-400">
-                  {dailyUsage} / {limits.AI_DAILY_LIMIT}
-                </span>
-              </div>
-              <div className="h-0.5 w-full bg-white/5 rounded-full overflow-hidden">
-                <motion.div 
-                  initial={{ width: 0 }}
-                  animate={{ width: `${Math.min(100, (dailyUsage / (limits.AI_DAILY_LIMIT || 1)) * 100)}%` }}
-                  className="h-full bg-blue-500 shadow-[0_0_8px_rgba(99,102,241,0.4)]" 
-                />
-              </div>
-            </div>
-          )}
-
           {/* Messages Area */}
 
           <div 
@@ -455,15 +469,15 @@ if (['get_thought_details', 'read_file_content', 'read_files_content'].includes(
                 <div className="w-16 h-16 bg-white/5 rounded-2xl flex items-center justify-center mb-4 border border-white/5">
                   <Shield className="w-6 h-6 text-slate-400" />
                 </div>
-                <h4 className="text-[10px] font-black uppercase tracking-[0.3em] text-white mb-1.5">Workspace Intelligence Active</h4>
-                <p className="text-[9px] font-bold text-slate-500 max-w-[180px] leading-relaxed uppercase tracking-widest">
+                <h4 className="text-[12px] font-black uppercase tracking-[0.3em] text-white mb-1.5">Welcome to Agentic Workspace</h4>
+                <p className="text-[10px] font-bold text-slate-500 max-w-[360px] leading-relaxed uppercase tracking-widest">
                   Ready to map your thoughts. Ask me to research, organize, or create.
                 </p>
                 {plan === 'free' && (
                   <div className="mt-6 p-4 rounded-2xl bg-blue-500/5 border border-blue-500/10 mx-4">
-                    <p className="text-[9px] uppercase font-black tracking-[0.2em] text-blue-400 mb-1.5">Limited Capabilities</p>
-                    <p className="text-[8px] font-bold text-slate-500 leading-relaxed uppercase tracking-widest">
-                      Upgrade to Pro for <strong className="text-blue-300">Unlimited</strong> usage and <strong className="text-blue-300">120B</strong> reasoning models.
+                    <p className="text-[12px] uppercase font-black tracking-[0.2em] text-blue-400 mb-1.5">Limited Capabilities</p>
+                    <p className="text-[10px] font-bold text-slate-500 leading-relaxed uppercase tracking-widest">
+                      Upgrade to Pro for <strong className="text-blue-300">more</strong> usage and <strong className="text-blue-300">premium advanced</strong> reasoning models.
                     </p>
                   </div>
                 )}
@@ -551,26 +565,38 @@ if (['get_thought_details', 'read_file_content', 'read_files_content'].includes(
               )}
             </form>
 
-            {/* Mode Toggle */}
-            <div className="flex items-center justify-center gap-6 pb-2">
-              <button
-                onClick={() => store.setOracleChatMode('chat')}
-                className={cn(
-                  "text-[9px] font-black uppercase tracking-[0.2em] transition-all",
-                  store.oracleChatMode === 'chat' ? "text-blue-400" : "text-slate-600 hover:text-slate-400"
-                )}
-              >
-                Chat
-              </button>
-              <button
-                onClick={() => store.setOracleChatMode('action')}
-                className={cn(
-                  "text-[9px] font-black uppercase tracking-[0.2em] transition-all",
-                  store.oracleChatMode === 'action' ? "text-amber-400" : "text-slate-600 hover:text-slate-400"
-                )}
-              >
-                Action
-              </button>
+            {/* Mode Toggle - Pill Style */}
+            <div className="flex items-center justify-between gap-2 pb-2">
+              <div className="flex items-center h-8 glass rounded-xl p-1 border border-white/5">
+                <button
+                  onClick={() => store.setOracleChatMode('chat')}
+                  className={cn(
+                    "px-3 h-6 rounded-lg transition-all duration-300 flex items-center gap-2",
+                    store.oracleChatMode === 'chat' 
+                      ? "bg-blue-500/20 text-blue-400 shadow-[0_0_10px_rgba(59,130,246,0.2)]" 
+                      : "text-slate-500 hover:text-slate-300 hover:bg-white/[0.03]"
+                  )}
+                >
+                  <div className={cn("w-1 h-1 rounded-full transition-all", store.oracleChatMode === 'chat' ? "bg-blue-400 shadow-[0_0_6px_rgba(59,130,246,0.6)]" : "bg-white/10")} />
+                  <span className="text-[9px] font-black uppercase tracking-[0.15em]">Chat</span>
+                </button>
+                <div className="w-[1px] h-4 bg-white/10 mx-1"></div>
+                <button
+                  onClick={() => store.setOracleChatMode('action')}
+                  className={cn(
+                    "px-3 h-6 rounded-lg transition-all duration-300 flex items-center gap-2",
+                    store.oracleChatMode === 'action' 
+                      ? "bg-amber-500/20 text-amber-400 shadow-[0_0_10px_rgba(245,158,11,0.2)]" 
+                      : "text-slate-500 hover:text-slate-300 hover:bg-white/[0.03]"
+                  )}
+                >
+                  <div className={cn("w-1 h-1 rounded-full transition-all", store.oracleChatMode === 'action' ? "bg-amber-400 shadow-[0_0_6px_rgba(245,158,11,0.6)]" : "bg-white/10")} />
+                  <span className="text-[9px] font-black uppercase tracking-[0.15em]">Action</span>
+                </button>
+              </div>
+              <span className="text-[9px] font-medium text-slate-400 uppercase tracking-wider leading-tight max-w-[160px] text-right">
+                Oracle AI is in development errors may occur
+              </span>
             </div>
           </div>
         </motion.div>
