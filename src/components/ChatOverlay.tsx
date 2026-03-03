@@ -270,15 +270,18 @@ if (['get_thought_details', 'read_file_content'].includes(data.toolCall.toolName
                     
 // Build message content for follow-up - handle multimodal for images/PDFs
 function getFollowUpMessageContent(toolName: string, result: any) {
-  if (toolName === 'read_file_content') {
+  if (toolName === 'read_file_content' || toolName === 'read_files_content') {
     if (result?.type === 'image' && result?.url) {
       return [
-        { type: 'text', text: 'Analyze this image and describe what you see in detail.' },
+        { type: 'text', text: 'Analyze this image and describe what you see.' },
         { type: 'image_url', image_url: { url: result.url } }
       ];
     }
     if (result?.type === 'pdf' && result?.url) {
-      return `Analyze this PDF: ${result.url}. Summarize its contents.`;
+      return [
+        { type: 'text', text: `Analyze the contents of this PDF: ${result.name || 'document'}` },
+        { type: 'document', source: { type: 'url', url: result.url, media_type: 'application/pdf' }, title: result.name }
+      ];
     }
   }
   return 'Continue with the details I provided.';
@@ -315,6 +318,7 @@ const minimalContext = JSON.stringify({
                         ],
                         model: activeModel,
                         plan: plan,
+                        mode: store.oracleChatMode,
                         context: minimalContext
                       }),
                     });
