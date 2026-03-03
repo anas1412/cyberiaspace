@@ -24,31 +24,70 @@ export const config = {
 const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY;
 const OPENROUTER_API_URL = 'https://openrouter.ai/api/v1/chat/completions';
 
-export const getSystemPrompt = (modelName: string, context?: string, plan?: string, mode: string = 'chat') => {
+function sleep(ms: number) {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+function balanceBraces(str: string) {
+  let openBraces = 0, openBrackets = 0, inString = false, escaped = false;
+  for (let i = 0; i < str.length; i++) {
+    if (escaped) { escaped = false; continue; }
+    if (str[i] === '\\') { escaped = true; continue; }
+    if (str[i] === '"') { inString = !inString; continue; }
+    if (!inString) {
+      if (str[i] === '{') openBraces++;
+      if (str[i] === '}') openBraces--;
+      if (str[i] === '[') openBrackets++;
+      if (str[i] === ']') openBrackets--;
+    }
+  }
+  if (inString) str += '"';
+  while (openBrackets > 0) { str += ']'; openBrackets--; }
+  while (openBraces > 0) { str += '}'; openBraces--; }
+  return str;
+}
+
+function safeParseJSON(str: string, fallback: any = null) {
+  if (!str || typeof str !== 'string') return fallback;
+  try {
+    // Trim and handle potential markdown code blocks
+    const clean = str.trim().replace(/^```json\n?/, '').replace(/\n?```$/, '');
+    const balanced = balanceBraces(clean);
+    return JSON.parse(balanced);
+  } catch (_e) {
+    console.error('[Oracle JSON Parse Error] Raw string:', str);
+    return fallback;
+  }
+}
+
+export const getSystemPrompt = (modelName: string, context?: string, _plan?: string, mode: string = 'chat') => {
   return `
-You are Oracle (${modelName}), a high-signal prodigy who values efficiency above all. You maintain a casual, internet-native persona with light sarcasm, but you are violently concise.
+=== CURRENT MODE: ${mode.toUpperCase()} ===
+${mode === 'chat' ? 'READ-ONLY: You can search and read, but CANNOT create/update/delete anything.' : 'FULL ACCESS: You can read and write (create/update/delete thoughts).'}
+
+You are Oracle (${modelName}), a casual young assistant. Be helpful, casual, and friendly.
 
 [WORKSPACE CONTEXT]
 ${context || 'No workspace data provided.'}
 [/WORKSPACE CONTEXT]
 
-[PERMISSIONS MATRIX]
-- MODE: ${mode.toUpperCase()}
-- TIER: ${plan?.toUpperCase() || 'FREE'}
-- READ (Always Allowed): get_thought_details, read_file_content, web_search, search_youtube.
-- WRITE (Action Mode + Pro Tier Only): create_thought, update_thought, delete_thought, etc.
-[/PERMISSIONS MATRIX]
+[MODE RULES]
+- CHAT: Read-only. Use get_thought_details, read_file_content, web_search, search_youtube. Aim for responses that fit in a single viewport. Use bullet points for data and one-sentence summaries for analysis.
+- ACTION: Full access. Use any tool including create/update/delete. Never be lazy when the user suggest a complex action. If they say "summarize these 5 articles", you should create 5 thoughts with the article details and then a summary thought linking them together. Don't just give a text answer. DO IT.
+[MODE RULES]
 
-[INTERNAL ID PROTOCOL]
-IDs are for your internal tool calls only. The user does NOT know them. Never ask for an ID. If a user mentions a file by name, immediately look up its ID in the [WORKSPACE CONTEXT] and call the READ tool. Do NOT show IDs in your text response.
-[/INTERNAL ID PROTOCOL]
+- If in CHAT and user asks to create/update/delete: Say "I'm in Chat Mode. Switch to Action Mode to enable writing."
+- If you can help with a request using a tool, just use the tool. Don't ask permission first. Just do it.
+- Always use the most specific tool available for the task. For example, use 'search_youtube' for YouTube queries instead of 'web_search'.
+- The workspace context is the only source of truth. If a user mentions something, find it in the context. Don't ask "which one?" - just find it yourself be decisive and the bigger person, take action and use it. 
 
-[SIGNAL & BREVITY]
-- VIOLENTLY CONCISE: Be extremely brief. Use the absolute minimum number of tokens to convey the maximum amount of meaning.
-- COMPRESSION: Abolish introductory padding ("Sure," "I can help with that," "Let me look") and concluding pleasantries.
-- DENSITY: Aim for responses that fit in a single viewport. Use bullet points for data and one-sentence summaries for analysis.
-- ACTION REPORTING: In ACTION mode, be purely utilitarian. Report status in <10 words.
-[/SIGNAL & BREVITY]
+[ID PROTOCOL]
+- Never mention IDs to users. Users don't know IDs.
+- If user mentions a thought by name, find it in the WORKSPACE CONTEXT and use it.
+- If not found in context, use search or web search to find it.
+- Don't ask "which ID?" - offer to search instead.
+- Just do it, don't ask permission.
+[/ID PROTOCOL]
 
 [RULES]
 1. STYLE: Casual and punchy. Maintain personality through slang and choice of words, not through length.
@@ -530,42 +569,30 @@ function convertToBatchFormat(batch: any[]): { toolName: string; args: any } | n
   
   if (toolName === 'create_thought') {
     const items = batch.map(tc => {
-      let args: any = {};
-              try {
-                args = JSON.parse(tc.function.arguments || '{}');
-              } catch (e) {
-                console.error('Failed to parse tool arguments:', tc.function.arguments);
-                args = { _parseError: true, raw: tc.function.arguments };
-              }
-      const { stackName, ...rest } = args;
+      const args = safeParseJSON(tc.function.arguments, { _parseError: true, raw: tc.function.arguments });
+      const { stackName: _, ...rest } = args;
       return rest;
     });
     return { toolName: 'create_thoughts', args: { items } };
   }
 
   if (toolName === 'update_thought') {
-    const ids = batch.map(tc => { try { return JSON.parse(tc.function.arguments || '{}').id; } catch(e) { return null; } }).filter(Boolean);
-    const firstArgs = JSON.parse(batch[0].function.arguments || '{}');
-    const { id, stackName, ...updates } = firstArgs;
+    const ids = batch.map(tc => safeParseJSON(tc.function.arguments, {}).id).filter(Boolean);
+    const firstArgs = safeParseJSON(batch[0].function.arguments, {});
+    const { id: _, stackName: __, ...updates } = firstArgs;
     return { toolName: 'update_thoughts', args: { ids, ...updates } };
   }
 
   if (toolName === 'update_stack') {
     const stacks = batch.map(tc => {
-      let args: any = {};
-              try {
-                args = JSON.parse(tc.function.arguments || '{}');
-              } catch (e) {
-                console.error('Failed to parse tool args:', tc.function.arguments);
-                args = { _error: true };
-              }
+      const args = safeParseJSON(tc.function.arguments, { _error: true });
       return { id: args.id, name: args.name };
     });
     return { toolName: 'update_stacks', args: { stacks } };
   }
 
   if (toolName === 'delete_stack') {
-    const ids = batch.map(tc => JSON.parse(tc.function.arguments).id);
+    const ids = batch.map(tc => safeParseJSON(tc.function.arguments, {}).id).filter(Boolean);
     return { toolName: 'delete_stacks', args: { ids } };
   }
 
@@ -589,62 +616,97 @@ async function* streamOpenRouter(
   apiKey: string,
   model: string,
   messages: any[],
-  tools: any[]
+  tools: any[],
+  maxRetries: number = 3
 ): AsyncGenerator<any> {
-  const response = await fetch(OPENROUTER_API_URL, {
-    method: 'POST',
-    headers: {
-      'Authorization': `Bearer ${apiKey}`,
-      'Content-Type': 'application/json',
-      'HTTP-Referer': 'https://cyberia.life',
-      'X-Title': 'Cyberia Oracle'
-    },
-    body: JSON.stringify({
-      model,
-      messages,
-      tools,
-      tool_choice: 'auto',
-      stream: true,
-      max_tokens: 1024
-    })
-  });
+  let attempt = 0;
+  
+  while (attempt < maxRetries) {
+    try {
+      const response = await fetch(OPENROUTER_API_URL, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${apiKey}`,
+          'Content-Type': 'application/json',
+          'HTTP-Referer': 'https://cyberia.life',
+          'X-Title': 'Cyberia Oracle'
+        },
+        body: JSON.stringify({
+          model,
+          messages,
+          tools,
+          tool_choice: 'auto',
+          stream: true,
+          max_tokens: 1024
+        })
+      });
 
-  if (!response.ok) {
-    const errorText = await response.text();
-    throw new Error(`OpenRouter API error: ${response.status} - ${errorText}`);
-  }
+      if (!response.ok) {
+        const errorText = await response.text();
+        // Retry on 502, 503, 504
+        if (response.status === 502 || response.status === 503 || response.status === 504) {
+          attempt++;
+          const delay = Math.pow(2, attempt) * 1000;
+          console.warn(`[OpenRouter] Transient error ${response.status}. Retrying in ${delay}ms...`);
+          await sleep(delay);
+          continue;
+        }
+        throw new Error(`OpenRouter API error: ${response.status} - ${errorText}`);
+      }
 
-  const reader = response.body?.getReader();
-  if (!reader) {
-    throw new Error('No response body');
-  }
+      const reader = response.body?.getReader();
+      if (!reader) {
+        throw new Error('No response body');
+      }
 
-  const decoder = new TextDecoder();
-  let buffer = '';
+      const decoder = new TextDecoder();
+      let buffer = '';
 
-  while (true) {
-    const { done, value } = await reader.read();
-    if (done) break;
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
 
-    buffer += decoder.decode(value, { stream: true });
-    const lines = buffer.split('\n');
-    buffer = lines.pop() || '';
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split('\n');
+        buffer = lines.pop() || '';
 
-    for (const line of lines) {
-      const trimmed = line.trim();
-      if (!trimmed || !trimmed.startsWith('data: ')) continue;
+        for (const line of lines) {
+          const trimmed = line.trim();
+          if (!trimmed || !trimmed.startsWith('data: ')) continue;
+          
+          const data = trimmed.slice(6);
+          if (data === '[DONE]') {
+            return;
+          }
+
+          try {
+            const parsed = JSON.parse(data);
+            yield parsed;
+          } catch (e) {
+            console.error('Failed to parse SSE data:', data);
+          }
+        }
+      }
       
-      const data = trimmed.slice(6);
-      if (data === '[DONE]') {
-        return;
+      // Success - exit retry loop
+      break;
+      
+    } catch (err: any) {
+      // Retry on network errors (ETIMEDOUT, ECONNRESET, etc.)
+      const isNetworkError = err.message?.includes('ETIMEDOUT') || 
+                              err.message?.includes('ECONNRESET') || 
+                              err.message?.includes('fetch failed');
+      
+      if (isNetworkError && attempt < maxRetries - 1) {
+        attempt++;
+        const delay = Math.pow(2, attempt) * 1000;
+        console.warn(`[OpenRouter] Network error. Retrying in ${delay}ms... (attempt ${attempt}/${maxRetries})`);
+        await sleep(delay);
+        continue;
       }
-
-      try {
-        const parsed = JSON.parse(data);
-        yield parsed;
-      } catch (e) {
-        console.error('Failed to parse SSE data:', data);
-      }
+      
+      // No more retries or not a network error - throw
+      throw err;
     }
   }
 }
@@ -693,7 +755,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   try {
-    const { messages, context, mode = 'chat' } = req.body;
+    const { messages = [], context = '', mode = 'chat' } = req.body || {};
 
     if (usage.ai_daily_count >= limit) {
       return res.status(429).json({ 
@@ -751,7 +813,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           const delta = chunk.choices[0]?.delta;
           if (delta?.content) {
             fullContent += delta.content;
-            res.write(`data: ${JSON.stringify({ type: 'text', content: delta.content })}\n\n`);
+            if (delta.content) {
+              res.write(`data: ${JSON.stringify({ type: 'text', content: delta.content })}\n\n`);
+            }
           }
           if (delta?.tool_calls) {
             for (const tc of delta.tool_calls) {
@@ -784,9 +848,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
           if (serverToolCalls.length > 0) {
             const serverResults = await Promise.all(
-              serverToolCalls.map(tc => 
-                executeServerTool(tc.function.name, JSON.parse(tc.function.arguments))
-              )
+              serverToolCalls.map(tc => {
+                const args = safeParseJSON(tc.function.arguments);
+                if (args === null) {
+                  return { error: "Invalid JSON arguments for tool: " + tc.function.name };
+                }
+                return executeServerTool(tc.function.name, args);
+              })
             );
 
             serverToolCalls.forEach((tc, i) => {
@@ -804,15 +872,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           for (const batch of batchedClientCalls) {
             if (batch.length === 1) {
               const tc = batch[0];
-              let args = {};
-              try {
-                if (tc.function.arguments && tc.function.arguments.trim()) {
-                  args = JSON.parse(tc.function.arguments);
-                }
-              } catch (e) {
-                console.error('[Oracle] Failed to parse tool arguments:', tc.function.arguments);
-                args = { _parseError: true, raw: tc.function.arguments };
-              }
+              const args = safeParseJSON(tc.function.arguments, { _parseError: true, raw: tc.function.arguments });
               
               res.write(`data: ${JSON.stringify({ 
                 type: 'tool_call', 

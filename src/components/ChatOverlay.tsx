@@ -2,7 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { useStore } from '../store/useStore';
 import { useAuthStore } from '../store/useAuthStore';
 import { serializeWorkspace } from '../utils/contextBuilder';
-import { X, Send, Shield, Loader2, History, Zap, Square } from 'lucide-react';
+import { X, Send, Shield, Loader2, History, Square } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
@@ -228,7 +228,7 @@ const ChatOverlay: React.FC = () => {
         const errorMsg: Message = { 
           id: Date.now().toString(), 
           role: 'assistant', 
-          content: `### Connection Expired\nChoom, your session has timed out. Please sign in again to continue your data stream.\n\n<button onclick="window._cyberia_reauth()" class="px-4 py-2 bg-blue-500 text-white rounded-xl text-xs font-black uppercase tracking-widest hover:bg-blue-600 transition-all mt-2">Refresh Session</button>` 
+          content: `### Connection Expired\nChoom, your session has timed out. Please sign in again to continue your data stream.` 
         };
         setMessages(prev => [...prev, errorMsg]);
         useAuthStore.getState().signOut(); // Graceful cleanup
@@ -279,6 +279,15 @@ const ChatOverlay: React.FC = () => {
                 
                 try {
                   const result = await executeOracleTool(data.toolCall, store);
+                  
+                  // If there's an error in the result, display it
+                  if (!result.success && result.error) {
+                    setMessages(prev => [...prev, {
+                      id: Date.now().toString(),
+                      role: 'assistant',
+                      content: `⚠️ ${result.error}`
+                    }]);
+                  }
                   
                   // DATA ROUND-TRIP: If the tool returned data (Retrieval), we need to send it back to Oracle
                   // We store retrieval results to send them all at once after the tool loop finishes if needed,
@@ -346,7 +355,15 @@ if (['get_thought_details', 'read_file_content', 'read_files_content'].includes(
                                   // We handle it by calling this same logic recursively or triggering a secondary execution
                                   setActiveTool({ name: fData.toolCall.toolName, args: fData.toolCall.args });
                                   setStatus(getFriendlyToolName(fData.toolCall.toolName));
-                                  await executeOracleTool(fData.toolCall, store);
+                                  const toolResult = await executeOracleTool(fData.toolCall, store);
+                                  // If there's an error in the result, display it
+                                  if (!toolResult.success && toolResult.error) {
+                                    setMessages(prev => [...prev, {
+                                      id: Date.now().toString(),
+                                      role: 'assistant',
+                                      content: `⚠️ ${toolResult.error}`
+                                    }]);
+                                  }
                                 }
                               } catch (e) {}
                             }
@@ -393,11 +410,10 @@ if (['get_thought_details', 'read_file_content', 'read_files_content'].includes(
 
           {/* Header */}
           <div className="p-4 md:p-5 border-b border-white/5 flex items-center justify-between bg-black/20 backdrop-blur-md sticky top-0 z-20">
-            <div className="flex items-center gap-3">
+            <div className="ml-2 flex items-center gap-3">
               <div>
                 <div className="flex items-center gap-2">
-                  <h3 className="text-xs font-black uppercase tracking-[0.2em] text-white leading-none">Oracle</h3>
-                  {plan === 'pro' && <Zap className="w-2.5 h-2.5 text-amber-400 fill-amber-400" />}
+                  <h3 className="text-xs font-black uppercase tracking-[0.2em] text-white leading-none">Oracle AI</h3>
                 </div>
                 <div className="flex items-center gap-2 mt-1">
                   <span className="w-1 h-1 rounded-full bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.6)]" />
@@ -551,26 +567,38 @@ if (['get_thought_details', 'read_file_content', 'read_files_content'].includes(
               )}
             </form>
 
-            {/* Mode Toggle */}
-            <div className="flex items-center justify-center gap-6 pb-2">
-              <button
-                onClick={() => store.setOracleChatMode('chat')}
-                className={cn(
-                  "text-[9px] font-black uppercase tracking-[0.2em] transition-all",
-                  store.oracleChatMode === 'chat' ? "text-blue-400" : "text-slate-600 hover:text-slate-400"
-                )}
-              >
-                Chat
-              </button>
-              <button
-                onClick={() => store.setOracleChatMode('action')}
-                className={cn(
-                  "text-[9px] font-black uppercase tracking-[0.2em] transition-all",
-                  store.oracleChatMode === 'action' ? "text-amber-400" : "text-slate-600 hover:text-slate-400"
-                )}
-              >
-                Action
-              </button>
+            {/* Mode Toggle - Pill Style */}
+            <div className="flex items-center justify-between gap-2 pb-2">
+              <div className="flex items-center h-8 glass rounded-xl p-1 border border-white/5">
+                <button
+                  onClick={() => store.setOracleChatMode('chat')}
+                  className={cn(
+                    "px-3 h-6 rounded-lg transition-all duration-300 flex items-center gap-2",
+                    store.oracleChatMode === 'chat' 
+                      ? "bg-blue-500/20 text-blue-400 shadow-[0_0_10px_rgba(59,130,246,0.2)]" 
+                      : "text-slate-500 hover:text-slate-300 hover:bg-white/[0.03]"
+                  )}
+                >
+                  <div className={cn("w-1 h-1 rounded-full transition-all", store.oracleChatMode === 'chat' ? "bg-blue-400 shadow-[0_0_6px_rgba(59,130,246,0.6)]" : "bg-white/10")} />
+                  <span className="text-[9px] font-black uppercase tracking-[0.15em]">Chat</span>
+                </button>
+                <div className="w-[1px] h-4 bg-white/10 mx-1"></div>
+                <button
+                  onClick={() => store.setOracleChatMode('action')}
+                  className={cn(
+                    "px-3 h-6 rounded-lg transition-all duration-300 flex items-center gap-2",
+                    store.oracleChatMode === 'action' 
+                      ? "bg-amber-500/20 text-amber-400 shadow-[0_0_10px_rgba(245,158,11,0.2)]" 
+                      : "text-slate-500 hover:text-slate-300 hover:bg-white/[0.03]"
+                  )}
+                >
+                  <div className={cn("w-1 h-1 rounded-full transition-all", store.oracleChatMode === 'action' ? "bg-amber-400 shadow-[0_0_6px_rgba(245,158,11,0.6)]" : "bg-white/10")} />
+                  <span className="text-[9px] font-black uppercase tracking-[0.15em]">Action</span>
+                </button>
+              </div>
+              <span className="text-[9px] font-medium text-slate-400 uppercase tracking-wider leading-tight max-w-[160px] text-right">
+                Oracle AI is in development errors may occur
+              </span>
             </div>
           </div>
         </motion.div>
