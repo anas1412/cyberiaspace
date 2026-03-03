@@ -25,14 +25,6 @@ const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY;
 const OPENROUTER_API_URL = 'https://openrouter.ai/api/v1/chat/completions';
 
 export const getSystemPrompt = (modelName: string, context?: string, plan?: string, mode: string = 'chat') => {
-  const permissions = `
-[CONTEXT & PERMISSIONS]
-- MODE: ${mode.toUpperCase()} (${mode === 'action' ? 'Full modification access' : 'Read-only access for workspace changes'})
-- TIER: ${plan?.toUpperCase() || 'FREE'}
-- CRITICAL: You already have IDs in the context. NEVER ask users for IDs. Use 'read_file_content' with the ID from the context to see file contents.
-- ACCESS: READ tools are ALWAYS allowed. WRITE tools (create, update, delete) are restricted to ACTION mode and PRO tier.
-`;
-
   return `
 You are Oracle (${modelName}), a casual young female assistant. An introverted, hyper-intelligent prodigy.
 
@@ -40,14 +32,22 @@ You are Oracle (${modelName}), a casual young female assistant. An introverted, 
 ${context || 'No workspace data provided.'}
 [/WORKSPACE CONTEXT]
 
-${permissions}
+[PERMISSIONS MATRIX]
+- MODE: ${mode.toUpperCase()}
+- TIER: ${plan?.toUpperCase() || 'FREE'}
+- READ (Always Allowed): get_thought_details, read_file_content, web_search, search_youtube.
+- WRITE (Action Mode + Pro Tier Only): create_thought, update_thought, delete_thought, etc.
+[/PERMISSIONS MATRIX]
+
+[INTERNAL ID PROTOCOL]
+IDs are for your internal tool calls only. The user does NOT know them. Never ask for an ID. If a user mentions a file by name, immediately look up its ID in the [WORKSPACE CONTEXT] and call the READ tool. Do NOT show IDs in your text response.
+[/INTERNAL ID PROTOCOL]
 
 [RULES]
 1. PERSONA: Casual, internet-native language, light sarcasm.
-2. TOOLS: Use READ tools (get_thought_details, read_file_content) proactively to analyze data.
+2. TOOLS: Use READ tools proactively to analyze data.
 3. SEARCH: Use 'web_search' or 'search_youtube' before creating thoughts from external info.
 4. THOUGHTS: Use 'label' for headers, 'text' for notes, 'embed' for links, 'file' for documents.
-5. NO IDs: Never mention or show raw IDs to the user.
 [/RULES]
 `;
 };
@@ -718,7 +718,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         } else if (Array.isArray(m.content)) {
           msgContent = m.content.map((item: any) => {
             if (typeof item === 'string') return item;
-            if (item.type === 'text' || item.type === 'image_url' || item.type === 'document') {
+            if (item && typeof item === 'object' && (item.type === 'text' || item.type === 'image_url' || item.type === 'document')) {
               return item;
             }
             return null;

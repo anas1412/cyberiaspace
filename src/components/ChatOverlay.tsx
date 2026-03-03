@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState, useMemo } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useStore } from '../store/useStore';
 import { useAuthStore } from '../store/useAuthStore';
 import { serializeWorkspace } from '../utils/contextBuilder';
@@ -22,22 +22,47 @@ interface Message {
   content: string;
 }
 
-const CHAT_SUGGESTIONS = [
-  "Summarize my recent thoughts...",
-  "Research the history of Cyberpunk...",
-  "Brainstorm 5 features for a new app...",
-  "Analyze the files in this space...",
-  "Find me the top 3 lo-fi tracks..."
-];
-
-const ACTION_SUGGESTIONS = [
-  "Create a task list for my project...",
-  "Build a table for my expenses...",
-  "Link all my urgent tasks together...",
-  "Clear all the thoughts in this space...",
-  "Group all my notes about AI...",
-  "Add 3 inspirational quotes about tech..."
-];
+// Build message content for follow-up - handle multimodal for images/PDFs
+function getFollowUpMessageContent(toolName: string, result: any) {
+  if (toolName === 'read_file_content' || toolName === 'read_files_content') {
+    // Handle single file result
+    if (result?.type === 'image' && result?.url) {
+      return [
+        { type: 'text', text: 'Analyze this image and describe what you see.' },
+        { type: 'image_url', image_url: { url: result.url } }
+      ];
+    }
+    if (result?.type === 'pdf' && result?.url) {
+      return [
+        { type: 'text', text: `Analyze the contents of this PDF: ${result.name || 'document'}` },
+        { type: 'file', source: { type: 'url', url: result.url, media_type: 'application/pdf' }, title: result.name }
+      ];
+    }
+    
+    // Handle multiple files result
+    if (result?.files && Array.isArray(result.files)) {
+      const contents: any[] = [{ type: 'text', text: 'I have retrieved the contents of the requested files. Please analyze them:' }];
+      
+      result.files.forEach((f: any) => {
+        if (f.success) {
+          if (f.type === 'text') {
+            contents.push({ type: 'text', text: `File Content (${f.id}):\n${f.content}` });
+          } else if (f.type === 'pdf' && f.url) {
+            contents.push({ 
+              type: 'file', 
+              source: { type: 'url', url: f.url, media_type: 'application/pdf' }, 
+              title: f.name || `File ${f.id}` 
+            });
+          } else if (f.type === 'image' && f.url) {
+            contents.push({ type: 'image_url', image_url: { url: f.url } });
+          }
+        }
+      });
+      return contents.length > 1 ? contents : 'Continue with the details I provided.';
+    }
+  }
+  return 'Continue with the details I provided.';
+}
 
 const ChatOverlay: React.FC = () => {
   const isChatOpen = useStore((state) => state.isChatOpen);
@@ -54,12 +79,6 @@ const ChatOverlay: React.FC = () => {
   const [status, setStatus] = useState<string>('');
   const [activeTool, setActiveTool] = useState<{ name: string; args: any } | null>(null);
   const [dailyUsage, setDailyUsage] = useState(user?.usage?.ai_daily_count || 0);
-
-  const suggestion = useMemo(() => {
-    const list = store.oracleChatMode === 'chat' ? CHAT_SUGGESTIONS : ACTION_SUGGESTIONS;
-    return list[Math.floor(Math.random() * list.length)];
-  }, [store.oracleChatMode, isChatOpen]);
-
 
   const scrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
@@ -265,29 +284,10 @@ const ChatOverlay: React.FC = () => {
                   // We store retrieval results to send them all at once after the tool loop finishes if needed,
                   // but for now, we'll keep the immediate follow-up logic but make it more robust.
                   
-if (['get_thought_details', 'read_file_content'].includes(data.toolCall.toolName) && result.success) {
+if (['get_thought_details', 'read_file_content', 'read_files_content'].includes(data.toolCall.toolName) && result.success) {
                     // Optimized: Continue with minimal context to avoid re-sending full workspace
                     
-// Build message content for follow-up - handle multimodal for images/PDFs
-function getFollowUpMessageContent(toolName: string, result: any) {
-  if (toolName === 'read_file_content' || toolName === 'read_files_content') {
-    if (result?.type === 'image' && result?.url) {
-      return [
-        { type: 'text', text: 'Analyze this image and describe what you see.' },
-        { type: 'image_url', image_url: { url: result.url } }
-      ];
-    }
-    if (result?.type === 'pdf' && result?.url) {
-      return [
-        { type: 'text', text: `Analyze the contents of this PDF: ${result.name || 'document'}` },
-        { type: 'document', source: { type: 'url', url: result.url, media_type: 'application/pdf' }, title: result.name }
-      ];
-    }
-  }
-  return 'Continue with the details I provided.';
-}
-
-const minimalContext = JSON.stringify({
+                    const minimalContext = JSON.stringify({
                       currentTime: {
                         date: new Date().toLocaleDateString('en-CA'),
                         full: new Date().toLocaleString(),
@@ -527,7 +527,7 @@ const minimalContext = JSON.stringify({
                     if (!isLoading) e.currentTarget.form?.requestSubmit();
                   }
                 }}
-                placeholder={(store.oracleChatMode === 'chat' ? "Inquiry: " : "Command: ") + suggestion}
+                placeholder={store.oracleChatMode === 'chat' ? "Message Oracle..." : "Command Oracle..."}
                 rows={1}
                 className="flex-1 bg-transparent border-none py-2.5 pl-3 pr-2 text-xs text-white placeholder:text-slate-600 focus:outline-none resize-none min-h-[36px] max-h-32 custom-scroll leading-relaxed"
               />
