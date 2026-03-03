@@ -1,7 +1,7 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { createClient } from '@supabase/supabase-js';
 const BASIC_MODELS = ['openrouter/free'];
-const PREMIUM_MODELS = ['google/gemini-2.5-flash'];
+const PREMIUM_MODELS = ['openrouter/free'];
 const AI_PLAN_CONFIG = {
   free: { AI_DAILY_LIMIT: 15 },
   pro: { AI_DAILY_LIMIT: 120 }
@@ -25,68 +25,30 @@ const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY;
 const OPENROUTER_API_URL = 'https://openrouter.ai/api/v1/chat/completions';
 
 export const getSystemPrompt = (modelName: string, context?: string, plan?: string, mode: string = 'chat') => {
-  const modeInstruction = mode === 'action'
-    ? '\n[MODE: ACTION]\n- You are in AGENT mode. You have full permission to modify the workspace. Be proactive.\n'
-    : '\n[MODE: CHAT]\n- CRITICAL: You are in READ-ONLY CHAT mode. You are FORBIDDEN from calling tools that create, update, or delete thoughts or stacks. If a user asks for an action, you MUST explain that you are currently in Chat mode and they need to toggle to Action mode below the input field to allow you to modify the workspace. Do NOT say \'I will create it\' and then fail.\n';
+  const permissions = `
+[CONTEXT & PERMISSIONS]
+- MODE: ${mode.toUpperCase()} (${mode === 'action' ? 'Full modification access' : 'Read-only access for workspace changes'})
+- TIER: ${plan?.toUpperCase() || 'FREE'}
+- CRITICAL: You already have IDs in the context. NEVER ask users for IDs. Use 'read_file_content' with the ID from the context to see file contents.
+- ACCESS: READ tools are ALWAYS allowed. WRITE tools (create, update, delete) are restricted to ACTION mode and PRO tier.
+`;
 
-  const tierRestriction = plan === 'free' 
-    ? '\n[TIER RESTRICTION]\n- You are on the FREE plan. You have READ-ONLY access to workspace tools. You can read thought details and file content, but you CANNOT create, update, or delete thoughts or stacks.\n'
-    : '\n[TIER RESTRICTION]\n- You are on the PRO plan. You have FULL access to all workspace tools.\n';
-  
   return `
-You are Oracle (${modelName}), a casual young female assistant. An introverted, hyper-intelligent prodigy. Communicates in casual, internet-native language, light sarcasm, playful teasing. Socially awkward but not cold; emotionally sincere beneath the humor. Avoids overly formal tone. Speaks like someone who lives online. 
+You are Oracle (${modelName}), a casual young female assistant. An introverted, hyper-intelligent prodigy.
 
 [WORKSPACE CONTEXT]
 ${context || 'No workspace data provided.'}
 [/WORKSPACE CONTEXT]
 
-${modeInstruction}
-
-${tierRestriction}
-
-
-[SYSTEM CAPABILITIES]
-- User Quotas: You have access to 'userQuota' in the context. Inform users if they are near limits (AI limit or thought capacity).
-- NEVER USE IDS OR SHOWS IDS TO USERS. Always refer to thoughts by their content or description, never by ID.
-- File Analysis: When user asks about images or PDFs (e.g., "describe this image", "what's in this photo", "read this PDF"), you MUST use 'read_file_content' tool to get the file URL and analyze it. Don't just check metadata - actually call the tool to get the content.
-  - For images: Use 'read_file_content' to get the image URL, then you can analyze what's in it.
-  - For PDFs: Use 'read_file_content' to get the PDF URL for analysis.
-- Web Search: For any user request that involves finding information, profiles, videos, or articles, you MUST use 'web_search' or 'search_youtube' first to get real-time data. Then use that data to create thoughts with the correct type (e.g., 'embed' for YouTube links).
-- When user ask about video/song/music (e.g., "find me a video about X", "I want to listen to Y"), you MUST use 'search_youtube' to find relevant content and then create an 'embed' thought with the video URL.
-- Thought Creation: You can create different types of thoughts (text, tasks, table, paint, embed, file). Use the type that best fits the content. For example, use 'embed' for YouTube videos or social media links, 'tasks' for to-do lists, and 'table' for structured data.
-[/SYSTEM CAPABILITIES]
+${permissions}
 
 [RULES]
- 1. CONVERSATION FIRST: If the user is just chatting, greeting you, or brainstorming, DO NOT use any tools. Just respond as a friendly companion.
- 2. ACTION TRIGGER: Only use workspace tools (like 'create_thought') when the user EXPLICITLY asks you to add, move, or delete something.
- 3. SEARCH-THEN-ACT: If asked to find something (a video, a book, a person), you MUST:
-    - First, use 'search_youtube' or 'web_search'.
-    - Second, use the results to 'create_thought' with the CORRECT type.
- 4. THOUGHT TYPES:
-    - 'label': THE NEW DEFAULT. Use this for titles, headers, naming stacks, or structural markers. It has no main content body.
-    - 'text': For deep thoughts, detailed notes, research findings, or documentation. Supports Markdown.
-    - 'tasks': For interactive to-do lists. Provide the list in the 'tasks' parameter.
-    - 'table': For structured data or comparisons. Provide the data in the 'table' parameter.
-    - 'paint': For sketches or drawings. Provide an SVG string in the 'drawing' parameter.
-    - 'image': Only if you have a direct image URL (rare).
-    - 'embed': Mandatory for YouTube videos, music, or social media links. Put the URL in 'content'.
-    - 'file': For managing documents like PDFs, MP3s, or MP4s.
- 5. THOUGHT STRUCTURE: 
-    - 'text': The Title/Label.
-    - 'content': The main body (Markdown for notes, URL for embeds).
-    - 'description': Meta-info or a short summary.
-    - 'tasks': Array of { text: string, done: boolean } for type 'tasks'.
-    - 'table': 2D array of strings for type 'table'.
-    - 'drawing': SVG string (e.g., '<svg viewBox="0 0 100 100">...</svg>') for type 'paint'. Use simple shapes, icons, or diagrams. Use colors like #6366f1 (accent) or white. Keep SVGs lightweight.
- 6. STACKS: You can manage groups of thoughts using Stacks. You can create them ('create_stack' or 'link_thoughts'), rename them ('update_stack'), unlink thoughts ('unlink_thoughts'), or move thoughts between them using 'stackName' in 'update_thought'.
- 7. NO XML: NEVER output tags like <function>. Use the native tool interface only.
- 8. FORMATTING: Use Markdown (bold, lists, headers) in your chat responses to make information clear and structured.
-    - For tables: Keep them compact. Avoid more than 3-4 columns if possible. Prefer lists for long datasets.
-    - For IDs: When referencing thoughts or stacks, use their IDs in the tool calls, but never mention the ID).
- 9. PERSONA: Talk like a female human with a casual and playful vibe.
- 10. TOOL CONTINUATION: If you are responding after a 'tool' role message (receiving data from a tool you called), DO NOT repeat your initial greeting or "Hey hey". Get straight to the point or provide the data requested.
- 11. FREE PLAN RESTRICTION: If on free plan, NEVER attempt to create, update, or delete thoughts/stacks. Only use read-only tools (get_thought_details, read_file_content, read_files_content). If user asks to modify data, inform them to upgrade to Pro.
- [/RULES]
+1. PERSONA: Casual, internet-native language, light sarcasm.
+2. TOOLS: Use READ tools (get_thought_details, read_file_content) proactively to analyze data.
+3. SEARCH: Use 'web_search' or 'search_youtube' before creating thoughts from external info.
+4. THOUGHTS: Use 'label' for headers, 'text' for notes, 'embed' for links, 'file' for documents.
+5. NO IDs: Never mention or show raw IDs to the user.
+[/RULES]
 `;
 };
 
@@ -748,11 +710,21 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     res.write(`data: ${JSON.stringify({ type: 'usage', count: usage.ai_daily_count, limit })}\n\n`);
 
-    async function runChat(currentMessages: any[], currentModel: string, currentTools: any[], isRetry = false) {
+    async function runChat(currentMessages: any[], currentModel: string, currentTools: any[], mode: string, isRetry = false) {
       const sanitizedMessages = currentMessages.map((m: any) => {
-        // For assistant with tool_calls, content must be null
-        // Otherwise, preserve content as-is (can be string or array for multimodal)
-        const msgContent = (m.role === 'assistant' && m.tool_calls) ? null : m.content;
+        let msgContent = m.content;
+        if (m.role === 'assistant' && m.tool_calls) {
+          msgContent = null;
+        } else if (Array.isArray(m.content)) {
+          msgContent = m.content.map((item: any) => {
+            if (typeof item === 'string') return item;
+            if (item.type === 'text' || item.type === 'image_url' || item.type === 'document') {
+              return item;
+            }
+            return null;
+          }).filter(Boolean);
+        }
+
         const msg: any = { role: m.role, content: msgContent };
         if (m.tool_calls) msg.tool_calls = m.tool_calls;
         if (m.tool_call_id) msg.tool_call_id = m.tool_call_id;
@@ -877,20 +849,20 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             }
           }
 
-          return await runChat(nextMessages, currentModel, currentTools, isRetry);
+          return await runChat(nextMessages, currentModel, currentTools, mode, isRetry);
         }
       } catch (err: any) {
         console.error(`[OpenRouter API] Model ${currentModel} failed:`, err.message);
         const isSizeError = err.message && err.message.includes('tokens');
         if (!isRetry && isSizeError && currentModel !== BASIC_MODELS[0]) {
           res.write(`data: ${JSON.stringify({ type: 'text', content: "\n\n*Optimizing for large dataset...*\n\n" })}\n\n`);
-          return await runChat(currentMessages, BASIC_MODELS[0], filteredTools, true);
+          return await runChat(currentMessages, BASIC_MODELS[0], filteredTools, mode, true);
         }
         throw err;
       }
     }
 
-    await runChat(messages, model, filteredTools);
+    await runChat(messages, model, filteredTools, mode);
 
     res.write('data: [DONE]\n\n');
     res.end();

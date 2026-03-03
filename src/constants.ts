@@ -80,7 +80,7 @@ export const DEFAULT_MODEL = getDefaultModel();
 
 
 export const BASIC_MODELS = ['openrouter/free'];
-export const PREMIUM_MODELS = ['google/gemini-2.5-flash'];
+export const PREMIUM_MODELS = ['openrouter/free'];
 
 export const AVAILABLE_MODELS = [
   ...BASIC_MODELS,
