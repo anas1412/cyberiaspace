@@ -13,6 +13,11 @@ function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
 
+const formatStorage = (mb: number) => {
+  if (mb >= 1024) return `${(mb / 1024).toFixed(1)} GB`;
+  return `${mb.toFixed(1)} MB`;
+};
+
 const AccountMenu: React.FC = () => {
   const authStore = useAuthStore();
   const syncStore = useSyncStore();
@@ -351,6 +356,7 @@ const AccountMenu: React.FC = () => {
               </div>
             </button>
           </div>
+          
 
           {/* Storage */}
           <div className="px-2.5 mb-4">
@@ -363,9 +369,10 @@ const AccountMenu: React.FC = () => {
                 "text-[8px] font-black tracking-widest",
                 storageUsageMB > PLAN_CONFIG[user?.plan || 'free'].MAX_STORAGE_MB ? "text-red-400 animate-pulse" : "text-slate-500"
               )}>
-                {storageUsageMB.toFixed(1)} MB / {PLAN_CONFIG[user?.plan || 'free'].MAX_STORAGE_MB} MB
+                {formatStorage(storageUsageMB)} / {formatStorage(PLAN_CONFIG[user?.plan || 'free'].MAX_STORAGE_MB)}
               </span>
             </div>
+
             <div className="h-1 w-full bg-white/5 rounded-full overflow-hidden border border-white/5">
               <div 
                 className={cn(

@@ -178,8 +178,8 @@ const Homepage: React.FC = () => {
             </h1>
             
             <p className="text-lg md:text-xl text-slate-400 max-w-2xl mx-auto mb-12 leading-relaxed font-medium">
-              Organize your mind in an infinite workspace where thoughts have <span className="text-white font-bold">mass and gravity</span>. 
-              Feel the inertia as you map your ideas across dimensions. <span style={{ color: 'var(--accent-secondary)' }}>Powered by AI agents that research and connect your thoughts.</span>
+              Organize docs, tables, images, tasks, links, files, etc... in an infinite agentic workspace where thoughts have <span className="text-white font-bold">mass and gravity</span>. <br />
+              <span style={{ color: 'var(--accent-secondary)' }}>Powered by AI agents that research and connect your thoughts.</span>
             </p>
 
             <div className="flex flex-col sm:flex-row items-center justify-center gap-5">
@@ -242,8 +242,8 @@ const Homepage: React.FC = () => {
               },
               {
                 icon: Layout,
-                title: 'Dynamic Stacks',
-                description: 'Link related thoughts into physical clusters. Morph space into Kanban or Timelines instantly.'
+                title: 'Dynamic Collections',
+                description: 'Link related thoughts into physical stacks. Morph space into Kanban or Timelines instantly.'
               },
               {
                 icon: Database,
@@ -252,7 +252,7 @@ const Homepage: React.FC = () => {
               },
               {
                 icon: Sparkles,
-                title: 'Oracle AI',
+                title: 'Agentic Workspace',
                 description: 'Deploy advanced agents to research the web and automate your workspace connections.'
               }
             ].map((feature, index) => (
@@ -306,11 +306,10 @@ className="glass p-8 rounded-[2.5rem] border-white/5 hover:border-[var(--accent)
                 <div className="text-4xl font-black text-white group-hover:scale-105 transition-transform origin-left duration-500">$0 <span className="text-sm text-slate-500 font-bold uppercase tracking-widest">/ Forever</span></div>
               </div>
               <div className="space-y-4 mb-10 flex-1">
-                <PricingFeature text={`${PLAN_CONFIG.free.MAX_SPACES} Cognitive Spaces`} />
-                <PricingFeature text={`${PLAN_CONFIG.free.MAX_THOUGHTS_PER_SPACE} Thoughts per Space`} />
-                <PricingFeature text={`${PLAN_CONFIG.free.AI_DAILY_LIMIT} AI Interactions / Day`} />
+                <PricingFeature text={`${PLAN_CONFIG.free.MAX_SPACES} Agentic Spaces`} />
+                <PricingFeature text={`${PLAN_CONFIG.free.MAX_THOUGHTS_PER_SPACE} Thoughts per Agentic Space`} />
+                <PricingFeature text={`${PLAN_CONFIG.free.AI_DAILY_LIMIT} Daily Agentic AI Interactions`} />
                 <PricingFeature text={`${PLAN_CONFIG.free.MAX_STORAGE_MB}MB Cloud Storage`} />
-                <PricingFeature text="Infinite Workspace" />
               </div>
               <a href="https://app.cyberia.tn" className="w-full py-4 bg-white/5 hover:bg-white/10 border border-white/10 text-white rounded-2xl text-[10px] font-black uppercase tracking-[0.3em] transition-all text-center">
                 Get Started Free
@@ -362,11 +361,12 @@ className="glass p-10 rounded-[3rem] border-[var(--accent)]/30 bg-[var(--accent)
               </div>
 
               <div className="space-y-4 mb-10 flex-1">
-                <PricingFeature text={`${PLAN_CONFIG.pro.MAX_SPACES} Priority Spaces`} pro />
-                <PricingFeature text={`${PLAN_CONFIG.pro.MAX_THOUGHTS_PER_SPACE} High-Frequency Thoughts`} pro />
-                <PricingFeature text={`${PLAN_CONFIG.pro.AI_DAILY_LIMIT} Oracle AI Interactions`} pro />
-                <PricingFeature text="50GB Secure Cloud Storage" pro />
-                <PricingFeature text="Early Access to Premium Models" pro />
+                <PricingFeature text={`${PLAN_CONFIG.pro.MAX_SPACES} Agentic Spaces`} pro />
+                <PricingFeature text={`${PLAN_CONFIG.pro.MAX_THOUGHTS_PER_SPACE} Thoughts Per Agentic Space`} pro />
+                <PricingFeature text={`${PLAN_CONFIG.pro.AI_DAILY_LIMIT} Daily Agentic AI Interactions`} pro />
+                <PricingFeature 
+                  text={`${(PLAN_CONFIG.pro.MAX_STORAGE_MB / 1024).toFixed(1)}GB Secure Cloud Storage`} pro />
+                <PricingFeature text="Access to Advanced Premium Models" pro />
                 <PricingFeature text="Shared Team Spaces (Coming Soon)" pro />
               </div>
 
@@ -426,7 +426,7 @@ className="glass p-10 rounded-[3rem] border-[var(--accent)]/30 bg-[var(--accent)
               transition={{ delay: 0.1 }}
               className="glass rounded-3xl p-6 shadow-[0_10px_40px_rgba(0,0,0,0.5)]"
             >
-              <h3 className="text-[14px] font-black uppercase tracking-[0.2em] text-white mb-4">The AI</h3>
+              <h3 className="text-[14px] font-black uppercase tracking-[0.2em] text-white mb-4">The Agentic Space</h3>
               <p className="text-sm text-[var(--text-dimmed)] leading-relaxed">
                 Oracle doesn't just chat. It <span className="text-white font-semibold">lives in your space</span>, reading docs and connecting dots.
               </p>
