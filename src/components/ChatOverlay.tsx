@@ -410,21 +410,38 @@ if (['get_thought_details', 'read_file_content', 'read_files_content'].includes(
 
           {/* Header */}
           <div className="p-4 md:p-5 border-b border-white/5 flex items-center justify-between bg-black/20 backdrop-blur-md sticky top-0 z-20">
-            <div className="ml-2 flex items-center gap-3">
+            <div className="ml-3 flex items-center gap-3">
               <div>
                 <div className="flex items-center gap-2">
-                  <h3 className="text-xs font-black uppercase tracking-[0.2em] text-white leading-none">Oracle AI</h3>
+                  <h3 className="text-sm font-black uppercase tracking-[0.2em] text-white leading-none">Oracle AI</h3>
                 </div>
                 <div className="flex items-center gap-2 mt-1">
                   <span className="w-1 h-1 rounded-full bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.6)]" />
-                  <span className="text-[8px] font-bold text-slate-500 uppercase tracking-widest leading-none">
+                  <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest leading-none">
                     {activeModel}
                   </span>
                 </div>
               </div>
             </div>
             
-            <div className="flex items-center gap-1">
+            
+            <div className="flex items-center gap-3">
+              {user && (
+                <div className="flex items-center gap-2">
+                  <div className="flex flex-col items-end gap-0.5">
+                    <span className="text-[11px] font-black uppercase tracking-widest text-blue-400/80">
+                      {dailyUsage} / {limits.AI_DAILY_LIMIT} REQUESTS DAILY LIMIT
+                    </span>
+                    <div className="w-48 h-0.5 bg-white/10 rounded-full overflow-hidden">
+                      <motion.div 
+                        initial={{ width: 0 }}
+                        animate={{ width: `${Math.min(100, (dailyUsage / (limits.AI_DAILY_LIMIT || 1)) * 100)}%` }}
+                        className="h-full bg-blue-500 shadow-[0_0_6px_rgba(59,130,246,0.4)]" 
+                      />
+                    </div>
+                  </div>
+                </div>
+              )}
               <button 
                 onClick={handleClear}
                 className="p-2 hover:bg-white/5 rounded-lg text-slate-500 hover:text-white transition-all group"
@@ -441,25 +458,6 @@ if (['get_thought_details', 'read_file_content', 'read_files_content'].includes(
             </div>
           </div>
 
-          {/* AI Usage Progress Bar */}
-          {user && (
-            <div className="px-5 py-2 bg-black/10 border-b border-white/5">
-              <div className="flex justify-between items-center mb-1">
-                <span className="text-[7px] font-black uppercase tracking-widest text-slate-500">Daily Quota</span>
-                <span className="text-[7px] font-black text-blue-400">
-                  {dailyUsage} / {limits.AI_DAILY_LIMIT}
-                </span>
-              </div>
-              <div className="h-0.5 w-full bg-white/5 rounded-full overflow-hidden">
-                <motion.div 
-                  initial={{ width: 0 }}
-                  animate={{ width: `${Math.min(100, (dailyUsage / (limits.AI_DAILY_LIMIT || 1)) * 100)}%` }}
-                  className="h-full bg-blue-500 shadow-[0_0_8px_rgba(99,102,241,0.4)]" 
-                />
-              </div>
-            </div>
-          )}
-
           {/* Messages Area */}
 
           <div 
@@ -471,15 +469,15 @@ if (['get_thought_details', 'read_file_content', 'read_files_content'].includes(
                 <div className="w-16 h-16 bg-white/5 rounded-2xl flex items-center justify-center mb-4 border border-white/5">
                   <Shield className="w-6 h-6 text-slate-400" />
                 </div>
-                <h4 className="text-[10px] font-black uppercase tracking-[0.3em] text-white mb-1.5">Workspace Intelligence Active</h4>
-                <p className="text-[9px] font-bold text-slate-500 max-w-[180px] leading-relaxed uppercase tracking-widest">
+                <h4 className="text-[12px] font-black uppercase tracking-[0.3em] text-white mb-1.5">Welcome to Agentic Workspace</h4>
+                <p className="text-[10px] font-bold text-slate-500 max-w-[360px] leading-relaxed uppercase tracking-widest">
                   Ready to map your thoughts. Ask me to research, organize, or create.
                 </p>
                 {plan === 'free' && (
                   <div className="mt-6 p-4 rounded-2xl bg-blue-500/5 border border-blue-500/10 mx-4">
-                    <p className="text-[9px] uppercase font-black tracking-[0.2em] text-blue-400 mb-1.5">Limited Capabilities</p>
-                    <p className="text-[8px] font-bold text-slate-500 leading-relaxed uppercase tracking-widest">
-                      Upgrade to Pro for <strong className="text-blue-300">Unlimited</strong> usage and <strong className="text-blue-300">120B</strong> reasoning models.
+                    <p className="text-[12px] uppercase font-black tracking-[0.2em] text-blue-400 mb-1.5">Limited Capabilities</p>
+                    <p className="text-[10px] font-bold text-slate-500 leading-relaxed uppercase tracking-widest">
+                      Upgrade to Pro for <strong className="text-blue-300">more</strong> usage and <strong className="text-blue-300">premium advanced</strong> reasoning models.
                     </p>
                   </div>
                 )}
