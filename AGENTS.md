@@ -52,6 +52,19 @@ The application uses a modular, slice-based architecture for state management to
   - `useModalStore`: UI-wide modal and alert management.
   - `useSyncStore`: Visual synchronization status.
 
+###  Oracle Workspace Intelligence
+- **Dual Operating Modes**:
+  - **Chat Mode**: Research and brainstorming focus. Restricted to READ-only tools.
+  - **Action Mode**: Proactive agent focus. Full READ-WRITE access to workspace tools (subject to Pro tier).
+- **Tool Governance**:
+  - **READ Tools** (Searching, reading files/thoughts): Always allowed in both modes.
+  - **WRITE Tools** (Creating/modifying thoughts/stacks): Restricted to Action mode.
+- **Multimodal Standards**:
+  - Strictly follow OpenRouter Unified Schema.
+  - Use `type: 'file'` with `media_type: 'application/pdf'` for documents. Never use `image_url` for PDFs.
+- **Internal ID Protocol**:
+  - IDs are private handles for tools. NEVER show IDs to users or ask users for IDs. Look them up proactively from the provided context.
+
 ---
 
 ##  Code Style & Guidelines
