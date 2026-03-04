@@ -1235,6 +1235,7 @@ const Homepage: React.FC = () => {
                 <motion.div
                   key={feature.id}
                   onMouseEnter={() => setActiveFeature(index)}
+                  onClick={() => setActiveFeature(index)}
                   className={`relative p-8 rounded-[2.5rem] transition-all duration-500 cursor-pointer group overflow-hidden ${
                     activeFeature === index 
                       ? 'glass border-[var(--accent)]/30 bg-[var(--accent)]/5 shadow-2xl shadow-[var(--accent)]/10' 
@@ -1263,6 +1264,20 @@ const Homepage: React.FC = () => {
                       </p>
                     </div>
                   </div>
+
+                  <AnimatePresence>
+                    {activeFeature === index && (
+                      <motion.div
+                        initial={{ opacity: 0, height: 0 }}
+                        animate={{ opacity: 1, height: 'auto' }}
+                        exit={{ opacity: 0, height: 0 }}
+                        className="lg:hidden mt-6 aspect-square glass rounded-3xl overflow-hidden relative"
+                      >
+                        <div className="absolute inset-0 bg-gradient-to-br from-[var(--accent)]/10 via-transparent to-transparent opacity-50" />
+                        <FeatureVisual activeFeature={index} />
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
 
                   {activeFeature === index && (
                     <motion.div 
