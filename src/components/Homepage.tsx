@@ -236,6 +236,7 @@ const AgenticSpaceVisual = () => {
 
         if (!mounted) break;
         await new Promise(r => setTimeout(r, 2000));
+        setActiveSpaceIdx(prev => (prev + 1) % SPACES_DATA.length);
       }
     };
 
@@ -366,6 +367,17 @@ const AgenticSpaceVisual = () => {
 
 const DynamicViewsVisual = () => {
   const [view, setView] = useState<'spatial' | 'kanban' | 'calendar'>('spatial');
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setView(prev => {
+        if (prev === 'spatial') return 'kanban';
+        if (prev === 'kanban') return 'calendar';
+        return 'spatial';
+      });
+    }, 4000);
+    return () => clearInterval(timer);
+  }, []);
   
   const thoughts = [
     { id: 1, title: 'TASKS_01', color: 'var(--accent)' },
