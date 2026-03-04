@@ -1,11 +1,778 @@
 import React, { lazy, Suspense, useState, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { MousePointer2, Layout, Database, Sparkles, ArrowRight, Check, Rocket, Menu, X, Send, Loader2, CheckCircle, Shield } from 'lucide-react';
+import { motion, AnimatePresence, useMotionValue, useSpring, useTransform, animate } from 'framer-motion';
+import { MousePointer2, Layout, Database, ArrowRight, Check, Rocket, Menu, X, Send, Loader2, CheckCircle, Shield, Zap } from 'lucide-react';
 import { PLAN_CONFIG } from '../constants';
 
 const DemoWorkspace = lazy(() => import('./demo/DemoWorkspace'));
 
+const FEATURES = [
+  {
+    id: 'spatial',
+    icon: MousePointer2,
+    title: 'Spaces, Collections & Thoughts',
+    description: 'Organize your mind in a space using thoughts that have mass and physical inertia. Link related thoughts into physical collections. '
+  },
+  {
+    id: 'views',
+    icon: Layout,
+    title: 'Dynamic Views',
+    description: 'Morph space into Spatial, Kanban or Calendar instantly.'
+  },
+  {
+    id: 'cloud',
+    icon: Database,
+    title: 'Cloud Persistence',
+    description: 'File storage for research assets, PDFs, and media synced across all devices.'
+  },
+  {
+    id: 'agentic',
+    icon: Zap,
+    title: 'Agentic Workspace',
+    description: 'Deploy advanced agents to research the web and automate your workspace connections.'
+  }
+];
+
+const MinimalistThought: React.FC<{ 
+  title: string; 
+  color?: string; 
+  className?: string;
+  style?: React.CSSProperties;
+}> = ({ title, color, className = '', style }) => (
+  <div 
+    className={`glass border border-white/5 rounded-xl p-3 flex flex-col gap-2 min-w-[140px] shadow-sm backdrop-blur-sm relative overflow-hidden transition-all duration-500 ${className}`}
+    style={style}
+  >
+    <div className="flex items-center justify-between">
+      <span className="text-[9px] font-black uppercase tracking-[0.15em] text-white/40">
+        {title}
+      </span>
+      <div 
+        className="w-1 h-1 rounded-full" 
+        style={{ backgroundColor: color || 'rgba(255,255,255,0.1)' }} 
+      />
+    </div>
+    <div className="space-y-1.5">
+      <div className="w-full h-[1px] rounded-full bg-white/5" />
+      <div className="w-[70%] h-[1px] rounded-full bg-white/5" />
+      <div className="flex gap-1">
+        <div className="w-[20%] h-[1px] rounded-full bg-white/5" />
+        <div className="w-[30%] h-[1px] rounded-full bg-white/5 opacity-30" />
+      </div>
+    </div>
+    <div className="flex items-center gap-2 mt-0.5">
+      <div className="w-3 h-3 rounded bg-white/5 border border-white/5" />
+      <div className="w-10 h-1.5 rounded-full bg-white/5" />
+    </div>
+  </div>
+);
+
+const AgenticSpaceVisual = () => {
+  const [isGrabbing, setIsGrabbing] = useState(false);
+  const freeNodes = [
+    { id: 4, title: 'INTERFACE_V3', x: [220, -260], y: [-240, 160], duration: 34, delay: 1 },
+    { id: 5, title: 'USER_FLOW', x: [-200, 280], y: [60, 240], duration: 45, delay: 5 },
+    { id: 6, title: 'DATABASE_01', x: [180, -280], y: [-120, 280], duration: 40, delay: 3 },
+  ];
+
+  const clusterNodes = [
+    { id: 1, title: 'RESEARCH_NOTES', ox: -80, oy: -60 },
+    { id: 2, title: 'SYSTEM_ARCH', ox: 80, oy: -40 },
+    { id: 3, title: 'CORE_LOGIC', ox: 0, oy: 80 },
+  ];
+
+  // Cursor Motion Values
+  const cursorX = useMotionValue(-300);
+  const cursorY = useMotionValue(-200);
+  const cursorScale = useMotionValue(1);
+  const cursorOpacity = useMotionValue(0);
+
+  // Leader Node (RESEARCH_NOTES)
+  const node1TargetX = useMotionValue(clusterNodes[0].ox);
+  const node1TargetY = useMotionValue(clusterNodes[0].oy);
+  
+  const node1X = useSpring(node1TargetX, { stiffness: 120, damping: 20 });
+  const node1Y = useSpring(node1TargetY, { stiffness: 120, damping: 20 });
+
+  // Followers (Spring towards Leader + relative offset)
+  // They are "pulled" with inertia
+  const node2X = useSpring(useTransform(node1X, x => x + (clusterNodes[1].ox - clusterNodes[0].ox)), { stiffness: 35, damping: 15, mass: 2.2 });
+  const node2Y = useSpring(useTransform(node1Y, y => y + (clusterNodes[1].oy - clusterNodes[0].oy)), { stiffness: 35, damping: 15, mass: 2.2 });
+
+  const node3X = useSpring(useTransform(node1X, x => x + (clusterNodes[2].ox - clusterNodes[0].ox)), { stiffness: 28, damping: 12, mass: 3 });
+  const node3Y = useSpring(useTransform(node1Y, y => y + (clusterNodes[2].oy - clusterNodes[0].oy)), { stiffness: 28, damping: 12, mass: 3 });
+
+  const nodes = [
+    { id: 1, title: 'RESEARCH_NOTES', x: node1X, y: node1Y },
+    { id: 2, title: 'SYSTEM_ARCH', x: node2X, y: node2Y },
+    { id: 3, title: 'CORE_LOGIC', x: node3X, y: node3Y },
+  ];
+
+  useEffect(() => {
+    const runAnimation = async () => {
+      while (true) {
+        // Init: Cursor appears
+        animate(cursorOpacity, 1, { duration: 0.8 });
+        
+        // 1. Cursor moves to RESEARCH_NOTES
+        await Promise.all([
+          animate(cursorX, clusterNodes[0].ox, { duration: 2, ease: "easeInOut" }),
+          animate(cursorY, clusterNodes[0].oy, { duration: 2, ease: "easeInOut" })
+        ]);
+        
+        // 2. Grab (Pulse effect)
+        await animate(cursorScale, 1.3, { duration: 0.3, type: "spring" });
+        setIsGrabbing(true);
+        
+        // Bind leader target to cursor
+        const stopX = cursorX.on("change", v => node1TargetX.set(v));
+        const stopY = cursorY.on("change", v => node1TargetY.set(v));
+
+        // 3. Drag smoothly across the stage
+        await Promise.all([
+          animate(cursorX, 160, { duration: 3.5, ease: [0.33, 1, 0.68, 1] }),
+          animate(cursorY, 40, { duration: 3.5, ease: [0.33, 1, 0.68, 1] })
+        ]);
+        
+        await new Promise(r => setTimeout(r, 1000));
+
+        // 4. Release
+        stopX();
+        stopY();
+        setIsGrabbing(false);
+        await animate(cursorScale, 1, { duration: 0.4 });
+        
+        // 5. Drift back: Leader node returns home
+        animate(node1TargetX, clusterNodes[0].ox, { duration: 2.5, ease: "easeOut" });
+        animate(node1TargetY, clusterNodes[0].oy, { duration: 2.5, ease: "easeOut" });
+
+        // 6. Cursor moves away and fades
+        await Promise.all([
+          animate(cursorX, -300, { duration: 2, ease: "easeInOut" }),
+          animate(cursorY, -200, { duration: 2, ease: "easeInOut" }),
+          animate(cursorOpacity, 0, { duration: 2 })
+        ]);
+
+        await new Promise(r => setTimeout(r, 2000));
+      }
+    };
+    runAnimation();
+  }, []);
+
+  return (
+    <div className="relative w-full h-full flex items-center justify-center overflow-hidden bg-[#020408]">
+      <div className="absolute inset-0 opacity-[0.05]" style={{ 
+        backgroundImage: `radial-gradient(circle at 1px 1px, var(--accent) 0.5px, transparent 0)`,
+        backgroundSize: '40px 40px',
+        maskImage: 'radial-gradient(circle at center, black, transparent 80%)'
+      }} />
+
+      {/* Free Drifting Nodes (Background) */}
+      {freeNodes.map((node) => (
+        <motion.div
+          key={node.id}
+          className="absolute"
+          animate={{ x: node.x, y: node.y, rotate: [0, 8, -8, 0] }}
+          transition={{ 
+            x: { duration: node.duration, repeat: Infinity, ease: "linear", delay: -node.delay },
+            y: { duration: node.duration * 0.9, repeat: Infinity, ease: "linear", delay: -node.delay },
+            rotate: { duration: 12, repeat: Infinity, ease: "easeInOut" }
+          }}
+        >
+          <MinimalistThought title={node.title} className="scale-90 opacity-40" />
+        </motion.div>
+      ))}
+
+      {/* Interacting Cluster */}
+      <div className="absolute inset-0 pointer-events-none">
+        <svg className="absolute inset-0 w-full h-full overflow-visible">
+          {[
+            [0, 1],
+            [1, 2],
+            [2, 0],
+          ].map(([i, j]) => (
+            <motion.line 
+              key={`${i}-${j}`}
+              x1={useTransform(nodes[i].x, v => `calc(50% + ${v}px)`)}
+              y1={useTransform(nodes[i].y, v => `calc(50% + ${v}px)`)}
+              x2={useTransform(nodes[j].x, v => `calc(50% + ${v}px)`)}
+              y2={useTransform(nodes[j].y, v => `calc(50% + ${v}px)`)}
+              stroke="#cbd5e1" 
+              strokeWidth="1.2" 
+              strokeLinecap="round"
+              strokeDasharray="6 12"
+              strokeOpacity={0.35}
+              animate={{ strokeDashoffset: [0, -36] }}
+              transition={{ duration: 6, repeat: Infinity, ease: "linear" }}
+            />
+          ))}
+        </svg>
+
+        {nodes.map((node, i) => (
+          <motion.div
+            key={node.id}
+            className="absolute left-1/2 top-1/2"
+            style={{ 
+              x: node.x, 
+              y: node.y, 
+              scale: (i === 0 && isGrabbing) ? 1.05 : 0.9 
+            }}
+          >
+            <div className="-translate-x-1/2 -translate-y-1/2">
+              <MinimalistThought title={node.title} className="shadow-2xl" />
+            </div>
+          </motion.div>
+        ))}
+
+        {/* Animated Cursor */}
+        <motion.div
+          className="absolute left-1/2 top-1/2 z-[100] pointer-events-none"
+          style={{ 
+            x: cursorX, 
+            y: cursorY, 
+            scale: cursorScale, 
+            opacity: cursorOpacity 
+          }}
+        >
+          <div className="relative">
+            <MousePointer2 className="w-6 h-6 text-white fill-white/20 -translate-x-1 translate-y-1 drop-shadow-[0_0_8px_rgba(255,255,255,0.4)]" />
+            {isGrabbing && (
+              <motion.div 
+                className="absolute inset-0 w-6 h-6 bg-white/40 rounded-full blur-xl"
+                animate={{ scale: [1, 1.5, 1], opacity: [0.5, 0.2, 0.5] }}
+                transition={{ duration: 1.5, repeat: Infinity }}
+              />
+            )}
+          </div>
+        </motion.div>
+      </div>
+    </div>
+  );
+};
+
+const DynamicViewsVisual = () => {
+  const [view, setView] = useState<'spatial' | 'kanban' | 'calendar'>('spatial');
+  
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setView(prev => {
+        if (prev === 'spatial') return 'kanban';
+        if (prev === 'kanban') return 'calendar';
+        return 'spatial';
+      });
+    }, 4500);
+    return () => clearInterval(timer);
+  }, []);
+
+  const thoughts = [
+    { id: 1, title: 'TASKS_01', color: 'var(--accent)' },
+    { id: 2, title: 'PROCESS_A', color: 'var(--accent-secondary)' },
+    { id: 3, title: 'DATA_NODE', color: 'var(--accent)' },
+    { id: 4, title: 'RESEARCH', color: 'var(--accent-secondary)' },
+    { id: 5, title: 'FEEDBACK', color: 'var(--accent)' },
+    { id: 6, title: 'DEPLOY', color: 'var(--accent-secondary)' },
+  ];
+
+  const getPosition = (index: number, currentView: string) => {
+    if (currentView === 'spatial') {
+      const positions = [
+        { x: -150, y: -140 }, { x: 140, y: -160 },
+        { x: -120, y: 120 }, { x: 160, y: 100 },
+        { x: 20, y: -30 }, { x: -220, y: 30 }
+      ];
+      return positions[index];
+    }
+    if (currentView === 'kanban') {
+      const cols = [-200, 0, 200];
+      const colIdx = index % 3;
+      const rowIdx = Math.floor(index / 3);
+      return { x: cols[colIdx], y: -80 + rowIdx * 160 };
+    }
+    if (currentView === 'calendar') {
+      const grid = [
+        { col: 1, row: 0 }, { col: 3, row: 0 }, { col: 5, row: 0 },
+        { col: 0, row: 1 }, { col: 2, row: 1 }, { col: 4, row: 1 }
+      ];
+      const { col, row } = grid[index % grid.length];
+      return { x: (col - 3) * 85, y: -120 + row * 80 };
+    }
+    return { x: 0, y: 0 };
+  };
+
+  return (
+    <div className="relative w-full h-full flex items-center justify-center bg-[#020408] overflow-hidden">
+      <div className="absolute inset-0 opacity-[0.03]" style={{ 
+        backgroundImage: `radial-gradient(circle at 1px 1px, var(--accent) 1px, transparent 0)`,
+        backgroundSize: '40px 40px' 
+      }} />
+
+      <div className="absolute top-12 left-1/2 -translate-x-1/2 z-10">
+        <AnimatePresence mode="wait">
+          <motion.div 
+            key={view}
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 10 }}
+            className="flex flex-col items-center gap-2"
+          >
+            <span className="text-[10px] font-black tracking-[0.5em] text-[var(--accent)] uppercase border border-[var(--accent)]/30 px-6 py-2 rounded-full bg-[var(--accent)]/5 backdrop-blur-sm">
+              {view} VIEW
+            </span>
+          </motion.div>
+        </AnimatePresence>
+      </div>
+
+      <AnimatePresence>
+        {view === 'kanban' && (
+          <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="absolute inset-0 flex justify-around items-start pt-32 px-12 pointer-events-none"
+          >
+            {['TODO', 'DOING', 'DONE'].map(label => (
+              <span key={label} className="text-[10px] font-black text-white/10 tracking-[0.4em] uppercase">{label}</span>
+            ))}
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {view === 'calendar' && (
+          <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none"
+          >
+            {/* Background Pulse */}
+            <motion.div 
+              className="absolute w-[600px] h-[400px] bg-[var(--accent)]/5 rounded-full blur-[100px]"
+              animate={{ 
+                scale: [1, 1.1, 1],
+                opacity: [0.2, 0.4, 0.2]
+              }}
+              transition={{ 
+                duration: 8, 
+                repeat: Infinity, 
+                ease: "easeInOut" 
+              }}
+            />
+
+            {/* Date Numbers */}
+            <div className="absolute inset-0 pointer-events-none">
+              {[...Array(30)].map((_, i) => {
+                const n = i + 1;
+                const col = (n - 1) % 7;
+                const row = Math.floor((n - 1) / 7);
+                return (
+                  <div 
+                    key={n}
+                    className="absolute text-[8px] font-black text-white/20 tracking-tighter"
+                    style={{
+                      left: `calc(50% + ${(col - 2.5) * 85}px - 10px)`,
+                      top: `calc(50% - 160px + ${row * 80}px + 10px)`,
+                      transform: 'translateX(-100%)'
+                    }}
+                  >
+                    {n}
+                  </div>
+                );
+              })}
+            </div>
+            <svg className="absolute inset-0 w-full h-full overflow-visible">
+              {[...Array(8)].map((_, i) => (
+                <React.Fragment key={`v-${i}`}>
+                  {/* Glow Line */}
+                  <line 
+                    x1={`calc(50% + ${(i - 3.5) * 85}px)`} y1="calc(50% - 160px)"
+                    x2={`calc(50% + ${(i - 3.5) * 85}px)`} y2="calc(50% + 240px)"
+                    stroke="white" strokeOpacity="0.1" strokeWidth="3"
+                    style={{ filter: 'blur(2px)' }}
+                  />
+                  {/* Base Line */}
+                  <line 
+                    x1={`calc(50% + ${(i - 3.5) * 85}px)`} y1="calc(50% - 160px)"
+                    x2={`calc(50% + ${(i - 3.5) * 85}px)`} y2="calc(50% + 240px)"
+                    stroke="white" strokeOpacity="0.2" strokeWidth="1"
+                  />
+                </React.Fragment>
+              ))}
+              {[...Array(6)].map((_, i) => (
+                <React.Fragment key={`h-${i}`}>
+                  {/* Glow Line */}
+                  <line 
+                    x1="calc(50% - 297.5px)" y1={`calc(50% - 160px + ${i * 80}px)`}
+                    x2="calc(50% + 297.5px)" y2={`calc(50% - 160px + ${i * 80}px)`}
+                    stroke="white" strokeOpacity="0.1" strokeWidth="3"
+                    style={{ filter: 'blur(2px)' }}
+                  />
+                  {/* Base Line */}
+                  <line 
+                    x1="calc(50% - 297.5px)" y1={`calc(50% - 160px + ${i * 80}px)`}
+                    x2="calc(50% + 297.5px)" y2={`calc(50% - 160px + ${i * 80}px)`}
+                    stroke="white" strokeOpacity="0.2" strokeWidth="1"
+                  />
+                </React.Fragment>
+              ))}
+            </svg>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {thoughts.map((t, i) => {
+        const pos = getPosition(i, view);
+        return (
+          <motion.div
+            key={t.id}
+            className="absolute"
+            animate={{ 
+              x: pos.x, 
+              y: pos.y,
+              scale: view === 'calendar' ? 0.75 : 0.9,
+              rotate: view === 'spatial' ? (i * 5 - 10) : 0
+            }}
+            transition={{ 
+              type: "spring",
+              damping: 25,
+              stiffness: 80,
+              mass: 1.2
+            }}
+          >
+            <MinimalistThought title={t.title} color={t.color} />
+          </motion.div>
+        );
+      })}
+    </div>
+  );
+};
+
+const CloudPersistenceVisual = () => {
+  return (
+    <div className="relative w-full h-full flex items-center justify-center bg-[#020408] overflow-hidden">
+      {/* Subtle Background Grid */}
+      <div className="absolute inset-0 opacity-[0.02]" style={{ 
+        backgroundImage: `radial-gradient(circle at 1px 1px, var(--accent) 1px, transparent 0)`,
+        backgroundSize: '32px 32px' 
+      }} />
+
+      {/* Animated Card Transfer */}
+      <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-30">
+        {/* Send: Local to Cloud */}
+        <motion.div
+          initial={{ x: -280, opacity: 0 }}
+          animate={{ 
+            x: [-280, -220, 220, 280], 
+            opacity: [0, 1, 1, 0]
+          }}
+          transition={{ 
+            duration: 6, 
+            repeat: Infinity, 
+            times: [0, 0.15, 0.85, 1],
+            ease: "easeInOut",
+            delay: 0
+          }}
+          style={{ y: -30 }}
+        >
+          <MinimalistThought title="LOCAL_DATA" className="scale-90 shadow-2xl" />
+        </motion.div>
+
+        {/* Receive: Cloud to Local */}
+        <motion.div
+          initial={{ x: 280, opacity: 0 }}
+          animate={{ 
+            x: [280, 220, -220, -280], 
+            opacity: [0, 1, 1, 0]
+          }}
+          transition={{ 
+            duration: 6, 
+            repeat: Infinity, 
+            times: [0, 0.15, 0.85, 1],
+            ease: "easeInOut",
+            delay: 3
+          }}
+          style={{ y: 30 }}
+        >
+          <MinimalistThought title="CLOUD_DATA" color="var(--accent-secondary)" className="scale-90 shadow-2xl" />
+        </motion.div>
+      </div>
+
+      <div className="relative w-full h-full flex items-center justify-around px-12 py-12">
+        {/* Local Storage */}
+        <div className="flex flex-col items-center gap-6">
+          <span className="text-[10px] font-black tracking-[0.3em] text-white/30 uppercase">LOCAL_STORAGE</span>
+          <div className="w-[220px] h-[400px] rounded-[2.5rem] border border-white/5 glass bg-white/[0.01] p-8 flex flex-col gap-6 relative overflow-hidden group">
+            {/* Subtle Database Grid Background */}
+            <div className="absolute inset-0 opacity-[0.02] pointer-events-none" style={{ 
+              backgroundImage: 'linear-gradient(to right, white 1px, transparent 1px), linear-gradient(to bottom, white 1px, transparent 1px)',
+              backgroundSize: '24px 24px'
+            }} />
+            
+            <div className="space-y-4 opacity-10 mt-auto">
+              <div className="w-full h-12 rounded-2xl bg-white/5 border border-white/5" />
+              <div className="w-full h-12 rounded-2xl bg-white/5 border border-white/5" />
+              <div className="w-full h-12 rounded-2xl bg-white/5 border border-white/5" />
+            </div>
+          </div>
+        </div>
+
+        {/* Cloud Sync */}
+        <div className="flex flex-col items-center gap-6">
+          <span className="text-[10px] font-black tracking-[0.3em] text-white/30 uppercase">CLOUD_SYNC</span>
+          <div className="w-[220px] h-[400px] rounded-[2.5rem] border border-white/5 glass bg-white/[0.01] p-8 flex flex-col gap-6 relative overflow-hidden">
+            {/* Subtle Database Grid Background */}
+            <div className="absolute inset-0 opacity-[0.02] pointer-events-none" style={{ 
+              backgroundImage: 'linear-gradient(to right, white 1px, transparent 1px), linear-gradient(to bottom, white 1px, transparent 1px)',
+              backgroundSize: '24px 24px'
+            }} />
+
+            <div className="space-y-4 opacity-10 mt-auto">
+              <div className="w-full h-12 rounded-2xl bg-white/5 border border-white/5" />
+              <div className="w-full h-12 rounded-2xl bg-white/5 border border-white/5" />
+              <div className="w-full h-12 rounded-2xl bg-white/5 border border-white/5" />
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const AgenticWorkspaceVisual = () => {
+  const [promptText, setPromptText] = useState("");
+  const [stage, setStage] = useState<'prompt' | 'beam' | 'spawn' | 'linked' | 'settled'>('prompt');
+  const fullPrompt = "Research on topic X, find me 3 related videos from youtube and link them.";
+
+  const freeNodes = [
+    { id: 'f1', title: 'RESEARCH_REF', x: [300, -300], y: [-200, 200], duration: 45, delay: 0, opacity: 0.85 },
+    { id: 'f2', title: 'API_DOCS', x: [-350, 350], y: [150, -150], duration: 55, delay: 10, opacity: 0.85 },
+    { id: 'f3', title: 'MARKET_DATA', x: [200, -200], y: [250, -250], duration: 65, delay: 5, opacity: 0.85 },
+    { id: 'f4', title: 'STRATEGY_V1', x: [-250, 250], y: [-300, 300], duration: 50, delay: 15, opacity: 0.85 },
+  ];
+  
+  useEffect(() => {
+    let mounted = true;
+    const runSequence = async () => {
+      while (mounted) {
+        setStage('prompt');
+        setPromptText("");
+        
+        // Typing effect
+        for (let i = 0; i <= fullPrompt.length; i++) {
+          if (!mounted) break;
+          setPromptText(fullPrompt.slice(0, i));
+          await new Promise(r => setTimeout(r, 60));
+        }
+        
+        if (!mounted) break;
+        await new Promise(r => setTimeout(r, 600));
+        setStage('beam');
+        
+        // We handle transitions via stages
+        await new Promise(r => setTimeout(r, 500)); // wait for beam duration
+        if (!mounted) break;
+        setStage('spawn');
+        await new Promise(r => setTimeout(r, 800));
+        if (!mounted) break;
+        setStage('linked');
+        await new Promise(r => setTimeout(r, 1200));
+        if (!mounted) break;
+        setStage('settled');
+        
+        // Hold for a moment then restart
+        await new Promise(r => setTimeout(r, 5000));
+      }
+    };
+    runSequence();
+    return () => { mounted = false; };
+  }, []);
+
+  const cards = [
+    { id: '1', title: 'YOUTUBE_01', tx: -180, ty: 40 },
+    { id: '2', title: 'YOUTUBE_02', tx: 180, ty: 60 },
+    { id: '3', title: 'YOUTUBE_03', tx: 0, ty: 200 },
+  ];
+
+  return (
+    <div className="relative w-full h-full bg-[#020408] overflow-hidden">
+      {/* Background Grid */}
+      <div className="absolute inset-0 opacity-[0.04]" style={{ 
+        backgroundImage: `radial-gradient(circle at 1px 1px, var(--accent) 1px, transparent 0)`,
+        backgroundSize: '40px 40px' 
+      }} />
+
+      {/* Free Drifting Nodes (Background) */}
+      {freeNodes.map((node) => (
+        <motion.div
+          key={node.id}
+          className="absolute left-1/2 top-1/2"
+          animate={{ x: node.x, y: node.y, rotate: [0, 8, -8, 0] }}
+          transition={{ 
+            x: { duration: node.duration, repeat: Infinity, ease: "linear", delay: -node.delay },
+            y: { duration: node.duration * 1.1, repeat: Infinity, ease: "linear", delay: -node.delay },
+            rotate: { duration: 15, repeat: Infinity, ease: "easeInOut" }
+          }}
+          style={{ opacity: node.opacity }}
+        >
+          <div className="-translate-x-1/2 -translate-y-1/2">
+            <MinimalistThought title={node.title} className="scale-75" />
+          </div>
+        </motion.div>
+      ))}
+
+      {/* Request Area */}
+      <div className="absolute left-1/2 -translate-x-1/2 top-[10%] z-30">
+        <motion.div 
+          className="w-[360px] h-20 glass border border-white/10 rounded-[2rem] flex items-center px-6 relative overflow-hidden shadow-2xl"
+          initial={{ y: 20, opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
+          transition={{ duration: 0.8 }}
+        >
+          <div className="flex flex-col w-full">
+            <span className="text-[8px] font-black tracking-[0.4em] text-white/20 uppercase mb-1">ORACLE AI</span>
+            <div className="flex items-center gap-3">
+              <span className="text-[11px] font-mono text-[var(--accent-secondary)] tracking-wider font-bold">
+                {">"} {promptText}
+                <motion.span 
+                  animate={{ opacity: [1, 0] }}
+                  transition={{ duration: 0.6, repeat: Infinity }}
+                  className="inline-block w-[6px] h-[12px] bg-[var(--accent-secondary)] ml-1 align-middle"
+                />
+              </span>
+            </div>
+          </div>
+        </motion.div>
+      </div>
+
+      {/* Data Beam */}
+      <AnimatePresence>
+        {stage === 'beam' && (
+          <motion.div
+            className="absolute left-1/2 w-[2px] bg-gradient-to-b from-[var(--accent-secondary)] to-white shadow-[0_0_20px_var(--accent-secondary)] z-20"
+            initial={{ top: '23%', height: 0, opacity: 1, translateX: '-50%' }}
+            animate={{ height: '27%', opacity: [1, 1, 0] }}
+            transition={{ duration: 0.5, ease: "circIn" }}
+          />
+        )}
+      </AnimatePresence>
+
+      {/* Interaction Stage */}
+      <motion.div 
+        className="absolute inset-0 flex items-center justify-center pointer-events-none"
+        animate={(stage === 'linked' || stage === 'settled') ? {
+          rotate: [0, 4, -4, 0],
+          x: [0, 40, -40, 0],
+          y: [0, -20, 20, 0]
+        } : {}}
+        transition={{
+          duration: 25,
+          repeat: Infinity,
+          ease: "easeInOut"
+        }}
+      >
+        {/* Weaving Lines */}
+        <svg className="absolute inset-0 w-full h-full overflow-visible">
+          {(stage === 'linked' || stage === 'settled') && [
+            [0, 1], [1, 2], [2, 0]
+          ].map(([i, j]) => (
+            <motion.line
+              key={`${i}-${j}`}
+              initial={{ 
+                pathLength: 0,
+                x1: `calc(50% + ${cards[i].tx}px)`,
+                y1: `calc(50% + ${cards[i].ty}px)`,
+                x2: `calc(50% + ${cards[j].tx}px)`,
+                y2: `calc(50% + ${cards[j].ty}px)`,
+              }}
+      animate={{ 
+        pathLength: 1,
+        x1: `calc(50% + ${cards[i].tx * (stage === 'settled' ? 0.75 : 1)}px)`,
+        y1: `calc(50% + ${cards[i].ty * (stage === 'settled' ? 0.75 : 1)}px)`,
+        x2: `calc(50% + ${cards[j].tx * (stage === 'settled' ? 0.75 : 1)}px)`,
+        y2: `calc(50% + ${cards[j].ty * (stage === 'settled' ? 0.75 : 1)}px)`,
+      }}
+      transition={{ 
+        pathLength: { duration: 1.2, ease: "easeInOut" },
+        x1: { type: "spring", stiffness: 400, damping: 25 },
+        y1: { type: "spring", stiffness: 400, damping: 25 },
+        x2: { type: "spring", stiffness: 400, damping: 25 },
+        y2: { type: "spring", stiffness: 400, damping: 25 },
+      }}
+              stroke="#cbd5e1"
+              strokeOpacity="0.35"
+              strokeWidth="1"
+            />
+          ))}
+        </svg>
+
+        {/* Action Cards */}
+        {(stage === 'spawn' || stage === 'linked' || stage === 'settled') && cards.map((card, i) => (
+          <motion.div
+            key={card.id}
+            className="absolute left-1/2 top-1/2"
+            initial={{ x: 0, y: 0, opacity: 0, scale: 0.5 }}
+            animate={{ 
+              x: stage === 'settled' ? card.tx * 0.75 : card.tx, 
+              y: stage === 'settled' ? card.ty * 0.75 : card.ty, 
+              opacity: 1, 
+              scale: 0.9,
+              rotate: (stage === 'linked' || stage === 'settled') ? [0, i % 2 === 0 ? 3 : -3, 0] : 0
+            }}
+            transition={{
+              x: { 
+                type: "spring", 
+                stiffness: stage === 'settled' ? 400 : 120, 
+                damping: stage === 'settled' ? 25 : 14, 
+                delay: stage === 'spawn' ? i * 0.05 : 0 
+              },
+              y: { 
+                type: "spring", 
+                stiffness: stage === 'settled' ? 400 : 120, 
+                damping: stage === 'settled' ? 25 : 14, 
+                delay: stage === 'spawn' ? i * 0.05 : 0 
+              },
+              opacity: { duration: 0.3 },
+              scale: { type: "spring", stiffness: 200, damping: 20 },
+              rotate: { duration: 6 + i, repeat: Infinity, ease: "easeInOut" }
+            }}
+          >
+            <div className="-translate-x-1/2 -translate-y-1/2">
+              <MinimalistThought 
+                title={card.title} 
+                className="shadow-2xl" 
+                color="var(--accent-secondary)" 
+              />
+            </div>
+          </motion.div>
+        ))}
+      </motion.div>
+    </div>
+  );
+};
+
+const FeatureVisual: React.FC<{ activeFeature: number }> = ({ activeFeature }) => {
+  return (
+    <div className="relative w-full h-full flex items-center justify-center">
+      <AnimatePresence mode="wait">
+        <motion.div
+          key={activeFeature}
+          initial={{ opacity: 0, scale: 0.95, filter: 'blur(20px)' }}
+          animate={{ opacity: 1, scale: 1, filter: 'blur(0px)' }}
+          exit={{ opacity: 0, scale: 1.05, filter: 'blur(20px)' }}
+          transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
+          className="w-full h-full"
+        >
+          {activeFeature === 0 && <AgenticSpaceVisual />}
+          {activeFeature === 1 && <DynamicViewsVisual />}
+          {activeFeature === 2 && <CloudPersistenceVisual />}
+          {activeFeature === 3 && <AgenticWorkspaceVisual />}
+        </motion.div>
+      </AnimatePresence>
+    </div>
+  );
+};
+
 const Homepage: React.FC = () => {
+  const [activeFeature, setActiveFeature] = useState(0);
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [location, setLocation] = useState<{ country: string; currency: string; isLocalPricing: boolean } | null>(null);
@@ -183,19 +950,19 @@ const Homepage: React.FC = () => {
             </p>
 
             <div className="flex flex-col sm:flex-row items-center justify-center gap-5">
-<a 
-                href="https://app.cyberia.tn"
-                className="w-full sm:w-auto px-10 py-5 bg-[var(--accent)] hover:bg-[var(--accent-secondary)] text-white rounded-[1.5rem] text-xs font-black uppercase tracking-[0.3em] transition-all shadow-2xl shadow-[var(--accent)]/30 active:scale-[0.98] flex items-center justify-center gap-3 group"
-              >
-                Access Workspace
-                <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
-              </a>
               <button 
                 onClick={() => scrollToSection('features')}
                 className="w-full sm:w-auto px-10 py-5 glass hover:bg-white/10 rounded-[1.5rem] text-xs font-black uppercase tracking-[0.3em] transition-all flex items-center justify-center gap-3"
               >
                 Explore Features
               </button>
+              <a 
+                href="https://app.cyberia.tn"
+                className="w-full sm:w-auto px-10 py-5 bg-[var(--accent)] hover:bg-[var(--accent-secondary)] text-white rounded-[1.5rem] text-xs font-black uppercase tracking-[0.3em] transition-all shadow-2xl shadow-[var(--accent)]/30 active:scale-[0.98] flex items-center justify-center gap-3 group"
+              >
+                Enter Cyberia
+                <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+              </a>
             </div>
           </motion.div>
         </div>
@@ -233,54 +1000,62 @@ const Homepage: React.FC = () => {
             </div>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-            {[
-              {
-                icon: MousePointer2,
-                title: 'Spatial Flux',
-                description: 'Organize your mind in an infinite workspace where thoughts have mass and physical inertia.'
-              },
-              {
-                icon: Layout,
-                title: 'Dynamic Collections',
-                description: 'Link related thoughts into physical stacks. Morph space into Kanban or Timelines instantly.'
-              },
-              {
-                icon: Database,
-                title: 'Cloud Persistence',
-                description: 'Supabase-powered storage for research assets, PDFs, and media synced across all devices.'
-              },
-              {
-                icon: Sparkles,
-                title: 'Agentic Workspace',
-                description: 'Deploy advanced agents to research the web and automate your workspace connections.'
-              }
-            ].map((feature, index) => (
-              <motion.div
-                key={feature.title}
-                initial={{ opacity: 0, y: 30 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                transition={{ 
-                  duration: 0.8, 
-                  delay: index * 0.1,
-                  ease: [0.21, 0.47, 0.32, 0.98]
-                }}
-                viewport={{ once: true, margin: "-50px" }}
-className="glass p-8 rounded-[2.5rem] border-white/5 hover:border-[var(--accent)]/40 transition-all duration-500 group relative overflow-hidden hover:-translate-y-2"
-              >
-                <div className="absolute inset-0 bg-gradient-to-br from-[var(--accent)]/10 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-700" />
-                
-                <div className="relative z-10">
-                  <div className="w-14 h-14 rounded-2xl bg-[var(--accent)]/10 flex items-center justify-center text-[var(--accent-secondary)] mb-8 group-hover:scale-110 group-hover:bg-[var(--accent)]/20 transition-all duration-500 shadow-lg shadow-[var(--accent)]/0 group-hover:shadow-[var(--accent)]/10">
-                    <feature.icon className="w-7 h-7" />
+          <div className="flex flex-col lg:flex-row lg:gap-12 items-start">
+            {/* Left Column: Feature Cards */}
+            <div className="w-full lg:w-1/2 space-y-4">
+              {FEATURES.map((feature, index) => (
+                <motion.div
+                  key={feature.id}
+                  onMouseEnter={() => setActiveFeature(index)}
+                  className={`relative p-8 rounded-[2.5rem] transition-all duration-500 cursor-pointer group overflow-hidden ${
+                    activeFeature === index 
+                      ? 'glass border-[var(--accent)]/30 bg-[var(--accent)]/5 shadow-2xl shadow-[var(--accent)]/10' 
+                      : 'border border-transparent hover:bg-white/5'
+                  }`}
+                >
+                  <div className="relative z-10 flex items-start gap-6">
+                    <div className={`w-14 h-14 rounded-2xl flex items-center justify-center transition-all duration-500 ${
+                      activeFeature === index 
+                        ? 'bg-[var(--accent)] text-white shadow-lg shadow-[var(--accent)]/40' 
+                        : 'bg-white/5 text-slate-500 group-hover:text-slate-300'
+                    }`}>
+                      <feature.icon className="w-7 h-7" />
+                    </div>
+                    
+                    <div className="flex-1">
+                      <h3 className={`text-[14px] font-black uppercase tracking-[0.2em] mb-2 transition-colors ${
+                        activeFeature === index ? 'text-white' : 'text-slate-400'
+                      }`}>
+                        {feature.title}
+                      </h3>
+                      <p className={`text-[11px] leading-relaxed uppercase font-bold tracking-widest transition-all duration-500 ${
+                        activeFeature === index ? 'text-slate-300 opacity-100' : 'text-slate-600 opacity-0 h-0 overflow-hidden group-hover:h-auto group-hover:opacity-60'
+                      }`}>
+                        {feature.description}
+                      </p>
+                    </div>
                   </div>
-                  <h3 className="text-[14px] font-black uppercase tracking-[0.2em] text-white mb-4 group-hover:text-[var(--accent-secondary)] transition-colors">{feature.title}</h3>
-                  <p className="text-[11px] text-slate-500 leading-relaxed uppercase font-bold tracking-widest opacity-80 group-hover:opacity-100 transition-opacity">{feature.description}</p>
-                </div>
 
-                <div className="absolute bottom-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-[var(--accent)]/20 to-transparent translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-1000" />
-              </motion.div>
-            ))}
+                  {activeFeature === index && (
+                    <motion.div 
+                      layoutId="active-pill"
+                      className="absolute inset-0 bg-gradient-to-r from-[var(--accent)]/5 to-transparent pointer-events-none"
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      transition={{ duration: 0.5 }}
+                    />
+                  )}
+                </motion.div>
+              ))}
+            </div>
+
+            {/* Right Column: Visual Stage */}
+            <div className="hidden lg:block lg:w-1/2 sticky top-32">
+              <div className="glass aspect-square lg:aspect-auto lg:h-[600px] rounded-[3rem] border-white/5 overflow-hidden relative group">
+                <div className="absolute inset-0 bg-gradient-to-br from-[var(--accent)]/10 via-transparent to-transparent opacity-50" />
+                <FeatureVisual activeFeature={activeFeature} />
+              </div>
+            </div>
           </div>
         </div>
       </section>
@@ -370,8 +1145,8 @@ className="glass p-10 rounded-[3rem] border-[var(--accent)]/30 bg-[var(--accent)
                 <PricingFeature text="Shared Team Spaces (Coming Soon)" pro />
               </div>
 
-              <a href="https://app.cyberia.tn" className="w-full py-5 bg-[var(--accent)] hover:bg-[var(--accent-secondary)] text-white rounded-2xl text-[10px] font-black uppercase tracking-[0.3em] transition-all text-center shadow-xl shadow-[var(--accent)]/20 active:scale-95">
-                Unlock in App
+              <a href="https://app.cyberia.tn/pricing" className="w-full py-5 bg-[var(--accent)] hover:bg-[var(--accent-secondary)] text-white rounded-2xl text-[10px] font-black uppercase tracking-[0.3em] transition-all text-center shadow-xl shadow-[var(--accent)]/20 active:scale-95">
+                Go Pro
               </a>
 
 <div className="mt-6 flex items-center justify-center gap-3 opacity-60">
@@ -586,7 +1361,7 @@ const PricingFeature: React.FC<{ text: string; pro?: boolean }> = ({ text, pro }
     <div className={`w-5 h-5 rounded-full flex items-center justify-center border ${pro ? 'bg-[var(--accent)]/20 border-[var(--accent)]/30 text-[var(--accent-secondary)]' : 'bg-white/5 border-white/10 text-slate-500'}`}>
       <Check className="w-3 h-3" />
     </div>
-    <span className={`text-[10px] font-bold uppercase tracking-widest ${pro ? 'text-slate-300' : 'text-slate-500'}`}>{text}</span>
+    <span className={`text-[13px] font-bold uppercase tracking-widest ${pro ? 'text-slate-300' : 'text-slate-500'}`}>{text}</span>
   </div>
 );
 
