@@ -23,8 +23,8 @@ const FEATURES = [
   {
     id: 'cloud',
     icon: Database,
-    title: 'Cloud Persistence',
-    description: 'File storage for research assets, PDFs, and media synced across all devices.'
+    title: 'Cloud Storage',
+    description: 'Cloud storage for research assets, PDFs, and media synced across all devices.'
   },
   {
     id: 'agentic',
