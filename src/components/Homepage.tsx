@@ -1,4 +1,4 @@
-import React, { lazy, Suspense, useState, useEffect, useMemo } from 'react';
+import React, { lazy, Suspense, useState, useEffect, useMemo, useRef } from 'react';
 
 import { motion, AnimatePresence, useMotionValue, useSpring, useTransform, animate } from 'framer-motion';
 
@@ -45,7 +45,7 @@ const MinimalistThought: React.FC<{
     style={style}
   >
     <div className="flex items-center justify-between">
-      <span className="text-[9px] font-black uppercase tracking-[0.15em] text-white/40">
+      <span className="text-[11px] font-black uppercase tracking-[0.15em] text-white/40">
         {title}
       </span>
       <div 
@@ -255,7 +255,7 @@ const AgenticSpaceVisual = () => {
   }, [activeSpaceIdx, clusterNodes, cursorOpacity, cursorScale, cursorX, cursorY, node1TargetX, node1TargetY]);
 
   return (
-    <div className="relative w-full h-full flex items-center justify-center overflow-hidden bg-[#020408]">
+    <div className="relative w-full h-full flex items-center justify-center overflow-hidden bg-transparent">
       <div className="absolute inset-0 opacity-[0.05]" style={{ 
         backgroundImage: `radial-gradient(circle at 1px 1px, var(--accent) 0.5px, transparent 0)`,
         backgroundSize: '40px 40px',
@@ -403,7 +403,7 @@ const DynamicViewsVisual = () => {
   };
 
   return (
-    <div className="relative w-full h-full flex items-center justify-center bg-[#020408] overflow-hidden">
+    <div className="relative w-full h-full flex items-center justify-center bg-transparent overflow-hidden">
       <div className="absolute inset-0 opacity-[0.03]" style={{ 
         backgroundImage: `radial-gradient(circle at 1px 1px, var(--accent) 1px, transparent 0)`,
         backgroundSize: '40px 40px' 
@@ -590,7 +590,7 @@ const CloudPersistenceVisual = () => {
   ];
 
   return (
-    <div className="relative w-full h-full flex items-center justify-center bg-[#020408] overflow-hidden">
+    <div className="relative w-full h-full flex items-center justify-center bg-transparent overflow-hidden">
       {/* Background Grid */}
       <div className="absolute inset-0 opacity-[0.03]" style={{ 
         backgroundImage: `radial-gradient(circle at 1px 1px, var(--accent) 1px, transparent 0)`,
@@ -821,7 +821,7 @@ const AgenticWorkspaceVisual = () => {
   ];
 
   return (
-    <div className="relative w-full h-full bg-[#020408] overflow-hidden">
+    <div className="relative w-full h-full bg-transparent overflow-hidden">
       {/* Background Grid */}
       <div className="absolute inset-0 opacity-[0.04]" style={{ 
         backgroundImage: `radial-gradient(circle at 1px 1px, var(--accent) 1px, transparent 0)`,
@@ -977,9 +977,40 @@ const AgenticWorkspaceVisual = () => {
   );
 };
 
+const ResponsiveStage = ({ children }: { children: React.ReactNode }) => {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [scale, setScale] = useState(1);
+
+  useEffect(() => {
+    const updateScale = () => {
+      if (containerRef.current) {
+        const width = containerRef.current.offsetWidth;
+        const height = containerRef.current.offsetHeight;
+        const designSize = 600;
+        const newScale = Math.min(width, height) / designSize;
+        setScale(Math.max(0.4, newScale)); // Minimum scale of 0.4 to prevent disappearance
+      }
+    };
+    updateScale();
+    window.addEventListener('resize', updateScale);
+    return () => window.removeEventListener('resize', updateScale);
+  }, []);
+
+  return (
+    <div ref={containerRef} className="w-full h-full relative flex items-center justify-center overflow-hidden">
+      <motion.div 
+        style={{ scale, width: 600, height: 600 }} 
+        className="relative flex-shrink-0 origin-center will-change-transform"
+      >
+        {children}
+      </motion.div>
+    </div>
+  );
+};
+
 const FeatureVisual: React.FC<{ activeFeature: number }> = ({ activeFeature }) => {
   return (
-    <div className="relative w-full h-full flex items-center justify-center">
+    <ResponsiveStage>
       <AnimatePresence mode="wait">
         <motion.div
           key={activeFeature}
@@ -995,9 +1026,10 @@ const FeatureVisual: React.FC<{ activeFeature: number }> = ({ activeFeature }) =
           {activeFeature === 3 && <AgenticWorkspaceVisual />}
         </motion.div>
       </AnimatePresence>
-    </div>
+    </ResponsiveStage>
   );
 };
+
 
 const Homepage: React.FC = () => {
   const [activeFeature, setActiveFeature] = useState(0);
@@ -1294,7 +1326,7 @@ const Homepage: React.FC = () => {
 
             {/* Right Column: Visual Stage */}
             <div className="hidden lg:block lg:w-1/2 sticky top-32">
-              <div className="glass aspect-square lg:aspect-auto lg:h-[600px] rounded-[3rem] border-white/5 overflow-hidden relative group">
+              <div className="bg-[#020408] aspect-square lg:aspect-auto lg:h-[600px] rounded-[3rem] border border-white/10 overflow-hidden relative group isolate">
                 <div className="absolute inset-0 bg-gradient-to-br from-[var(--accent)]/10 via-transparent to-transparent opacity-50" />
                 <FeatureVisual activeFeature={activeFeature} />
               </div>
