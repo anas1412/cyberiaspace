@@ -1,6 +1,6 @@
 import React, { lazy, Suspense, useState, useEffect, useMemo } from 'react';
 
-import { motion, AnimatePresence, useMotionValue, useSpring, useTransform, animate, MotionValue } from 'framer-motion';
+import { motion, AnimatePresence, useMotionValue, useSpring, useTransform, animate } from 'framer-motion';
 
 import { MousePointer2, Layout, Database, ArrowRight, Check, Rocket, Menu, X, Send, Loader2, CheckCircle, Shield, Zap } from 'lucide-react';
 import { PLAN_CONFIG } from '../constants';
@@ -552,92 +552,215 @@ const DynamicViewsVisual = () => {
 };
 
 const CloudPersistenceVisual = () => {
+  const [phase, setPhase] = useState<'upload' | 'pulse' | 'distribute' | 'success' | 'idle'>('idle');
+
+  useEffect(() => {
+    let mounted = true;
+    const sequence = async () => {
+      while (mounted) {
+        setPhase('upload');
+        await new Promise(r => setTimeout(r, 2200));
+        if (!mounted) break;
+        
+        setPhase('pulse');
+        await new Promise(r => setTimeout(r, 800));
+        if (!mounted) break;
+
+        setPhase('distribute');
+        await new Promise(r => setTimeout(r, 1500));
+        if (!mounted) break;
+
+        setPhase('success');
+        await new Promise(r => setTimeout(r, 1500));
+        if (!mounted) break;
+
+        setPhase('idle');
+        await new Promise(r => setTimeout(r, 1000));
+      }
+    };
+    sequence();
+    return () => { mounted = false; };
+  }, []);
+
+  const devices = [
+    { id: 'desktop', label: 'Desktop', x: -240, y: 0, type: 'monitor' },
+    { id: 'mobile', label: 'Mobile', x: 240, y: 0, type: 'phone' },
+    { id: 'laptop-top', label: 'Laptop', x: 0, y: -180, type: 'laptop' },
+    { id: 'laptop-bottom', label: 'Laptop', x: 0, y: 180, type: 'laptop' },
+  ];
+
   return (
     <div className="relative w-full h-full flex items-center justify-center bg-[#020408] overflow-hidden">
-      {/* Subtle Background Grid */}
-      <div className="absolute inset-0 opacity-[0.02]" style={{ 
+      {/* Background Grid */}
+      <div className="absolute inset-0 opacity-[0.03]" style={{ 
         backgroundImage: `radial-gradient(circle at 1px 1px, var(--accent) 1px, transparent 0)`,
-        backgroundSize: '32px 32px' 
+        backgroundSize: '40px 40px' 
       }} />
 
-      {/* Animated Card Transfer */}
-      <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-30">
-        {/* Send: Local to Cloud */}
-        <motion.div
-          initial={{ x: -280, opacity: 0 }}
-          animate={{ 
-            x: [-280, -220, 220, 280], 
-            opacity: [0, 1, 1, 0]
-          }}
-          transition={{ 
-            duration: 6, 
-            repeat: Infinity, 
-            times: [0, 0.15, 0.85, 1],
-            ease: "easeInOut",
-            delay: 0
-          }}
-          style={{ y: -30 }}
-        >
-          <MinimalistThought title="LOCAL_DATA" className="scale-90 shadow-2xl" />
-        </motion.div>
+      {/* 1. Cloud Hub (Center) */}
+      <div className="relative z-20">
+        <div className="relative flex items-center justify-center">
+          {/* Rotating Sync Ring */}
+          <motion.div
+            animate={{ rotate: 360 }}
+            transition={{ duration: 15, repeat: Infinity, ease: "linear" }}
+            className="absolute w-40 h-40 opacity-20"
+          >
+            <svg viewBox="0 0 100 100" className="w-full h-full">
+              <circle 
+                cx="50" cy="50" r="48" 
+                stroke="white" strokeWidth="0.5" fill="none" 
+                strokeDasharray="4 6" 
+              />
+            </svg>
+          </motion.div>
 
-        {/* Receive: Cloud to Local */}
-        <motion.div
-          initial={{ x: 280, opacity: 0 }}
-          animate={{ 
-            x: [280, 220, -220, -280], 
-            opacity: [0, 1, 1, 0]
-          }}
-          transition={{ 
-            duration: 6, 
-            repeat: Infinity, 
-            times: [0, 0.15, 0.85, 1],
-            ease: "easeInOut",
-            delay: 3
-          }}
-          style={{ y: 30 }}
-        >
-          <MinimalistThought title="CLOUD_DATA" color="var(--accent-secondary)" className="scale-90 shadow-2xl" />
-        </motion.div>
-      </div>
-
-      <div className="relative w-full h-full flex items-center justify-around px-12 py-12">
-        {/* Local Storage */}
-        <div className="flex flex-col items-center gap-6">
-          <span className="text-[10px] font-black tracking-[0.3em] text-white/30 uppercase">LOCAL_STORAGE</span>
-          <div className="w-[220px] h-[400px] rounded-[2.5rem] border border-white/5 glass bg-white/[0.01] p-8 flex flex-col gap-6 relative overflow-hidden group">
-            {/* Subtle Database Grid Background */}
-            <div className="absolute inset-0 opacity-[0.02] pointer-events-none" style={{ 
-              backgroundImage: 'linear-gradient(to right, white 1px, transparent 1px), linear-gradient(to bottom, white 1px, transparent 1px)',
-              backgroundSize: '24px 24px'
-            }} />
+          {/* Core Node */}
+          <div className="w-[110px] h-[110px] rounded-full border border-white/10 glass bg-white/[0.02] flex items-center justify-center relative group shadow-2xl">
+            <div className="absolute inset-0 bg-[var(--accent)]/5 blur-3xl rounded-full" />
+            <Database className="w-10 h-10 text-white/40 group-hover:text-[var(--accent)] transition-colors duration-500" />
             
-            <div className="space-y-4 opacity-10 mt-auto">
-              <div className="w-full h-12 rounded-2xl bg-white/5 border border-white/5" />
-              <div className="w-full h-12 rounded-2xl bg-white/5 border border-white/5" />
-              <div className="w-full h-12 rounded-2xl bg-white/5 border border-white/5" />
-            </div>
+            <AnimatePresence>
+              {phase === 'pulse' && (
+                <motion.div 
+                  initial={{ scale: 0.8, opacity: 0 }}
+                  animate={{ scale: 2.5, opacity: [0, 1, 0] }}
+                  exit={{ opacity: 0 }}
+                  className="absolute inset-0 bg-[radial-gradient(circle,var(--accent)_0%,transparent_70%)] opacity-40 rounded-full blur-xl"
+                  transition={{ duration: 0.8, ease: "easeOut" }}
+                />
+              )}
+            </AnimatePresence>
           </div>
         </div>
-
-        {/* Cloud Sync */}
-        <div className="flex flex-col items-center gap-6">
-          <span className="text-[10px] font-black tracking-[0.3em] text-white/30 uppercase">CLOUD_SYNC</span>
-          <div className="w-[220px] h-[400px] rounded-[2.5rem] border border-white/5 glass bg-white/[0.01] p-8 flex flex-col gap-6 relative overflow-hidden">
-            {/* Subtle Database Grid Background */}
-            <div className="absolute inset-0 opacity-[0.02] pointer-events-none" style={{ 
-              backgroundImage: 'linear-gradient(to right, white 1px, transparent 1px), linear-gradient(to bottom, white 1px, transparent 1px)',
-              backgroundSize: '24px 24px'
-            }} />
-
-            <div className="space-y-4 opacity-10 mt-auto">
-              <div className="w-full h-12 rounded-2xl bg-white/5 border border-white/5" />
-              <div className="w-full h-12 rounded-2xl bg-white/5 border border-white/5" />
-              <div className="w-full h-12 rounded-2xl bg-white/5 border border-white/5" />
-            </div>
-          </div>
+        <div className="absolute top-[120%] left-1/2 -translate-x-1/2">
+          <span className="text-[8px] font-black tracking-[0.4em] text-white/30 uppercase whitespace-nowrap">Cloud Storage</span>
         </div>
       </div>
+
+      {/* 2. Devices */}
+      {devices.map((device) => (
+        <div 
+          key={device.id} 
+          className="absolute left-1/2 top-1/2" 
+          style={{ transform: `translate(calc(-50% + ${device.x}px), calc(-50% + ${device.y}px))` }}
+        >
+          <div className="flex flex-col items-center gap-4">
+            <motion.div 
+              className="relative"
+              animate={phase === 'success' ? { 
+                scale: [1, 1.05, 1],
+                filter: ['drop-shadow(0 0 0px transparent)', 'drop-shadow(0 0 15px #22c55e44)', 'drop-shadow(0 0 0px transparent)']
+              } : {}}
+              transition={{ duration: 0.6 }}
+            >
+              {device.type === 'monitor' && (
+                <div className="flex flex-col items-center">
+                  <div className="w-[100px] h-[75px] rounded-lg border border-white/10 glass bg-white/[0.01] p-1.5 relative shadow-xl overflow-hidden">
+                    <div className="w-full h-full rounded-md bg-black/40 border border-white/5" />
+                  </div>
+                  <div className="w-4 h-3 bg-white/5 border-x border-white/10 opacity-50" />
+                  <div className="w-10 h-0.5 bg-white/10 rounded-full opacity-50" />
+                </div>
+              )}
+              {device.type === 'phone' && (
+                <div className="w-[50px] h-[90px] rounded-xl border border-white/15 glass bg-white/[0.01] p-1 relative shadow-xl overflow-hidden">
+                  <div className="absolute top-1 left-1/2 -translate-x-1/2 w-4 h-1 rounded-full bg-black/60 border border-white/5" />
+                  <div className="w-full h-full rounded-lg bg-black/40 border border-white/5" />
+                </div>
+              )}
+              {device.type === 'laptop' && (
+                <div className="flex flex-col items-center">
+                  <div className="w-[90px] h-[60px] rounded-t-lg border border-white/10 glass bg-white/[0.01] p-1.5 relative shadow-xl overflow-hidden">
+                    <div className="w-full h-full rounded-md bg-black/40 border border-white/5" />
+                  </div>
+                  <div className="w-[105px] h-1.5 bg-white/10 rounded-b-lg border-x border-b border-white/10" />
+                </div>
+              )}
+            </motion.div>
+            <span className="text-[7px] font-black tracking-[0.3em] text-white/20 uppercase">{device.label}</span>
+          </div>
+        </div>
+      ))}
+
+      {/* 3. The Sync Sequence (Cards) */}
+      <AnimatePresence>
+        {/* Phase 1: Upload (Desktop -> Hub) */}
+        {phase === 'upload' && (
+          <motion.div
+            className="absolute left-1/2 top-1/2 z-30"
+            initial={{ x: -240, y: 0, opacity: 0, scale: 0.7 }}
+            animate={{ 
+              x: [ -240, -240, 0, 0 ], 
+              y: [ 0, 0, 0, 0 ],
+              opacity: [ 0, 1, 1, 0 ],
+              scale: [ 0.7, 0.9, 0.9, 0 ],
+            }}
+            transition={{ 
+              duration: 2.2,
+              times: [0, 0.15, 0.85, 1],
+              ease: "easeInOut"
+            }}
+          >
+            <div className="-translate-x-1/2 -translate-y-1/2 relative">
+              <MinimalistThought title="UPLOAD_SYNC" className="shadow-2xl" />
+              {/* Overlay dot that animates color */}
+              <motion.div 
+                className="absolute top-[15px] right-[15px] w-1 h-1 rounded-full z-10"
+                animate={{ backgroundColor: ['rgba(255,255,255,0.2)', 'rgba(255,255,255,0.2)', 'var(--accent)', 'var(--accent)'] }}
+                transition={{ duration: 2.2, times: [0, 0.45, 0.55, 1] }}
+              />
+            </div>
+          </motion.div>
+        )}
+
+        {/* Phase 4: Distribution (Hub -> All Devices) */}
+        {phase === 'distribute' && devices.map((device, i) => (
+          <motion.div
+            key={`dist-${device.id}`}
+            className="absolute left-1/2 top-1/2 z-30"
+            initial={{ x: 0, y: 0, opacity: 0, scale: 0 }}
+            animate={{ 
+              x: [ 0, device.x ], 
+              y: [ 0, device.y ],
+              opacity: [ 0, 1, 1 ],
+              scale: [ 0, 0.7, 0.7 ],
+            }}
+            transition={{ 
+              duration: 1.2,
+              delay: i * 0.05,
+              ease: [0.16, 1, 0.3, 1]
+            }}
+          >
+            <div className="-translate-x-1/2 -translate-y-1/2 relative">
+              <MinimalistThought title="SYNCED" className="shadow-xl" />
+              <div 
+                className="absolute top-[14px] right-[14px] w-1.5 h-1.5 rounded-full"
+                style={{ backgroundColor: '#22c55e' }}
+              />
+            </div>
+          </motion.div>
+        ))}
+        
+        {/* Persistent Synced Cards during success phase */}
+        {phase === 'success' && devices.map((device) => (
+          <motion.div
+            key={`success-${device.id}`}
+            className="absolute left-1/2 top-1/2 z-30"
+            initial={{ x: device.x, y: device.y, opacity: 1, scale: 0.7 }}
+            animate={{ opacity: 0, scale: 0.6 }}
+            transition={{ duration: 0.5, delay: 0.8 }}
+          >
+            <div className="-translate-x-1/2 -translate-y-1/2 relative">
+              <MinimalistThought title="SYNCED" className="shadow-xl" />
+              <div 
+                className="absolute top-[14px] right-[14px] w-1.5 h-1.5 rounded-full"
+                style={{ backgroundColor: '#22c55e' }}
+              />
+            </div>
+          </motion.div>
+        ))}
+      </AnimatePresence>
     </div>
   );
 };
