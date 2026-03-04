@@ -1,5 +1,7 @@
-import React, { lazy, Suspense, useState, useEffect } from 'react';
-import { motion, AnimatePresence, useMotionValue, useSpring, useTransform, animate } from 'framer-motion';
+import React, { lazy, Suspense, useState, useEffect, useMemo } from 'react';
+
+import { motion, AnimatePresence, useMotionValue, useSpring, useTransform, animate, MotionValue } from 'framer-motion';
+
 import { MousePointer2, Layout, Database, ArrowRight, Check, Rocket, Menu, X, Send, Loader2, CheckCircle, Shield, Zap } from 'lucide-react';
 import { PLAN_CONFIG } from '../constants';
 
@@ -66,19 +68,71 @@ const MinimalistThought: React.FC<{
   </div>
 );
 
-const AgenticSpaceVisual = () => {
-  const [isGrabbing, setIsGrabbing] = useState(false);
-  const freeNodes = [
-    { id: 4, title: 'INTERFACE_V3', x: [220, -260], y: [-240, 160], duration: 34, delay: 1 },
-    { id: 5, title: 'USER_FLOW', x: [-200, 280], y: [60, 240], duration: 45, delay: 5 },
-    { id: 6, title: 'DATABASE_01', x: [180, -280], y: [-120, 280], duration: 40, delay: 3 },
-  ];
+const SPACES_DATA = [
+  {
+    name: 'Engineering',
+    cluster: ['RESEARCH_NOTES', 'SYSTEM_ARCH', 'CORE_LOGIC'],
+    free: ['INTERFACE_V3', 'USER_FLOW', 'DATABASE_01']
+  },
+  {
+    name: 'Marketing',
+    cluster: ['AD_CAMPAIGN', 'ASSET_PACK', 'COPY_DECK'],
+    free: ['FB_ADS', 'EMAIL_FLOW', 'SEO_LOG']
+  },
+  {
+    name: 'Personal',
+    cluster: ['TRAVEL_PLAN', 'GIFT_IDEAS', 'GROCERIES'],
+    free: ['FLIGHT_01', 'HOTEL_CONF', 'PHOTO_DUMP']
+  },
+];
 
-  const clusterNodes = [
-    { id: 1, title: 'RESEARCH_NOTES', ox: -80, oy: -60 },
-    { id: 2, title: 'SYSTEM_ARCH', ox: 80, oy: -40 },
-    { id: 3, title: 'CORE_LOGIC', ox: 0, oy: 80 },
-  ];
+interface ThoughtNodeData {
+  id: number;
+  title: string;
+  x: any;
+  y: any;
+}
+
+const ThoughtConnection = ({ nodeA, nodeB }: { nodeA: ThoughtNodeData; nodeB: ThoughtNodeData }) => {
+  const x1 = useTransform(nodeA.x, (v: number) => `calc(50% + ${v}px)`);
+  const y1 = useTransform(nodeA.y, (v: number) => `calc(50% + ${v}px)`);
+  const x2 = useTransform(nodeB.x, (v: number) => `calc(50% + ${v}px)`);
+  const y2 = useTransform(nodeB.y, (v: number) => `calc(50% + ${v}px)`);
+
+  return (
+    <motion.line
+      x1={x1}
+      y1={y1}
+      x2={x2}
+      y2={y2}
+      stroke="#cbd5e1"
+      strokeWidth="1.2"
+      strokeLinecap="round"
+      strokeDasharray="6 12"
+      strokeOpacity={0.35}
+      animate={{ strokeDashoffset: [0, -36] }}
+      transition={{ duration: 6, repeat: Infinity, ease: "linear" }}
+    />
+  );
+};
+
+const AgenticSpaceVisual = () => {
+  const [activeSpaceIdx, setActiveSpaceIdx] = useState(0);
+  const [isGrabbing, setIsGrabbing] = useState(false);
+  
+  const currentSpace = SPACES_DATA[activeSpaceIdx];
+
+  const freeNodes = useMemo(() => [
+    { id: 4, title: currentSpace.free[0], x: [220, -260], y: [-240, 160], duration: 34, delay: 1 },
+    { id: 5, title: currentSpace.free[1], x: [-200, 280], y: [60, 240], duration: 45, delay: 5 },
+    { id: 6, title: currentSpace.free[2], x: [180, -280], y: [-120, 280], duration: 40, delay: 3 },
+  ], [currentSpace]);
+
+  const clusterNodes = useMemo(() => [
+    { id: 1, title: currentSpace.cluster[0], ox: -80, oy: -60 },
+    { id: 2, title: currentSpace.cluster[1], ox: 80, oy: -40 },
+    { id: 3, title: currentSpace.cluster[2], ox: 0, oy: 80 },
+  ], [currentSpace]);
 
   // Cursor Motion Values
   const cursorX = useMotionValue(-300);
@@ -95,21 +149,45 @@ const AgenticSpaceVisual = () => {
 
   // Followers (Spring towards Leader + relative offset)
   // They are "pulled" with inertia
-  const node2X = useSpring(useTransform(node1X, x => x + (clusterNodes[1].ox - clusterNodes[0].ox)), { stiffness: 35, damping: 15, mass: 2.2 });
-  const node2Y = useSpring(useTransform(node1Y, y => y + (clusterNodes[1].oy - clusterNodes[0].oy)), { stiffness: 35, damping: 15, mass: 2.2 });
+  const node2X = useSpring(useTransform(node1X, (x: any) => x + (clusterNodes[1].ox - clusterNodes[0].ox)), { stiffness: 35, damping: 15, mass: 2.2 });
+  const node2Y = useSpring(useTransform(node1Y, (y: any) => y + (clusterNodes[1].oy - clusterNodes[0].oy)), { stiffness: 35, damping: 15, mass: 2.2 });
 
-  const node3X = useSpring(useTransform(node1X, x => x + (clusterNodes[2].ox - clusterNodes[0].ox)), { stiffness: 28, damping: 12, mass: 3 });
-  const node3Y = useSpring(useTransform(node1Y, y => y + (clusterNodes[2].oy - clusterNodes[0].oy)), { stiffness: 28, damping: 12, mass: 3 });
+  const node3X = useSpring(useTransform(node1X, (x: any) => x + (clusterNodes[2].ox - clusterNodes[0].ox)), { stiffness: 28, damping: 12, mass: 3 });
+  const node3Y = useSpring(useTransform(node1Y, (y: any) => y + (clusterNodes[2].oy - clusterNodes[0].oy)), { stiffness: 28, damping: 12, mass: 3 });
 
-  const nodes = [
-    { id: 1, title: 'RESEARCH_NOTES', x: node1X, y: node1Y },
-    { id: 2, title: 'SYSTEM_ARCH', x: node2X, y: node2Y },
-    { id: 3, title: 'CORE_LOGIC', x: node3X, y: node3Y },
-  ];
+  const nodes = useMemo(() => [
+    { id: 1, title: currentSpace.cluster[0], x: node1X, y: node1Y },
+    { id: 2, title: currentSpace.cluster[1], x: node2X, y: node2Y },
+    { id: 3, title: currentSpace.cluster[2], x: node3X, y: node3Y },
+  ], [currentSpace.cluster, node1X, node1Y, node2X, node2Y, node3X, node3Y]);
 
   useEffect(() => {
+    let mounted = true;
+    let unsubscribeX: (() => void) | null = null;
+    let unsubscribeY: (() => void) | null = null;
+
+    const cleanupSubscriptions = () => {
+      if (unsubscribeX) { unsubscribeX(); unsubscribeX = null; }
+      if (unsubscribeY) { unsubscribeY(); unsubscribeY = null; }
+    };
+
     const runAnimation = async () => {
-      while (true) {
+      // Immediate reset for a clean start when space changes
+      cursorOpacity.stop();
+      cursorX.stop();
+      cursorY.stop();
+      node1TargetX.stop();
+      node1TargetY.stop();
+      cursorScale.stop();
+
+      cursorOpacity.set(0);
+      cursorX.set(-300);
+      cursorY.set(-200);
+      node1TargetX.set(clusterNodes[0].ox);
+      node1TargetY.set(clusterNodes[0].oy);
+      setIsGrabbing(false);
+
+      while (mounted) {
         // Init: Cursor appears
         animate(cursorOpacity, 1, { duration: 0.8 });
         
@@ -119,13 +197,16 @@ const AgenticSpaceVisual = () => {
           animate(cursorY, clusterNodes[0].oy, { duration: 2, ease: "easeInOut" })
         ]);
         
+        if (!mounted) break;
+
         // 2. Grab (Pulse effect)
         await animate(cursorScale, 1.3, { duration: 0.3, type: "spring" });
         setIsGrabbing(true);
         
         // Bind leader target to cursor
-        const stopX = cursorX.on("change", v => node1TargetX.set(v));
-        const stopY = cursorY.on("change", v => node1TargetY.set(v));
+        cleanupSubscriptions();
+        unsubscribeX = cursorX.on("change", v => node1TargetX.set(v));
+        unsubscribeY = cursorY.on("change", v => node1TargetY.set(v));
 
         // 3. Drag smoothly across the stage
         await Promise.all([
@@ -133,11 +214,12 @@ const AgenticSpaceVisual = () => {
           animate(cursorY, 40, { duration: 3.5, ease: [0.33, 1, 0.68, 1] })
         ]);
         
+        if (!mounted) break;
+
         await new Promise(r => setTimeout(r, 1000));
 
         // 4. Release
-        stopX();
-        stopY();
+        cleanupSubscriptions();
         setIsGrabbing(false);
         await animate(cursorScale, 1, { duration: 0.4 });
         
@@ -152,11 +234,25 @@ const AgenticSpaceVisual = () => {
           animate(cursorOpacity, 0, { duration: 2 })
         ]);
 
+        if (!mounted) break;
         await new Promise(r => setTimeout(r, 2000));
       }
     };
+
     runAnimation();
-  }, []);
+
+    return () => { 
+      mounted = false;
+      cleanupSubscriptions();
+      cursorX.stop();
+      cursorY.stop();
+      cursorScale.stop();
+      cursorOpacity.stop();
+      node1TargetX.stop();
+      node1TargetY.stop();
+      setIsGrabbing(false);
+    };
+  }, [activeSpaceIdx, clusterNodes, cursorOpacity, cursorScale, cursorX, cursorY, node1TargetX, node1TargetY]);
 
   return (
     <div className="relative w-full h-full flex items-center justify-center overflow-hidden bg-[#020408]">
@@ -166,103 +262,111 @@ const AgenticSpaceVisual = () => {
         maskImage: 'radial-gradient(circle at center, black, transparent 80%)'
       }} />
 
-      {/* Free Drifting Nodes (Background) */}
-      {freeNodes.map((node) => (
+      <AnimatePresence mode="wait">
         <motion.div
-          key={node.id}
-          className="absolute"
-          animate={{ x: node.x, y: node.y, rotate: [0, 8, -8, 0] }}
-          transition={{ 
-            x: { duration: node.duration, repeat: Infinity, ease: "linear", delay: -node.delay },
-            y: { duration: node.duration * 0.9, repeat: Infinity, ease: "linear", delay: -node.delay },
-            rotate: { duration: 12, repeat: Infinity, ease: "easeInOut" }
-          }}
+          key={activeSpaceIdx}
+          initial={{ opacity: 0, scale: 0.95 }}
+          animate={{ opacity: 1, scale: 1 }}
+          exit={{ opacity: 0, scale: 0.95 }}
+          transition={{ duration: 0.5, ease: "easeInOut" }}
+          className="absolute inset-0"
         >
-          <MinimalistThought title={node.title} className="scale-90 opacity-40" />
-        </motion.div>
-      ))}
-
-      {/* Interacting Cluster */}
-      <div className="absolute inset-0 pointer-events-none">
-        <svg className="absolute inset-0 w-full h-full overflow-visible">
-          {[
-            [0, 1],
-            [1, 2],
-            [2, 0],
-          ].map(([i, j]) => (
-            <motion.line 
-              key={`${i}-${j}`}
-              x1={useTransform(nodes[i].x, v => `calc(50% + ${v}px)`)}
-              y1={useTransform(nodes[i].y, v => `calc(50% + ${v}px)`)}
-              x2={useTransform(nodes[j].x, v => `calc(50% + ${v}px)`)}
-              y2={useTransform(nodes[j].y, v => `calc(50% + ${v}px)`)}
-              stroke="#cbd5e1" 
-              strokeWidth="1.2" 
-              strokeLinecap="round"
-              strokeDasharray="6 12"
-              strokeOpacity={0.35}
-              animate={{ strokeDashoffset: [0, -36] }}
-              transition={{ duration: 6, repeat: Infinity, ease: "linear" }}
-            />
+          {/* Free Drifting Nodes (Background) */}
+          {freeNodes.map((node) => (
+            <motion.div
+              key={node.title}
+              className="absolute left-1/2 top-1/2"
+              animate={{ x: node.x, y: node.y, rotate: [0, 8, -8, 0] }}
+              transition={{ 
+                x: { duration: node.duration, repeat: Infinity, ease: "linear", delay: -node.delay },
+                y: { duration: node.duration * 0.9, repeat: Infinity, ease: "linear", delay: -node.delay },
+                rotate: { duration: 12, repeat: Infinity, ease: "easeInOut" }
+              }}
+            >
+              <div className="-translate-x-1/2 -translate-y-1/2">
+                <MinimalistThought title={node.title} className="scale-90 opacity-40" />
+              </div>
+            </motion.div>
           ))}
-        </svg>
 
-        {nodes.map((node, i) => (
-          <motion.div
-            key={node.id}
-            className="absolute left-1/2 top-1/2"
-            style={{ 
-              x: node.x, 
-              y: node.y, 
-              scale: (i === 0 && isGrabbing) ? 1.05 : 0.9 
-            }}
-          >
-            <div className="-translate-x-1/2 -translate-y-1/2">
-              <MinimalistThought title={node.title} className="shadow-2xl" />
-            </div>
-          </motion.div>
-        ))}
+          {/* Interacting Cluster */}
+          <div className="absolute inset-0 pointer-events-none">
+            <svg className="absolute inset-0 w-full h-full overflow-visible">
+              {[
+                [0, 1],
+                [1, 2],
+                [2, 0],
+              ].map(([i, j]) => (
+                <ThoughtConnection key={`${i}-${j}`} nodeA={nodes[i]} nodeB={nodes[j]} />
+              ))}
+            </svg>
 
-        {/* Animated Cursor */}
-        <motion.div
-          className="absolute left-1/2 top-1/2 z-[100] pointer-events-none"
-          style={{ 
-            x: cursorX, 
-            y: cursorY, 
-            scale: cursorScale, 
-            opacity: cursorOpacity 
-          }}
-        >
-          <div className="relative">
-            <MousePointer2 className="w-6 h-6 text-white fill-white/20 -translate-x-1 translate-y-1 drop-shadow-[0_0_8px_rgba(255,255,255,0.4)]" />
-            {isGrabbing && (
-              <motion.div 
-                className="absolute inset-0 w-6 h-6 bg-white/40 rounded-full blur-xl"
-                animate={{ scale: [1, 1.5, 1], opacity: [0.5, 0.2, 0.5] }}
-                transition={{ duration: 1.5, repeat: Infinity }}
-              />
-            )}
+            {nodes.map((node, i) => (
+              <motion.div
+                key={node.title}
+                className="absolute left-1/2 top-1/2"
+                style={{ 
+                  x: node.x, 
+                  y: node.y, 
+                  scale: (i === 0 && isGrabbing) ? 1.05 : 0.9 
+                }}
+              >
+                <div className="-translate-x-1/2 -translate-y-1/2">
+                  <MinimalistThought title={node.title} className="shadow-2xl" />
+                </div>
+              </motion.div>
+            ))}
           </div>
         </motion.div>
+      </AnimatePresence>
+
+
+      {/* Animated Cursor - Outside AnimatePresence to stay persistent */}
+      <motion.div
+        className="absolute left-1/2 top-1/2 z-[100] pointer-events-none"
+        style={{ 
+          x: cursorX, 
+          y: cursorY, 
+          scale: cursorScale, 
+          opacity: cursorOpacity 
+        }}
+      >
+        <div className="relative">
+          <MousePointer2 className="w-6 h-6 text-white fill-white/20 -translate-x-1 translate-y-1 drop-shadow-[0_0_8px_rgba(255,255,255,0.4)]" />
+          {isGrabbing && (
+            <motion.div 
+              className="absolute inset-0 w-6 h-6 bg-white/40 rounded-full blur-xl"
+              animate={{ scale: [1, 1.5, 1], opacity: [0.5, 0.2, 0.5] }}
+              transition={{ duration: 1.5, repeat: Infinity }}
+            />
+          )}
+        </div>
+      </motion.div>
+
+      {/* Space Switcher */}
+      <div className="absolute top-8 left-1/2 -translate-x-1/2 z-[110] flex items-center gap-1.5 p-1.5 glass rounded-full border border-white/5">
+        {SPACES_DATA.map((space, idx) => (
+          <button
+            key={space.name}
+            onClick={() => setActiveSpaceIdx(idx)}
+            className={`px-4 py-1.5 rounded-full text-[8px] font-black uppercase tracking-[0.2em] transition-all duration-300 ${
+              activeSpaceIdx === idx 
+                ? 'bg-white text-black shadow-lg shadow-white/10' 
+                : 'text-white/40 hover:text-white hover:bg-white/5'
+            }`}
+          >
+            {space.name}
+          </button>
+        ))}
       </div>
     </div>
   );
 };
 
+
 const DynamicViewsVisual = () => {
   const [view, setView] = useState<'spatial' | 'kanban' | 'calendar'>('spatial');
   
-  useEffect(() => {
-    const timer = setInterval(() => {
-      setView(prev => {
-        if (prev === 'spatial') return 'kanban';
-        if (prev === 'kanban') return 'calendar';
-        return 'spatial';
-      });
-    }, 4500);
-    return () => clearInterval(timer);
-  }, []);
-
   const thoughts = [
     { id: 1, title: 'TASKS_01', color: 'var(--accent)' },
     { id: 2, title: 'PROCESS_A', color: 'var(--accent-secondary)' },
@@ -304,22 +408,6 @@ const DynamicViewsVisual = () => {
         backgroundImage: `radial-gradient(circle at 1px 1px, var(--accent) 1px, transparent 0)`,
         backgroundSize: '40px 40px' 
       }} />
-
-      <div className="absolute top-12 left-1/2 -translate-x-1/2 z-10">
-        <AnimatePresence mode="wait">
-          <motion.div 
-            key={view}
-            initial={{ opacity: 0, y: -10 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: 10 }}
-            className="flex flex-col items-center gap-2"
-          >
-            <span className="text-[10px] font-black tracking-[0.5em] text-[var(--accent)] uppercase border border-[var(--accent)]/30 px-6 py-2 rounded-full bg-[var(--accent)]/5 backdrop-blur-sm">
-              {view} VIEW
-            </span>
-          </motion.div>
-        </AnimatePresence>
-      </div>
 
       <AnimatePresence>
         {view === 'kanban' && (
@@ -442,6 +530,23 @@ const DynamicViewsVisual = () => {
           </motion.div>
         );
       })}
+
+      {/* View Switcher */}
+      <div className="absolute top-8 right-8 z-[110] flex items-center gap-1.5 p-1.5 glass rounded-full border border-white/5">
+        {(['spatial', 'kanban', 'calendar'] as const).map((v) => (
+          <button
+            key={v}
+            onClick={() => setView(v)}
+            className={`px-4 py-1.5 rounded-full text-[8px] font-black uppercase tracking-[0.2em] transition-all duration-300 ${
+              view === v 
+                ? 'bg-white text-black shadow-lg shadow-white/10' 
+                : 'text-white/40 hover:text-white hover:bg-white/5'
+            }`}
+          >
+            {v}
+          </button>
+        ))}
+      </div>
     </div>
   );
 };
