@@ -2,7 +2,7 @@ import React, { lazy, Suspense, useState, useEffect, useMemo, useRef } from 'rea
 
 import { motion, AnimatePresence, useMotionValue, useSpring, useTransform, animate } from 'framer-motion';
 
-import { MousePointer2, Layout, Database, ArrowRight, Check, Rocket, Menu, X, Send, Loader2, CheckCircle, Shield, Zap } from 'lucide-react';
+import { MousePointer2, Layout, Database, ArrowRight, Check, Compass, Rocket, Menu, X, Send, Loader2, CheckCircle, Shield, Zap } from 'lucide-react';
 import { PLAN_CONFIG } from '../constants';
 
 const DemoWorkspace = lazy(() => import('./demo/DemoWorkspace'));
@@ -1373,9 +1373,16 @@ const Homepage: React.FC = () => {
                 <PricingFeature text={`${PLAN_CONFIG.free.AI_DAILY_LIMIT} Daily Agentic AI Interactions`} />
                 <PricingFeature text={`${PLAN_CONFIG.free.MAX_STORAGE_MB}MB Cloud Storage`} />
               </div>
-              <a href="https://app.cyberia.tn" className="w-full py-4 bg-white/5 hover:bg-white/10 border border-white/10 text-white rounded-2xl text-[10px] font-black uppercase tracking-[0.3em] transition-all text-center">
+              <a href="https://app.cyberia.tn" className="w-full py-5 bg-white/5 hover:bg-white/10 border border-white/10 text-white rounded-2xl text-[10px] font-black uppercase tracking-[0.3em] transition-all text-center">
                 Get Started Free
               </a>
+
+              <div className="mt-6 flex items-center justify-center gap-3 opacity-60">
+                <Compass className="w-4 h-4 text-slate-500" />
+                <span className="text-[9px] font-black uppercase tracking-widest text-slate-500">
+                  Free forever. No credit card required.
+                </span>
+              </div>
             </motion.div>
 
             <motion.div 
@@ -1427,7 +1434,7 @@ className="glass p-10 rounded-[3rem] border-[var(--accent)]/30 bg-[var(--accent)
                 <PricingFeature text={`${PLAN_CONFIG.pro.MAX_THOUGHTS_PER_SPACE} Thoughts Per Agentic Space`} pro />
                 <PricingFeature text={`${PLAN_CONFIG.pro.AI_DAILY_LIMIT} Daily Agentic AI Interactions`} pro />
                 <PricingFeature 
-                  text={`${(PLAN_CONFIG.pro.MAX_STORAGE_MB / 1024).toFixed(1)}GB Secure Cloud Storage`} pro />
+                  text={`${(PLAN_CONFIG.pro.MAX_STORAGE_MB / 1024).toFixed(0)}GB Secure Cloud Storage`} pro />
                 <PricingFeature text="Access to Advanced Premium Models" pro />
                 <PricingFeature text="Shared Team Spaces (Coming Soon)" pro />
               </div>
