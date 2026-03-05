@@ -1127,8 +1127,8 @@ const Homepage: React.FC = () => {
 
       <nav className={`fixed top-0 left-0 right-0 z-[100] transition-all duration-500 ${
         isScrolled 
-          ? 'bg-[#020408]/10 backdrop-blur-3xl border-b border-white/10 py-3' 
-          : 'bg-transparent py-5'
+          ? 'bg-[#020408]/40 backdrop-blur-3xl shadow-sm shadow-white/5 py-3' 
+          : 'bg-transparent py-4'
       }`}>
         <div className="max-w-7xl mx-auto px-6 flex items-center justify-between">
           <div className="flex items-center gap-3 group cursor-pointer" onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}>
@@ -1144,12 +1144,12 @@ const Homepage: React.FC = () => {
           {/* Desktop Nav - ViewSwitcher Style */}
           <div className="hidden md:flex items-center gap-3"> {/* Increased gap slightly to 3 */}
   {/* The Nav Container */}
-  <div className="flex items-center h-12 p-1.5  rounded-2xl  ">
+  <div className="flex items-center h-10 p-1 rounded-2xl">
     {['features', 'pricing', 'about', 'contact'].map((item) => (
       <button 
         key={item}
         onClick={() => scrollToSection(item)} 
-        className="px-4 h-full rounded-xl transition-all duration-300 flex items-center group/nav"
+        className="px-3 h-full rounded-xl transition-all duration-300 flex items-center group/nav"
       >
         <span className="text-[10px] font-black uppercase tracking-[0.15em] text-slate-400 group-hover/nav:text-white transition-colors">
           {item}
