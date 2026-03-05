@@ -19,8 +19,9 @@ function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
 
-const Viewport: React.FC = () => {
+const Viewport: React.FC<{ isInteracting?: boolean }> = ({ isInteracting }) => {
   const activeSpaceId = useStore((state) => state.activeSpaceId);
+
   const spaces = useStore((state) => state.spaces);
   const thoughts = useStore((state) => state.thoughts);
   const activeSpace = spaces.find((s) => s.id === activeSpaceId);
@@ -77,8 +78,10 @@ const Viewport: React.FC = () => {
     setTransform,
     kanbanHeight: kanbanHeight.current,
     getGlobalScale,
-    isDemo
+    isDemo,
+    isInteracting
   });
+
 
 
   useEffect(() => {
@@ -100,8 +103,9 @@ const Viewport: React.FC = () => {
 
   useEffect(() => {
     const handleMouseDownLocal = (e: MouseEvent) => {
-      if (isDemo && !(e.target as HTMLElement).closest('[data-demo-workspace="true"]')) return;
+      if (isDemo && (!isInteracting || !(e.target as HTMLElement).closest('[data-demo-workspace="true"]'))) return;
       const isMiddleClick = e.button === 1;
+
       const isAltLeftClick = e.button === 0 && e.altKey;
       const isLeftClick = e.button === 0 && !e.altKey;
       const isCtrlLeftClick = isLeftClick && (e.ctrlKey || e.metaKey);
@@ -191,8 +195,9 @@ const Viewport: React.FC = () => {
     };
 
     const handleClick = (e: MouseEvent) => {
-      if (isDemo && !(e.target as HTMLElement).closest('[data-demo-workspace="true"]')) return;
+      if (isDemo && (!isInteracting || !(e.target as HTMLElement).closest('[data-demo-workspace="true"]'))) return;
       const target = e.target as HTMLElement;
+
       const dist = Math.sqrt(Math.pow(e.clientX - selectionStartRef.current.rawX, 2) + Math.pow(e.clientY - selectionStartRef.current.rawY, 2));
       if (dist > 5) return;
 
@@ -493,7 +498,8 @@ const Viewport: React.FC = () => {
       window.removeEventListener('touchmove', handleTouchMove);
       window.removeEventListener('touchend', handleTouchEnd);
     };
-  }, [activeSpace, setInspectorOpen, isGrabbing, selectedThoughtId, selectedThoughtIds, openModal, deleteThought, deleteSelectedThoughts, thoughts, addThought, setSelectedThoughtId, setSelectedThoughtIds, clearSelection, transform, setTransform, isReadOnly, handleWheel, handleTouchStartLocal, handleTouchMove, handleTouchEnd, getGlobalScale, uploadThoughtBlob, applyConstraints, lastMousePos, selectionStartRef, isPanningRef, isSelectingRef, isDemo]);
+  }, [activeSpace, setInspectorOpen, isGrabbing, selectedThoughtId, selectedThoughtIds, openModal, deleteThought, deleteSelectedThoughts, thoughts, addThought, setSelectedThoughtId, setSelectedThoughtIds, clearSelection, transform, setTransform, isReadOnly, handleWheel, handleTouchStartLocal, handleTouchMove, handleTouchEnd, getGlobalScale, uploadThoughtBlob, applyConstraints, lastMousePos, selectionStartRef, isPanningRef, isSelectingRef, isDemo, isInteracting]);
+
 
   return (
     <div

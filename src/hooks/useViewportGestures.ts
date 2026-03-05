@@ -7,13 +7,15 @@ interface GestureConfig {
   kanbanHeight: number;
   getGlobalScale: () => number;
   isDemo?: boolean;
+  isInteracting?: boolean;
 }
 
 export const useViewportGestures = (config: GestureConfig) => {
   const { 
     activeSpaceMode, transform, setTransform, kanbanHeight, 
-    getGlobalScale, isDemo
+    getGlobalScale, isDemo, isInteracting
   } = config;
+
 
 
   const isPanningRef = useRef(false);
@@ -50,7 +52,9 @@ export const useViewportGestures = (config: GestureConfig) => {
   }, [activeSpaceMode, kanbanHeight, getGlobalScale]);
 
   const handleWheel = useCallback((e: WheelEvent) => {
+    if (isDemo && !isInteracting) return;
     const target = e.target as HTMLElement;
+
 
     // For Demo: Stop the whole page from scrolling when interacting with the engine
     if (isDemo && target.closest('[data-demo-workspace="true"]')) {
@@ -109,11 +113,14 @@ export const useViewportGestures = (config: GestureConfig) => {
     }
     
     setTransform(applyConstraints(newTransform));
-  }, [activeSpaceMode, transform, setTransform, applyConstraints, getGlobalScale, isDemo]);
+  }, [activeSpaceMode, transform, setTransform, applyConstraints, getGlobalScale, isDemo, isInteracting]);
 
 
   const handleTouchStart = useCallback((e: TouchEvent) => {
+
+    if (isDemo && !isInteracting) return;
     const target = e.target as HTMLElement;
+
     
     // For Demo: Stop the whole page from scrolling when interacting with the engine
     if (isDemo && target.closest('[data-demo-workspace="true"]')) {
@@ -148,10 +155,13 @@ export const useViewportGestures = (config: GestureConfig) => {
         y: (midY - transform.y) / transform.scale
       };
     }
-  }, [getGlobalScale, transform, activeSpaceMode, isDemo]);
+  }, [getGlobalScale, transform, activeSpaceMode, isDemo, isInteracting]);
 
   const handleTouchMove = useCallback((e: TouchEvent) => {
+
+    if (isDemo && !isInteracting) return;
     if (isDemo && (e.target as HTMLElement).closest('[data-demo-workspace="true"]')) {
+
       e.preventDefault();
     }
     if (!isTouchingRef.current) return;
@@ -200,9 +210,10 @@ export const useViewportGestures = (config: GestureConfig) => {
     }
     
     setTransform(applyConstraints(newTransform));
-  }, [transform, setTransform, applyConstraints, getGlobalScale, activeSpaceMode]);
+  }, [transform, setTransform, applyConstraints, getGlobalScale, activeSpaceMode, isDemo, isInteracting]);
 
   const handleTouchEnd = useCallback(() => {
+
     isTouchingRef.current = false;
     isPanningRef.current = false;
     initialTouchDistance.current = null;

@@ -43,9 +43,10 @@ const DemoWorkspace: React.FC = () => {
       {/* Real App Layers */}
       <div className={cn("w-full h-full", !isInteracting && "md:pointer-events-auto pointer-events-none")}>
         <Suspense fallback={null}>
-          <Viewport />
+          <Viewport isInteracting={isInteracting} />
         </Suspense>
       </div>
+
 
       <AnimatePresence>
         {!isInteracting && (
@@ -53,9 +54,10 @@ const DemoWorkspace: React.FC = () => {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            onClick={() => setIsInteracting(true)}
-            className="absolute inset-0 z-[150] md:hidden bg-black/40 backdrop-blur-[2px] flex items-center justify-center cursor-pointer group/shield"
+            onPointerDown={(e) => { e.stopPropagation(); setIsInteracting(true); }}
+            className="absolute inset-0 z-[150] md:hidden bg-black/40 backdrop-blur-[2px] flex items-center justify-center cursor-pointer group/shield pointer-events-auto"
           >
+
             <div className="px-6 py-3 rounded-full glass border border-white/20 flex items-center gap-3 shadow-2xl group-active/shield:scale-95 transition-transform">
               <MousePointer2 className="w-5 h-5 text-[var(--accent)]" />
               <span className="text-xs font-black uppercase tracking-[0.2em] text-white">Tap to Explore</span>
