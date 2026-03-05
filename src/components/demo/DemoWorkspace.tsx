@@ -1,8 +1,9 @@
-import React, { useEffect, Suspense, lazy } from 'react';
+import React, { useEffect, Suspense, lazy, useState } from 'react';
 import { useStore } from '../../store/useStore';
 import { MousePointer2, Zap, Rocket } from 'lucide-react';
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
+import { motion, AnimatePresence } from 'framer-motion';
 
 // Import real components
 const Viewport = lazy(() => import('../Viewport'));
@@ -18,16 +19,16 @@ const DemoWorkspace: React.FC = () => {
   const activeSpace = spaces.find(s => s.id === activeSpaceId);
   const updateSpace = useStore((state) => state.updateSpace);
   const isDemo = useStore((state) => state.isDemo);
+  const [isInteracting, setIsInteracting] = useState(false);
+  const setTransform = useStore((state) => state.setTransform);
 
   useEffect(() => {
-    // Initialize demo mode on mount
     setDemoMode(true);
-    
-    return () => {
-      // Clean up demo mode on unmount
-      setDemoMode(false);
-    };
-  }, [setDemoMode]);
+    if (window.innerWidth < 768) {
+      setTransform({ x: 0, y: 0, scale: 0.5 });
+    }
+    return () => setDemoMode(false);
+  }, [setDemoMode, setTransform]);
 
   const physicsEnabled = activeSpace?.physics ?? true;
 
@@ -37,21 +38,35 @@ const DemoWorkspace: React.FC = () => {
     <div 
       id="demo-workspace-container"
       data-demo-workspace="true"
-      className="w-full h-[600px] glass rounded-[3rem] overflow-hidden relative border border-white/5 shadow-2xl group pointer-events-auto"
+      className="w-full h-[400px] md:h-[600px] glass rounded-[2rem] md:rounded-[3rem] overflow-hidden relative border border-white/5 shadow-2xl group pointer-events-auto"
     >
-      {/* Background */}
-      {/*<div 
-          className="absolute inset-0 bg-cover bg-center bg-no-repeat opacity-40"
-          style={{ backgroundImage: 'url(/background.jpg)' }}
-        />*/}
       {/* Real App Layers */}
-      <Suspense fallback={null}>
-        <Viewport />
-      </Suspense>
+      <div className={cn("w-full h-full", !isInteracting && "md:pointer-events-auto pointer-events-none")}>
+        <Suspense fallback={null}>
+          <Viewport />
+        </Suspense>
+      </div>
+
+      <AnimatePresence>
+        {!isInteracting && (
+          <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={() => setIsInteracting(true)}
+            className="absolute inset-0 z-[150] md:hidden bg-black/40 backdrop-blur-[2px] flex items-center justify-center cursor-pointer group/shield"
+          >
+            <div className="px-6 py-3 rounded-full glass border border-white/20 flex items-center gap-3 shadow-2xl group-active/shield:scale-95 transition-transform">
+              <MousePointer2 className="w-5 h-5 text-[var(--accent)]" />
+              <span className="text-xs font-black uppercase tracking-[0.2em] text-white">Tap to Explore</span>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
       
       {/* Fixed Spatial Indicator */}
       <div className="absolute top-6 left-1/2 -translate-x-1/2 z-[100] flex p-1 bg-black/40 backdrop-blur-md border border-white/10 rounded-2xl shadow-xl transition-all group-hover:opacity-100 opacity-80 pointer-events-none">
-        <div className="px-4 py-2.5 rounded-xl flex items-center gap-2 text-[10px] font-black uppercase tracking-widest shadow-lg" style={{ backgroundColor: 'var(--accent)', color: 'white' }}>
+        <div className="md:px-4 md:py-2.5 px-2 py-1.5 rounded-xl flex items-center gap-2 text-[10px] font-black uppercase tracking-widest shadow-lg" style={{ backgroundColor: 'var(--accent)', color: 'white' }}>
           <MousePointer2 className="w-4 h-4" />
           <span>Spatial Mode</span>
         </div>
@@ -62,7 +77,7 @@ const DemoWorkspace: React.FC = () => {
         <button 
           onClick={() => activeSpaceId && updateSpace(activeSpaceId, { physics: !physicsEnabled })}
           className={cn(
-            "p-3 rounded-2xl border transition-all flex items-center gap-2",
+            "md:p-3 p-2 rounded-2xl border transition-all flex items-center gap-2",
             physicsEnabled 
               ? "bg-amber-500/10 border-amber-500/30 text-amber-500 shadow-[0_0_15px_rgba(245,158,11,0.2)]" 
               : "bg-white/5 border-white/10 text-slate-500"
