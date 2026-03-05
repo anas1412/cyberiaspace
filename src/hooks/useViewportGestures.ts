@@ -109,6 +109,7 @@ export const useViewportGestures = (config: GestureConfig) => {
 
 
   const handleTouchStart = useCallback((e: TouchEvent) => {
+    if (isDemo && !(e.target as HTMLElement).closest('[data-demo-workspace="true"]')) return;
     const target = e.target as HTMLElement;
     if (target.closest('button, input, textarea, .thought-bulb, #inspector, .ui-layer, .expand-img, #chat-overlay, .focus-box')) return;
 
@@ -136,7 +137,7 @@ export const useViewportGestures = (config: GestureConfig) => {
         y: (midY - transform.y) / transform.scale
       };
     }
-  }, [getGlobalScale, transform, activeSpaceMode]);
+  }, [getGlobalScale, transform, activeSpaceMode, isDemo]);
 
   const handleTouchMove = useCallback((e: TouchEvent) => {
     if (!isTouchingRef.current) return;
