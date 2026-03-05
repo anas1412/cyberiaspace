@@ -61,7 +61,7 @@ const ThoughtNode: React.FC<ThoughtNodeProps> = React.memo(({ thought, registerE
 
   const isSpatial = activeSpace?.mode === 'spatial';
   const isCalendar = activeSpace?.mode === 'calendar';
-  const isDateHovered = isCalendar && thought.date === hoveredCalDate;
+  const isDateHovered = isCalendar && hoveredCalDate !== null && (thought.date || "") === hoveredCalDate;
   const isExpanded = isDateHovered || (isCalendar && isSelected);
 
   const stack = useMemo(() => stacks.find(s => s.id === thought.stackId), [stacks, thought.stackId]);
@@ -195,13 +195,13 @@ const ThoughtNode: React.FC<ThoughtNodeProps> = React.memo(({ thought, registerE
       onDragStart={(e) => e.preventDefault()}
       onClick={handleClick}
       onMouseEnter={() => {
-        if (isCalendar && thought.date) {
+        if (isCalendar) {
           if ((window as any)._calLeaveTimer) clearTimeout((window as any)._calLeaveTimer);
-          setHoveredCalDate(thought.date);
+          setHoveredCalDate(thought.date || "");
         }
       }}
       onMouseLeave={() => {
-        if (isCalendar && thought.date) {
+        if (isCalendar) {
           if ((window as any)._calLeaveTimer) clearTimeout((window as any)._calLeaveTimer);
           (window as any)._calLeaveTimer = setTimeout(() => setHoveredCalDate(null), 150);
         }
