@@ -121,9 +121,9 @@ const AgenticSpaceVisual: React.FC<{
 
 
   const freeNodes = useMemo(() => [
-    { id: 4, title: currentSpace.free[0], x: [220, -260], y: [-240, 160], duration: 34, delay: 1 },
-    { id: 5, title: currentSpace.free[1], x: [-200, 280], y: [60, 240], duration: 45, delay: 5 },
-    { id: 6, title: currentSpace.free[2], x: [180, -280], y: [-120, 280], duration: 40, delay: 3 },
+    { id: 4, title: currentSpace.free[0], x: [240, -290], y: [-270, 190], duration: 34, delay: 1 },
+    { id: 5, title: currentSpace.free[1], x: [-220, 310], y: [80, 270], duration: 45, delay: 5 },
+    { id: 6, title: currentSpace.free[2], x: [200, -310], y: [-140, 310], duration: 40, delay: 3 },
   ], [currentSpace]);
 
   const clusterNodes = useMemo(() => [
@@ -375,9 +375,9 @@ const DynamicViewsVisual: React.FC<{
   ];
 
   const freeNodes = [
-    { id: 'f1', title: 'IDEAS', x: [250, -250], y: [-150, 150], duration: 30, delay: 0 },
-    { id: 'f2', title: 'NOTES', x: [-200, 200], y: [100, -100], duration: 40, delay: 5 },
-    { id: 'f3', title: 'LOGS', x: [150, -150], y: [200, -200], duration: 35, delay: 2 },
+    { id: 'f1', title: 'IDEAS', x: [290, -290], y: [-170, 170], duration: 30, delay: 0 },
+    { id: 'f2', title: 'NOTES', x: [-230, 230], y: [110, -110], duration: 40, delay: 5 },
+    { id: 'f3', title: 'LOGS', x: [170, -170], y: [230, -230], duration: 35, delay: 2 },
   ];
 
   const getPosition = (index: number, currentView: string) => {
@@ -606,9 +606,9 @@ const CloudPersistenceVisual = () => {
   ];
 
   const freeNodes = [
-    { id: 'f1', title: 'BACKUP_V1', x: [280, -280], y: [-200, 200], duration: 35, delay: 0 },
-    { id: 'f2', title: 'ASSETS', x: [-250, 250], y: [150, -150], duration: 45, delay: 5 },
-    { id: 'f3', title: 'MEDIA', x: [200, -200], y: [250, -250], duration: 40, delay: 10 },
+    { id: 'f1', title: 'BACKUP_V1', x: [310, -310], y: [-220, 220], duration: 35, delay: 0 },
+    { id: 'f2', title: 'ASSETS', x: [-280, 280], y: [170, -170], duration: 45, delay: 5 },
+    { id: 'f3', title: 'MEDIA', x: [220, -220], y: [280, -280], duration: 40, delay: 10 },
   ];
 
   return (
@@ -811,10 +811,10 @@ const AgenticWorkspaceVisual = () => {
   const fullPrompt = "Research on topic X, find me 3 related videos from youtube and link them.";
 
   const freeNodes = [
-    { id: 'f1', title: 'RESEARCH_REF', x: [300, -300], y: [-200, 200], duration: 45, delay: 0 },
-    { id: 'f2', title: 'API_DOCS', x: [-350, 350], y: [150, -150], duration: 55, delay: 10 },
-    { id: 'f3', title: 'MARKET_DATA', x: [200, -200], y: [250, -250], duration: 65, delay: 5 },
-    { id: 'f4', title: 'STRATEGY_V1', x: [-250, 250], y: [-300, 300], duration: 50, delay: 15 },
+    { id: 'f1', title: 'RESEARCH_REF', x: [340, -340], y: [-220, 220], duration: 45, delay: 0 },
+    { id: 'f2', title: 'API_DOCS', x: [-390, 390], y: [170, -170], duration: 55, delay: 10 },
+    { id: 'f3', title: 'MARKET_DATA', x: [230, -230], y: [280, -280], duration: 65, delay: 5 },
+    { id: 'f4', title: 'STRATEGY_V1', x: [-290, 290], y: [-340, 340], duration: 50, delay: 15 },
   ];
   
   useEffect(() => {
@@ -855,9 +855,9 @@ const AgenticWorkspaceVisual = () => {
   }, []);
 
   const cards = [
-    { id: '1', title: 'YOUTUBE_01', tx: -180, ty: 40 },
-    { id: '2', title: 'YOUTUBE_02', tx: 180, ty: 60 },
-    { id: '3', title: 'YOUTUBE_03', tx: 0, ty: 200 },
+    { id: '1', title: 'YOUTUBE_01', tx: -160, ty: 40 },
+    { id: '2', title: 'YOUTUBE_02', tx: 160, ty: 60 },
+    { id: '3', title: 'YOUTUBE_03', tx: 0, ty: 180 },
   ];
 
   return (
@@ -1024,12 +1024,12 @@ const ResponsiveStage = ({ children }: { children: React.ReactNode }) => {
   useEffect(() => {
     const updateScale = () => {
       if (containerRef.current) {
-        const width = containerRef.current.offsetWidth;
+        const width = containerRef.current.offsetWidth - 32; // Account for 32px padding safety
+        const height = containerRef.current.offsetHeight - 32;
         const designSize = 600;
-
-        const newScale = width / designSize;
-        setScale(Math.max(0.4, newScale)); // Minimum scale of 0.4 to prevent disappearance
-
+        // New scaling logic: Contain within both width and height
+        const newScale = Math.min(width / designSize, height / designSize);
+        setScale(Math.max(0.45, newScale)); // Increase min-scale to 0.45 for better readability
       }
     };
     updateScale();
@@ -1090,13 +1090,13 @@ const FeatureVisual: React.FC<{ activeFeature: number }> = ({ activeFeature }) =
             initial={{ opacity: 0, y: -10 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -10 }}
-            className="absolute top-8 left-1/2 -translate-x-1/2 z-[110] flex items-center gap-1.5 p-1.5 glass rounded-full border border-white/5"
+            className="absolute top-8 left-1/2 -translate-x-1/2 z-[110] flex items-center gap-1.5 p-1.5 glass rounded-full border border-white/5 max-w-[90vw]"
           >
             {SPACES_DATA.map((space, idx) => (
               <button
                 key={space.name}
                 onClick={() => setActiveSpaceIdx(idx)}
-                className={`px-4 py-1.5 rounded-full text-[8px] font-black uppercase tracking-[0.2em] transition-all duration-300 ${
+                className={`px-2 py-1 md:px-4 md:py-1.5 rounded-full text-[7px] md:text-[8px] font-black uppercase tracking-[0.1em] md:tracking-[0.2em] transition-all duration-300 ${
                   activeSpaceIdx === idx 
                     ? 'bg-white text-black shadow-lg shadow-white/10' 
                     : 'text-white/40 hover:text-white hover:bg-white/5'
@@ -1113,13 +1113,13 @@ const FeatureVisual: React.FC<{ activeFeature: number }> = ({ activeFeature }) =
             initial={{ opacity: 0, y: -10 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -10 }}
-            className="absolute top-8 left-1/2 -translate-x-1/2 z-[110] flex items-center gap-1.5 p-1.5 glass rounded-full border border-white/5"
+            className="absolute top-8 left-1/2 -translate-x-1/2 z-[110] flex items-center gap-1.5 p-1.5 glass rounded-full border border-white/5 max-w-[90vw]"
           >
             {(['spatial', 'kanban', 'calendar'] as const).map((v) => (
               <button
                 key={v}
                 onClick={() => setView(v)}
-                className={`px-4 py-1.5 rounded-full text-[8px] font-black uppercase tracking-[0.2em] transition-all duration-300 ${
+                className={`px-2 py-1 md:px-4 md:py-1.5 rounded-full text-[7px] md:text-[8px] font-black uppercase tracking-[0.1em] md:tracking-[0.2em] transition-all duration-300 ${
                   view === v 
                     ? 'bg-white text-black shadow-lg shadow-white/10' 
                     : 'text-white/40 hover:text-white hover:bg-white/5'
@@ -1407,9 +1407,9 @@ const Homepage: React.FC = () => {
                     {activeFeature === index && (
                       <motion.div
                         initial={{ opacity: 0, height: 0 }}
-                        animate={{ opacity: 1, height: 380 }}
+                        animate={{ opacity: 1, height: 'auto' }}
                         exit={{ opacity: 0, height: 0 }}
-                        className="lg:hidden mt-6 w-full h-[380px] glass rounded-3xl overflow-hidden relative"
+                        className="lg:hidden mt-6 w-full h-[380px] md:h-[500px] glass rounded-3xl overflow-hidden relative"
                       >
 
                         <div className="absolute inset-0 bg-gradient-to-br from-[var(--accent)]/10 via-transparent to-transparent opacity-50" />
