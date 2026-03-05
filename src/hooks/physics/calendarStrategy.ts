@@ -108,14 +108,15 @@ export const calendarStrategy: LayoutStrategist = {
       
       const index = unscheduled.findIndex(t => t.id === thought.id);
       
+      const currentScale = 0.8;
       const h = elementHeights.get(thought.id) || 120;
-      const heightAtScale = h * 0.8;
+      const heightAtScale = h * currentScale;
       
       // Sum previous heights in sidebar
       let yOffset = 0;
       for (let i = 0; i < index; i++) {
         const prevH = elementHeights.get(unscheduled[i].id) || 120;
-        yOffset += (prevH * 0.8) + 20;
+        yOffset += (prevH * currentScale) + 20;
       }
 
       const targetY = sidebarTop + 20 - sidebarScrollTop + yOffset + heightAtScale / 2;
@@ -123,7 +124,7 @@ export const calendarStrategy: LayoutStrategist = {
       return {
         targetX: padding + sidebarWidth / 2,
         targetY,
-        targetScale: isFilteredOut ? 0 : 0.8,
+        targetScale: isFilteredOut ? 0 : currentScale,
         zIndex: '35',
         opacity: isFilteredOut ? 0 : 1,
         visibility: isFilteredOut ? 'hidden' : 'visible',

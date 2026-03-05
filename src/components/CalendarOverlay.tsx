@@ -88,14 +88,19 @@ const CalendarOverlay: React.FC = () => {
   return (
     <div 
       className={cn(
-        "calendar-overlay inset-0 flex flex-col md:flex-row pointer-events-none p-4 md:p-10 pb-[100px] md:pb-[120px] pt-[100px] md:pt-[100px] gap-4 md:gap-5 opacity-100 transition-opacity duration-400 z-[10] overflow-y-auto md:overflow-hidden",
+        "calendar-overlay inset-0 flex flex-col md:flex-row pointer-events-auto p-4 md:p-10 pb-[100px] md:pb-[120px] pt-[100px] md:pt-[100px] gap-4 md:gap-5 opacity-100 transition-opacity duration-400 z-[10] overflow-y-auto md:overflow-hidden",
         isDemo ? "absolute" : "fixed"
       )}
       onClick={handleBackgroundClick}
+      onMouseEnter={() => handleMouseLeave()}
     >
 
       {/* Sidebar */}
-      <div className="cal-sidebar w-full md:w-[260px] min-h-[200px] md:min-h-0 glass rounded-3xl flex flex-col overflow-hidden pointer-events-auto z-[30] relative border border-white/10 shadow-2xl">
+      <div 
+        className="cal-sidebar w-full md:w-[260px] min-h-[200px] md:min-h-0 glass rounded-3xl flex flex-col overflow-hidden pointer-events-auto z-[30] relative border border-white/10 shadow-2xl"
+        onMouseEnter={() => handleMouseEnter('')}
+        onMouseLeave={handleMouseLeave}
+      >
         <div className="cal-sidebar-header p-4 md:p-5 border-b border-white/[0.05] text-[9px] md:text-[10px] font-900 tracking-[0.2em] uppercase text-[var(--accent-secondary)] bg-[var(--bg-main)] z-[40] sticky top-0 shadow-lg">
           Unscheduled
         </div>
@@ -106,7 +111,7 @@ const CalendarOverlay: React.FC = () => {
       </div>
       
       {/* Main Grid */}
-      <div className="cal-main flex-1 flex flex-col min-h-[400px] md:min-h-0 glass rounded-3xl overflow-hidden pointer-events-auto z-[5] relative border border-white/10 shadow-xl">
+      <div className="cal-main flex-1 flex flex-col min-h-[400px] md:min-h-0 glass rounded-3xl overflow-hidden pointer-events-auto z-[5] relative border border-white/10 shadow-xl" onMouseEnter={handleMouseLeave}>
         <div className="cal-header h-[50px] md:h-[60px] flex items-center justify-between px-4 md:px-[30px] border-b border-white/[0.05] bg-black/20">
           <button onClick={() => changeMonth(-1)} className="p-2 hover:bg-white/5 rounded-lg text-slate-400 transition-colors">
             <ChevronLeft className="w-4 h-4" />
