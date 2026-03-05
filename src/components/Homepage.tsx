@@ -1196,7 +1196,7 @@ const Homepage: React.FC = () => {
                   </button>
                 ))}
                 <a href="https://app.cyberia.tn" className="w-full py-3 bg-[var(--accent)] text-white rounded-xl text-[10px] font-black uppercase tracking-[0.2em] transition-all text-center">
-                  Launch App
+                  Open Workspace
                 </a>
               </div>
             </motion.div>
