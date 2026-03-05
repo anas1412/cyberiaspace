@@ -116,11 +116,14 @@ const ThoughtConnection = ({ nodeA, nodeB }: { nodeA: ThoughtNodeData; nodeB: Th
   );
 };
 
-const AgenticSpaceVisual = () => {
-  const [activeSpaceIdx, setActiveSpaceIdx] = useState(0);
+const AgenticSpaceVisual: React.FC<{
+  activeSpaceIdx: number;
+  setActiveSpaceIdx: React.Dispatch<React.SetStateAction<number>>;
+}> = ({ activeSpaceIdx, setActiveSpaceIdx }) => {
   const [isGrabbing, setIsGrabbing] = useState(false);
   
   const currentSpace = SPACES_DATA[activeSpaceIdx];
+
 
   const freeNodes = useMemo(() => [
     { id: 4, title: currentSpace.free[0], x: [220, -260], y: [-240, 160], duration: 34, delay: 1 },
@@ -285,8 +288,9 @@ const AgenticSpaceVisual = () => {
               }}
             >
               <div className="-translate-x-1/2 -translate-y-1/2">
-                <MinimalistThought title={node.title} className="scale-90 opacity-40" />
+                <MinimalistThought title={node.title} className="scale-90 opacity-60 blur-sm" />
               </div>
+
             </motion.div>
           ))}
 
@@ -343,30 +347,17 @@ const AgenticSpaceVisual = () => {
           )}
         </div>
       </motion.div>
-
-      {/* Space Switcher */}
-      <div className="absolute top-8 left-1/2 -translate-x-1/2 z-[110] flex items-center gap-1.5 p-1.5 glass rounded-full border border-white/5">
-        {SPACES_DATA.map((space, idx) => (
-          <button
-            key={space.name}
-            onClick={() => setActiveSpaceIdx(idx)}
-            className={`px-4 py-1.5 rounded-full text-[8px] font-black uppercase tracking-[0.2em] transition-all duration-300 ${
-              activeSpaceIdx === idx 
-                ? 'bg-white text-black shadow-lg shadow-white/10' 
-                : 'text-white/40 hover:text-white hover:bg-white/5'
-            }`}
-          >
-            {space.name}
-          </button>
-        ))}
-      </div>
     </div>
   );
 };
 
 
-const DynamicViewsVisual = () => {
-  const [view, setView] = useState<'spatial' | 'kanban' | 'calendar'>('spatial');
+
+const DynamicViewsVisual: React.FC<{
+  view: 'spatial' | 'kanban' | 'calendar';
+  setView: React.Dispatch<React.SetStateAction<'spatial' | 'kanban' | 'calendar'>>;
+}> = ({ view, setView }) => {
+
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -542,26 +533,10 @@ const DynamicViewsVisual = () => {
           </motion.div>
         );
       })}
-
-      {/* View Switcher */}
-      <div className="absolute top-8 right-8 z-[110] flex items-center gap-1.5 p-1.5 glass rounded-full border border-white/5">
-        {(['spatial', 'kanban', 'calendar'] as const).map((v) => (
-          <button
-            key={v}
-            onClick={() => setView(v)}
-            className={`px-4 py-1.5 rounded-full text-[8px] font-black uppercase tracking-[0.2em] transition-all duration-300 ${
-              view === v 
-                ? 'bg-white text-black shadow-lg shadow-white/10' 
-                : 'text-white/40 hover:text-white hover:bg-white/5'
-            }`}
-          >
-            {v}
-          </button>
-        ))}
-      </div>
     </div>
   );
 };
+
 
 const CloudPersistenceVisual = () => {
   const [phase, setPhase] = useState<'upload' | 'pulse' | 'distribute' | 'success' | 'idle'>('idle');
@@ -783,10 +758,11 @@ const AgenticWorkspaceVisual = () => {
   const fullPrompt = "Research on topic X, find me 3 related videos from youtube and link them.";
 
   const freeNodes = [
-    { id: 'f1', title: 'RESEARCH_REF', x: [300, -300], y: [-200, 200], duration: 45, delay: 0, opacity: 0.85 },
-    { id: 'f2', title: 'API_DOCS', x: [-350, 350], y: [150, -150], duration: 55, delay: 10, opacity: 0.85 },
-    { id: 'f3', title: 'MARKET_DATA', x: [200, -200], y: [250, -250], duration: 65, delay: 5, opacity: 0.85 },
-    { id: 'f4', title: 'STRATEGY_V1', x: [-250, 250], y: [-300, 300], duration: 50, delay: 15, opacity: 0.85 },
+    { id: 'f1', title: 'RESEARCH_REF', x: [300, -300], y: [-200, 200], duration: 45, delay: 0, opacity: 0.95 },
+    { id: 'f2', title: 'API_DOCS', x: [-350, 350], y: [150, -150], duration: 55, delay: 10, opacity: 0.95 },
+    { id: 'f3', title: 'MARKET_DATA', x: [200, -200], y: [250, -250], duration: 65, delay: 5, opacity: 0.95 },
+    { id: 'f4', title: 'STRATEGY_V1', x: [-250, 250], y: [-300, 300], duration: 50, delay: 15, opacity: 0.95 },
+
   ];
   
   useEffect(() => {
@@ -854,8 +830,9 @@ const AgenticWorkspaceVisual = () => {
           style={{ opacity: node.opacity }}
         >
           <div className="-translate-x-1/2 -translate-y-1/2">
-            <MinimalistThought title={node.title} className="scale-75" />
+            <MinimalistThought title={node.title} className="scale-75 blur-sm" />
           </div>
+
         </motion.div>
       ))}
 
@@ -997,10 +974,11 @@ const ResponsiveStage = ({ children }: { children: React.ReactNode }) => {
     const updateScale = () => {
       if (containerRef.current) {
         const width = containerRef.current.offsetWidth;
-        const height = containerRef.current.offsetHeight;
         const designSize = 600;
-        const newScale = Math.min(width, height) / designSize;
+
+        const newScale = width / designSize;
         setScale(Math.max(0.4, newScale)); // Minimum scale of 0.4 to prevent disappearance
+
       }
     };
     updateScale();
@@ -1021,26 +999,91 @@ const ResponsiveStage = ({ children }: { children: React.ReactNode }) => {
 };
 
 const FeatureVisual: React.FC<{ activeFeature: number }> = ({ activeFeature }) => {
+  const [activeSpaceIdx, setActiveSpaceIdx] = useState(0);
+  const [view, setView] = useState<'spatial' | 'kanban' | 'calendar'>('spatial');
+
   return (
-    <ResponsiveStage>
-      <AnimatePresence mode="wait">
-        <motion.div
-          key={activeFeature}
-          initial={{ opacity: 0, scale: 0.95, filter: 'blur(20px)' }}
-          animate={{ opacity: 1, scale: 1, filter: 'blur(0px)' }}
-          exit={{ opacity: 0, scale: 1.05, filter: 'blur(20px)' }}
-          transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
-          className="w-full h-full"
-        >
-          {activeFeature === 0 && <AgenticSpaceVisual />}
-          {activeFeature === 1 && <DynamicViewsVisual />}
-          {activeFeature === 2 && <CloudPersistenceVisual />}
-          {activeFeature === 3 && <AgenticWorkspaceVisual />}
-        </motion.div>
+    <div className="w-full h-full relative">
+      <ResponsiveStage>
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={activeFeature}
+            initial={{ opacity: 0, scale: 0.95, filter: 'blur(20px)' }}
+            animate={{ opacity: 1, scale: 1, filter: 'blur(0px)' }}
+            exit={{ opacity: 0, scale: 1.05, filter: 'blur(20px)' }}
+            transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
+            className="w-full h-full"
+          >
+            {activeFeature === 0 && (
+              <AgenticSpaceVisual 
+                activeSpaceIdx={activeSpaceIdx} 
+                setActiveSpaceIdx={setActiveSpaceIdx} 
+              />
+            )}
+            {activeFeature === 1 && (
+              <DynamicViewsVisual 
+                view={view} 
+                setView={setView} 
+              />
+            )}
+            {activeFeature === 2 && <CloudPersistenceVisual />}
+            {activeFeature === 3 && <AgenticWorkspaceVisual />}
+          </motion.div>
+        </AnimatePresence>
+      </ResponsiveStage>
+
+      {/* Switchers rendered at 1:1 scale on top of ResponsiveStage */}
+      <AnimatePresence>
+        {activeFeature === 0 && (
+          <motion.div 
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -10 }}
+            className="absolute top-8 left-1/2 -translate-x-1/2 z-[110] flex items-center gap-1.5 p-1.5 glass rounded-full border border-white/5"
+          >
+            {SPACES_DATA.map((space, idx) => (
+              <button
+                key={space.name}
+                onClick={() => setActiveSpaceIdx(idx)}
+                className={`px-4 py-1.5 rounded-full text-[8px] font-black uppercase tracking-[0.2em] transition-all duration-300 ${
+                  activeSpaceIdx === idx 
+                    ? 'bg-white text-black shadow-lg shadow-white/10' 
+                    : 'text-white/40 hover:text-white hover:bg-white/5'
+                }`}
+              >
+                {space.name}
+              </button>
+            ))}
+          </motion.div>
+        )}
+
+        {activeFeature === 1 && (
+          <motion.div 
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -10 }}
+            className="absolute top-8 left-1/2 -translate-x-1/2 z-[110] flex items-center gap-1.5 p-1.5 glass rounded-full border border-white/5"
+          >
+            {(['spatial', 'kanban', 'calendar'] as const).map((v) => (
+              <button
+                key={v}
+                onClick={() => setView(v)}
+                className={`px-4 py-1.5 rounded-full text-[8px] font-black uppercase tracking-[0.2em] transition-all duration-300 ${
+                  view === v 
+                    ? 'bg-white text-black shadow-lg shadow-white/10' 
+                    : 'text-white/40 hover:text-white hover:bg-white/5'
+                }`}
+              >
+                {v}
+              </button>
+            ))}
+          </motion.div>
+        )}
       </AnimatePresence>
-    </ResponsiveStage>
+    </div>
   );
 };
+
 
 
 const Homepage: React.FC = () => {
@@ -1313,10 +1356,11 @@ const Homepage: React.FC = () => {
                     {activeFeature === index && (
                       <motion.div
                         initial={{ opacity: 0, height: 0 }}
-                        animate={{ opacity: 1, height: 'auto' }}
+                        animate={{ opacity: 1, height: 380 }}
                         exit={{ opacity: 0, height: 0 }}
-                        className="lg:hidden mt-6 aspect-square glass rounded-3xl overflow-hidden relative"
+                        className="lg:hidden mt-6 w-full h-[380px] glass rounded-3xl overflow-hidden relative"
                       >
+
                         <div className="absolute inset-0 bg-gradient-to-br from-[var(--accent)]/10 via-transparent to-transparent opacity-50" />
                         <FeatureVisual activeFeature={index} />
                       </motion.div>
