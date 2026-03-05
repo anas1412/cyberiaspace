@@ -94,17 +94,12 @@ interface ThoughtNodeData {
 }
 
 const ThoughtConnection = ({ nodeA, nodeB }: { nodeA: ThoughtNodeData; nodeB: ThoughtNodeData }) => {
-  const x1 = useTransform(nodeA.x, (v: number) => `calc(50% + ${v}px)`);
-  const y1 = useTransform(nodeA.y, (v: number) => `calc(50% + ${v}px)`);
-  const x2 = useTransform(nodeB.x, (v: number) => `calc(50% + ${v}px)`);
-  const y2 = useTransform(nodeB.y, (v: number) => `calc(50% + ${v}px)`);
-
   return (
     <motion.line
-      x1={x1}
-      y1={y1}
-      x2={x2}
-      y2={y2}
+      x1={nodeA.x}
+      y1={nodeA.y}
+      x2={nodeB.x}
+      y2={nodeB.y}
       stroke="#cbd5e1"
       strokeWidth="1.2"
       strokeLinecap="round"
@@ -288,7 +283,7 @@ const AgenticSpaceVisual: React.FC<{
               }}
             >
               <div className="-translate-x-1/2 -translate-y-1/2">
-                <MinimalistThought title={node.title} className="scale-90 opacity-60 blur-sm" />
+                <MinimalistThought title={node.title} className="scale-90 opacity-40" />
               </div>
 
             </motion.div>
@@ -296,7 +291,7 @@ const AgenticSpaceVisual: React.FC<{
 
           {/* Interacting Cluster */}
           <div className="absolute inset-0 pointer-events-none">
-            <svg className="absolute inset-0 w-full h-full overflow-visible">
+            <svg viewBox="-300 -300 600 600" className="absolute inset-0 w-full h-full overflow-visible">
               {[
                 [0, 1],
                 [1, 2],
@@ -379,6 +374,12 @@ const DynamicViewsVisual: React.FC<{
     { id: 6, title: 'DEPLOY', color: 'var(--accent-secondary)' },
   ];
 
+  const freeNodes = [
+    { id: 'f1', title: 'IDEAS', x: [250, -250], y: [-150, 150], duration: 30, delay: 0 },
+    { id: 'f2', title: 'NOTES', x: [-200, 200], y: [100, -100], duration: 40, delay: 5 },
+    { id: 'f3', title: 'LOGS', x: [150, -150], y: [200, -200], duration: 35, delay: 2 },
+  ];
+
   const getPosition = (index: number, currentView: string) => {
     if (currentView === 'spatial') {
       const positions = [
@@ -412,6 +413,24 @@ const DynamicViewsVisual: React.FC<{
         backgroundSize: '40px 40px' 
       }} />
 
+      {/* Free Drifting Nodes (Background) */}
+      {freeNodes.map((node) => (
+        <motion.div
+          key={node.id}
+          className="absolute left-1/2 top-1/2"
+          animate={{ x: node.x, y: node.y, rotate: [0, 8, -8, 0] }}
+          transition={{ 
+            x: { duration: node.duration, repeat: Infinity, ease: "linear", delay: -node.delay },
+            y: { duration: node.duration * 0.9, repeat: Infinity, ease: "linear", delay: -node.delay },
+            rotate: { duration: 12, repeat: Infinity, ease: "easeInOut" }
+          }}
+        >
+          <div className="-translate-x-1/2 -translate-y-1/2">
+            <MinimalistThought title={node.title} className="scale-75 opacity-40" />
+          </div>
+        </motion.div>
+      ))}
+
       <AnimatePresence>
         {view === 'kanban' && (
           <motion.div 
@@ -437,10 +456,12 @@ const DynamicViewsVisual: React.FC<{
           >
             {/* Background Pulse */}
             <motion.div 
-              className="absolute w-[600px] h-[400px] bg-[var(--accent)]/5 rounded-full blur-[100px]"
+              className="absolute left-1/2 top-1/2 w-[600px] h-[400px] bg-[var(--accent)]/5 rounded-full blur-[100px]"
               animate={{ 
                 scale: [1, 1.1, 1],
-                opacity: [0.2, 0.4, 0.2]
+                opacity: [0.2, 0.4, 0.2],
+                x: '-50%',
+                y: '-50%'
               }}
               transition={{ 
                 duration: 8, 
@@ -456,55 +477,61 @@ const DynamicViewsVisual: React.FC<{
                 const col = (n - 1) % 7;
                 const row = Math.floor((n - 1) / 7);
                 return (
-                  <div 
+                  <motion.div 
                     key={n}
-                    className="absolute text-[8px] font-black text-white/20 tracking-tighter"
+                    className="absolute left-1/2 top-1/2 text-[8px] font-black text-white/20 tracking-tighter"
                     style={{
-                      left: `calc(50% + ${(col - 2.5) * 85}px - 10px)`,
-                      top: `calc(50% - 160px + ${row * 80}px + 10px)`,
-                      transform: 'translateX(-100%)'
+                      x: (col - 2.5) * 85 - 10,
+                      y: -160 + row * 80 + 10,
+                      translateX: '-100%'
                     }}
                   >
                     {n}
-                  </div>
+                  </motion.div>
                 );
               })}
             </div>
-            <svg className="absolute inset-0 w-full h-full overflow-visible">
-              {[...Array(8)].map((_, i) => (
-                <React.Fragment key={`v-${i}`}>
-                  {/* Glow Line */}
-                  <line 
-                    x1={`calc(50% + ${(i - 3.5) * 85}px)`} y1="calc(50% - 160px)"
-                    x2={`calc(50% + ${(i - 3.5) * 85}px)`} y2="calc(50% + 240px)"
-                    stroke="white" strokeOpacity="0.1" strokeWidth="3"
-                    style={{ filter: 'blur(2px)' }}
-                  />
-                  {/* Base Line */}
-                  <line 
-                    x1={`calc(50% + ${(i - 3.5) * 85}px)`} y1="calc(50% - 160px)"
-                    x2={`calc(50% + ${(i - 3.5) * 85}px)`} y2="calc(50% + 240px)"
-                    stroke="white" strokeOpacity="0.2" strokeWidth="1"
-                  />
-                </React.Fragment>
-              ))}
-              {[...Array(6)].map((_, i) => (
-                <React.Fragment key={`h-${i}`}>
-                  {/* Glow Line */}
-                  <line 
-                    x1="calc(50% - 297.5px)" y1={`calc(50% - 160px + ${i * 80}px)`}
-                    x2="calc(50% + 297.5px)" y2={`calc(50% - 160px + ${i * 80}px)`}
-                    stroke="white" strokeOpacity="0.1" strokeWidth="3"
-                    style={{ filter: 'blur(2px)' }}
-                  />
-                  {/* Base Line */}
-                  <line 
-                    x1="calc(50% - 297.5px)" y1={`calc(50% - 160px + ${i * 80}px)`}
-                    x2="calc(50% + 297.5px)" y2={`calc(50% - 160px + ${i * 80}px)`}
-                    stroke="white" strokeOpacity="0.2" strokeWidth="1"
-                  />
-                </React.Fragment>
-              ))}
+            <svg viewBox="-300 -300 600 600" className="absolute inset-0 w-full h-full overflow-visible">
+              {[...Array(8)].map((_, i) => {
+                const x = (i - 3.5) * 85;
+                return (
+                  <React.Fragment key={`v-${i}`}>
+                    {/* Glow Line */}
+                    <line 
+                      x1={x} y1={-160}
+                      x2={x} y2={240}
+                      stroke="white" strokeOpacity="0.1" strokeWidth="3"
+                      style={{ filter: 'blur(2px)' }}
+                    />
+                    {/* Base Line */}
+                    <line 
+                      x1={x} y1={-160}
+                      x2={x} y2={240}
+                      stroke="white" strokeOpacity="0.2" strokeWidth="1"
+                    />
+                  </React.Fragment>
+                );
+              })}
+              {[...Array(6)].map((_, i) => {
+                const y = -160 + i * 80;
+                return (
+                  <React.Fragment key={`h-${i}`}>
+                    {/* Glow Line */}
+                    <line 
+                      x1={-297.5} y1={y}
+                      x2={297.5} y2={y}
+                      stroke="white" strokeOpacity="0.1" strokeWidth="3"
+                      style={{ filter: 'blur(2px)' }}
+                    />
+                    {/* Base Line */}
+                    <line 
+                      x1={-297.5} y1={y}
+                      x2={297.5} y2={y}
+                      stroke="white" strokeOpacity="0.2" strokeWidth="1"
+                    />
+                  </React.Fragment>
+                );
+              })}
             </svg>
           </motion.div>
         )}
@@ -515,7 +542,7 @@ const DynamicViewsVisual: React.FC<{
         return (
           <motion.div
             key={t.id}
-            className="absolute"
+            className="absolute left-1/2 top-1/2"
             animate={{ 
               x: pos.x, 
               y: pos.y,
@@ -529,7 +556,9 @@ const DynamicViewsVisual: React.FC<{
               mass: 1.2
             }}
           >
-            <MinimalistThought title={t.title} color={t.color} />
+            <div className="-translate-x-1/2 -translate-y-1/2">
+              <MinimalistThought title={t.title} color={t.color} />
+            </div>
           </motion.div>
         );
       })}
@@ -576,6 +605,12 @@ const CloudPersistenceVisual = () => {
     { id: 'laptop-bottom', label: 'Laptop', x: 0, y: 180, type: 'laptop' },
   ];
 
+  const freeNodes = [
+    { id: 'f1', title: 'BACKUP_V1', x: [280, -280], y: [-200, 200], duration: 35, delay: 0 },
+    { id: 'f2', title: 'ASSETS', x: [-250, 250], y: [150, -150], duration: 45, delay: 5 },
+    { id: 'f3', title: 'MEDIA', x: [200, -200], y: [250, -250], duration: 40, delay: 10 },
+  ];
+
   return (
     <div className="relative w-full h-full flex items-center justify-center bg-transparent overflow-hidden">
       {/* Background Grid */}
@@ -583,6 +618,24 @@ const CloudPersistenceVisual = () => {
         backgroundImage: `radial-gradient(circle at 1px 1px, var(--accent) 1px, transparent 0)`,
         backgroundSize: '40px 40px' 
       }} />
+
+      {/* Free Drifting Nodes (Background) */}
+      {freeNodes.map((node) => (
+        <motion.div
+          key={node.id}
+          className="absolute left-1/2 top-1/2"
+          animate={{ x: node.x, y: node.y, rotate: [0, 8, -8, 0] }}
+          transition={{ 
+            x: { duration: node.duration, repeat: Infinity, ease: "linear", delay: -node.delay },
+            y: { duration: node.duration * 0.9, repeat: Infinity, ease: "linear", delay: -node.delay },
+            rotate: { duration: 12, repeat: Infinity, ease: "easeInOut" }
+          }}
+        >
+          <div className="-translate-x-1/2 -translate-y-1/2">
+            <MinimalistThought title={node.title} className="scale-75 opacity-40" />
+          </div>
+        </motion.div>
+      ))}
 
       {/* 1. Cloud Hub (Center) */}
       <div className="relative z-20">
@@ -593,9 +646,9 @@ const CloudPersistenceVisual = () => {
             transition={{ duration: 15, repeat: Infinity, ease: "linear" }}
             className="absolute w-40 h-40 opacity-20"
           >
-            <svg viewBox="0 0 100 100" className="w-full h-full">
+            <svg viewBox="-50 -50 100 100" className="w-full h-full">
               <circle 
-                cx="50" cy="50" r="48" 
+                cx="0" cy="0" r="48" 
                 stroke="white" strokeWidth="0.5" fill="none" 
                 strokeDasharray="4 6" 
               />
@@ -627,12 +680,12 @@ const CloudPersistenceVisual = () => {
 
       {/* 2. Devices */}
       {devices.map((device) => (
-        <div 
+        <motion.div 
           key={device.id} 
           className="absolute left-1/2 top-1/2" 
-          style={{ transform: `translate(calc(-50% + ${device.x}px), calc(-50% + ${device.y}px))` }}
+          animate={{ x: device.x, y: device.y }}
         >
-          <div className="flex flex-col items-center gap-4">
+          <div className="-translate-x-1/2 -translate-y-1/2 flex flex-col items-center gap-4">
             <motion.div 
               className="relative"
               animate={phase === 'success' ? { 
@@ -667,7 +720,7 @@ const CloudPersistenceVisual = () => {
             </motion.div>
             <span className="text-[7px] font-black tracking-[0.3em] text-white/20 uppercase">{device.label}</span>
           </div>
-        </div>
+        </motion.div>
       ))}
 
       {/* 3. The Sync Sequence (Cards) */}
@@ -758,11 +811,10 @@ const AgenticWorkspaceVisual = () => {
   const fullPrompt = "Research on topic X, find me 3 related videos from youtube and link them.";
 
   const freeNodes = [
-    { id: 'f1', title: 'RESEARCH_REF', x: [300, -300], y: [-200, 200], duration: 45, delay: 0, opacity: 0.95 },
-    { id: 'f2', title: 'API_DOCS', x: [-350, 350], y: [150, -150], duration: 55, delay: 10, opacity: 0.95 },
-    { id: 'f3', title: 'MARKET_DATA', x: [200, -200], y: [250, -250], duration: 65, delay: 5, opacity: 0.95 },
-    { id: 'f4', title: 'STRATEGY_V1', x: [-250, 250], y: [-300, 300], duration: 50, delay: 15, opacity: 0.95 },
-
+    { id: 'f1', title: 'RESEARCH_REF', x: [300, -300], y: [-200, 200], duration: 45, delay: 0 },
+    { id: 'f2', title: 'API_DOCS', x: [-350, 350], y: [150, -150], duration: 55, delay: 10 },
+    { id: 'f3', title: 'MARKET_DATA', x: [200, -200], y: [250, -250], duration: 65, delay: 5 },
+    { id: 'f4', title: 'STRATEGY_V1', x: [-250, 250], y: [-300, 300], duration: 50, delay: 15 },
   ];
   
   useEffect(() => {
@@ -827,10 +879,9 @@ const AgenticWorkspaceVisual = () => {
             y: { duration: node.duration * 1.1, repeat: Infinity, ease: "linear", delay: -node.delay },
             rotate: { duration: 15, repeat: Infinity, ease: "easeInOut" }
           }}
-          style={{ opacity: node.opacity }}
         >
           <div className="-translate-x-1/2 -translate-y-1/2">
-            <MinimalistThought title={node.title} className="scale-75 blur-sm" />
+            <MinimalistThought title={node.title} className="scale-75 opacity-40" />
           </div>
 
         </motion.div>
@@ -887,7 +938,7 @@ const AgenticWorkspaceVisual = () => {
         }}
       >
         {/* Weaving Lines */}
-        <svg className="absolute inset-0 w-full h-full overflow-visible">
+        <svg viewBox="-300 -300 600 600" className="absolute inset-0 w-full h-full overflow-visible">
           {(stage === 'linked' || stage === 'settled') && [
             [0, 1], [1, 2], [2, 0]
           ].map(([i, j]) => (
@@ -895,17 +946,17 @@ const AgenticWorkspaceVisual = () => {
               key={`${i}-${j}`}
               initial={{ 
                 pathLength: 0,
-                x1: `calc(50% + ${cards[i].tx}px)`,
-                y1: `calc(50% + ${cards[i].ty}px)`,
-                x2: `calc(50% + ${cards[j].tx}px)`,
-                y2: `calc(50% + ${cards[j].ty}px)`,
+                x1: cards[i].tx,
+                y1: cards[i].ty,
+                x2: cards[j].tx,
+                y2: cards[j].ty,
               }}
       animate={{ 
         pathLength: 1,
-        x1: `calc(50% + ${cards[i].tx * (stage === 'settled' ? 0.75 : 1)}px)`,
-        y1: `calc(50% + ${cards[i].ty * (stage === 'settled' ? 0.75 : 1)}px)`,
-        x2: `calc(50% + ${cards[j].tx * (stage === 'settled' ? 0.75 : 1)}px)`,
-        y2: `calc(50% + ${cards[j].ty * (stage === 'settled' ? 0.75 : 1)}px)`,
+        x1: cards[i].tx * (stage === 'settled' ? 0.75 : 1),
+        y1: cards[i].ty * (stage === 'settled' ? 0.75 : 1),
+        x2: cards[j].tx * (stage === 'settled' ? 0.75 : 1),
+        y2: cards[j].ty * (stage === 'settled' ? 0.75 : 1),
       }}
       transition={{ 
         pathLength: { duration: 1.2, ease: "easeInOut" },
