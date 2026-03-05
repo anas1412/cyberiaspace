@@ -127,6 +127,8 @@ const Viewport: React.FC = () => {
     };
 
     const handleMouseMove = (e: MouseEvent) => {
+      if (!isPanningRef.current && !isSelectingRef.current) return;
+
       const s = getGlobalScale();
       const lx = e.clientX / s;
       const ly = e.clientY / s;
@@ -137,8 +139,8 @@ const Viewport: React.FC = () => {
       };
 
       if (isPanningRef.current) {
-        const dx = (e.clientX - lastMousePos.current.rawX) / s;
-        const dy = (e.clientY - lastMousePos.current.rawY) / s;
+        const dx = (e.clientX - lastMousePos.current.rawX) / (s * transform.scale);
+        const dy = (e.clientY - lastMousePos.current.rawY) / (s * transform.scale);
 
         setTransform(applyConstraints({
           ...transform,
@@ -146,6 +148,7 @@ const Viewport: React.FC = () => {
           y: transform.y + dy,
         }));
       } else if (isSelectingRef.current) {
+
         const startLX = selectionStartRef.current.rawX / s;
         const startLY = selectionStartRef.current.rawY / s;
         const x = Math.min(lx, startLX);

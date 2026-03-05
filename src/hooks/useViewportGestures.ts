@@ -51,6 +51,12 @@ export const useViewportGestures = (config: GestureConfig) => {
 
   const handleWheel = useCallback((e: WheelEvent) => {
     const target = e.target as HTMLElement;
+
+    // For Demo: Stop the whole page from scrolling when interacting with the engine
+    if (isDemo && target.closest('[data-demo-workspace="true"]')) {
+      e.preventDefault();
+    }
+
     // Standard exclusions
     if (target.closest('#inspector, #text-focus-overlay, #table-focus-overlay, #chat-overlay, .focus-box, #space-switcher-list')) return;
 
@@ -60,8 +66,6 @@ export const useViewportGestures = (config: GestureConfig) => {
     // For Demo: Allow zoom/scroll if mouse is over the demo container OR the viewport
     if (isDemo && !target.closest('[data-demo-workspace="true"], #viewport')) return;
 
-    // Prevent default scroll only if we are inside the intended interaction zone
-    if (isDemo && !target.closest('[data-demo-workspace="true"]')) return;
 
     // Calendar Sidebar Scroll
 
@@ -109,9 +113,16 @@ export const useViewportGestures = (config: GestureConfig) => {
 
 
   const handleTouchStart = useCallback((e: TouchEvent) => {
-    if (isDemo && !(e.target as HTMLElement).closest('[data-demo-workspace="true"]')) return;
     const target = e.target as HTMLElement;
+    
+    // For Demo: Stop the whole page from scrolling when interacting with the engine
+    if (isDemo && target.closest('[data-demo-workspace="true"]')) {
+      e.preventDefault();
+    }
+
+    if (isDemo && !target.closest('[data-demo-workspace="true"]')) return;
     if (target.closest('button, input, textarea, .thought-bulb, #inspector, .ui-layer, .expand-img, #chat-overlay, .focus-box')) return;
+
 
     isTouchingRef.current = true;
     const s = getGlobalScale();
@@ -140,6 +151,9 @@ export const useViewportGestures = (config: GestureConfig) => {
   }, [getGlobalScale, transform, activeSpaceMode, isDemo]);
 
   const handleTouchMove = useCallback((e: TouchEvent) => {
+    if (isDemo && (e.target as HTMLElement).closest('[data-demo-workspace="true"]')) {
+      e.preventDefault();
+    }
     if (!isTouchingRef.current) return;
     const s = getGlobalScale();
 
@@ -147,8 +161,9 @@ export const useViewportGestures = (config: GestureConfig) => {
 
     if (e.touches.length === 1 && isPanningRef.current) {
       const touch = e.touches[0];
-      const dx = (touch.clientX - lastMousePos.current.rawX) / s;
-      const dy = (touch.clientY - lastMousePos.current.rawY) / s;
+      const dx = (touch.clientX - lastMousePos.current.rawX) / (s * transform.scale);
+      const dy = (touch.clientY - lastMousePos.current.rawY) / (s * transform.scale);
+
       
       if (activeSpaceMode === 'spatial') {
         newTransform = {

@@ -88,7 +88,7 @@ const DemoWorkspace: React.FC = () => {
         </button>
       </div>
 
-      <div className="absolute bottom-6 left-6 z-[100] flex items-center gap-3 transition-all group-hover:opacity-100 opacity-40">
+      <div className="absolute bottom-4 left-4 md:bottom-6 md:left-6 z-[100] flex items-center gap-3 transition-all group-hover:opacity-100 opacity-40">
         <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ backgroundColor: 'rgba(99, 102, 241, 0.2)' }}>
           <Rocket className="w-4 h-4" style={{ color: 'var(--accent-secondary)' }} />
         </div>
@@ -99,9 +99,10 @@ const DemoWorkspace: React.FC = () => {
       </div>
 
       {/* Interactive Hint */}
-      <div className="absolute bottom-6 right-6 z-[100] pointer-events-none transition-all group-hover:opacity-0 opacity-100">
+      <div className="absolute bottom-6 right-6 z-[100] pointer-events-none transition-all group-hover:opacity-0 opacity-100 hidden md:block">
         <span className="text-[10px] font-black uppercase tracking-[0.3em] animate-pulse" style={{ color: 'var(--accent)', opacity: 0.6 }}>Drag Nodes to Interact</span>
       </div>
+
     </div>
   );
 };
