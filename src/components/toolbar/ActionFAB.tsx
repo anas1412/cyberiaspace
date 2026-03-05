@@ -1,4 +1,4 @@
-import React, { useRef } from 'react';
+import React, { useRef, useState, useEffect } from 'react';
 import { Plus, ArrowLeft, File as FileIcon, Clipboard } from 'lucide-react';
 import { detectImageType } from '../../utils/image';
 
@@ -8,7 +8,55 @@ interface ActionFABProps {
 }
 
 export const ActionFAB: React.FC<ActionFABProps> = ({ isReadOnly, handleAddThought }) => {
+  const [isExpanded, setIsExpanded] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const longPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const closeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const isLongPress = useRef(false);
+
+  useEffect(() => {
+    return () => {
+      if (closeTimer.current) clearTimeout(closeTimer.current);
+      if (longPressTimer.current) clearTimeout(longPressTimer.current);
+    };
+  }, []);
+
+  const handleMouseEnter = () => {
+    if (closeTimer.current) {
+      clearTimeout(closeTimer.current);
+      closeTimer.current = null;
+    }
+    setIsExpanded(true);
+  };
+
+  const handleMouseLeave = () => {
+    closeTimer.current = setTimeout(() => {
+      setIsExpanded(false);
+      closeTimer.current = null;
+    }, 300);
+  };
+
+  const handleTouchStart = () => {
+    isLongPress.current = false;
+    longPressTimer.current = setTimeout(() => {
+      isLongPress.current = true;
+      setIsExpanded(prev => !prev);
+    }, 500);
+  };
+
+  const handleTouchEnd = () => {
+    if (longPressTimer.current) {
+      clearTimeout(longPressTimer.current);
+    }
+  };
+
+  const handleClick = () => {
+    if (isLongPress.current) {
+      isLongPress.current = false;
+      return;
+    }
+    handleAddThought();
+  };
 
   const handlePasteAction = async () => {
     try {
@@ -95,7 +143,9 @@ export const ActionFAB: React.FC<ActionFABProps> = ({ isReadOnly, handleAddThoug
   }
 
   return (
-    <div className="fixed bottom-10 md:bottom-10 lg:bottom-10 z-[10000] left-1/2 -translate-x-1/2 pointer-events-none flex items-center gap-4 transition-all duration-300 mobile-fab-adjust">
+    <div 
+      className="fixed bottom-10 z-[10000] left-1/2 -translate-x-1/2 flex items-center justify-center transition-all duration-300 mobile-fab-adjust"
+    >
       <input 
         type="file" 
         className="hidden" 
@@ -114,27 +164,43 @@ export const ActionFAB: React.FC<ActionFABProps> = ({ isReadOnly, handleAddThoug
         }} 
       />
       
-      <button 
-        onClick={() => fileInputRef.current?.click()}
-        className="group relative flex items-center justify-center w-12 h-12 bg-white/5 backdrop-blur-2xl text-white rounded-full border border-white/5 shadow-2xl transition-all hover:scale-110 active:scale-95 hover:bg-white/10 pointer-events-auto"
+      <div 
+        onMouseEnter={handleMouseEnter}
+        onMouseLeave={handleMouseLeave}
+        className={`relative flex items-center justify-center pointer-events-auto transition-all duration-500 ${isExpanded ? 'w-[200px]' : 'w-[64px]'} h-[64px]`}
       >
-        <div className="absolute bottom-full mb-4 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-all duration-300 translate-y-2 group-hover:translate-y-0 pointer-events-none whitespace-nowrap"><div className="glass px-3 py-1.5 rounded-xl border border-white/10 flex flex-col items-center gap-1 shadow-2xl bg-[var(--bg-main)]/90 backdrop-blur-xl"><span className="text-[10px] font-black uppercase tracking-widest text-white/80">Upload File</span></div></div>
-        <FileIcon className="w-5 h-5 text-slate-500 group-hover:text-white transition-all" />
-      </button>
+        <button 
+          onClick={() => fileInputRef.current?.click()}
+          className={`absolute group flex items-center justify-center w-12 h-12 bg-white/5 backdrop-blur-2xl text-white rounded-full border border-white/5 shadow-2xl transition-all duration-500 [transition-timing-function:cubic-bezier(0.34,1.56,0.64,1)] hover:scale-110 active:scale-95 hover:bg-white/10 pointer-events-auto ${
+            isExpanded ? "opacity-100 scale-100 -translate-x-[70px]" : "opacity-0 scale-50 translate-x-0 pointer-events-none"
+          }`}
+        >
+          <div className="absolute bottom-full mb-4 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-all duration-300 translate-y-2 group-hover:translate-y-0 pointer-events-none whitespace-nowrap"><div className="glass px-3 py-1.5 rounded-xl border border-white/10 flex flex-col items-center gap-1 shadow-2xl bg-[var(--bg-main)]/90 backdrop-blur-xl"><span className="text-[10px] font-black uppercase tracking-widest text-white/80">Upload File</span></div></div>
+          <FileIcon className="w-5 h-5 text-slate-500 group-hover:text-white transition-all" />
+        </button>
 
-      <button onClick={handleAddThought} className="group relative flex items-center justify-center w-16 h-16 bg-[var(--bg-gradient-to)]/40 backdrop-blur-2xl text-white rounded-full border border-white/10 shadow-[0_0_50px_var(--accent-glow)] transition-all hover:scale-110 active:scale-95 hover:border-[var(--accent)]/40 pointer-events-auto">
-        <div className="absolute bottom-full mb-4 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-all duration-300 translate-y-2 group-hover:translate-y-0 pointer-events-none whitespace-nowrap"><div className="glass px-3 py-1.5 rounded-xl border border-white/10 flex flex-col items-center gap-1 shadow-2xl bg-[var(--bg-main)]/90 backdrop-blur-xl"><div className="flex items-center gap-2"><span className="text-[10px] font-black uppercase tracking-widest text-white/80">New Thought</span><div className="w-[1px] h-2 bg-white/10 mx-0.5" /><kbd className="bg-white/5 border border-white/10 px-1.5 py-0.5 rounded text-[8px] font-black text-[var(--accent-secondary)]">SPACE</kbd></div><span className="text-[7px] font-black uppercase tracking-[0.2em] text-white/30 italic">or drag files to import</span></div></div>
-        <div className="absolute inset-0 rounded-full bg-[var(--accent)]/5 opacity-0 group-hover:opacity-100 transition-opacity blur-xl" />
-        <Plus className="w-8 h-8 text-slate-400 group-hover:text-white transition-all group-hover:rotate-90 relative z-10" />
-      </button>
+        <button 
+          onContextMenu={(e) => e.preventDefault()}
+          onTouchStart={handleTouchStart}
+          onTouchEnd={handleTouchEnd}
+          onClick={handleClick}
+          className="group relative z-10 flex items-center justify-center w-16 h-16 bg-[var(--bg-gradient-to)]/40 backdrop-blur-2xl text-white rounded-full border border-white/10 shadow-[0_0_50px_var(--accent-glow)] transition-all hover:scale-110 active:scale-95 hover:border-[var(--accent)]/40 pointer-events-auto"
+        >
+          <div className="absolute bottom-full mb-4 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-all duration-300 translate-y-2 group-hover:translate-y-0 pointer-events-none whitespace-nowrap"><div className="glass px-3 py-1.5 rounded-xl border border-white/10 flex flex-col items-center gap-1 shadow-2xl bg-[var(--bg-main)]/90 backdrop-blur-xl"><div className="flex items-center gap-2"><span className="text-[10px] font-black uppercase tracking-widest text-white/80">New Thought</span><div className="w-[1px] h-2 bg-white/10 mx-0.5" /><kbd className="bg-white/5 border border-white/10 px-1.5 py-0.5 rounded text-[8px] font-black text-[var(--accent-secondary)]">SPACE</kbd></div><span className="text-[7px] font-black uppercase tracking-[0.2em] text-white/30 italic">or drag files to import</span></div></div>
+          <div className="absolute inset-0 rounded-full bg-[var(--accent)]/5 opacity-0 group-hover:opacity-100 transition-opacity blur-xl" />
+          <Plus className={`w-8 h-8 text-slate-400 group-hover:text-white transition-all duration-500 relative z-10 ${isExpanded ? 'rotate-90 text-white' : ''}`} />
+        </button>
 
-      <button 
-        onClick={handlePasteAction}
-        className="group relative flex items-center justify-center w-12 h-12 bg-white/5 backdrop-blur-2xl text-white rounded-full border border-white/5 shadow-2xl transition-all hover:scale-110 active:scale-95 hover:bg-white/10 pointer-events-auto"
-      >
-        <div className="absolute bottom-full mb-4 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-all duration-300 translate-y-2 group-hover:translate-y-0 pointer-events-none whitespace-nowrap"><div className="glass px-3 py-1.5 rounded-xl border border-white/10 flex flex-col items-center gap-1 shadow-2xl bg-[var(--bg-main)]/90 backdrop-blur-xl"><div className="flex items-center gap-2"><span className="text-[10px] font-black uppercase tracking-widest text-white/80">Paste</span><div className="w-[1px] h-2 bg-white/10 mx-0.5" /><kbd className="bg-white/5 border border-white/10 px-1.5 py-0.5 rounded text-[8px] font-black text-[var(--accent-secondary)]">CTRL+V</kbd></div></div></div>
-        <Clipboard className="w-5 h-5 text-slate-500 group-hover:text-white transition-all" />
-      </button>
+        <button 
+          onClick={handlePasteAction}
+          className={`absolute group flex items-center justify-center w-12 h-12 bg-white/5 backdrop-blur-2xl text-white rounded-full border border-white/5 shadow-2xl transition-all duration-500 [transition-timing-function:cubic-bezier(0.34,1.56,0.64,1)] hover:scale-110 active:scale-95 hover:bg-white/10 pointer-events-auto ${
+            isExpanded ? "opacity-100 scale-100 translate-x-[70px]" : "opacity-0 scale-50 translate-x-0 pointer-events-none"
+          }`}
+        >
+          <div className="absolute bottom-full mb-4 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-all duration-300 translate-y-2 group-hover:translate-y-0 pointer-events-none whitespace-nowrap"><div className="glass px-3 py-1.5 rounded-xl border border-white/10 flex flex-col items-center gap-1 shadow-2xl bg-[var(--bg-main)]/90 backdrop-blur-xl"><div className="flex items-center gap-2"><span className="text-[10px] font-black uppercase tracking-widest text-white/80">Paste</span><div className="w-[1px] h-2 bg-white/10 mx-0.5" /><kbd className="bg-white/5 border border-white/10 px-1.5 py-0.5 rounded text-[8px] font-black text-[var(--accent-secondary)]">CTRL+V</kbd></div></div></div>
+          <Clipboard className="w-5 h-5 text-slate-500 group-hover:text-white transition-all" />
+        </button>
+      </div>
     </div>
   );
 };
