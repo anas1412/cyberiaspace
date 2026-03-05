@@ -1244,10 +1244,10 @@ const Homepage: React.FC = () => {
           whileInView={{ opacity: 1, y: 0 }}
           transition={{ duration: 1, delay: 0.2 }}
           viewport={{ once: true }}
-          className="hidden md:block max-w-6xl mx-auto mt-24 relative"
+          className="block max-w-6xl mx-auto mt-16 md:mt-24 px-4 md:px-0 relative"
         >
           <Suspense fallback={
-            <div className="w-full h-[600px] glass rounded-[3rem] animate-pulse flex items-center justify-center">
+            <div className="w-full h-[400px] md:h-[600px] glass rounded-[2rem] md:rounded-[3rem] animate-pulse flex items-center justify-center">
               <span className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-500">Initializing Core Engine...</span>
             </div>
           }>
