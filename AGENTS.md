@@ -31,7 +31,9 @@ Welcome to the Cyberia codebase! This project is a modern, high-performance spat
 ###  Spatial Thinking Engine
 - Thoughts are not just static entries; they are physical entities with `x, y` (position) and `vx, vy` (velocity) properties.
 - The canvas uses a custom physics engine for interactions, including "stacks" where nodes orbit each other.
+- **Physics Architecture:** Detailed principles regarding Top-Left Anchoring, DOM Synchronization, and Persistence are documented in [docs/physics-engine.md](./docs/physics-engine.md).
 - **Canvas Scaling:** Managed via `DOMMatrix` transforms. Avoid direct DOM manipulation for the canvas; use the `useStore` transform state.
+
 
 ###  State Management (Zustand)
 The application uses a modular, slice-based architecture for state management to maintain readability and prevent circular dependencies.

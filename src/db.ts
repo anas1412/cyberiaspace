@@ -39,6 +39,7 @@ interface Thought {
   placeholder?: string;
   description: string;
   type: 'label' | 'text' | 'tasks' | 'paint' | 'table' | 'image' | 'embed' | 'file';
+  deletedAt?: number | null;
   content: string;
   image: string | null;
   drawing: string | null;
@@ -100,9 +101,9 @@ db.on('versionchange', () => {
   window.location.reload();
 });
 
-db.version(12).stores({
+db.version(13).stores({
   spaces: 'id, name, order, syncStatus',
-  thoughts: '++id, spaceId, stackId, text, type, status, date, priority, order, author, storageUrl, syncStatus',
+  thoughts: '++id, spaceId, stackId, text, type, status, date, priority, order, author, storageUrl, syncStatus, deletedAt',
   stacks: 'id, spaceId, name, syncStatus',
   blobs: 'id, thoughtId',
   pendingDeletions: '++id, tableName, localId',

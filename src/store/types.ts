@@ -118,6 +118,7 @@ export interface CyberiaState {
   clearLocalData: () => Promise<void>;
   exportData: () => Promise<void>;
   importData: (file: File) => Promise<void>;
+  cleanupTrash: () => Promise<void>;
   isLocalWorkspaceEmpty: () => Promise<boolean>;
 }
 
@@ -144,7 +145,8 @@ export interface AuthState {
   processPendingDeletions: () => Promise<void>;
   processOfflineChanges: () => Promise<void>;
   processPendingBlobs: () => Promise<void>;
-  uploadThoughtBlob: (thoughtId: number) => Promise<void>;
+  uploadThoughtBlob: (thoughtId: number, force?: boolean) => Promise<void>;
+  removeCloudAsset: (thoughtId: number) => Promise<void>;
   importCloudData: () => Promise<unknown | null>;
   setAutoSync: (enabled: boolean) => void;
   deleteCloudData: () => Promise<void>;

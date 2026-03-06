@@ -15,7 +15,7 @@ export const createThoughtSlice: StateCreator<CyberiaState, [], [], any> = (set,
   deletingThoughtIds: [] as number[],
 
   refreshTotalThoughtCount: async () => {
-    const count = await db.thoughts.count();
+    const count = await db.thoughts.filter(t => !t.deletedAt).count();
     set(() => ({ totalThoughtCount: count }));
   },
 
@@ -24,7 +24,13 @@ export const createThoughtSlice: StateCreator<CyberiaState, [], [], any> = (set,
     const targetId = spaceId || get().activeSpaceId;
 
     if (!targetId) return;
-    const thoughts = await db.thoughts.where('spaceId').equals(targetId).toArray();
+    // Only fetch non-deleted thoughts for the active view
+    const thoughts = await db.thoughts
+      .where('spaceId')
+      .equals(targetId)
+      .filter(t => !t.deletedAt)
+      .toArray();
+      
     set(() => ({ thoughts, isSpaceLoading: false }));
     get().refreshTotalThoughtCount();
     if (get().history.length === 0) set(() => ({ history: [JSON.parse(JSON.stringify(thoughts))], historyIndex: 0 }));
@@ -48,7 +54,7 @@ export const createThoughtSlice: StateCreator<CyberiaState, [], [], any> = (set,
     }
     const QUIRKY_TITLES = ["Name Pending", "Just Go With It", "Something Is Happening", "Trust the Process"];
     const result = await db.transaction('rw', db.thoughts, async () => {
-      const currentCount = await db.thoughts.where('spaceId').equals(targetSpaceId).count();
+      const currentCount = await db.thoughts.where('spaceId').equals(targetSpaceId).filter(t => !t.deletedAt).count();
       if (currentCount >= limits.MAX_THOUGHTS_PER_SPACE) {
         useModalStore.getState().openModal({ 
           title: 'Thinking Limit Reached', 
@@ -138,12 +144,22 @@ export const createThoughtSlice: StateCreator<CyberiaState, [], [], any> = (set,
     const { useAuthStore } = await import('../useAuthStore');
     const authStore = useAuthStore.getState();
     set((state: CyberiaState) => ({ deletingThoughtIds: [...state.deletingThoughtIds, id] }));
+    
     if (thought) {
       await get().updateSpace(thought.spaceId, { updatedAt: new Date().toISOString() });
-      if (authStore.status === 'authenticated') await authStore.deleteServiceContent(thought);
+      if (authStore.status === 'authenticated') {
+        await authStore.deleteServiceContent(thought);
+      }
+      
+      // Soft-delete: update deletedAt and reset cloud metadata locally
+      await db.thoughts.update(id, { 
+        deletedAt: Date.now(),
+        storageUrl: undefined,
+        storagePath: undefined,
+        syncStatus: 'local'
+      });
     }
-    await db.thoughts.delete(id);
-    await db.blobs.where('thoughtId').equals(id).delete();
+
     await get().refreshThoughts();
     await get().refreshTotalThoughtCount();
     if (affectedStackId) await get().cleanupStacks();
@@ -164,13 +180,21 @@ export const createThoughtSlice: StateCreator<CyberiaState, [], [], any> = (set,
     const authStore = useAuthStore.getState();
     set((state: CyberiaState) => ({ deletingThoughtIds: [...state.deletingThoughtIds, ...ids] }));
     const affectedStackIds = Array.from(new Set(thoughts.filter((t: Thought) => ids.includes(t.id)).map((t: Thought) => t.stackId).filter(Boolean))) as string[];
+    
     if (authStore.status === 'authenticated') {
       for (const t of thoughts.filter((t: Thought) => ids.includes(t.id))) {
         try { await authStore.deleteServiceContent(t); } catch (e) { console.warn('Delete failed', e); }
       }
     }
-    await db.thoughts.bulkDelete(ids);
-    await db.blobs.where('thoughtId').anyOf(ids).delete();
+
+    // Bulk soft-delete
+    await db.thoughts.where('id').anyOf(ids).modify({ 
+      deletedAt: Date.now(),
+      storageUrl: undefined,
+      storagePath: undefined,
+      syncStatus: 'local'
+    });
+
     await get().refreshThoughts();
     await get().refreshTotalThoughtCount();
     if (affectedStackIds.length) await get().cleanupStacks();
@@ -247,13 +271,21 @@ export const createThoughtSlice: StateCreator<CyberiaState, [], [], any> = (set,
     const { useAuthStore } = await import('../useAuthStore');
     const authStore = useAuthStore.getState();
     const affectedStackIds = Array.from(new Set(thoughts.filter((t: Thought) => selectedThoughtIds.includes(t.id)).map((t: Thought) => t.stackId).filter(Boolean))) as string[];
+    
     if (authStore.status === 'authenticated') {
       for (const t of thoughts.filter((t: Thought) => selectedThoughtIds.includes(t.id))) {
         try { await authStore.deleteServiceContent(t); } catch (e) { console.warn('Delete failed', e); }
       }
     }
-    await db.thoughts.bulkDelete(selectedThoughtIds);
-    await db.blobs.where('thoughtId').anyOf(selectedThoughtIds).delete();
+
+    // Bulk soft-delete
+    await db.thoughts.where('id').anyOf(selectedThoughtIds).modify({ 
+      deletedAt: Date.now(),
+      storageUrl: undefined,
+      storagePath: undefined,
+      syncStatus: 'local'
+    });
+
     await get().refreshThoughts();
     if (affectedStackIds.length > 0) await get().cleanupStacks();
     const deletedIds = [...selectedThoughtIds];

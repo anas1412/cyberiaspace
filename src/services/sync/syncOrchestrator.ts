@@ -68,7 +68,7 @@ export const syncOrchestrator = {
       const [localSpaces, localStacks, localThoughts] = await Promise.all([
         db.spaces.toArray(),
         db.stacks.toArray(),
-        db.thoughts.toArray(),
+        db.thoughts.filter(t => !t.deletedAt).toArray(),
       ]);
       
       console.log(`[Sync] Local: ${localSpaces.length} spaces, ${localStacks.length} stacks, ${localThoughts.length} thoughts`);
@@ -149,18 +149,21 @@ export const syncOrchestrator = {
       
       // STEP 5: Push local thoughts to cloud and upload new files
       if (localThoughts.length > 0) {
-        for (const thought of localThoughts) {
-          // Upload new files if thought has a blob and no storagePath
-          if ((thought.type === 'image' || thought.type === 'file') && !thought.storagePath) {
-            const blob = await db.blobs.where('thoughtId').equals(thought.id).first();
-            if (blob?.blob) {
-              const result = await supabaseStorage.uploadFile(userId, blob.blob, blob.name);
-              await db.thoughts.update(thought.id, {
-                storageUrl: result.url,
-                storagePath: result.path,
-              });
-              validStoragePaths.add(result.path);
-              console.log(`[Sync] Uploaded file for thought ${thought.id}`);
+        // Upload new files if user has auto-sync enabled
+        if (authState.autoSync) {
+          for (const thought of localThoughts) {
+            // Upload new files if thought has a blob and no storagePath
+            if ((thought.type === 'image' || thought.type === 'file') && !thought.storagePath) {
+              const blob = await db.blobs.where('thoughtId').equals(thought.id).first();
+              if (blob?.blob) {
+                const result = await supabaseStorage.uploadFile(userId, blob.blob, blob.name);
+                await db.thoughts.update(thought.id, {
+                  storageUrl: result.url,
+                  storagePath: result.path,
+                });
+                validStoragePaths.add(result.path);
+                console.log(`[Sync] Uploaded file for thought ${thought.id}`);
+              }
             }
           }
         }
@@ -226,7 +229,7 @@ export const syncOrchestrator = {
   },
 
   async isLocalEmpty(): Promise<boolean> {
-    const thoughtsCount = await db.thoughts.count();
+    const thoughtsCount = await db.thoughts.filter(t => !t.deletedAt).count();
     
     if (thoughtsCount === 0) return true;
     

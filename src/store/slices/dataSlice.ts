@@ -81,6 +81,7 @@ export const createDataSlice: StateCreator<CyberiaState, [], [], any> = (set, ge
     try {
       await get().refreshSpaces();
       await get().refreshTotalThoughtCount();
+      await get().cleanupTrash();
     } catch (err) {
       console.error('Failed to load data, resetting to onboarding:', err);
       get().loadOnboardingData();
@@ -271,6 +272,7 @@ export const createDataSlice: StateCreator<CyberiaState, [], [], any> = (set, ge
       // just refresh the data and state.
       await get().refreshSpaces();
       await get().refreshTotalThoughtCount();
+      await get().cleanupTrash();
       
       const { spaces } = get();
       if (spaces.length > 0) {
@@ -366,7 +368,7 @@ export const createDataSlice: StateCreator<CyberiaState, [], [], any> = (set, ge
   },
 
   isLocalWorkspaceEmpty: async () => {
-    const thoughtsCount = await db.thoughts.count();
+    const thoughtsCount = await db.thoughts.filter(t => !t.deletedAt).count();
     const spacesCount = await db.spaces.count();
     console.log(`[Conflict] Checking local state: ${thoughtsCount} thoughts, ${spacesCount} spaces`);
     
@@ -478,6 +480,21 @@ export const createDataSlice: StateCreator<CyberiaState, [], [], any> = (set, ge
       } else {
         set({ isDemo: false, isReadOnly: false });
       }
+    }
+  },
+  cleanupTrash: async () => {
+    const thirtyDaysAgo = Date.now() - 30 * 24 * 60 * 60 * 1000;
+    const thoughtsToPurge = await db.thoughts
+      .filter(t => t.deletedAt !== undefined && t.deletedAt !== null && t.deletedAt < thirtyDaysAgo)
+      .toArray();
+    
+    if (thoughtsToPurge.length > 0) {
+      console.log(`[Storage] Purging ${thoughtsToPurge.length} old soft-deleted thoughts...`);
+      const ids = thoughtsToPurge.map(t => t.id);
+      await db.transaction("rw", db.thoughts, db.blobs, async () => {
+        await db.thoughts.bulkDelete(ids);
+        await db.blobs.where("thoughtId").anyOf(ids).delete();
+      });
     }
   },
 });

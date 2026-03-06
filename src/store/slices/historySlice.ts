@@ -27,8 +27,8 @@ export const createHistorySlice: StateCreator<CyberiaState, [], [], any> = (set,
     const prevThoughts = history[newIndex];
     
     await db.transaction('rw', db.thoughts, async () => {
-      await db.thoughts.where('spaceId').equals(activeSpaceId).delete();
-      await db.thoughts.bulkAdd(prevThoughts);
+      await db.thoughts.where('spaceId').equals(activeSpaceId).filter(t => !t.deletedAt).delete();
+      await db.thoughts.bulkPut(prevThoughts);
     });
     
     set({ thoughts: prevThoughts, historyIndex: newIndex });
@@ -42,8 +42,8 @@ export const createHistorySlice: StateCreator<CyberiaState, [], [], any> = (set,
     const nextThoughts = history[newIndex];
     
     await db.transaction('rw', db.thoughts, async () => {
-      await db.thoughts.where('spaceId').equals(activeSpaceId).delete();
-      await db.thoughts.bulkAdd(nextThoughts);
+      await db.thoughts.where('spaceId').equals(activeSpaceId).filter(t => !t.deletedAt).delete();
+      await db.thoughts.bulkPut(nextThoughts);
     });
     
     set({ thoughts: nextThoughts, historyIndex: newIndex });

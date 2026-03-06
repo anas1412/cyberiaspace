@@ -9,13 +9,18 @@ function cn(...inputs: ClassValue[]) {
 }
 
 const Modal: React.FC = () => {
-  const { isOpen, title, description, type, inputValue: initialValue, confirmText, onConfirm, content, closeModal } = useModalStore();
+  const { isOpen, title, description, type, inputValue: initialValue, confirmText, onConfirm, content, cancelText, onCancel, closeModal } = useModalStore();
   const [inputValue, setInputValue] = useState('');
 
   const handleConfirm = React.useCallback((value?: string) => {
     if (onConfirm) onConfirm(value || inputValue);
     closeModal();
   }, [onConfirm, inputValue, closeModal]);
+
+  const handleCancel = React.useCallback(() => {
+    if (onCancel) onCancel();
+    closeModal();
+  }, [onCancel, closeModal]);
 
   useEffect(() => {
     if (isOpen) {
@@ -151,10 +156,10 @@ const Modal: React.FC = () => {
             </button>
             {showCancel && (
               <button
-                onClick={closeModal}
+                onClick={handleCancel}
                 className="order-2 md:order-1 flex-1 py-3.5 md:py-4 text-[10px] md:text-xs font-bold uppercase tracking-widest bg-white/5 rounded-xl md:rounded-2xl text-white hover:bg-white/10 transition-colors"
               >
-                Cancel
+                {cancelText || 'Cancel'}
               </button>
             )}
           </div>
