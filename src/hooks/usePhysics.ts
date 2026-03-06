@@ -94,7 +94,11 @@ export const usePhysics = (
     thoughtMap.current.clear(); const mode = activeSpace?.mode || 'spatial';
     thoughts.forEach((t) => {
       thoughtMap.current.set(t.id, { ...t });
-      if (!physicsState.current.has(t.id)) physicsState.current.set(t.id, { x: t.x, y: t.y, vx: 0, vy: 0, scale: mode === 'spatial' ? 1 : 0.1 });
+      if (!physicsState.current.has(t.id)) {
+        const initialX = mode === 'spatial' ? t.x - 140 : t.x;
+        const initialY = mode === 'spatial' ? t.y - 60 : t.y;
+        physicsState.current.set(t.id, { x: initialX, y: initialY, vx: 0, vy: 0, scale: mode === 'spatial' ? 1 : 0.1 });
+      }
     });
     const ids = new Set(thoughts.map(t => t.id));
     for (const id of physicsState.current.keys()) if (!ids.has(id)) { physicsState.current.delete(id); elements.current.delete(id); }
@@ -241,16 +245,16 @@ export const usePhysics = (
     visualTransformRef.current.scale += (transform.scale - visualTransformRef.current.scale) * lerpFactor;
 
     const vT = visualTransformRef.current;
-    const isStructured = mode === 'calendar' || mode === 'kanban';
-    const effectiveTransform = isStructured ? { x: 0, y: 0, scale: 1 } : vT;
+    const isCalendar = mode === 'calendar';
+    const isKanban = mode === 'kanban';
+    const effectiveTransform = isCalendar ? { x: 0, y: 0, scale: 1 } : (isKanban ? { x: 0, y: vT.y, scale: 1 } : vT);
 
     if (worldRef.current) {
       worldRef.current.style.transform = `translate(${effectiveTransform.x}px, ${effectiveTransform.y}px) scale(${effectiveTransform.scale})`;
     }
     if (gridRef.current) {
       gridRef.current.style.transform = `translate(${effectiveTransform.x}px, ${effectiveTransform.y}px) scale(${effectiveTransform.scale})`;
-      // Hide standard grid lines in calendar mode
-      gridRef.current.style.opacity = mode === 'calendar' ? '0' : '0.03';
+      gridRef.current.style.opacity = isCalendar ? '0' : '0.03';
     }
 
 
@@ -293,6 +297,7 @@ export const usePhysics = (
       calendarStackFilter,
       kanbanSearchQuery,
       kanbanStackFilter,
+      kanbanY: vT.y,
       sidebarScrollTop: sbContent?.scrollTop || 0,
       sidebarTop: sbRect ? (sbRect.top / globalScale) : 320,
       isMobile,

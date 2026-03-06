@@ -43,7 +43,7 @@ export const kanbanStrategy: LayoutStrategist = {
 
     // Fading Logic from reference
     const headerBottom = isMobile ? 210 : 240;
-    const nodeScreenY = targetY; // Since camera is 0,0 in modular structured modes
+    const nodeScreenY = targetY; // Since world transform is {x:0, y:vT.y, scale:1}
     const cardBottom = nodeScreenY + height;
     
     let opacity = Math.max(0, Math.min(1, (cardBottom - headerBottom) / 60));

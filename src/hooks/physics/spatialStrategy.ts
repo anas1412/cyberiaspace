@@ -1,5 +1,5 @@
 import type { Thought } from '../../db';
-import type { LayoutStrategist, LayoutResult } from './types';
+import type { LayoutStrategist, LayoutResult, LayoutContext } from './types';
 
 const REPULSION = 80000;
 const ATTRACTION = 0.01;
@@ -17,13 +17,13 @@ const PRIORITY_WEIGHT = {
 export const spatialStrategy: LayoutStrategist = {
   name: 'spatial',
   
-  calculateLayout: (thought: Thought): LayoutResult => {
+  calculateLayout: (thought: Thought, _allThoughts: Thought[], _context: LayoutContext, elementHeights: Map<number, number>): LayoutResult => {
     const prioLevel = PRIORITY_WEIGHT[thought.priority] || 0;
     const targetScale = (1 + prioLevel * 0.05) * (thought.size || 1);
     
     return {
-      targetX: thought.x,
-      targetY: thought.y,
+      targetX: thought.x - 140,
+      targetY: thought.y - (elementHeights.get(thought.id) || 120) / 2,
       targetScale,
       zIndex: (20 + (thought.layer || 0)).toString(),
       opacity: 1,
@@ -41,8 +41,10 @@ export const spatialStrategy: LayoutStrategist = {
     const gravityMultiplier = 1 + prioLevel * 0.5;
     
     // Gravity toward center
-    dvx += (context.logicalWidth / 2 - p.x) * (GRAVITY * gravityMultiplier);
-    dvy += (context.logicalHeight / 2 - p.y) * (GRAVITY * gravityMultiplier);
+    const centerX = p.x + 140;
+    const centerY = p.y + (elementHeights.get(id) || 120) / 2;
+    dvx += (context.logicalWidth / 2 - centerX) * (GRAVITY * gravityMultiplier);
+    dvy += (context.logicalHeight / 2 - centerY) * (GRAVITY * gravityMultiplier);
 
     allStates.forEach((otherP, otherId) => {
       if (id === otherId) return;

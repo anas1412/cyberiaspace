@@ -18,6 +18,7 @@ export interface LayoutContext {
   calendarStackFilter: string | null;
   kanbanSearchQuery: string;
   kanbanStackFilter: string | null;
+  kanbanY: number;
   sidebarScrollTop: number;
   sidebarTop: number;
   isMobile: boolean;
