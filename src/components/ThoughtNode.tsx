@@ -184,12 +184,11 @@ const ThoughtNode: React.FC<ThoughtNodeProps> = React.memo(({ thought, registerE
       data-id={thought.id}
       data-unscheduled={!thought.date ? "true" : "false"}
       className={cn(
-        "thought-bulb absolute select-none touch-none will-change-transform w-[280px] pointer-events-auto",
+        "thought-bulb absolute select-none touch-none will-change-transform pointer-events-auto origin-top-left",
+        "w-[280px]",
         isDragging ? "z-[1000] cursor-grabbing" : "z-20 cursor-grab",
         ((isReadOnly && !isSpatial && !isDemo) || isDeleting) && "cursor-default pointer-events-none"
       )}
-
-
       onMouseDown={handleLocalMouseDown}
       onTouchStart={handleLocalTouchStart}
       onDragStart={(e) => e.preventDefault()}
@@ -211,7 +210,7 @@ const ThoughtNode: React.FC<ThoughtNodeProps> = React.memo(({ thought, registerE
       
       {/* DELETING OVERLAY */}
       {isDeleting && (
-        <div className="absolute inset-0 z-[50] rounded-3xl bg-black/60 backdrop-blur-sm border border-red-500/30 flex flex-col items-center justify-center gap-3 animate-in fade-in duration-300">
+        <div className="absolute inset-0 z-[50] rounded-[32px] bg-black/60 backdrop-blur-sm border border-red-500/30 flex flex-col items-center justify-center gap-3 animate-in fade-in duration-300">
           <div className="relative">
             <Loader2 className="w-8 h-8 text-red-500 animate-spin" />
             <Trash2 className="w-4 h-4 text-red-500 absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2" />
@@ -222,8 +221,7 @@ const ThoughtNode: React.FC<ThoughtNodeProps> = React.memo(({ thought, registerE
 
       <div
         className={cn(
-          "thought-bulb-content group backdrop-blur-[20px] border rounded-3xl flex flex-col relative transition-all duration-300",
-
+          "thought-bulb-content group backdrop-blur-[20px] border rounded-[32px] flex flex-col relative transition-all duration-300",
           isCalendar && !isExpanded ? "p-3 gap-0" : "p-4.5 gap-2",
           isSelected
             ? "border-[var(--accent)]/50 shadow-[0_0_40px_var(--accent-glow)] bg-[var(--node-bg)]/80"
@@ -239,9 +237,9 @@ const ThoughtNode: React.FC<ThoughtNodeProps> = React.memo(({ thought, registerE
           data-trigger={thought.type === 'text' ? 'text' : undefined}
           className={cn(
             "flex flex-col relative transition-all duration-300",
+            (isCalendar && !isExpanded) ? "h-0 opacity-0 pointer-events-none" : "opacity-100",
             thought.type === 'text' && "cursor-pointer rounded-xl overflow-hidden",
-            (isCalendar && !isExpanded) ? "h-0 opacity-0 pointer-events-none"
-              : (thought.type === 'text' && (thought.content || thought.description || !thought.stackId)) 
+            (thought.type === 'text' && (thought.content || thought.description || !thought.stackId)) 
                 ? "min-h-0 justify-center gap-2 mt-0.5 pointer-events-auto" : "min-h-0 gap-0 pointer-events-auto"
           )}
         >

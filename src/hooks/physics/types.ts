@@ -18,11 +18,14 @@ export interface LayoutContext {
   calendarStackFilter: string | null;
   kanbanSearchQuery: string;
   kanbanStackFilter: string | null;
+  kanbanY: number;
   sidebarScrollTop: number;
   sidebarTop: number;
   isMobile: boolean;
   isReadOnly: boolean;
+  calendarCellMap?: Map<string, { x: number; y: number; w: number; h: number }>;
 }
+
 
 export interface LayoutResult {
   targetX: number;

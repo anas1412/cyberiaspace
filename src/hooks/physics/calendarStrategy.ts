@@ -4,7 +4,9 @@ export const calendarStrategy: LayoutStrategist = {
   name: 'calendar',
   
   calculateLayout: (thought, allThoughts, context, elementHeights) => {
-    const { logicalWidth, logicalHeight, calendarViewDate, hoveredCalDate, sidebarScrollTop, sidebarTop, calendarSearchQuery, calendarStackFilter } = context;
+    const { logicalWidth, logicalHeight, hoveredCalDate, sidebarScrollTop, sidebarTop, calendarSearchQuery, calendarStackFilter, isMobile } = context;
+    
+    const compactClip = 'inset(0px 0px calc(100% - 70px) 0px round 32px)';
     
     // Filtering logic
     const matchesSearch = !calendarSearchQuery || 
@@ -13,34 +15,19 @@ export const calendarStrategy: LayoutStrategist = {
     
     const matchesStack = !calendarStackFilter || thought.stackId === calendarStackFilter;
     const isFilteredOut = !matchesSearch || !matchesStack;
-
+ 
     const sidebarWidth = 260;
-    const gap = 20;
-    const padding = 40;
-    const topPadding = 190;
-    const mainLeft = padding + sidebarWidth + gap;
-    const mainWidth = logicalWidth - mainLeft - padding;
-    const cellWidth = mainWidth / 7;
-    const cellHeight = (logicalHeight - topPadding - 120) / 5;
+    const padding = isMobile ? 16 : 40;
 
     if (thought.date) {
-      const year = calendarViewDate.getFullYear();
-      const month = calendarViewDate.getMonth();
-      const firstDay = new Date(year, month, 1).getDay() || 7;
-      
-      const tDate = new Date(thought.date + 'T00:00:00');
-      if (tDate.getFullYear() === year && tDate.getMonth() === month) {
-        const day = tDate.getDate();
-        const startOffset = firstDay - 1;
-        const cellIndex = startOffset + (day - 1);
-        const col = cellIndex % 7;
-        const row = Math.floor(cellIndex / 7);
-
-        const cellX = mainLeft + col * cellWidth;
-        const cellY = topPadding + row * cellHeight;
+      const cell = context.calendarCellMap?.get(thought.date);
+      if (cell) {
+        const cellX = cell.x;
+        const cellY = cell.y;
+        const cellWidth = cell.w;
+        const cellHeight = cell.h;
 
         const isHovered = hoveredCalDate === thought.date;
-        
         const dateThoughts = allThoughts
           .filter(t => t.date === thought.date)
           .filter(t => {
@@ -54,31 +41,18 @@ export const calendarStrategy: LayoutStrategist = {
         const index = dateThoughts.findIndex(t => t.id === thought.id);
         const isTopCard = index === count - 1;
 
-        // Scaling & Spacing Math: Use more of the cell area
-        const widthScale = (cellWidth - 12) / 280;
-        const heightScale = (cellHeight - 20) / 150; 
-        const uniformScale = Math.min(widthScale, heightScale, 0.85);
-
-        let hSpread = isHovered ? 25 : 12;
-        let vSpread = isHovered ? 70 : 35;
-
-        if (count > 1) {
-          hSpread = Math.min(hSpread, (cellWidth * 0.5) / (count - 1));
-          vSpread = Math.min(vSpread, (cellHeight * 0.5) / (count - 1));
-        }
-
+        const uniformScale = Math.min((cellWidth - 12) / 280, (cellHeight - 32) / 70, 0.85);
         const targetScale = isFilteredOut ? 0 : (isHovered ? uniformScale * 1.05 : uniformScale);
-        const h = elementHeights.get(thought.id) || 120;
         
-        const targetX = cellX + 6 + (index * hSpread) + (280 * targetScale) / 2;
-        const targetY = cellY + 4 + (index * vSpread) + (h * targetScale) / 2;
+        const targetX = cellX + 12 + (index * 12);
+        const targetY = cellY + 32 + (index * 35);
 
         return {
           targetX,
           targetY,
           targetScale,
           zIndex: (30 + (thought.layer || 0)).toString(),
-          clipPath: (isHovered || isTopCard) ? 'none' : 'inset(0px 0px calc(100% - 70px) 0px)',
+          clipPath: (isHovered || isTopCard) ? 'none' : compactClip,
           rotation: (thought.layer || 0) % 2 === 0 ? 0.8 : -0.8,
           opacity: isFilteredOut ? 0 : 1,
           visibility: isFilteredOut ? 'hidden' : 'visible',
@@ -107,30 +81,35 @@ export const calendarStrategy: LayoutStrategist = {
         .sort((a, b) => a.order - b.order);
       
       const index = unscheduled.findIndex(t => t.id === thought.id);
+      const isSidebarHovered = hoveredCalDate === "";
       
-      const currentScale = 0.8;
+      const currentScale = 0.78;
       const h = elementHeights.get(thought.id) || 120;
-      const heightAtScale = h * currentScale;
       
       // Sum previous heights in sidebar
       let yOffset = 0;
       for (let i = 0; i < index; i++) {
         const prevH = elementHeights.get(unscheduled[i].id) || 120;
-        yOffset += (prevH * currentScale) + 20;
+        const prevIsExpanded = isSidebarHovered; // Simplified for now
+        const visibleH = prevIsExpanded ? prevH : 70;
+        yOffset += (visibleH * currentScale) + 20;
       }
 
-      const targetY = sidebarTop + 20 - sidebarScrollTop + yOffset + heightAtScale / 2;
+      const targetY = sidebarTop + 20 - sidebarScrollTop + yOffset;
+
+      const currentVisibleH = isSidebarHovered ? h : 70;
 
       return {
-        targetX: padding + sidebarWidth / 2,
+        targetX: padding + (sidebarWidth - 280 * 0.78) / 2,
         targetY,
         targetScale: isFilteredOut ? 0 : currentScale,
-        zIndex: '35',
+        zIndex: '50',
         opacity: isFilteredOut ? 0 : 1,
         visibility: isFilteredOut ? 'hidden' : 'visible',
         pointerEvents: isFilteredOut ? 'none' : 'auto',
+        clipPath: isSidebarHovered ? 'none' : compactClip,
         isSidebar: true,
-        columnHeight: yOffset + heightAtScale + 20
+        columnHeight: yOffset + (currentVisibleH * currentScale) + 20
       };
     }
   }
