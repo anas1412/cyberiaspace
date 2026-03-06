@@ -73,10 +73,24 @@ export const usePhysics = (
     let allSettled = true;
     physicsState.current.forEach((p, id) => {
       const t = thoughtMap.current.get(id); if (!t) return;
-      const dx = t.x - p.x; const dy = t.y - p.y; const dist = Math.sqrt(dx * dx + dy * dy);
+      const h = elements.current.get(id)?.offsetHeight || 120;
+      const targetX = t.x - 140;
+      const targetY = t.y - h / 2;
+      const dx = targetX - p.x;
+      const dy = targetY - p.y;
+      const dist = Math.sqrt(dx * dx + dy * dy);
       const targetScale = (1 + (PRIORITY_WEIGHT[t.priority] || 0) * 0.05) * (t.size || 1);
-      if (dist > 1) { p.x += dx * 0.12; p.y += dy * 0.12; allSettled = false; } else { p.x = t.x; p.y = t.y; }
-      p.scale += (targetScale - p.scale) * 0.12; p.vx = 0; p.vy = 0;
+      if (dist > 1) {
+        p.x += dx * 0.12;
+        p.y += dy * 0.12;
+        allSettled = false;
+      } else {
+        p.x = targetX;
+        p.y = targetY;
+      }
+      p.scale += (targetScale - p.scale) * 0.12;
+      p.vx = 0;
+      p.vy = 0;
     });
     if (allSettled) isReturningHome.current = false;
   }, []);
@@ -90,18 +104,81 @@ export const usePhysics = (
     window.addEventListener('mousemove', handleMouseGlobal); return () => window.removeEventListener('mousemove', handleMouseGlobal);
   }, [getGlobalScale]);
 
+  const lastThoughtIds = useRef<string>('');
+  const lastInitMode = useRef<string | null>(null);
+
+  // --- PERSISTENCE (Fixes "Save Storm") ---
   useEffect(() => {
-    thoughtMap.current.clear(); const mode = activeSpace?.mode || 'spatial';
-    thoughts.forEach((t) => {
-      thoughtMap.current.set(t.id, { ...t });
-      if (!physicsState.current.has(t.id)) {
-        const initialX = mode === 'spatial' ? t.x - 140 : t.x;
-        const initialY = mode === 'spatial' ? t.y - 60 : t.y;
-        physicsState.current.set(t.id, { x: initialX, y: initialY, vx: 0, vy: 0, scale: mode === 'spatial' ? 1 : 0.1 });
+    const mode = activeSpace?.mode || 'spatial';
+    const physics = physicsState.current;
+    const thoughtsCache = thoughtMap.current;
+    const els = elements.current;
+
+    return () => {
+      // If we are leaving a spatial mode (via mode switch or space switch), save positions
+      if (mode === 'spatial') {
+        const store = useStore.getState();
+
+        // Capture heights immediately before updates
+        const heights = new Map<number, number>();
+        physics.forEach((_, id) => {
+          heights.set(id, els.get(id)?.offsetHeight || 120);
+        });
+
+        physics.forEach((p, id) => {
+          const t = thoughtsCache.get(id);
+          if (t) {
+            const h = heights.get(id) || 120;
+            store.updateThought(id, { x: p.x + 140, y: p.y + h / 2 });
+          }
+        });
       }
-    });
-    const ids = new Set(thoughts.map(t => t.id));
-    for (const id of physicsState.current.keys()) if (!ids.has(id)) { physicsState.current.delete(id); elements.current.delete(id); }
+    };
+  }, [activeSpace?.mode, activeSpaceId]);
+
+
+  // --- INITIALIZATION ---
+  useEffect(() => {
+    const physics = physicsState.current;
+    const thoughtsCache = thoughtMap.current;
+    const els = elements.current;
+    const mode = activeSpace?.mode || 'spatial';
+    
+    // Always keep cache fresh for physics loop
+    thoughts.forEach((t) => thoughtsCache.set(t.id, { ...t }));
+
+    // Only re-initialize structural state if IDs change or mode switches
+    const currentIds = thoughts.map(t => t.id).join(',');
+    const modeChanged = mode !== lastInitMode.current;
+    
+    if (currentIds !== lastThoughtIds.current || modeChanged) {
+      lastThoughtIds.current = currentIds;
+      lastInitMode.current = mode;
+      
+      thoughts.forEach((t) => {
+        if (!physics.has(t.id)) {
+          const h = els.get(t.id)?.offsetHeight || 120;
+          const initialX = mode === 'spatial' ? t.x - 140 : t.x;
+          const initialY = mode === 'spatial' ? t.y - h / 2 : t.y;
+          physics.set(t.id, { 
+            x: initialX, 
+            y: initialY, 
+            vx: 0, 
+            vy: 0, 
+            scale: mode === 'spatial' ? 1 : 0.1 
+          });
+        }
+      });
+
+      const ids = new Set(thoughts.map(t => t.id));
+      for (const id of physics.keys()) {
+        if (!ids.has(id)) {
+          physics.delete(id);
+          els.delete(id);
+          thoughtsCache.delete(id);
+        }
+      }
+    }
   }, [thoughts, activeSpace?.mode]);
 
   useEffect(() => {
@@ -110,26 +187,21 @@ export const usePhysics = (
       prevSpaceIdRef.current = currentSpaceId || null; prevModeRef.current = currentMode; prevTransformRef.current = { ...transform }; return;
     }
     if (currentMode === 'spatial' && prevModeRef.current !== 'spatial' && prevModeRef.current !== null) {
-      isReturningHome.current = true; const oldT = prevTransformRef.current; const newT = transform;
+      isReturningHome.current = true;
+      const oldMode = prevModeRef.current;
+      const oldT = (oldMode === 'calendar') ? { x: 0, y: 0, scale: 1 } : 
+                   (oldMode === 'kanban' ? { x: 0, y: prevTransformRef.current.y, scale: 1 } : prevTransformRef.current);
+      const newT = transform;
       physicsState.current.forEach((p) => {
-        const oldScreenX = p.x * oldT.scale + oldT.x; const oldScreenY = p.y * oldT.scale + oldT.y;
-        p.x = (oldScreenX - newT.x) / newT.scale; p.y = (oldScreenY - newT.y) / newT.scale;
-        p.scale = (p.scale * oldT.scale) / newT.scale; p.vx = 0; p.vy = 0;
+        const oldScreenX = p.x * oldT.scale + oldT.x;
+        const oldScreenY = p.y * oldT.scale + oldT.y;
+        p.x = (oldScreenX - newT.x) / newT.scale;
+        p.y = (oldScreenY - newT.y) / newT.scale;
+        p.scale = (p.scale * oldT.scale) / newT.scale;
+        p.vx = 0; p.vy = 0;
       });
     }
     prevModeRef.current = currentMode; prevTransformRef.current = { ...transform };
-    return () => {
-      if (currentMode === 'spatial' && currentSpaceId) {
-        thoughts.forEach((t) => {
-          const p = physicsState.current.get(t.id);
-          if (p && !useStore.getState().isReadOnly) {
-            import('../db').then(({ db }) => {
-              db.thoughts.update(t.id, { x: p.x, y: p.y });
-            });
-          }
-        });
-      }
-    };
   }, [activeSpace?.mode, activeSpaceId, thoughts, transform]);
 
   useEffect(() => {
@@ -194,7 +266,15 @@ export const usePhysics = (
             }
             if (foundDate) initialPositions.forEach((_, draggedId) => updateThought(draggedId, { date: foundDate! }));
           }
-        } else initialPositions.forEach((_, draggedId) => { const p = physicsState.current.get(draggedId); if (p) updateThought(draggedId, { x: p.x, y: p.y }); });
+        } else {
+          initialPositions.forEach((_, draggedId) => {
+            const p = physicsState.current.get(draggedId);
+            if (p) {
+              const h = elements.current.get(draggedId)?.offsetHeight || 120;
+              updateThought(draggedId, { x: p.x + 140, y: p.y + h / 2 });
+            }
+          });
+        }
       }
       dragRef.current = null;
     };
@@ -245,16 +325,18 @@ export const usePhysics = (
     visualTransformRef.current.scale += (transform.scale - visualTransformRef.current.scale) * lerpFactor;
 
     const vT = visualTransformRef.current;
-    const isCalendar = mode === 'calendar';
-    const isKanban = mode === 'kanban';
-    const effectiveTransform = isCalendar ? { x: 0, y: 0, scale: 1 } : (isKanban ? { x: 0, y: vT.y, scale: 1 } : vT);
+    const effectiveTransform = mode === 'spatial' 
+      ? vT 
+      : (mode === 'kanban' 
+          ? { x: 0, y: vT.y, scale: 1 } 
+          : { x: 0, y: 0, scale: 1 });
 
     if (worldRef.current) {
       worldRef.current.style.transform = `translate(${effectiveTransform.x}px, ${effectiveTransform.y}px) scale(${effectiveTransform.scale})`;
     }
     if (gridRef.current) {
       gridRef.current.style.transform = `translate(${effectiveTransform.x}px, ${effectiveTransform.y}px) scale(${effectiveTransform.scale})`;
-      gridRef.current.style.opacity = isCalendar ? '0' : '0.03';
+      gridRef.current.style.opacity = mode === 'calendar' ? '0' : '0.03';
     }
 
 
