@@ -38,13 +38,13 @@ export const kanbanStrategy: LayoutStrategist = {
     }
     
     const height = elementHeights.get(thought.id) || 120;
-    const targetY = isFilteredOut ? 320 : currentY + height / 2;
-    const targetX = (colWidth * colIdx) + (colWidth / 2);
+    const targetY = isFilteredOut ? 320 : currentY;
+    const targetX = (colWidth * colIdx) + (colWidth - 280) / 2;
 
     // Fading Logic from reference
     const headerBottom = isMobile ? 210 : 240;
     const nodeScreenY = targetY; // Since camera is 0,0 in modular structured modes
-    const cardBottom = nodeScreenY + (height / 2);
+    const cardBottom = nodeScreenY + height;
     
     let opacity = Math.max(0, Math.min(1, (cardBottom - headerBottom) / 60));
     if (isFilteredOut) opacity = 0;

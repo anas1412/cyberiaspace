@@ -50,8 +50,10 @@ export const spatialStrategy: LayoutStrategist = {
       const otherT = allThoughts.find(t => t.id === otherId);
       if (!otherT) return;
 
-      const dx = p.x - otherP.x;
-      const dy = p.y - otherP.y;
+      const centerA = { x: p.x + 140, y: p.y + (elementHeights.get(id) || 120) / 2 };
+      const centerB = { x: otherP.x + 140, y: otherP.y + (elementHeights.get(otherId) || 120) / 2 };
+      const dx = centerA.x - centerB.x;
+      const dy = centerA.y - centerB.y;
       const distSq = dx * dx + dy * dy || 1;
       const d = Math.sqrt(distSq);
 

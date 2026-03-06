@@ -22,7 +22,9 @@ export interface LayoutContext {
   sidebarTop: number;
   isMobile: boolean;
   isReadOnly: boolean;
+  calendarCellMap?: Map<string, { x: number; y: number; w: number; h: number }>;
 }
+
 
 export interface LayoutResult {
   targetX: number;

@@ -59,6 +59,7 @@ export const usePhysics = (
     lastMouseX: number;
     lastMouseY: number;
     initialPositions: Map<number, { x: number, y: number }>;
+    cellRectMap?: Map<string, DOMRect>;
   } | null>(null);
 
   // --- HELPERS ---
@@ -144,7 +145,6 @@ export const usePhysics = (
       const { id, startX, startY, moved, initialPositions } = dragRef.current;
       const dist = Math.sqrt(Math.pow(lastMouseX - startX, 2) + Math.pow(lastMouseY - startY, 2));
       const logicalWidth = worldRef.current?.clientWidth || window.innerWidth;
-      const logicalHeight = worldRef.current?.clientHeight || window.innerHeight;
 
       if (dist <= 10) {
         const store = useStore.getState();
@@ -178,21 +178,17 @@ export const usePhysics = (
             if (t.id === id) updateThought(t.id, { status, order: index }); else if (t.order !== index) updateThought(t.id, { order: index });
           });
         } else if (mode === 'calendar' && !isReadOnly) {
-          const sidebarWidth = 260; const gap = 20; const padding = 40; const topPadding = 190; const mainLeft = padding + sidebarWidth + gap;
+          const sidebarWidth = 260; const gap = 20; const padding = 40; const mainLeft = padding + sidebarWidth + gap;
           if (lastMouseX < mainLeft) initialPositions.forEach((_, draggedId) => updateThought(draggedId, { date: '' }));
-          else {
-            const mainWidth = logicalWidth - mainLeft - padding; const cellWidth = mainWidth / 7; const cellHeight = (logicalHeight - topPadding - 120) / 5;
-            const gridX = lastMouseX - mainLeft; const gridY = lastMouseY - topPadding;
-            if (gridX >= 0 && gridY >= 0) {
-              const col = Math.floor(gridX / cellWidth); const row = Math.floor(gridY / cellHeight);
-              if (col >= 0 && col < 7 && row >= 0 && row < 5) {
-                const year = calendarViewDate.getFullYear(); const month = calendarViewDate.getMonth();
-                const firstDay = new Date(year, month, 1).getDay() || 7;
-                const startOffset = firstDay - 1; const dayIndex = row * 7 + col - startOffset;
-                const newDate = new Date(year, month, dayIndex + 1);
-                if (newDate.getMonth() === month) initialPositions.forEach((_, draggedId) => updateThought(draggedId, { date: newDate.toLocaleDateString('en-CA') }));
+          else if (dragRef.current?.cellRectMap) {
+            const cellRectMap = dragRef.current.cellRectMap;
+            let foundDate: string | null = null;
+            for (const [date, rect] of cellRectMap.entries()) {
+              if (rawMouseX >= rect.left && rawMouseX <= rect.right && rawMouseY >= rect.top && rawMouseY <= rect.bottom) {
+                foundDate = date; break;
               }
             }
+            if (foundDate) initialPositions.forEach((_, draggedId) => updateThought(draggedId, { date: foundDate! }));
           }
         } else initialPositions.forEach((_, draggedId) => { const p = physicsState.current.get(draggedId); if (p) updateThought(draggedId, { x: p.x, y: p.y }); });
       }
@@ -245,8 +241,18 @@ export const usePhysics = (
     visualTransformRef.current.scale += (transform.scale - visualTransformRef.current.scale) * lerpFactor;
 
     const vT = visualTransformRef.current;
-    if (worldRef.current) worldRef.current.style.transform = `translate(${vT.x}px, ${vT.y}px) scale(${vT.scale})`;
-    if (gridRef.current) gridRef.current.style.transform = `translate(${vT.x}px, ${vT.y}px) scale(${vT.scale})`;
+    const isStructured = mode === 'calendar' || mode === 'kanban';
+    const effectiveTransform = isStructured ? { x: 0, y: 0, scale: 1 } : vT;
+
+    if (worldRef.current) {
+      worldRef.current.style.transform = `translate(${effectiveTransform.x}px, ${effectiveTransform.y}px) scale(${effectiveTransform.scale})`;
+    }
+    if (gridRef.current) {
+      gridRef.current.style.transform = `translate(${effectiveTransform.x}px, ${effectiveTransform.y}px) scale(${effectiveTransform.scale})`;
+      // Hide standard grid lines in calendar mode
+      gridRef.current.style.opacity = mode === 'calendar' ? '0' : '0.03';
+    }
+
 
     // --- Modular Physics Engine ---
     const strategist = getStrategist(mode);
@@ -256,6 +262,26 @@ export const usePhysics = (
 
     const sbContent = document.getElementById('cal-sidebar-content');
     const sbRect = sbContent?.getBoundingClientRect();
+
+    const calendarCellMap = new Map<string, { x: number; y: number; w: number; h: number }>();
+    if (mode === 'calendar') {
+      const cells = document.querySelectorAll('.cal-cell');
+      const worldRect = worldRef.current?.getBoundingClientRect();
+      if (worldRect) {
+        cells.forEach((cell) => {
+          const date = cell.getAttribute('data-date');
+          if (date) {
+            const rect = cell.getBoundingClientRect();
+            calendarCellMap.set(date, {
+              x: (rect.left - worldRect.left) / globalScale,
+              y: (rect.top - worldRect.top) / globalScale,
+              w: rect.width / globalScale,
+              h: rect.height / globalScale,
+            });
+          }
+        });
+      }
+    }
 
     const context: LayoutContext = {
       logicalWidth,
@@ -270,8 +296,10 @@ export const usePhysics = (
       sidebarScrollTop: sbContent?.scrollTop || 0,
       sidebarTop: sbRect ? (sbRect.top / globalScale) : 320,
       isMobile,
-      isReadOnly: useStore.getState().isReadOnly
+      isReadOnly: useStore.getState().isReadOnly,
+      calendarCellMap
     };
+
 
     let maxColHeight = 0;
     let sidebarHeight = 0;
@@ -346,9 +374,13 @@ export const usePhysics = (
         ctx.beginPath();
         for (let i = 0; i < ids.length; i++) {
           const tA = thoughtMap.current.get(ids[i]); const pA = state.get(ids[i]); if (!tA?.stackId || !pA) continue;
+          const hA = elementHeights.get(ids[i]) || 120;
           for (let j = i + 1; j < ids.length; j++) {
-            const tB = thoughtMap.current.get(ids[j]); const pB = state.get(ids[j]); if (tB && tA.stackId === tB.stackId && pB) {
-              ctx.moveTo(pA.x * s + tx, pA.y * s + ty); ctx.lineTo(pB.x * s + tx, pB.y * s + ty);
+            const tB = thoughtMap.current.get(ids[j]); const pB = state.get(ids[j]); 
+            if (tB && tA.stackId === tB.stackId && pB) {
+              const hB = elementHeights.get(ids[j]) || 120;
+              ctx.moveTo((pA.x + 140) * s + tx, (pA.y + hA / 2) * s + ty); 
+              ctx.lineTo((pB.x + 140) * s + tx, (pB.y + hB / 2) * s + ty);
             }
           }
         }
@@ -357,8 +389,9 @@ export const usePhysics = (
       if (linkingSourceId) {
         const pS = state.get(linkingSourceId);
         if (pS) {
+          const hS = elementHeights.get(linkingSourceId) || 120;
           ctx.beginPath(); ctx.setLineDash([5, 5]); ctx.strokeStyle = 'rgba(99, 102, 241, 0.5)'; ctx.lineWidth = 2;
-          ctx.moveTo(pS.x * vT.scale + vT.x, pS.y * vT.scale + vT.y); ctx.lineTo(mousePosRef.current.x, mousePosRef.current.y);
+          ctx.moveTo((pS.x + 140) * vT.scale + vT.x, (pS.y + hS / 2) * vT.scale + vT.y); ctx.lineTo(mousePosRef.current.x, mousePosRef.current.y);
           ctx.stroke(); ctx.setLineDash([]);
         }
       }
@@ -367,10 +400,11 @@ export const usePhysics = (
     state.forEach((p, id) => {
       const el = elements.current.get(id); const t = thoughtMap.current.get(id); if (!el || !t) return;
       const h = el.offsetHeight || 120;
-      el.style.transform = `translate3d(${p.x - 140}px, ${p.y - h / 2}px, 0) scale(${p.scale})`;
+      el.style.transform = `translate3d(${p.x}px, ${p.y}px, 0) scale(${p.scale})`;
       
       const isSelected = t.id === selectedThoughtId;
       const isDraggingThis = dragRef.current?.initialPositions.has(id) && dragRef.current.moved;
+
 
       // Re-calculate layout results for styling (clipPath, etc)
       const res = strategist.calculateLayout(t, allThoughts, context, elementHeights);
@@ -389,12 +423,13 @@ export const usePhysics = (
         const cRectRaw = contentEl?.getBoundingClientRect();
         if (cRectRaw) {
           const cRect = { top: cRectRaw.top / globalScale, bottom: cRectRaw.bottom / globalScale };
-          const cardTop = (p.y * vT.scale + vT.y) - ((h * p.scale) * vT.scale) / 2;
-          const cardBottom = (p.y * vT.scale + vT.y) + ((h * p.scale) * vT.scale) / 2;
+          const cardTop = (p.y * vT.scale + vT.y);
+          const cardBottom = (p.y + h * p.scale) * vT.scale + vT.y;
           const topClip = Math.max(0, ((cRect.top - cardTop) / ((h * p.scale) * vT.scale)) * 100);
           const bottomClip = Math.max(0, ((cardBottom - cRect.bottom) / ((h * p.scale) * vT.scale)) * 100);
-          el.style.clipPath = `inset(${topClip}% 0% ${bottomClip}% 0%)`;
+          el.style.clipPath = `inset(${topClip}% 0% ${bottomClip}% 0% round 32px)`;
           el.style.visibility = (topClip > 95 || bottomClip > 95) ? 'hidden' : 'visible';
+
           el.style.pointerEvents = (topClip > 80 || bottomClip > 80) ? 'none' : 'auto';
         }
       }
@@ -413,8 +448,16 @@ export const usePhysics = (
     const targets = new Set(store.selectedThoughtIds); if (!targets.has(id)) targets.add(id);
     const initialPositions = new Map();
     targets.forEach(tid => { const p = physicsState.current.get(tid); if (p) initialPositions.set(tid, { x: p.x, y: p.y }); });
-    dragRef.current = { id, startX: e.clientX / s, startY: e.clientY / s, moved: false, lastMouseX: e.clientX / s, lastMouseY: e.clientY / s, initialPositions };
-  }, [getGlobalScale]);
+    let cellRectMap: Map<string, DOMRect> | undefined;
+    if (activeSpace?.mode === 'calendar') {
+      cellRectMap = new Map();
+      document.querySelectorAll('.cal-cell').forEach(cell => {
+        const date = cell.getAttribute('data-date');
+        if (date) cellRectMap!.set(date, cell.getBoundingClientRect());
+      });
+    }
+    dragRef.current = { id, startX: e.clientX / s, startY: e.clientY / s, moved: false, lastMouseX: e.clientX / s, lastMouseY: e.clientY / s, initialPositions, cellRectMap };
+  }, [getGlobalScale, activeSpace?.mode]);
 
   const handleTouchStart = useCallback((id: number, e: React.TouchEvent) => {
     const s = getGlobalScale(); const store = useStore.getState();
@@ -422,8 +465,16 @@ export const usePhysics = (
     const targets = new Set(store.selectedThoughtIds); if (!targets.has(id)) targets.add(id);
     const initialPositions = new Map();
     targets.forEach(tid => { const p = physicsState.current.get(tid); if (p) initialPositions.set(tid, { x: p.x, y: p.y }); });
-    dragRef.current = { id, startX: touch.clientX / s, startY: touch.clientY / s, moved: false, lastMouseX: touch.clientX / s, lastMouseY: touch.clientY / s, initialPositions };
-  }, [getGlobalScale]);
+    let cellRectMap: Map<string, DOMRect> | undefined;
+    if (activeSpace?.mode === 'calendar') {
+      cellRectMap = new Map();
+      document.querySelectorAll('.cal-cell').forEach(cell => {
+        const date = cell.getAttribute('data-date');
+        if (date) cellRectMap!.set(date, cell.getBoundingClientRect());
+      });
+    }
+    dragRef.current = { id, startX: touch.clientX / s, startY: touch.clientY / s, moved: false, lastMouseX: touch.clientX / s, lastMouseY: touch.clientY / s, initialPositions, cellRectMap };
+  }, [getGlobalScale, activeSpace?.mode]);
 
   return { registerElement: (id: number, el: HTMLDivElement | null) => { if (el) elements.current.set(id, el); else elements.current.delete(id); }, registerWorld: (el: HTMLDivElement | null) => { worldRef.current = el; }, registerGrid: (el: HTMLDivElement | null) => { gridRef.current = el; }, handleMouseDown: handleMouseDown as (id: number, e: React.MouseEvent) => void, handleTouchStart: handleTouchStart as (id: number, e: React.TouchEvent) => void, isDragging: (id: number) => !!dragRef.current?.initialPositions.has(id), sidebarHeight: sbHeight, kanbanHeight: kMaxHeight };
 };
