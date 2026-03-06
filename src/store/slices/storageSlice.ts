@@ -33,9 +33,9 @@ export const createStorageSlice: StateCreator<AuthState, [], [], any> = (set, ge
     });
   },
 
-  uploadThoughtBlob: async (thoughtId: number) => {
+  uploadThoughtBlob: async (thoughtId: number, force?: boolean) => {
     const { autoSync, user, isOnline } = get();
-    if (!autoSync || !user) {
+    if ((!autoSync && !force) || !user) {
       console.log('[Storage] Auto-sync is OFF, keeping blob locally');
       return;
     }
@@ -99,6 +99,49 @@ export const createStorageSlice: StateCreator<AuthState, [], [], any> = (set, ge
     } catch (err) {
       console.error('[Storage] Failed to upload blob:', err);
       await db.thoughts.update(thoughtId, { syncStatus: 'error' });
+    }
+  },
+
+  removeCloudAsset: async (thoughtId: number) => {
+    // Disable auto-sync to prevent immediate re-upload
+    await get().updateSettings({ autoSync: false });
+
+    const { user, isOnline, syncData } = get();
+    if (!user) return;
+
+    try {
+      const thought = await db.thoughts.get(thoughtId);
+      if (!thought || !thought.storagePath) return;
+
+      if (isOnline) {
+        try {
+          await supabaseStorage.deleteFile(thought.storagePath);
+        } catch (err) {
+          console.warn('[Storage] Could not delete cloud file, it might be already gone:', err);
+        }
+      } else {
+        await db.pendingDeletions.add({
+          tableName: 'thoughts',
+          localId: thought.id,
+          storagePath: thought.storagePath,
+          createdAt: Date.now(),
+        }).catch(() => {});
+      }
+
+      const updates = {
+        storageUrl: undefined,
+        storagePath: undefined,
+        syncStatus: 'local' as const
+      };
+
+      await db.thoughts.update(thoughtId, updates);
+      
+      const { useStore } = await import('../useStore');
+      useStore.getState().updateThought(thoughtId, updates);
+
+      await syncData();
+    } catch (err) {
+      console.error('[Storage] Failed to remove cloud asset:', err);
     }
   },
 

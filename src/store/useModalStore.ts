@@ -8,6 +8,8 @@ interface ModalState {
   type: 'rename' | 'delete_space' | 'delete_thought' | 'delete_stack' | 'limit_space' | 'limit_thought' | 'new_space' | 'alert' | 'import_confirm' | 'reset_confirm' | 'confirm_cancel' | 'terms' | 'custom' | 'conflict_resolver';
   inputValue?: string;
   confirmText?: string;
+  cancelText?: string;
+  onCancel?: () => void;
   onConfirm?: (value?: string) => void;
   content?: React.ReactNode;
   openModal: (params: Omit<ModalState, 'isOpen' | 'isPricingOpen' | 'openModal' | 'closeModal' | 'openPricing' | 'closePricing'>) => void;
@@ -22,6 +24,8 @@ export const useModalStore = create<ModalState>((set) => ({
   title: '',
   type: 'alert',
   openModal: (params) => set({
+    cancelText: undefined,
+    onCancel: undefined,
     description: undefined,
     inputValue: undefined,
     confirmText: undefined,

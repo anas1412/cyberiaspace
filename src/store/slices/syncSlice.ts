@@ -76,7 +76,7 @@ export const createSyncSlice: StateCreator<AuthState, [], [], SyncSlice> = (set,
     try {
       const { useStore } = await import('../useStore');
       const mediaThoughts = await db.thoughts
-        .filter(t => (t.type === 'image' || t.type === 'file') && t.syncStatus !== 'synced')
+        .filter(t => (t.type === 'image' || t.type === 'file') && t.syncStatus !== 'synced' && !t.deletedAt)
         .toArray();
 
       if (mediaThoughts.length === 0) {

@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useStore } from '../../store/useStore';
 import { useAuthStore } from '../../store/useAuthStore';
+import { useModalStore } from '../../store/useModalStore';
 import { File as FileIcon, Upload, Download, Loader2, FileAudio, Shield, Database, CloudOff, Cloud } from 'lucide-react';
 import { FocusEditorShell } from './FocusEditorShell';
 import { MAX_FILE_SIZE_MB } from '../../constants';
@@ -196,7 +197,20 @@ const FileFocusEditor: React.FC = () => {
   const updateThought = useStore((state) => state.updateThought);
   const setActiveFocus = useStore((state) => state.setActiveFocus);
   
-  const { user } = useAuthStore();
+  const { user, autoSync, setAutoSync } = useAuthStore();
+
+  const handleSync = async () => {
+    if (!thought) return;
+    setIsSyncing(true);
+    try {
+      await useAuthStore.getState().uploadThoughtBlob(thought.id, true);
+    } catch (err) {
+      console.error('Sync error:', err);
+    } finally {
+      setIsSyncing(false);
+    }
+  };
+
 
   const thought = useMemo(() => {
     if (focusType === 'file' || focusType === 'image') {
@@ -218,6 +232,8 @@ const FileFocusEditor: React.FC = () => {
   const [localTitle, setLocalTitle] = useState('');
   const [localPreviewUrl, setLocalPreviewUrl] = useState<string | null>(null);
   const [isUploading, setIsUploading] = useState(false);
+  const [isSyncing, setIsSyncing] = useState(false);
+  const [isUnsyncing, setIsUnsyncing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const scrollerRef = useRef<HTMLDivElement>(null);
 
@@ -412,6 +428,64 @@ const FileFocusEditor: React.FC = () => {
               </p>
             </div>
           </div>
+          
+          {!thought.storageUrl && localPreviewUrl && (
+            <button 
+              disabled={isSyncing}
+              onClick={async () => {
+                if (!autoSync) {
+                  useModalStore.getState().openModal({
+                    type: 'confirm_cancel',
+                    title: 'Enable Auto-Sync?',
+                    description: 'Auto-Sync is currently off. Enabling it keeps all your files and thoughts backed up across all devices automatically.',
+                    confirmText: 'Enable & Sync',
+                    cancelText: 'Sync This File Only',
+                    onConfirm: async () => {
+                      await setAutoSync(true);
+                      await handleSync();
+                    },
+                    onCancel: async () => {
+                      await handleSync();
+                    }
+                  });
+                } else {
+                  await handleSync();
+                }
+              }}
+              className="flex items-center gap-2 px-5 py-2.5 bg-amber-500 hover:bg-amber-600 text-white rounded-xl text-[10px] font-black uppercase tracking-widest transition-all shadow-lg shadow-amber-500/20 active:scale-95 disabled:opacity-50"
+            >
+              {isSyncing ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Cloud className="w-3.5 h-3.5" />}
+              Sync to Cloud
+            </button>
+          )}
+
+          {thought.storageUrl && (
+            <button 
+              disabled={isUnsyncing}
+              onClick={() => {
+                useModalStore.getState().openModal({
+                  title: 'Remove from Cloud?',
+                  description: 'This will delete the remote file to free up your quota. The original file will remain safely on this device. Note: Auto-Sync will be toggled off.',
+                  type: 'confirm_cancel',
+                  confirmText: 'Remove File',
+                  onConfirm: async () => {
+                    setIsUnsyncing(true);
+                    try {
+                      await useAuthStore.getState().removeCloudAsset(thought.id);
+                    } catch (err) {
+                      console.error('Unsync error:', err);
+                    } finally {
+                      setIsUnsyncing(false);
+                    }
+                  }
+                });
+              }}
+              className="flex items-center gap-2 px-5 py-2.5 bg-slate-800 hover:bg-red-900/40 text-slate-400 hover:text-red-400 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all border border-white/5 active:scale-95 disabled:opacity-50"
+            >
+              {isUnsyncing ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <CloudOff className="w-3.5 h-3.5" />}
+              Remove from Cloud
+            </button>
+          )}
 
           {(thought.storageUrl || localPreviewUrl) && (
             <button 
