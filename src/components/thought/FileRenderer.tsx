@@ -41,14 +41,14 @@ export const FileRenderer: React.FC<FileRendererProps> = ({ thought }) => {
   const isAudio = mimeType.startsWith('audio/') || 
                   ['mp3', 'wav', 'ogg', 'm4a', 'aac', 'flac'].includes(extension);
 
-  // Robust Image Detection (Exclude Audio)
-  const isImage = (mimeType.startsWith('image/') || 
-                  ['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg'].includes(extension) || 
-                  !!image) && !isAudio;
-                  
   // Robust Video Detection (Exclude Audio)
   const isVideo = (mimeType.startsWith('video/') || 
                   ['mp4', 'webm', 'mov', 'm4v'].includes(extension)) && !isAudio;
+
+  // Robust Image Detection (Strictly image types, exclude Audio/Video)
+  const isImage = (mimeType.startsWith('image/') || 
+                  ['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg'].includes(extension)) && 
+                  !isAudio && !isVideo;
 
   const getFileIcon = () => {
     if (isAudio) return <FileAudio className="w-8 h-8 text-blue-400" />;

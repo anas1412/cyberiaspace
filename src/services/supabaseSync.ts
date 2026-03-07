@@ -13,8 +13,16 @@ function toSnakeCase(obj: any): any {
     if (key === 'date' && (value === '' || value === undefined)) {
       value = null
     }
-    // Skip transform fields (stored in transform JSONB column)
-    if (key === 'transformScale' || key === 'transformX' || key === 'transformY') {
+    // Skip local-only fields
+    if (
+      key === 'transformScale' || 
+      key === 'transformX' || 
+      key === 'transformY' ||
+      key === 'isOnboarding' ||
+      key === 'syncStatus' ||
+      key === 'retryCount' ||
+      key === 'deletedAt'
+    ) {
       continue
     }
     const snakeKey = key.replace(/([A-Z])/g, '_$1').toLowerCase()
