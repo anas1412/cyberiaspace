@@ -80,7 +80,7 @@ export const createThoughtSlice: StateCreator<CyberiaState, [], [], any> = (set,
     return result as number;
   },
 
-  updateThought: async (id: number, updates: Partial<Thought>) => {
+  updateThought: async (id: number, updates: Partial<Thought>, options?: { skipSync?: boolean }) => {
     const { thoughts, activeSpaceId, isReadOnly } = get();
     const thought = thoughts.find((t: Thought) => t.id === id);
     const isBlobType = thought?.type === 'file' || updates.type === 'file';
@@ -105,7 +105,7 @@ export const createThoughtSlice: StateCreator<CyberiaState, [], [], any> = (set,
     }
 
     if (isReadOnly || get().isDemo) return;
-    if (activeSpaceId) get().updateSpace(activeSpaceId, { updatedAt: new Date().toISOString() });
+    if (activeSpaceId) get().updateSpace(activeSpaceId, { updatedAt: new Date().toISOString() }, options);
 
     const saveTimers = (window as any)._cyberia_save_timers || {};
     if (saveTimers[id]) clearTimeout(saveTimers[id]);
@@ -116,17 +116,17 @@ export const createThoughtSlice: StateCreator<CyberiaState, [], [], any> = (set,
       
       const { useAuthStore } = await import('../useAuthStore');
       const authStore = useAuthStore.getState();
-      if (authStore.status === 'authenticated') {
+      if (authStore.status === 'authenticated' && !options?.skipSync) {
         await syncOrchestrator.triggerSync();
       }
     }, 500);
     (window as any)._cyberia_save_timers = saveTimers;
   },
 
-  updateThoughts: async (ids: number[], updates: Partial<Thought>) => {
+  updateThoughts: async (ids: number[], updates: Partial<Thought>, options?: { skipSync?: boolean }) => {
     if (get().isReadOnly) return;
     const { thoughts, activeSpaceId } = get();
-    if (activeSpaceId) get().updateSpace(activeSpaceId, { updatedAt: new Date().toISOString() });
+    if (activeSpaceId) get().updateSpace(activeSpaceId, { updatedAt: new Date().toISOString() }, options);
 
     // Sanitize date if present
     if (updates.date) {
@@ -139,12 +139,12 @@ export const createThoughtSlice: StateCreator<CyberiaState, [], [], any> = (set,
     
     const { useAuthStore } = await import('../useAuthStore');
     const authStore = useAuthStore.getState();
-    if (authStore.autoSync && authStore.status === 'authenticated') {
+    if (authStore.autoSync && authStore.status === 'authenticated' && !options?.skipSync) {
       await syncOrchestrator.triggerSync();
     }
   },
 
-  bulkUpdateThoughts: async (updates: { id: number; updates: Partial<Thought> }[]) => {
+  bulkUpdateThoughts: async (updates: { id: number; updates: Partial<Thought> }[], options?: { skipSync?: boolean }) => {
     if (get().isReadOnly || !updates.length) return;
     const { thoughts, activeSpaceId } = get();
 
@@ -167,12 +167,12 @@ export const createThoughtSlice: StateCreator<CyberiaState, [], [], any> = (set,
       }
     });
 
-    if (activeSpaceId) get().updateSpace(activeSpaceId, { updatedAt: new Date().toISOString() });
+    if (activeSpaceId) get().updateSpace(activeSpaceId, { updatedAt: new Date().toISOString() }, options);
     get().pushHistory();
 
     const { useAuthStore } = await import('../useAuthStore');
     const authStore = useAuthStore.getState();
-    if (authStore.autoSync && authStore.status === 'authenticated') {
+    if (authStore.autoSync && authStore.status === 'authenticated' && !options?.skipSync) {
       await syncOrchestrator.triggerSync();
     }
   },

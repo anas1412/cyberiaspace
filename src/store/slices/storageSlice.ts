@@ -55,7 +55,7 @@ export const createStorageSlice: StateCreator<AuthState, [], [], any> = (set, ge
         const { useStore } = await import('../useStore');
         const updates = { syncStatus: 'local' as const };
         await db.thoughts.update(thoughtId, updates);
-        useStore.getState().updateThought(thoughtId, updates);
+        useStore.getState().updateThought(thoughtId, updates, { skipSync: true });
       }
       return;
     }
@@ -72,8 +72,8 @@ export const createStorageSlice: StateCreator<AuthState, [], [], any> = (set, ge
       }
 
       // Skip if already has storagePath (don't re-upload) unless forced
-      if (thought.storagePath && !force) {
-        console.log('[Storage] Thought already has storagePath, skipping upload');
+      if (thought.storagePath && thought.syncStatus === 'synced' && !force) {
+        console.log('[Storage] Thought already has storagePath and is synced, skipping upload');
         return;
       }
 
@@ -83,7 +83,7 @@ export const createStorageSlice: StateCreator<AuthState, [], [], any> = (set, ge
         console.error('[Storage] File too large:', sizeCheck.message);
         const updates = { syncStatus: 'error' as const };
         await db.thoughts.update(thoughtId, updates);
-        useStore.getState().updateThought(thoughtId, updates);
+        useStore.getState().updateThought(thoughtId, updates, { skipSync: true });
         return;
       }
 
@@ -99,12 +99,12 @@ export const createStorageSlice: StateCreator<AuthState, [], [], any> = (set, ge
         });
         const updates = { syncStatus: 'pending' as const };
         await db.thoughts.update(thoughtId, updates);
-        useStore.getState().updateThought(thoughtId, updates);
+        useStore.getState().updateThought(thoughtId, updates, { skipSync: true });
         return;
       }
 
       console.log('[Storage] Transitioning status to syncing...');
-      useStore.getState().updateThought(thoughtId, { syncStatus: 'syncing' });
+      useStore.getState().updateThought(thoughtId, { syncStatus: 'syncing' }, { skipSync: true });
 
       // Add a timeout to prevent hanging forever
       const uploadPromise = supabaseStorage.uploadFile(
@@ -139,14 +139,14 @@ export const createStorageSlice: StateCreator<AuthState, [], [], any> = (set, ge
       }
 
       await db.thoughts.update(thoughtId, updates);
-      useStore.getState().updateThought(thoughtId, updates);
+      useStore.getState().updateThought(thoughtId, updates, { skipSync: true });
 
     } catch (err) {
       console.error('[Storage] Failed to upload blob:', err);
       const { useStore } = await import('../useStore');
       const updates = { syncStatus: 'error' as const };
       await db.thoughts.update(thoughtId, updates);
-      useStore.getState().updateThought(thoughtId, updates);
+      useStore.getState().updateThought(thoughtId, updates, { skipSync: true });
     }
   },
 
@@ -180,7 +180,7 @@ export const createStorageSlice: StateCreator<AuthState, [], [], any> = (set, ge
       // Dynamic import to avoid circular dependency
       const { useStore } = await import('../useStore');
       // "Ping" the UI by updating updatedAt
-      await useStore.getState().updateThought(thoughtId, { updatedAt: Date.now() });
+      await useStore.getState().updateThought(thoughtId, { updatedAt: Date.now() }, { skipSync: true });
       console.log(`[Storage] Priority download complete: ${thoughtId}`);
     } catch (err) {
       console.error(`[Storage] Priority download failed for ${thoughtId}:`, err);
@@ -233,7 +233,7 @@ export const createStorageSlice: StateCreator<AuthState, [], [], any> = (set, ge
             });
 
             // Ping UI for each thought in the batch
-            await useStore.getState().updateThought(t.id, { updatedAt: Date.now() });
+            await useStore.getState().updateThought(t.id, { updatedAt: Date.now() }, { skipSync: true });
           } catch (e) {
             console.warn(`[Storage] Background download failed for ${t.id}:`, e);
           }
@@ -291,7 +291,7 @@ export const createStorageSlice: StateCreator<AuthState, [], [], any> = (set, ge
       await db.thoughts.update(thoughtId, updates);
       
       const { useStore } = await import('../useStore');
-      useStore.getState().updateThought(thoughtId, updates);
+      useStore.getState().updateThought(thoughtId, updates, { skipSync: true });
 
     } catch (err) {
       console.error('[Storage] Failed to remove cloud asset:', err);
@@ -417,7 +417,7 @@ export const createStorageSlice: StateCreator<AuthState, [], [], any> = (set, ge
           await db.thoughts.update(blob.thoughtId, updates);
 
           const { useStore } = await import('../useStore');
-          useStore.getState().updateThought(blob.thoughtId, updates);
+          useStore.getState().updateThought(blob.thoughtId, updates, { skipSync: true });
 
           await db.pendingBlobs.delete(blob.id!);
           console.log(`[Storage] Uploaded pending blob for thought:`, blob.thoughtId);

@@ -75,15 +75,15 @@ export interface CyberiaState {
   setActiveSpace: (id: string) => Promise<void>;
   setCalendarViewDate: (date: Date) => void;
   addSpace: (name: string) => Promise<void>;
-  updateSpace: (id: string, updates: Partial<Space>) => Promise<void>;
+  updateSpace: (id: string, updates: Partial<Space>, options?: { skipSync?: boolean }) => Promise<void>;
   deleteSpace: (id: string) => Promise<void>;
   reorderSpaces: (spaces: Space[]) => Promise<void>;
   saveSpaceTransform: (id: string, transform: { x: number; y: number; scale: number }) => Promise<void>;
 
   addThought: (thought: Partial<Thought>) => Promise<number>;
-  updateThought: (id: number, updates: Partial<Thought>) => Promise<void>;
-  updateThoughts: (ids: number[], updates: Partial<Thought>) => Promise<void>;
-  bulkUpdateThoughts: (updates: { id: number; updates: Partial<Thought> }[]) => Promise<void>;
+  updateThought: (id: number, updates: Partial<Thought>, options?: { skipSync?: boolean }) => Promise<void>;
+  updateThoughts: (ids: number[], updates: Partial<Thought>, options?: { skipSync?: boolean }) => Promise<void>;
+  bulkUpdateThoughts: (updates: { id: number; updates: Partial<Thought> }[], options?: { skipSync?: boolean }) => Promise<void>;
   deleteThought: (id: number) => Promise<void>;
   deleteThoughts: (ids: number[]) => Promise<void>;
   bringToFront: (id: number) => Promise<void>;
