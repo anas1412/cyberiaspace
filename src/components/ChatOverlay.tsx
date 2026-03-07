@@ -413,7 +413,7 @@ if (['get_thought_details', 'read_file_content', 'read_files_content'].includes(
             <div className="ml-3 flex items-center gap-3">
               <div>
                 <div className="flex items-center gap-2">
-                  <h3 className="text-sm font-black uppercase tracking-[0.2em] text-white leading-none">Oracle AI</h3>
+                  <h3 className="text-xs font-black uppercase tracking-[0.2em] text-white leading-none">Oracle AI</h3>
                 </div>
                 <div className="flex items-center gap-2 mt-1">
                   <span className="w-1 h-1 rounded-full bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.6)]" />
@@ -429,7 +429,7 @@ if (['get_thought_details', 'read_file_content', 'read_files_content'].includes(
               {user && (
                 <div className="flex items-center gap-2">
                   <div className="flex flex-col items-end gap-0.5">
-                    <span className="text-[11px] font-black uppercase tracking-widest text-blue-400/80">
+                    <span className="text-[10px] font-bold uppercase tracking-widest text-blue-400/80">
                       {dailyUsage} / {limits.AI_DAILY_LIMIT} REQUESTS DAILY LIMIT
                     </span>
                     <div className="w-48 h-0.5 bg-white/10 rounded-full overflow-hidden">
@@ -444,14 +444,14 @@ if (['get_thought_details', 'read_file_content', 'read_files_content'].includes(
               )}
               <button 
                 onClick={handleClear}
-                className="p-2 hover:bg-white/5 rounded-lg text-slate-500 hover:text-white transition-all group"
+                className="p-2 rounded-lg text-slate-400 transition-all group"
                 title="Clear Stream"
               >
                 <History className="w-3.5 h-3.5 group-hover:scale-110 transition-transform" />
               </button>
               <button 
                 onClick={() => setChatOpen(false)}
-                className="p-2 hover:bg-red-500/10 rounded-lg text-slate-500 hover:text-red-400 transition-all"
+                className="p-2 rounded-lg text-slate-400 transition-all"
               >
                 <X className="w-4 h-4" />
               </button>

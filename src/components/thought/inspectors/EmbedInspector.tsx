@@ -1,33 +1,23 @@
 import React from 'react';
-import { useStore } from '../../../store/useStore';
 import { useThoughtPayload } from '../hooks/useThoughtPayload';
 import { type InspectorPanelProps } from '../registry';
 import { fetchEmbedMeta } from '../../../utils/embeds';
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
-import { Share2 } from 'lucide-react';
+import { useStore } from '../../../store/useStore';
 
 function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
 
 export const EmbedInspector: React.FC<InspectorPanelProps> = ({ thought, isReadOnly }) => {
-  const setActiveFocus = useStore(state => state.setActiveFocus);
   const updateThought = useStore(state => state.updateThought);
   const { content } = useThoughtPayload(thought);
 
   return (
-    <div className="space-y-4">
-      <button
-        onClick={() => setActiveFocus(thought.id, 'embed')}
-        className="w-full bg-blue-500/10 hover:bg-blue-500/20 border border-blue-500/30 text-[var(--accent-secondary)] py-6 rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] transition-all flex flex-col items-center justify-center gap-3"
-      >
-        <Share2 className="w-5 h-5 opacity-40 group-hover:opacity-100 transition-opacity" />
-        Open Interaction Layer
-      </button>
-
+    <div className="space-y-6">
       <div className="space-y-2">
-        <label className="text-[9px] uppercase font-bold tracking-widest text-slate-500 ml-1">Universal URL</label>
+        <label className="text-[9px] uppercase font-bold tracking-widest text-slate-500 ml-1">URL</label>
         <input
           type="text"
           readOnly={isReadOnly}

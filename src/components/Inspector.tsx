@@ -4,7 +4,7 @@ import { useStore } from '../store/useStore';
 import { useModalStore } from '../store/useModalStore';
 import type { ThoughtType } from '../db';
 import { 
-  X, ChevronLeft, ChevronRight, Calendar, ArrowUp, ArrowDown, Save
+  X, ChevronLeft, ChevronRight, Calendar, ArrowUp, ArrowDown, Save, Maximize2, Trash2
 } from 'lucide-react';
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
@@ -149,6 +149,7 @@ const Inspector: React.FC = () => {
   const updateStack = useStore((state) => state.updateStack);
   const createStack = useStore((state) => state.createStack);
   const deleteThought = useStore((state) => state.deleteThought);
+  const setActiveFocus = useStore((state) => state.setActiveFocus);
   const unlinkSelectedThoughts = useStore((state) => state.unlinkSelectedThoughts);
   const bringToFront = useStore((state) => state.bringToFront);
   const sendToBack = useStore((state) => state.sendToBack);
@@ -165,6 +166,7 @@ const Inspector: React.FC = () => {
   const [localDate, setLocalDate] = React.useState('');
   const [localStackName, setLocalStackName] = React.useState('');
   const [pendingType, setPendingType] = React.useState<ThoughtType | null>(null);
+  const [activeTab, setActiveTab] = React.useState<'content' | 'status' | 'layout'>('content');
 
   // Sync local state when selected thought changes
   React.useEffect(() => {
@@ -229,335 +231,394 @@ const Inspector: React.FC = () => {
                   {isReadOnly ? 'Published' : 'Editor'}
                 </h3>
               </div>
-              <button onClick={() => setInspectorOpen(false)} className="p-2 hover:bg-white/5 rounded-lg text-slate-500 hover:text-white transition-all">
+              <button onClick={() => setInspectorOpen(false)} className="p-2 rounded-lg text-slate-400 transition-all">
                 <X className="w-4 h-4" />
               </button>
             </div>
           </div>
 
+          {/* TAB NAVIGATION */}
+          <div className="flex bg-black/10 backdrop-blur-sm sticky top-[61px] md:top-[69px] z-20 border-b border-white/5">
+            {(['content', 'status', 'layout'] as const).map((tab) => (
+              <button
+                key={tab}
+                onClick={() => setActiveTab(tab)}
+                className={cn(
+                  "flex-1 py-4 text-[10px] font-black uppercase tracking-[0.2em] relative transition-all duration-300",
+                  activeTab === tab ? "text-white" : "text-slate-500 hover:text-slate-300"
+                )}
+              >
+                {tab}
+                {activeTab === tab && (
+                  <motion.div
+                    layoutId="activeTab"
+                    className="absolute bottom-0 left-0 right-0 h-0.5 bg-[var(--accent)] shadow-[0_0_10px_var(--accent-glow)]"
+                    initial={false}
+                  />
+                )}
+              </button>
+            ))}
+          </div>
+
           {/* SCROLLABLE CONTENT AREA */}
-          <div className="flex-1 overflow-y-auto custom-scroll p-4 md:p-6 space-y-6">
-            <div className="grid grid-cols-4 gap-2 mb-6">
-              {(['label', 'text', 'tasks', 'table', 'paint', 'embed', 'file', 'save'] as const).map((item) => {
-                if (item === 'save') {
-                  const showSave = pendingType !== null && pendingType !== thought.type;
-                  return (
-                    <button
-                      key="save"
-                      onClick={() => {
-                        if (pendingType) {
-                          handleTypeChange(pendingType);
-                          setPendingType(null);
-                        }
-                      }}
-                      disabled={!showSave}
-                      className={cn(
-                        "p-3 rounded-xl flex flex-col items-center justify-center transition-all border gap-1.5",
-                        showSave 
-                          ? "bg-[var(--accent)] border-[var(--accent)] text-white shadow-[0_0_20px_var(--accent-glow)] scale-100 opacity-100"
-                          : "bg-white/5 border-white/5 text-slate-600 scale-95 opacity-50 cursor-default"
-                      )}
-                    >
-                      <Save className="w-3.5 h-3.5" />
-                      <span className="text-[8px] font-black uppercase tracking-widest">Save</span>
-                    </button>
-                  );
-                }
-                const type = item as ThoughtType;
-                const tConfig = getThoughtConfig(type);
-                const isActive = (pendingType || thought.type) === type;
-                return (
-                  <button
-                    key={type}
-                    onClick={() => setPendingType(type)}
-                    className={cn(
-                      "p-3 rounded-xl flex flex-col items-center justify-center transition-all border gap-1.5",
-                      isActive
-                        ? "bg-[var(--accent)]/10 border-[var(--accent)] text-white shadow-[0_0_15px_rgba(99,102,241,0.2)]"
-                        : "bg-white/[0.03] border-transparent text-slate-500 hover:bg-white/[0.06] hover:text-slate-300",
-                      isReadOnly && thought.type !== type && "opacity-30 grayscale cursor-default"
-                    )}
-                    disabled={isReadOnly}
-                    title={tConfig?.label || type}
-                  >
-                    {tConfig?.icon && <tConfig.icon className="w-3.5 h-3.5" />}
-                    <span className="text-[7px] font-black uppercase tracking-tighter">{type === 'tasks' ? 'Task' : type}</span>
-                  </button>
-                );
-              })}
-            </div>
-
-            <div className="space-y-5">
-              <div className="space-y-2">
-                <label className="text-[9px] uppercase font-bold tracking-widest text-slate-500 ml-1">Name</label>
-                <input
-                  type="text"
-                  readOnly={isReadOnly}
-                  value={localText}
-                  onChange={(e) => {
-                    setLocalText(e.target.value);
-                    updateThought(thought.id, { text: e.target.value });
-                  }}
-                  maxLength={100}
-                  className={cn(
-                    "w-full bg-[var(--bg-page)]/20 border border-white/10 rounded-xl p-3 text-sm outline-none focus:border-[var(--accent)] text-[var(--text-primary)] placeholder:text-slate-500",
-                    isReadOnly && "pointer-events-none opacity-80"
-                  )}
-                  placeholder={"Name"}
-                />
-              </div>
-
-              <div className="space-y-2">
-                <label className="text-[9px] uppercase font-bold tracking-widest text-slate-500 ml-1">Note</label>
-                <textarea
-                  readOnly={isReadOnly}
-                  value={localDesc}
-                  onChange={(e) => {
-                    setLocalDesc(e.target.value);
-                    updateThought(thought.id, { description: e.target.value });
-                  }}
-                  rows={2}
-                  maxLength={150}
-                  className={cn(
-                    "w-full bg-[var(--bg-page)]/20 border border-white/10 rounded-xl p-3 text-xs outline-none focus:border-[var(--accent)] text-[var(--text-primary)] placeholder:text-slate-500",
-                    isReadOnly && "pointer-events-none opacity-80"
-                  )}
-                  placeholder="Note"
-                />
-              </div>
-
-              <div className="space-y-2">
-                <label className="text-[9px] uppercase font-bold tracking-widest text-slate-500 ml-1">Date</label>
-                <DatePicker
-                  value={localDate}
-                  disabled={isReadOnly}
-                  onChange={(val) => {
-                    setLocalDate(val);
-                    updateThought(thought.id, { date: val });
-                  }}
-                />
-              </div>
-
-              <div className="space-y-2">
-                <label className="text-[9px] uppercase font-bold tracking-widest text-slate-500 ml-1">Progress</label>
-                <div className="grid grid-cols-4 gap-1">
-                  {(['none', 'todo', 'doing', 'done'] as const).map((s) => (
-                    <button
-                      key={s}
-                      disabled={isReadOnly}
-                      onClick={() => !isReadOnly && updateThought(thought.id, { status: s })}
-                      className={cn(
-                        "border rounded-lg py-2 text-[8px] font-bold uppercase transition-colors",
-                        thought.status === s
-                          ? {
-                            'none': 'bg-white/10 border-white/30 text-white',
-                            'todo': 'bg-[var(--status-todo)]/30 border-[var(--status-todo)] text-white',
-                            'doing': 'bg-[var(--status-doing)]/30 border-[var(--status-doing)] text-white',
-                            'done': 'bg-[var(--status-done)]/30 border-[var(--status-done)] text-white',
-                          }[s]
-                          : "bg-white/5 border-white/10 text-slate-400 hover:bg-white/10",
-                        isReadOnly && thought.status !== s && "opacity-30 grayscale cursor-default"
-                      )}
-                    >
-                      {s}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              <div className="space-y-2">
-                <label className="text-[9px] uppercase font-bold tracking-widest text-slate-500 ml-1">Priority</label>
-                <div className="grid grid-cols-5 gap-1">
-                  {(['none', 'low', 'medium', 'high', 'urgent'] as const).map((p) => (
-                    <button
-                      key={p}
-                      disabled={isReadOnly}
-                      onClick={() => handlePriorityChange(p)}
-                      className={cn(
-                        "border rounded-lg py-2 text-[8px] font-bold uppercase transition-colors",
-                        thought.priority === p
-                          ? {
-                            'none': 'bg-white/10 border-white/30 text-white',
-                            'low': 'bg-[var(--prio-low)]/30 border-[var(--prio-low)] text-white',
-                            'medium': 'bg-[var(--prio-medium)]/30 border-[var(--prio-medium)] text-white',
-                            'high': 'bg-[var(--prio-high)]/30 border-[var(--prio-high)] text-white',
-                            'urgent': 'bg-[var(--prio-urgent)]/30 border-[var(--prio-urgent)] text-white',
-                          }[p]
-                          : "bg-white/5 border-white/10 text-slate-400 hover:bg-white/10",
-                        isReadOnly && thought.priority !== p && "opacity-30 grayscale cursor-default"
-                      )}
-                    >
-                      {p === 'medium' ? 'Med' : p[0].toUpperCase() + p.slice(1, 3)}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              <div className="space-y-3">
-                <div className="flex justify-between items-center ml-1">
-                  <label className="text-[9px] uppercase font-bold tracking-widest text-slate-500">Scale</label>
-                  <span className="text-[9px] font-mono text-[var(--accent-secondary)]">{(thought.size || 1.0).toFixed(1)}x</span>
-                </div>
-                <input
-                  type="range"
-                  min="0.5"
-                  max="2.0"
-                  step="0.1"
-                  value={thought.size || 1.0}
-                  disabled={isReadOnly}
-                  onChange={(e) => updateThought(thought.id, { size: parseFloat(e.target.value) })}
-                  className={cn(
-                    "w-full h-1.5 bg-white/5 rounded-lg appearance-none cursor-pointer accent-[var(--accent)]",
-                    isReadOnly && "opacity-30 pointer-events-none"
-                  )}
-                />
-              </div>
-
-              <div className="space-y-3 pt-4 border-t border-white/5">
-                <div className="flex items-center mb-2 px-1">
-                  <span className="text-[9px] uppercase font-black tracking-widest text-white">Group</span>
-                </div>
-
-                {stack ? (
-                  <div className="p-4 bg-[var(--bg-page)]/20 border border-white/10 rounded-2xl space-y-4">
-                    <div className="flex items-center gap-3">
-                      <div className="w-2 h-2 rounded-full shadow-[0_0_10px_currentColor]" style={{ backgroundColor: stack.color, color: stack.color }} />
-                      <input
-                        type="text"
-                        readOnly={isReadOnly}
-                        value={localStackName}
-                        onChange={(e) => {
-                          setLocalStackName(e.target.value);
-                          updateStack(stack.id, { name: e.target.value });
-                        }}
-                        className={cn(
-                          "bg-transparent text-[10px] font-black uppercase tracking-widest text-white outline-none flex-1",
-                          isReadOnly && "pointer-events-none"
-                        )}
-                        placeholder="Group Name"
-                      />
-                    </div>
-                    {!isReadOnly && (
-                      <button
-                        onClick={() => unlinkSelectedThoughts()}
-                        className="w-full py-2 bg-white/5 hover:bg-red-500/10 text-slate-400 hover:text-red-400 border border-white/5 rounded-xl text-[8px] font-black uppercase tracking-widest transition-all"
-                      >
-                        Remove from Group
-                      </button>
-                    )}
-                  </div>
-                ) : (
-                  <div className="space-y-3">
-                    <div className="relative group">
-                      <input
-                        type="text"
-                        placeholder="Type to create or join..."
-                        onKeyDown={(e) => {
-                          if (e.key === 'Enter' && e.currentTarget.value.trim()) {
-                            const name = e.currentTarget.value.trim();
-                            const existingStack = stacks.find(s => s.name.toLowerCase() === name.toLowerCase());
-                            if (existingStack) {
-                              updateThought(thought.id, { stackId: existingStack.id });
-                            } else {
-                              createStack(name, thought.id);
-                            }
-                            e.currentTarget.value = '';
-                          }
-                        }}
-                        className="w-full bg-[var(--bg-page)]/20 border border-white/10 rounded-xl p-3 text-xs outline-none focus:border-[var(--accent)] text-[var(--text-primary)] placeholder:text-slate-500 transition-all"
-                      />
-                    </div>
-
-                    {stacks.length > 0 && (
-                      <div className="space-y-1.5">
-                        <label className="text-[7px] uppercase font-black tracking-[0.2em] text-slate-600 ml-1">Groups</label>
-                        <div className="flex flex-col gap-1 max-h-[160px] overflow-y-auto custom-scroll pr-1">
-                          {stacks.map(s => (
-                            <div key={s.id} className="relative group/s">
-                              <button
-                                onClick={() => updateThought(thought.id, { stackId: s.id })}
-                                className="w-full flex items-center gap-3 p-2.5 rounded-xl bg-white/[0.02] hover:bg-white/[0.05] border border-transparent hover:border-white/5 transition-all"
-                              >
-                                <div className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: s.color, boxShadow: `0 0 8px ${s.color}44` }} />
-                                <span className="text-[9px] font-bold uppercase tracking-widest text-slate-400 group-hover/s:text-white transition-colors">{s.name}</span>
-                              </button>
-                              {!isReadOnly && (
-                                  <button
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      openModal({
-                                        title: 'Dissolve Group?',
-                                        description: `This will unlink all thoughts from "${s.name}".`,
-                                        type: 'delete_stack',
-                                        confirmText: 'Dissolve',
-                                        onConfirm: () => useStore.getState().deleteStack(s.id)
-                                      });
-                                  }}
-                                  className="absolute right-2 top-1/2 -translate-y-1/2 p-1 text-slate-600 hover:text-red-400 opacity-0 group-hover/s:opacity-100 transition-all"
-                                >
-                                  <X className="w-3 h-3" />
-                                </button>
+          <div className="flex-1 overflow-y-auto custom-scroll">
+            <AnimatePresence mode="wait">
+              <motion.div
+                key={activeTab}
+                initial={{ opacity: 0, x: 10 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: -10 }}
+                transition={{ duration: 0.2 }}
+                className="p-4 md:p-6 space-y-8"
+              >
+                {activeTab === 'content' && (
+                  <div className="space-y-6">
+                    <div className="grid grid-cols-4 gap-2">
+                      {(['label', 'text', 'tasks', 'table', 'paint', 'embed', 'file', 'save'] as const).map((item) => {
+                        if (item === 'save') {
+                          const showSave = pendingType !== null && pendingType !== thought.type;
+                          return (
+                            <button
+                              key="save"
+                              onClick={() => {
+                                if (pendingType) {
+                                  handleTypeChange(pendingType);
+                                  setPendingType(null);
+                                }
+                              }}
+                              disabled={!showSave}
+                              className={cn(
+                                "p-3 rounded-xl flex flex-col items-center justify-center transition-all border gap-1.5",
+                                showSave 
+                                  ? "bg-[var(--accent)] border-[var(--accent)] text-white shadow-[0_0_20px_var(--accent-glow)] scale-100 opacity-100"
+                                  : "bg-white/5 border-white/5 text-slate-600 scale-95 opacity-50 cursor-default"
                               )}
-                            </div>
-                          ))}
-                        </div>
+                            >
+                              <Save className="w-3.5 h-3.5" />
+                              <span className="text-[8px] font-black uppercase tracking-widest">Save</span>
+                            </button>
+                          );
+                        }
+                        const type = item as ThoughtType;
+                        const tConfig = getThoughtConfig(type);
+                        const isActive = (pendingType || thought.type) === type;
+                        return (
+                          <button
+                            key={type}
+                            onClick={() => setPendingType(type)}
+                            className={cn(
+                              "p-3 rounded-xl flex flex-col items-center justify-center transition-all border gap-1.5",
+                              isActive
+                                ? "bg-[var(--accent)]/10 border-[var(--accent)] text-white shadow-[0_0_15px_rgba(99,102,241,0.2)]"
+                                : "bg-white/[0.03] border-transparent text-slate-500 hover:bg-white/[0.06] hover:text-slate-300",
+                              isReadOnly && thought.type !== type && "opacity-30 grayscale cursor-default"
+                            )}
+                            disabled={isReadOnly}
+                            title={tConfig?.label || type}
+                          >
+                            {tConfig?.icon && <tConfig.icon className="w-3.5 h-3.5" />}
+                            <span className="text-[7px] font-black uppercase tracking-tighter">{type === 'tasks' ? 'Task' : type}</span>
+                          </button>
+                        );
+                      })}
+                    </div>
+
+                    <div className="space-y-5">
+                      <div className="space-y-2">
+                        <label className="text-[9px] uppercase font-bold tracking-widest text-slate-500 ml-1">Name</label>
+                        <input
+                          type="text"
+                          readOnly={isReadOnly}
+                          value={localText}
+                          onChange={(e) => {
+                            setLocalText(e.target.value);
+                            updateThought(thought.id, { text: e.target.value });
+                          }}
+                          maxLength={100}
+                          className={cn(
+                            "w-full bg-[var(--bg-page)]/20 border border-white/10 rounded-xl p-3 text-sm outline-none focus:border-[var(--accent)] text-[var(--text-primary)] placeholder:text-slate-500",
+                            isReadOnly && "pointer-events-none opacity-80"
+                          )}
+                          placeholder={"Name"}
+                        />
+                      </div>
+
+                      <div className="space-y-2">
+                        <label className="text-[9px] uppercase font-bold tracking-widest text-slate-500 ml-1">Note</label>
+                        <textarea
+                          readOnly={isReadOnly}
+                          value={localDesc}
+                          onChange={(e) => {
+                            setLocalDesc(e.target.value);
+                            updateThought(thought.id, { description: e.target.value });
+                          }}
+                          rows={4}
+                          maxLength={150}
+                          className={cn(
+                            "w-full bg-[var(--bg-page)]/20 border border-white/10 rounded-xl p-3 text-xs outline-none focus:border-[var(--accent)] text-[var(--text-primary)] placeholder:text-slate-500",
+                            isReadOnly && "pointer-events-none opacity-80"
+                          )}
+                          placeholder="Note"
+                        />
+                      </div>
+                    </div>
+
+                    {/* Modular Panel Extension */}
+                    {InspectorPanel && (
+                      <div className="pt-6 border-t border-white/5">
+                        <InspectorPanel thought={thought} isReadOnly={isReadOnly} />
                       </div>
                     )}
                   </div>
                 )}
-              </div>
 
-              <div className="space-y-2 pt-4 border-t border-white/5">
-                <div className="flex items-center mb-2 px-1">
-                  <span className="text-[9px] uppercase font-black tracking-widest text-white">Layers</span>
-                </div>
-                <div className="grid grid-cols-2 gap-2">
-                  <button
-                    disabled={isReadOnly}
-                    onClick={() => !isReadOnly && bringToFront(thought.id)}
-                    className={cn(
-                      "flex items-center justify-center gap-2 py-2.5 bg-white/5 border border-white/10 rounded-xl text-[8px] font-black uppercase tracking-widest text-slate-300 hover:bg-white/10 hover:text-white transition-all",
-                      isReadOnly && "opacity-30 cursor-default"
-                    )}
-                  >
-                    <ArrowUp className="w-3 h-3" />
-                    Bring to Front
-                  </button>
-                  <button
-                    disabled={isReadOnly}
-                    onClick={() => !isReadOnly && sendToBack(thought.id)}
-                    className={cn(
-                      "flex items-center justify-center gap-2 py-2.5 bg-white/5 border border-white/10 rounded-xl text-[8px] font-black uppercase tracking-widest text-slate-300 hover:bg-white/10 hover:text-white transition-all",
-                      isReadOnly && "opacity-30 cursor-default"
-                    )}
-                  >
-                    <ArrowDown className="w-3 h-3" />
-                    Send to Back
-                  </button>
-                </div>
-              </div>
+                {activeTab === 'status' && (
+                  <div className="space-y-8">
+                    <div className="space-y-3">
+                      <label className="text-[9px] uppercase font-bold tracking-widest text-slate-500 ml-1">Date</label>
+                      <DatePicker
+                        value={localDate}
+                        disabled={isReadOnly}
+                        onChange={(val) => {
+                          setLocalDate(val);
+                          updateThought(thought.id, { date: val });
+                        }}
+                      />
+                    </div>
 
-              {/* Modular Panel Extension */}
-              {InspectorPanel && (
-                <div className="pt-8 border-t border-white/5">
-                  <div className="flex items-center mb-4 px-1">
-                    <span className="text-[9px] uppercase font-black tracking-widest text-white">Extensions</span>
+                    <div className="space-y-3">
+                      <label className="text-[9px] uppercase font-bold tracking-widest text-slate-500 ml-1">Progress</label>
+                      <div className="grid grid-cols-4 gap-1">
+                        {(['none', 'todo', 'doing', 'done'] as const).map((s) => (
+                          <button
+                            key={s}
+                            disabled={isReadOnly}
+                            onClick={() => !isReadOnly && updateThought(thought.id, { status: s })}
+                            className={cn(
+                              "border rounded-lg py-2.5 text-[8px] font-bold uppercase transition-colors",
+                              thought.status === s
+                                ? {
+                                  'none': 'bg-white/10 border-white/30 text-white',
+                                  'todo': 'bg-[var(--status-todo)]/30 border-[var(--status-todo)] text-white',
+                                  'doing': 'bg-[var(--status-doing)]/30 border-[var(--status-doing)] text-white',
+                                  'done': 'bg-[var(--status-done)]/30 border-[var(--status-done)] text-white',
+                                }[s]
+                                : "bg-white/5 border-white/10 text-slate-400 hover:bg-white/10",
+                              isReadOnly && thought.status !== s && "opacity-30 grayscale cursor-default"
+                            )}
+                          >
+                            {s}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div className="space-y-3">
+                      <label className="text-[9px] uppercase font-bold tracking-widest text-slate-500 ml-1">Priority</label>
+                      <div className="grid grid-cols-5 gap-1">
+                        {(['none', 'low', 'medium', 'high', 'urgent'] as const).map((p) => (
+                          <button
+                            key={p}
+                            disabled={isReadOnly}
+                            onClick={() => handlePriorityChange(p)}
+                            className={cn(
+                              "border rounded-lg py-2.5 text-[8px] font-bold uppercase transition-colors",
+                              thought.priority === p
+                                ? {
+                                  'none': 'bg-white/10 border-white/30 text-white',
+                                  'low': 'bg-[var(--prio-low)]/30 border-[var(--prio-low)] text-white',
+                                  'medium': 'bg-[var(--prio-medium)]/30 border-[var(--prio-medium)] text-white',
+                                  'high': 'bg-[var(--prio-high)]/30 border-[var(--prio-high)] text-white',
+                                  'urgent': 'bg-[var(--prio-urgent)]/30 border-[var(--prio-urgent)] text-white',
+                                }[p]
+                                : "bg-white/5 border-white/10 text-slate-400 hover:bg-white/10",
+                              isReadOnly && thought.priority !== p && "opacity-30 grayscale cursor-default"
+                            )}
+                          >
+                            {p === 'medium' ? 'Med' : p[0].toUpperCase() + p.slice(1, 3)}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div className="space-y-3 pt-6 border-t border-white/5">
+                      <div className="flex items-center mb-2 px-1">
+                        <span className="text-[9px] uppercase font-black tracking-widest text-white">Group</span>
+                      </div>
+
+                      {stack ? (
+                        <div className="p-4 bg-[var(--bg-page)]/20 border border-white/10 rounded-2xl space-y-4">
+                          <div className="flex items-center gap-3">
+                            <div className="w-2 h-2 rounded-full shadow-[0_0_10px_currentColor]" style={{ backgroundColor: stack.color, color: stack.color }} />
+                            <input
+                              type="text"
+                              readOnly={isReadOnly}
+                              value={localStackName}
+                              onChange={(e) => {
+                                setLocalStackName(e.target.value);
+                                updateStack(stack.id, { name: e.target.value });
+                              }}
+                              className={cn(
+                                "bg-transparent text-[10px] font-black uppercase tracking-widest text-white outline-none flex-1",
+                                isReadOnly && "pointer-events-none"
+                              )}
+                              placeholder="Group Name"
+                            />
+                          </div>
+                          {!isReadOnly && (
+                            <button
+                              onClick={() => unlinkSelectedThoughts()}
+                              className="w-full py-2 bg-white/5 hover:bg-red-500/10 text-slate-400 hover:text-red-400 border border-white/5 rounded-xl text-[8px] font-black uppercase tracking-widest transition-all"
+                            >
+                              Remove from Group
+                            </button>
+                          )}
+                        </div>
+                      ) : (
+                        <div className="space-y-3">
+                          <div className="relative group">
+                            <input
+                              type="text"
+                              placeholder="Type to create or join..."
+                              onKeyDown={(e) => {
+                                if (e.key === 'Enter' && e.currentTarget.value.trim()) {
+                                  const name = e.currentTarget.value.trim();
+                                  const existingStack = stacks.find(s => s.name.toLowerCase() === name.toLowerCase());
+                                  if (existingStack) {
+                                    updateThought(thought.id, { stackId: existingStack.id });
+                                  } else {
+                                    createStack(name, thought.id);
+                                  }
+                                  e.currentTarget.value = '';
+                                }
+                              }}
+                              className="w-full bg-[var(--bg-page)]/20 border border-white/10 rounded-xl p-3 text-xs outline-none focus:border-[var(--accent)] text-[var(--text-primary)] placeholder:text-slate-500 transition-all"
+                            />
+                          </div>
+
+                          {stacks.length > 0 && (
+                            <div className="space-y-1.5">
+                              <label className="text-[7px] uppercase font-black tracking-[0.2em] text-slate-600 ml-1">Groups</label>
+                              <div className="flex flex-col gap-1 max-h-[160px] overflow-y-auto custom-scroll pr-1">
+                                {stacks.map(s => (
+                                  <div key={s.id} className="relative group/s">
+                                    <button
+                                      onClick={() => updateThought(thought.id, { stackId: s.id })}
+                                      className="w-full flex items-center gap-3 p-2.5 rounded-xl bg-white/[0.02] hover:bg-white/[0.05] border border-transparent hover:border-white/5 transition-all"
+                                    >
+                                      <div className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: s.color, boxShadow: `0 0 8px ${s.color}44` }} />
+                                      <span className="text-[9px] font-bold uppercase tracking-widest text-slate-400 group-hover/s:text-white transition-colors">{s.name}</span>
+                                    </button>
+                                    {!isReadOnly && (
+                                        <button
+                                          onClick={(e) => {
+                                            e.stopPropagation();
+                                            openModal({
+                                              title: 'Dissolve Group?',
+                                              description: `This will unlink all thoughts from "${s.name}".`,
+                                              type: 'delete_stack',
+                                              confirmText: 'Dissolve',
+                                              onConfirm: () => useStore.getState().deleteStack(s.id)
+                                            });
+                                        }}
+                                        className="absolute right-2 top-1/2 -translate-y-1/2 p-1 text-slate-600 hover:text-red-400 opacity-0 group-hover/s:opacity-100 transition-all"
+                                      >
+                                        <X className="w-3 h-3" />
+                                      </button>
+                                    )}
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </div>
                   </div>
-                  <InspectorPanel thought={thought} isReadOnly={isReadOnly} />
-                </div>
-              )}
-            </div>
+                )}
+
+                {activeTab === 'layout' && (
+                  <div className="space-y-8">
+                    <div className="space-y-4">
+                      <div className="flex justify-between items-center ml-1">
+                        <label className="text-[9px] uppercase font-bold tracking-widest text-slate-500">Scale</label>
+                        <span className="text-[9px] font-mono text-[var(--accent-secondary)]">{(thought.size || 1.0).toFixed(1)}x</span>
+                      </div>
+                      <input
+                        type="range"
+                        min="0.5"
+                        max="2.0"
+                        step="0.1"
+                        value={thought.size || 1.0}
+                        disabled={isReadOnly}
+                        onChange={(e) => updateThought(thought.id, { size: parseFloat(e.target.value) })}
+                        className={cn(
+                          "w-full h-1.5 bg-white/5 rounded-lg appearance-none cursor-pointer accent-[var(--accent)]",
+                          isReadOnly && "opacity-30 pointer-events-none"
+                        )}
+                      />
+                    </div>
+
+                    <div className="space-y-3 pt-6 border-t border-white/5">
+                      <div className="flex items-center mb-2 px-1">
+                        <span className="text-[9px] uppercase font-black tracking-widest text-white">Layers</span>
+                      </div>
+                      <div className="grid grid-cols-2 gap-2">
+                        <button
+                          disabled={isReadOnly}
+                          onClick={() => !isReadOnly && bringToFront(thought.id)}
+                          className={cn(
+                            "flex items-center justify-center gap-2 py-3 bg-white/5 border border-white/10 rounded-xl text-[8px] font-black uppercase tracking-widest text-slate-300 hover:bg-white/10 hover:text-white transition-all",
+                            isReadOnly && "opacity-30 cursor-default"
+                          )}
+                        >
+                          <ArrowUp className="w-3 h-3" />
+                          Bring to Front
+                        </button>
+                        <button
+                          disabled={isReadOnly}
+                          onClick={() => !isReadOnly && sendToBack(thought.id)}
+                          className={cn(
+                            "flex items-center justify-center gap-2 py-3 bg-white/5 border border-white/10 rounded-xl text-[8px] font-black uppercase tracking-widest text-slate-300 hover:bg-white/10 hover:text-white transition-all",
+                            isReadOnly && "opacity-30 cursor-default"
+                          )}
+                        >
+                          <ArrowDown className="w-3 h-3" />
+                          Send to Back
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </motion.div>
+            </AnimatePresence>
           </div>
 
           {/* STICKY FOOTER */}
           {!isReadOnly && (
-            <div className="bg-black/40 border-t border-white/5 p-4 md:p-6 mt-auto">
+            <div className="bg-black/40 border-t border-white/5 p-4 md:p-6 mt-auto flex items-center gap-3">
               <button
                 onClick={handleDeleteThought}
-                className="w-full bg-red-500/10 hover:bg-red-500/20 text-red-400 py-4 rounded-2xl text-[10px] font-bold uppercase tracking-widest transition-colors border border-red-500/20"
+                className="flex-1 bg-red-500/10 hover:bg-red-500/20 text-red-400 py-4 rounded-2xl text-[10px] font-bold uppercase tracking-widest transition-colors border border-red-500/20 flex items-center justify-center gap-2"
               >
-                Delete Thought
+                <Trash2 className="w-4 h-4" />
+                Delete
               </button>
+              {thought.type !== 'label' && (
+                <button
+                  onClick={() => {
+                    const triggers: Record<string, string> = {
+                      text: 'text', tasks: 'tasks', table: 'table', paint: 'paint', embed: 'embed', file: 'file', image: 'file'
+                    };
+                    const focusType = (triggers[thought.type] || 'text') as any;
+                    setActiveFocus(thought.id, focusType);
+                  }}
+                  className="flex-1 bg-[var(--accent)]/10 hover:bg-[var(--accent)]/20 border border-[var(--accent)]/30 text-[var(--accent-secondary)] py-4 rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] transition-all flex items-center justify-center gap-2"
+                >
+                  <Maximize2 className="w-4 h-4" />
+                  Open
+                </button>
+              )}
             </div>
           )}
         </motion.div>
