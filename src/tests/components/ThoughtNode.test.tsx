@@ -58,18 +58,14 @@ const mockThought: Thought = {
   placeholder: 'New Thought',
   description: 'Description',
   type: 'text',
-  content: 'Content',
-  image: null,
-  drawing: null,
   status: 'none',
-  tasks: [],
-  table: [],
   date: '',
   priority: 'none',
   size: 1.0,
   author: 'Author',
   order: 0,
-  layer: 1
+  layer: 1,
+  data: { type: 'text', content: 'Content' }
 };
 
 const defaultProps = {
@@ -95,9 +91,9 @@ describe('ThoughtNode', () => {
     const taskThought = { 
       ...mockThought, 
       type: 'tasks' as const, 
-      tasks: [{ text: 'Task 1', done: false }, { text: 'Task 2', done: true }] 
+      data: { type: 'tasks', tasks: [{ text: 'Task 1', done: false }, { text: 'Task 2', done: true }] } as any
     };
-    render(<ThoughtNode thought={taskThought} {...defaultProps} />);
+    render(<ThoughtNode thought={taskThought as any} {...defaultProps} />);
     expect(screen.getByText('Task 1')).toBeDefined();
     expect(screen.getByText('Task 2')).toBeDefined();
   });

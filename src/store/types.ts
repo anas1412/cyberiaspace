@@ -10,7 +10,7 @@ export interface CyberiaState {
   selectedThoughtIds: number[];
   isInspectorOpen: boolean;
   activeFocusId: number | null;
-  focusType: 'text' | 'table' | 'paint' | 'tasks' | 'embed' | 'file' | 'image' | null;
+  focusType: 'text' | 'table' | 'paint' | 'tasks' | 'embed' | 'file' | null;
   calendarViewDate: Date;
   hoveredCalDate: string | null;
   linkingSourceId: number | null;
@@ -71,7 +71,7 @@ export interface CyberiaState {
   setChatOpen: (isOpen: boolean) => void;
   setOracleChatMode: (mode: 'chat' | 'action') => void;
 
-  setActiveSpace: (id: string) => void;
+  setActiveSpace: (id: string) => Promise<void>;
   setCalendarViewDate: (date: Date) => void;
   addSpace: (name: string) => Promise<void>;
   updateSpace: (id: string, updates: Partial<Space>) => Promise<void>;
@@ -94,7 +94,7 @@ export interface CyberiaState {
   linkSelectedThoughts: (name?: string) => Promise<void>;
   unlinkSelectedThoughts: () => Promise<void>;
   setInspectorOpen: (open: boolean) => void;
-  setActiveFocus: (id: number | null, type: 'text' | 'table' | 'paint' | 'tasks' | 'embed' | 'file' | 'image' | null) => void;
+  setActiveFocus: (id: number | null, type: 'text' | 'table' | 'paint' | 'tasks' | 'embed' | 'file' | null) => void;
 
   setHoveredCalDate: (date: string | null) => void;
   setCalendarSearchQuery: (query: string) => void;

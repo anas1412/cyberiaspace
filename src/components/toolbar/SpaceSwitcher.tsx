@@ -12,7 +12,7 @@ function cn(...inputs: ClassValue[]) {
 interface SpaceSwitcherProps {
   spaces: any[];
   activeSpaceId: string | null;
-  setActiveSpace: (id: string) => void;
+  setActiveSpace: (id: string) => Promise<void>;
   isReadOnly: boolean;
   isSpaceLoading: boolean;
   creatorName: string | null;

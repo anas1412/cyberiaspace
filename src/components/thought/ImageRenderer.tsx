@@ -1,6 +1,7 @@
 import React from 'react';
 import { Image as ImageIcon, Maximize2 } from 'lucide-react';
 import { type Thought } from '../../db';
+import { useThoughtPayload } from './hooks/useThoughtPayload';
 
 interface ImageRendererProps {
   thought: Thought;
@@ -15,7 +16,10 @@ export const ImageRenderer: React.FC<ImageRendererProps> = ({
   setSelectedThoughtId, 
   setInspectorOpen
 }) => {
-  if (!thought.image) {
+  // Use the dual-read hook for backward compatibility
+  const { image } = useThoughtPayload(thought);
+  
+  if (!image) {
     const hasRemoteContent = thought.storageUrl && thought.syncStatus !== 'synced' && !isReadOnly;
     
     return (
@@ -45,7 +49,7 @@ export const ImageRenderer: React.FC<ImageRendererProps> = ({
   return (
     <div data-trigger="image" className="mt-2 relative group cursor-pointer overflow-hidden rounded-xl border border-white/10 bg-black/50 aspect-video flex items-center justify-center">
       <img
-        src={thought.image}
+        src={image}
         draggable="false"
         className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
         alt={thought.text}
@@ -62,4 +66,3 @@ export const ImageRenderer: React.FC<ImageRendererProps> = ({
     </div>
   );
 };
-

@@ -226,23 +226,37 @@ export const createAuthSlice: StateCreator<AuthState, [], [], any> = (set, get, 
     const { accessToken, user, refreshSecret } = get();
     if (!accessToken || !user) return;
     try {
+      // Create a timeout controller
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 8000); // 8 second timeout
+
       // 1. Try a silent refresh using refreshSecret
-      const refreshRes = await fetch('/api/google-auth?action=refresh', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userId: user.id, refreshSecret })
-      });
-      
-      let currentToken = accessToken;
-      if (refreshRes.ok) {
-        const refreshData = await refreshRes.json();
-        currentToken = refreshData.access_token;
-        set({ accessToken: currentToken });
-        localStorage.setItem('cyberia-token', currentToken);
-      } else if (refreshRes.status === 401) {
-        console.warn('[Auth] Refresh failed (401), signing out...');
-        get().signOut();
-        return;
+      try {
+        const refreshRes = await fetch('/api/google-auth?action=refresh', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ userId: user.id, refreshSecret }),
+          signal: controller.signal
+        });
+        
+        let currentToken = accessToken;
+        if (refreshRes.ok) {
+          const refreshData = await refreshRes.json();
+          currentToken = refreshData.access_token;
+          set({ accessToken: currentToken });
+          localStorage.setItem('cyberia-token', currentToken);
+        } else if (refreshRes.status === 401) {
+          console.warn('[Auth] Refresh failed (401), signing out...');
+          clearTimeout(timeoutId);
+          get().signOut();
+          return;
+        }
+      } catch (err: any) {
+        if (err.name === 'AbortError') {
+          console.warn('[Auth] Refresh request timed out');
+        } else {
+          console.warn('[Auth] Refresh failed:', err);
+        }
       }
 
       // 2. Fetch profile from Supabase
@@ -250,6 +264,7 @@ export const createAuthSlice: StateCreator<AuthState, [], [], any> = (set, get, 
       const supabaseProfile = await supabaseSync.getProfile(user.id);
       console.log('[Auth] Supabase profile result:', JSON.stringify(supabaseProfile));
 
+      clearTimeout(timeoutId);
 
       if (supabaseProfile?.user) {
         const supabaseUser = supabaseProfile.user;

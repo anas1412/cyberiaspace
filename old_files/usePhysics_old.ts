@@ -230,9 +230,7 @@ export const usePhysics = (
             store.clearSelection();
           } else {
             store.setSelectedThoughtId(id);
-            if (!store.isReadOnly && typeof store.setInspectorOpen === 'function') {
-              store.setInspectorOpen(true);
-            }
+            if (!store.isReadOnly) store.setInspectorOpen(true);
           }
         }
       } else if (moved) {

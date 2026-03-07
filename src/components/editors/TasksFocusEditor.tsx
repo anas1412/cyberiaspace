@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useStore } from '../../store/useStore';
+import { useThoughtPayload } from '../thought/hooks/useThoughtPayload';
 import { CheckSquare, Plus, Trash2, GripVertical } from 'lucide-react';
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
@@ -139,30 +140,37 @@ const TasksFocusEditor: React.FC = () => {
   const [localTitle, setLocalTitle] = useState('');
   const [localTasks, setLocalTasks] = useState<Task[]>([]);
   const isDraggingRef = React.useRef(false);
-  const pendingTasksRef = React.useRef<Task[] | null>(null);
 
   const thought = thoughts.find((t) => t.id === activeFocusId);
+  const { tasks } = useThoughtPayload(thought as any);
   const stack = stacks.find((s) => s.id === thought?.stackId);
   const isVisible = focusType === 'tasks' && !!thought;
 
   React.useEffect(() => {
     if (thought) {
       setLocalTitle(thought.text);
-      const tasksWithIds = (thought.tasks || []).map((t, i) => ({
+      const tasksWithIds = (tasks || []).map((t, i) => ({
         ...t,
         id: (t as Task & { id?: string }).id || `task-${i}-${Date.now()}`
       }));
       setLocalTasks(tasksWithIds);
     }
-  }, [thought]);
+  }, [thought, tasks]);
+
+  const saveTasks = (tasksToSaveRaw: Task[]) => {
+    if (!thought) return;
+    const tasksToSave = tasksToSaveRaw.map(({ id: _, ...rest }) => rest);
+    updateThought(thought.id, { 
+      data: { type: 'tasks', tasks: tasksToSave } 
+    });
+  };
 
   const handleAddTask = () => {
     if (!thought || isReadOnly) return;
     const newTask = { id: `task-${Date.now()}`, text: '', done: false };
     const newTasks = [...localTasks, newTask];
     setLocalTasks(newTasks);
-    const tasksToSave = newTasks.map(({ id: _, ...rest }) => rest);
-    updateThought(thought.id, { tasks: tasksToSave });
+    saveTasks(newTasks);
   };
 
   const handleUpdateTask = (id: string, updates: { text?: string; done?: boolean }) => {
@@ -170,14 +178,12 @@ const TasksFocusEditor: React.FC = () => {
     const newTasks = localTasks.map(t => t.id === id ? { ...t, ...updates } : t);
     setLocalTasks(newTasks);
     if (updates.done !== undefined) {
-      const tasksToSave = newTasks.map(({ id: _, ...rest }) => rest);
-      updateThought(thought.id, { tasks: tasksToSave });
+      saveTasks(newTasks);
     } else {
       const timerKey = `task-save-${thought.id}`;
       if ((window as any)[timerKey]) clearTimeout((window as any)[timerKey]);
       (window as any)[timerKey] = setTimeout(() => {
-        const tasksToSave = newTasks.map(({ id: _, ...rest }) => rest);
-        updateThought(thought.id, { tasks: tasksToSave });
+        saveTasks(newTasks);
         delete (window as any)[timerKey];
       }, 1000);
     }
@@ -187,40 +193,16 @@ const TasksFocusEditor: React.FC = () => {
     if (!thought || isReadOnly) return;
     const newTasks = localTasks.filter(t => t.id !== id);
     setLocalTasks(newTasks);
-    const tasksToSave = newTasks.map(({ id: _, ...rest }) => rest);
-    updateThought(thought.id, { tasks: tasksToSave });
+    saveTasks(newTasks);
   };
 
-  const handleReorderTasks = (newTasks: Task[]) => {
+  const handleReorder = (newTasks: Task[]) => {
     if (!thought || isReadOnly) return;
     setLocalTasks(newTasks);
-    if (isDraggingRef.current) {
-      pendingTasksRef.current = newTasks;
-    } else {
-      const tasksToSave = newTasks.map(({ id: _, ...rest }) => rest);
-      updateThought(thought.id, { tasks: tasksToSave });
-    }
-  };
-
-  const handleDragStart = () => {
-    isDraggingRef.current = true;
-    pendingTasksRef.current = null;
-  };
-
-  const handleDragEnd = () => {
-    isDraggingRef.current = false;
-    if (pendingTasksRef.current && thought) {
-      const tasksToSave = pendingTasksRef.current.map(({ id: _, ...rest }) => rest);
-      updateThought(thought.id, { tasks: tasksToSave });
-      pendingTasksRef.current = null;
-    }
+    saveTasks(newTasks);
   };
 
   if (!thought) return null;
-
-  const completedCount = localTasks.filter(t => t.done).length || 0;
-  const totalCount = localTasks.length || 0;
-  const progress = totalCount > 0 ? (completedCount / totalCount) * 100 : 0;
 
   return (
     <FocusEditorShell
@@ -230,26 +212,11 @@ const TasksFocusEditor: React.FC = () => {
       title={localTitle}
       onTitleChange={(val) => {
         setLocalTitle(val);
-        if (!isReadOnly && thought) updateThought(thought.id, { text: val });
+        if (!isReadOnly) updateThought(thought.id, { text: val });
       }}
       description={thought.description}
       isReadOnly={isReadOnly}
-      maxWidth="800px"
       stack={stack}
-      headerSubContent={
-        <div className="flex items-center gap-3 mt-1">
-          <div className="w-20 md:w-32 h-1 bg-white/5 rounded-full overflow-hidden">
-            <motion.div
-              initial={{ width: 0 }}
-              animate={{ width: `${progress}%` }}
-              className="h-full bg-[var(--accent)] shadow-[0_0_10px_var(--accent-glow)]"
-            />
-          </div>
-          <span className="text-[8px] md:text-[10px] font-black uppercase tracking-widest text-slate-500 whitespace-nowrap">
-            {completedCount}/{totalCount} Tasks Complete
-          </span>
-        </div>
-      }
       headerActions={
         <div className="flex bg-white/5 p-1 rounded-xl md:rounded-2xl border border-white/5">
           <button
@@ -277,21 +244,28 @@ const TasksFocusEditor: React.FC = () => {
       footerStatus={
         <div className="flex items-center gap-4">
           <p className="text-[8px] md:text-[10px] uppercase font-black tracking-widest text-slate-600">
-            {isReadOnly ? "Read-only view" : "Click a task in View mode to toggle it"}
+            {localTasks.filter(t => t.done).length} / {localTasks.length} Completed
           </p>
+          <div className="w-20 md:w-32 h-1 bg-white/5 rounded-full overflow-hidden">
+            <motion.div 
+              className="h-full bg-[var(--status-todo)]"
+              initial={{ width: 0 }}
+              animate={{ width: `${(localTasks.filter(t => t.done).length / (localTasks.length || 1)) * 100}%` }}
+            />
+          </div>
         </div>
       }
     >
       <EditorContent 
         isEditMode={isEditMode}
         tasks={localTasks}
-        onReorder={handleReorderTasks}
+        onReorder={handleReorder}
         onUpdate={handleUpdateTask}
         onDelete={handleDeleteTask}
         onAdd={handleAddTask}
         isReadOnly={isReadOnly}
-        onDragStart={handleDragStart}
-        onDragEnd={handleDragEnd}
+        onDragStart={() => { isDraggingRef.current = true; }}
+        onDragEnd={() => { isDraggingRef.current = false; }}
       />
     </FocusEditorShell>
   );

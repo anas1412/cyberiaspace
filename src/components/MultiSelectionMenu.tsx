@@ -88,7 +88,7 @@ const MultiSelectionMenu: React.FC = () => {
   const isMobile = typeof window !== 'undefined' ? window.innerWidth < 768 : false;
 
   const sharedStack = React.useMemo(() => {
-    if (selectedThoughtIds.length < 2) return null;
+    if (!selectedThoughtIds || selectedThoughtIds.length < 2) return null;
     const selectedThoughts = thoughts.filter(t => selectedThoughtIds.includes(t.id));
     const firstStackId = selectedThoughts[0]?.stackId;
     if (!firstStackId) return null;
@@ -98,7 +98,7 @@ const MultiSelectionMenu: React.FC = () => {
   const [localStackName, setLocalStackName] = React.useState('');
   React.useEffect(() => setLocalStackName(sharedStack?.name || ''), [sharedStack]);
 
-  if (selectedThoughtIds.length < 2 || isReadOnly) return null;
+  if (!selectedThoughtIds || selectedThoughtIds.length < 2 || isReadOnly) return null;
 
   return (
     <AnimatePresence>

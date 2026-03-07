@@ -1,22 +1,20 @@
 import React, { useEffect, useState } from 'react';
-import { Music, Play, Loader2, ExternalLink } from 'lucide-react';
+import { Music, Loader2, ExternalLink } from 'lucide-react';
 import { type Thought } from '../../db';
+import { useThoughtPayload } from './hooks/useThoughtPayload';
 import { getEmbedInfo, fetchEmbedMeta } from '../../utils/embeds';
 import { PROVIDER_CONFIG } from './constants';
 import { useStore } from '../../store/useStore';
-import { clsx, type ClassValue } from 'clsx';
-import { twMerge } from 'tailwind-merge';
-
-function cn(...inputs: ClassValue[]) {
-  return twMerge(clsx(inputs));
-}
 
 interface EmbedRendererProps {
   thought: Thought;
 }
 
 export const EmbedRenderer: React.FC<EmbedRendererProps> = ({ thought }) => {
-  const { provider, id } = getEmbedInfo(thought.content);
+  // Use the dual-read hook for backward compatibility
+  const { content, image } = useThoughtPayload(thought);
+  
+  const { provider, id } = getEmbedInfo(content);
   const config = PROVIDER_CONFIG[provider as string] || PROVIDER_CONFIG.unknown;
   const Icon = config.icon;
   const updateThought = useStore(state => state.updateThought);
@@ -24,18 +22,18 @@ export const EmbedRenderer: React.FC<EmbedRendererProps> = ({ thought }) => {
 
   // Automatic Metadata Sync
   useEffect(() => {
-    const shouldFetch = !thought.image && !thought.author && thought.content && !thought.content.includes('localhost');
+    const shouldFetch = !image && !thought.author && content && !content.includes('localhost');
     
     if (shouldFetch) {
       const syncMetadata = async () => {
         setIsLoading(true);
         try {
-          const meta = await fetchEmbedMeta(thought.content);
+          const meta = await fetchEmbedMeta(content);
           if (meta) {
             const updates: any = {};
             if (meta.thumbnail_url) updates.image = meta.thumbnail_url;
             if (meta.author_name) updates.author = meta.author_name;
-            if (meta.title && meta.title !== thought.content) updates.text = meta.title;
+            if (meta.title && meta.title !== content) updates.text = meta.title;
             if (meta.description) updates.description = meta.description;
             
             if (Object.keys(updates).length > 0) {
@@ -50,9 +48,9 @@ export const EmbedRenderer: React.FC<EmbedRendererProps> = ({ thought }) => {
       };
       syncMetadata();
     }
-  }, [thought.id, thought.content, thought.image, thought.author, updateThought, thought.text]);
+  }, [thought.id, content, image, thought.author, updateThought, thought.text]);
 
-  const previewImage = thought.image || (provider === 'youtube' && id ? `https://img.youtube.com/vi/${id}/mqdefault.jpg` : null);
+  const previewImage = image || (provider === 'youtube' && id ? `https://img.youtube.com/vi/${id}/mqdefault.jpg` : null);
 
   return (
     <div data-trigger="embed" className="mt-2 relative group cursor-pointer overflow-hidden rounded-xl border border-white/10 bg-black/50 aspect-video flex items-center justify-center">
@@ -64,14 +62,6 @@ export const EmbedRenderer: React.FC<EmbedRendererProps> = ({ thought }) => {
             className="w-full h-full object-cover opacity-60 group-hover:opacity-100 transition-opacity"
             alt="Preview"
           />
-          <div className="absolute inset-0 flex items-center justify-center">
-            <div className={cn(
-              "w-12 h-12 rounded-full flex items-center justify-center shadow-2xl transform group-hover:scale-110 transition-transform text-white", 
-              provider === 'youtube' ? "bg-red-600" : "bg-black/60 backdrop-blur-md"
-            )}>
-              {provider === 'youtube' ? <Play className="w-6 h-6 fill-white ml-1" /> : <Icon className="w-6 h-6" style={{ color: config.color }} />}
-            </div>
-          </div>
         </>
       ) : provider === 'spotify' ? (
         <div className="flex flex-col items-center gap-3 p-6 text-center">
@@ -114,4 +104,3 @@ export const EmbedRenderer: React.FC<EmbedRendererProps> = ({ thought }) => {
     </div>
   );
 };
-

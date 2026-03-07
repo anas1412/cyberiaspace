@@ -35,8 +35,11 @@ export const createStorageSlice: StateCreator<AuthState, [], [], any> = (set, ge
 
   uploadThoughtBlob: async (thoughtId: number, force?: boolean) => {
     const { autoSync, user, isOnline } = get();
+    
+    console.log(`[Storage] uploadThoughtBlob started for thoughtId: ${thoughtId}, autoSync: ${autoSync}, force: ${force}`);
+
     if ((!autoSync && !force) || !user) {
-      console.log('[Storage] Auto-sync is OFF, keeping blob locally');
+      console.log('[Storage] Auto-sync is OFF and no force sync requested, keeping blob locally');
       return;
     }
 
@@ -46,7 +49,10 @@ export const createStorageSlice: StateCreator<AuthState, [], [], any> = (set, ge
       const blobEntry = await db.blobs.where('thoughtId').equals(thoughtId).first();
       const thought = await db.thoughts.get(thoughtId);
 
-      if (!blobEntry || !thought) return;
+      if (!blobEntry || !thought) {
+        console.warn('[Storage] No blob entry or thought found for id:', thoughtId);
+        return;
+      }
 
       // Skip if already has storagePath (don't re-upload)
       if (thought.storagePath) {
@@ -55,50 +61,73 @@ export const createStorageSlice: StateCreator<AuthState, [], [], any> = (set, ge
       }
 
       // Check file size
-      const sizeCheck = supabaseStorage.checkFileSize(blobEntry.blob)
+      const sizeCheck = supabaseStorage.checkFileSize(blobEntry.blob);
       if (!sizeCheck.valid) {
-        console.error('[Storage] File too large:', sizeCheck.message)
-        await db.thoughts.update(thoughtId, { syncStatus: 'error' })
-        return
+        console.error('[Storage] File too large:', sizeCheck.message);
+        const updates = { syncStatus: 'error' as const };
+        await db.thoughts.update(thoughtId, updates);
+        useStore.getState().updateThought(thoughtId, updates);
+        return;
       }
 
       // If offline, queue for later
       if (!isOnline) {
         console.log('[Storage] Offline, queuing blob for later upload');
-        await db.pendingBlobs.add({
+        await db.pendingBlobs.put({
           thoughtId,
           name: blobEntry.name,
           type: blobEntry.type,
           createdAt: Date.now(),
           retryCount: 0
         });
-        await db.thoughts.update(thoughtId, { syncStatus: 'pending' });
+        const updates = { syncStatus: 'pending' as const };
+        await db.thoughts.update(thoughtId, updates);
+        useStore.getState().updateThought(thoughtId, updates);
         return;
       }
 
+      console.log('[Storage] Transitioning status to syncing...');
       useStore.getState().updateThought(thoughtId, { syncStatus: 'syncing' });
 
-      const result = await supabaseStorage.uploadFile(
+      // Add a timeout to prevent hanging forever
+      const uploadPromise = supabaseStorage.uploadFile(
         user.id,
         blobEntry.blob,
         blobEntry.name
       );
 
-      await db.thoughts.update(thoughtId, {
+      const timeoutPromise = new Promise((_, reject) => 
+        setTimeout(() => reject(new Error('Upload timed out')), 60000)
+      );
+
+      console.log('[Storage] Calling supabaseStorage.uploadFile with 60s timeout...');
+      const result = await Promise.race([uploadPromise, timeoutPromise]) as any;
+
+      console.log('[Storage] Upload successful:', result.path);
+
+      const updates: any = {
         storageUrl: result.url,
         storagePath: result.path,
         syncStatus: 'synced',
-      });
+      };
 
-      useStore.getState().updateThought(thoughtId, {
-        storageUrl: result.url,
-        storagePath: result.path,
-        syncStatus: 'synced'
-      });
+      // Modular data update
+      if (thought.type === 'file' && thought.data?.type === 'file') {
+        updates.data = {
+          ...thought.data,
+          url: result.url
+        };
+      }
+
+      await db.thoughts.update(thoughtId, updates);
+      useStore.getState().updateThought(thoughtId, updates);
 
     } catch (err) {
       console.error('[Storage] Failed to upload blob:', err);
-      await db.thoughts.update(thoughtId, { syncStatus: 'error' });
+      const { useStore } = await import('../useStore');
+      const updates = { syncStatus: 'error' as const };
+      await db.thoughts.update(thoughtId, updates);
+      useStore.getState().updateThought(thoughtId, updates);
     }
   },
 
@@ -112,6 +141,8 @@ export const createStorageSlice: StateCreator<AuthState, [], [], any> = (set, ge
     try {
       const thought = await db.thoughts.get(thoughtId);
       if (!thought || !thought.storagePath) return;
+
+      console.log('[Storage] Removing cloud asset:', thought.storagePath);
 
       if (isOnline) {
         try {
@@ -128,11 +159,19 @@ export const createStorageSlice: StateCreator<AuthState, [], [], any> = (set, ge
         }).catch(() => {});
       }
 
-      const updates = {
+      const updates: any = {
         storageUrl: undefined,
         storagePath: undefined,
         syncStatus: 'local' as const
       };
+
+      // Modular data update
+      if (thought.type === 'file' && thought.data?.type === 'file') {
+        updates.data = {
+          ...thought.data,
+          url: '' // Revert to empty/local
+        };
+      }
 
       await db.thoughts.update(thoughtId, updates);
       
@@ -245,11 +284,24 @@ export const createStorageSlice: StateCreator<AuthState, [], [], any> = (set, ge
             blobEntry.name
           );
 
-          await db.thoughts.update(blob.thoughtId, {
+          const updates: any = {
             storageUrl: result.url,
             storagePath: result.path,
             syncStatus: 'synced'
-          });
+          };
+
+          // Modular data update
+          if (thought && thought.type === 'file' && thought.data?.type === 'file') {
+            updates.data = {
+              ...thought.data,
+              url: result.url
+            };
+          }
+
+          await db.thoughts.update(blob.thoughtId, updates);
+
+          const { useStore } = await import('../useStore');
+          useStore.getState().updateThought(blob.thoughtId, updates);
 
           await db.pendingBlobs.delete(blob.id!);
           console.log(`[Storage] Uploaded pending blob for thought:`, blob.thoughtId);

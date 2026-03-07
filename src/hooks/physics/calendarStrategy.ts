@@ -11,7 +11,7 @@ export const calendarStrategy: LayoutStrategist = {
     // Filtering logic
     const matchesSearch = !calendarSearchQuery || 
       thought.text.toLowerCase().includes(calendarSearchQuery.toLowerCase()) ||
-      thought.content.toLowerCase().includes(calendarSearchQuery.toLowerCase());
+      (thought.data?.type === 'text' ? thought.data.content : ((thought as any).content || '')).toLowerCase().includes(calendarSearchQuery.toLowerCase());
     
     const matchesStack = !calendarStackFilter || thought.stackId === calendarStackFilter;
     const isFilteredOut = !matchesSearch || !matchesStack;
@@ -31,7 +31,9 @@ export const calendarStrategy: LayoutStrategist = {
         const dateThoughts = allThoughts
           .filter(t => t.date === thought.date)
           .filter(t => {
-            const mS = !calendarSearchQuery || t.text.toLowerCase().includes(calendarSearchQuery.toLowerCase()) || t.content.toLowerCase().includes(calendarSearchQuery.toLowerCase());
+            const mS = !calendarSearchQuery || 
+              t.text.toLowerCase().includes(calendarSearchQuery.toLowerCase()) || 
+              (t.data?.type === 'text' ? t.data.content : ((t as any).content || '')).toLowerCase().includes(calendarSearchQuery.toLowerCase());
             const mStack = !calendarStackFilter || t.stackId === calendarStackFilter;
             return mS && mStack;
           })
@@ -74,7 +76,9 @@ export const calendarStrategy: LayoutStrategist = {
       const unscheduled = allThoughts
         .filter(t => !t.date)
         .filter(t => {
-          const mS = !calendarSearchQuery || t.text.toLowerCase().includes(calendarSearchQuery.toLowerCase()) || t.content.toLowerCase().includes(calendarSearchQuery.toLowerCase());
+          const mS = !calendarSearchQuery || 
+            t.text.toLowerCase().includes(calendarSearchQuery.toLowerCase()) || 
+            (t.data?.type === 'text' ? t.data.content : ((t as any).content || '')).toLowerCase().includes(calendarSearchQuery.toLowerCase());
           const mStack = !calendarStackFilter || t.stackId === calendarStackFilter;
           return mS && mStack;
         })

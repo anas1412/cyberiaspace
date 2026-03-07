@@ -1,24 +1,12 @@
-[Storage] Deleted: 113068402010739048954/sousou-no-frieren-flowers.png
-syncSlice.ts:35 [Auth] syncData called - forcing manual sync
-syncOrchestrator.ts:49 [Sync] fullPushSync called {authStatus: 'authenticated', isOnline: true, currentStatus: 'idle'}
-syncOrchestrator.ts:62 [Sync] Status set to syncing
-syncOrchestrator.ts:74 [Sync] Local: 2 spaces, 6 stacks, 21 thoughts
-syncOrchestrator.ts:77 [Sync] Fetching cloud data for comparison...
-supabaseSync.ts:315 [Supabase] getStacks: 6 stacks
-supabaseSync.ts:202 [Supabase] getThoughts: 21 thoughts
-supabaseSync.ts:105 [Supabase] getSpaces: 2 spaces
-syncOrchestrator.ts:88 [Sync] Cloud: 2 spaces, 6 stacks, 21 thoughts
-syncOrchestrator.ts:120 [Sync] Orphan cleanup complete
-supabaseSync.ts:142 [Supabase] createSpaces success: 2 spaces
-syncOrchestrator.ts:137 [Sync] Spaces synced
-supabaseSync.ts:350 [Supabase] createStacks success: 6 stacks
-syncOrchestrator.ts:147 [Sync] Stacks synced
-supabaseStorage.ts:42 [Storage] Upload success: 113068402010739048954/sousou-no-frieren-flowers.png
-syncOrchestrator.ts:163 [Sync] Uploaded file for thought 1122
-syncOrchestrator.ts:174 [Sync] Thoughts synced
-syncOrchestrator.ts:178 [Sync] Valid storage paths: 1
-supabaseStorage.ts:142 [Storage] Starting orphan cleanup for user: 113068402010739048954
-supabaseStorage.ts:168 [Storage] Found 1 files in bucket
-supabaseStorage.ts:175 [Storage] Found 0 orphaned files
-syncOrchestrator.ts:180 [Sync] Cleaned up 0 orphaned files
-syncOrchestrator.ts:190 [Sync] Full push complete
+usePhysics.ts:233 Uncaught TypeError: store.setInspectorOpen is not a function
+    at handleUp (usePhysics.ts:233:42)
+    at onMouseUp (usePhysics.ts:282:42)
+handleUp @ usePhysics.ts:233
+onMouseUp @ usePhysics.ts:282
+authSlice.ts:256 [Auth] Refresh request timed out
+refreshProfile @ authSlice.ts:256
+authSlice.ts:263 [Auth] Refreshing profile for: 113068402010739048954
+authSlice.ts:256 [Auth] Refresh request timed out
+refreshProfile @ authSlice.ts:256
+authSlice.ts:263 [Auth] Refreshing profile for: 113068402010739048954
+2authSlice.ts:265 [Auth] Supabase profile result: {"user":{"id":"113068402010739048954","email":"anasbassoumi@gmail.com","name":"Anas Bassoumi","avatar":"https://lh3.googleusercontent.com/a/ACg8ocJbB9b-G5oJlfDKyYAFaBtdr5DnjO9DeugWTx3JE-HvZbkfoLl1=s96-c","plan":"free","subscriptionStatus":"none","settings":{"theme":"sea","autoSync":false},"createdAt":"2026-02-25T22:33:23.595618","updatedAt":"2026-03-06T23:35:04.565","autoSync":false,"polarCustomerId":null,"polarSubscriptionId":null,"usage":{"lastAiReset":"2026-03-03","aiDailyCount":0},"expiryDate":null,"paymentProvider":null,"refreshToken":null,"refreshSecret":null}}

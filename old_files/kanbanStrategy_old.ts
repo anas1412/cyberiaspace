@@ -12,7 +12,7 @@ export const kanbanStrategy: LayoutStrategist = {
     // Filtering logic
     const matchesSearch = !kanbanSearchQuery || 
       thought.text.toLowerCase().includes(kanbanSearchQuery.toLowerCase()) ||
-      (thought.data?.type === 'text' ? thought.data.content : ((thought as any).content || '')).toLowerCase().includes(kanbanSearchQuery.toLowerCase());
+      thought.content.toLowerCase().includes(kanbanSearchQuery.toLowerCase());
     
     const matchesStack = !kanbanStackFilter || thought.stackId === kanbanStackFilter;
     const isFilteredOut = !matchesSearch || !matchesStack;
@@ -20,9 +20,7 @@ export const kanbanStrategy: LayoutStrategist = {
     const list = allThoughts
       .filter(t => t.status === thought.status)
       .filter(t => {
-        const mS = !kanbanSearchQuery || 
-          t.text.toLowerCase().includes(kanbanSearchQuery.toLowerCase()) || 
-          (t.data?.type === 'text' ? t.data.content : ((t as any).content || '')).toLowerCase().includes(kanbanSearchQuery.toLowerCase());
+        const mS = !kanbanSearchQuery || t.text.toLowerCase().includes(kanbanSearchQuery.toLowerCase()) || t.content.toLowerCase().includes(kanbanSearchQuery.toLowerCase());
         const mStack = !kanbanStackFilter || t.stackId === kanbanStackFilter;
         return mS && mStack;
       })

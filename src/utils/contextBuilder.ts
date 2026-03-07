@@ -19,6 +19,7 @@ export const serializeWorkspace = (
   const simplifiedThoughts = thoughts.map(t => {
     const isSelected = selectedThoughtIds.includes(t.id);
     const fileMeta = t.meta?.file || {};
+    const data = t.data;
     
     return {
       id: t.id,
@@ -32,17 +33,16 @@ export const serializeWorkspace = (
       isSelected: isSelected || undefined,
       syncStatus: t.syncStatus,
       // Metadata indicators - tell AI that data exists without sending it all
-      hasContent: !!t.content?.trim(),
-      hasTasks: t.type === 'tasks' && !!t.tasks?.length,
-      hasTable: t.type === 'table' && !!t.table?.length,
-      hasImage: !!t.image,
-      hasDrawing: !!t.drawing,
+      hasContent: !!(data?.type === 'text' ? data.content : (t as any).content)?.trim(),
+      hasTasks: (data?.type === 'tasks' ? !!data.tasks?.length : ((t as any).type === 'tasks' && !!(t as any).tasks?.length)),
+      hasTable: (data?.type === 'table' ? !!data.rows?.length : ((t as any).type === 'table' && !!(t as any).table?.length)),
+      hasImage: !!(data?.type === 'image' ? data.url : (t as any).image),
+      hasDrawing: !!(data?.type === 'paint' ? data.drawing : (t as any).drawing),
       fileInfo: t.type === 'file' || t.type === 'image' ? {
         extension: fileMeta.type?.split('/')[1] || t.text?.split('.').pop(),
         size: fileMeta.size ? `${(fileMeta.size / (1024 * 1024)).toFixed(2)}MB` : undefined,
         isCloudSynced: !!t.storageUrl
       } : undefined,
-      // REMOVED: preview - moving to strict tool-based retrieval for token efficiency
     };
   });
 
@@ -69,4 +69,3 @@ export const serializeWorkspace = (
 
   return JSON.stringify(context, null, 2);
 };
-

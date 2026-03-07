@@ -1,5 +1,4 @@
 import React, { useRef, useEffect, useState, useMemo } from 'react';
-import { useThoughtPayload } from './thought/hooks/useThoughtPayload';
 import { type Thought } from '../db';
 import { useStore } from '../store/useStore';
 import { marked } from 'marked';
@@ -9,15 +8,14 @@ import { twMerge } from 'tailwind-merge';
 // Modular Components
 import { ThoughtHeader } from './thought/ThoughtHeader';
 import { ThoughtFooter } from './thought/ThoughtFooter';
-import { getThoughtConfig, type ThoughtRendererProps } from './thought/registry';
-
-
-
-
-
-
-
-
+import { TextRenderer } from './thought/TextRenderer';
+import { TasksRenderer } from './thought/TasksRenderer';
+import { PaintRenderer } from './thought/PaintRenderer';
+import { TableRenderer } from './thought/TableRenderer';
+import { ImageRenderer } from './thought/ImageRenderer';
+import { EmbedRenderer } from './thought/EmbedRenderer';
+import { FileRenderer } from './thought/FileRenderer';
+import { LabelRenderer } from './thought/LabelRenderer';
 import { Loader2, Trash2 } from 'lucide-react';
 
 
@@ -66,15 +64,10 @@ const ThoughtNode: React.FC<ThoughtNodeProps> = React.memo(({ thought, registerE
   const isDateHovered = isCalendar && hoveredCalDate !== null && (thought.date || "") === hoveredCalDate;
   const isExpanded = isDateHovered || (isCalendar && isSelected);
 
-  const { content } = useThoughtPayload(thought);
   const stack = useMemo(() => stacks.find(s => s.id === thought.stackId), [stacks, thought.stackId]);
 
   const [startPos, setStartPos] = useState({ x: 0, y: 0 });
   const [showPing, setShowPing] = useState(false);
-
-  // Get renderer from registry
-  const thoughtConfig = useMemo(() => getThoughtConfig(thought.type), [thought.type]);
-  const Renderer = thoughtConfig?.renderer;
 
   useEffect(() => {
     if (layerActionTrigger?.id === thought.id) {
@@ -105,8 +98,8 @@ const ThoughtNode: React.FC<ThoughtNodeProps> = React.memo(({ thought, registerE
   }, [thought.layer, isDragging, performanceMode, isSelected]);
 
   const parsedContent = useMemo(() => {
-    return content ? marked.parse(content) : '';
-  }, [content]);
+    return thought.content ? marked.parse(thought.content) : '';
+  }, [thought.content]);
 
   useEffect(() => {
     registerElement(thought.id, elRef.current);
@@ -170,22 +163,19 @@ const ThoughtNode: React.FC<ThoughtNodeProps> = React.memo(({ thought, registerE
     }
   };
 
-
   const renderContent = () => {
-    if (!Renderer) return null;
-    
-    const rendererProps: ThoughtRendererProps = {
-      thought,
-      isReadOnly,
-      isCalendar,
-      isSpatial,
-      parsedContent,
-      setActiveFocus,
-      setSelectedThoughtId,
-      setInspectorOpen
-    };
-    
-    return <Renderer {...rendererProps} />;
+    const commonProps = { thought, isReadOnly, setActiveFocus };
+    switch (thought.type) {
+      case 'label': return <LabelRenderer thought={thought} />;
+      case 'text': return <TextRenderer {...commonProps} isCalendar={isCalendar} isSpatial={isSpatial} parsedContent={parsedContent} />;
+      case 'tasks': return <TasksRenderer {...commonProps} />;
+      case 'paint': return <PaintRenderer {...commonProps} />;
+      case 'table': return <TableRenderer {...commonProps} />;
+      case 'image': return <ImageRenderer {...commonProps} setSelectedThoughtId={setSelectedThoughtId} setInspectorOpen={setInspectorOpen} />;
+      case 'embed': return <EmbedRenderer thought={thought} />;
+      case 'file': return <FileRenderer thought={thought} />;
+      default: return null;
+    }
   };
 
   return (
@@ -249,7 +239,7 @@ const ThoughtNode: React.FC<ThoughtNodeProps> = React.memo(({ thought, registerE
             "flex flex-col relative transition-all duration-300",
             (isCalendar && !isExpanded) ? "h-0 opacity-0 pointer-events-none" : "opacity-100",
             thought.type === 'text' && "cursor-pointer rounded-xl overflow-hidden",
-            (thought.type === 'text' && (content || thought.description || !thought.stackId)) 
+            (thought.type === 'text' && (thought.content || thought.description || !thought.stackId)) 
                 ? "min-h-0 justify-center gap-2 mt-0.5 pointer-events-auto" : "min-h-0 gap-0 pointer-events-auto"
           )}
         >

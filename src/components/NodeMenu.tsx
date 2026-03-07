@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
+import { getThoughtConfig } from './thought/registry';
 import { useStore } from '../store/useStore';
 import { useModalStore } from '../store/useModalStore';
 import type { Thought } from '../db';
@@ -76,7 +77,9 @@ const NodeMenu: React.FC<NodeMenuProps> = ({ thought, isOpen, onClose, triggerRe
   };
 
   const handleTypeChange = (type: Thought['type']) => {
-    updateThought(thought.id, { type });
+    const config = getThoughtConfig(type);
+    const payload = config?.createPayload();
+    updateThought(thought.id, { type, data: payload });
     setSubmenu(null);
   };
 
@@ -107,7 +110,7 @@ const NodeMenu: React.FC<NodeMenuProps> = ({ thought, isOpen, onClose, triggerRe
     const triggers: Record<string, Thought['type']> = {
       text: 'text', tasks: 'tasks', table: 'table', paint: 'paint', embed: 'embed', file: 'file', image: 'file'
     };
-    const focusType = (triggers[thought.type] || 'text') as 'text' | 'table' | 'paint' | 'tasks' | 'embed' | 'file' | 'image' | null;
+    const focusType = (triggers[thought.type] || 'text') as 'text' | 'table' | 'paint' | 'tasks' | 'embed' | 'file' | null;
     setActiveFocus(thought.id, focusType);
     onClose();
   };
