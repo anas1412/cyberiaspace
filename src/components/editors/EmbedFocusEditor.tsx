@@ -190,7 +190,6 @@ const EmbedFocusEditor: React.FC = () => {
       description={thought.description}
       isReadOnly={isReadOnly}
       stack={stack}
-      icon={Share2}
       headerSubContent={
         <div className="flex items-center gap-2 mt-1 overflow-hidden">
           {thought.author && (

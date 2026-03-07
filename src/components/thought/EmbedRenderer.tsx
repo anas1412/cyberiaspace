@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Music, Loader2, ExternalLink } from 'lucide-react';
+import { Music, Loader2, ExternalLink, Play } from 'lucide-react';
 import { type Thought } from '../../db';
 import { useThoughtPayload } from './hooks/useThoughtPayload';
 import { getEmbedInfo, fetchEmbedMeta } from '../../utils/embeds';
@@ -55,14 +55,21 @@ export const EmbedRenderer: React.FC<EmbedRendererProps> = ({ thought }) => {
   return (
     <div data-trigger="embed" className="mt-2 relative group cursor-pointer overflow-hidden rounded-xl border border-white/10 bg-black/50 aspect-video flex items-center justify-center">
       {previewImage ? (
-        <>
+        <div className="relative w-full h-full">
           <img
             src={previewImage}
             draggable="false"
             className="w-full h-full object-cover opacity-60 group-hover:opacity-100 transition-opacity"
             alt="Preview"
           />
-        </>
+          {provider === 'youtube' && (
+            <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+              <div className="w-16 h-11 bg-red-600 rounded-xl flex items-center justify-center text-white shadow-xl group-hover:scale-110 transition-transform">
+                <Play className="w-6 h-6 fill-current" />
+              </div>
+            </div>
+          )}
+        </div>
       ) : provider === 'spotify' ? (
         <div className="flex flex-col items-center gap-3 p-6 text-center">
           <div className="w-16 h-16 rounded-full bg-[#1db954]/20 flex items-center justify-center border border-[#1db954]/40 shadow-[0_0_30px_rgba(29,185,84,0.2)] animate-pulse">
