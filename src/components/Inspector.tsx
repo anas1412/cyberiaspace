@@ -261,7 +261,7 @@ const Inspector: React.FC = () => {
           </div>
 
           {/* SCROLLABLE CONTENT AREA */}
-          <div className="flex-1 overflow-y-auto custom-scroll">
+          <div className="flex-1 overflow-y-auto custom-scroll scrollbar-none">
             <AnimatePresence mode="wait">
               <motion.div
                 key={activeTab}
