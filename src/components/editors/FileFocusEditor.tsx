@@ -427,7 +427,6 @@ const FileFocusEditor: React.FC = () => {
       description={thought.description}
       isReadOnly={isReadOnly}
       stack={stack}
-      icon={FileIcon}
       headerActions={
         <div className="flex items-center gap-2">
           {/* Status Badges */}

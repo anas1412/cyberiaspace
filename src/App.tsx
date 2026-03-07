@@ -77,7 +77,7 @@ function App() {
 
   // Hook: Body class
   useEffect(() => {
-    if (path === '/' && !isMainDomain) {
+    if (!isMainDomain && (path === '/' || path.startsWith('/s/') || path === '/pricing')) {
       document.body.classList.add('app-body');
     } else {
       document.body.classList.remove('app-body');

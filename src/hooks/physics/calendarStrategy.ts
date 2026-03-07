@@ -4,9 +4,10 @@ export const calendarStrategy: LayoutStrategist = {
   name: 'calendar',
   
   calculateLayout: (thought, _allThoughts, context, elementHeights) => {
+    const H_STACK = 62;
+    const H_PLAIN = 46;
+    const COMPACT_GAP = 8;
     const { logicalWidth, logicalHeight, hoveredCalDate, sidebarScrollTop, sidebarTop, calendarSearchQuery, calendarStackFilter, isMobile } = context;
-    
-    const compactClip = 'inset(0px 0px calc(100% - 70px) 0px round 32px)';
     
     // Filtering logic
     const matchesSearch = !calendarSearchQuery || 
@@ -34,18 +35,24 @@ export const calendarStrategy: LayoutStrategist = {
         const index = dateThoughts.findIndex(t => t.id === thought.id);
         const isTopCard = index === count - 1;
 
-        const uniformScale = Math.min((cellWidth - 12) / 280, (cellHeight - 32) / 70, 0.85);
+        const currentCompactH = thought.stackId ? H_STACK : H_PLAIN;
+        const dynamicClip = 'inset(0px 0px calc(100% - ' + currentCompactH + 'px) 0px round 32px)';
+
+        const uniformScale = Math.min((cellWidth - 12) / 280, (cellHeight - 12) / currentCompactH, 0.85);
         const targetScale = isFilteredOut ? 0 : (isHovered ? uniformScale * 1.05 : uniformScale);
         
-        const targetX = cellX + 12 + (index * 12);
-        const targetY = cellY + 32 + (index * 35);
+        const verticalStep = isHovered ? 45 : 10;
+        const horizontalStep = isHovered ? 12 : 0; // ZERO horizontal shift in compact mode to stop leakage
+        const cardWidth = 280 * targetScale;
+        const targetX = cellX + (cellWidth - cardWidth) / 2 + (index * horizontalStep);
+        const targetY = cellY + 20 + (index * verticalStep);
 
         return {
           targetX,
           targetY,
           targetScale,
           zIndex: (30 + (thought.layer || 0)).toString(),
-          clipPath: (isHovered || isTopCard) ? 'none' : compactClip,
+          clipPath: (isHovered || isTopCard) ? 'none' : dynamicClip,
           rotation: (thought.layer || 0) % 2 === 0 ? 0.8 : -0.8,
           opacity: isFilteredOut ? 0 : 1,
           visibility: isFilteredOut ? 'hidden' : 'visible',
@@ -65,25 +72,27 @@ export const calendarStrategy: LayoutStrategist = {
     } else {
       // Unscheduled - Sidebar Logic
       const unscheduled = context.dateMap?.get("") || [];
-      
       const index = unscheduled.findIndex(t => t.id === thought.id);
       const isSidebarHovered = hoveredCalDate === "";
       
       const currentScale = 0.78;
       const h = elementHeights.get(thought.id) || 120;
       
+      const currentCompactH = thought.stackId ? H_STACK : H_PLAIN;
+      const dynamicClip = 'inset(0px 0px calc(100% - ' + currentCompactH + 'px) 0px round 32px)';
+      
       // Sum previous heights in sidebar
       let yOffset = 0;
       for (let i = 0; i < index; i++) {
-        const prevH = elementHeights.get(unscheduled[i].id) || 120;
-        const prevIsExpanded = isSidebarHovered; // Simplified for now
-        const visibleH = prevIsExpanded ? prevH : 70;
-        yOffset += (visibleH * currentScale) + 20;
+        const prevT = unscheduled[i];
+        const hForCalc = isSidebarHovered ? (elementHeights.get(prevT.id) || 120) : (prevT.stackId ? H_STACK : H_PLAIN);
+        const gapForCalc = isSidebarHovered ? 20 : COMPACT_GAP;
+        yOffset += (hForCalc * currentScale) + gapForCalc;
       }
 
+      const currentVisibleH = isSidebarHovered ? h : (thought.stackId ? H_STACK : H_PLAIN);
+      const finalGap = isSidebarHovered ? 20 : COMPACT_GAP;
       const targetY = sidebarTop + 20 - sidebarScrollTop + yOffset;
-
-      const currentVisibleH = isSidebarHovered ? h : 70;
 
       return {
         targetX: padding + (sidebarWidth - 280 * 0.78) / 2,
@@ -93,10 +102,11 @@ export const calendarStrategy: LayoutStrategist = {
         opacity: isFilteredOut ? 0 : 1,
         visibility: isFilteredOut ? 'hidden' : 'visible',
         pointerEvents: isFilteredOut ? 'none' : 'auto',
-        clipPath: isSidebarHovered ? 'none' : compactClip,
+        clipPath: isSidebarHovered ? 'none' : dynamicClip,
         isSidebar: true,
-        columnHeight: yOffset + (currentVisibleH * currentScale) + 20
+        columnHeight: yOffset + (currentVisibleH * currentScale) + finalGap
       };
     }
+
   }
 };

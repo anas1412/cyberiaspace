@@ -105,9 +105,10 @@ body {
 
 .app-body {
   overflow: hidden;
-  width: 100vw;
-  height: 100vh;
-  height: 100dvh;
+  width: 111.111vw;
+  height: 111.111dvh;
+  transform: scale(0.9);
+  transform-origin: 0 0;
   touch-action: none;
   overscroll-behavior: none;
   position: fixed;
@@ -116,12 +117,19 @@ body {
 }
 
 /* Global Scaling */
-@media (max-width: 1366px), (max-height: 800px) {
+@media (max-width: 1600px), (max-height: 900px) {
   .app-body {
     width: 117.647vw;
     height: 117.647dvh;
     transform: scale(0.85);
-    transform-origin: 0 0;
+  }
+}
+
+@media (max-width: 1366px), (max-height: 800px) {
+  .app-body {
+    width: 125vw;
+    height: 125dvh;
+    transform: scale(0.8);
   }
 }
 
@@ -130,7 +138,6 @@ body {
     width: 142.857vw;
     height: 142.857dvh;
     transform: scale(0.7);
-    transform-origin: 0 0;
   }
 }
 
@@ -139,7 +146,6 @@ body {
     width: 166.667vw;
     height: 166.667dvh;
     transform: scale(0.6);
-    transform-origin: 0 0;
   }
 }
 

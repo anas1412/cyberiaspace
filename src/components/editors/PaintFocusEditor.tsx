@@ -235,7 +235,6 @@ const PaintFocusEditor: React.FC = () => {
       onTitleChange={(val) => { if (!isReadOnly) updateThought(thought.id, { text: val }); }}
       description={thought.description}
       isReadOnly={isReadOnly}
-      icon={Palette}
       headerActions={
         <div className="flex bg-white/5 p-1 rounded-xl md:rounded-2xl border border-white/5">
           <button

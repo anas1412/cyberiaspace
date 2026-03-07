@@ -11,7 +11,6 @@ interface FocusEditorShellProps {
   isReadOnly?: boolean;
   maxWidth?: string;
   stack?: { name: string; color: string } | null;
-  icon?: React.ElementType;
   
   // Custom slots for flexibility
   headerSubContent?: React.ReactNode; // e.g., Progress bar in Tasks
@@ -31,7 +30,6 @@ export const FocusEditorShell: React.FC<FocusEditorShellProps> = ({
   isReadOnly = false,
   maxWidth = "1000px",
   stack,
-  icon: Icon,
   headerSubContent,
   headerActions,
   footerActions,
@@ -61,11 +59,6 @@ export const FocusEditorShell: React.FC<FocusEditorShellProps> = ({
             {/* Header Area */}
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center p-6 md:p-8 border-b border-white/5 bg-black/20 gap-4 md:gap-0">
               <div className="flex items-center w-full md:w-auto flex-1 min-w-0">
-                {Icon && (
-                  <div className="w-10 h-10 md:w-12 md:h-12 bg-white/5 rounded-xl md:rounded-2xl flex items-center justify-center mr-4 md:mr-6 border border-white/10 text-white/40 flex-shrink-0">
-                    <Icon className="w-5 h-5 md:w-6 md:h-6" />
-                  </div>
-                )}
                 <div className="flex flex-col flex-1 min-w-0">
                   <input
                     type="text"
@@ -88,7 +81,7 @@ export const FocusEditorShell: React.FC<FocusEditorShellProps> = ({
                 {headerActions}
                 <button
                   onClick={onClose}
-                  className="p-3 md:p-4 hover:bg-red-500/10 rounded-xl md:rounded-2xl text-slate-400 hover:text-red-400 transition-all"
+                  className="p-2 rounded-lg text-slate-400 hover:bg-white/5 transition-all"
                 >
                   <X className="w-5 h-5 md:w-6 md:h-6" />
                 </button>

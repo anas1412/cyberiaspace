@@ -1,7 +1,7 @@
 import React, { useMemo, useEffect, useRef } from 'react';
 import { useStore } from '../store/useStore';
 import { useThoughtPayload } from './thought/hooks/useThoughtPayload';
-import { ChevronLeft, ChevronRight, Download, Image } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Download } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { FocusEditorShell } from './editors/FocusEditorShell';
 import { clsx, type ClassValue } from 'clsx';
@@ -106,7 +106,6 @@ const Lightbox: React.FC = () => {
       isReadOnly={isReadOnly}
       stack={stack}
       maxWidth="1200px"
-      icon={Image}
       headerActions={
         <button 
           onClick={handleDownload}
