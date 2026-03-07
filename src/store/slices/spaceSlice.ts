@@ -75,7 +75,7 @@ export const createSpaceSlice: StateCreator<CyberiaState, [], [], any> = (set, g
       });
       return;
     }
-    const id = 's' + Date.now();
+    const id = String(Date.now());
     await db.spaces.add({ id, name, mode: 'spatial', physics: true, order: spaces.length });
     await get().refreshSpaces();
     await get().setActiveSpace(id);

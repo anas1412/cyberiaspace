@@ -231,11 +231,11 @@ const PaintFocusEditor: React.FC = () => {
     <FocusEditorShell
       isVisible={isVisible}
       onClose={() => setActiveFocus(null, null)}
-      icon={Palette}
       title={thought.text}
       onTitleChange={(val) => { if (!isReadOnly) updateThought(thought.id, { text: val }); }}
       description={thought.description}
       isReadOnly={isReadOnly}
+      icon={Palette}
       headerActions={
         <div className="flex bg-white/5 p-1 rounded-xl md:rounded-2xl border border-white/5">
           <button

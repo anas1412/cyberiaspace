@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useStore } from '../../store/useStore';
 import { useAuthStore } from '../../store/useAuthStore';
+import { useSyncStore } from '../../store/useSyncStore';
 import { useThoughtPayload } from '../thought/hooks/useThoughtPayload';
 import { useModalStore } from '../../store/useModalStore';
 import { 
@@ -19,6 +20,32 @@ function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
 
+const StackItemThumbnail: React.FC<{ 
+  item: any; 
+  onClick: () => void;
+}> = ({ item, onClick }) => {
+  const itemPayload = useThoughtPayload(item);
+  const thumb = itemPayload.image;
+  
+  return (
+    <button
+      onClick={onClick}
+      className="flex-shrink-0 w-32 md:w-40 aspect-video rounded-xl overflow-hidden border border-white/5 hover:border-[var(--accent)]/50 transition-all group/item snap-start relative bg-white/[0.02]"
+    >
+      {thumb ? (
+        <img src={thumb} alt={item.text} className="w-full h-full object-cover opacity-50 group-hover/item:opacity-100 transition-opacity" />
+      ) : (
+        <div className="w-full h-full flex items-center justify-center">
+          <FileIcon className="w-5 h-5 opacity-20 text-slate-400" />
+        </div>
+      )}
+      <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent opacity-0 group-hover/item:opacity-100 transition-opacity flex items-end p-2 text-left">
+        <p className="text-[8px] font-bold text-white truncate w-full">{item.text || "Untitled"}</p>
+      </div>
+    </button>
+  );
+};
+
 const EditorContent: React.FC<{
   thought: any;
   fileInfo: any;
@@ -36,14 +63,15 @@ const EditorContent: React.FC<{
   handleFileSelect, 
   stackItems, setActiveFocus, scrollerRef, stack 
 }) => {
-  const isStranded = !thought.storageUrl && !localPreviewUrl && !image && thought.syncStatus !== 'synced';
+  const isStranded = !thought.storageUrl && !localPreviewUrl && !image && !!thought.storagePath;
 
   // Robust type detection using fileInfo and extension
   const fileName = (fileInfo?.name || thought.text || '').toLowerCase();
   const mimeType = (fileInfo?.type || '').toLowerCase();
   const extension = fileName.split('.').pop() || '';
   
-  const activeSource = localPreviewUrl || thought.storageUrl || image;
+  const isLocalOnly = thought.syncStatus === 'local' || thought.syncStatus === 'error';
+  const activeSource = isLocalOnly ? localPreviewUrl : (localPreviewUrl || thought.storageUrl || image);
 
   const isPdf = mimeType.includes('pdf') || extension === 'pdf';
   const isVideo = mimeType.startsWith('video/') || ['mp4', 'webm', 'mov', 'm4v'].includes(extension);
@@ -53,7 +81,6 @@ const EditorContent: React.FC<{
   const isImage = mimeType.startsWith('image/') || 
                   ['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg'].includes(extension) || 
                   fileName.includes('pasted_image') ||
-                  (thought.type === 'image' && !!activeSource) ||
                   (!!activeSource && !isPdf && !isVideo && !isAudio && fileName.includes('image'));
 
   console.log('[FileFocus] Type Detection:', { 
@@ -68,7 +95,7 @@ const EditorContent: React.FC<{
   return (
     <div className="flex-1 flex flex-col min-h-0 bg-black">
       <div className="flex-1 relative min-h-0">
-        {isFetching ? (
+        {isFetching && !activeSource ? (
           <div className="absolute inset-0 flex flex-col items-center justify-center bg-[#020408] gap-4">
             <Loader2 className="w-10 h-10 text-[var(--accent)] animate-spin" />
             <p className="text-[10px] font-black uppercase tracking-[0.2em] text-[var(--accent)]">Retrieving Data...</p>
@@ -182,28 +209,13 @@ const EditorContent: React.FC<{
               <span className="text-[8px] font-bold text-slate-600 uppercase tracking-widest">{stackItems.length + 1} items total</span>
             </div>
             <div className="flex gap-3 overflow-x-auto custom-scroll pb-2 w-full snap-x" ref={scrollerRef}>
-              {stackItems.map((item) => {
-                const itemPayload = useThoughtPayload(item);
-                const thumb = itemPayload.image;
-                return (
-                  <button
-                    key={item.id}
-                    onClick={() => setActiveFocus(item.id, 'file')}
-                    className="flex-shrink-0 w-32 md:w-40 aspect-video rounded-xl overflow-hidden border border-white/5 hover:border-[var(--accent)]/50 transition-all group/item snap-start relative bg-white/[0.02]"
-                  >
-                    {thumb ? (
-                      <img src={thumb} alt={item.text} className="w-full h-full object-cover opacity-50 group-hover/item:opacity-100 transition-opacity" />
-                    ) : (
-                      <div className="w-full h-full flex items-center justify-center">
-                        <FileIcon className="w-5 h-5 opacity-20 text-slate-400" />
-                      </div>
-                    )}
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent opacity-0 group-hover/item:opacity-100 transition-opacity flex items-end p-2 text-left">
-                      <p className="text-[8px] font-bold text-white truncate w-full">{item.text || "Untitled"}</p>
-                    </div>
-                  </button>
-                );
-              })}
+              {stackItems.map((item) => (
+                <StackItemThumbnail 
+                  key={item.id} 
+                  item={item} 
+                  onClick={() => setActiveFocus(item.id, 'file')} 
+                />
+              ))}
             </div>
           </div>
         )}
@@ -215,6 +227,7 @@ const EditorContent: React.FC<{
 const FileFocusEditor: React.FC = () => {
   const activeFocusId = useStore((state) => state.activeFocusId);
   const focusType = useStore((state) => state.focusType);
+  const isSyncBlocked = useSyncStore((state) => state.isSyncBlocked);
   const setActiveFocus = useStore((state) => state.setActiveFocus);
   const thoughts = useStore((state) => state.thoughts);
   const stacks = useStore((state) => state.stacks);
@@ -257,7 +270,7 @@ const FileFocusEditor: React.FC = () => {
 
   const stackItems = useMemo(() => {
     if (!thought?.stackId) return [];
-    return thoughts.filter(t => t.stackId === thought.stackId && t.id !== thought.id && (t.type === 'file' || (t.type as any) === 'image'));
+    return thoughts.filter(t => t.stackId === thought.stackId && t.id !== thought.id && t.type === 'file');
   }, [thoughts, thought]);
 
   useEffect(() => {
@@ -270,7 +283,7 @@ const FileFocusEditor: React.FC = () => {
 
   useEffect(() => {
     // Only load if visible, has thought, and NO local URL already set
-    if (isVisible && thought && !localPreviewUrl && !thought.storageUrl) {
+    if (isVisible && thought && !localPreviewUrl) {
       loadLocalBlob();
     }
   }, [isVisible, thought?.id, localPreviewUrl]);
@@ -283,6 +296,9 @@ const FileFocusEditor: React.FC = () => {
       if (blobEntry) {
         const url = URL.createObjectURL(blobEntry.blob);
         setLocalPreviewUrl(url);
+      } else if (thought.storageUrl) {
+        // High priority download for focused item
+        useAuthStore.getState().downloadSingleBlob(thought.id);
       }
     } catch (e) {
       console.warn("[FileFocus] Local blob load failed", e);
@@ -400,17 +416,18 @@ const FileFocusEditor: React.FC = () => {
 
   const isSynced = thought.syncStatus === 'synced' && !!thought.storageUrl;
   const isSyncing = thought.syncStatus === 'syncing';
+  const sourceLabel = localPreviewUrl ? 'Local' : (thought.storageUrl ? 'Cloud' : 'None');
 
   return (
     <FocusEditorShell
       isVisible={isVisible}
       onClose={() => setActiveFocus(null, null)}
-      icon={FileIcon}
       title={thought.text}
       onTitleChange={(val) => { if (!isReadOnly) updateThought(thought.id, { text: val }); }}
       description={thought.description}
       isReadOnly={isReadOnly}
       stack={stack}
+      icon={FileIcon}
       headerActions={
         <div className="flex items-center gap-2">
           {/* Status Badges */}
@@ -421,9 +438,9 @@ const FileFocusEditor: React.FC = () => {
                 <span className="text-[8px] font-black uppercase tracking-widest text-emerald-400">Cloud Synced</span>
               </div>
             ) : (
-              <div className="flex items-center gap-1.5 px-3 py-1 bg-amber-500/10 border border-amber-500/20 rounded-lg">
-                <Shield className="w-3 h-3 text-amber-400" />
-                <span className="text-[8px] font-black uppercase tracking-widest text-amber-400">Local Only</span>
+              <div className="flex items-center gap-1.5 px-3 py-1 bg-blue-500/10 border border-blue-500/20 rounded-lg">
+                <Shield className="w-3 h-3 text-blue-400" />
+                <span className="text-[8px] font-black uppercase tracking-widest text-blue-400">Local Only</span>
               </div>
             )}
           </div>
@@ -440,7 +457,7 @@ const FileFocusEditor: React.FC = () => {
       }
       footerStatus={
         <p className="text-[8px] md:text-[10px] uppercase font-black tracking-widest text-slate-600 italic">
-          {fileInfo?.size ? `${(fileInfo.size / 1024).toFixed(1)}KB` : 'Empty'} • {fileInfo?.type || 'Generic Asset'}
+          <span className="text-slate-500 font-black">SOURCE: {sourceLabel}</span> • {fileInfo?.size ? `${(fileInfo.size / 1024).toFixed(1)}KB` : 'Empty'} • {fileInfo?.type || 'Generic Asset'}
         </p>
       }
       footerActions={
@@ -457,16 +474,16 @@ const FileFocusEditor: React.FC = () => {
             ) : (
               <button 
                 onClick={handleSyncToCloud}
-                disabled={isSyncing || (!localPreviewUrl && !thought.storageUrl)}
+                disabled={isSyncing || isSyncBlocked || (!localPreviewUrl && !thought.storageUrl)}
                 className={cn(
                   "flex items-center gap-2 px-4 py-2 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all border",
-                  isSyncing 
+                  (isSyncing || isSyncBlocked) 
                     ? "bg-blue-500/5 border-blue-500/10 text-blue-400 opacity-50 cursor-wait" 
                     : "bg-blue-500/10 hover:bg-blue-500/20 border-blue-500/20 text-blue-400"
                 )}
               >
-                {isSyncing ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Cloud className="w-3.5 h-3.5" />}
-                {isSyncing ? 'Syncing...' : 'Sync to Cloud'}
+                {isSyncing || isSyncBlocked ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Cloud className="w-3.5 h-3.5" />}
+                {isSyncing ? 'Syncing...' : isSyncBlocked ? 'Pending Sync' : 'Sync to Cloud'}
               </button>
             )}
           </div>

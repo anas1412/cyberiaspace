@@ -9,14 +9,15 @@ export const supabaseStorage = {
   async uploadFile(
     userId: string, 
     file: File | Blob, 
-    fileName: string
+    fileName: string,
+    thoughtId?: number | string
   ): Promise<{ url: string; path: string; size: number }> {
     if (file.size > MAX_FILE_SIZE) {
       throw new Error(`File too large. Maximum size is ${MAX_FILE_SIZE / 1024 / 1024} MB`)
     }
 
     const safeName = fileName.replace(/[^a-zA-Z0-9.-]/g, '_')
-    const path = `${userId}/${safeName}`
+    const path = thoughtId ? `${userId}/${thoughtId}/${safeName}` : `${userId}/${safeName}`;
     
     // Just upload with upsert - don't check if file exists
     // This prevents the re-upload bug
@@ -139,64 +140,110 @@ export const supabaseStorage = {
   },
 
   async cleanupOrphanedFiles(userId: string, validPaths: Set<string>): Promise<number> {
-    console.log('[Storage] Starting orphan cleanup for user:', userId);
+    console.log('[Storage] Starting structural orphan cleanup for user:', userId);
+    console.log(`[Storage] Index of valid paths: ${validPaths.size} items`);
     
     try {
-      let allFiles: { name: string }[] = [];
-      let offset = 0;
-      const limit = 100;
+      const itemsToDelete: string[] = [];
       
-      while (true) {
-        const { data, error } = await storageClient
-          .storage
-          .from(BUCKET_NAME)
-          .list(userId, { limit, offset });
+      // 1. List all items in userId/
+      const { data: rootItems, error: rootError } = await storageClient
+        .storage
+        .from(BUCKET_NAME)
+        .list(userId, { limit: 1000 });
 
-        if (error) {
-          console.error('[Storage] List error during cleanup:', error);
-          break;
-        }
-
-        if (!data || data.length === 0) break;
-        
-        allFiles = allFiles.concat(data);
-        offset += limit;
-        
-        if (data.length < limit) break;
-      }
-
-      console.log(`[Storage] Found ${allFiles.length} files in bucket`);
-
-      const orphans = allFiles.filter(f => {
-        const fullPath = `${userId}/${f.name}`;
-        return !validPaths.has(fullPath);
-      });
-
-      console.log(`[Storage] Found ${orphans.length} orphaned files`);
-
-      if (orphans.length === 0) {
+      if (rootError) {
+        console.error('[Storage] List root items error:', rootError);
         return 0;
       }
 
-      const pathsToDelete = orphans.map(f => `${userId}/${f.name}`);
+      if (!rootItems || rootItems.length === 0) {
+        console.log('[Storage] No items found in user directory');
+        return 0;
+      }
+
+      console.log(`[Storage] Analyzing ${rootItems.length} root items...`);
+
+      for (const item of rootItems) {
+        // id is null for folders
+        const isFolder = !item.id;
+        const itemName = item.name;
+
+        if (isFolder) {
+          // New style: numeric folder name (thoughtId)
+          const folderPathPrefix = `${userId}/${itemName}/`;
+          const isFolderValid = Array.from(validPaths).some(p => p.startsWith(folderPathPrefix));
+
+          // List files inside that folder
+          const { data: folderFiles, error: folderError } = await storageClient
+            .storage
+            .from(BUCKET_NAME)
+            .list(`${userId}/${itemName}`, { limit: 1000 });
+
+          if (folderError) {
+            console.warn(`[Storage] Error listing folder ${itemName}:`, folderError);
+            continue;
+          }
+
+          if (!isFolderValid) {
+            // Orphaned thought folder - delete all files inside it
+            console.log(`[Storage] Orphaned folder detected: ${itemName} (not in valid index)`);
+            if (folderFiles && folderFiles.length > 0) {
+              folderFiles.forEach(f => {
+                itemsToDelete.push(`${userId}/${itemName}/${f.name}`);
+              });
+            } else {
+              // Empty folders technically don't exist in Supabase storage, 
+              // but if we encounter one we should try to clear it
+              // (actually just skipping it is fine as it's virtual)
+            }
+          } else {
+            // Folder is valid, but check if individual files inside are valid
+            if (folderFiles && folderFiles.length > 0) {
+              for (const f of folderFiles) {
+                const fullPath = `${userId}/${itemName}/${f.name}`;
+                if (!validPaths.has(fullPath)) {
+                  console.log(`[Storage] Orphaned file in valid folder detected: ${fullPath}`);
+                  itemsToDelete.push(fullPath);
+                }
+              }
+            }
+          }
+        } else {
+          // Legacy style: file directly in userId/
+          const fullPath = `${userId}/${itemName}`;
+          if (!validPaths.has(fullPath)) {
+            console.log(`[Storage] Orphaned legacy file detected: ${fullPath}`);
+            itemsToDelete.push(fullPath);
+          }
+        }
+      }
+
+      console.log(`[Storage] Total items to delete: ${itemsToDelete.length}`);
+
+      if (itemsToDelete.length === 0) {
+        return 0;
+      }
+
+      // Batch delete items
       const batchSize = 10;
-      
-      for (let i = 0; i < pathsToDelete.length; i += batchSize) {
-        const batch = pathsToDelete.slice(i, i + batchSize);
+      for (let i = 0; i < itemsToDelete.length; i += batchSize) {
+        const batch = itemsToDelete.slice(i, i + batchSize);
+        console.log(`[Storage] Deleting batch ${i / batchSize + 1}...`);
         const { error } = await storageClient
           .storage
           .from(BUCKET_NAME)
           .remove(batch);
 
         if (error) {
-          console.error('[Storage] Failed to delete orphan batch:', error);
+          console.error('[Storage] Failed to delete batch:', error);
         }
       }
 
-      console.log(`[Storage] Cleaned up ${orphans.length} orphaned files`);
-      return orphans.length;
+      console.log(`[Storage] Successfully cleaned up ${itemsToDelete.length} orphaned items`);
+      return itemsToDelete.length;
     } catch (err) {
-      console.error('[Storage] Orphan cleanup failed:', err);
+      console.error('[Storage] Orphan structural cleanup failed:', err);
       return 0;
     }
   },

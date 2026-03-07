@@ -51,7 +51,7 @@ const EditorContent: React.FC<{
               const itemInfo = getEmbedInfo(itemPayload);
               const itemConfig = PROVIDER_CONFIG[itemInfo.provider] || PROVIDER_CONFIG.unknown;
               const ItemIcon = itemConfig.icon;
-              const itemImage = (item.data?.type === 'image' || item.data?.type === 'file' ? item.data.url : (item as any).image);
+              const itemImage = (item.data?.type === 'file' ? item.data.url : (item as any).image);
               const thumb = itemInfo.provider === 'youtube' && itemInfo.id
                 ? `https://img.youtube.com/vi/${itemInfo.id}/mqdefault.jpg`
                 : itemImage;
@@ -185,12 +185,12 @@ const EmbedFocusEditor: React.FC = () => {
     <FocusEditorShell
       isVisible={isVisible}
       onClose={() => setActiveFocus(null, null)}
-      icon={Icon}
       title={thought.text}
       onTitleChange={(val) => { if (!isReadOnly) updateThought(thought.id, { text: val }); }}
       description={thought.description}
       isReadOnly={isReadOnly}
       stack={stack}
+      icon={Share2}
       headerSubContent={
         <div className="flex items-center gap-2 mt-1 overflow-hidden">
           {thought.author && (

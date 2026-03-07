@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useStore } from '../../store/useStore';
 import { useThoughtPayload } from '../thought/hooks/useThoughtPayload';
-import { Table as TableIcon, Plus, Trash2, Download } from 'lucide-react';
+import { Plus, Trash2, Download } from 'lucide-react';
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 import { FocusEditorShell } from './FocusEditorShell';
@@ -180,7 +180,6 @@ const TableFocusEditor: React.FC = () => {
     <FocusEditorShell
       isVisible={isVisible}
       onClose={() => setActiveFocus(null, null)}
-      icon={TableIcon}
       title={thought.text}
       onTitleChange={(val) => { if (!isReadOnly) updateThought(thought.id, { text: val }); }}
       description={thought.description}

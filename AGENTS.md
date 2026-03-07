@@ -20,8 +20,11 @@ Welcome to the Cyberia codebase! This project is a modern, high-performance spat
 
 ###  Data Flow & Synchronization
 1.  **Local First:** All user data (Spaces, Thoughts, Stacks) is stored in **IndexedDB** using **Dexie**. This ensures offline functionality and low latency.
-2.  **Cloud Sync:** Synchronization with Supabase is managed by `src/services/sync/syncOrchestrator.ts`.
-3.  **Backend Services:**
+2.  **Local-First Priority:** The UI must always prioritize local Blobs over cloud URLs. Assets should be rendered from local storage whenever available to ensure instant feedback and offline reliability.
+3.  **The Sync Shield:** Large data operations (like imports) are protected by `isSyncBlocked` in the auth store. This prevents race conditions and sync conflicts by pausing background synchronization during heavy write operations.
+4.  **Safe Orphan Cleanup:** Deletion follows a soft-delete pattern using the `deletedAt` timestamp. Local binary assets (blobs) that are no longer referenced by any thought are subject to a 30-day TTL (Time-To-Live) before being permanently purged from local storage.
+5.  **Cloud Sync:** Synchronization with Supabase is managed by `src/services/sync/syncOrchestrator.ts`.
+6.  **Backend Services:**
     *   **Vercel Serverless Functions:** Primary API layer located in `api/` (e.g., `api/feedback.ts`, `api/publish.ts`), keep in mind that we are using hobby ter 12 functions max. These are the source of truth for custom backend functionality.
     *   **Supabase:** Acts as a "Backend-as-a-Service" (BaaS) for:
         *   **PostgreSQL Database:** Cloud storage for synced Dexie data.
@@ -31,8 +34,15 @@ Welcome to the Cyberia codebase! This project is a modern, high-performance spat
 ###  Spatial Thinking Engine
 - Thoughts are not just static entries; they are physical entities with `x, y` (position) and `vx, vy` (velocity) properties.
 - The canvas uses a custom physics engine for interactions, including "stacks" where nodes orbit each other.
+- **Performance Optimization:** 
+    *   **Frame Pre-Processor:** Collision detection and spatial indexing use an optimized $O(N^2)$ pre-processor to manage entity interactions without jitter.
+    *   **Selfish Selectors:** React components use highly granular "selfish selectors" to minimize re-renders, ensuring only the specific properties needed by a component (e.g., just `x` and `y`) trigger updates.
 - **Physics Architecture:** Detailed principles regarding Top-Left Anchoring, DOM Synchronization, and Persistence are documented in [docs/physics-engine.md](./docs/physics-engine.md).
 - **Canvas Scaling:** Managed via `DOMMatrix` transforms. Avoid direct DOM manipulation for the canvas; use the `useStore` transform state.
+
+###  Storage
+- **Unique Folder Protocol:** To prevent filename collisions and ensure clean user isolation, all file assets in cloud storage are organized using the path structure: `${userId}/${thoughtId}/${fileName}`.
+- **Background Downloader:** The application implements a proactive synchronization strategy where the cloud-to-local sync engine automatically populates IndexedDB with remote assets in the background, ensuring they are ready for offline use.
 
 
 ###  State Management (Zustand)
@@ -64,8 +74,11 @@ The application uses a modular, slice-based architecture for state management to
 - **Multimodal Standards**:
   - Strictly follow OpenRouter Unified Schema.
   - Use `type: 'file'` with `media_type: 'application/pdf'` for documents. Never use `image_url` for PDFs.
+  - **Deprecated:** The `image` thought type is deprecated. Use `type: 'file'` for all image assets to ensure consistent handling and storage.
 - **Internal ID Protocol**:
   - IDs are private handles for tools. NEVER show IDs to users or ask users for IDs. Look them up proactively from the provided context.
+  - **Temporal IDs:** All new Spaces and Stacks must use numeric timestamp-based IDs (e.g., `Date.now()`). 
+  - **Onboarding:** Static string IDs like `s-onboarding` are deprecated. Use the `isOnboarding: true` flag on the Space object to identify and filter tutorial content.
 
 ---
 

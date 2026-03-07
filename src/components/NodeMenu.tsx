@@ -28,10 +28,10 @@ const typeIcons = {
 };
 
 const statusOptions = [
-  { value: 'none', label: 'None', icon: Circle, color: 'text-slate-500' },
-  { value: 'todo', label: 'Todo', icon: Circle, color: 'text-[var(--status-todo)]' },
-  { value: 'doing', label: 'Doing', icon: Clock, color: 'text-[var(--status-doing)]' },
-  { value: 'done', label: 'Done', icon: CheckCircle, color: 'text-[var(--status-done)]' },
+  { value: 'none', label: 'None', color: 'bg-slate-500', icon: Circle, iconColor: 'text-slate-500' },
+  { value: 'todo', label: 'Todo', color: 'bg-[var(--status-todo)]', icon: Circle, iconColor: 'text-[var(--status-todo)]' },
+  { value: 'doing', label: 'Doing', color: 'bg-[var(--status-doing)]', icon: Clock, iconColor: 'text-[var(--status-doing)]' },
+  { value: 'done', label: 'Done', color: 'bg-[var(--status-done)]', icon: CheckCircle, iconColor: 'text-[var(--status-done)]' },
 ] as const;
 
 const priorityOptions = [
@@ -175,7 +175,7 @@ const NodeMenu: React.FC<NodeMenuProps> = ({ thought, isOpen, onClose, triggerRe
                       : "hover:bg-white/5 border border-transparent"
                   )}
                 >
-                  <opt.icon className={cn("w-4 h-4", opt.color)} />
+                  <div className={cn("w-2.5 h-2.5 rounded-full", opt.color)} />
                   <span className="text-[10px] font-bold uppercase tracking-widest text-slate-300">{opt.label}</span>
                 </button>
               ))}
@@ -248,7 +248,7 @@ const NodeMenu: React.FC<NodeMenuProps> = ({ thought, isOpen, onClose, triggerRe
                     )}
                   >
                     <Icon className="w-5 h-5 text-slate-400" />
-                    <span className="text-[9px] font-black uppercase tracking-widest text-slate-400">{type}</span>
+                    <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">{type}</span>
                   </button>
                 );
               })}
@@ -276,7 +276,7 @@ const NodeMenu: React.FC<NodeMenuProps> = ({ thought, isOpen, onClose, triggerRe
               disabled={isReadOnly}
               className="w-full flex items-center gap-3 p-3 rounded-xl hover:bg-white/5 border border-dashed border-white/10 transition-all mb-3"
             >
-              <FolderPlus className="w-4 h-4 text-[var(--accent)]" />
+              <FolderPlus className="w-4 h-4 text-slate-400" />
               <span className="text-[10px] font-bold uppercase tracking-widest text-slate-300">New Collection</span>
             </button>
 
@@ -362,11 +362,12 @@ const NodeMenu: React.FC<NodeMenuProps> = ({ thought, isOpen, onClose, triggerRe
                   className="w-full flex items-center justify-between p-3 rounded-xl hover:bg-white/5 transition-all group"
                 >
                   <div className="flex items-center gap-3">
-                    {statusOptions.find(s => s.value === thought.status)?.icon && 
-                      React.createElement(statusOptions.find(s => s.value === thought.status)!.icon, { 
-                        className: cn("w-4 h-4", statusOptions.find(s => s.value === thought.status)!.color) 
-                      })
-                    }
+                    {(() => {
+                      const opt = statusOptions.find(s => s.value === thought.status);
+                      if (!opt) return <ListTodo className="w-4 h-4 text-slate-500" />;
+                      const Icon = opt.icon;
+                      return <Icon className={cn("w-4 h-4", opt.iconColor)} />;
+                    })()}
                     <span className="text-[10px] font-bold uppercase tracking-widest text-slate-300">Status</span>
                   </div>
                   <div className="flex items-center gap-2">

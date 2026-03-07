@@ -2,11 +2,13 @@ import { type StateCreator } from 'zustand';
 import { db } from '../../db';
 import { supabaseStorage } from '../../services/supabaseStorage';
 import { PLAN_CONFIG, type SubscriptionPlan } from '../../constants';
+import { syncOrchestrator } from '../../services/sync/syncOrchestrator';
 import { type AuthState } from '../types';
 
 export const createStorageSlice: StateCreator<AuthState, [], [], any> = (set, get, _api) => ({
   cloudUsage: 0,
   storageUsageMB: 0,
+  activeDownloads: [],
 
   calculateUsage: async (thoughtCount: number) => {
     const { user } = get();
@@ -36,10 +38,25 @@ export const createStorageSlice: StateCreator<AuthState, [], [], any> = (set, ge
   uploadThoughtBlob: async (thoughtId: number, force?: boolean) => {
     const { autoSync, user, isOnline } = get();
     
-    console.log(`[Storage] uploadThoughtBlob started for thoughtId: ${thoughtId}, autoSync: ${autoSync}, force: ${force}`);
+    const isBlocked = syncOrchestrator.getSyncBlocked();
+    console.log(`[Storage] uploadThoughtBlob started for thoughtId: ${thoughtId}, autoSync: ${autoSync}, force: ${force}, isBlocked: ${isBlocked}`);
+
+    if (isBlocked && !force) {
+      console.log('[Storage] Sync is currently blocked by another operation, skipping individual upload');
+      return;
+    }
 
     if ((!autoSync && !force) || !user) {
       console.log('[Storage] Auto-sync is OFF and no force sync requested, keeping blob locally');
+      
+      // Reset status to local if it was stuck in pending/syncing
+      const thought = await db.thoughts.get(thoughtId);
+      if (thought && (thought.syncStatus === 'pending' || thought.syncStatus === 'syncing')) {
+        const { useStore } = await import('../useStore');
+        const updates = { syncStatus: 'local' as const };
+        await db.thoughts.update(thoughtId, updates);
+        useStore.getState().updateThought(thoughtId, updates);
+      }
       return;
     }
 
@@ -54,8 +71,8 @@ export const createStorageSlice: StateCreator<AuthState, [], [], any> = (set, ge
         return;
       }
 
-      // Skip if already has storagePath (don't re-upload)
-      if (thought.storagePath) {
+      // Skip if already has storagePath (don't re-upload) unless forced
+      if (thought.storagePath && !force) {
         console.log('[Storage] Thought already has storagePath, skipping upload');
         return;
       }
@@ -93,7 +110,8 @@ export const createStorageSlice: StateCreator<AuthState, [], [], any> = (set, ge
       const uploadPromise = supabaseStorage.uploadFile(
         user.id,
         blobEntry.blob,
-        blobEntry.name
+        blobEntry.name,
+        thoughtId
       );
 
       const timeoutPromise = new Promise((_, reject) => 
@@ -112,9 +130,10 @@ export const createStorageSlice: StateCreator<AuthState, [], [], any> = (set, ge
       };
 
       // Modular data update
-      if (thought.type === 'file' && thought.data?.type === 'file') {
+      if (thought.type === 'file') {
         updates.data = {
-          ...thought.data,
+          ...(thought.data || {}),
+          type: 'file',
           url: result.url
         };
       }
@@ -131,11 +150,107 @@ export const createStorageSlice: StateCreator<AuthState, [], [], any> = (set, ge
     }
   },
 
+  downloadSingleBlob: async (thoughtId: number) => {
+    const { activeDownloads, user, isOnline } = get();
+    if (!user || !isOnline) return;
+    if (activeDownloads.includes(thoughtId)) return;
+
+    set({ activeDownloads: [...activeDownloads, thoughtId] });
+
+    try {
+      const thought = await db.thoughts.get(thoughtId);
+      if (!thought || !thought.storageUrl) return;
+
+      console.log(`[Storage] Priority download starting for thought: ${thoughtId}`);
+      const response = await fetch(thought.storageUrl);
+      const blob = await response.blob();
+      
+      const fileName = thought.text || 'asset';
+      const fileType = blob.type || 'application/octet-stream';
+
+      await db.blobs.put({
+        id: `cloud-${Date.now()}-${thoughtId}`,
+        thoughtId,
+        blob,
+        name: fileName,
+        type: fileType,
+        updatedAt: Date.now()
+      });
+
+      // Dynamic import to avoid circular dependency
+      const { useStore } = await import('../useStore');
+      // "Ping" the UI by updating updatedAt
+      await useStore.getState().updateThought(thoughtId, { updatedAt: Date.now() });
+      console.log(`[Storage] Priority download complete: ${thoughtId}`);
+    } catch (err) {
+      console.error(`[Storage] Priority download failed for ${thoughtId}:`, err);
+    } finally {
+      const { activeDownloads: currentDownloads } = get();
+      set({ activeDownloads: currentDownloads.filter(id => id !== thoughtId) });
+    }
+  },
+
+  downloadMissingBlobs: async () => {
+    const { user, isOnline } = get();
+    if (!user || !isOnline) return;
+
+    try {
+      const { useStore } = await import('../useStore');
+      
+      // Find thoughts with storage but no local blob
+      const cloudThoughts = await db.thoughts
+        .filter(t => !!t.storageUrl && !t.deletedAt)
+        .toArray();
+      
+      const missing = [];
+      for (const t of cloudThoughts) {
+        const localBlob = await db.blobs.where('thoughtId').equals(t.id).first();
+        if (!localBlob) {
+          missing.push(t);
+        }
+      }
+
+      if (missing.length === 0) return;
+      console.log(`[Storage] Background sync: ${missing.length} missing blobs detected.`);
+
+      // Batch process in groups of 3
+      const BATCH_SIZE = 3;
+      for (let i = 0; i < missing.length; i += BATCH_SIZE) {
+        const batch = missing.slice(i, i + BATCH_SIZE);
+        
+        await Promise.all(batch.map(async (t) => {
+          try {
+            const res = await fetch(t.storageUrl!);
+            const blob = await res.blob();
+            
+            await db.blobs.put({
+              id: `cloud-${Date.now()}-${t.id}`,
+              thoughtId: t.id,
+              blob,
+              name: t.text || 'asset',
+              type: blob.type || 'application/octet-stream',
+              updatedAt: Date.now()
+            });
+
+            // Ping UI for each thought in the batch
+            await useStore.getState().updateThought(t.id, { updatedAt: Date.now() });
+          } catch (e) {
+            console.warn(`[Storage] Background download failed for ${t.id}:`, e);
+          }
+        }));
+      }
+      
+      console.log('[Storage] Background sync complete');
+    } catch (err) {
+      console.error('[Storage] Background sync failed:', err);
+    }
+  },
+
   removeCloudAsset: async (thoughtId: number) => {
     // Disable auto-sync to prevent immediate re-upload
-    await get().updateSettings({ autoSync: false });
+    await get().setAutoSync(false);
 
-    const { user, isOnline, syncData } = get();
+    const { user, isOnline } = get();
     if (!user) return;
 
     try {
@@ -178,7 +293,6 @@ export const createStorageSlice: StateCreator<AuthState, [], [], any> = (set, ge
       const { useStore } = await import('../useStore');
       useStore.getState().updateThought(thoughtId, updates);
 
-      await syncData();
     } catch (err) {
       console.error('[Storage] Failed to remove cloud asset:', err);
     }
@@ -281,7 +395,8 @@ export const createStorageSlice: StateCreator<AuthState, [], [], any> = (set, ge
           const result = await supabaseStorage.uploadFile(
             user.id,
             blobEntry.blob,
-            blobEntry.name
+            blobEntry.name,
+            blob.thoughtId
           );
 
           const updates: any = {
@@ -291,9 +406,10 @@ export const createStorageSlice: StateCreator<AuthState, [], [], any> = (set, ge
           };
 
           // Modular data update
-          if (thought && thought.type === 'file' && thought.data?.type === 'file') {
+          if (thought && thought.type === 'file') {
             updates.data = {
-              ...thought.data,
+              ...(thought.data || {}),
+              type: 'file',
               url: result.url
             };
           }

@@ -1,6 +1,77 @@
 import { db, type Thought, type ThoughtPayload } from '../db';
 
 const MIGRATION_KEY = 'cyberia_thought_migration_v3'; // Increment to re-run for image consolidation
+const MIGRATION_ID_KEY = 'cyberia_id_migration_v1';
+
+export async function migrateLegacyIds(): Promise<void> {
+  if (localStorage.getItem(MIGRATION_ID_KEY)) return;
+
+  console.log('[Migration] Starting ID sanitization...');
+
+  const spaces = await db.spaces.toArray();
+
+  await db.transaction('rw', db.spaces, db.stacks, db.thoughts, async () => {
+    // 1. Migrate Spaces
+    for (const space of spaces) {
+      const isLegacy = space.id.startsWith('s-') || !/^\d+$/.test(space.id);
+      if (isLegacy) {
+        let newId = space.id.replace('s-', '').replace(/\D/g, '');
+        let isOnboarding = space.isOnboarding;
+
+        if (space.id === 's-onboarding') {
+          newId = '10002';
+          isOnboarding = true;
+        } else if (space.id === 's-workspace') {
+          newId = '10001';
+        }
+
+        if (!newId || !/^\d+$/.test(newId)) {
+          newId = String(Date.now() + Math.floor(Math.random() * 1000));
+        }
+
+        console.log(`[Migration] Converting space ${space.id} -> ${newId}`);
+
+        // Update Thoughts and Stacks first
+        await db.thoughts.where('spaceId').equals(space.id).modify({ spaceId: newId });
+        await db.stacks.where('spaceId').equals(space.id).modify({ spaceId: newId });
+
+        // Delete old space and add new one
+        await db.spaces.delete(space.id);
+        await db.spaces.add({ ...space, id: newId, isOnboarding });
+
+        // Update active space ID in localStorage
+        if (localStorage.getItem('cyberia-active-space-id') === space.id) {
+          localStorage.setItem('cyberia-active-space-id', newId);
+        }
+      }
+    }
+
+    // 2. Migrate Stacks
+    // We need to fetch stacks again because their spaceId might have changed above
+    const currentStacks = await db.stacks.toArray();
+    for (const stack of currentStacks) {
+      const isLegacy = stack.id.startsWith('st-') || !/^\d+$/.test(stack.id);
+      if (isLegacy) {
+        let newId = stack.id.replace('st-', '').replace(/\D/g, '');
+        if (!newId || !/^\d+$/.test(newId)) {
+          newId = String(Date.now() + Math.floor(Math.random() * 1000));
+        }
+
+        console.log(`[Migration] Converting stack ${stack.id} -> ${newId}`);
+
+        // Update Thoughts
+        await db.thoughts.where('stackId').equals(stack.id).modify({ stackId: newId });
+
+        // Delete old stack and add new one
+        await db.stacks.delete(stack.id);
+        await db.stacks.add({ ...stack, id: newId });
+      }
+    }
+  });
+
+  localStorage.setItem(MIGRATION_ID_KEY, 'true');
+  console.log('[Migration] ID sanitization complete.');
+}
 
 export async function migrateThoughtsToModular(): Promise<void> {
   // Check if migration already ran

@@ -6,8 +6,7 @@ import {
   Palette, 
   Table, 
   Youtube, 
-  File as FileIcon,
-  Image as ImageIcon
+  File as FileIcon
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { type Thought, type ThoughtType, type ThoughtPayload } from '../../db';
@@ -18,7 +17,6 @@ import { TextRenderer } from './TextRenderer';
 import { TasksRenderer } from './TasksRenderer';
 import { TableRenderer } from './TableRenderer';
 import { PaintRenderer } from './PaintRenderer';
-import { ImageRenderer } from './ImageRenderer';
 import { EmbedRenderer } from './EmbedRenderer';
 import { FileRenderer } from './FileRenderer';
 
@@ -28,7 +26,6 @@ import { TextInspector } from './inspectors/TextInspector';
 import { TasksInspector } from './inspectors/TasksInspector';
 import { TableInspector } from './inspectors/TableInspector';
 import { PaintInspector } from './inspectors/PaintInspector';
-import { ImageInspector } from './inspectors/ImageInspector';
 import { EmbedInspector } from './inspectors/EmbedInspector';
 import { FileInspector } from './inspectors/FileInspector';
 
@@ -140,17 +137,6 @@ export const ThoughtRegistry: Record<ThoughtType, ThoughtTypeConfig> = {
     createPayload: () => ({ type: 'paint', drawing: '' }),
     hasFooter: true,
     supportsFocusMode: true,
-    supportsInspector: true
-  },
-  image: {
-    type: 'image',
-    label: 'Image',
-    icon: ImageIcon,
-    renderer: ImageRenderer as any,
-    inspectorPanel: ImageInspector,
-    createPayload: () => ({ type: 'image', url: '' }),
-    hasFooter: true,
-    supportsFocusMode: false,
     supportsInspector: true
   },
   embed: {

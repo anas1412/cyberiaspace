@@ -5,7 +5,7 @@ import { PLAN_CONFIG, type SubscriptionPlan } from '../../constants';
 import { syncOrchestrator } from '../../services/sync/syncOrchestrator';
 import { useAuthStore } from '../useAuthStore';
 import { type CyberiaState } from '../types';
-import { migrateThoughtsToModular } from '../../utils/migrations';
+import { migrateThoughtsToModular, migrateLegacyIds } from '../../utils/migrations';
 
 export const createDataSlice: StateCreator<CyberiaState, [], [], any> = (set, get, _api) => ({
   isInitializing: true,
@@ -29,6 +29,7 @@ export const createDataSlice: StateCreator<CyberiaState, [], [], any> = (set, ge
 
       // Run data migration for modular thought payloads
       await migrateThoughtsToModular();
+      await migrateLegacyIds();
 
       const { useAuthStore: dynamicAuthStore } = await import('../useAuthStore');
       // Fire initAuth in background to prevent blocking workspace render
@@ -115,23 +116,24 @@ export const createDataSlice: StateCreator<CyberiaState, [], [], any> = (set, ge
   },
 
   loadOnboardingData: async () => {
-    const demoSpaceId = 'demo-space';
-    const s1 = 'demo-s1';
-    const s2 = 'demo-s2';
-    const s3 = 'demo-s3';
-
+    const demoSpaceId = '9999';
+    const s1 = '9991';
+    const s2 = '9992';
+    const s3 = '9993';
+    
     const demoSpaces: Space[] = [{
       id: demoSpaceId,
       name: 'Demo Workspace',
       mode: 'spatial',
       physics: true,
-      order: 0
+      order: 0,
+      isOnboarding: true
     }];
 
     const demoStacks: Stack[] = [
-      { id: s1, name: 'Spatial Flux', color: '#6366f1', spaceId: demoSpaceId },
-      { id: s2, name: 'Dynamic Views', color: '#8b5cf6', spaceId: demoSpaceId },
-      { id: s3, name: 'Oracle AI', color: '#3b82f6', spaceId: demoSpaceId },
+      { id: s1, name: 'Spatial Flux', color: '#6366f1', spaceId: demoSpaceId, isOnboarding: true },
+      { id: s2, name: 'Dynamic Views', color: '#8b5cf6', spaceId: demoSpaceId, isOnboarding: true },
+      { id: s3, name: 'Oracle AI', color: '#3b82f6', spaceId: demoSpaceId, isOnboarding: true },
     ];
 
     const demoThoughts: Thought[] = [
@@ -177,24 +179,24 @@ export const createDataSlice: StateCreator<CyberiaState, [], [], any> = (set, ge
     const { spaces } = get();
     if (spaces.length === 0) {
       set({ isSpaceLoading: true });
-      const workspaceId = 's-workspace';
-      const onboardingId = 's-onboarding';
+      const workspaceId = '10001';
+      const onboardingId = '10002';
       await db.spaces.bulkAdd([
         { id: workspaceId, name: 'Workspace', mode: 'spatial', physics: true, order: 0 },
-        { id: onboardingId, name: 'Onboarding', mode: 'spatial', physics: true, order: 1 }
+        { id: onboardingId, name: 'Onboarding', mode: 'spatial', physics: true, order: 1, isOnboarding: true }
       ]);
       await get().refreshSpaces();
       set({ activeSpaceId: onboardingId });
       localStorage.setItem('cyberia-active-space-id', onboardingId);
       const cx = window.innerWidth / 2;
       const cy = window.innerHeight / 2;
-      const spatialId = 'st-spatial';
-      const toolsId = 'st-tools';
-      const logicId = 'st-logic';
+      const spatialId = '20001';
+      const toolsId = '20002';
+      const logicId = '20003';
       await db.stacks.bulkAdd([
-        { id: spatialId, name: 'Spatial Engine', color: 'hsla(230, 80%, 60%, 1)', spaceId: onboardingId },
-        { id: toolsId, name: 'Universal Tools', color: 'hsla(280, 80%, 65%, 1)', spaceId: onboardingId },
-        { id: logicId, name: 'Logic Matrix', color: 'hsla(40, 90%, 55%, 1)', spaceId: onboardingId }
+        { id: spatialId, name: 'Spatial Engine', color: 'hsla(230, 80%, 60%, 1)', spaceId: onboardingId, isOnboarding: true },
+        { id: toolsId, name: 'Universal Tools', color: 'hsla(280, 80%, 65%, 1)', spaceId: onboardingId, isOnboarding: true },
+        { id: logicId, name: 'Logic Matrix', color: 'hsla(40, 90%, 55%, 1)', spaceId: onboardingId, isOnboarding: true }
       ]);
       
       // 3. Populate Onboarding Constellation
@@ -227,7 +229,7 @@ export const createDataSlice: StateCreator<CyberiaState, [], [], any> = (set, ge
       const authStore = dynamicAuthStore.getState();
       const isAuthenticated = authStore.status === 'authenticated';
       
-      const workspaceId = 's-workspace-' + Date.now();
+      const workspaceId = String(Date.now());
       
       await db.transaction('rw', db.spaces, db.thoughts, db.stacks, db.blobs, async () => {
         await db.spaces.clear();
@@ -396,8 +398,11 @@ export const createDataSlice: StateCreator<CyberiaState, [], [], any> = (set, ge
 
     // Check for any thoughts that are NOT part of the default onboarding set
     // Onboarding thoughts have specific space IDs.
+    const allSpaces = await db.spaces.toArray();
+    const onboardingSpaceIds = new Set(allSpaces.filter(s => s.isOnboarding === true).map(s => s.id));
+    
     const customThoughts = await db.thoughts
-      .filter(t => t.spaceId !== 's-onboarding' && t.spaceId !== 's-workspace')
+      .filter(t => !onboardingSpaceIds.has(t.spaceId))
       .count();
     
     if (customThoughts > 0) {
@@ -429,23 +434,24 @@ export const createDataSlice: StateCreator<CyberiaState, [], [], any> = (set, ge
   setDemoMode: (enabled: boolean) => {
     const state = get();
     if (enabled) {
-      const demoSpaceId = 'demo-space';
-      const s1 = 'demo-s1';
-      const s2 = 'demo-s2';
-      const s3 = 'demo-s3';
+      const demoSpaceId = '9999';
+      const s1 = '9991';
+      const s2 = '9992';
+      const s3 = '9993';
 
       const demoSpaces: Space[] = [{
         id: demoSpaceId,
         name: 'Demo Workspace',
         mode: 'spatial',
         physics: true,
-        order: 0
+        order: 0,
+        isOnboarding: true
       }];
 
       const demoStacks: Stack[] = [
-        { id: s1, name: 'Spatial Flux', color: '#6366f1', spaceId: demoSpaceId },
-        { id: s2, name: 'Dynamic Views', color: '#8b5cf6', spaceId: demoSpaceId },
-        { id: s3, name: 'Oracle AI', color: '#3b82f6', spaceId: demoSpaceId },
+        { id: s1, name: 'Spatial Flux', color: '#6366f1', spaceId: demoSpaceId, isOnboarding: true },
+        { id: s2, name: 'Dynamic Views', color: '#8b5cf6', spaceId: demoSpaceId, isOnboarding: true },
+        { id: s3, name: 'Oracle AI', color: '#3b82f6', spaceId: demoSpaceId, isOnboarding: true },
       ];
 
       const demoThoughts: Thought[] = [
@@ -496,6 +502,8 @@ export const createDataSlice: StateCreator<CyberiaState, [], [], any> = (set, ge
   },
   cleanupTrash: async () => {
     const thirtyDaysAgo = Date.now() - 30 * 24 * 60 * 60 * 1000;
+    
+    // Step 1: Purge old soft-deleted thoughts (Existing logic)
     const thoughtsToPurge = await db.thoughts
       .filter(t => t.deletedAt !== undefined && t.deletedAt !== null && t.deletedAt < thirtyDaysAgo)
       .toArray();
@@ -507,6 +515,24 @@ export const createDataSlice: StateCreator<CyberiaState, [], [], any> = (set, ge
         await db.thoughts.bulkDelete(ids);
         await db.blobs.where("thoughtId").anyOf(ids).delete();
       });
+    }
+
+    // Step 2: Orphaned Blob Cleanup (New logic)
+    try {
+      const allThoughtIds = new Set((await db.thoughts.toCollection().primaryKeys()));
+      const allBlobs = await db.blobs.toArray();
+      const orphanedBlobs = allBlobs.filter(b => !allThoughtIds.has(b.thoughtId));
+      
+      // Apply TTL: Filter orphans where updatedAt is older than 30 days
+      const blobsToPurge = orphanedBlobs.filter(b => b.updatedAt < thirtyDaysAgo);
+      
+      if (blobsToPurge.length > 0) {
+        const blobIds = blobsToPurge.map(b => b.id);
+        await db.blobs.bulkDelete(blobIds);
+        console.log(`[Storage] Purged ${blobsToPurge.length} orphaned blobs`);
+      }
+    } catch (err) {
+      console.error('[Storage] Orphaned blob cleanup failed:', err);
     }
   },
 });

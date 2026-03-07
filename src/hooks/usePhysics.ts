@@ -345,6 +345,46 @@ export const usePhysics = (
     // --- Modular Physics Engine ---
     const strategist = getStrategist(mode);
     const allThoughts = Array.from(thoughtMap.current.values());
+
+    // Frame Pre-Processor
+    const columnMap = new Map<string, Thought[]>();
+    const dateMap = new Map<string, Thought[]>();
+
+    if (mode === 'kanban') {
+      const statuses: ('none' | 'todo' | 'doing' | 'done')[] = ['none', 'todo', 'doing', 'done'];
+      statuses.forEach(status => {
+        const list = allThoughts
+          .filter(t => t.status === status)
+          .filter(t => {
+            const mS = !kanbanSearchQuery || 
+              t.text.toLowerCase().includes(kanbanSearchQuery.toLowerCase()) || 
+              (t.data?.type === 'text' ? t.data.content : ((t as any).content || '')).toLowerCase().includes(kanbanSearchQuery.toLowerCase());
+            const mStack = !kanbanStackFilter || t.stackId === kanbanStackFilter;
+            return mS && mStack;
+          })
+          .sort((a, b) => a.order - b.order);
+        columnMap.set(status, list);
+      });
+    } else if (mode === 'calendar') {
+      allThoughts.forEach(t => {
+        const dateKey = t.date || "";
+        if (!dateMap.has(dateKey)) dateMap.set(dateKey, []);
+        
+        const matchesSearch = !calendarSearchQuery || 
+          t.text.toLowerCase().includes(calendarSearchQuery.toLowerCase()) ||
+          (t.data?.type === 'text' ? t.data.content : ((t as any).content || '')).toLowerCase().includes(calendarSearchQuery.toLowerCase());
+        const matchesStack = !calendarStackFilter || t.stackId === calendarStackFilter;
+        
+        if (matchesSearch && matchesStack) {
+          dateMap.get(dateKey)!.push(t);
+        }
+      });
+      dateMap.forEach((list, key) => {
+        if (key === "") list.sort((a, b) => a.order - b.order);
+        else list.sort((a, b) => (a.layer || 0) - (b.layer || 0));
+      });
+    }
+
     const elementHeights = new Map<number, number>();
     ids.forEach(id => elementHeights.set(id, elements.current.get(id)?.offsetHeight || 120));
 
@@ -386,7 +426,10 @@ export const usePhysics = (
       sidebarTop: sbRect ? (sbRect.top / globalScale) : 320,
       isMobile,
       isReadOnly: useStore.getState().isReadOnly,
-      calendarCellMap
+      calendarCellMap,
+      thoughtMap: thoughtMap.current,
+      columnMap,
+      dateMap
     };
 
 

@@ -43,7 +43,7 @@ export function useThoughtPayload(thought: Thought | null | undefined): UseThoug
     const modContent = data.type === 'text' ? data.content : (data.type === 'embed' ? data.url : '');
     const modTasks = data.type === 'tasks' ? data.tasks : [];
     const modTable = data.type === 'table' ? data.rows : [];
-    const modImage = (data.type === 'image' || data.type === 'file') ? data.url : null;
+    const modImage = data.type === 'file' ? data.url : null;
     const modDrawing = data.type === 'paint' ? data.drawing : null;
 
     // NORMALIZE FILE INFO

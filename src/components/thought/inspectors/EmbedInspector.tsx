@@ -1,11 +1,11 @@
 import React from 'react';
-import { Share2 } from 'lucide-react';
 import { useStore } from '../../../store/useStore';
 import { useThoughtPayload } from '../hooks/useThoughtPayload';
 import { type InspectorPanelProps } from '../registry';
 import { fetchEmbedMeta } from '../../../utils/embeds';
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
+import { Share2 } from 'lucide-react';
 
 function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -20,9 +20,9 @@ export const EmbedInspector: React.FC<InspectorPanelProps> = ({ thought, isReadO
     <div className="space-y-4">
       <button
         onClick={() => setActiveFocus(thought.id, 'embed')}
-        className="w-full bg-blue-500/10 hover:bg-blue-500/20 border border-blue-500/30 text-[var(--accent-secondary)] py-6 rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] transition-all flex flex-col items-center gap-3"
+        className="w-full bg-blue-500/10 hover:bg-blue-500/20 border border-blue-500/30 text-[var(--accent-secondary)] py-6 rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] transition-all flex flex-col items-center justify-center gap-3"
       >
-        <Share2 className="w-5 h-5" />
+        <Share2 className="w-5 h-5 opacity-40 group-hover:opacity-100 transition-opacity" />
         Open Interaction Layer
       </button>
 

@@ -307,6 +307,11 @@ export const createAuthSlice: StateCreator<AuthState, [], [], any> = (set, get, 
     set({ user: updatedUser });
     localStorage.setItem('cyberia-user', JSON.stringify(updatedUser));
 
+    if (settings.autoSync !== undefined) {
+      set({ autoSync: settings.autoSync });
+      localStorage.setItem('cyberia-auto-sync', String(settings.autoSync));
+    }
+
     try {
       await supabaseSync.updateSettings(user.id, updatedUser.settings);
     } catch (e) {

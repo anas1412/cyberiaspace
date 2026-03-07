@@ -1,5 +1,4 @@
 import React from 'react';
-import { File as FileIcon, Upload } from 'lucide-react';
 import { useStore } from '../../../store/useStore';
 import { useAuthStore } from '../../../store/useAuthStore';
 import { useModalStore } from '../../../store/useModalStore';
@@ -7,6 +6,7 @@ import { db } from '../../../db';
 import { type InspectorPanelProps } from '../registry';
 import { MAX_FILE_SIZE_MB } from '../../../constants';
 import { generateThumbnail, generateVideoThumbnail } from '../../../utils/image';
+import { File as FileIcon, Upload } from 'lucide-react';
 
 export const FileInspector: React.FC<InspectorPanelProps> = ({ thought, isReadOnly }) => {
   const setActiveFocus = useStore(state => state.setActiveFocus);
@@ -18,14 +18,14 @@ export const FileInspector: React.FC<InspectorPanelProps> = ({ thought, isReadOn
     <div className="space-y-3">
       <button
         onClick={() => setActiveFocus(thought.id, 'file')}
-        className="w-full bg-[var(--accent)]/10 hover:bg-[var(--accent)]/20 border border-[var(--accent)]/30 text-[var(--accent-secondary)] py-6 rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] transition-all flex flex-col items-center gap-3"
+        className="w-full bg-[var(--accent)]/10 hover:bg-[var(--accent)]/20 border border-[var(--accent)]/30 text-[var(--accent-secondary)] py-6 rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] transition-all flex flex-col items-center justify-center gap-3"
       >
-        <FileIcon className="w-5 h-5" />
+        <FileIcon className="w-5 h-5 opacity-40 group-hover:opacity-100 transition-opacity" />
         Open File Manager
       </button>
 
       {!isReadOnly && (
-        <div className="border border-dashed border-white/10 rounded-xl p-4 text-center hover:bg-white/5 transition-colors cursor-pointer relative">
+        <div className="border border-dashed border-white/10 rounded-xl p-6 text-center hover:bg-white/5 transition-colors cursor-pointer relative flex flex-col items-center justify-center gap-3">
           <input
             type="file"
             className="absolute inset-0 opacity-0 cursor-pointer"
@@ -81,7 +81,7 @@ export const FileInspector: React.FC<InspectorPanelProps> = ({ thought, isReadOn
               }
             }}
           />
-          <Upload className="w-6 h-6 mx-auto text-slate-500 mb-2" />
+          <Upload className="w-5 h-5 text-slate-500" />
           <p className="text-[9px] text-slate-400 uppercase font-bold tracking-widest">Upload or Drag File</p>
         </div>
       )}

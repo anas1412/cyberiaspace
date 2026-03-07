@@ -4,13 +4,7 @@ import Dexie, { type EntityTable } from 'dexie';
 // NEW: Thought Type Definitions (Modular)
 // ============================================
 
-export type ThoughtType = 'label' | 'text' | 'tasks' | 'paint' | 'table' | 'image' | 'embed' | 'file';
-
-export interface ImageMeta {
-  width?: number;
-  height?: number;
-  type?: string;
-}
+export type ThoughtType = 'label' | 'text' | 'tasks' | 'paint' | 'table' | 'embed' | 'file';
 
 export interface FileMeta {
   name: string;
@@ -24,7 +18,6 @@ export type ThoughtPayload =
   | { type: 'tasks'; tasks: { text: string; done: boolean }[] }
   | { type: 'table'; rows: string[][] }
   | { type: 'paint'; drawing: string }
-  | { type: 'image'; url: string; meta?: ImageMeta }
   | { type: 'embed'; url: string; provider?: string; providerId?: string }
   | { type: 'file'; url: string; name: string; size: number; meta?: FileMeta }
   | { type: 'label' };  // No payload data needed
@@ -39,6 +32,8 @@ interface Space {
   mode: 'spatial' | 'kanban' | 'calendar';
   physics: boolean;
   order: number;
+  isOnboarding?: boolean;
+  deletedAt?: number | null;
   transformX?: number;
   transformY?: number;
   transformScale?: number;
@@ -56,6 +51,8 @@ interface Stack {
   name: string;
   color: string;
   spaceId: string;
+  isOnboarding?: boolean;
+  deletedAt?: number | null;
   syncStatus?: 'local' | 'synced' | 'pending' | 'syncing' | 'error';
   retryCount?: number;
 }
@@ -87,6 +84,7 @@ interface Thought {
   googleCalendarEventId?: string;
   syncStatus?: 'local' | 'synced' | 'pending' | 'syncing' | 'error';
   retryCount?: number;
+  updatedAt?: number | null;
 
   // Modular Payload (Discriminated Union)
   data?: ThoughtPayload;

@@ -98,10 +98,10 @@ export const executeOracleTool = async (toolCall: any, store: any) => {
           return {
             id: t.id,
             text: t.text,
-            type: t.type === ('image' as any) ? 'file' : t.type, // Consolidate image to file
+            type: t.type,
             description: t.description,
             content: data?.type === 'text' ? data.content : (t as any).content,
-            url: (data?.type === 'file' || data?.type === ('image' as any)) ? data.url : (t as any).image,
+            url: data?.type === 'file' ? data.url : (t as any).image,
             tasks: data?.type === 'tasks' ? data.tasks : (t.type === 'tasks' ? (t as any).tasks : undefined),
             table: data?.type === 'table' ? data.rows : (t.type === 'table' ? (t as any).table : undefined),
             drawing: data?.type === 'paint' ? data.drawing : (t.type === 'paint' ? (t as any).drawing : undefined),
@@ -133,8 +133,8 @@ export const executeOracleTool = async (toolCall: any, store: any) => {
         const processedArgs = processDrawing({ ...args });
         const { stackName, ...thoughtArgs } = processedArgs;
         
-        // Ensure type isn't 'image'
-        if (thoughtArgs.type === 'image') thoughtArgs.type = 'file';
+        // Ensure type isn't 'image' (legacy safety)
+        if (thoughtArgs.type === ('image' as any)) thoughtArgs.type = 'file';
 
         const x = typeof thoughtArgs.x !== 'undefined' ? Number(thoughtArgs.x) : window.innerWidth / 2;
         const y = typeof thoughtArgs.y !== 'undefined' ? Number(thoughtArgs.y) : window.innerHeight / 2;
@@ -159,7 +159,7 @@ export const executeOracleTool = async (toolCall: any, store: any) => {
           const processedItem = processDrawing({ ...item });
           const { stackName, ...thoughtArgs } = processedItem;
           
-          if (thoughtArgs.type === 'image') thoughtArgs.type = 'file';
+          if (thoughtArgs.type === ('image' as any)) thoughtArgs.type = 'file';
 
           const x = typeof thoughtArgs.x !== 'undefined' ? Number(thoughtArgs.x) : window.innerWidth / 2;
           const y = typeof thoughtArgs.y !== 'undefined' ? Number(thoughtArgs.y) : window.innerHeight / 2;
@@ -218,7 +218,7 @@ export const executeOracleTool = async (toolCall: any, store: any) => {
           const sanitizedUpdates: any = { ...updates };
           if (typeof updates.x !== 'undefined') sanitizedUpdates.x = Number(updates.x);
           if (typeof updates.y !== 'undefined') sanitizedUpdates.y = Number(updates.y);
-          if (updates.type === 'image') sanitizedUpdates.type = 'file';
+          if (updates.type === ('image' as any)) sanitizedUpdates.type = 'file';
 
           await store.updateThought(id, sanitizedUpdates);
           if (stackName) await store.createStack(stackName, id);
@@ -235,7 +235,7 @@ export const executeOracleTool = async (toolCall: any, store: any) => {
           const sanitizedUpdates: any = { ...updates };
           if (typeof updates.x !== 'undefined') sanitizedUpdates.x = Number(updates.x);
           if (typeof updates.y !== 'undefined') sanitizedUpdates.y = Number(updates.y);
-          if (updates.type === 'image') sanitizedUpdates.type = 'file';
+          if (updates.type === ('image' as any)) sanitizedUpdates.type = 'file';
 
           for (const id of ids) {
             await store.updateThought(id, sanitizedUpdates);

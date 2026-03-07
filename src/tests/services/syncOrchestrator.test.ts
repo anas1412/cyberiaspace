@@ -119,7 +119,7 @@ describe('syncOrchestrator', () => {
 
   it('uploads local blobs for media thoughts', async () => {
     // 1. Local thought with blob
-    await db.thoughts.add({ id: 2, type: 'image', spaceId: 's1', text: 'Image', stackId: null, x: 0, y: 0, vx: 0, vy: 0, author: '', order: 0, date: '', priority: 'none', description: '', status: 'none', size: 1, data: { type: 'image', url: '' } });
+    await db.thoughts.add({ id: 2, type: 'file', spaceId: 's1', text: 'Image', stackId: null, x: 0, y: 0, vx: 0, vy: 0, author: '', order: 0, date: '', priority: 'none', description: '', status: 'none', size: 1, data: { type: 'file', url: '', name: 'test.png', size: 5 } });
     await db.blobs.add({ id: 'b1', thoughtId: 2, blob: new Blob(['hello'], { type: 'image/png' }), name: 'test.png', type: 'image/png', updatedAt: Date.now() });
     
     vi.mocked(supabaseSync.getSpaces).mockResolvedValue({ spaces: [] });

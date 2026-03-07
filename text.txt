@@ -1,12 +1,1 @@
-usePhysics.ts:233 Uncaught TypeError: store.setInspectorOpen is not a function
-    at handleUp (usePhysics.ts:233:42)
-    at onMouseUp (usePhysics.ts:282:42)
-handleUp @ usePhysics.ts:233
-onMouseUp @ usePhysics.ts:282
-authSlice.ts:256 [Auth] Refresh request timed out
-refreshProfile @ authSlice.ts:256
-authSlice.ts:263 [Auth] Refreshing profile for: 113068402010739048954
-authSlice.ts:256 [Auth] Refresh request timed out
-refreshProfile @ authSlice.ts:256
-authSlice.ts:263 [Auth] Refreshing profile for: 113068402010739048954
-2authSlice.ts:265 [Auth] Supabase profile result: {"user":{"id":"113068402010739048954","email":"anasbassoumi@gmail.com","name":"Anas Bassoumi","avatar":"https://lh3.googleusercontent.com/a/ACg8ocJbB9b-G5oJlfDKyYAFaBtdr5DnjO9DeugWTx3JE-HvZbkfoLl1=s96-c","plan":"free","subscriptionStatus":"none","settings":{"theme":"sea","autoSync":false},"createdAt":"2026-02-25T22:33:23.595618","updatedAt":"2026-03-06T23:35:04.565","autoSync":false,"polarCustomerId":null,"polarSubscriptionId":null,"usage":{"lastAiReset":"2026-03-03","aiDailyCount":0},"expiryDate":null,"paymentProvider":null,"refreshToken":null,"refreshSecret":null}}
+[Storage] Thought already has storagePath, skipping upload

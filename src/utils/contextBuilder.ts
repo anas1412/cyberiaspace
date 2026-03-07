@@ -36,9 +36,9 @@ export const serializeWorkspace = (
       hasContent: !!(data?.type === 'text' ? data.content : (t as any).content)?.trim(),
       hasTasks: (data?.type === 'tasks' ? !!data.tasks?.length : ((t as any).type === 'tasks' && !!(t as any).tasks?.length)),
       hasTable: (data?.type === 'table' ? !!data.rows?.length : ((t as any).type === 'table' && !!(t as any).table?.length)),
-      hasImage: !!(data?.type === 'image' ? data.url : (t as any).image),
+      hasImage: !!(data?.type === 'file' ? data.url : (t as any).image),
       hasDrawing: !!(data?.type === 'paint' ? data.drawing : (t as any).drawing),
-      fileInfo: t.type === 'file' || t.type === 'image' ? {
+      fileInfo: t.type === 'file' ? {
         extension: fileMeta.type?.split('/')[1] || t.text?.split('.').pop(),
         size: fileMeta.size ? `${(fileMeta.size / (1024 * 1024)).toFixed(2)}MB` : undefined,
         isCloudSynced: !!t.storageUrl

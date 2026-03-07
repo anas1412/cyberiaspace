@@ -42,6 +42,8 @@ export const createThoughtSlice: StateCreator<CyberiaState, [], [], any> = (set,
     const { useAuthStore } = await import('../useAuthStore');
     const autoSync = useAuthStore.getState().autoSync;
 
+    const authStatus = useAuthStore.getState().status;
+
     const thought = {
       spaceId: activeSpaceId,
       stackId: null,
@@ -58,7 +60,7 @@ export const createThoughtSlice: StateCreator<CyberiaState, [], [], any> = (set,
       order: Date.now(),
       layer: 0,
       author: '',
-      syncStatus: (isBlobType && autoSync) ? 'pending' : 'local',
+      syncStatus: (isBlobType && autoSync && authStatus === 'authenticated') ? 'pending' : 'local',
       ...partialThought,
       date: partialThought.date ? sanitizeDate(partialThought.date) : '',
       data: partialThought.data || payload
@@ -263,17 +265,28 @@ export const createThoughtSlice: StateCreator<CyberiaState, [], [], any> = (set,
     set({ layerActionTrigger: { id, time: Date.now() } } as Partial<CyberiaState>);
   },
 
-  setSelectedThoughtId: (id: number | null) => set({ selectedThoughtId: id } as Partial<CyberiaState>),
+  setSelectedThoughtId: (id: number | null) => {
+    set({ 
+      selectedThoughtId: id,
+      selectedThoughtIds: id ? [id] : []
+    } as Partial<CyberiaState>);
+  },
   
   setSelectedThoughtIds: (ids: number[]) => set({ selectedThoughtIds: ids } as Partial<CyberiaState>),
   
   toggleThoughtSelection: (id: number) => {
     const { selectedThoughtIds } = get();
+    let nextIds: number[];
     if (selectedThoughtIds.includes(id)) {
-      set({ selectedThoughtIds: selectedThoughtIds.filter(tid => tid !== id) } as Partial<CyberiaState>);
+      nextIds = selectedThoughtIds.filter(tid => tid !== id);
     } else {
-      set({ selectedThoughtIds: [...selectedThoughtIds, id] } as Partial<CyberiaState>);
+      nextIds = [...selectedThoughtIds, id];
     }
+    
+    set({ 
+      selectedThoughtIds: nextIds,
+      selectedThoughtId: nextIds.length === 1 ? nextIds[0] : null
+    } as Partial<CyberiaState>);
   },
 
   clearSelection: () => set({ selectedThoughtId: null, selectedThoughtIds: [] } as Partial<CyberiaState>),
@@ -300,7 +313,7 @@ export const createThoughtSlice: StateCreator<CyberiaState, [], [], any> = (set,
     if (existingStack) {
       targetStackId = existingStack.id;
     } else {
-      targetStackId = 'st-' + Date.now();
+      targetStackId = String(Date.now());
       await db.stacks.add({ 
         id: targetStackId, 
         name: trimmedName, 

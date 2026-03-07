@@ -1,10 +1,10 @@
 import React from 'react';
-import { Maximize2, Trash2 } from 'lucide-react';
 import { useStore } from '../../../store/useStore';
 import { useThoughtPayload } from '../hooks/useThoughtPayload';
 import { type InspectorPanelProps } from '../registry';
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
+import { Maximize2, Trash2 } from 'lucide-react';
 
 function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -25,9 +25,9 @@ export const TasksInspector: React.FC<InspectorPanelProps> = ({ thought, isReadO
     <div className="space-y-4">
       <button
         onClick={() => setActiveFocus(thought.id, 'tasks')}
-        className="w-full bg-[var(--accent)]/10 hover:bg-[var(--accent)]/20 border border-[var(--accent)]/30 text-[var(--accent-secondary)] py-6 rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] transition-all flex flex-col items-center gap-3"
+        className="w-full bg-[var(--accent)]/10 hover:bg-[var(--accent)]/20 border border-[var(--accent)]/30 text-[var(--accent-secondary)] py-6 rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] transition-all flex flex-col items-center justify-center gap-3"
       >
-        <Maximize2 className="w-5 h-5" />
+        <Maximize2 className="w-5 h-5 opacity-40 group-hover:opacity-100 transition-opacity" />
         Open Task Manager
       </button>
 
@@ -67,7 +67,7 @@ export const TasksInspector: React.FC<InspectorPanelProps> = ({ thought, isReadO
                     newTasks.splice(i, 1);
                     handleUpdateTasks(newTasks);
                   }}
-                  className="text-red-400 p-1"
+                  className="text-red-400 p-2 hover:bg-red-500/10 rounded-lg transition-colors"
                 >
                   <Trash2 className="w-3.5 h-3.5" />
                 </button>

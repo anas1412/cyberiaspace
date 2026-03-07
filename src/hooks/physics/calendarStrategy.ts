@@ -3,7 +3,7 @@ import type { LayoutStrategist } from './types';
 export const calendarStrategy: LayoutStrategist = {
   name: 'calendar',
   
-  calculateLayout: (thought, allThoughts, context, elementHeights) => {
+  calculateLayout: (thought, _allThoughts, context, elementHeights) => {
     const { logicalWidth, logicalHeight, hoveredCalDate, sidebarScrollTop, sidebarTop, calendarSearchQuery, calendarStackFilter, isMobile } = context;
     
     const compactClip = 'inset(0px 0px calc(100% - 70px) 0px round 32px)';
@@ -28,16 +28,7 @@ export const calendarStrategy: LayoutStrategist = {
         const cellHeight = cell.h;
 
         const isHovered = hoveredCalDate === thought.date;
-        const dateThoughts = allThoughts
-          .filter(t => t.date === thought.date)
-          .filter(t => {
-            const mS = !calendarSearchQuery || 
-              t.text.toLowerCase().includes(calendarSearchQuery.toLowerCase()) || 
-              (t.data?.type === 'text' ? t.data.content : ((t as any).content || '')).toLowerCase().includes(calendarSearchQuery.toLowerCase());
-            const mStack = !calendarStackFilter || t.stackId === calendarStackFilter;
-            return mS && mStack;
-          })
-          .sort((a, b) => (a.layer || 0) - (b.layer || 0));
+        const dateThoughts = context.dateMap?.get(thought.date) || [];
         
         const count = dateThoughts.length;
         const index = dateThoughts.findIndex(t => t.id === thought.id);
@@ -73,16 +64,7 @@ export const calendarStrategy: LayoutStrategist = {
       }
     } else {
       // Unscheduled - Sidebar Logic
-      const unscheduled = allThoughts
-        .filter(t => !t.date)
-        .filter(t => {
-          const mS = !calendarSearchQuery || 
-            t.text.toLowerCase().includes(calendarSearchQuery.toLowerCase()) || 
-            (t.data?.type === 'text' ? t.data.content : ((t as any).content || '')).toLowerCase().includes(calendarSearchQuery.toLowerCase());
-          const mStack = !calendarStackFilter || t.stackId === calendarStackFilter;
-          return mS && mStack;
-        })
-        .sort((a, b) => a.order - b.order);
+      const unscheduled = context.dateMap?.get("") || [];
       
       const index = unscheduled.findIndex(t => t.id === thought.id);
       const isSidebarHovered = hoveredCalDate === "";

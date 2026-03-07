@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useStore } from '../../store/useStore';
 import { useThoughtPayload } from '../thought/hooks/useThoughtPayload';
-import { FileText, Download } from 'lucide-react';
+import { Download } from 'lucide-react';
 import { marked } from 'marked';
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
@@ -102,7 +102,6 @@ const TextFocusEditor: React.FC = () => {
     <FocusEditorShell
       isVisible={isVisible}
       onClose={() => setActiveFocus(null, null)}
-      icon={FileText}
       title={localTitle}
       onTitleChange={handleTitleChange}
       description={thought.description}

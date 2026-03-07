@@ -208,7 +208,6 @@ const TasksFocusEditor: React.FC = () => {
     <FocusEditorShell
       isVisible={isVisible}
       onClose={() => setActiveFocus(null, null)}
-      icon={CheckSquare}
       title={localTitle}
       onTitleChange={(val) => {
         setLocalTitle(val);

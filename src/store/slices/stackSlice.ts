@@ -37,7 +37,7 @@ export const createStackSlice: StateCreator<CyberiaState, [], [], any> = (set, g
       return;
     }
     
-    const newStackId = 'st-' + Date.now();
+    const newStackId = String(Date.now());
     await db.stacks.add({ id: newStackId, name: trimmedName, color: `hsla(${Math.floor(Math.random() * 360)}, 70%, 50%, 1)`, spaceId: activeSpaceId });
     await db.thoughts.update(thoughtId, { stackId: newStackId });
     await get().refreshThoughts();

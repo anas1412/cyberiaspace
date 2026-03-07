@@ -6,7 +6,26 @@ import type { SyncConflictData } from './syncTypes';
 let syncDebounceTimer: ReturnType<typeof setTimeout> | null = null;
 const SYNC_DEBOUNCE_MS = 5000;
 
+let isSyncBlocked = false;
+
 export const syncOrchestrator = {
+  async setSyncBlocked(blocked: boolean) {
+    console.log(`[Sync] Sync blocked set to: ${blocked}`);
+    isSyncBlocked = blocked;
+    
+    // Update store for reactivity
+    try {
+      const { useSyncStore } = await import('../../store/useSyncStore');
+      useSyncStore.getState().setSyncBlocked(blocked);
+    } catch (e) {
+      // In case store isn't available during early init
+    }
+  },
+
+  getSyncBlocked() {
+    return isSyncBlocked;
+  },
+
   async triggerSync(force: boolean = false): Promise<void> {
     const { useSyncStore } = await import('../../store/useSyncStore');
     const { useAuthStore } = await import('../../store/useAuthStore');
@@ -39,9 +58,15 @@ export const syncOrchestrator = {
     }
   },
 
-  async fullPushSync(): Promise<{ success: boolean; error?: string }> {
+  async fullPushSync(bypassBlock: boolean = false): Promise<{ success: boolean; error?: string }> {
     const { useSyncStore } = await import('../../store/useSyncStore');
     const { useAuthStore } = await import('../../store/useAuthStore');
+    
+    console.log('[Sync] fullPushSync checking block state:', { isSyncBlocked, bypassBlock });
+    if (isSyncBlocked && !bypassBlock) {
+      console.log('[Sync] Skipping - sync is currently blocked');
+      return { success: false, error: 'Sync is blocked' };
+    }
     
     const authState = useAuthStore.getState();
     const currentStatus = useSyncStore.getState().status;
@@ -64,17 +89,26 @@ export const syncOrchestrator = {
     try {
       const userId = authState.user!.id;
       
+      // PRE-STEP: Ensure all local thoughts with blobs are "healed" for re-upload if needed
+      console.log('[Sync] Step 0: Repairing local empty file thoughts...');
+      await authState.repairEmptyFileThoughts();
+      
       // Get local data
-      const [localSpaces, localStacks, localThoughts] = await Promise.all([
+      console.log('[Sync] Step 1: Gathering local data...');
+      const [localSpaces, localStacks, allLocalThoughts] = await Promise.all([
         db.spaces.toArray(),
         db.stacks.toArray(),
-        db.thoughts.filter(t => !t.deletedAt).toArray(),
+        db.thoughts.toArray(), // Fetch ALL local items including deleted ones
       ]);
+
+      const activeLocalThoughts = allLocalThoughts.filter(t => !t.deletedAt);
+      const activeLocalSpaces = localSpaces.filter(s => !s.deletedAt);
+      const activeLocalStacks = localStacks.filter(s => !s.deletedAt);
       
-      console.log(`[Sync] Local: ${localSpaces.length} spaces, ${localStacks.length} stacks, ${localThoughts.length} thoughts`);
+      console.log(`[Sync] Local: ${activeLocalSpaces.length} active spaces, ${activeLocalStacks.length} active stacks, ${activeLocalThoughts.length} active thoughts, ${allLocalThoughts.length} total thoughts`);
       
       // Fetch cloud data for comparison
-      console.log('[Sync] Fetching cloud data for comparison...');
+      console.log('[Sync] Step 2: Fetching cloud data for comparison...');
       const [cloudSpaces, cloudStacks, cloudThoughts] = await Promise.all([
         supabaseSync.getSpaces(userId),
         supabaseSync.getStacks(userId),
@@ -87,100 +121,139 @@ export const syncOrchestrator = {
       
       console.log(`[Sync] Cloud: ${cloudSpaceIds.size} spaces, ${cloudStackIds.size} stacks, ${cloudThoughtIds.size} thoughts`);
       
-      // STEP 1: Delete orphaned cloud data (exists in cloud but not in local)
+      // STEP 1: Delete orphaned cloud data (exists in cloud but marked deleted locally)
+      console.log('[Sync] Step 3: Cleaning up orphaned cloud metadata...');
       // Delete orphaned spaces
       for (const spaceId of cloudSpaceIds) {
-        if (!localSpaces.find(s => s.id === spaceId)) {
-          console.log(`[Sync] Deleting orphaned space: ${spaceId}`);
+        const localSpace = localSpaces.find(s => s.id === spaceId);
+        // If it exists in cloud but not locally, skip it (don't delete during imports)
+        if (!localSpace) continue;
+
+        // If it's explicitly deleted locally, delete from cloud
+        if (localSpace.deletedAt) {
+          console.log(`[Sync] Deleting orphaned cloud space: ${spaceId}`);
           await supabaseSync.deleteSpace(spaceId, userId);
         }
       }
       
       // Delete orphaned stacks
       for (const stackId of cloudStackIds) {
-        if (!localStacks.find(s => s.id === stackId)) {
-          console.log(`[Sync] Deleting orphaned stack: ${stackId}`);
+        const localStack = localStacks.find(s => s.id === stackId);
+        // If it exists in cloud but not locally, skip it
+        if (!localStack) continue;
+
+        // If it's explicitly deleted locally, delete from cloud
+        if (localStack.deletedAt) {
+          console.log(`[Sync] Deleting orphaned cloud stack: ${stackId}`);
           await supabaseSync.deleteStack(stackId, userId);
         }
       }
       
       // Delete orphaned thoughts and their storage files
       for (const thoughtId of cloudThoughtIds) {
-        if (!localThoughts.find(t => t.id === thoughtId)) {
+        const localThought = allLocalThoughts.find(t => t.id === thoughtId);
+        // If it exists in cloud but not locally at all, skip it (critical for imports)
+        if (!localThought) continue;
+
+        // ONLY delete if we HAVE a local record AND it's marked as deleted
+        if (localThought.deletedAt) {
           const cloudThought = cloudThoughts.thoughts?.find(t => t.id === thoughtId);
           if (cloudThought?.storagePath) {
-            console.log(`[Sync] Deleting orphaned file: ${cloudThought.storagePath}`);
+            console.log(`[Sync] Deleting orphaned cloud file for thought: ${cloudThought.storagePath}`);
             await supabaseStorage.deleteFile(cloudThought.storagePath);
           }
-          console.log(`[Sync] Deleting orphaned thought: ${thoughtId}`);
+          console.log(`[Sync] Deleting orphaned cloud thought: ${thoughtId}`);
           await supabaseSync.deleteThought(thoughtId, userId);
         }
       }
       
-      console.log('[Sync] Orphan cleanup complete');
+      console.log('[Sync] Cloud orphan cleanup complete');
       
       // STEP 2: Build valid storage paths from local thoughts
+      console.log('[Sync] Step 4: Building valid storage index...');
       const validStoragePaths = new Set<string>();
-      for (const thought of localThoughts) {
+      for (const thought of activeLocalThoughts) {
         if (thought.storagePath) {
           validStoragePaths.add(thought.storagePath);
         }
       }
       
       // STEP 3: Push local spaces to cloud
-      if (localSpaces.length > 0) {
-        const cleanedSpaces = localSpaces.map(s => ({
-          ...s,
-          user_id: userId,
-        }));
-        await supabaseSync.createSpaces(cleanedSpaces, userId);
-        console.log('[Sync] Spaces synced');
+      console.log('[Sync] Step 5: Syncing spaces to cloud...');
+      if (activeLocalSpaces.length > 0) {
+        const cleanedSpaces = activeLocalSpaces
+          .filter(s => !s.isOnboarding)
+          .map(s => ({
+            ...s,
+            user_id: userId,
+          }));
+        if (cleanedSpaces.length > 0) {
+          await supabaseSync.createSpaces(cleanedSpaces, userId);
+          console.log('[Sync] Spaces synced successfully');
+        }
       }
       
       // STEP 4: Push local stacks to cloud
-      if (localStacks.length > 0) {
-        const cleanedStacks = localStacks.map(s => ({
-          ...s,
-          user_id: userId,
-        }));
-        await supabaseSync.createStacks(cleanedStacks, userId);
-        console.log('[Sync] Stacks synced');
+      console.log('[Sync] Step 6: Syncing stacks to cloud...');
+      if (activeLocalStacks.length > 0) {
+        const cleanedStacks = activeLocalStacks
+          .filter(s => !s.isOnboarding)
+          .map(s => ({
+            ...s,
+            user_id: userId,
+          }));
+        if (cleanedStacks.length > 0) {
+          await supabaseSync.createStacks(cleanedStacks, userId);
+          console.log('[Sync] Stacks synced successfully');
+        }
       }
       
       // STEP 5: Push local thoughts to cloud and upload new files
-      if (localThoughts.length > 0) {
+      console.log('[Sync] Step 7: Syncing thoughts and media to cloud...');
+      if (activeLocalThoughts.length > 0) {
+        // Filter out thoughts from onboarding spaces
+        const onboardingSpaceIds = new Set(localSpaces.filter(s => s.isOnboarding).map(s => s.id));
+        const nonOnboardingThoughts = activeLocalThoughts.filter(t => !onboardingSpaceIds.has(t.spaceId));
+
         // Upload new files if user has auto-sync enabled
-        if (authState.autoSync) {
-          for (const thought of localThoughts) {
-            // Upload new files if thought has a blob and no storagePath
-            if ((thought.type === 'image' || thought.type === 'file') && !thought.storagePath) {
+        if (authState.autoSync || bypassBlock) {
+          for (const thought of nonOnboardingThoughts) {
+            // Upload new files if thought has a blob and no storagePath (or is in local/error state)
+            if (thought.type === 'file' && (!thought.storagePath || thought.syncStatus === 'local' || thought.syncStatus === 'error')) {
               const blob = await db.blobs.where('thoughtId').equals(thought.id).first();
               if (blob?.blob) {
-                const result = await supabaseStorage.uploadFile(userId, blob.blob, blob.name);
+                console.log(`[Sync] Uploading media for thought ${thought.id}...`);
+                const result = await supabaseStorage.uploadFile(userId, blob.blob, blob.name, thought.id);
                 await db.thoughts.update(thought.id, {
                   storageUrl: result.url,
                   storagePath: result.path,
                 });
                 validStoragePaths.add(result.path);
-                console.log(`[Sync] Uploaded file for thought ${thought.id}`);
+                console.log(`[Sync] Uploaded file for thought ${thought.id}: ${result.path}`);
               }
             }
           }
         }
         
         // Push thoughts to cloud
-        const cleanedThoughts = localThoughts.map(t => ({
+        const cleanedThoughts = nonOnboardingThoughts.map(t => ({
           ...t,
           user_id: userId,
         }));
-        await supabaseSync.createThoughts(cleanedThoughts);
-        console.log('[Sync] Thoughts synced');
+        if (cleanedThoughts.length > 0) {
+          await supabaseSync.createThoughts(cleanedThoughts);
+          console.log(`[Sync] ${cleanedThoughts.length} thoughts synced successfully`);
+        }
       }
       
-      // STEP 6: Clean up orphaned storage files
-      console.log(`[Sync] Valid storage paths: ${validStoragePaths.size}`);
+      // STEP 6: Clean up orphaned storage files (Only if previous steps succeeded)
+      console.log(`[Sync] Step 8: Final structural storage cleanup. Index size: ${validStoragePaths.size}`);
       const cleanedCount = await supabaseStorage.cleanupOrphanedFiles(userId, validStoragePaths);
-      console.log(`[Sync] Cleaned up ${cleanedCount} orphaned files`);
+      if (cleanedCount > 0) {
+        console.log(`[Sync] Cleaned up ${cleanedCount} orphaned files or folders`);
+      } else {
+        console.log('[Sync] No orphaned storage items found');
+      }
       
       const now = new Date();
       useSyncStore.setState({
@@ -190,7 +263,10 @@ export const syncOrchestrator = {
       });
       
       localStorage.setItem('cyberia-last-sync', now.toISOString());
-      console.log('[Sync] Full push complete');
+      console.log('[Sync] Full push sync successfully completed');
+      
+      // Background download missing blobs
+      authState.downloadMissingBlobs();
       
       return { success: true };
     } catch (err) {
@@ -234,13 +310,16 @@ export const syncOrchestrator = {
     if (thoughtsCount === 0) return true;
     
     const mediaCount = await db.thoughts
-      .filter(t => t.type === 'image' || t.type === 'file')
+      .filter(t => t.type === 'file' && !t.deletedAt)
       .count();
     
     if (mediaCount > 0) return false;
     
+    const allSpaces = await db.spaces.toArray();
+    const onboardingSpaceIds = new Set(allSpaces.filter(s => s.isOnboarding === true).map(s => s.id));
+
     const customThoughts = await db.thoughts
-      .filter(t => t.spaceId !== 's-onboarding' && t.spaceId !== 's-workspace')
+      .filter(t => !onboardingSpaceIds.has(t.spaceId) && !t.deletedAt)
       .count();
     
     return customThoughts === 0;
@@ -319,7 +398,7 @@ export const syncOrchestrator = {
       if (!blob?.blob) return;
       
       const userId = useAuthStore.getState().user!.id;
-      const result = await supabaseStorage.uploadFile(userId, blob.blob, blob.name);
+      const result = await supabaseStorage.uploadFile(userId, blob.blob, blob.name, thoughtId);
       
       await db.thoughts.update(thoughtId, {
         storageUrl: result.url,

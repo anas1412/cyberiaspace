@@ -133,6 +133,7 @@ export interface AuthState {
   autoSync: boolean;
   cloudUsage: number;
   storageUsageMB: number;
+  activeDownloads: number[];
   isOnline: boolean;
 
   setAuthenticatedUser: (user: User, token: string, refreshSecret?: string, scopes?: string[]) => Promise<void>;
@@ -146,6 +147,8 @@ export interface AuthState {
   processOfflineChanges: () => Promise<void>;
   processPendingBlobs: () => Promise<void>;
   uploadThoughtBlob: (thoughtId: number, force?: boolean) => Promise<void>;
+  downloadSingleBlob: (thoughtId: number) => Promise<void>;
+  downloadMissingBlobs: () => Promise<void>;
   removeCloudAsset: (thoughtId: number) => Promise<void>;
   importCloudData: () => Promise<unknown | null>;
   setAutoSync: (enabled: boolean) => void;
@@ -155,6 +158,7 @@ export interface AuthState {
   handlePostAuthSync: () => Promise<void>;
   _syncPromise: Promise<void> | null;
   mediaSweep: () => Promise<void>;
+  repairEmptyFileThoughts: () => Promise<number>;
   upgradePlan: (plan: SubscriptionPlan, period?: AccessPeriod) => void;
   checkExpiry: () => void;
   refreshProfile: () => Promise<void>;

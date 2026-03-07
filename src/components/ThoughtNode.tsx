@@ -35,11 +35,9 @@ interface ThoughtNodeProps {
 
 const ThoughtNode: React.FC<ThoughtNodeProps> = React.memo(({ thought, registerElement, onMouseDown, onTouchStart, isDragging }) => {
   const elRef = useRef<HTMLDivElement>(null);
-  const selectedThoughtId = useStore((state) => state.selectedThoughtId);
-  const selectedThoughtIds = useStore((state) => state.selectedThoughtIds);
-  const isSelected = selectedThoughtId === thought.id || selectedThoughtIds.includes(thought.id);
-  const isInspectorOpen = useStore((state) => state.isInspectorOpen);
-  const layerActionTrigger = useStore((state) => state.layerActionTrigger);
+  const isSelected = useStore((state) => state.selectedThoughtId === thought.id || state.selectedThoughtIds.includes(thought.id));
+  const isInspectorOpen = useStore((state) => (state.selectedThoughtId === thought.id || state.selectedThoughtIds.includes(thought.id)) && state.isInspectorOpen);
+  const layerActionTrigger = useStore((state) => state.layerActionTrigger?.id === thought.id ? state.layerActionTrigger : null);
   const isReadOnly = useStore((state) => state.isReadOnly);
   const isDemo = useStore((state) => state.isDemo);
   const performanceMode = useStore((state) => state.performanceMode);
@@ -51,15 +49,12 @@ const ThoughtNode: React.FC<ThoughtNodeProps> = React.memo(({ thought, registerE
   const linkingSourceId = useStore((state) => state.linkingSourceId);
 
   const setLinkingSourceId = useStore((state) => state.setLinkingSourceId);
-  const stacks = useStore((state) => state.stacks);
-  const spaces = useStore((state) => state.spaces);
-  const activeSpaceId = useStore((state) => state.activeSpaceId);
+  
+  const activeSpace = useStore((state) => state.spaces.find(s => s.id === state.activeSpaceId));
+
   const setHoveredCalDate = useStore((state) => state.setHoveredCalDate);
   const hoveredCalDate = useStore((state) => state.hoveredCalDate);
-  const deletingThoughtIds = useStore((state) => state.deletingThoughtIds);
-  const isDeleting = deletingThoughtIds.includes(thought.id);
-
-  const activeSpace = useMemo(() => spaces.find(s => s.id === activeSpaceId), [spaces, activeSpaceId]);
+  const isDeleting = useStore((state) => state.deletingThoughtIds.includes(thought.id));
 
   const isSpatial = activeSpace?.mode === 'spatial';
   const isCalendar = activeSpace?.mode === 'calendar';
@@ -67,7 +62,7 @@ const ThoughtNode: React.FC<ThoughtNodeProps> = React.memo(({ thought, registerE
   const isExpanded = isDateHovered || (isCalendar && isSelected);
 
   const { content } = useThoughtPayload(thought);
-  const stack = useMemo(() => stacks.find(s => s.id === thought.stackId), [stacks, thought.stackId]);
+  const stack = useStore((state) => state.stacks.find(s => s.id === thought.stackId));
 
   const [startPos, setStartPos] = useState({ x: 0, y: 0 });
   const [showPing, setShowPing] = useState(false);
@@ -160,7 +155,7 @@ const ThoughtNode: React.FC<ThoughtNodeProps> = React.memo(({ thought, registerE
     const target = e.target as HTMLElement;
     if (target.closest('.checkbox')) return;
 
-    const triggers = ['label', 'text', 'table', 'tasks', 'image', 'paint', 'embed', 'file'];
+    const triggers = ['label', 'text', 'table', 'tasks', 'paint', 'embed', 'file'];
     for (const t of triggers) {
       if (target.closest(`[data-trigger="${t}"]`)) {
         if (t === 'label') return; // Labels don't have focus mode
@@ -225,7 +220,7 @@ const ThoughtNode: React.FC<ThoughtNodeProps> = React.memo(({ thought, registerE
             <Loader2 className="w-8 h-8 text-red-500 animate-spin" />
             <Trash2 className="w-4 h-4 text-red-500 absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2" />
           </div>
-          <span className="text-[8px] font-black uppercase tracking-[0.2em] text-red-400">Purging Data</span>
+          <span className="text-[8px] font-black uppercase tracking-[0.2em] text-red-400">Purging...</span>
         </div>
       )}
 

@@ -1,14 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { type Thought } from '../../db';
 import { useThoughtPayload } from './hooks/useThoughtPayload';
-import { FileText, FileAudio, FileVideo, FileCode, File as FileIcon, Maximize2, RefreshCw } from 'lucide-react';
-import { clsx, type ClassValue } from 'clsx';
-import { twMerge } from 'tailwind-merge';
+import { FileText, FileAudio, FileVideo, FileCode, File as FileIcon, Maximize2 } from 'lucide-react';
 import { db } from '../../db';
-
-function cn(...inputs: ClassValue[]) {
-  return twMerge(clsx(inputs));
-}
 
 interface FileRendererProps {
   thought: Thought;
@@ -50,7 +44,7 @@ export const FileRenderer: React.FC<FileRendererProps> = ({ thought }) => {
   // Robust Image Detection (Exclude Audio)
   const isImage = (mimeType.startsWith('image/') || 
                   ['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg'].includes(extension) || 
-                  (thought.type === 'image' && !!image)) && !isAudio;
+                  !!image) && !isAudio;
                   
   // Robust Video Detection (Exclude Audio)
   const isVideo = (mimeType.startsWith('video/') || 
@@ -71,7 +65,6 @@ export const FileRenderer: React.FC<FileRendererProps> = ({ thought }) => {
   const hasContent = !!activeSource;
   
   const hasRemoteContent = thought.storageUrl && !localUrl && thought.syncStatus !== 'synced';
-  const isSyncing = thought.syncStatus === 'syncing' || thought.syncStatus === 'pending';
 
   // MEDIA PREVIEW BLOCK (Images & Videos)
   // Audio files use the list view below to ensure correct icon and prevent video overlay
@@ -82,10 +75,7 @@ export const FileRenderer: React.FC<FileRendererProps> = ({ thought }) => {
           isVideo ? (
             <video
               src={activeSource}
-              className={cn(
-                "w-full h-full object-cover group-hover:scale-105 transition-transform duration-500",
-                isSyncing && "opacity-40 grayscale"
-              )}
+              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
               muted
               playsInline
               loop
@@ -96,19 +86,13 @@ export const FileRenderer: React.FC<FileRendererProps> = ({ thought }) => {
             <img
               src={activeSource}
               draggable="false"
-              className={cn(
-                "w-full h-full object-cover group-hover:scale-105 transition-transform duration-500",
-                isSyncing && "opacity-40 grayscale"
-              )}
+              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
               alt={thought.text}
             />
           )
         ) : (
           <div className="flex flex-col items-center gap-2 opacity-20 animate-pulse">
             <Maximize2 className="w-6 h-6 text-white" />
-            <span className="text-[8px] font-black uppercase tracking-widest text-amber-500 text-center px-4">
-              {isSyncing ? 'Securing...' : 'Pending Sync'}
-            </span>
           </div>
         )}
 
@@ -122,19 +106,9 @@ export const FileRenderer: React.FC<FileRendererProps> = ({ thought }) => {
         )}
 
         {/* Hover View Action for Images */}
-        {activeSource && !isSyncing && !isVideo && (
+        {activeSource && !isVideo && (
           <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center pointer-events-none">
             <Maximize2 className="w-6 h-6 text-white" />
-          </div>
-        )}
-
-        {isSyncing && (
-          <div className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-2 bg-[var(--accent)]/5 backdrop-blur-[2px]">
-            <div className="relative">
-              <RefreshCw className="w-6 h-6 text-[var(--accent)] animate-spin" />
-              <div className="absolute inset-0 bg-[var(--accent)]/20 blur-md rounded-full animate-pulse" />
-            </div>
-            <span className="text-[8px] font-black uppercase tracking-[0.2em] text-[var(--accent)]/80">Securing to Cloud</span>
           </div>
         )}
 
@@ -158,16 +132,10 @@ export const FileRenderer: React.FC<FileRendererProps> = ({ thought }) => {
       data-trigger="file"
       className="mt-2 p-4 rounded-2xl bg-white/5 border border-white/5 hover:bg-white/10 transition-all cursor-pointer group flex items-center gap-4 relative overflow-hidden"
     >
-      {isSyncing && (
-        <div className="absolute inset-0 z-10 flex items-center justify-center gap-3 bg-[var(--accent)]/10 backdrop-blur-[2px]">
-          <RefreshCw className="w-4 h-4 text-[var(--accent)] animate-spin" />
-          <span className="text-[8px] font-black uppercase tracking-[0.2em] text-[var(--accent)]">Syncing...</span>
-        </div>
-      )}
-      <div className={cn("w-14 h-14 rounded-xl bg-black/20 flex items-center justify-center border border-white/5 shadow-inner", isSyncing && "opacity-20")}>
+      <div className="w-14 h-14 rounded-xl bg-black/20 flex items-center justify-center border border-white/5 shadow-inner">
         {getFileIcon()}
       </div>
-      <div className={cn("flex-1 overflow-hidden", isSyncing && "opacity-20")}>
+      <div className="flex-1 overflow-hidden">
         <h4 className="text-[11px] font-black uppercase tracking-widest text-white truncate mb-1">
           {thought.text || 'Untitled File'}
         </h4>

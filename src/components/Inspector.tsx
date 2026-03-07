@@ -2,9 +2,9 @@ import React from 'react';
 import { getThoughtConfig } from './thought/registry';
 import { useStore } from '../store/useStore';
 import { useModalStore } from '../store/useModalStore';
+import type { ThoughtType } from '../db';
 import { 
-  X, Calendar, ChevronLeft, ChevronRight, 
-  ArrowUp, ArrowDown, Tag, Type, Zap, Box, Layers
+  X, ChevronLeft, ChevronRight, Calendar, ArrowUp, ArrowDown, Save
 } from 'lucide-react';
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
@@ -63,7 +63,7 @@ const DatePicker: React.FC<{ value: string; onChange: (val: string) => void; dis
           disabled && "opacity-50 cursor-default"
         )}
       >
-        <span>{value || "Pick a Date"}</span>
+        <span className="flex-1 text-center">{value || "Pick a Date"}</span>
         <Calendar className="w-4 h-4 text-slate-500 group-hover:text-[var(--accent)] transition-colors" />
       </button>
 
@@ -164,6 +164,7 @@ const Inspector: React.FC = () => {
   const [localDesc, setLocalDesc] = React.useState('');
   const [localDate, setLocalDate] = React.useState('');
   const [localStackName, setLocalStackName] = React.useState('');
+  const [pendingType, setPendingType] = React.useState<ThoughtType | null>(null);
 
   // Sync local state when selected thought changes
   React.useEffect(() => {
@@ -171,6 +172,7 @@ const Inspector: React.FC = () => {
       setLocalText(thought.text || '');
       setLocalDesc(thought.description || '');
       setLocalDate(thought.date || '');
+      setPendingType(null);
     }
     if (stack) {
       setLocalStackName(stack.name || '');
@@ -206,7 +208,6 @@ const Inspector: React.FC = () => {
 
   const config = getThoughtConfig(thought.type);
   const InspectorPanel = config?.inspectorPanel;
-  const TypeIcon = config?.icon || Type;
 
   return (
     <AnimatePresence>
@@ -221,20 +222,12 @@ const Inspector: React.FC = () => {
         >
           {/* HEADER AREA */}
           <div className="p-4 md:p-5 border-b border-white/5 bg-black/20 backdrop-blur-md sticky top-0 z-20">
-            <div className="flex justify-between items-center">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 bg-[var(--accent)]/10 rounded-xl flex items-center justify-center border border-[var(--accent)]/20 shadow-[0_0_20px_rgba(99,102,241,0.15)]">
-                  <TypeIcon className="w-5 h-5 text-[var(--accent-secondary)]" />
-                </div>
-                <div>
-                  <h3 className="text-xs font-black uppercase tracking-[0.2em] text-white leading-none">
-                    {isReadOnly ? 'Published' : 'Editor'}
-                  </h3>
-                  <div className="flex items-center gap-2 mt-1">
-                    <span className="w-1 h-1 rounded-full bg-blue-500 shadow-[0_0_8px_rgba(99,102,241,0.6)]" />
-                    <span className="text-[8px] font-bold text-slate-500 uppercase tracking-widest leading-none">Thought Properties</span>
-                  </div>
-                </div>
+            <div className="flex justify-between items-center relative">
+              <div className="w-8" /> {/* Spacer to help center */}
+              <div className="flex-1 flex justify-center">
+                <h3 className="text-xs font-black uppercase tracking-[0.2em] text-white leading-none">
+                  {isReadOnly ? 'Published' : 'Editor'}
+                </h3>
               </div>
               <button onClick={() => setInspectorOpen(false)} className="p-2 hover:bg-white/5 rounded-lg text-slate-500 hover:text-white transition-all">
                 <X className="w-4 h-4" />
@@ -244,17 +237,42 @@ const Inspector: React.FC = () => {
 
           {/* SCROLLABLE CONTENT AREA */}
           <div className="flex-1 overflow-y-auto custom-scroll p-4 md:p-6 space-y-6">
-            <div className="grid grid-cols-7 gap-1 mb-6">
-              {(['label', 'text', 'tasks', 'paint', 'table', 'embed', 'file'] as const).map((type) => {
+            <div className="grid grid-cols-4 gap-2 mb-6">
+              {(['label', 'text', 'tasks', 'table', 'paint', 'embed', 'file', 'save'] as const).map((item) => {
+                if (item === 'save') {
+                  const showSave = pendingType !== null && pendingType !== thought.type;
+                  return (
+                    <button
+                      key="save"
+                      onClick={() => {
+                        if (pendingType) {
+                          handleTypeChange(pendingType);
+                          setPendingType(null);
+                        }
+                      }}
+                      disabled={!showSave}
+                      className={cn(
+                        "p-3 rounded-xl flex flex-col items-center justify-center transition-all border gap-1.5",
+                        showSave 
+                          ? "bg-[var(--accent)] border-[var(--accent)] text-white shadow-[0_0_20px_var(--accent-glow)] scale-100 opacity-100"
+                          : "bg-white/5 border-white/5 text-slate-600 scale-95 opacity-50 cursor-default"
+                      )}
+                    >
+                      <Save className="w-3.5 h-3.5" />
+                      <span className="text-[8px] font-black uppercase tracking-widest">Save</span>
+                    </button>
+                  );
+                }
+                const type = item as ThoughtType;
                 const tConfig = getThoughtConfig(type);
-                const Icon = tConfig?.icon || Tag;
+                const isActive = (pendingType || thought.type) === type;
                 return (
                   <button
                     key={type}
-                    onClick={() => handleTypeChange(type)}
+                    onClick={() => setPendingType(type)}
                     className={cn(
-                      "p-2.5 rounded-xl flex flex-col items-center justify-center gap-1 transition-all border",
-                      thought.type === type
+                      "p-3 rounded-xl flex flex-col items-center justify-center transition-all border gap-1.5",
+                      isActive
                         ? "bg-[var(--accent)]/10 border-[var(--accent)] text-white shadow-[0_0_15px_rgba(99,102,241,0.2)]"
                         : "bg-white/[0.03] border-transparent text-slate-500 hover:bg-white/[0.06] hover:text-slate-300",
                       isReadOnly && thought.type !== type && "opacity-30 grayscale cursor-default"
@@ -262,7 +280,7 @@ const Inspector: React.FC = () => {
                     disabled={isReadOnly}
                     title={tConfig?.label || type}
                   >
-                    <Icon className="w-4 h-4" />
+                    {tConfig?.icon && <tConfig.icon className="w-3.5 h-3.5" />}
                     <span className="text-[7px] font-black uppercase tracking-tighter">{type === 'tasks' ? 'Task' : type}</span>
                   </button>
                 );
@@ -271,7 +289,7 @@ const Inspector: React.FC = () => {
 
             <div className="space-y-5">
               <div className="space-y-2">
-                <label className="text-[9px] uppercase font-bold tracking-widest text-slate-500 ml-1">Title</label>
+                <label className="text-[9px] uppercase font-bold tracking-widest text-slate-500 ml-1">Name</label>
                 <input
                   type="text"
                   readOnly={isReadOnly}
@@ -285,12 +303,12 @@ const Inspector: React.FC = () => {
                     "w-full bg-[var(--bg-page)]/20 border border-white/10 rounded-xl p-3 text-sm outline-none focus:border-[var(--accent)] text-[var(--text-primary)] placeholder:text-slate-500",
                     isReadOnly && "pointer-events-none opacity-80"
                   )}
-                  placeholder={"Title"}
+                  placeholder={"Name"}
                 />
               </div>
 
               <div className="space-y-2">
-                <label className="text-[9px] uppercase font-bold tracking-widest text-slate-500 ml-1">Description</label>
+                <label className="text-[9px] uppercase font-bold tracking-widest text-slate-500 ml-1">Note</label>
                 <textarea
                   readOnly={isReadOnly}
                   value={localDesc}
@@ -304,7 +322,7 @@ const Inspector: React.FC = () => {
                     "w-full bg-[var(--bg-page)]/20 border border-white/10 rounded-xl p-3 text-xs outline-none focus:border-[var(--accent)] text-[var(--text-primary)] placeholder:text-slate-500",
                     isReadOnly && "pointer-events-none opacity-80"
                   )}
-                  placeholder="Description"
+                  placeholder="Note"
                 />
               </div>
 
@@ -321,7 +339,7 @@ const Inspector: React.FC = () => {
               </div>
 
               <div className="space-y-2">
-                <label className="text-[9px] uppercase font-bold tracking-widest text-slate-500 ml-1">Status</label>
+                <label className="text-[9px] uppercase font-bold tracking-widest text-slate-500 ml-1">Progress</label>
                 <div className="grid grid-cols-4 gap-1">
                   {(['none', 'todo', 'doing', 'done'] as const).map((s) => (
                     <button
@@ -377,7 +395,7 @@ const Inspector: React.FC = () => {
 
               <div className="space-y-3">
                 <div className="flex justify-between items-center ml-1">
-                  <label className="text-[9px] uppercase font-bold tracking-widest text-slate-500">Node Size</label>
+                  <label className="text-[9px] uppercase font-bold tracking-widest text-slate-500">Scale</label>
                   <span className="text-[9px] font-mono text-[var(--accent-secondary)]">{(thought.size || 1.0).toFixed(1)}x</span>
                 </div>
                 <input
@@ -396,9 +414,8 @@ const Inspector: React.FC = () => {
               </div>
 
               <div className="space-y-3 pt-4 border-t border-white/5">
-                <div className="flex items-center gap-3 mb-2 px-1">
-                  <Box className="w-3.5 h-3.5 text-blue-400" />
-                  <span className="text-[9px] uppercase font-black tracking-widest text-white">Collection</span>
+                <div className="flex items-center mb-2 px-1">
+                  <span className="text-[9px] uppercase font-black tracking-widest text-white">Group</span>
                 </div>
 
                 {stack ? (
@@ -417,7 +434,7 @@ const Inspector: React.FC = () => {
                           "bg-transparent text-[10px] font-black uppercase tracking-widest text-white outline-none flex-1",
                           isReadOnly && "pointer-events-none"
                         )}
-                        placeholder="Stack Name"
+                        placeholder="Group Name"
                       />
                     </div>
                     {!isReadOnly && (
@@ -425,7 +442,7 @@ const Inspector: React.FC = () => {
                         onClick={() => unlinkSelectedThoughts()}
                         className="w-full py-2 bg-white/5 hover:bg-red-500/10 text-slate-400 hover:text-red-400 border border-white/5 rounded-xl text-[8px] font-black uppercase tracking-widest transition-all"
                       >
-                        Remove from Stack
+                        Remove from Group
                       </button>
                     )}
                   </div>
@@ -453,7 +470,7 @@ const Inspector: React.FC = () => {
 
                     {stacks.length > 0 && (
                       <div className="space-y-1.5">
-                        <label className="text-[7px] uppercase font-black tracking-[0.2em] text-slate-600 ml-1">Existing Collections</label>
+                        <label className="text-[7px] uppercase font-black tracking-[0.2em] text-slate-600 ml-1">Groups</label>
                         <div className="flex flex-col gap-1 max-h-[160px] overflow-y-auto custom-scroll pr-1">
                           {stacks.map(s => (
                             <div key={s.id} className="relative group/s">
@@ -465,16 +482,16 @@ const Inspector: React.FC = () => {
                                 <span className="text-[9px] font-bold uppercase tracking-widest text-slate-400 group-hover/s:text-white transition-colors">{s.name}</span>
                               </button>
                               {!isReadOnly && (
-                                <button
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    openModal({
-                                      title: 'Dissolve Stack?',
-                                      description: `This will unlink all thoughts from "${s.name}".`,
-                                      type: 'delete_stack',
-                                      confirmText: 'Dissolve',
-                                      onConfirm: () => useStore.getState().deleteStack(s.id)
-                                    });
+                                  <button
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      openModal({
+                                        title: 'Dissolve Group?',
+                                        description: `This will unlink all thoughts from "${s.name}".`,
+                                        type: 'delete_stack',
+                                        confirmText: 'Dissolve',
+                                        onConfirm: () => useStore.getState().deleteStack(s.id)
+                                      });
                                   }}
                                   className="absolute right-2 top-1/2 -translate-y-1/2 p-1 text-slate-600 hover:text-red-400 opacity-0 group-hover/s:opacity-100 transition-all"
                                 >
@@ -491,9 +508,8 @@ const Inspector: React.FC = () => {
               </div>
 
               <div className="space-y-2 pt-4 border-t border-white/5">
-                <div className="flex items-center gap-3 mb-2 px-1">
-                  <Layers className="w-3.5 h-3.5 text-purple-400" />
-                  <span className="text-[9px] uppercase font-black tracking-widest text-white">Spatial Layering</span>
+                <div className="flex items-center mb-2 px-1">
+                  <span className="text-[9px] uppercase font-black tracking-widest text-white">Layers</span>
                 </div>
                 <div className="grid grid-cols-2 gap-2">
                   <button
@@ -504,7 +520,8 @@ const Inspector: React.FC = () => {
                       isReadOnly && "opacity-30 cursor-default"
                     )}
                   >
-                    <ArrowUp className="w-3 h-3" /> Bring to Front
+                    <ArrowUp className="w-3 h-3" />
+                    Bring to Front
                   </button>
                   <button
                     disabled={isReadOnly}
@@ -514,7 +531,8 @@ const Inspector: React.FC = () => {
                       isReadOnly && "opacity-30 cursor-default"
                     )}
                   >
-                    <ArrowDown className="w-3 h-3" /> Send to Back
+                    <ArrowDown className="w-3 h-3" />
+                    Send to Back
                   </button>
                 </div>
               </div>
@@ -522,26 +540,26 @@ const Inspector: React.FC = () => {
               {/* Modular Panel Extension */}
               {InspectorPanel && (
                 <div className="pt-8 border-t border-white/5">
-                  <div className="flex items-center gap-3 mb-4 px-1">
-                    <Zap className="w-3.5 h-3.5 text-amber-400 animate-pulse" />
-                    <span className="text-[9px] uppercase font-black tracking-widest text-white">Interface Extension</span>
+                  <div className="flex items-center mb-4 px-1">
+                    <span className="text-[9px] uppercase font-black tracking-widest text-white">Extensions</span>
                   </div>
                   <InspectorPanel thought={thought} isReadOnly={isReadOnly} />
                 </div>
               )}
-
-              {!isReadOnly && (
-                <div className="pt-6">
-                  <button
-                    onClick={handleDeleteThought}
-                    className="w-full bg-red-500/10 hover:bg-red-500/20 text-red-400 py-4 rounded-2xl text-[10px] font-bold uppercase tracking-widest transition-colors border border-red-500/20"
-                  >
-                    Delete Thought
-                  </button>
-                </div>
-              )}
             </div>
           </div>
+
+          {/* STICKY FOOTER */}
+          {!isReadOnly && (
+            <div className="bg-black/40 border-t border-white/5 p-4 md:p-6 mt-auto">
+              <button
+                onClick={handleDeleteThought}
+                className="w-full bg-red-500/10 hover:bg-red-500/20 text-red-400 py-4 rounded-2xl text-[10px] font-bold uppercase tracking-widest transition-colors border border-red-500/20"
+              >
+                Delete Thought
+              </button>
+            </div>
+          )}
         </motion.div>
       )}
     </AnimatePresence>
