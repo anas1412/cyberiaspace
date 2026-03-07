@@ -7,6 +7,7 @@ let syncDebounceTimer: ReturnType<typeof setTimeout> | null = null;
 const SYNC_DEBOUNCE_MS = 5000;
 
 let isSyncBlocked = false;
+let syncRequestedDuringActiveSync = false;
 
 export const syncOrchestrator = {
   async setSyncBlocked(blocked: boolean) {
@@ -42,6 +43,7 @@ export const syncOrchestrator = {
     }
     
     if (syncState.status === 'syncing') {
+      syncRequestedDuringActiveSync = true;
       return;
     }
     
@@ -273,6 +275,13 @@ export const syncOrchestrator = {
       console.error('[Sync] Full push failed:', err);
       useSyncStore.getState().setStatus('error');
       return { success: false, error: String(err) };
+    } finally {
+      if (syncRequestedDuringActiveSync) {
+        syncRequestedDuringActiveSync = false;
+        setTimeout(() => {
+          syncOrchestrator.triggerSync();
+        }, SYNC_DEBOUNCE_MS);
+      }
     }
   },
 

@@ -41,7 +41,7 @@ const MinimalistThought: React.FC<{
   style?: React.CSSProperties;
 }> = ({ title, color, className = '', style }) => (
   <div 
-    className={`glass border border-white/5 rounded-xl p-3 flex flex-col gap-2 min-w-[140px] shadow-sm backdrop-blur-sm relative overflow-hidden transition-all duration-500 ${className}`}
+    className={`glass border border-white/5 rounded-xl p-3 flex flex-col gap-2 min-w-[140px] shadow-sm backdrop-blur-sm relative overflow-hidden ${className}`}
     style={style}
   >
     <div className="flex items-center justify-between">
@@ -254,7 +254,7 @@ const AgenticSpaceVisual: React.FC<{
   }, [activeSpaceIdx, clusterNodes, cursorOpacity, cursorScale, cursorX, cursorY, node1TargetX, node1TargetY]);
 
   return (
-    <div className="relative w-full h-full flex items-center justify-center overflow-hidden bg-transparent">
+    <div className="relative w-full h-full flex items-center justify-center overflow-hidden bg-transparent pointer-events-none will-change-transform">
       <div className="absolute inset-0 opacity-[0.05]" style={{ 
         backgroundImage: `radial-gradient(circle at 1px 1px, var(--accent) 0.5px, transparent 0)`,
         backgroundSize: '40px 40px',
@@ -407,7 +407,7 @@ const DynamicViewsVisual: React.FC<{
   };
 
   return (
-    <div className="relative w-full h-full flex items-center justify-center bg-transparent overflow-hidden">
+    <div className="relative w-full h-full flex items-center justify-center bg-transparent overflow-hidden pointer-events-none will-change-transform">
       <div className="absolute inset-0 opacity-[0.03]" style={{ 
         backgroundImage: `radial-gradient(circle at 1px 1px, var(--accent) 1px, transparent 0)`,
         backgroundSize: '40px 40px' 
@@ -612,7 +612,7 @@ const CloudPersistenceVisual = () => {
   ];
 
   return (
-    <div className="relative w-full h-full flex items-center justify-center bg-transparent overflow-hidden">
+    <div className="relative w-full h-full flex items-center justify-center bg-transparent overflow-hidden pointer-events-none will-change-transform">
       {/* Background Grid */}
       <div className="absolute inset-0 opacity-[0.03]" style={{ 
         backgroundImage: `radial-gradient(circle at 1px 1px, var(--accent) 1px, transparent 0)`,
@@ -861,7 +861,7 @@ const AgenticWorkspaceVisual = () => {
   ];
 
   return (
-    <div className="relative w-full h-full bg-transparent overflow-hidden">
+    <div className="relative w-full h-full bg-transparent overflow-hidden pointer-events-none will-change-transform">
       {/* Background Grid */}
       <div className="absolute inset-0 opacity-[0.04]" style={{ 
         backgroundImage: `radial-gradient(circle at 1px 1px, var(--accent) 1px, transparent 0)`,
@@ -1017,19 +1017,29 @@ const AgenticWorkspaceVisual = () => {
   );
 };
 
-const ResponsiveStage = ({ children }: { children: React.ReactNode }) => {
+const ResponsiveStage = React.memo(({ children }: { children: React.ReactNode }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const [scale, setScale] = useState(1);
+  const lastDimensions = useRef({ width: 0, height: 0 });
 
   useEffect(() => {
     const updateScale = () => {
       if (containerRef.current) {
-        const width = containerRef.current.offsetWidth - 32; // Account for 32px padding safety
-        const height = containerRef.current.offsetHeight - 32;
-        const designSize = 600;
-        // New scaling logic: Contain within both width and height
-        const newScale = Math.min(width / designSize, height / designSize);
-        setScale(Math.max(0.45, newScale)); // Increase min-scale to 0.45 for better readability
+        const width = containerRef.current.offsetWidth;
+        const height = containerRef.current.offsetHeight;
+        
+        const widthChanged = width !== lastDimensions.current.width;
+        const heightSignificant = Math.abs(height - lastDimensions.current.height) > 100;
+
+        if (widthChanged || heightSignificant) {
+          const safeWidth = width - 32;
+          const safeHeight = height - 32;
+          const designSize = 600;
+          const newScale = Math.min(safeWidth / designSize, safeHeight / designSize);
+          setScale(Math.max(0.45, newScale));
+          
+          lastDimensions.current = { width, height };
+        }
       }
     };
     updateScale();
@@ -1047,9 +1057,9 @@ const ResponsiveStage = ({ children }: { children: React.ReactNode }) => {
       </motion.div>
     </div>
   );
-};
+});
 
-const FeatureVisual: React.FC<{ activeFeature: number }> = ({ activeFeature }) => {
+const FeatureVisual: React.FC<{ activeFeature: number }> = React.memo(({ activeFeature }) => {
   const [activeSpaceIdx, setActiveSpaceIdx] = useState(0);
   const [view, setView] = useState<'spatial' | 'kanban' | 'calendar'>('spatial');
 
@@ -1133,7 +1143,7 @@ const FeatureVisual: React.FC<{ activeFeature: number }> = ({ activeFeature }) =
       </AnimatePresence>
     </div>
   );
-};
+});
 
 
 
@@ -1239,7 +1249,7 @@ const Homepage: React.FC = () => {
           <div className="hidden md:flex items-center gap-3"> {/* Increased gap slightly to 3 */}
   {/* The Nav Container */}
   <div className="flex items-center h-10 p-1 rounded-2xl">
-    {['features', 'pricing', 'about', 'contact'].map((item) => (
+                {['features', 'about', 'pricing', 'contact'].map((item) => (
       <button 
         key={item}
         onClick={() => scrollToSection(item)} 
@@ -1280,7 +1290,7 @@ const Homepage: React.FC = () => {
               className="md:hidden glass border-t border-white/5 overflow-hidden"
             >
               <div className="flex flex-col p-6 gap-6">
-                {['features', 'pricing', 'about', 'contact'].map((item) => (
+    {['features', 'about', 'pricing', 'contact'].map((item) => (
                   <button 
                     key={item}
                     onClick={() => scrollToSection(item)} 
@@ -1372,7 +1382,6 @@ const Homepage: React.FC = () => {
               {FEATURES.map((feature, index) => (
                 <motion.div
                   key={feature.id}
-                  onMouseEnter={() => setActiveFeature(index)}
                   onClick={() => setActiveFeature(index)}
                   className={`relative p-8 rounded-[2.5rem] transition-all duration-500 cursor-pointer group overflow-hidden ${
                     activeFeature === index 
@@ -1438,6 +1447,69 @@ const Homepage: React.FC = () => {
                 <FeatureVisual activeFeature={activeFeature} />
               </div>
             </div>
+          </div>
+        </div>
+      </section>
+
+      <section id="about" className="py-32 px-6 relative z-10">
+        <div className="max-w-4xl mx-auto">
+          <div className="text-center mb-12">
+            <h2 className="text-4xl md:text-5xl font-black tracking-tighter uppercase mb-4">
+              Why <span style={{ color: 'var(--accent)' }}>Cyberia Workspace</span>?
+            </h2>
+            <p className="text-slate-400">Simple. Your brain isn't a spreadsheet.</p>
+          </div>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <motion.div 
+              initial={{ opacity: 0, x: -20 }}
+              whileInView={{ opacity: 1, x: 0 }}
+              viewport={{ once: true }}
+              className="glass rounded-3xl p-6 shadow-[0_10px_40px_rgba(0,0,0,0.5)]"
+            >
+              <h3 className="text-[14px] font-black uppercase tracking-[0.2em] text-white mb-4">The Problem</h3>
+              <p className="text-sm text-[var(--text-dimmed)] leading-relaxed">
+                <span className="text-white font-semibold">Spreadsheets kill creativity.</span> Your brain doesn't think in rows and columns—so why should your tools?
+              </p>
+            </motion.div>
+
+            <motion.div 
+              initial={{ opacity: 0, x: 20 }}
+              whileInView={{ opacity: 1, x: 0 }}
+              viewport={{ once: true }}
+              className="glass rounded-3xl p-6 shadow-[0_10px_40px_rgba(0,0,0,0.5)]"
+            >
+              <h3 className="text-[14px] font-black uppercase tracking-[0.2em] text-white mb-4">The Physics</h3>
+              <p className="text-sm text-[var(--text-dimmed)] leading-relaxed">
+                Your thoughts <span className="text-white font-semibold">drift, collide, and cluster</span> like galaxies. We built a workspace that respects that.
+              </p>
+            </motion.div>
+
+            <motion.div 
+              initial={{ opacity: 0, x: -20 }}
+              whileInView={{ opacity: 1, x: 0 }}
+              viewport={{ once: true }}
+              transition={{ delay: 0.1 }}
+              className="glass rounded-3xl p-6 shadow-[0_10px_40px_rgba(0,0,0,0.5)]"
+            >
+              <h3 className="text-[14px] font-black uppercase tracking-[0.2em] text-white mb-4">The Agentic Space</h3>
+              <p className="text-sm text-[var(--text-dimmed)] leading-relaxed">
+                Oracle doesn't just chat. It <span className="text-white font-semibold">lives in your space</span>, reading docs and connecting dots.
+              </p>
+            </motion.div>
+
+            <motion.div 
+              initial={{ opacity: 0, x: 20 }}
+              whileInView={{ opacity: 1, x: 0 }}
+              viewport={{ once: true }}
+              transition={{ delay: 0.1 }}
+              className="glass rounded-3xl p-6 shadow-[0_10px_40px_rgba(0,0,0,0.5)]"
+            >
+              <h3 className="text-[14px] font-black uppercase tracking-[0.2em] text-white mb-4">The Ownership</h3>
+              <p className="text-sm text-[var(--text-dimmed)] leading-relaxed">
+                <span className="text-white font-semibold">Your data stays local.</span> No cloud lock-in. You own your mind.
+              </p>
+            </motion.div>
           </div>
         </div>
       </section>
@@ -1544,69 +1616,6 @@ className="glass p-10 rounded-[3rem] border-[var(--accent)]/30 bg-[var(--accent)
                   Secure local & global payments via Flouci
                 </span>
               </div>
-            </motion.div>
-          </div>
-        </div>
-      </section>
-
-      <section id="about" className="py-32 px-6 relative z-10">
-        <div className="max-w-4xl mx-auto">
-          <div className="text-center mb-12">
-            <h2 className="text-4xl md:text-5xl font-black tracking-tighter uppercase mb-4">
-              Why <span style={{ color: 'var(--accent)' }}>Cyberia Workspace</span>?
-            </h2>
-            <p className="text-slate-400">Simple. Your brain isn't a spreadsheet.</p>
-          </div>
-          
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <motion.div 
-              initial={{ opacity: 0, x: -20 }}
-              whileInView={{ opacity: 1, x: 0 }}
-              viewport={{ once: true }}
-              className="glass rounded-3xl p-6 shadow-[0_10px_40px_rgba(0,0,0,0.5)]"
-            >
-              <h3 className="text-[14px] font-black uppercase tracking-[0.2em] text-white mb-4">The Problem</h3>
-              <p className="text-sm text-[var(--text-dimmed)] leading-relaxed">
-                <span className="text-white font-semibold">Spreadsheets kill creativity.</span> Your brain doesn't think in rows and columns—so why should your tools?
-              </p>
-            </motion.div>
-
-            <motion.div 
-              initial={{ opacity: 0, x: 20 }}
-              whileInView={{ opacity: 1, x: 0 }}
-              viewport={{ once: true }}
-              className="glass rounded-3xl p-6 shadow-[0_10px_40px_rgba(0,0,0,0.5)]"
-            >
-              <h3 className="text-[14px] font-black uppercase tracking-[0.2em] text-white mb-4">The Physics</h3>
-              <p className="text-sm text-[var(--text-dimmed)] leading-relaxed">
-                Your thoughts <span className="text-white font-semibold">drift, collide, and cluster</span> like galaxies. We built a workspace that respects that.
-              </p>
-            </motion.div>
-
-            <motion.div 
-              initial={{ opacity: 0, x: -20 }}
-              whileInView={{ opacity: 1, x: 0 }}
-              viewport={{ once: true }}
-              transition={{ delay: 0.1 }}
-              className="glass rounded-3xl p-6 shadow-[0_10px_40px_rgba(0,0,0,0.5)]"
-            >
-              <h3 className="text-[14px] font-black uppercase tracking-[0.2em] text-white mb-4">The Agentic Space</h3>
-              <p className="text-sm text-[var(--text-dimmed)] leading-relaxed">
-                Oracle doesn't just chat. It <span className="text-white font-semibold">lives in your space</span>, reading docs and connecting dots.
-              </p>
-            </motion.div>
-
-            <motion.div 
-              initial={{ opacity: 0, x: 20 }}
-              whileInView={{ opacity: 1, x: 0 }}
-              viewport={{ once: true }}
-              transition={{ delay: 0.1 }}
-              className="glass rounded-3xl p-6 shadow-[0_10px_40px_rgba(0,0,0,0.5)]"
-            >
-              <h3 className="text-[14px] font-black uppercase tracking-[0.2em] text-white mb-4">The Ownership</h3>
-              <p className="text-sm text-[var(--text-dimmed)] leading-relaxed">
-                <span className="text-white font-semibold">Your data stays local.</span> No cloud lock-in. You own your mind.
-              </p>
             </motion.div>
           </div>
         </div>

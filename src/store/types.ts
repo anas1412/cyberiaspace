@@ -21,6 +21,7 @@ export interface CyberiaState {
   theme: 'cyberia' | 'sea' | 'forest' | 'rain';
   customBg: string | null;
   isSpaceLoading: boolean;
+  lastSpaceRequestId: number;
   totalThoughtCount: number;
   isInitializing: boolean;
   performanceMode: boolean;
@@ -82,6 +83,7 @@ export interface CyberiaState {
   addThought: (thought: Partial<Thought>) => Promise<number>;
   updateThought: (id: number, updates: Partial<Thought>) => Promise<void>;
   updateThoughts: (ids: number[], updates: Partial<Thought>) => Promise<void>;
+  bulkUpdateThoughts: (updates: { id: number; updates: Partial<Thought> }[]) => Promise<void>;
   deleteThought: (id: number) => Promise<void>;
   deleteThoughts: (ids: number[]) => Promise<void>;
   bringToFront: (id: number) => Promise<void>;

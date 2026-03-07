@@ -125,13 +125,18 @@ export const usePhysics = (
           heights.set(id, els.get(id)?.offsetHeight || 120);
         });
 
+        const updates: { id: number; updates: Partial<Thought> }[] = [];
         physics.forEach((p, id) => {
           const t = thoughtsCache.get(id);
           if (t) {
             const h = heights.get(id) || 120;
-            store.updateThought(id, { x: p.x + 140, y: p.y + h / 2 });
+            updates.push({ id, updates: { x: p.x + 140, y: p.y + h / 2 } });
           }
         });
+
+        if (updates.length > 0) {
+          store.bulkUpdateThoughts(updates);
+        }
       }
     };
   }, [activeSpace?.mode, activeSpaceId]);

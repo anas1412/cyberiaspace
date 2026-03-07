@@ -14,6 +14,7 @@ export const createSpaceSlice: StateCreator<CyberiaState, [], [], any> = (set, g
   lastUpdated: null,
 
   setActiveSpace: async (id: string) => {
+    const requestId = Date.now();
     try {
       localStorage.setItem('cyberia-active-space-id', id);
       const space = get().spaces.find((s: Space) => s.id === id);
@@ -24,6 +25,7 @@ export const createSpaceSlice: StateCreator<CyberiaState, [], [], any> = (set, g
         thoughts: [], 
         stacks: [], 
         isSpaceLoading: true, 
+        lastSpaceRequestId: requestId,
         history: [], 
         historyIndex: -1, 
         layerActionTrigger: null 
@@ -51,8 +53,10 @@ export const createSpaceSlice: StateCreator<CyberiaState, [], [], any> = (set, g
     } catch (err) {
       console.error('Failed to set active space:', err);
     } finally {
-      // Data loaded (or failed), stop loading state
-      set({ isSpaceLoading: false });
+      // Data loaded (or failed), stop loading state ONLY if this is the latest request
+      if (get().lastSpaceRequestId === requestId) {
+        set({ isSpaceLoading: false });
+      }
     }
   },
 
