@@ -191,6 +191,8 @@ export const syncOrchestrator = {
           }));
         if (cleanedSpaces.length > 0) {
           await supabaseSync.createSpaces(cleanedSpaces, userId);
+          // Mark as synced locally
+          await db.spaces.where('id').anyOf(cleanedSpaces.map(s => s.id)).modify({ syncStatus: 'synced' });
           console.log('[Sync] Spaces synced successfully');
         }
       }
@@ -206,6 +208,8 @@ export const syncOrchestrator = {
           }));
         if (cleanedStacks.length > 0) {
           await supabaseSync.createStacks(cleanedStacks, userId);
+          // Mark as synced locally
+          await db.stacks.where('id').anyOf(cleanedStacks.map(s => s.id)).modify({ syncStatus: 'synced' });
           console.log('[Sync] Stacks synced successfully');
         }
       }
@@ -229,6 +233,7 @@ export const syncOrchestrator = {
                 await db.thoughts.update(thought.id, {
                   storageUrl: result.url,
                   storagePath: result.path,
+                  syncStatus: 'synced',
                 });
                 validStoragePaths.add(result.path);
                 console.log(`[Sync] Uploaded file for thought ${thought.id}: ${result.path}`);
@@ -244,6 +249,8 @@ export const syncOrchestrator = {
         }));
         if (cleanedThoughts.length > 0) {
           await supabaseSync.createThoughts(cleanedThoughts);
+          // Mark as synced locally
+          await db.thoughts.where('id').anyOf(cleanedThoughts.map(t => t.id)).modify({ syncStatus: 'synced' });
           console.log(`[Sync] ${cleanedThoughts.length} thoughts synced successfully`);
         }
       }
@@ -266,6 +273,19 @@ export const syncOrchestrator = {
       
       localStorage.setItem('cyberia-last-sync', now.toISOString());
       console.log('[Sync] Full push sync successfully completed');
+      
+      // Refresh UI from store
+      try {
+        const { useStore } = await import('../../store/useStore');
+        const store = useStore.getState();
+        await Promise.all([
+          store.refreshThoughts(),
+          store.refreshSpaces(),
+          store.refreshStacks()
+        ]);
+      } catch (e) {
+        console.warn('[Sync] Failed to refresh UI after sync:', e);
+      }
       
       // Background download missing blobs
       authState.downloadMissingBlobs();

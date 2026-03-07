@@ -167,16 +167,21 @@ export const createSyncSlice: StateCreator<AuthState, [], [], SyncSlice> = (set,
             t.id
           );
 
-          await db.thoughts.update(t.id, {
+          const updates = {
             storageUrl: result.url,
             storagePath: result.path,
-            syncStatus: 'synced'
-          });
+            syncStatus: 'synced' as const
+          };
+
+          await db.thoughts.update(t.id, updates);
+          useStore.getState().updateThought(t.id, updates, { skipSync: true });
           
           console.log(`[Sync] Media sweep: Uploaded ${t.id}`);
         } catch (err) {
           console.error(`[Sync] Media sweep: Failed to upload ${t.id}:`, err);
-          await db.thoughts.update(t.id, { syncStatus: 'error' });
+          const updates = { syncStatus: 'error' as const };
+          await db.thoughts.update(t.id, updates);
+          useStore.getState().updateThought(t.id, updates, { skipSync: true });
         }
       }
       

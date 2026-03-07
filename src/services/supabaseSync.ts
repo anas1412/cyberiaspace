@@ -13,8 +13,8 @@ function toSnakeCase(obj: any): any {
     if (key === 'date' && (value === '' || value === undefined)) {
       value = null
     }
-    // Skip local-only fields
-    if (key === 'isOnboarding') {
+    // Skip local-only synchronization metadata
+    if (key === 'syncStatus' || key === 'retryCount' || key === 'deletedAt' || key === 'isOnboarding') {
       continue
     }
     const snakeKey = key.replace(/([A-Z])/g, '_$1').toLowerCase()
@@ -103,7 +103,7 @@ export const supabaseSync = {
       throw new Error(error.message)
     }
     console.log('[Supabase] getSpaces:', data?.length, 'spaces')
-    const spaces = (data || []).map(s => toCamelCase({ ...s, id: s.local_id || s.id }))
+    const spaces = (data || []).map(s => toCamelCase({ ...s, id: s.local_id || s.id, syncStatus: 'synced' }))
     return { spaces }
   },
 
@@ -200,7 +200,7 @@ export const supabaseSync = {
       throw new Error(error.message)
     }
     console.log('[Supabase] getThoughts:', data?.length, 'thoughts')
-    const thoughts = (data || []).map(t => toCamelCase({ ...t, id: t.local_id || t.id }))
+    const thoughts = (data || []).map(t => toCamelCase({ ...t, id: t.local_id || t.id, syncStatus: 'synced' }))
     return { thoughts }
   },
 
@@ -313,7 +313,7 @@ export const supabaseSync = {
       throw new Error(error.message)
     }
     console.log('[Supabase] getStacks:', data?.length, 'stacks')
-    const stacks = (data || []).map(s => toCamelCase({ ...s, id: s.local_id || s.id }))
+    const stacks = (data || []).map(s => toCamelCase({ ...s, id: s.local_id || s.id, syncStatus: 'synced' }))
     return { stacks }
   },
 

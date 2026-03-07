@@ -90,7 +90,7 @@ export const createSpaceSlice: StateCreator<CyberiaState, [], [], any> = (set, g
     }
   },
 
-  updateSpace: async (id: string, updates: Partial<Space>) => {
+  updateSpace: async (id: string, updates: Partial<Space>, options?: { skipSync?: boolean }) => {
     const { spaces } = get();
     const index = spaces.findIndex((s: Space) => s.id === id);
     if (index !== -1) {
@@ -103,7 +103,7 @@ export const createSpaceSlice: StateCreator<CyberiaState, [], [], any> = (set, g
     await get().refreshSpaces();
     
     const authStore = useAuthStore.getState();
-    if (authStore.status === 'authenticated') {
+    if (authStore.status === 'authenticated' && !options?.skipSync) {
       await syncOrchestrator.triggerSync();
     }
   },
