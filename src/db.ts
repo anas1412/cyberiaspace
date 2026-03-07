@@ -7,9 +7,14 @@ import Dexie, { type EntityTable } from 'dexie';
 export type ThoughtType = 'label' | 'text' | 'tasks' | 'paint' | 'table' | 'embed' | 'file';
 
 export interface FileMeta {
-  name: string;
-  size: number;
-  type: string;
+  name?: string;
+  size?: number;
+  type?: string;
+  file?: {
+    name: string;
+    size: number;
+    type: string;
+  };
 }
 
 // Discriminated Union for modular payload

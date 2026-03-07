@@ -14,15 +14,7 @@ function toSnakeCase(obj: any): any {
       value = null
     }
     // Skip local-only fields
-    if (
-      key === 'transformScale' || 
-      key === 'transformX' || 
-      key === 'transformY' ||
-      key === 'isOnboarding' ||
-      key === 'syncStatus' ||
-      key === 'retryCount' ||
-      key === 'deletedAt'
-    ) {
+    if (key === 'isOnboarding') {
       continue
     }
     const snakeKey = key.replace(/([A-Z])/g, '_$1').toLowerCase()
