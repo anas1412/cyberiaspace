@@ -1,6 +1,7 @@
 import React from 'react';
 import { ListTodo, Maximize2 } from 'lucide-react';
 import { type Thought } from '../../db';
+import { useThoughtPayload } from './hooks/useThoughtPayload';
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 
@@ -20,12 +21,15 @@ export const TasksRenderer: React.FC<TasksRendererProps> = ({
   isReadOnly, 
   setActiveFocus 
 }) => {
-  const done = thought.tasks.filter((t) => t.done).length;
-  const progress = (done / thought.tasks.length) * 100;
-  const previewTasks = thought.tasks.slice(0, 3);
-  const hasRemoteContent = thought.storageUrl && thought.tasks.length === 0 && thought.syncStatus !== 'synced' && !isReadOnly;
+  // Use the dual-read hook for backward compatibility
+  const { tasks } = useThoughtPayload(thought);
+  
+  const done = tasks.filter((t) => t.done).length;
+  const progress = (done / tasks.length) * 100;
+  const previewTasks = tasks.slice(0, 3);
+  const hasRemoteContent = thought.storageUrl && tasks.length === 0 && thought.syncStatus !== 'synced' && !isReadOnly;
 
-  if (thought.tasks.length === 0) {
+  if (tasks.length === 0) {
     return (
       <div data-trigger="tasks" className="mt-1 flex flex-col items-center gap-2 py-4 bg-black/20 rounded-xl border border-white/5 group/tasks relative cursor-pointer transition-colors hover:bg-white/[0.05]">
         <ListTodo className="w-6 h-6 text-white/20" />
@@ -69,9 +73,9 @@ export const TasksRenderer: React.FC<TasksRendererProps> = ({
             </span>
           </div>
         ))}
-        {thought.tasks.length > 3 && (
+        {tasks.length > 3 && (
           <div className="text-[8px] text-slate-600 pl-5">
-            + {thought.tasks.length - 3} more...
+            + {tasks.length - 3} more...
           </div>
         )}
       </div>

@@ -3,7 +3,7 @@ import type { LayoutStrategist } from './types';
 export const kanbanStrategy: LayoutStrategist = {
   name: 'kanban',
   
-  calculateLayout: (thought, allThoughts, context, elementHeights) => {
+  calculateLayout: (thought, _allThoughts, context, elementHeights) => {
     const { logicalWidth, isMobile, kanbanSearchQuery, kanbanStackFilter } = context;
     const colWidth = logicalWidth / 4;
     const statuses: ('none' | 'todo' | 'doing' | 'done')[] = ['none', 'todo', 'doing', 'done'];
@@ -12,19 +12,12 @@ export const kanbanStrategy: LayoutStrategist = {
     // Filtering logic
     const matchesSearch = !kanbanSearchQuery || 
       thought.text.toLowerCase().includes(kanbanSearchQuery.toLowerCase()) ||
-      thought.content.toLowerCase().includes(kanbanSearchQuery.toLowerCase());
+      (thought.data?.type === 'text' ? thought.data.content : ((thought as any).content || '')).toLowerCase().includes(kanbanSearchQuery.toLowerCase());
     
     const matchesStack = !kanbanStackFilter || thought.stackId === kanbanStackFilter;
     const isFilteredOut = !matchesSearch || !matchesStack;
 
-    const list = allThoughts
-      .filter(t => t.status === thought.status)
-      .filter(t => {
-        const mS = !kanbanSearchQuery || t.text.toLowerCase().includes(kanbanSearchQuery.toLowerCase()) || t.content.toLowerCase().includes(kanbanSearchQuery.toLowerCase());
-        const mStack = !kanbanStackFilter || t.stackId === kanbanStackFilter;
-        return mS && mStack;
-      })
-      .sort((a, b) => a.order - b.order);
+    const list = context.columnMap?.get(thought.status) || [];
     
     const indexInCol = list.findIndex(t => t.id === thought.id);
     

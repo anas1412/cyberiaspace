@@ -1,6 +1,7 @@
 import React from 'react';
 import { Table, Maximize2 } from 'lucide-react';
 import { type Thought } from '../../db';
+import { useThoughtPayload } from './hooks/useThoughtPayload';
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 
@@ -20,7 +21,10 @@ export const TableRenderer: React.FC<TableRendererProps> = ({
   isReadOnly, 
   setActiveFocus 
 }) => {
-  const isTableEmpty = !thought.table || thought.table.every(row => row.every(cell => !cell || !cell.trim()));
+  // Use the dual-read hook for backward compatibility
+  const { table } = useThoughtPayload(thought);
+  
+  const isTableEmpty = !table || table.every(row => row.every(cell => !cell || !cell.trim()));
   const hasRemoteContent = thought.storageUrl && isTableEmpty && thought.syncStatus !== 'synced' && !isReadOnly;
 
   if (isTableEmpty) {
@@ -52,9 +56,9 @@ export const TableRenderer: React.FC<TableRendererProps> = ({
 
   const maxCols = 3;
   const maxRows = 4;
-  const hasMoreRows = thought.table.length > maxRows;
-  const hasMoreCols = thought.table[0]?.length > maxCols;
-  const visibleRows = thought.table.slice(0, maxRows);
+  const hasMoreRows = table.length > maxRows;
+  const hasMoreCols = table[0]?.length > maxCols;
+  const visibleRows = table.slice(0, maxRows);
 
   return (
     <div data-trigger="table" className="relative group/table overflow-hidden rounded-xl cursor-pointer min-h-[60px] flex flex-col justify-center">
@@ -73,8 +77,8 @@ export const TableRenderer: React.FC<TableRendererProps> = ({
             ))}
             {hasMoreRows && (
               <tr>
-                <td colSpan={Math.min(maxCols, thought.table[0]?.length || 0) + (hasMoreCols ? 1 : 0)} className="text-center text-[8px] opacity-30 py-1">
-                  ... and {thought.table.length - maxRows} more rows
+                <td colSpan={Math.min(maxCols, table[0]?.length || 0) + (hasMoreCols ? 1 : 0)} className="text-center text-[8px] opacity-30 py-1">
+                  ... and {table.length - maxRows} more rows
                 </td>
               </tr>
             )}

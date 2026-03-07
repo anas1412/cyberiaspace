@@ -1,6 +1,7 @@
 import React from 'react';
 import { Palette, Maximize2 } from 'lucide-react';
 import { type Thought } from '../../db';
+import { useThoughtPayload } from './hooks/useThoughtPayload';
 
 interface PaintRendererProps {
   thought: Thought;
@@ -14,12 +15,15 @@ export const PaintRenderer: React.FC<PaintRendererProps> = ({
   isReadOnly, 
   setActiveFocus 
 }) => {
-  const hasRemoteContent = thought.storageUrl && !thought.drawing && thought.syncStatus !== 'synced';
+  // Use the dual-read hook for backward compatibility
+  const { drawing } = useThoughtPayload(thought);
+  
+  const hasRemoteContent = thought.storageUrl && !drawing && thought.syncStatus !== 'synced';
 
   return (
     <div data-trigger="paint" className="paint-container bg-black/40 rounded-xl p-2 mt-1 border border-white/5 cursor-pointer group/paint relative overflow-hidden min-h-[60px] flex items-center justify-center">
-      {thought.drawing ? (
-        <img src={thought.drawing} draggable="false" className="w-full rounded-lg object-contain max-h-[140px] prevent-drag" alt="Drawing" />
+      {drawing ? (
+        <img src={drawing} draggable="false" className="w-full rounded-lg object-contain max-h-[140px] prevent-drag" alt="Drawing" />
       ) : hasRemoteContent ? (
         <div className="flex flex-col items-center gap-2 py-4 opacity-40">
           <Palette className="w-6 h-6 text-amber-500/40" />

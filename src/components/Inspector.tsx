@@ -1,32 +1,18 @@
 import React from 'react';
+import { getThoughtConfig } from './thought/registry';
 import { useStore } from '../store/useStore';
-import { useAuthStore } from '../store/useAuthStore';
 import { useModalStore } from '../store/useModalStore';
-import { db } from '../db';
-import { generateThumbnail, generateVideoThumbnail } from '../utils/image';
-import { X, Maximize2, Image as ImageIcon, Trash2, Youtube, Type, ListTodo, Palette, Table, Calendar, ChevronLeft, ChevronRight, ArrowUp, ArrowDown, Share2, File as FileIcon, Upload, Tag } from 'lucide-react';
-import { MAX_FILE_SIZE_MB } from '../constants';
+import type { ThoughtType } from '../db';
+import { 
+  X, ChevronLeft, ChevronRight, Calendar, ArrowUp, ArrowDown, Save, Maximize2, Trash2
+} from 'lucide-react';
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 import { motion, AnimatePresence } from 'framer-motion';
-import { fetchEmbedMeta } from '../utils/embeds';
-
 
 function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
-
-const typeIcons = {
-  label: Tag,
-  text: Type,
-  tasks: ListTodo,
-  paint: Palette,
-  table: Table,
-  image: ImageIcon,
-  embed: Youtube,
-  file: FileIcon,
-};
-
 
 const DatePicker: React.FC<{ value: string; onChange: (val: string) => void; disabled?: boolean }> = ({ value, onChange, disabled }) => {
   const [isOpen, setIsOpen] = React.useState(false);
@@ -77,7 +63,7 @@ const DatePicker: React.FC<{ value: string; onChange: (val: string) => void; dis
           disabled && "opacity-50 cursor-default"
         )}
       >
-        <span>{value || "Pick a Date"}</span>
+        <span className="flex-1 text-center">{value || "Pick a Date"}</span>
         <Calendar className="w-4 h-4 text-slate-500 group-hover:text-[var(--accent)] transition-colors" />
       </button>
 
@@ -163,11 +149,9 @@ const Inspector: React.FC = () => {
   const updateStack = useStore((state) => state.updateStack);
   const createStack = useStore((state) => state.createStack);
   const deleteThought = useStore((state) => state.deleteThought);
-  const unlinkSelectedThoughts = useStore((state) => state.unlinkSelectedThoughts);
   const setActiveFocus = useStore((state) => state.setActiveFocus);
-  const uploadThoughtBlob = useAuthStore((state) => state.uploadThoughtBlob);
+  const unlinkSelectedThoughts = useStore((state) => state.unlinkSelectedThoughts);
   const bringToFront = useStore((state) => state.bringToFront);
-
   const sendToBack = useStore((state) => state.sendToBack);
   const isReadOnly = useStore((state) => state.isReadOnly);
 
@@ -181,6 +165,8 @@ const Inspector: React.FC = () => {
   const [localDesc, setLocalDesc] = React.useState('');
   const [localDate, setLocalDate] = React.useState('');
   const [localStackName, setLocalStackName] = React.useState('');
+  const [pendingType, setPendingType] = React.useState<ThoughtType | null>(null);
+  const [activeTab, setActiveTab] = React.useState<'content' | 'status' | 'layout'>('content');
 
   // Sync local state when selected thought changes
   React.useEffect(() => {
@@ -188,33 +174,42 @@ const Inspector: React.FC = () => {
       setLocalText(thought.text || '');
       setLocalDesc(thought.description || '');
       setLocalDate(thought.date || '');
+      setPendingType(null);
     }
     if (stack) {
       setLocalStackName(stack.name || '');
     }
   }, [selectedThoughtId, stack?.id]);
 
+  if (!isInspectorOpen || !thought) return null;
+
   const handleDeleteThought = () => {
-    if (!thought) return;
     openModal({
       title: 'Delete Thought?',
       description: 'This action cannot be undone.',
       type: 'delete_thought',
       confirmText: 'Delete',
-      onConfirm: () => deleteThought(thought.id)
+      onConfirm: () => {
+        deleteThought(thought.id);
+        setInspectorOpen(false);
+      }
     });
   };
 
-  const handleTypeChange = (type: 'label' | 'text' | 'tasks' | 'paint' | 'table' | 'image' | 'embed' | 'file') => {
-    if (!thought) return;
-    updateThought(thought.id, { type });
+  const handleTypeChange = (type: any) => {
+    if (isReadOnly) return;
+    const config = getThoughtConfig(type);
+    const payload = config?.createPayload();
+    updateThought(thought.id, { type, data: payload });
   };
-
 
   const handlePriorityChange = (priority: 'none' | 'low' | 'medium' | 'high' | 'urgent') => {
-    if (!thought) return;
+    if (isReadOnly) return;
     updateThought(thought.id, { priority });
   };
+
+  const config = getThoughtConfig(thought.type);
+  const InspectorPanel = config?.inspectorPanel;
 
   return (
     <AnimatePresence>
@@ -229,574 +224,403 @@ const Inspector: React.FC = () => {
         >
           {/* HEADER AREA */}
           <div className="p-4 md:p-5 border-b border-white/5 bg-black/20 backdrop-blur-md sticky top-0 z-20">
-            <div className="flex justify-between items-center">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 bg-[var(--accent)]/10 rounded-xl flex items-center justify-center border border-[var(--accent)]/20 shadow-[0_0_20px_rgba(99,102,241,0.15)]">
-                  {React.createElement(typeIcons[thought.type] || Type, { className: "w-5 h-5 text-[var(--accent-secondary)]" })}
-                </div>
-                <div>
-                  <h3 className="text-xs font-black uppercase tracking-[0.2em] text-white leading-none">
-                    {isReadOnly ? 'Published' : 'Editor'}
-                  </h3>
-                  <div className="flex items-center gap-2 mt-1">
-                    <span className="w-1 h-1 rounded-full bg-blue-500 shadow-[0_0_8px_rgba(99,102,241,0.6)]" />
-                    <span className="text-[8px] font-bold text-slate-500 uppercase tracking-widest leading-none">Thought Properties</span>
-                  </div>
-                </div>
+            <div className="flex justify-between items-center relative">
+              <div className="w-8" /> {/* Spacer to help center */}
+              <div className="flex-1 flex justify-center">
+                <h3 className="text-xs font-black uppercase tracking-[0.2em] text-white leading-none">
+                  {isReadOnly ? 'Published' : 'Editor'}
+                </h3>
               </div>
-              <button onClick={() => setInspectorOpen(false)} className="p-2 hover:bg-white/5 rounded-lg text-slate-500 hover:text-white transition-all">
+              <button onClick={() => setInspectorOpen(false)} className="p-2 rounded-lg text-slate-400 transition-all">
                 <X className="w-4 h-4" />
               </button>
             </div>
           </div>
 
+          {/* TAB NAVIGATION */}
+          <div className="flex bg-black/10 backdrop-blur-sm sticky top-[61px] md:top-[69px] z-20 border-b border-white/5">
+            {(['content', 'status', 'layout'] as const).map((tab) => (
+              <button
+                key={tab}
+                onClick={() => setActiveTab(tab)}
+                className={cn(
+                  "flex-1 py-4 text-[10px] font-black uppercase tracking-[0.2em] relative transition-all duration-300",
+                  activeTab === tab ? "text-white" : "text-slate-500 hover:text-slate-300"
+                )}
+              >
+                {tab}
+                {activeTab === tab && (
+                  <motion.div
+                    layoutId="activeTab"
+                    className="absolute bottom-0 left-0 right-0 h-0.5 bg-[var(--accent)] shadow-[0_0_10px_var(--accent-glow)]"
+                    initial={false}
+                  />
+                )}
+              </button>
+            ))}
+          </div>
+
           {/* SCROLLABLE CONTENT AREA */}
-          <div className="flex-1 overflow-y-auto custom-scroll p-4 md:p-6 space-y-6">
-            <div className="grid grid-cols-8 gap-1 mb-6">
-              {(['label', 'text', 'tasks', 'paint', 'table', 'image', 'embed', 'file'] as const).map((type) => {
-                const Icon = typeIcons[type];
-                return (
-                  <button
-                    key={type}
-                    onClick={() => !isReadOnly && handleTypeChange(type)}
-                    className={cn(
-                      "p-2.5 rounded-xl flex flex-col items-center justify-center gap-1 transition-all border",
-                      thought.type === type
-                        ? "bg-[var(--accent)]/10 border-[var(--accent)] text-white shadow-[0_0_15px_rgba(99,102,241,0.2)]"
-                        : "bg-white/[0.03] border-transparent text-slate-500 hover:bg-white/[0.06] hover:text-slate-300",
-                      isReadOnly && thought.type !== type && "opacity-30 grayscale cursor-default"
+          <div className="flex-1 overflow-y-auto custom-scroll">
+            <AnimatePresence mode="wait">
+              <motion.div
+                key={activeTab}
+                initial={{ opacity: 0, x: 10 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: -10 }}
+                transition={{ duration: 0.2 }}
+                className="p-4 md:p-6 space-y-8"
+              >
+                {activeTab === 'content' && (
+                  <div className="space-y-6">
+                    <div className="grid grid-cols-4 gap-2">
+                      {(['label', 'text', 'tasks', 'table', 'paint', 'embed', 'file', 'save'] as const).map((item) => {
+                        if (item === 'save') {
+                          const showSave = pendingType !== null && pendingType !== thought.type;
+                          return (
+                            <button
+                              key="save"
+                              onClick={() => {
+                                if (pendingType) {
+                                  handleTypeChange(pendingType);
+                                  setPendingType(null);
+                                }
+                              }}
+                              disabled={!showSave}
+                              className={cn(
+                                "p-3 rounded-xl flex flex-col items-center justify-center transition-all border gap-1.5",
+                                showSave 
+                                  ? "bg-[var(--accent)] border-[var(--accent)] text-white shadow-[0_0_20px_var(--accent-glow)] scale-100 opacity-100"
+                                  : "bg-white/5 border-white/5 text-slate-600 scale-95 opacity-50 cursor-default"
+                              )}
+                            >
+                              <Save className="w-3.5 h-3.5" />
+                              <span className="text-[8px] font-black uppercase tracking-widest">Save</span>
+                            </button>
+                          );
+                        }
+                        const type = item as ThoughtType;
+                        const tConfig = getThoughtConfig(type);
+                        const isActive = (pendingType || thought.type) === type;
+                        return (
+                          <button
+                            key={type}
+                            onClick={() => setPendingType(type)}
+                            className={cn(
+                              "p-3 rounded-xl flex flex-col items-center justify-center transition-all border gap-1.5",
+                              isActive
+                                ? "bg-[var(--accent)]/10 border-[var(--accent)] text-white shadow-[0_0_15px_rgba(99,102,241,0.2)]"
+                                : "bg-white/[0.03] border-transparent text-slate-500 hover:bg-white/[0.06] hover:text-slate-300",
+                              isReadOnly && thought.type !== type && "opacity-30 grayscale cursor-default"
+                            )}
+                            disabled={isReadOnly}
+                            title={tConfig?.label || type}
+                          >
+                            {tConfig?.icon && <tConfig.icon className="w-3.5 h-3.5" />}
+                            <span className="text-[7px] font-black uppercase tracking-tighter">{type === 'tasks' ? 'Task' : type}</span>
+                          </button>
+                        );
+                      })}
+                    </div>
+
+                    <div className="space-y-5">
+                      <div className="space-y-2">
+                        <label className="text-[9px] uppercase font-bold tracking-widest text-slate-500 ml-1">Name</label>
+                        <input
+                          type="text"
+                          readOnly={isReadOnly}
+                          value={localText}
+                          onChange={(e) => {
+                            setLocalText(e.target.value);
+                            updateThought(thought.id, { text: e.target.value });
+                          }}
+                          maxLength={100}
+                          className={cn(
+                            "w-full bg-[var(--bg-page)]/20 border border-white/10 rounded-xl p-3 text-sm outline-none focus:border-[var(--accent)] text-[var(--text-primary)] placeholder:text-slate-500",
+                            isReadOnly && "pointer-events-none opacity-80"
+                          )}
+                          placeholder={"Name"}
+                        />
+                      </div>
+
+                      <div className="space-y-2">
+                        <label className="text-[9px] uppercase font-bold tracking-widest text-slate-500 ml-1">Note</label>
+                        <textarea
+                          readOnly={isReadOnly}
+                          value={localDesc}
+                          onChange={(e) => {
+                            setLocalDesc(e.target.value);
+                            updateThought(thought.id, { description: e.target.value });
+                          }}
+                          rows={4}
+                          maxLength={150}
+                          className={cn(
+                            "w-full bg-[var(--bg-page)]/20 border border-white/10 rounded-xl p-3 text-xs outline-none focus:border-[var(--accent)] text-[var(--text-primary)] placeholder:text-slate-500",
+                            isReadOnly && "pointer-events-none opacity-80"
+                          )}
+                          placeholder="Note"
+                        />
+                      </div>
+                    </div>
+
+                    {/* Modular Panel Extension */}
+                    {InspectorPanel && (
+                      <div className="pt-6 border-t border-white/5">
+                        <InspectorPanel thought={thought} isReadOnly={isReadOnly} />
+                      </div>
                     )}
-                    disabled={isReadOnly}
-                    title={type.charAt(0).toUpperCase() + type.slice(1)}
-                  >
-                    <Icon className="w-4 h-4" />
-                    <span className="text-[7px] font-black uppercase tracking-tighter">{type === 'tasks' ? 'Task' : type}</span>
-                  </button>
-                );
-              })}
-            </div>
-
-
-            <div className="space-y-5">
-              <input
-                type="text"
-                readOnly={isReadOnly}
-                value={localText}
-                onChange={(e) => {
-                  setLocalText(e.target.value);
-                  updateThought(thought.id, { text: e.target.value });
-                }}
-                maxLength={100}
-                className={cn(
-                  "w-full bg-[var(--bg-page)]/20 border border-white/10 rounded-xl p-3 text-sm outline-none focus:border-[var(--accent)] text-[var(--text-primary)] placeholder:text-slate-500",
-                  isReadOnly && "pointer-events-none opacity-80"
-                )}
-                placeholder={"Title"}
-              />
-              <textarea
-                readOnly={isReadOnly}
-                value={localDesc}
-                onChange={(e) => {
-                  setLocalDesc(e.target.value);
-                  updateThought(thought.id, { description: e.target.value });
-                }}
-                rows={2}
-                maxLength={150}
-                className={cn(
-                  "w-full bg-[var(--bg-page)]/20 border border-white/10 rounded-xl p-3 text-xs outline-none focus:border-[var(--accent)] text-[var(--text-primary)] placeholder:text-slate-500",
-                  isReadOnly && "pointer-events-none opacity-80"
-                )}
-                placeholder="Description"
-              />
-
-              <DatePicker
-                value={localDate}
-                disabled={isReadOnly}
-                onChange={(val) => {
-                  setLocalDate(val);
-                  updateThought(thought.id, { date: val });
-                }}
-              />
-
-              <div className="space-y-2">
-
-                <label className="text-[9px] uppercase font-bold tracking-widest text-slate-500 ml-1">Status</label>
-                <div className="grid grid-cols-4 gap-1">
-                  {(['none', 'todo', 'doing', 'done'] as const).map((s) => (
-                    <button
-                      key={s}
-                      disabled={isReadOnly}
-                      onClick={() => !isReadOnly && updateThought(thought.id, { status: s })}
-                      className={cn(
-                        "border rounded-lg py-2 text-[8px] font-bold uppercase transition-colors",
-                        thought.status === s
-                          ? {
-                            'none': 'bg-white/10 border-white/30 text-white',
-                            'todo': 'bg-[var(--status-todo)]/30 border-[var(--status-todo)] text-white',
-                            'doing': 'bg-[var(--status-doing)]/30 border-[var(--status-doing)] text-white',
-                            'done': 'bg-[var(--status-done)]/30 border-[var(--status-done)] text-white',
-                          }[s]
-                          : "bg-white/5 border-white/10 text-slate-400 hover:bg-white/10",
-                        isReadOnly && thought.status !== s && "opacity-30 grayscale cursor-default"
-                      )}
-                    >
-                      {s}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              <div className="space-y-2">
-                <label className="text-[9px] uppercase font-bold tracking-widest text-slate-500 ml-1">Priority</label>
-                <div className="grid grid-cols-5 gap-1">
-                  {(['none', 'low', 'medium', 'high', 'urgent'] as const).map((p) => (
-                    <button
-                      key={p}
-                      disabled={isReadOnly}
-                      onClick={() => handlePriorityChange(p)}
-                      className={cn(
-                        "border rounded-lg py-2 text-[8px] font-bold uppercase transition-colors",
-                        thought.priority === p
-                          ? {
-                            'none': 'bg-white/10 border-white/30 text-white',
-                            'low': 'bg-[var(--prio-low)]/30 border-[var(--prio-low)] text-white',
-                            'medium': 'bg-[var(--prio-medium)]/30 border-[var(--prio-medium)] text-white',
-                            'high': 'bg-[var(--prio-high)]/30 border-[var(--prio-high)] text-white',
-                            'urgent': 'bg-[var(--prio-urgent)]/30 border-[var(--prio-urgent)] text-white',
-                          }[p]
-                          : "bg-white/5 border-white/10 text-slate-400 hover:bg-white/10",
-                        isReadOnly && thought.priority !== p && "opacity-30 grayscale cursor-default"
-                      )}
-                    >
-                      {p === 'medium' ? 'Med' : p}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              <div className="space-y-3">
-                <div className="flex justify-between items-center ml-1">
-                  <label className="text-[9px] uppercase font-bold tracking-widest text-slate-500">Node Size</label>
-                  <span className="text-[9px] font-mono text-[var(--accent-secondary)]">{(thought.size || 1.0).toFixed(1)}x</span>
-                </div>
-                <input
-                  type="range"
-                  min="0.5"
-                  max="2.0"
-                  step="0.1"
-                  value={thought.size || 1.0}
-                  disabled={isReadOnly}
-                  onChange={(e) => updateThought(thought.id, { size: parseFloat(e.target.value) })}
-                  className={cn(
-                    "w-full h-1.5 bg-white/5 rounded-lg appearance-none cursor-pointer accent-[var(--accent)]",
-                    isReadOnly && "opacity-30 pointer-events-none"
-                  )}
-                />
-              </div>
-
-              <div className="pt-4 border-t border-white/5">
-                {thought.type === 'text' && (
-                  <button
-                    onClick={() => setActiveFocus(thought.id, 'text')}
-                    className="w-full bg-[var(--accent)]/10 hover:bg-[var(--accent)]/20 border border-[var(--accent)]/30 text-[var(--accent-secondary)] py-6 rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] transition-all flex flex-col items-center gap-3"
-                  >
-                    <Maximize2 className="w-5 h-5" />
-                    Open Full-Screen Editor
-                  </button>
+                  </div>
                 )}
 
-                {thought.type === 'tasks' && (
-                  <div className="space-y-4">
-                    <button
-                      onClick={() => setActiveFocus(thought.id, 'tasks')}
-                      className="w-full bg-[var(--accent)]/10 hover:bg-[var(--accent)]/20 border border-[var(--accent)]/30 text-[var(--accent-secondary)] py-6 rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] transition-all flex flex-col items-center gap-3"
-                    >
-                      <Maximize2 className="w-5 h-5" />
-                      Open Task Manager
-                    </button>
+                {activeTab === 'status' && (
+                  <div className="space-y-8">
+                    <div className="space-y-3">
+                      <label className="text-[9px] uppercase font-bold tracking-widest text-slate-500 ml-1">Date</label>
+                      <DatePicker
+                        value={localDate}
+                        disabled={isReadOnly}
+                        onChange={(val) => {
+                          setLocalDate(val);
+                          updateThought(thought.id, { date: val });
+                        }}
+                      />
+                    </div>
 
                     <div className="space-y-3">
-                      <div className="space-y-2">
-                        {thought.tasks.map((task, i) => (
-                          <div key={i} className="flex items-center gap-3">
-                            <div
-                              className={cn("checkbox w-[18px] h-[18px] border-2 border-white/10 rounded-[6px] flex-shrink-0 cursor-pointer transition-all", task.done && "bg-[var(--status-todo)] border-[var(--status-todo)]")}
-                              onClick={() => {
-                                if (isReadOnly) return;
-                                const newTasks = [...thought.tasks];
-                                newTasks[i].done = !newTasks[i].done;
-                                updateThought(thought.id, { tasks: newTasks });
-                              }}
-                            >
-                              {task.done && <span className="text-white text-[12px] flex items-center justify-center">✓</span>}
-                            </div>
+                      <label className="text-[9px] uppercase font-bold tracking-widest text-slate-500 ml-1">Progress</label>
+                      <div className="grid grid-cols-4 gap-1">
+                        {(['none', 'todo', 'doing', 'done'] as const).map((s) => (
+                          <button
+                            key={s}
+                            disabled={isReadOnly}
+                            onClick={() => !isReadOnly && updateThought(thought.id, { status: s })}
+                            className={cn(
+                              "border rounded-lg py-2.5 text-[8px] font-bold uppercase transition-colors",
+                              thought.status === s
+                                ? {
+                                  'none': 'bg-white/10 border-white/30 text-white',
+                                  'todo': 'bg-[var(--status-todo)]/30 border-[var(--status-todo)] text-white',
+                                  'doing': 'bg-[var(--status-doing)]/30 border-[var(--status-doing)] text-white',
+                                  'done': 'bg-[var(--status-done)]/30 border-[var(--status-done)] text-white',
+                                }[s]
+                                : "bg-white/5 border-white/10 text-slate-400 hover:bg-white/10",
+                              isReadOnly && thought.status !== s && "opacity-30 grayscale cursor-default"
+                            )}
+                          >
+                            {s}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div className="space-y-3">
+                      <label className="text-[9px] uppercase font-bold tracking-widest text-slate-500 ml-1">Priority</label>
+                      <div className="grid grid-cols-5 gap-1">
+                        {(['none', 'low', 'medium', 'high', 'urgent'] as const).map((p) => (
+                          <button
+                            key={p}
+                            disabled={isReadOnly}
+                            onClick={() => handlePriorityChange(p)}
+                            className={cn(
+                              "border rounded-lg py-2.5 text-[8px] font-bold uppercase transition-colors",
+                              thought.priority === p
+                                ? {
+                                  'none': 'bg-white/10 border-white/30 text-white',
+                                  'low': 'bg-[var(--prio-low)]/30 border-[var(--prio-low)] text-white',
+                                  'medium': 'bg-[var(--prio-medium)]/30 border-[var(--prio-medium)] text-white',
+                                  'high': 'bg-[var(--prio-high)]/30 border-[var(--prio-high)] text-white',
+                                  'urgent': 'bg-[var(--prio-urgent)]/30 border-[var(--prio-urgent)] text-white',
+                                }[p]
+                                : "bg-white/5 border-white/10 text-slate-400 hover:bg-white/10",
+                              isReadOnly && thought.priority !== p && "opacity-30 grayscale cursor-default"
+                            )}
+                          >
+                            {p === 'medium' ? 'Med' : p[0].toUpperCase() + p.slice(1, 3)}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div className="space-y-3 pt-6 border-t border-white/5">
+                      <div className="flex items-center mb-2 px-1">
+                        <span className="text-[9px] uppercase font-black tracking-widest text-white">Group</span>
+                      </div>
+
+                      {stack ? (
+                        <div className="p-4 bg-[var(--bg-page)]/20 border border-white/10 rounded-2xl space-y-4">
+                          <div className="flex items-center gap-3">
+                            <div className="w-2 h-2 rounded-full shadow-[0_0_10px_currentColor]" style={{ backgroundColor: stack.color, color: stack.color }} />
                             <input
                               type="text"
                               readOnly={isReadOnly}
-                              value={task.text}
+                              value={localStackName}
                               onChange={(e) => {
-                                const newTasks = [...thought.tasks];
-                                newTasks[i].text = e.target.value;
-                                updateThought(thought.id, { tasks: newTasks });
+                                setLocalStackName(e.target.value);
+                                updateStack(stack.id, { name: e.target.value });
                               }}
                               className={cn(
-                                "flex-1 bg-black/20 border border-white/5 rounded-xl p-2 text-xs outline-none text-white focus:border-[var(--accent)]",
-                                isReadOnly && "pointer-events-none opacity-80"
+                                "bg-transparent text-[10px] font-black uppercase tracking-widest text-white outline-none flex-1",
+                                isReadOnly && "pointer-events-none"
                               )}
+                              placeholder="Group Name"
                             />
-                            {!isReadOnly && (
-                              <button
-                                onClick={() => {
-                                  const newTasks = [...thought.tasks];
-                                  newTasks.splice(i, 1);
-                                  updateThought(thought.id, { tasks: newTasks });
-                                }}
-                                className="text-red-400 p-1"
-                              >
-                                <Trash2 className="w-3.5 h-3.5" />
-                              </button>
-                            )}
                           </div>
-                        ))}
-                      </div>
-                      {!isReadOnly && (
-                        <button
-                          onClick={() => updateThought(thought.id, { tasks: [...thought.tasks, { text: 'Task', done: false }] })}
-                          className="w-full py-2 border border-dashed border-white/10 rounded-xl text-[10px] uppercase font-bold text-slate-500 hover:text-white"
-                        >
-                          + Add Task
-                        </button>
+                          {!isReadOnly && (
+                            <button
+                              onClick={() => unlinkSelectedThoughts()}
+                              className="w-full py-2 bg-white/5 hover:bg-red-500/10 text-slate-400 hover:text-red-400 border border-white/5 rounded-xl text-[8px] font-black uppercase tracking-widest transition-all"
+                            >
+                              Remove from Group
+                            </button>
+                          )}
+                        </div>
+                      ) : (
+                        <div className="space-y-3">
+                          <div className="relative group">
+                            <input
+                              type="text"
+                              placeholder="Type to create or join..."
+                              onKeyDown={(e) => {
+                                if (e.key === 'Enter' && e.currentTarget.value.trim()) {
+                                  const name = e.currentTarget.value.trim();
+                                  const existingStack = stacks.find(s => s.name.toLowerCase() === name.toLowerCase());
+                                  if (existingStack) {
+                                    updateThought(thought.id, { stackId: existingStack.id });
+                                  } else {
+                                    createStack(name, thought.id);
+                                  }
+                                  e.currentTarget.value = '';
+                                }
+                              }}
+                              className="w-full bg-[var(--bg-page)]/20 border border-white/10 rounded-xl p-3 text-xs outline-none focus:border-[var(--accent)] text-[var(--text-primary)] placeholder:text-slate-500 transition-all"
+                            />
+                          </div>
+
+                          {stacks.length > 0 && (
+                            <div className="space-y-1.5">
+                              <label className="text-[7px] uppercase font-black tracking-[0.2em] text-slate-600 ml-1">Groups</label>
+                              <div className="flex flex-col gap-1 max-h-[160px] overflow-y-auto custom-scroll pr-1">
+                                {stacks.map(s => (
+                                  <div key={s.id} className="relative group/s">
+                                    <button
+                                      onClick={() => updateThought(thought.id, { stackId: s.id })}
+                                      className="w-full flex items-center gap-3 p-2.5 rounded-xl bg-white/[0.02] hover:bg-white/[0.05] border border-transparent hover:border-white/5 transition-all"
+                                    >
+                                      <div className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: s.color, boxShadow: `0 0 8px ${s.color}44` }} />
+                                      <span className="text-[9px] font-bold uppercase tracking-widest text-slate-400 group-hover/s:text-white transition-colors">{s.name}</span>
+                                    </button>
+                                    {!isReadOnly && (
+                                        <button
+                                          onClick={(e) => {
+                                            e.stopPropagation();
+                                            openModal({
+                                              title: 'Dissolve Group?',
+                                              description: `This will unlink all thoughts from "${s.name}".`,
+                                              type: 'delete_stack',
+                                              confirmText: 'Dissolve',
+                                              onConfirm: () => useStore.getState().deleteStack(s.id)
+                                            });
+                                        }}
+                                        className="absolute right-2 top-1/2 -translate-y-1/2 p-1 text-slate-600 hover:text-red-400 opacity-0 group-hover/s:opacity-100 transition-all"
+                                      >
+                                        <X className="w-3 h-3" />
+                                      </button>
+                                    )}
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+                        </div>
                       )}
                     </div>
                   </div>
                 )}
 
-                {thought.type === 'table' && (
-                  <button
-                    onClick={() => setActiveFocus(thought.id, 'table')}
-                    className="w-full bg-[var(--accent)]/10 hover:bg-[var(--accent)]/20 border border-[var(--accent)]/30 text-[var(--accent-secondary)] py-6 rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] transition-all flex flex-col items-center gap-3"
-                  >
-                    <Maximize2 className="w-5 h-5" />
-                    Open Full-Screen Editor
-                  </button>
-                )}
-
-                {thought.type === 'paint' && (
-                  <button
-                    onClick={() => setActiveFocus(thought.id, 'paint')}
-                    className="w-full bg-[var(--accent)]/10 hover:bg-[var(--accent)]/20 border border-[var(--accent)]/30 text-[var(--accent-secondary)] py-6 rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] transition-all flex flex-col items-center gap-3"
-                  >
-                    <Maximize2 className="w-5 h-5" />
-                    Open Full-Screen Editor
-                  </button>
-                )}
-
-                {thought.type === 'embed' && (
-                  <div className="space-y-4">
-                    <button
-                      onClick={() => setActiveFocus(thought.id, 'embed')}
-                      className="w-full bg-blue-500/10 hover:bg-blue-500/20 border border-blue-500/30 text-[var(--accent-secondary)] py-6 rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] transition-all flex flex-col items-center gap-3"
-                    >
-                      <Share2 className="w-5 h-5" />
-                      Open Interaction Layer
-                    </button>
-
-                    <div className="space-y-2">
-                      <label className="text-[9px] uppercase font-bold tracking-widest text-slate-500 ml-1">Universal URL</label>
+                {activeTab === 'layout' && (
+                  <div className="space-y-8">
+                    <div className="space-y-4">
+                      <div className="flex justify-between items-center ml-1">
+                        <label className="text-[9px] uppercase font-bold tracking-widest text-slate-500">Scale</label>
+                        <span className="text-[9px] font-mono text-[var(--accent-secondary)]">{(thought.size || 1.0).toFixed(1)}x</span>
+                      </div>
                       <input
-                        type="text"
-                        readOnly={isReadOnly}
-                        value={thought.content}
-                        onChange={(e) => {
-                          const newUrl = e.target.value;
-                          updateThought(thought.id, { content: newUrl });
-
-                          if (newUrl.startsWith('http')) {
-                            // Fetch metadata for the new URL (Spotify, YT, etc)
-                            fetchEmbedMeta(newUrl)
-                              .then(metadata => {
-                                if (metadata && metadata.title) {
-                                  updateThought(thought.id, {
-                                    text: metadata.title,
-                                    author: metadata.author_name || "",
-                                    description: metadata.description || ""
-                                  });
-                                }
-                              })
-                              .catch(err => {
-                                console.warn("Embed metadata fetch failed:", err);
-                              });
-                          }
-                        }}
-                        placeholder="Paste Spotify, YouTube, X, or Reddit link..."
+                        type="range"
+                        min="0.5"
+                        max="2.0"
+                        step="0.1"
+                        value={thought.size || 1.0}
+                        disabled={isReadOnly}
+                        onChange={(e) => updateThought(thought.id, { size: parseFloat(e.target.value) })}
                         className={cn(
-                          "w-full bg-black/40 border border-white/10 rounded-xl p-3 text-xs outline-none focus:border-[var(--accent)] text-white",
-                          isReadOnly && "opacity-50 pointer-events-none"
+                          "w-full h-1.5 bg-white/5 rounded-lg appearance-none cursor-pointer accent-[var(--accent)]",
+                          isReadOnly && "opacity-30 pointer-events-none"
                         )}
                       />
                     </div>
-                  </div>
-                )}
 
-                {thought.type === 'file' && (
-                  <div className="space-y-3">
-                    <button
-                      onClick={() => setActiveFocus(thought.id, 'file')}
-                      className="w-full bg-[var(--accent)]/10 hover:bg-[var(--accent)]/20 border border-[var(--accent)]/30 text-[var(--accent-secondary)] py-6 rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] transition-all flex flex-col items-center gap-3"
-                    >
-                      <FileIcon className="w-5 h-5" />
-                      Open File Manager
-                    </button>
-
-                    {!isReadOnly && (
-                      <div className="border border-dashed border-white/10 rounded-xl p-4 text-center hover:bg-white/5 transition-colors cursor-pointer relative">
-                        <input
-                          type="file"
-                          className="absolute inset-0 opacity-0 cursor-pointer"
-                          onChange={async (e) => {
-                            const file = e.target.files?.[0];
-                            if (file) {
-                              if (file.size > MAX_FILE_SIZE_MB * 1024 * 1024) {
-                                openModal({
-                                  title: 'Incompatible Mass',
-                                  description: `This asset exceeds the ${MAX_FILE_SIZE_MB}MB transmission limit. Please compress your assets or use a smaller file.`,
-                                  type: 'alert',
-                                  confirmText: 'Acknowledged'
-                                });
-                                return;
-                              }
-                              
-                              // 1. Update metadata and type if image/video
-                              const isImage = file.type.startsWith('image/') || /\.(jpg|jpeg|png|gif|webp|svg)$/i.test(file.name);
-                              const isVideo = file.type.startsWith('video/') || /\.(mp4|webm|mov|m4v)$/i.test(file.name);
-                              
-                              const thumbnail = isImage 
-                                ? await generateThumbnail(file).catch(() => null)
-                                : isVideo 
-                                  ? await generateVideoThumbnail(file).catch(() => null)
-                                  : null;
-
-                              await updateThought(thought.id, { 
-                                text: file.name,
-                                type: isImage ? 'image' : 'file',
-                                image: thumbnail || undefined,
-                                meta: { ...thought.meta, file: { name: file.name, size: file.size, type: file.type } }
-                              });
-
-                              // 2. Save to blobs
-                              await db.blobs.put({
-                                id: `local-${Date.now()}-${thought.id}`,
-                                thoughtId: thought.id,
-                                blob: file,
-                                name: file.name,
-                                type: file.type,
-                                updatedAt: Date.now()
-                              });
-
-                              // 3. Trigger upload
-                              uploadThoughtBlob(thought.id);
-                            }
-                          }}
-                        />
-                        <Upload className="w-6 h-6 mx-auto text-slate-500 mb-2" />
-                        <p className="text-[9px] text-slate-400 uppercase font-bold tracking-widest">Upload or Drag File</p>
+                    <div className="space-y-3 pt-6 border-t border-white/5">
+                      <div className="flex items-center mb-2 px-1">
+                        <span className="text-[9px] uppercase font-black tracking-widest text-white">Layers</span>
                       </div>
-                    )}
-                  </div>
-                )}
-
-
-                {thought.type === 'image' && (
-                  <div className="space-y-3">
-                    <button
-                      onClick={() => setActiveFocus(thought.id, 'file')}
-                      className="w-full bg-[var(--accent)]/10 hover:bg-[var(--accent)]/20 border border-[var(--accent)]/30 text-[var(--accent-secondary)] py-6 rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] transition-all flex flex-col items-center gap-3"
-                    >
-                      <ImageIcon className="w-5 h-5" />
-                      Open Image Manager
-                    </button>
-
-                    {!isReadOnly && (
-                      <div className="border border-dashed border-white/10 rounded-xl p-4 text-center hover:bg-white/5 transition-colors cursor-pointer relative">
-                        <input
-                          type="file"
-                          accept="image/*"
-                          className="absolute inset-0 opacity-0 cursor-pointer"
-                          onChange={async (e) => {
-                            const file = e.target.files?.[0];
-                            if (file) {
-                              if (file.size > MAX_FILE_SIZE_MB * 1024 * 1024) {
-                                openModal({
-                                  title: 'Incompatible Mass',
-                                  description: `This asset exceeds the ${MAX_FILE_SIZE_MB}MB transmission limit. Please compress your assets or use a smaller file.`,
-                                  type: 'alert',
-                                  confirmText: 'Acknowledged'
-                                });
-                                return;
-                              }
-                              
-                              const thumbnail = await generateThumbnail(file).catch(() => null);
-                              await updateThought(thought.id, { 
-                                image: thumbnail || undefined,
-                                text: file.name,
-                                meta: { ...thought.meta, file: { name: file.name, size: file.size, type: file.type } }
-                              });
-
-                              // Also save full file to blobs for sync
-                              await db.blobs.put({
-                                id: `local-${Date.now()}-${thought.id}`,
-                                thoughtId: thought.id,
-                                blob: file,
-                                name: file.name,
-                                type: file.type,
-                                updatedAt: Date.now()
-                              });
-                              uploadThoughtBlob(thought.id);
-                            }
-                          }}
-                        />
-                        <ImageIcon className="w-6 h-6 mx-auto text-slate-500 mb-2" />
-                        <p className="text-[9px] text-slate-400 uppercase font-bold tracking-widest">Update Image Asset</p>
+                      <div className="grid grid-cols-2 gap-2">
+                        <button
+                          disabled={isReadOnly}
+                          onClick={() => !isReadOnly && bringToFront(thought.id)}
+                          className={cn(
+                            "flex items-center justify-center gap-2 py-3 bg-white/5 border border-white/10 rounded-xl text-[8px] font-black uppercase tracking-widest text-slate-300 hover:bg-white/10 hover:text-white transition-all",
+                            isReadOnly && "opacity-30 cursor-default"
+                          )}
+                        >
+                          <ArrowUp className="w-3 h-3" />
+                          Bring to Front
+                        </button>
+                        <button
+                          disabled={isReadOnly}
+                          onClick={() => !isReadOnly && sendToBack(thought.id)}
+                          className={cn(
+                            "flex items-center justify-center gap-2 py-3 bg-white/5 border border-white/10 rounded-xl text-[8px] font-black uppercase tracking-widest text-slate-300 hover:bg-white/10 hover:text-white transition-all",
+                            isReadOnly && "opacity-30 cursor-default"
+                          )}
+                        >
+                          <ArrowDown className="w-3 h-3" />
+                          Send to Back
+                        </button>
                       </div>
-                    )}
-                    {thought.image && (
-                      <div className="rounded-xl border border-white/10 overflow-hidden bg-black/50">
-                        <img src={thought.image} className="w-full object-contain" alt="Preview" />
-                      </div>
-                    )}
-                  </div>
-                )}
-
-              </div>
-
-              <div className="space-y-3 pt-4 border-t border-white/5">
-                <label className="text-[9px] uppercase font-bold tracking-widest text-slate-500 ml-1">Collection</label>
-
-                {stack ? (
-                  <div className="p-4 bg-[var(--bg-page)]/20 border border-white/10 rounded-2xl space-y-4">
-                    <div className="flex items-center gap-3">
-                      <div className="w-2 h-2 rounded-full shadow-[0_0_10px_currentColor]" style={{ backgroundColor: stack.color, color: stack.color }} />
-                      <input
-                        type="text"
-                        readOnly={isReadOnly}
-                        value={localStackName}
-                        onChange={(e) => {
-                          setLocalStackName(e.target.value);
-                          updateStack(stack.id, { name: e.target.value });
-                        }}
-                        className={cn(
-                          "bg-transparent text-[10px] font-black uppercase tracking-widest text-white outline-none flex-1",
-                          isReadOnly && "pointer-events-none"
-                        )}
-                        placeholder="Stack Name"
-                      />
                     </div>
-                    {!isReadOnly && (
-                      <button
-                        onClick={() => unlinkSelectedThoughts()}
-                        className="w-full py-2 bg-white/5 hover:bg-red-500/10 text-slate-400 hover:text-red-400 border border-white/5 rounded-xl text-[8px] font-black uppercase tracking-widest transition-all"
-                      >
-                        Remove from Stack
-                      </button>
-                    )}
-                  </div>
-                ) : (
-                  <div className="space-y-3">
-                    <div className="relative group">
-                      <input
-                        type="text"
-                        placeholder="Type to create or join..."
-                        onKeyDown={(e) => {
-                          if (e.key === 'Enter' && e.currentTarget.value.trim()) {
-                            const name = e.currentTarget.value.trim();
-                            const existingStack = stacks.find(s => s.name.toLowerCase() === name.toLowerCase());
-                            if (existingStack) {
-                              updateThought(thought.id, { stackId: existingStack.id });
-                            } else {
-                              createStack(name, thought.id);
-                            }
-                            e.currentTarget.value = '';
-                          }
-                        }}
-                        className="w-full bg-[var(--bg-page)]/20 border border-white/10 rounded-xl p-3 text-xs outline-none focus:border-[var(--accent)] text-[var(--text-primary)] placeholder:text-slate-500 transition-all"
-                      />
-                    </div>
-
-                    {stacks.length > 0 && (
-                      <div className="space-y-1.5">
-                        <label className="text-[7px] uppercase font-black tracking-[0.2em] text-slate-600 ml-1">Existing Collections</label>
-                        <div className="flex flex-col gap-1 max-h-[160px] overflow-y-auto custom-scroll pr-1">
-                          {stacks.map(s => (
-                            <div key={s.id} className="relative group/s">
-                              <button
-                                onClick={() => updateThought(thought.id, { stackId: s.id })}
-                                className="w-full flex items-center gap-3 p-2.5 rounded-xl bg-white/[0.02] hover:bg-white/[0.05] border border-transparent hover:border-white/5 transition-all"
-                              >
-                                <div className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: s.color, boxShadow: `0 0 8px ${s.color}44` }} />
-                                <span className="text-[9px] font-bold uppercase tracking-widest text-slate-400 group-hover/s:text-white transition-colors">{s.name}</span>
-                              </button>
-                              {!isReadOnly && (
-                                <button
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    openModal({
-                                      title: 'Dissolve Stack?',
-                                      description: `This will unlink all thoughts from "${s.name}".`,
-                                      type: 'delete_stack',
-                                      confirmText: 'Dissolve',
-                                      onConfirm: () => useStore.getState().deleteStack(s.id)
-                                    });
-                                  }}
-                                  className="absolute right-2 top-1/2 -translate-y-1/2 p-1 text-slate-600 hover:text-red-400 opacity-0 group-hover/s:opacity-100 transition-all"
-                                >
-                                  <X className="w-3 h-3" />
-                                </button>
-                              )}
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    )}
                   </div>
                 )}
-              </div>
+              </motion.div>
+            </AnimatePresence>
+          </div>
 
-              <div className="space-y-2">
-                <label className="text-[9px] uppercase font-bold tracking-widest text-slate-500 ml-1">Layering</label>
-                <div className="grid grid-cols-2 gap-2">
-                  <button
-                    disabled={isReadOnly}
-                    onClick={() => !isReadOnly && bringToFront(thought.id)}
-                    className={cn(
-                      "flex items-center justify-center gap-2 py-2.5 bg-white/5 border border-white/10 rounded-xl text-[8px] font-black uppercase tracking-widest text-slate-300 hover:bg-white/10 hover:text-white transition-all",
-                      isReadOnly && "opacity-30 cursor-default"
-                    )}
-                  >
-                    <ArrowUp className="w-3 h-3" /> Bring to Front
-                  </button>
-                  <button
-                    disabled={isReadOnly}
-                    onClick={() => !isReadOnly && sendToBack(thought.id)}
-                    className={cn(
-                      "flex items-center justify-center gap-2 py-2.5 bg-white/5 border border-white/10 rounded-xl text-[8px] font-black uppercase tracking-widest text-slate-300 hover:bg-white/10 hover:text-white transition-all",
-                      isReadOnly && "opacity-30 cursor-default"
-                    )}
-                  >
-                    <ArrowDown className="w-3 h-3" /> Send to Back
-                  </button>
-                </div>
-              </div>
-
-              {!isReadOnly && (
+          {/* STICKY FOOTER */}
+          {!isReadOnly && (
+            <div className="bg-black/40 border-t border-white/5 p-4 md:p-6 mt-auto flex items-center gap-3">
+              <button
+                onClick={handleDeleteThought}
+                className="flex-1 bg-red-500/10 hover:bg-red-500/20 text-red-400 py-4 rounded-2xl text-[10px] font-bold uppercase tracking-widest transition-colors border border-red-500/20 flex items-center justify-center gap-2"
+              >
+                <Trash2 className="w-4 h-4" />
+                Delete
+              </button>
+              {thought.type !== 'label' && (
                 <button
-                  onClick={handleDeleteThought}
-                  className="w-full bg-red-500/10 hover:bg-red-500/20 text-red-400 py-4 rounded-2xl text-[10px] font-bold uppercase tracking-widest transition-colors"
+                  onClick={() => {
+                    const triggers: Record<string, string> = {
+                      text: 'text', tasks: 'tasks', table: 'table', paint: 'paint', embed: 'embed', file: 'file', image: 'file'
+                    };
+                    const focusType = (triggers[thought.type] || 'text') as any;
+                    setActiveFocus(thought.id, focusType);
+                  }}
+                  className="flex-1 bg-[var(--accent)]/10 hover:bg-[var(--accent)]/20 border border-[var(--accent)]/30 text-[var(--accent-secondary)] py-4 rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] transition-all flex items-center justify-center gap-2"
                 >
-                  Delete Thought
+                  <Maximize2 className="w-4 h-4" />
+                  Open
                 </button>
               )}
             </div>
-          </div>
+          )}
         </motion.div>
       )}
     </AnimatePresence>

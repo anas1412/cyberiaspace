@@ -4,6 +4,8 @@
  * Handles the execution of client-side tool calls from the Oracle AI.
  */
 
+import { db } from '../../db';
+
 const svgToDataUrl = (svg: string): string => {
   if (svg.startsWith('data:image/svg+xml')) return svg;
   
@@ -30,6 +32,37 @@ const processDrawing = (args: any) => {
     args.drawing = svgToDataUrl(args.drawing);
   }
   return args;
+};
+
+const readFileHelper = async (id: number, store: any) => {
+  const t = store.thoughts.find((thought: any) => thought.id === id);
+  if (!t) return { id, success: false, error: 'Not found' };
+
+  const data = t.data;
+  const isImage = t.meta?.file?.type?.startsWith('image/') || 
+                  t.text?.toLowerCase().match(/\.(jpg|jpeg|png|gif|webp|svg)$/);
+  const isPdf = t.meta?.file?.type?.includes('pdf') || 
+                t.text?.toLowerCase().endsWith('.pdf');
+
+  if (isImage) {
+    const url = data?.type === 'file' ? data.url : (t as any).image;
+    return { id, success: true, type: 'image', url, name: t.text };
+  }
+
+  if (isPdf) {
+    const url = t.storageUrl || (data?.type === 'file' ? data.url : null);
+    // If we have a local blob, we might need to get it
+    let finalUrl = url;
+    if (!finalUrl) {
+      const blobEntry = await db.blobs.where('thoughtId').equals(id).first();
+      if (blobEntry) finalUrl = URL.createObjectURL(blobEntry.blob);
+    }
+    return { id, success: true, type: 'pdf', url: finalUrl, name: t.text };
+  }
+
+  // Default to text content
+  const content = data?.type === 'text' ? data.content : (t as any).content;
+  return { id, success: true, type: 'text', content, name: t.text };
 };
 
 export const executeOracleTool = async (toolCall: any, store: any) => {
@@ -60,30 +93,49 @@ export const executeOracleTool = async (toolCall: any, store: any) => {
           const t = store.thoughts.find((thought: any) => thought.id === id);
           if (!t) return { id, error: 'Not found' };
           
+          const data = t.data;
+          
           return {
             id: t.id,
             text: t.text,
             type: t.type,
-            content: t.content,
             description: t.description,
-            tasks: t.type === 'tasks' ? t.tasks : undefined,
-            table: t.type === 'table' ? t.table : undefined,
-            drawing: t.type === 'paint' ? t.drawing : undefined,
+            content: data?.type === 'text' ? data.content : (t as any).content,
+            url: data?.type === 'file' ? data.url : (t as any).image,
+            tasks: data?.type === 'tasks' ? data.tasks : (t.type === 'tasks' ? (t as any).tasks : undefined),
+            table: data?.type === 'table' ? data.rows : (t.type === 'table' ? (t as any).table : undefined),
+            drawing: data?.type === 'paint' ? data.drawing : (t.type === 'paint' ? (t as any).drawing : undefined),
             date: t.date,
             status: t.status,
             priority: t.priority,
             meta: t.meta,
             syncStatus: t.syncStatus
           };
-
         });
         
         return { success: true, thoughts: results };
       }
 
+      case 'read_file_content': {
+        const { id } = args;
+        if (!id) return { success: false, error: 'Missing ID' };
+        return await readFileHelper(Number(id), store);
+      }
+
+      case 'read_files_content': {
+        const { ids } = args;
+        if (!ids || !Array.isArray(ids)) return { success: false, error: 'Invalid IDs' };
+        const results = await Promise.all(ids.map(id => readFileHelper(Number(id), store)));
+        return { success: true, files: results };
+      }
+
       case 'create_thought': {
         const processedArgs = processDrawing({ ...args });
         const { stackName, ...thoughtArgs } = processedArgs;
+        
+        // Ensure type isn't 'image' (legacy safety)
+        if (thoughtArgs.type === ('image' as any)) thoughtArgs.type = 'file';
+
         const x = typeof thoughtArgs.x !== 'undefined' ? Number(thoughtArgs.x) : window.innerWidth / 2;
         const y = typeof thoughtArgs.y !== 'undefined' ? Number(thoughtArgs.y) : window.innerHeight / 2;
 
@@ -106,6 +158,9 @@ export const executeOracleTool = async (toolCall: any, store: any) => {
         for (const item of items) {
           const processedItem = processDrawing({ ...item });
           const { stackName, ...thoughtArgs } = processedItem;
+          
+          if (thoughtArgs.type === ('image' as any)) thoughtArgs.type = 'file';
+
           const x = typeof thoughtArgs.x !== 'undefined' ? Number(thoughtArgs.x) : window.innerWidth / 2;
           const y = typeof thoughtArgs.y !== 'undefined' ? Number(thoughtArgs.y) : window.innerHeight / 2;
           
@@ -163,6 +218,7 @@ export const executeOracleTool = async (toolCall: any, store: any) => {
           const sanitizedUpdates: any = { ...updates };
           if (typeof updates.x !== 'undefined') sanitizedUpdates.x = Number(updates.x);
           if (typeof updates.y !== 'undefined') sanitizedUpdates.y = Number(updates.y);
+          if (updates.type === ('image' as any)) sanitizedUpdates.type = 'file';
 
           await store.updateThought(id, sanitizedUpdates);
           if (stackName) await store.createStack(stackName, id);
@@ -179,6 +235,7 @@ export const executeOracleTool = async (toolCall: any, store: any) => {
           const sanitizedUpdates: any = { ...updates };
           if (typeof updates.x !== 'undefined') sanitizedUpdates.x = Number(updates.x);
           if (typeof updates.y !== 'undefined') sanitizedUpdates.y = Number(updates.y);
+          if (updates.type === ('image' as any)) sanitizedUpdates.type = 'file';
 
           for (const id of ids) {
             await store.updateThought(id, sanitizedUpdates);
@@ -235,146 +292,23 @@ export const executeOracleTool = async (toolCall: any, store: any) => {
 
       case 'delete_stacks': {
         const { ids } = args;
-        if (!ids || !Array.isArray(ids)) {
-          return { success: false, error: 'Invalid IDs array' };
-        }
-        let deletedCount = 0;
-        for (const id of ids) {
-          if (id) {
+        if (!ids?.length) {
+          return { success: false, error: 'No IDs provided' };
+        } else {
+          for (const id of ids) {
             await store.deleteStack(id);
-            deletedCount++;
           }
-        }
-        return { success: true, count: deletedCount };
-      }
-
-      case 'read_file_content': {
-        const { id } = args;
-        const thought = store.thoughts.find((t: any) => t.id === id);
-        if (!thought) return { success: false, error: 'Thought not found' };
-
-        try {
-          const { db } = await import('../../db');
-          const { supabaseStorage } = await import('../supabaseStorage');
-
-          // Try to get from local blobs first
-          let blob: Blob | null = null;
-          const blobEntry = await db.blobs.where('thoughtId').equals(id).first();
-          
-          if (blobEntry) {
-            blob = blobEntry.blob;
-          } else if (thought.storagePath) {
-            const signedUrl = await supabaseStorage.getSignedUrl(thought.storagePath);
-            const response = await fetch(signedUrl);
-            blob = await response.blob();
-          }
-
-          if (!blob) return { success: false, error: 'File content not available (might be local-only and you are on a different device)' };
-
-          // Only read as text if it's a readable type
-          const readableTypes = ['text/', 'application/json', 'application/javascript', 'application/x-javascript'];
-          const isPDF = blob.type.includes('pdf');
-          
-          if (isPDF) {
-            // Return signed URL - OpenRouter can process PDFs directly
-            let pdfUrl = '';
-            if (thought.storagePath) {
-              pdfUrl = await supabaseStorage.getSignedUrl(thought.storagePath);
-            } else if (blobEntry) {
-              const buffer = await blob.arrayBuffer();
-              const base64 = btoa(String.fromCharCode(...new Uint8Array(buffer)));
-              pdfUrl = "data:application/pdf;base64," + base64;
-            }
-            return { success: true, type: 'pdf', url: pdfUrl, name: thought.text };
-          }
-
-          const isText = readableTypes.some(t => blob!.type.startsWith(t)) || thought.text?.endsWith('.md') || thought.text?.endsWith('.txt');
-          
-          if (isText) {
-            const text = await blob.text();
-            return { success: true, type: 'text', content: text.substring(0, 10000) }; // Limit to 10k chars for safety
-          }
-
-          // Handle images - return signed URL for vision model
-          if (blob.type.startsWith('image/')) {
-            let imageUrl = '';
-            if (thought.storagePath) {
-              imageUrl = await supabaseStorage.getSignedUrl(thought.storagePath);
-            } else if (blobEntry) {
-              const buffer = await blob.arrayBuffer();
-              const base64 = btoa(String.fromCharCode(...new Uint8Array(buffer)));
-              imageUrl = "data:" + blob.type + ";base64," + base64;
-            }
-            return { success: true, type: 'image', url: imageUrl, name: thought.text };
-          }
-          
-          return { success: false, error: 'File type is not readable as text.' };
-        } catch (e: any) {
-          return { success: false, error: e.message };
+          return { success: true };
         }
       }
-
-      case 'read_files_content': {
-        const { ids } = args;
-        if (!ids || !Array.isArray(ids)) {
-          return { success: false, error: 'Invalid IDs array' };
-        }
-
-        const results = [];
-        for (const id of ids) {
-          const thought = store.thoughts.find((t: any) => t.id === id);
-          if (!thought) {
-            results.push({ id, success: false, error: 'Thought not found' });
-            continue;
-          }
-
-          try {
-            const { db } = await import('../../db');
-            const { supabaseStorage } = await import('../supabaseStorage');
-
-            let blob: Blob | null = null;
-            const blobEntry = await db.blobs.where('thoughtId').equals(id).first();
-            
-            if (blobEntry) {
-              blob = blobEntry.blob;
-            } else if (thought.storagePath) {
-              const signedUrl = await supabaseStorage.getSignedUrl(thought.storagePath);
-              const response = await fetch(signedUrl);
-              blob = await response.blob();
-            }
-
-            if (!blob) {
-              results.push({ id, success: false, error: 'File content not available' });
-              continue;
-            }
-
-            const readableTypes = ['text/', 'application/json', 'application/javascript', 'application/x-javascript'];
-            const isPDF = blob.type.includes('pdf');
-            const isText = readableTypes.some(t => blob!.type.startsWith(t)) || thought.text?.endsWith('.md') || thought.text?.endsWith('.txt');
-
-            if (isPDF) {
-              results.push({ id, success: true, type: 'pdf', message: 'PDF file' });
-            } else if (isText) {
-              const text = await blob.text();
-              results.push({ id, success: true, type: 'text', content: text.substring(0, 10000) });
-            } else {
-              results.push({ id, success: false, error: 'File type not readable' });
-            }
-          } catch (e: any) {
-            results.push({ id, success: false, error: e.message });
-          }
-        }
-
-        return { success: true, files: results };
-      }
-
 
       default:
-        console.warn(`[Oracle] Unknown client-side tool: ${toolName}`);
         return { success: false, error: `Unknown tool: ${toolName}` };
     }
   } catch (error: any) {
-    console.error(`[Oracle] Tool Execution Error (${toolName}):`, error);
-    return { success: false, error: error.message || 'Internal client tool error' };
+    console.error(`[Oracle] Tool Execution Failed: ${toolName}`, error);
+    return { success: false, error: error.message || 'Unknown error occurred' };
   }
 };
+
+export default executeOracleTool;

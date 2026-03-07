@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useStore } from '../../store/useStore';
-import { Table as TableIcon, Plus, Trash2, Download } from 'lucide-react';
+import { useThoughtPayload } from '../thought/hooks/useThoughtPayload';
+import { Plus, Trash2, Download } from 'lucide-react';
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 import { FocusEditorShell } from './FocusEditorShell';
@@ -11,20 +12,20 @@ function cn(...inputs: ClassValue[]) {
 
 const EditorContent: React.FC<{
   isEditMode: boolean;
-  thought: any;
+  table: string[][];
   onUpdateCell: (r: number, c: number, val: string) => void;
   onAddRow: () => void;
   onAddColumn: () => void;
   onDeleteRow: (idx: number) => void;
   onDeleteColumn: (idx: number) => void;
-}> = ({ isEditMode, thought, onUpdateCell, onAddRow, onAddColumn, onDeleteRow, onDeleteColumn }) => (
+}> = ({ isEditMode, table, onUpdateCell, onAddRow, onAddColumn, onDeleteRow, onDeleteColumn }) => (
   <div className="flex-1 overflow-auto custom-scroll p-3 md:p-12 relative bg-black/10">
     <div className="table-wrapper mx-auto w-max min-w-full shadow-2xl mb-12 border border-white/10 rounded-xl md:rounded-3xl bg-black/20 overflow-hidden">
       <table className="w-full border-collapse">
         <thead>
           <tr>
             {isEditMode && <th className="p-1 md:p-2 border border-white/5 w-8 md:w-10 bg-black/40"></th>}
-            {thought.table[0].map((cell: string, i: number) => (
+            {table[0]?.map((cell: string, i: number) => (
               <th key={i} className="p-0 border border-white/5 bg-black/40 min-w-[100px] md:min-w-[150px]">
                 {isEditMode ? (
                   <div className="flex items-center group/h h-full">
@@ -55,7 +56,7 @@ const EditorContent: React.FC<{
           </tr>
         </thead>
         <tbody>
-          {thought.table.slice(1).map((row: string[], rIdx: number) => {
+          {table.slice(1).map((row: string[], rIdx: number) => {
             const actualRow = rIdx + 1;
             return (
               <tr key={actualRow} className="hover:bg-white/[0.02] transition-colors">
@@ -94,7 +95,7 @@ const EditorContent: React.FC<{
                   <Plus className="w-4 h-4 md:w-5 md:h-5 text-[var(--accent-secondary)]" />
                 </button>
               </td>
-              <td colSpan={thought.table[0].length + (isEditMode ? 1 : 0)} className="border border-white/5 bg-black/10"></td>
+              <td colSpan={(table[0]?.length || 0) + (isEditMode ? 1 : 0)} className="border border-white/5 bg-black/10"></td>
             </tr>
           )}
         </tbody>
@@ -114,48 +115,56 @@ const TableFocusEditor: React.FC = () => {
 
   const [isEditMode, setIsEditMode] = useState(false);
   const thought = thoughts.find((t) => t.id === activeFocusId);
+  const { table } = useThoughtPayload(thought as any);
   const stack = stacks.find((s) => s.id === thought?.stackId);
   const isVisible = focusType === 'table' && !!thought;
 
+  const saveTable = (newTable: string[][]) => {
+    if (!thought) return;
+    updateThought(thought.id, { 
+      data: { type: 'table', rows: newTable } 
+    });
+  };
+
   const handleUpdateCell = (r: number, c: number, val: string) => {
     if (!thought || isReadOnly) return;
-    const newTable = [...thought.table.map(row => [...row])];
+    const newTable = [...table.map(row => [...row])];
     newTable[r][c] = val;
-    updateThought(thought.id, { table: newTable });
+    saveTable(newTable);
   };
 
   const addRow = () => {
     if (!thought || isReadOnly) return;
-    const colCount = thought.table[0]?.length || 2;
-    updateThought(thought.id, { table: [...thought.table, new Array(colCount).fill("")] });
+    const colCount = table[0]?.length || 2;
+    saveTable([...table, new Array(colCount).fill("")]);
   };
 
   const addColumn = () => {
     if (!thought || isReadOnly) return;
-    const newTable = thought.table.map(row => [...row, ""]);
-    updateThought(thought.id, { table: newTable });
+    const newTable = table.map(row => [...row, ""]);
+    saveTable(newTable);
   };
 
   const deleteRow = (idx: number) => {
-    if (!thought || thought.table.length <= 1 || isReadOnly) return;
-    const newTable = [...thought.table];
+    if (!thought || table.length <= 1 || isReadOnly) return;
+    const newTable = [...table];
     newTable.splice(idx, 1);
-    updateThought(thought.id, { table: newTable });
+    saveTable(newTable);
   };
 
   const deleteColumn = (idx: number) => {
-    if (!thought || thought.table[0].length <= 1 || isReadOnly) return;
-    const newTable = thought.table.map(row => {
+    if (!thought || table[0].length <= 1 || isReadOnly) return;
+    const newTable = table.map(row => {
       const newRow = [...row];
       newRow.splice(idx, 1);
       return newRow;
     });
-    updateThought(thought.id, { table: newTable });
+    saveTable(newTable);
   };
 
   const exportCSV = () => {
     if (!thought) return;
-    const csv = thought.table.map(row => row.map(cell => `"${cell.split('"').join('""')}"`).join(',')).join('\n');
+    const csv = table.map(row => row.map(cell => `"${cell.split('"').join('""')}"`).join(',')).join('\n');
     const blob = new Blob([csv], { type: 'text/csv' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
@@ -171,18 +180,17 @@ const TableFocusEditor: React.FC = () => {
     <FocusEditorShell
       isVisible={isVisible}
       onClose={() => setActiveFocus(null, null)}
-      icon={TableIcon}
       title={thought.text}
       onTitleChange={(val) => { if (!isReadOnly) updateThought(thought.id, { text: val }); }}
       description={thought.description}
       isReadOnly={isReadOnly}
       stack={stack}
       headerActions={
-        <div className="flex bg-white/5 p-1 rounded-lg md:rounded-2xl border border-white/5">
+        <div className="flex bg-white/5 p-1 rounded-xl md:rounded-2xl border border-white/5">
           <button
             onClick={() => setIsEditMode(false)}
             className={cn(
-              "px-3 md:px-6 py-1.5 md:py-2.5 rounded-md md:rounded-xl text-[8px] md:text-[10px] font-black uppercase tracking-widest transition-all",
+              "px-4 md:px-6 py-2 md:py-2.5 rounded-lg md:rounded-xl text-[9px] md:text-[10px] font-black uppercase tracking-widest transition-all",
               !isEditMode ? "bg-slate-700 text-white" : "text-slate-500 hover:text-white"
             )}
           >
@@ -192,7 +200,7 @@ const TableFocusEditor: React.FC = () => {
             onClick={() => setIsEditMode(true)}
             disabled={isReadOnly}
             className={cn(
-              "px-3 md:px-6 py-1.5 md:py-2.5 rounded-md md:rounded-xl text-[8px] md:text-[10px] font-black uppercase tracking-widest transition-all",
+              "px-4 md:px-6 py-2 md:py-2.5 rounded-lg md:rounded-xl text-[9px] md:text-[10px] font-black uppercase tracking-widest transition-all",
               isEditMode ? "bg-[var(--accent)] text-white shadow-lg shadow-[var(--accent-glow)]" : "text-slate-500 hover:text-white",
               isReadOnly && "opacity-30 cursor-not-allowed"
             )}
@@ -201,18 +209,15 @@ const TableFocusEditor: React.FC = () => {
           </button>
         </div>
       }
-      footerStatus={
-        <p className="text-[7px] md:text-[10px] uppercase font-black tracking-widest text-slate-600">Row 1 is headers</p>
-      }
       footerActions={
-        <button onClick={exportCSV} className="text-[7px] md:text-[10px] uppercase font-black tracking-widest text-slate-400 hover:text-white transition-colors flex items-center gap-1.5 md:gap-2">
-          <Download className="w-2.5 md:w-3.5 h-2.5 md:h-3.5" /> CSV
+        <button onClick={exportCSV} className="text-[8px] md:text-[10px] uppercase font-black tracking-widest text-slate-400 hover:text-white transition-colors flex items-center gap-2">
+          <Download className="w-3.5 h-3.5" /> CSV
         </button>
       }
     >
       <EditorContent 
         isEditMode={isEditMode}
-        thought={thought}
+        table={table}
         onUpdateCell={handleUpdateCell}
         onAddRow={addRow}
         onAddColumn={addColumn}

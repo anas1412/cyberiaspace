@@ -1,6 +1,7 @@
 import React from 'react';
 import { Maximize2, Type } from 'lucide-react';
 import { type Thought } from '../../db';
+import { useThoughtPayload } from './hooks/useThoughtPayload';
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 
@@ -24,7 +25,10 @@ export const TextRenderer: React.FC<TextRendererProps> = ({
   parsedContent, 
   setActiveFocus 
 }) => {
-  const hasContent = thought.content && thought.content.trim().length > 0;
+  // Use the dual-read hook for backward compatibility
+  const { content } = useThoughtPayload(thought);
+  
+  const hasContent = content && content.trim().length > 0;
   const hasRemoteContent = thought.storageUrl && !hasContent && thought.syncStatus !== 'synced' && !isReadOnly;
 
   if (!hasContent) {
@@ -64,7 +68,7 @@ export const TextRenderer: React.FC<TextRendererProps> = ({
         dangerouslySetInnerHTML={{ __html: parsedContent as string }}
         onDragStart={(e) => e.preventDefault()}
       />
-      {thought.content.length > 150 && (
+      {content.length > 150 && (
         <div className="absolute bottom-0 left-0 right-0 h-16 bg-gradient-to-t from-[var(--bg-main)] via-[var(--bg-main)]/80 to-transparent pointer-events-none" />
       )}
       {!isReadOnly && (

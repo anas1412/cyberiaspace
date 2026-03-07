@@ -236,9 +236,19 @@ function App() {
           const thumbnail = await generateThumbnail(bestFile).catch(() => null);
           const id = await addThought({
             ...getPlacementProps(),
-            type: 'image',
-            image: thumbnail,
-            text: 'Pasted Image',
+            type: 'file', // Consolidated to 'file'
+            text: fileName,
+            data: {
+              type: 'file', // Consolidated to 'file'
+              url: thumbnail || '',
+              name: fileName,
+              size: bestFile.size,
+              meta: {
+                name: fileName,
+                size: bestFile.size,
+                type: actualType
+              } as any
+            },
             meta: {
               file: {
                 name: fileName,
@@ -276,7 +286,7 @@ function App() {
             ...getPlacementProps(),
             type: 'embed',
             text: "Loading Link...",
-            content: cleanText
+            data: { type: 'embed', url: cleanText }
           });
 
           if (id !== -1) {
@@ -288,7 +298,12 @@ function App() {
                     text: metadata.title || "Link",
                     author: metadata.author_name || "",
                     description: metadata.description || "",
-                    image: metadata.thumbnail_url || null,
+                    data: {
+                      type: 'embed',
+                      url: cleanText,
+                      provider: metadata.provider_name,
+                      // Note: thumbnail_url is not in embed payload but we keep it in meta if needed
+                    },
                     meta: metadata
                   });
                 }
@@ -304,7 +319,7 @@ function App() {
           ...getPlacementProps(),
           type: 'text',
           text: "Note",
-          content: cleanText
+          data: { type: 'text', content: cleanText }
         });
         if (id !== -1) {
           setSelectedThoughtId(id);
@@ -436,8 +451,6 @@ function App() {
 
   if (path === '/pricing') {
     // If we're on /pricing, we stay on the app root but open the pricing modal
-    // Actually, we can just let it fall through to the App render but ensure the modal is open.
-    // But to prevent 404, we must mark it as valid.
   }
 
   // Landing page routes - only on main domain

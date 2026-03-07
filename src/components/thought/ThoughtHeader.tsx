@@ -55,7 +55,7 @@ export const ThoughtHeader: React.FC<ThoughtHeaderProps> = ({ thought, isCalenda
             {thought.status}
           </div>
         )}
-        {thought.date && (
+        {thought.date && formattedDate && !isCalendar && (
           <div className="flex items-center gap-1 text-[9px] font-bold text-blue-400 bg-blue-500/10 border border-blue-500/20 px-2 py-0.5 rounded-lg shadow-[0_0_15px_rgba(99,102,241,0.1)]">
             <Calendar className="w-2.5 h-2.5" />
             <span className="uppercase tracking-wider">{formattedDate}</span>

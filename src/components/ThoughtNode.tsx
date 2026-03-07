@@ -1,4 +1,5 @@
 import React, { useRef, useEffect, useState, useMemo } from 'react';
+import { useThoughtPayload } from './thought/hooks/useThoughtPayload';
 import { type Thought } from '../db';
 import { useStore } from '../store/useStore';
 import { marked } from 'marked';
@@ -8,14 +9,15 @@ import { twMerge } from 'tailwind-merge';
 // Modular Components
 import { ThoughtHeader } from './thought/ThoughtHeader';
 import { ThoughtFooter } from './thought/ThoughtFooter';
-import { TextRenderer } from './thought/TextRenderer';
-import { TasksRenderer } from './thought/TasksRenderer';
-import { PaintRenderer } from './thought/PaintRenderer';
-import { TableRenderer } from './thought/TableRenderer';
-import { ImageRenderer } from './thought/ImageRenderer';
-import { EmbedRenderer } from './thought/EmbedRenderer';
-import { FileRenderer } from './thought/FileRenderer';
-import { LabelRenderer } from './thought/LabelRenderer';
+import { getThoughtConfig, type ThoughtRendererProps } from './thought/registry';
+
+
+
+
+
+
+
+
 import { Loader2, Trash2 } from 'lucide-react';
 
 
@@ -33,11 +35,9 @@ interface ThoughtNodeProps {
 
 const ThoughtNode: React.FC<ThoughtNodeProps> = React.memo(({ thought, registerElement, onMouseDown, onTouchStart, isDragging }) => {
   const elRef = useRef<HTMLDivElement>(null);
-  const selectedThoughtId = useStore((state) => state.selectedThoughtId);
-  const selectedThoughtIds = useStore((state) => state.selectedThoughtIds);
-  const isSelected = selectedThoughtId === thought.id || selectedThoughtIds.includes(thought.id);
-  const isInspectorOpen = useStore((state) => state.isInspectorOpen);
-  const layerActionTrigger = useStore((state) => state.layerActionTrigger);
+  const isSelected = useStore((state) => state.selectedThoughtId === thought.id || state.selectedThoughtIds.includes(thought.id));
+  const isInspectorOpen = useStore((state) => (state.selectedThoughtId === thought.id || state.selectedThoughtIds.includes(thought.id)) && state.isInspectorOpen);
+  const layerActionTrigger = useStore((state) => state.layerActionTrigger?.id === thought.id ? state.layerActionTrigger : null);
   const isReadOnly = useStore((state) => state.isReadOnly);
   const isDemo = useStore((state) => state.isDemo);
   const performanceMode = useStore((state) => state.performanceMode);
@@ -49,25 +49,27 @@ const ThoughtNode: React.FC<ThoughtNodeProps> = React.memo(({ thought, registerE
   const linkingSourceId = useStore((state) => state.linkingSourceId);
 
   const setLinkingSourceId = useStore((state) => state.setLinkingSourceId);
-  const stacks = useStore((state) => state.stacks);
-  const spaces = useStore((state) => state.spaces);
-  const activeSpaceId = useStore((state) => state.activeSpaceId);
+  
+  const activeSpace = useStore((state) => state.spaces.find(s => s.id === state.activeSpaceId));
+
   const setHoveredCalDate = useStore((state) => state.setHoveredCalDate);
   const hoveredCalDate = useStore((state) => state.hoveredCalDate);
-  const deletingThoughtIds = useStore((state) => state.deletingThoughtIds);
-  const isDeleting = deletingThoughtIds.includes(thought.id);
-
-  const activeSpace = useMemo(() => spaces.find(s => s.id === activeSpaceId), [spaces, activeSpaceId]);
+  const isDeleting = useStore((state) => state.deletingThoughtIds.includes(thought.id));
 
   const isSpatial = activeSpace?.mode === 'spatial';
   const isCalendar = activeSpace?.mode === 'calendar';
   const isDateHovered = isCalendar && hoveredCalDate !== null && (thought.date || "") === hoveredCalDate;
   const isExpanded = isDateHovered || (isCalendar && isSelected);
 
-  const stack = useMemo(() => stacks.find(s => s.id === thought.stackId), [stacks, thought.stackId]);
+  const { content } = useThoughtPayload(thought);
+  const stack = useStore((state) => state.stacks.find(s => s.id === thought.stackId));
 
   const [startPos, setStartPos] = useState({ x: 0, y: 0 });
   const [showPing, setShowPing] = useState(false);
+
+  // Get renderer from registry
+  const thoughtConfig = useMemo(() => getThoughtConfig(thought.type), [thought.type]);
+  const Renderer = thoughtConfig?.renderer;
 
   useEffect(() => {
     if (layerActionTrigger?.id === thought.id) {
@@ -98,8 +100,8 @@ const ThoughtNode: React.FC<ThoughtNodeProps> = React.memo(({ thought, registerE
   }, [thought.layer, isDragging, performanceMode, isSelected]);
 
   const parsedContent = useMemo(() => {
-    return thought.content ? marked.parse(thought.content) : '';
-  }, [thought.content]);
+    return content ? marked.parse(content) : '';
+  }, [content]);
 
   useEffect(() => {
     registerElement(thought.id, elRef.current);
@@ -153,7 +155,7 @@ const ThoughtNode: React.FC<ThoughtNodeProps> = React.memo(({ thought, registerE
     const target = e.target as HTMLElement;
     if (target.closest('.checkbox')) return;
 
-    const triggers = ['label', 'text', 'table', 'tasks', 'image', 'paint', 'embed', 'file'];
+    const triggers = ['label', 'text', 'table', 'tasks', 'paint', 'embed', 'file'];
     for (const t of triggers) {
       if (target.closest(`[data-trigger="${t}"]`)) {
         if (t === 'label') return; // Labels don't have focus mode
@@ -163,19 +165,22 @@ const ThoughtNode: React.FC<ThoughtNodeProps> = React.memo(({ thought, registerE
     }
   };
 
+
   const renderContent = () => {
-    const commonProps = { thought, isReadOnly, setActiveFocus };
-    switch (thought.type) {
-      case 'label': return <LabelRenderer thought={thought} />;
-      case 'text': return <TextRenderer {...commonProps} isCalendar={isCalendar} isSpatial={isSpatial} parsedContent={parsedContent} />;
-      case 'tasks': return <TasksRenderer {...commonProps} />;
-      case 'paint': return <PaintRenderer {...commonProps} />;
-      case 'table': return <TableRenderer {...commonProps} />;
-      case 'image': return <ImageRenderer {...commonProps} setSelectedThoughtId={setSelectedThoughtId} setInspectorOpen={setInspectorOpen} />;
-      case 'embed': return <EmbedRenderer thought={thought} />;
-      case 'file': return <FileRenderer thought={thought} />;
-      default: return null;
-    }
+    if (!Renderer) return null;
+    
+    const rendererProps: ThoughtRendererProps = {
+      thought,
+      isReadOnly,
+      isCalendar,
+      isSpatial,
+      parsedContent,
+      setActiveFocus,
+      setSelectedThoughtId,
+      setInspectorOpen
+    };
+    
+    return <Renderer {...rendererProps} />;
   };
 
   return (
@@ -215,7 +220,7 @@ const ThoughtNode: React.FC<ThoughtNodeProps> = React.memo(({ thought, registerE
             <Loader2 className="w-8 h-8 text-red-500 animate-spin" />
             <Trash2 className="w-4 h-4 text-red-500 absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2" />
           </div>
-          <span className="text-[8px] font-black uppercase tracking-[0.2em] text-red-400">Purging Data</span>
+          <span className="text-[8px] font-black uppercase tracking-[0.2em] text-red-400">Purging...</span>
         </div>
       )}
 
@@ -239,7 +244,7 @@ const ThoughtNode: React.FC<ThoughtNodeProps> = React.memo(({ thought, registerE
             "flex flex-col relative transition-all duration-300",
             (isCalendar && !isExpanded) ? "h-0 opacity-0 pointer-events-none" : "opacity-100",
             thought.type === 'text' && "cursor-pointer rounded-xl overflow-hidden",
-            (thought.type === 'text' && (thought.content || thought.description || !thought.stackId)) 
+            (thought.type === 'text' && (content || thought.description || !thought.stackId)) 
                 ? "min-h-0 justify-center gap-2 mt-0.5 pointer-events-auto" : "min-h-0 gap-0 pointer-events-auto"
           )}
         >

@@ -8,12 +8,15 @@ export const createStackSlice: StateCreator<CyberiaState, [], [], any> = (set, g
   stacks: [],
 
   refreshStacks: async (spaceId?: string) => {
-    if (get().isDemo) return;
     const targetId = spaceId || get().activeSpaceId;
-
     if (!targetId) return;
+    
     const stacks = await db.stacks.where('spaceId').equals(targetId).toArray();
-    set({ stacks });
+    
+    // Only update if it's still the active space or if we are refreshing for initial load
+    if (!spaceId || targetId === get().activeSpaceId) {
+      set({ stacks });
+    }
   },
 
   createStack: async (name: string, thoughtId: number) => {
@@ -34,7 +37,7 @@ export const createStackSlice: StateCreator<CyberiaState, [], [], any> = (set, g
       return;
     }
     
-    const newStackId = 'st-' + Date.now();
+    const newStackId = String(Date.now());
     await db.stacks.add({ id: newStackId, name: trimmedName, color: `hsla(${Math.floor(Math.random() * 360)}, 70%, 50%, 1)`, spaceId: activeSpaceId });
     await db.thoughts.update(thoughtId, { stackId: newStackId });
     await get().refreshThoughts();

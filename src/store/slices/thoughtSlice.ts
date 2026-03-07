@@ -1,85 +1,77 @@
 import { type StateCreator } from 'zustand';
-import { db, type Thought } from '../../db';
-import { useModalStore } from '../useModalStore';
-import { syncOrchestrator } from '../../services/sync/syncOrchestrator';
 import { type CyberiaState } from '../types';
+import { db, type Thought } from '../../db';
+import { syncOrchestrator } from '../../services/sync/syncOrchestrator';
+import { useModalStore } from '../useModalStore';
+import { sanitizeDate } from '../../utils/date';
 
-export const createThoughtSlice: StateCreator<CyberiaState, [], [], any> = (set, get, _api) => ({
-  thoughts: [] as Thought[],
-  selectedThoughtId: null as number | null,
-  selectedThoughtIds: [] as number[],
-  isInspectorOpen: false,
-  activeFocusId: null as number | null,
-  focusType: null as 'text' | 'table' | 'paint' | 'tasks' | 'embed' | 'file' | 'image' | null,
+export const createThoughtSlice: StateCreator<CyberiaState, [], [], any> = (set, get) => ({
+  thoughts: [],
   totalThoughtCount: 0,
+  selectedThoughtId: null,
+  selectedThoughtIds: [],
+  activeFocusId: null,
+  focusType: null as 'text' | 'table' | 'paint' | 'tasks' | 'embed' | 'file' | null,
   deletingThoughtIds: [] as number[],
 
-  refreshTotalThoughtCount: async () => {
-    const count = await db.thoughts.filter(t => !t.deletedAt).count();
-    set(() => ({ totalThoughtCount: count }));
-  },
-
-  refreshThoughts: async (spaceId?: string) => {
-    if (get().isDemo) return;
-    const targetId = spaceId || get().activeSpaceId;
-
-    if (!targetId) return;
-    // Only fetch non-deleted thoughts for the active view
-    const thoughts = await db.thoughts
-      .where('spaceId')
-      .equals(targetId)
-      .filter(t => !t.deletedAt)
-      .toArray();
-      
-    set(() => ({ thoughts, isSpaceLoading: false }));
-    get().refreshTotalThoughtCount();
-    if (get().history.length === 0) set(() => ({ history: [JSON.parse(JSON.stringify(thoughts))], historyIndex: 0 }));
-  },
-
   addThought: async (partialThought: Partial<Thought>) => {
-    if (get().isReadOnly) return -1;
-    const { activeSpaceId } = get();
-    const targetSpaceId = partialThought.spaceId || activeSpaceId;
-    if (!targetSpaceId) throw new Error('No space');
-    if (get().isDemo) {
-      useModalStore.getState().openModal({ title: 'Demo Mode', description: 'Cannot modify in demo mode.', type: 'alert', confirmText: 'Okay' });
+    const { activeSpaceId, totalThoughtCount, isReadOnly } = get();
+    if (isReadOnly) return -1;
+    if (!activeSpaceId) return -1;
+
+    if (totalThoughtCount >= 1000) {
+      useModalStore.getState().openModal({
+        title: 'Workspace Saturation',
+        description: 'You have reached the maximum storage capacity for this dimension.',
+        type: 'alert',
+        confirmText: 'Acknowledged'
+      });
       return -1;
     }
+
+    const thoughtType = partialThought.type || 'label';
     
-    const limits = get().getLimits();
-    const isBlobType = partialThought.type === 'file' || partialThought.type === 'image';
-    if (JSON.stringify(partialThought).length > 2 * 1024 * 1024 && !isBlobType) {
-      useModalStore.getState().openModal({ title: 'Buffer Overflow', description: 'Payload > 2MB.', type: 'alert', confirmText: 'Okay' });
-      return -1;
-    }
-    const QUIRKY_TITLES = ["Name Pending", "Just Go With It", "Something Is Happening", "Trust the Process"];
-    const result = await db.transaction('rw', db.thoughts, async () => {
-      const currentCount = await db.thoughts.where('spaceId').equals(targetSpaceId).filter(t => !t.deletedAt).count();
-      if (currentCount >= limits.MAX_THOUGHTS_PER_SPACE) {
-        useModalStore.getState().openModal({ 
-          title: 'Thinking Limit Reached', 
-          description: `You’ve reached the free limit of ${limits.MAX_THOUGHTS_PER_SPACE} thoughts for this space. Upgrade to Cyberia Pro to unlock unlimited mapping and premium Oracle AI features.`, 
-          type: 'limit_thought', 
-          confirmText: 'Upgrade to Pro', 
-          onConfirm: () => useModalStore.getState().openPricing() 
-        });
-        return -1;
-      }
-      const randomTitle = QUIRKY_TITLES[Math.floor(Math.random() * QUIRKY_TITLES.length)];
-      const maxLayer = await db.thoughts.where('spaceId').equals(targetSpaceId).reverse().sortBy('layer').then(t => t[0]?.layer || 0);
-      
-      const thought = {
-        spaceId: targetSpaceId, stackId: null, x: window.innerWidth / 2, y: window.innerHeight / 2, vx: 0, vy: 0, text: '', placeholder: randomTitle, description: '', type: 'label', content: '', image: null, drawing: null, status: 'none', tasks: [], table: [['', ''], ['', '']], date: '', priority: 'none', size: 1.0, author: '', order: currentCount, layer: maxLayer + 1, ...partialThought
-      } as Thought;
-      return await db.thoughts.add(thought);
-    });
-    if (result !== -1) {
-      await get().updateSpace(targetSpaceId, { updatedAt: new Date().toISOString() });
-      await get().refreshThoughts(targetSpaceId);
+    // Dynamic import to break circular dependency with ThoughtRegistry
+    const { getThoughtConfig } = await import('../../components/thought/registry');
+    const config = getThoughtConfig(thoughtType);
+    const payload = config?.createPayload();
+
+    const isBlobType = partialThought.type === 'file';
+    
+    // Get autoSync status from AuthStore
+    const { useAuthStore } = await import('../useAuthStore');
+    const autoSync = useAuthStore.getState().autoSync;
+
+    const authStatus = useAuthStore.getState().status;
+
+    const thought = {
+      spaceId: activeSpaceId,
+      stackId: null,
+      x: window.innerWidth / 2,
+      y: window.innerHeight / 2,
+      vx: 0,
+      vy: 0,
+      text: '',
+      description: '',
+      type: 'label',
+      status: 'none',
+      priority: 'none',
+      size: 1,
+      order: Date.now(),
+      layer: 0,
+      author: '',
+      syncStatus: (isBlobType && autoSync && authStatus === 'authenticated') ? 'pending' : 'local',
+      ...partialThought,
+      date: partialThought.date ? sanitizeDate(partialThought.date) : '',
+      data: partialThought.data || payload
+    } as Thought;
+
+    const result = await db.thoughts.add(thought);
+    if (result) {
+      await get().refreshThoughts();
       await get().refreshTotalThoughtCount();
       get().pushHistory();
       
-      const { useAuthStore } = await import('../useAuthStore');
       const authStore = useAuthStore.getState();
       if (authStore.status === 'authenticated') {
         await syncOrchestrator.triggerSync();
@@ -91,23 +83,31 @@ export const createThoughtSlice: StateCreator<CyberiaState, [], [], any> = (set,
   updateThought: async (id: number, updates: Partial<Thought>) => {
     const { thoughts, activeSpaceId, isReadOnly } = get();
     const thought = thoughts.find((t: Thought) => t.id === id);
-    const isBlobType = thought?.type === 'file' || updates.type === 'file' || thought?.type === 'image' || updates.type === 'image';
-    if (!(Object.keys(updates).length <= 4 && !updates.content && !updates.image && !updates.drawing) && !isBlobType) {
+    const isBlobType = thought?.type === 'file' || updates.type === 'file';
+    
+    // Sanitize date if present
+    if (updates.date) {
+      updates.date = sanitizeDate(updates.date);
+    }
+
+    if (!(Object.keys(updates).length <= 4 && !updates.data) && !isBlobType) {
       if (JSON.stringify(updates).length > 2 * 1024 * 1024) {
         useModalStore.getState().openModal({ title: 'Payload Reached', description: 'Thought > 2MB.', type: 'alert', confirmText: 'Okay' });
         return;
       }
     }
+
     const index = thoughts.findIndex((t: Thought) => t.id === id);
     if (index !== -1) {
       const newThoughts = [...thoughts];
       newThoughts[index] = { ...newThoughts[index], ...updates };
-      set(() => ({ thoughts: newThoughts }));
+      set({ thoughts: newThoughts } as Partial<CyberiaState>);
     }
+
     if (isReadOnly || get().isDemo) return;
     if (activeSpaceId) get().updateSpace(activeSpaceId, { updatedAt: new Date().toISOString() });
 
-    const saveTimers = (window as unknown as { _cyberia_save_timers: Record<number, NodeJS.Timeout> })._cyberia_save_timers || {};
+    const saveTimers = (window as any)._cyberia_save_timers || {};
     if (saveTimers[id]) clearTimeout(saveTimers[id]);
     saveTimers[id] = setTimeout(async () => {
       await db.thoughts.update(id, updates);
@@ -120,16 +120,23 @@ export const createThoughtSlice: StateCreator<CyberiaState, [], [], any> = (set,
         await syncOrchestrator.triggerSync();
       }
     }, 500);
-    (window as unknown as { _cyberia_save_timers: Record<number, NodeJS.Timeout> })._cyberia_save_timers = saveTimers;
+    (window as any)._cyberia_save_timers = saveTimers;
   },
 
   updateThoughts: async (ids: number[], updates: Partial<Thought>) => {
     if (get().isReadOnly) return;
     const { thoughts, activeSpaceId } = get();
     if (activeSpaceId) get().updateSpace(activeSpaceId, { updatedAt: new Date().toISOString() });
-    set(() => ({ thoughts: thoughts.map((t: Thought) => ids.includes(t.id) ? { ...t, ...updates } : t) }));
+
+    // Sanitize date if present
+    if (updates.date) {
+      updates.date = sanitizeDate(updates.date);
+    }
+
+    set({ thoughts: thoughts.map((t: Thought) => ids.includes(t.id) ? { ...t, ...updates } : t) } as Partial<CyberiaState>);
     await db.thoughts.where('id').anyOf(ids).modify(updates);
     get().pushHistory();
+    
     const { useAuthStore } = await import('../useAuthStore');
     const authStore = useAuthStore.getState();
     if (authStore.autoSync && authStore.status === 'authenticated') {
@@ -143,7 +150,8 @@ export const createThoughtSlice: StateCreator<CyberiaState, [], [], any> = (set,
     const affectedStackId = thought?.stackId;
     const { useAuthStore } = await import('../useAuthStore');
     const authStore = useAuthStore.getState();
-    set((state: CyberiaState) => ({ deletingThoughtIds: [...state.deletingThoughtIds, id] }));
+    
+    set((state: CyberiaState) => ({ deletingThoughtIds: [...state.deletingThoughtIds, id] } as Partial<CyberiaState>));
     
     if (thought) {
       await get().updateSpace(thought.spaceId, { updatedAt: new Date().toISOString() });
@@ -151,7 +159,6 @@ export const createThoughtSlice: StateCreator<CyberiaState, [], [], any> = (set,
         await authStore.deleteServiceContent(thought);
       }
       
-      // Soft-delete: update deletedAt and reset cloud metadata locally
       await db.thoughts.update(id, { 
         deletedAt: Date.now(),
         storageUrl: undefined,
@@ -163,9 +170,16 @@ export const createThoughtSlice: StateCreator<CyberiaState, [], [], any> = (set,
     await get().refreshThoughts();
     await get().refreshTotalThoughtCount();
     if (affectedStackId) await get().cleanupStacks();
-    if (get().selectedThoughtId === id) set(() => ({ selectedThoughtId: null, isInspectorOpen: false }));
-    if (get().selectedThoughtIds.includes(id)) set(() => ({ selectedThoughtIds: get().selectedThoughtIds.filter((tid: number) => tid !== id) }));
-    set((state: CyberiaState) => ({ deletingThoughtIds: state.deletingThoughtIds.filter((tid: number) => tid !== id) }));
+    
+    if (get().selectedThoughtId === id) {
+      set({ selectedThoughtId: null, isInspectorOpen: false } as Partial<CyberiaState>);
+    }
+    
+    if (get().selectedThoughtIds.includes(id)) {
+      set((state: CyberiaState) => ({ selectedThoughtIds: state.selectedThoughtIds.filter((tid: number) => tid !== id) } as Partial<CyberiaState>));
+    }
+    
+    set((state: CyberiaState) => ({ deletingThoughtIds: state.deletingThoughtIds.filter((tid: number) => tid !== id) } as Partial<CyberiaState>));
     get().pushHistory();
     
     if (authStore.status === 'authenticated') {
@@ -175,10 +189,12 @@ export const createThoughtSlice: StateCreator<CyberiaState, [], [], any> = (set,
 
   deleteThoughts: async (ids: number[]) => {
     if (get().isReadOnly || !ids.length) return;
-    const { thoughts, selectedThoughtId, selectedThoughtIds } = get();
+    const { thoughts } = get();
     const { useAuthStore } = await import('../useAuthStore');
     const authStore = useAuthStore.getState();
-    set((state: CyberiaState) => ({ deletingThoughtIds: [...state.deletingThoughtIds, ...ids] }));
+    
+    set((state: CyberiaState) => ({ deletingThoughtIds: [...state.deletingThoughtIds, ...ids] } as Partial<CyberiaState>));
+    
     const affectedStackIds = Array.from(new Set(thoughts.filter((t: Thought) => ids.includes(t.id)).map((t: Thought) => t.stackId).filter(Boolean))) as string[];
     
     if (authStore.status === 'authenticated') {
@@ -187,7 +203,6 @@ export const createThoughtSlice: StateCreator<CyberiaState, [], [], any> = (set,
       }
     }
 
-    // Bulk soft-delete
     await db.thoughts.where('id').anyOf(ids).modify({ 
       deletedAt: Date.now(),
       storageUrl: undefined,
@@ -197,159 +212,146 @@ export const createThoughtSlice: StateCreator<CyberiaState, [], [], any> = (set,
 
     await get().refreshThoughts();
     await get().refreshTotalThoughtCount();
-    if (affectedStackIds.length) await get().cleanupStacks();
-    if (selectedThoughtId && ids.includes(selectedThoughtId)) set(() => ({ selectedThoughtId: null, isInspectorOpen: false }));
-    set(() => ({ selectedThoughtIds: selectedThoughtIds.filter((tid: number) => !ids.includes(tid)) }));
-    set((state: CyberiaState) => ({ deletingThoughtIds: state.deletingThoughtIds.filter((tid: number) => !ids.includes(tid)) }));
+    if (affectedStackIds.length > 0) await get().cleanupStacks();
+    
+    set((state: CyberiaState) => ({ 
+      selectedThoughtId: ids.includes(state.selectedThoughtId as number) ? null : state.selectedThoughtId,
+      selectedThoughtIds: state.selectedThoughtIds.filter((tid: number) => !ids.includes(tid)),
+      deletingThoughtIds: state.deletingThoughtIds.filter((tid: number) => !ids.includes(tid))
+    } as Partial<CyberiaState>));
+    
     get().pushHistory();
     
     if (authStore.status === 'authenticated') {
-      await syncOrchestrator.triggerSync();
+      setTimeout(() => syncOrchestrator.triggerSync(), 50);
     }
+  },
+
+  refreshThoughts: async (spaceId?: string) => {
+    const targetId = spaceId || get().activeSpaceId;
+    if (!targetId) return;
+    const thoughts = await db.thoughts
+      .where('spaceId')
+      .equals(targetId)
+      .and(t => !t.deletedAt)
+      .toArray();
+    
+    // Only update if it's still the active space or if we are refreshing for initial load
+    if (!spaceId || targetId === get().activeSpaceId) {
+      set({ thoughts: thoughts.sort((a, b) => (a.order || 0) - (b.order || 0)) } as Partial<CyberiaState>);
+    }
+  },
+
+  refreshTotalThoughtCount: async () => {
+    const count = await db.thoughts.filter(t => !t.deletedAt).count();
+    set({ totalThoughtCount: count } as Partial<CyberiaState>);
+  },
+
+  setActiveFocus: (id: number | null, type: 'text' | 'table' | 'paint' | 'tasks' | 'embed' | 'file' | null) => {
+    set({ activeFocusId: id, focusType: type } as Partial<CyberiaState>);
   },
 
   bringToFront: async (id: number) => {
-    if (get().isReadOnly) return;
-    const { thoughts, activeSpaceId } = get();
-    if (!activeSpaceId) return;
-    const sorted = [...thoughts].sort((a: Thought, b: Thought) => (a.layer || 0) - (b.layer || 0));
-    const filtered = sorted.filter((t: Thought) => t.id !== id);
-    const target = thoughts.find((t: Thought) => t.id === id);
-    if (!target) return;
-    filtered.push(target);
-    await db.transaction('rw', db.thoughts, async () => {
-      await Promise.all(filtered.map((t: Thought, i: number) => db.thoughts.update(t.id, { layer: i + 1 })));
-    });
-    set(() => ({ layerActionTrigger: { id, time: Date.now() } }));
-    await get().refreshThoughts(activeSpaceId);
-    
-    const { useAuthStore } = await import('../useAuthStore');
-    const authStore = useAuthStore.getState();
-    if (authStore.status === 'authenticated') {
-      await syncOrchestrator.triggerSync();
-    }
+    const { thoughts } = get();
+    const maxLayer = Math.max(...thoughts.map(t => t.layer || 0), 0);
+    await get().updateThought(id, { layer: maxLayer + 1 });
+    set({ layerActionTrigger: { id, time: Date.now() } } as Partial<CyberiaState>);
   },
 
   sendToBack: async (id: number) => {
-    if (get().isReadOnly) return;
-    const { thoughts, activeSpaceId } = get();
-    if (!activeSpaceId) return;
-    const sorted = [...thoughts].sort((a: Thought, b: Thought) => (a.layer || 0) - (b.layer || 0));
-    const filtered = sorted.filter((t: Thought) => t.id !== id);
-    const target = thoughts.find((t: Thought) => t.id === id);
-    if (!target) return;
-    filtered.unshift(target);
-    await db.transaction('rw', db.thoughts, async () => {
-      await Promise.all(filtered.map((t: Thought, i: number) => db.thoughts.update(t.id, { layer: i + 1 })));
-    });
-    set(() => ({ layerActionTrigger: { id, time: Date.now() } }));
-    await get().refreshThoughts(activeSpaceId);
-    
-    const { useAuthStore } = await import('../useAuthStore');
-    const authStore = useAuthStore.getState();
-    if (authStore.status === 'authenticated') {
-      await syncOrchestrator.triggerSync();
-    }
+    const { thoughts } = get();
+    const minLayer = Math.min(...thoughts.map(t => t.layer || 0), 0);
+    await get().updateThought(id, { layer: minLayer - 1 });
+    set({ layerActionTrigger: { id, time: Date.now() } } as Partial<CyberiaState>);
   },
 
-  setSelectedThoughtId: (id: number | null) => set(() => ({ selectedThoughtId: id, selectedThoughtIds: id ? [id] : [] })),
-  setSelectedThoughtIds: (ids: number[]) => set(() => ({ selectedThoughtIds: ids, selectedThoughtId: ids.length === 1 ? ids[0] : null, isInspectorOpen: ids.length === 1 && !get().isReadOnly })),
-  toggleThoughtSelection: (id: number) => {
-    const { selectedThoughtIds, selectedThoughtId } = get();
-    const currentIds = [...selectedThoughtIds];
-    if (selectedThoughtId && !currentIds.includes(selectedThoughtId)) currentIds.push(selectedThoughtId);
-    const newIds = currentIds.includes(id) ? currentIds.filter(tid => tid !== id) : [...currentIds, id];
-    set(() => ({ selectedThoughtIds: newIds, selectedThoughtId: newIds.length === 1 ? newIds[0] : null, isInspectorOpen: newIds.length === 1 && !get().isReadOnly }));
+  setSelectedThoughtId: (id: number | null) => {
+    set({ 
+      selectedThoughtId: id,
+      selectedThoughtIds: id ? [id] : []
+    } as Partial<CyberiaState>);
   },
-  clearSelection: () => set(() => ({ selectedThoughtIds: [], selectedThoughtId: null, isInspectorOpen: false })),
+  
+  setSelectedThoughtIds: (ids: number[]) => set({ selectedThoughtIds: ids } as Partial<CyberiaState>),
+  
+  toggleThoughtSelection: (id: number) => {
+    const { selectedThoughtIds } = get();
+    let nextIds: number[];
+    if (selectedThoughtIds.includes(id)) {
+      nextIds = selectedThoughtIds.filter(tid => tid !== id);
+    } else {
+      nextIds = [...selectedThoughtIds, id];
+    }
+    
+    set({ 
+      selectedThoughtIds: nextIds,
+      selectedThoughtId: nextIds.length === 1 ? nextIds[0] : null
+    } as Partial<CyberiaState>);
+  },
+
+  clearSelection: () => set({ selectedThoughtId: null, selectedThoughtIds: [] } as Partial<CyberiaState>),
 
   deleteSelectedThoughts: async () => {
-    if (get().isReadOnly || get().isDemo) return;
-    const { selectedThoughtIds, thoughts } = get();
+    const { selectedThoughtIds } = get();
     if (selectedThoughtIds.length === 0) return;
-    set((state: CyberiaState) => ({ deletingThoughtIds: [...state.deletingThoughtIds, ...selectedThoughtIds] }));
-    const { useAuthStore } = await import('../useAuthStore');
-    const authStore = useAuthStore.getState();
-    const affectedStackIds = Array.from(new Set(thoughts.filter((t: Thought) => selectedThoughtIds.includes(t.id)).map((t: Thought) => t.stackId).filter(Boolean))) as string[];
-    
-    if (authStore.status === 'authenticated') {
-      for (const t of thoughts.filter((t: Thought) => selectedThoughtIds.includes(t.id))) {
-        try { await authStore.deleteServiceContent(t); } catch (e) { console.warn('Delete failed', e); }
-      }
-    }
-
-    // Bulk soft-delete
-    await db.thoughts.where('id').anyOf(selectedThoughtIds).modify({ 
-      deletedAt: Date.now(),
-      storageUrl: undefined,
-      storagePath: undefined,
-      syncStatus: 'local'
-    });
-
-    await get().refreshThoughts();
-    if (affectedStackIds.length > 0) await get().cleanupStacks();
-    const deletedIds = [...selectedThoughtIds];
-    set(() => ({ selectedThoughtIds: [], selectedThoughtId: null, isInspectorOpen: false }));
-    set((state: CyberiaState) => ({ deletingThoughtIds: state.deletingThoughtIds.filter((tid: number) => !deletedIds.includes(tid)) }));
-    get().pushHistory();
-    
-    if (authStore.status === 'authenticated') {
-      await syncOrchestrator.triggerSync();
-    }
+    await get().deleteThoughts(selectedThoughtIds);
+    get().clearSelection();
   },
 
   linkSelectedThoughts: async (name?: string) => {
-    if (get().isReadOnly || get().isDemo) return;
-    const { selectedThoughtIds, thoughts, activeSpaceId } = get();
+    const { selectedThoughtIds, activeSpaceId, stacks } = get();
     if (selectedThoughtIds.length < 2 || !activeSpaceId) return;
-    const thoughtsInSelection = thoughts.filter(t => selectedThoughtIds.includes(t.id));
-    const existingStackIds = Array.from(new Set(thoughtsInSelection.map(t => t.stackId).filter(Boolean))) as string[];
-    let targetStackId: string;
-    
-    if (existingStackIds.length > 0) {
-      targetStackId = existingStackIds[0];
-      await db.transaction('rw', db.thoughts, db.stacks, async () => {
-        await db.thoughts.where('id').anyOf(selectedThoughtIds).modify({ stackId: targetStackId });
-        if (existingStackIds.length > 1) {
-          const otherStackIds = existingStackIds.slice(1);
-          await db.thoughts.where('stackId').anyOf(otherStackIds).modify({ stackId: targetStackId });
-          await db.stacks.where('id').anyOf(otherStackIds).delete();
-        }
-        if (name) await db.stacks.update(targetStackId, { name: name.trim() });
-      });
-    } else {
-      targetStackId = 'st-' + Date.now();
-      await db.stacks.add({ id: targetStackId, name: name?.trim() || 'Unnamed Stack', color: `hsla(${Math.floor(Math.random() * 360)}, 70%, 50%, 1)`, spaceId: activeSpaceId });
-      await db.thoughts.where('id').anyOf(selectedThoughtIds).modify({ stackId: targetStackId });
-    }
-    await get().refreshThoughts();
-    await get().refreshStacks();
-    get().pushHistory();
+
+    const trimmedName = name?.trim() || 'New Collection';
+    const existingStack = stacks.find((s: any) => s.name.toLowerCase() === trimmedName.toLowerCase() && s.spaceId === activeSpaceId);
     
     const { useAuthStore } = await import('../useAuthStore');
     const authStore = useAuthStore.getState();
+
+    let targetStackId: string;
+
+    if (existingStack) {
+      targetStackId = existingStack.id;
+    } else {
+      targetStackId = String(Date.now());
+      await db.stacks.add({ 
+        id: targetStackId, 
+        name: trimmedName, 
+        color: `hsla(${Math.floor(Math.random() * 360)}, 70%, 50%, 1)`, 
+        spaceId: activeSpaceId 
+      });
+    }
+
+    await db.thoughts.where('id').anyOf(selectedThoughtIds).modify({ stackId: targetStackId });
+    await get().refreshThoughts();
+    await get().refreshStacks();
+    get().pushHistory();
+
     if (authStore.status === 'authenticated') {
-      await (await import('../../services/sync/syncOrchestrator')).syncOrchestrator.triggerSync();
+      await syncOrchestrator.triggerSync();
     }
   },
 
   unlinkSelectedThoughts: async () => {
-    if (get().isReadOnly) return;
     const { selectedThoughtIds } = get();
-    if (!selectedThoughtIds.length) return;
+    if (selectedThoughtIds.length === 0) return;
+
+    const thoughtsToUnlink = get().thoughts.filter(t => selectedThoughtIds.includes(t.id));
+    const affectedStackIds = Array.from(new Set(thoughtsToUnlink.map(t => t.stackId).filter(Boolean))) as string[];
+
     await db.thoughts.where('id').anyOf(selectedThoughtIds).modify({ stackId: null });
-    await get().cleanupStacks();
     await get().refreshThoughts();
-    await get().refreshStacks();
+    
+    for (const _sid of affectedStackIds) {
+      await get().cleanupStacks();
+    }
+
     get().pushHistory();
     
     const { useAuthStore } = await import('../useAuthStore');
     const authStore = useAuthStore.getState();
     if (authStore.status === 'authenticated') {
-      await (await import('../../services/sync/syncOrchestrator')).syncOrchestrator.triggerSync();
+      await syncOrchestrator.triggerSync();
     }
-  },
-
-  setInspectorOpen: (open: boolean) => set(() => ({ isInspectorOpen: open })),
-  setActiveFocus: (id: number | null, type: 'text' | 'table' | 'paint' | 'tasks' | 'embed' | 'file' | 'image' | null) => set(() => ({ activeFocusId: id, focusType: type })),
+  }
 });

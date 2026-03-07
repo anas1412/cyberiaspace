@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useStore } from '../../store/useStore';
-import { FileText, Download } from 'lucide-react';
+import { useThoughtPayload } from '../thought/hooks/useThoughtPayload';
+import { Download } from 'lucide-react';
 import { marked } from 'marked';
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
@@ -53,15 +54,16 @@ const TextFocusEditor: React.FC = () => {
   const [localContent, setLocalContent] = useState('');
 
   const thought = thoughts.find((t) => t.id === activeFocusId);
+  const { content } = useThoughtPayload(thought as any);
   const stack = stacks.find((s) => s.id === thought?.stackId);
   const isVisible = focusType === 'text' && !!thought;
 
   React.useEffect(() => {
     if (thought) {
       setLocalTitle(thought.text);
-      setLocalContent(thought.content);
+      setLocalContent(content);
     }
-  }, [activeFocusId]);
+  }, [activeFocusId, thought, content]);
 
   const handleTitleChange = (val: string) => {
     setLocalTitle(val);
@@ -71,20 +73,21 @@ const TextFocusEditor: React.FC = () => {
   const handleContentChange = (val: string) => {
     setLocalContent(val);
     if (!isReadOnly && thought) {
-      // Debounce the global store update to reduce lag
       const timerKey = `content-save-${thought.id}`;
       if ((window as any)[timerKey]) clearTimeout((window as any)[timerKey]);
       (window as any)[timerKey] = setTimeout(() => {
-        updateThought(thought.id, { content: val });
+        updateThought(thought.id, { 
+          data: { type: 'text', content: val } 
+        });
         delete (window as any)[timerKey];
-      }, 1000); // 1 second debounce for heavy content
+      }, 1000);
     }
   };
 
 
   const exportTXT = () => {
     if (!thought) return;
-    const blob = new Blob([thought.content], { type: 'text/plain' });
+    const blob = new Blob([content], { type: 'text/plain' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
@@ -99,7 +102,6 @@ const TextFocusEditor: React.FC = () => {
     <FocusEditorShell
       isVisible={isVisible}
       onClose={() => setActiveFocus(null, null)}
-      icon={FileText}
       title={localTitle}
       onTitleChange={handleTitleChange}
       description={thought.description}

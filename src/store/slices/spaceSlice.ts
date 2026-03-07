@@ -1,5 +1,5 @@
 import { type StateCreator } from 'zustand';
-import { db } from '../../db';
+import { db, type Space } from '../../db';
 import { useAuthStore } from '../useAuthStore';
 import { useModalStore } from '../useModalStore';
 import { syncOrchestrator } from '../../services/sync/syncOrchestrator';
@@ -13,18 +13,47 @@ export const createSpaceSlice: StateCreator<CyberiaState, [], [], any> = (set, g
   creatorName: null,
   lastUpdated: null,
 
-  setActiveSpace: (id: string) => {
-    localStorage.setItem('cyberia-active-space-id', id);
-    const space = get().spaces.find((s: any) => s.id === id);
-    const updates: any = { activeSpaceId: id, thoughts: [], stacks: [], isSpaceLoading: true, history: [], historyIndex: -1, layerActionTrigger: null };
-    if (space) {
-      updates.transform = space.mode === 'spatial' ? { x: space.transformX ?? 0, y: space.transformY ?? 0, scale: space.transformScale ?? 1 } : { x: 0, y: 0, scale: 1 };
-      if (space.theme) { updates.theme = space.theme; document.body.setAttribute('data-theme', space.theme); }
-      updates.customBg = space.customBg || null;
+  setActiveSpace: async (id: string) => {
+    try {
+      localStorage.setItem('cyberia-active-space-id', id);
+      const space = get().spaces.find((s: Space) => s.id === id);
+      
+      // Set loading state and clear current thoughts/stacks
+      set({ 
+        activeSpaceId: id, 
+        thoughts: [], 
+        stacks: [], 
+        isSpaceLoading: true, 
+        history: [], 
+        historyIndex: -1, 
+        layerActionTrigger: null 
+      });
+
+      if (space) {
+        const transform = space.mode === 'spatial' 
+          ? { x: space.transformX ?? 0, y: space.transformY ?? 0, scale: space.transformScale ?? 1 } 
+          : { x: 0, y: 0, scale: 1 };
+        
+        set({ transform } as Partial<CyberiaState>);
+        
+        if (space.theme) { 
+          set({ theme: space.theme });
+          document.body.setAttribute('data-theme', space.theme); 
+        }
+        set({ customBg: space.customBg || null });
+      }
+
+      // Load data for the new space
+      await Promise.all([
+        get().refreshThoughts(id),
+        get().refreshStacks(id)
+      ]);
+    } catch (err) {
+      console.error('Failed to set active space:', err);
+    } finally {
+      // Data loaded (or failed), stop loading state
+      set({ isSpaceLoading: false });
     }
-    set(updates);
-    get().refreshThoughts(id);
-    get().refreshStacks(id);
   },
 
   refreshSpaces: async () => {
@@ -46,10 +75,10 @@ export const createSpaceSlice: StateCreator<CyberiaState, [], [], any> = (set, g
       });
       return;
     }
-    const id = 's' + Date.now();
+    const id = String(Date.now());
     await db.spaces.add({ id, name, mode: 'spatial', physics: true, order: spaces.length });
     await get().refreshSpaces();
-    get().setActiveSpace(id);
+    await get().setActiveSpace(id);
     
     const authStore = useAuthStore.getState();
     if (authStore.status === 'authenticated') {
@@ -57,9 +86,9 @@ export const createSpaceSlice: StateCreator<CyberiaState, [], [], any> = (set, g
     }
   },
 
-  updateSpace: async (id: string, updates: any) => {
+  updateSpace: async (id: string, updates: Partial<Space>) => {
     const { spaces } = get();
-    const index = spaces.findIndex((s: any) => s.id === id);
+    const index = spaces.findIndex((s: Space) => s.id === id);
     if (index !== -1) {
       const newSpaces = [...spaces];
       newSpaces[index] = { ...newSpaces[index], ...updates };
@@ -78,33 +107,42 @@ export const createSpaceSlice: StateCreator<CyberiaState, [], [], any> = (set, g
   deleteSpace: async (id: string) => {
     if (get().isReadOnly || get().isDemo) return;
     const { spaces, activeSpaceId } = get();
-    const space = spaces.find((s: any) => s.id === id);
-    const deleteIndex = spaces.findIndex((s: any) => s.id === id);
+    const space = spaces.find((s: Space) => s.id === id);
+    const deleteIndex = spaces.findIndex((s: Space) => s.id === id);
+    
     if (space?.publishedId) {
       try { await get().unpublishSpace(id); } catch (err) { console.warn('Unpublish failed', err); }
     }
+    
     const thoughtsInSpace = await db.thoughts.where('spaceId').equals(id).toArray();
     const authStore = useAuthStore.getState();
-    for (const t of thoughtsInSpace) { if (t.storageUrl || t.storagePath) await authStore.deleteServiceContent(t); }
-    
-    if (authStore.status === 'authenticated') {
-      await syncOrchestrator.triggerSync();
+    for (const t of thoughtsInSpace) { 
+      if (t.storageUrl || t.storagePath) {
+        await authStore.deleteServiceContent(t); 
+      }
     }
     
     await db.spaces.delete(id);
     await db.thoughts.where('spaceId').equals(id).delete();
     await db.stacks.where('spaceId').equals(id).delete();
     await get().refreshSpaces();
+    
     const updatedSpaces = get().spaces;
     if (updatedSpaces.length > 0) {
-      if (id === activeSpaceId) get().setActiveSpace(updatedSpaces[Math.max(0, deleteIndex - 1)].id);
+      if (id === activeSpaceId) {
+        await get().setActiveSpace(updatedSpaces[Math.max(0, deleteIndex - 1)].id);
+      }
     } else {
       localStorage.removeItem('cyberia-active-space-id');
       set({ activeSpaceId: null, thoughts: [], stacks: [] });
     }
+
+    if (authStore.status === 'authenticated') {
+      await syncOrchestrator.triggerSync();
+    }
   },
 
-  reorderSpaces: async (newSpaces: any[]) => {
+  reorderSpaces: async (newSpaces: Space[]) => {
     if (get().isReadOnly) return;
     await Promise.all(newSpaces.map((s, i) => db.spaces.update(s.id, { order: i })));
     await get().refreshSpaces();
@@ -115,15 +153,26 @@ export const createSpaceSlice: StateCreator<CyberiaState, [], [], any> = (set, g
     }
   },
 
-  saveSpaceTransform: async (id: string, transform: any) => {
+  saveSpaceTransform: async (id: string, transform: { x: number; y: number; scale: number }) => {
     const { spaces } = get();
-    const space = spaces.find((s: any) => s.id === id);
+    const space = spaces.find((s: Space) => s.id === id);
     if (!space || space.mode !== 'spatial') return;
-    await db.spaces.update(id, { transformX: transform.x, transformY: transform.y, transformScale: transform.scale });
-    const index = spaces.findIndex((s: any) => s.id === id);
+    
+    await db.spaces.update(id, { 
+      transformX: transform.x, 
+      transformY: transform.y, 
+      transformScale: transform.scale 
+    });
+    
+    const index = spaces.findIndex((s: Space) => s.id === id);
     if (index !== -1) {
       const newSpaces = [...spaces];
-      newSpaces[index] = { ...newSpaces[index], ...transform };
+      newSpaces[index] = { 
+        ...newSpaces[index], 
+        transformX: transform.x, 
+        transformY: transform.y, 
+        transformScale: transform.scale 
+      };
       set({ spaces: newSpaces });
     }
     
@@ -135,7 +184,7 @@ export const createSpaceSlice: StateCreator<CyberiaState, [], [], any> = (set, g
 
   publishSpace: async (spaceId: string) => {
     const { spaces, thoughts, stacks } = get();
-    const space = spaces.find((s: any) => s.id === spaceId);
+    const space = spaces.find((s: Space) => s.id === spaceId);
     if (!space) return;
 
     const authStore = useAuthStore.getState();
@@ -192,7 +241,7 @@ export const createSpaceSlice: StateCreator<CyberiaState, [], [], any> = (set, g
 
   unpublishSpace: async (spaceId: string) => {
     const { spaces } = get();
-    const space = spaces.find((s: any) => s.id === spaceId);
+    const space = spaces.find((s: Space) => s.id === spaceId);
     if (!space || !space.publishedId) return;
 
     const authStore = useAuthStore.getState();
@@ -217,4 +266,40 @@ export const createSpaceSlice: StateCreator<CyberiaState, [], [], any> = (set, g
       throw err;
     }
   },
+
+  importFullState: async (data: any) => {
+    if (get().isReadOnly) return;
+    try {
+      await db.transaction('rw', db.spaces, db.thoughts, db.stacks, async () => {
+        if (data.spaces && data.spaces.length > 0) {
+          await db.spaces.clear();
+          await db.spaces.bulkPut(data.spaces);
+        }
+        if (data.thoughts && data.thoughts.length > 0) {
+          await db.thoughts.clear();
+          await db.thoughts.bulkPut(data.thoughts);
+        }
+        if (data.stacks && data.stacks.length > 0) {
+          await db.stacks.clear();
+          await db.stacks.bulkPut(data.stacks);
+        }
+      });
+
+      if (data.activeSpaceId) {
+        localStorage.setItem('cyberia-active-space-id', data.activeSpaceId);
+      }
+      
+      await get().refreshSpaces();
+      await get().refreshTotalThoughtCount();
+      await get().cleanupTrash();
+      
+      const { spaces } = get();
+      if (spaces.length > 0) {
+        const targetId = data.activeSpaceId || spaces[0].id;
+        await get().setActiveSpace(targetId);
+      }
+    } catch (err) {
+      console.error('Full state import failed', err);
+    }
+  }
 });

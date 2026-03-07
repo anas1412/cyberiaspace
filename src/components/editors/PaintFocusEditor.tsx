@@ -1,5 +1,6 @@
 import React, { useRef, useState, useEffect } from 'react';
 import { useStore } from '../../store/useStore';
+import { useThoughtPayload } from '../thought/hooks/useThoughtPayload';
 import { Trash2, Palette, MousePointer2, Eraser } from 'lucide-react';
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
@@ -17,7 +18,7 @@ const BRUSH_SIZES = [2, 4, 8, 12, 24, 48];
 
 const EditorContent: React.FC<{
   isEditMode: boolean;
-  thought: any;
+  drawing: string | null;
   canvasRef: React.RefObject<HTMLCanvasElement | null>;
   containerRef: React.RefObject<HTMLDivElement | null>;
   startPainting: (e: React.MouseEvent | React.TouchEvent) => void;
@@ -33,7 +34,7 @@ const EditorContent: React.FC<{
   setColor: (c: string) => void;
   clearCanvas: () => void;
 }> = ({ 
-  isEditMode, thought, canvasRef, containerRef, startPainting, paint, stopPainting,
+  isEditMode, drawing, canvasRef, containerRef, startPainting, paint, stopPainting,
   tool, setTool, isNeon, setIsNeon, brushSize, setBrushSize, color, setColor, clearCanvas
 }) => (
   <div className="flex-1 flex flex-col md:flex-row overflow-hidden p-3 md:p-6 gap-3 md:gap-6">
@@ -95,8 +96,8 @@ const EditorContent: React.FC<{
       </>
     ) : (
       <div className="flex-1 bg-black/20 rounded-2xl md:rounded-[2.5rem] border border-white/5 flex items-center justify-center overflow-hidden">
-        {thought.drawing ? (
-          <img src={thought.drawing} className="max-w-full max-h-full object-contain shadow-2xl" alt="Sketch" />
+        {drawing ? (
+          <img src={drawing} className="max-w-full max-h-full object-contain shadow-2xl" alt="Sketch" />
         ) : (
           <div className="text-center text-slate-600">
             <Palette className="w-12 h-12 md:w-16 md:h-16 mx-auto mb-4 opacity-10" />
@@ -118,6 +119,7 @@ const PaintFocusEditor: React.FC = () => {
 
   const [isEditMode, setIsEditMode] = useState(false);
   const thought = thoughts.find((t) => t.id === activeFocusId);
+  const { drawing } = useThoughtPayload(thought as any);
   const isVisible = focusType === 'paint' && !!thought;
 
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -137,17 +139,17 @@ const PaintFocusEditor: React.FC = () => {
         canvas.height = 1080;
         ctx.lineCap = 'round';
         ctx.lineJoin = 'round';
-        if (thought?.drawing) {
+        if (drawing) {
           const img = new Image();
           img.onload = () => {
             ctx.clearRect(0, 0, canvas.width, canvas.height);
             ctx.drawImage(img, 0, 0);
           };
-          img.src = thought.drawing;
+          img.src = drawing;
         }
       }
     }
-  }, [isVisible, isEditMode, activeFocusId]);
+  }, [isVisible, isEditMode, activeFocusId, drawing]);
 
   const startPainting = (e: React.MouseEvent | React.TouchEvent) => {
     if (!isEditMode || isReadOnly) return;
@@ -160,37 +162,51 @@ const PaintFocusEditor: React.FC = () => {
     setIsPainting(false);
     if (canvasRef.current && activeFocusId) {
       const dataUrl = canvasRef.current.toDataURL();
-      updateThought(activeFocusId, { drawing: dataUrl });
+      updateThought(activeFocusId, { 
+        data: { type: 'paint', drawing: dataUrl } 
+      });
     }
     const ctx = canvasRef.current?.getContext('2d');
     if (ctx) ctx.beginPath();
   };
 
   const paint = (e: React.MouseEvent | React.TouchEvent) => {
-    if (!isPainting || !canvasRef.current || !isEditMode) return;
     const canvas = canvasRef.current;
+    if (!canvas || !isPainting) return;
+
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
+
     const rect = canvas.getBoundingClientRect();
     const scaleX = canvas.width / rect.width;
     const scaleY = canvas.height / rect.height;
+
     let x, y;
     if ('touches' in e) {
       x = (e.touches[0].clientX - rect.left) * scaleX;
       y = (e.touches[0].clientY - rect.top) * scaleY;
     } else {
-      x = (e.clientX - rect.left) * scaleX;
-      y = (e.clientY - rect.top) * scaleY;
+      x = (e.nativeEvent.offsetX) * scaleX;
+      y = (e.nativeEvent.offsetY) * scaleY;
     }
-    ctx.lineWidth = brushSize * 2;
+
+    ctx.lineWidth = brushSize;
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+    
     if (tool === 'eraser') {
       ctx.globalCompositeOperation = 'destination-out';
-      ctx.shadowBlur = 0;
     } else {
       ctx.globalCompositeOperation = 'source-over';
       ctx.strokeStyle = color;
-      if (isNeon) { ctx.shadowBlur = 4; ctx.shadowColor = color; } else { ctx.shadowBlur = 0; }
+      if (isNeon) {
+        ctx.shadowBlur = brushSize * 2;
+        ctx.shadowColor = color;
+      } else {
+        ctx.shadowBlur = 0;
+      }
     }
+
     ctx.lineTo(x, y);
     ctx.stroke();
     ctx.beginPath();
@@ -198,10 +214,14 @@ const PaintFocusEditor: React.FC = () => {
   };
 
   const clearCanvas = () => {
-    if (canvasRef.current && activeFocusId && !isReadOnly) {
-      const ctx = canvasRef.current.getContext('2d');
-      ctx?.clearRect(0, 0, canvasRef.current.width, canvasRef.current.height);
-      updateThought(activeFocusId, { drawing: null });
+    if (!canvasRef.current || isReadOnly) return;
+    const ctx = canvasRef.current.getContext('2d');
+    if (ctx) {
+      ctx.clearRect(0, 0, canvasRef.current.width, canvasRef.current.height);
+      const dataUrl = canvasRef.current.toDataURL();
+      updateThought(activeFocusId!, { 
+        data: { type: 'paint', drawing: dataUrl } 
+      });
     }
   };
 
@@ -211,12 +231,11 @@ const PaintFocusEditor: React.FC = () => {
     <FocusEditorShell
       isVisible={isVisible}
       onClose={() => setActiveFocus(null, null)}
-      icon={Palette}
       title={thought.text}
       onTitleChange={(val) => { if (!isReadOnly) updateThought(thought.id, { text: val }); }}
       description={thought.description}
       isReadOnly={isReadOnly}
-      maxWidth="1200px"
+      icon={Palette}
       headerActions={
         <div className="flex bg-white/5 p-1 rounded-xl md:rounded-2xl border border-white/5">
           <button
@@ -241,20 +260,10 @@ const PaintFocusEditor: React.FC = () => {
           </button>
         </div>
       }
-      footerStatus={
-        <p className="text-[8px] md:text-[10px] uppercase font-black tracking-widest text-slate-600">Drawing automatically saved to space</p>
-      }
-      footerActions={
-        <div className="flex items-center gap-6 md:gap-10 text-white/20 text-[7px] md:text-[8px] font-black uppercase tracking-[0.2em]">
-          <span>Click & Drag to Paint</span>
-          <span className="w-1 h-1 md:w-1.5 md:h-1.5 rounded-full bg-white/10" />
-          <span>Neon Chalk Enabled</span>
-        </div>
-      }
     >
       <EditorContent 
         isEditMode={isEditMode}
-        thought={thought}
+        drawing={drawing}
         canvasRef={canvasRef}
         containerRef={containerRef}
         startPainting={startPainting}

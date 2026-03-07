@@ -82,8 +82,6 @@ const Viewport: React.FC<{ isInteracting?: boolean }> = ({ isInteracting }) => {
     isInteracting
   });
 
-
-
   useEffect(() => {
     if (activeSpace?.mode === 'spatial' && activeSpaceId) {
       if (saveTimeoutRef.current) window.clearTimeout(saveTimeoutRef.current);
@@ -356,12 +354,22 @@ const Viewport: React.FC<{ isInteracting?: boolean }> = ({ isInteracting }) => {
               });
 
           const id = await addThought({
-            type: isImage ? 'image' : 'file',
+            type: 'file', // Consolidated to 'file'
             text: file.name,
-            image: thumbnail,
             syncStatus: 'local',
             x: dropX + (Math.random() * 20 - 10),
             y: dropY + (Math.random() * 20 - 10),
+            data: {
+              type: 'file', // Consolidated to 'file'
+              url: thumbnail || '',
+              name: file.name,
+              size: file.size,
+              meta: {
+                name: file.name,
+                size: file.size,
+                type: file.type,
+              } as any
+            },
             meta: {
               file: {
                 name: file.name,
@@ -372,7 +380,7 @@ const Viewport: React.FC<{ isInteracting?: boolean }> = ({ isInteracting }) => {
           });
 
           if (id !== -1) {
-            await db.blobs.add({
+            await db.blobs.put({
               id: `temp-${Date.now()}-${id}`,
               thoughtId: id,
               blob: file,
@@ -393,6 +401,13 @@ const Viewport: React.FC<{ isInteracting?: boolean }> = ({ isInteracting }) => {
             syncStatus: 'local',
             x: dropX + (Math.random() * 20 - 10),
             y: dropY + (Math.random() * 20 - 10),
+            data: {
+              type: 'file',
+              url: '',
+              name: file.name,
+              size: file.size,
+              meta: { name: file.name, size: file.size, type: file.type } as any
+            },
             meta: {
               file: {
                 name: file.name,
@@ -403,7 +418,7 @@ const Viewport: React.FC<{ isInteracting?: boolean }> = ({ isInteracting }) => {
           });
 
           if (id !== -1) {
-            await db.blobs.add({
+            await db.blobs.put({
               id: `temp-${Date.now()}-${id}`,
               thoughtId: id,
               blob: file,
@@ -421,9 +436,10 @@ const Viewport: React.FC<{ isInteracting?: boolean }> = ({ isInteracting }) => {
         const reader = new FileReader();
         if (file.name.endsWith('.txt') || file.type === 'text/plain') {
           reader.onload = async (ev) => {
+            const content = ev.target?.result as string;
             await addThought({
               type: 'text',
-              content: ev.target?.result as string,
+              data: { type: 'text', content },
               x: dropX + (Math.random() * 20 - 10),
               y: dropY + (Math.random() * 20 - 10),
               text: file.name.replace('.txt', '')
@@ -455,7 +471,7 @@ const Viewport: React.FC<{ isInteracting?: boolean }> = ({ isInteracting }) => {
             if (rows.length > 0) {
               await addThought({
                 type: 'table',
-                table: rows,
+                data: { type: 'table', rows },
                 x: dropX + (Math.random() * 20 - 10),
                 y: dropY + (Math.random() * 20 - 10),
                 text: file.name.replace('.csv', '')
@@ -560,7 +576,7 @@ const Viewport: React.FC<{ isInteracting?: boolean }> = ({ isInteracting }) => {
               </div>
               <div className="text-center">
                 <h2 className="text-white text-xl font-black uppercase tracking-[0.3em] mb-2">Import Files</h2>
-                <p className="text-blue-300/60 text-xs font-bold uppercase tracking-widest">Drop images, text, or CSV files here</p>
+                <p className="text-blue-300/60 text-xs font-bold uppercase tracking-widest">Drop files, text, or CSV here</p>
               </div>
             </motion.div>
           </motion.div>

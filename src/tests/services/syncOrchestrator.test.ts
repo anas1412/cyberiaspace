@@ -87,7 +87,7 @@ describe('syncOrchestrator', () => {
   it('performs full push sync correctly', async () => {
     // 1. Add local data
     await db.spaces.add({ id: 's1', name: 'Space 1', order: 0, physics: true, mode: 'spatial' });
-    await db.thoughts.add({ id: 1, text: 'Thought 1', spaceId: 's1', stackId: null, x: 0, y: 0, vx: 0, vy: 0, type: 'text', content: '', author: '', order: 0, date: '', priority: 'none', description: '', image: null, drawing: null, status: 'none', size: 1, tasks: [], table: [] });
+    await db.thoughts.add({ id: 1, text: 'Thought 1', spaceId: 's1', stackId: null, x: 0, y: 0, vx: 0, vy: 0, type: 'text', author: '', order: 0, date: '', priority: 'none', description: '', status: 'none', size: 1, data: { type: 'text', content: '' } });
     
     // 2. Mock cloud data (empty cloud)
     vi.mocked(supabaseSync.getSpaces).mockResolvedValue({ spaces: [] });
@@ -119,7 +119,7 @@ describe('syncOrchestrator', () => {
 
   it('uploads local blobs for media thoughts', async () => {
     // 1. Local thought with blob
-    await db.thoughts.add({ id: 2, type: 'image', spaceId: 's1', text: 'Image', stackId: null, x: 0, y: 0, vx: 0, vy: 0, content: '', author: '', order: 0, date: '', priority: 'none', description: '', image: null, drawing: null, status: 'none', size: 1, tasks: [], table: [] });
+    await db.thoughts.add({ id: 2, type: 'file', spaceId: 's1', text: 'Image', stackId: null, x: 0, y: 0, vx: 0, vy: 0, author: '', order: 0, date: '', priority: 'none', description: '', status: 'none', size: 1, data: { type: 'file', url: '', name: 'test.png', size: 5 } });
     await db.blobs.add({ id: 'b1', thoughtId: 2, blob: new Blob(['hello'], { type: 'image/png' }), name: 'test.png', type: 'image/png', updatedAt: Date.now() });
     
     vi.mocked(supabaseSync.getSpaces).mockResolvedValue({ spaces: [] });
@@ -141,11 +141,11 @@ describe('syncOrchestrator', () => {
     expect(await syncOrchestrator.isLocalEmpty()).toBe(true);
     
     // Case 2: Only onboarding/workspace defaults (still "empty")
-    await db.thoughts.add({ id: 3, spaceId: 's-onboarding', text: 'Welcome', type: 'text', stackId: null, x: 0, y: 0, vx: 0, vy: 0, content: '', author: '', order: 0, date: '', priority: 'none', description: '', image: null, drawing: null, status: 'none', size: 1, tasks: [], table: [] });
+    await db.thoughts.add({ id: 3, spaceId: 's-onboarding', text: 'Welcome', type: 'text', stackId: null, x: 0, y: 0, vx: 0, vy: 0, author: '', order: 0, date: '', priority: 'none', description: '', status: 'none', size: 1, data: { type: 'text', content: '' } });
     expect(await syncOrchestrator.isLocalEmpty()).toBe(true);
     
     // Case 3: User content
-    await db.thoughts.add({ id: 4, spaceId: 'my-space', text: 'My Thought', type: 'text', stackId: null, x: 0, y: 0, vx: 0, vy: 0, content: '', author: '', order: 0, date: '', priority: 'none', description: '', image: null, drawing: null, status: 'none', size: 1, tasks: [], table: [] });
+    await db.thoughts.add({ id: 4, spaceId: 'my-space', text: 'My Thought', type: 'text', stackId: null, x: 0, y: 0, vx: 0, vy: 0, author: '', order: 0, date: '', priority: 'none', description: '', status: 'none', size: 1, data: { type: 'text', content: '' } });
     expect(await syncOrchestrator.isLocalEmpty()).toBe(false);
   });
 });

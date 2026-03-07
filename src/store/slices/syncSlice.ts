@@ -1,7 +1,6 @@
 import { type StateCreator } from 'zustand';
 import { db } from '../../db';
 import { syncOrchestrator } from '../../services/sync/syncOrchestrator';
-import { supabaseSync } from '../../services/supabaseSync';
 import { supabaseStorage } from '../../services/supabaseStorage';
 
 import { type AuthState } from '../types';
@@ -18,6 +17,7 @@ export interface SyncSlice {
   processOfflineChanges: () => Promise<void>;
   importCloudData: () => Promise<unknown | null>;
   mediaSweep: () => Promise<void>;
+  repairEmptyFileThoughts: () => Promise<number>;
   handlePostAuthSync: () => Promise<void>;
   setAutoSync: (enabled: boolean) => Promise<void>;
 }
@@ -33,6 +33,7 @@ export const createSyncSlice: StateCreator<AuthState, [], [], SyncSlice> = (set,
 
   syncData: async () => {
     console.log('[Auth] syncData called - forcing manual sync');
+    await get().repairEmptyFileThoughts();
     await syncOrchestrator.fullPushSync();
   },
 
@@ -68,7 +69,51 @@ export const createSyncSlice: StateCreator<AuthState, [], [], SyncSlice> = (set,
     }
   },
 
+  repairEmptyFileThoughts: async () => {
+    console.log('[Maintenance] Starting repair of empty file thoughts...');
+    try {
+      const fileThoughts = await db.thoughts.where('type').equals('file').toArray();
+      let markedForHealingCount = 0;
+
+      for (const t of fileThoughts) {
+        // Check if there is an entry in the blobs table for its id.
+        const blobEntry = await db.blobs.where('thoughtId').equals(t.id).first();
+        
+        // AGGRESSIVE: If we have a local blob, we clear the cloud URL and path 
+        // to prevent stale or duplicate URLs from causing issues.
+        // This ensures local priority - we will re-upload to a fresh unique URL.
+        if (blobEntry) {
+          // Only mark for healing if it's not already in a local/syncing state with no storage path
+          // OR if it has a storage path that we want to override with the local blob
+          if (t.storagePath || t.syncStatus === 'synced' || t.syncStatus === 'error') {
+            console.log(`[Maintenance] Marking thought ${t.id} for healing (has local blob)`);
+            await db.thoughts.update(t.id, {
+              syncStatus: 'local',
+              storageUrl: undefined,
+              storagePath: undefined,
+              data: { ...(t.data || {}), url: '' } as any
+            });
+            markedForHealingCount++;
+          }
+        }
+      }
+
+      console.log(`[Maintenance] Total thoughts marked for healing: ${markedForHealingCount}`);
+
+      if (markedForHealingCount > 0) {
+        console.log(`[Maintenance] ${markedForHealingCount} thoughts need re-upload. Starting mediaSweep...`);
+        await get().mediaSweep();
+      }
+
+      return markedForHealingCount;
+    } catch (err) {
+      console.error('[Maintenance] Repair failed:', err);
+      return 0;
+    }
+  },
+
   mediaSweep: async () => {
+
     const { autoSync, user, isOnline } = get();
     if (!autoSync || !user) return;
 
@@ -76,7 +121,7 @@ export const createSyncSlice: StateCreator<AuthState, [], [], SyncSlice> = (set,
     try {
       const { useStore } = await import('../useStore');
       const mediaThoughts = await db.thoughts
-        .filter(t => (t.type === 'image' || t.type === 'file') && t.syncStatus !== 'synced' && !t.deletedAt)
+        .filter(t => t.type === 'file' && t.syncStatus !== 'synced' && !t.deletedAt)
         .toArray();
 
       if (mediaThoughts.length === 0) {
@@ -118,7 +163,8 @@ export const createSyncSlice: StateCreator<AuthState, [], [], SyncSlice> = (set,
           const result = await supabaseStorage.uploadFile(
             user.id,
             blobEntry.blob,
-            blobEntry.name
+            blobEntry.name,
+            t.id
           );
 
           await db.thoughts.update(t.id, {
@@ -172,12 +218,18 @@ export const createSyncSlice: StateCreator<AuthState, [], [], SyncSlice> = (set,
           const { useModalStore } = await import('../useModalStore');
           
           useStore.setState({ isInitializing: false });
+          
+          await syncOrchestrator.setSyncBlocked(true);
 
           await new Promise((resolve) => {
             useModalStore.getState().openModal({
               title: 'Choose Data Source',
               description: 'Do you want to use your cloud backup or keep your local workspace?',
               type: 'conflict_resolver',
+              onCancel: () => {
+                console.log('[Sync] Conflict modal cancelled');
+                resolve(void 0);
+              },
               onConfirm: async (choice) => {
                 console.log('[Sync] User choice:', choice);
                 useStore.setState({ isInitializing: true });
@@ -202,7 +254,7 @@ export const createSyncSlice: StateCreator<AuthState, [], [], SyncSlice> = (set,
                     // NO cloud storage cleanup when choosing cloud!
                   } else if (choice === 'local') {
                     // Push local to cloud (wipes cloud first, then pushes)
-                    await syncOrchestrator.fullPushSync();
+                    await syncOrchestrator.fullPushSync(true);
                     
                     // Clean up CLOUD orphaned files (this is correct for local choice)
                     const validPaths = new Set<string>();
@@ -226,10 +278,13 @@ export const createSyncSlice: StateCreator<AuthState, [], [], SyncSlice> = (set,
             });
           });
         } else if (!data || cloudIsEmpty) {
-          console.log('[Sync] Cloud is empty or no data, pushing local data to cloud...');
-          if (get().status === 'authenticated') {
+          console.log('[Sync] Cloud is empty or no data, checking auto-sync...');
+          if (get().status === 'authenticated' && get().autoSync) {
+            console.log('[Sync] Auto-sync is ON, pushing local data to cloud...');
             await syncOrchestrator.fullPushSync();
             await get().mediaSweep();
+          } else {
+            console.log('[Sync] Auto-sync is OFF, skipping automatic push');
           }
         }
         
@@ -242,6 +297,7 @@ export const createSyncSlice: StateCreator<AuthState, [], [], SyncSlice> = (set,
         set({ syncStatus: 'error' });
       } finally {
         set({ _syncPromise: null });
+        await syncOrchestrator.setSyncBlocked(false);
         // Only clear initializing if we are actually in a booting sequence
         if (isBooting) {
           useStore.setState({ isInitializing: false });
@@ -257,14 +313,11 @@ export const createSyncSlice: StateCreator<AuthState, [], [], SyncSlice> = (set,
     localStorage.setItem('cyberia-auto-sync', String(enabled));
     set({ autoSync: enabled });
     
-    // Save to Supabase for cross-device persistence
+    // Save to Supabase for cross-device persistence and ensure user settings are in sync
     const { user, accessToken } = get();
     if (user && accessToken) {
       try {
-        await supabaseSync.updateSettings(user.id, { autoSync: enabled });
-        const updatedUser = { ...user, settings: { ...user.settings, autoSync: enabled } };
-        set({ user: updatedUser });
-        localStorage.setItem('cyberia-user', JSON.stringify(updatedUser));
+        await get().updateSettings({ autoSync: enabled });
       } catch (e) {
         console.warn('[Auth] Failed to save autoSync preference:', e);
       }

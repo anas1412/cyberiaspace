@@ -1,6 +1,7 @@
 import React, { useMemo, useEffect, useRef } from 'react';
 import { useStore } from '../store/useStore';
-import { Image as ImageIcon, ChevronLeft, ChevronRight, Maximize2, Download } from 'lucide-react';
+import { useThoughtPayload } from './thought/hooks/useThoughtPayload';
+import { ChevronLeft, ChevronRight, Download, Image } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { FocusEditorShell } from './editors/FocusEditorShell';
 import { clsx, type ClassValue } from 'clsx';
@@ -21,6 +22,7 @@ const Lightbox: React.FC = () => {
   const isReadOnly = useStore((state) => state.isReadOnly);
 
   const thought = thoughts.find((t) => t.id === lightboxThoughtId);
+  const { image } = useThoughtPayload(thought);
   const stack = stacks.find((s) => s.id === thought?.stackId);
   const isVisible = isLightboxOpen && !!thought;
 
@@ -29,7 +31,13 @@ const Lightbox: React.FC = () => {
   const stackItems = useMemo(() => {
     if (!thought?.stackId) return [];
     return thoughts
-      .filter(t => t.stackId === thought.stackId && t.type === 'image' && t.image)
+      .filter(t => t.stackId === thought.stackId && t.type === 'file')
+      .filter(t => {
+        // Only include files that are actually images
+        const isImg = t.meta?.file?.type?.startsWith('image/') || 
+                      t.text?.toLowerCase().match(/\.(jpg|jpeg|png|gif|webp|svg)$/);
+        return !!isImg;
+      })
       .sort((a, b) => (a.order || 0) - (b.order || 0));
   }, [thoughts, thought]);
 
@@ -45,8 +53,11 @@ const Lightbox: React.FC = () => {
     if (nextIndex >= stackItems.length) nextIndex = 0;
     
     const nextThought = stackItems[nextIndex];
-    if (nextThought && nextThought.image) {
-      openLightbox(nextThought.image, nextThought.id);
+    if (nextThought) {
+      const nextPayload = nextThought.data?.type === 'file' ? nextThought.data.url : (nextThought as any).image;
+      if (nextPayload) {
+        openLightbox(nextPayload, nextThought.id);
+      }
     }
   };
 
@@ -76,9 +87,9 @@ const Lightbox: React.FC = () => {
   if (!thought) return null;
 
   const handleDownload = () => {
-    if (!thought.image) return;
+    if (!image) return;
     const link = document.createElement('a');
-    link.href = thought.image;
+    link.href = image;
     link.download = `cyberia-image-${thought.id}.png`;
     document.body.appendChild(link);
     link.click();
@@ -89,13 +100,13 @@ const Lightbox: React.FC = () => {
     <FocusEditorShell
       isVisible={isVisible}
       onClose={closeLightbox}
-      icon={ImageIcon}
       title={thought.text}
       onTitleChange={(val) => { if (!isReadOnly) updateThought(thought.id, { text: val }); }}
       description={thought.description}
       isReadOnly={isReadOnly}
       stack={stack}
       maxWidth="1200px"
+      icon={Image}
       headerActions={
         <button 
           onClick={handleDownload}
@@ -107,7 +118,7 @@ const Lightbox: React.FC = () => {
       }
       footerStatus={
         <p className="text-[8px] md:text-[10px] uppercase font-black tracking-widest text-slate-600 italic">
-          Resolution: {thought.image?.startsWith('data:image/') ? 'Buffered Asset' : 'External Link'}
+          Resolution: {image?.startsWith('data:image/') ? 'Buffered Asset' : 'External Link'}
         </p>
       }
     >
@@ -139,7 +150,7 @@ const Lightbox: React.FC = () => {
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 1.02, y: -10 }}
               transition={{ duration: 0.4, ease: [0.23, 1, 0.32, 1] }}
-              src={thought.image || undefined} 
+              src={image || undefined} 
               className="max-w-full max-h-full object-contain rounded-xl shadow-2xl" 
               alt={thought.text} 
             />
@@ -159,34 +170,21 @@ const Lightbox: React.FC = () => {
                 <span className="text-[8px] font-bold text-slate-600 uppercase tracking-widest">{currentIndex + 1} / {stackItems.length} Images</span>
               </div>
               <div className="flex gap-3 overflow-x-auto custom-scroll pb-2 w-full snap-x" ref={scrollerRef}>
-                {stackItems.map((item, idx) => (
-                  <button
-                    key={item.id}
-                    onClick={() => openLightbox(item.image!, item.id)}
-                    className={cn(
-                      "flex-shrink-0 w-24 md:w-32 aspect-video rounded-xl overflow-hidden border transition-all group/item snap-start relative bg-white/[0.02]",
-                      idx === currentIndex ? "border-[var(--accent)] ring-2 ring-[var(--accent)]/20 scale-95" : "border-white/5 hover:border-white/20"
-                    )}
-                  >
-                    <img 
-                      src={item.image!} 
-                      alt={item.text} 
+                {stackItems.map((item, idx) => {
+                  const itemImage = item.data?.type === 'file' ? item.data.url : (item as any).image;
+                  return (
+                    <button
+                      key={item.id}
+                      onClick={() => openLightbox(itemImage!, item.id)}
                       className={cn(
-                        "w-full h-full object-cover transition-opacity duration-500",
-                        idx === currentIndex ? "opacity-100" : "opacity-40 group-hover/item:opacity-80"
-                      )} 
-                    />
-                    <div className={cn(
-                      "absolute inset-0 bg-[var(--accent)]/10 transition-opacity",
-                      idx === currentIndex ? "opacity-100" : "opacity-0 group-hover/item:opacity-100"
-                    )} />
-                    {idx === currentIndex && (
-                      <div className="absolute top-2 right-2">
-                        <Maximize2 className="w-3 h-3 text-[var(--accent-secondary)]" />
-                      </div>
-                    )}
-                  </button>
-                ))}
+                        "flex-shrink-0 w-24 md:w-32 aspect-video rounded-xl overflow-hidden border transition-all group/item snap-start relative bg-white/[0.02]",
+                        idx === currentIndex ? "border-[var(--accent)] ring-2 ring-[var(--accent)]/20 scale-95" : "border-white/5 hover:border-white/20"
+                      )}
+                    >
+                      <img src={itemImage!} alt={item.text} className="w-full h-full object-cover opacity-40 group-hover/item:opacity-100 transition-opacity" />
+                    </button>
+                  );
+                })}
               </div>
             </motion.div>
           )}

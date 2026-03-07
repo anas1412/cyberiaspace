@@ -33,7 +33,7 @@ export const spatialStrategy: LayoutStrategist = {
     };
   },
 
-  applyForces: (id, p, allStates, thought, allThoughts, context, elementHeights) => {
+  applyForces: (id, p, allStates, thought, _allThoughts, context, elementHeights) => {
     let dvx = 0;
     let dvy = 0;
 
@@ -49,7 +49,7 @@ export const spatialStrategy: LayoutStrategist = {
     allStates.forEach((otherP, otherId) => {
       if (id === otherId) return;
       
-      const otherT = allThoughts.find(t => t.id === otherId);
+      const otherT = context.thoughtMap.get(otherId);
       if (!otherT) return;
 
       const centerA = { x: p.x + 140, y: p.y + (elementHeights.get(id) || 120) / 2 };

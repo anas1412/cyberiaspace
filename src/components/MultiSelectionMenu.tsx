@@ -1,7 +1,7 @@
 import React from 'react';
 import { useStore } from '../store/useStore';
 import { useModalStore } from '../store/useModalStore';
-import { X, Trash2, Calendar, ChevronLeft, ChevronRight, Layers } from 'lucide-react';
+import { X, Trash2, Calendar, ChevronLeft, ChevronRight } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 const BatchDatePicker: React.FC<{ onSelect: (val: string) => void }> = ({ onSelect }) => {
@@ -88,7 +88,7 @@ const MultiSelectionMenu: React.FC = () => {
   const isMobile = typeof window !== 'undefined' ? window.innerWidth < 768 : false;
 
   const sharedStack = React.useMemo(() => {
-    if (selectedThoughtIds.length < 2) return null;
+    if (!selectedThoughtIds || selectedThoughtIds.length < 2) return null;
     const selectedThoughts = thoughts.filter(t => selectedThoughtIds.includes(t.id));
     const firstStackId = selectedThoughts[0]?.stackId;
     if (!firstStackId) return null;
@@ -98,7 +98,7 @@ const MultiSelectionMenu: React.FC = () => {
   const [localStackName, setLocalStackName] = React.useState('');
   React.useEffect(() => setLocalStackName(sharedStack?.name || ''), [sharedStack]);
 
-  if (selectedThoughtIds.length < 2 || isReadOnly) return null;
+  if (!selectedThoughtIds || selectedThoughtIds.length < 2 || isReadOnly) return null;
 
   return (
     <AnimatePresence>
@@ -110,18 +110,11 @@ const MultiSelectionMenu: React.FC = () => {
       >
         {/* MATCHING HEADER STYLE */}
         <div className="p-4 md:p-5 border-b border-white/5 bg-black/20 backdrop-blur-md sticky top-0 z-20">
-          <div className="flex justify-between items-center">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-blue-500/10 rounded-xl flex items-center justify-center border border-blue-500/20 shadow-[0_0_20px_rgba(99,102,241,0.15)]">
-                <Layers className="w-5 h-5 text-blue-400" />
-              </div>
-              <div>
-                <h3 className="text-xs font-black uppercase tracking-[0.2em] text-white leading-none">Bulk Actions</h3>
-                <div className="flex items-center gap-2 mt-1">
-                  <span className="w-1 h-1 rounded-full bg-blue-500 shadow-[0_0_8px_rgba(99,102,241,0.6)]" />
-                  <span className="text-[8px] font-bold text-slate-500 uppercase tracking-widest leading-none">{selectedThoughtIds.length} Nodes Selected</span>
-                </div>
-              </div>
+          <div className="flex justify-between items-center relative">
+            <div className="w-8" /> {/* Spacer to help center */}
+            <div className="flex-1 flex flex-col items-center">
+              <h3 className="text-xs font-black uppercase tracking-[0.2em] text-white leading-none">Selection</h3>
+              <span className="text-[8px] font-bold text-slate-500 uppercase tracking-widest leading-none mt-1">{selectedThoughtIds.length} Items Selected</span>
             </div>
             <button onClick={clearSelection} className="p-2 hover:bg-white/5 rounded-lg text-slate-500 hover:text-white transition-all">
               <X className="w-4 h-4" />
@@ -132,7 +125,7 @@ const MultiSelectionMenu: React.FC = () => {
         <div className="flex-1 overflow-y-auto custom-scroll p-4 md:p-6 space-y-6">
           {/* 1. Status Batch */}
           <div className="space-y-3">
-            <label className="text-[9px] uppercase font-bold tracking-widest text-slate-500 ml-1">Batch Status</label>
+            <label className="text-[9px] uppercase font-bold tracking-widest text-slate-500 ml-1">Progress</label>
             <div className="grid grid-cols-4 gap-1">
               {(['none', 'todo', 'doing', 'done'] as const).map(s => (
                 <button
@@ -148,7 +141,7 @@ const MultiSelectionMenu: React.FC = () => {
 
           {/* 2. Priority Batch */}
           <div className="space-y-3">
-            <label className="text-[9px] uppercase font-bold tracking-widest text-slate-500 ml-1">Batch Priority</label>
+            <label className="text-[9px] uppercase font-bold tracking-widest text-slate-500 ml-1">Priority</label>
             <div className="grid grid-cols-5 gap-1">
               {(['none', 'low', 'medium', 'high', 'urgent'] as const).map(p => (
                 <button
@@ -164,19 +157,19 @@ const MultiSelectionMenu: React.FC = () => {
 
           {/* 3. Date Batch */}
           <div className="space-y-3">
-            <label className="text-[9px] uppercase font-bold tracking-widest text-slate-500 ml-1">Temporal Alignment</label>
+            <label className="text-[9px] uppercase font-bold tracking-widest text-slate-500 ml-1">Date</label>
             <BatchDatePicker onSelect={(date) => updateThoughts(selectedThoughtIds, { date })} />
           </div>
 
           {/* 4. Stack Management */}
           <div className="space-y-3 pt-4 border-t border-white/5">
-            <label className="text-[9px] uppercase font-bold tracking-widest text-slate-500 ml-1">Collection</label>
+            <label className="text-[9px] uppercase font-bold tracking-widest text-slate-500 ml-1">Group</label>
             <div className="p-4 bg-[var(--bg-page)]/20 border border-white/10 rounded-2xl space-y-4">
               <input
                 type="text"
                 value={localStackName}
                 onChange={(e) => setLocalStackName(e.target.value)}
-                placeholder="Name your collection..."
+                placeholder="Name your group..."
                 className="w-full bg-transparent text-[10px] font-black uppercase tracking-widest text-white outline-none border-b border-white/5 pb-2"
               />
               <button
@@ -190,12 +183,12 @@ const MultiSelectionMenu: React.FC = () => {
                 disabled={!!sharedStack && localStackName.trim() === sharedStack.name}
                 className="w-full py-3 bg-blue-500/10 hover:bg-blue-500/20 border border-blue-500/30 text-blue-400 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all disabled:opacity-30 disabled:cursor-not-allowed"
               >
-                {sharedStack ? 'Rename Collection' : 'Link into New Collection'}
+                {sharedStack ? 'Rename Group' : 'Link into New Group'}
               </button>
 
               {stacks.length > 0 && !sharedStack && (
                 <div className="space-y-1.5 pt-2">
-                  <label className="text-[7px] uppercase font-black tracking-[0.2em] text-slate-600 ml-1">Add to Existing</label>
+                  <label className="text-[7px] uppercase font-black tracking-[0.2em] text-slate-600 ml-1">Add to Group</label>
                   <div className="flex flex-col gap-1 max-h-[160px] overflow-y-auto custom-scroll pr-1">
                     {stacks.map(s => (
                       <button
@@ -212,7 +205,7 @@ const MultiSelectionMenu: React.FC = () => {
               )}
 
               {sharedStack && (
-                <button onClick={unlinkSelectedThoughts} className="w-full py-2 bg-white/5 hover:bg-red-500/10 text-slate-500 hover:text-red-400 border border-white/5 rounded-xl text-[8px] font-black uppercase tracking-widest transition-all">Dissolve Collection</button>
+                <button onClick={unlinkSelectedThoughts} className="w-full py-2 bg-white/5 hover:bg-red-500/10 text-slate-500 hover:text-red-400 border border-white/5 rounded-xl text-[8px] font-black uppercase tracking-widest transition-all">Dissolve Group</button>
               )}
             </div>
           </div>
@@ -222,11 +215,11 @@ const MultiSelectionMenu: React.FC = () => {
         {/* FOOTER ACTIONS */}
         <div className="p-4 md:p-6 bg-black/40 border-t border-white/5 mt-auto">
           <button
-            onClick={() => openModal({ title: `Purge ${selectedThoughtIds.length} Nodes?`, description: 'This action is permanent and clears them from all views.', type: 'delete_thought', confirmText: 'Purge Selected', onConfirm: () => deleteSelectedThoughts() })}
+            onClick={() => openModal({ title: `Delete ${selectedThoughtIds.length} Nodes?`, description: 'This action is permanent and clears them from all views.', type: 'delete_thought', confirmText: 'Delete Selected', onConfirm: () => deleteSelectedThoughts() })}
             className="w-full py-4 bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/20 rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] transition-all flex items-center justify-center gap-3 group"
           >
             <Trash2 className="w-4 h-4 group-hover:scale-110 transition-transform" />
-            Purge Selected
+            Delete Selected
           </button>
         </div>
       </motion.div>
