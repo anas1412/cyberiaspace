@@ -10,7 +10,9 @@ import { migrateThoughtsToModular, migrateLegacyIds } from '../../utils/migratio
 export const createDataSlice: StateCreator<CyberiaState, [], [], any> = (set, get, _api) => ({
   isInitializing: true,
   isDemo: false,
+  lastSpaceRequestId: 0,
   _savedUserState: null as { spaces: Space[]; thoughts: Thought[]; stacks: Stack[]; activeSpaceId: string | null } | null,
+
 
   init: async () => {
     try {

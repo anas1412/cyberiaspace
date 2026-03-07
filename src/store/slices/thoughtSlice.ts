@@ -144,6 +144,39 @@ export const createThoughtSlice: StateCreator<CyberiaState, [], [], any> = (set,
     }
   },
 
+  bulkUpdateThoughts: async (updates: { id: number; updates: Partial<Thought> }[]) => {
+    if (get().isReadOnly || !updates.length) return;
+    const { thoughts, activeSpaceId } = get();
+
+    // 1. Store Update (One set() call)
+    const updateMap = new Map(updates.map(u => [u.id, u.updates]));
+    const nextThoughts = thoughts.map(t => {
+      const u = updateMap.get(t.id);
+      return u ? { ...t, ...u } : t;
+    });
+    set({ thoughts: nextThoughts } as Partial<CyberiaState>);
+
+    // 2. Dexie Transaction
+    await db.transaction('rw', db.thoughts, async () => {
+      for (const { id, updates: u } of updates) {
+        // Sanitize date if present
+        if (u.date) {
+          u.date = sanitizeDate(u.date);
+        }
+        await db.thoughts.update(id, u);
+      }
+    });
+
+    if (activeSpaceId) get().updateSpace(activeSpaceId, { updatedAt: new Date().toISOString() });
+    get().pushHistory();
+
+    const { useAuthStore } = await import('../useAuthStore');
+    const authStore = useAuthStore.getState();
+    if (authStore.autoSync && authStore.status === 'authenticated') {
+      await syncOrchestrator.triggerSync();
+    }
+  },
+
   deleteThought: async (id: number) => {
     if (get().isReadOnly || get().isDemo) return;
     const thought = get().thoughts.find((t: Thought) => t.id === id);
