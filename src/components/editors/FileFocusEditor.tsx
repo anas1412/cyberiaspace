@@ -77,11 +77,10 @@ const EditorContent: React.FC<{
   const isVideo = mimeType.startsWith('video/') || ['mp4', 'webm', 'mov', 'm4v'].includes(extension);
   const isAudio = mimeType.startsWith('audio/') || ['mp3', 'wav', 'ogg'].includes(extension);
   
-  // Special handling for images including "Pasted Image" fallback
-  const isImage = mimeType.startsWith('image/') || 
-                  ['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg'].includes(extension) || 
-                  fileName.includes('pasted_image') ||
-                  (!!activeSource && !isPdf && !isVideo && !isAudio && fileName.includes('image'));
+  // Strict Image Detection (Exclude Audio, Video, and PDF)
+  const isImage = (mimeType.startsWith('image/') || 
+                  ['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg'].includes(extension)) && 
+                  !isAudio && !isVideo && !isPdf;
 
   console.log('[FileFocus] Type Detection:', { 
     fileName, 
