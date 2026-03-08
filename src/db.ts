@@ -102,7 +102,7 @@ interface LocalBlob {
   blob: Blob;
   name: string;
   type: string;
-  updatedAt: number;
+  updatedAt: string;
 }
 
 interface PendingDeletion {
@@ -110,7 +110,7 @@ interface PendingDeletion {
   tableName: 'spaces' | 'stacks' | 'thoughts';
   localId: string | number;
   storagePath?: string;
-  createdAt: number;
+  createdAt: string;
 }
 
 interface PendingBlob {
@@ -118,7 +118,7 @@ interface PendingBlob {
   thoughtId: number;
   name: string;
   type: string;
-  createdAt: number;
+  createdAt: string;
   retryCount: number;
 }
 
