@@ -75,7 +75,7 @@ export const createSyncSlice: StateCreator<AuthState, [], [], SyncSlice> = (set,
     try {
       const allThoughts = await db.thoughts.toArray();
       const allSpaces = await db.spaces.toArray();
-      const allStacks = await db.stacks.toArray();
+      
       const { useStore } = await import('../useStore');
       
       let repairCount = 0;
@@ -191,7 +191,7 @@ export const createSyncSlice: StateCreator<AuthState, [], [], SyncSlice> = (set,
             thoughtId: t.id,
             name: blobEntry.name,
             type: blobEntry.type,
-            createdAt: Date.now(),
+            createdAt: new Date().toISOString(),
             retryCount: 0
           });
           await db.thoughts.update(t.id, { syncStatus: 'pending' });

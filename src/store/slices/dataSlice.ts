@@ -542,7 +542,7 @@ export const createDataSlice: StateCreator<CyberiaState, [], [], any> = (set, ge
       const orphanedBlobs = allBlobs.filter(b => !allThoughtIds.has(b.thoughtId));
       
       // Apply TTL: Filter orphans where updatedAt is older than 30 days
-      const blobsToPurge = orphanedBlobs.filter(b => b.updatedAt < thirtyDaysAgo);
+      const blobsToPurge = orphanedBlobs.filter(b => new Date(b.updatedAt).getTime() < thirtyDaysAgo);
       
       if (blobsToPurge.length > 0) {
         const blobIds = blobsToPurge.map(b => b.id);

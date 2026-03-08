@@ -94,7 +94,7 @@ export const createStorageSlice: StateCreator<AuthState, [], [], any> = (set, ge
           thoughtId,
           name: blobEntry.name,
           type: blobEntry.type,
-          createdAt: Date.now(),
+          createdAt: new Date().toISOString(),
           retryCount: 0
         });
         const updates = { syncStatus: 'pending' as const };
@@ -184,7 +184,7 @@ export const createStorageSlice: StateCreator<AuthState, [], [], any> = (set, ge
         blob,
         name: fileName,
         type: fileType,
-        updatedAt: Date.now()
+        updatedAt: new Date().toISOString()
       });
 
       // Dynamic import to avoid circular dependency
@@ -239,7 +239,7 @@ export const createStorageSlice: StateCreator<AuthState, [], [], any> = (set, ge
               blob,
               name: t.text || 'asset',
               type: blob.type || 'application/octet-stream',
-              updatedAt: Date.now()
+              updatedAt: new Date().toISOString()
             });
 
             // Ping UI for each thought in the batch
@@ -280,7 +280,7 @@ export const createStorageSlice: StateCreator<AuthState, [], [], any> = (set, ge
           tableName: 'thoughts',
           localId: thought.id,
           storagePath: thought.storagePath,
-          createdAt: Date.now(),
+          createdAt: new Date().toISOString(),
         }).catch(() => {});
       }
 
@@ -323,7 +323,7 @@ export const createStorageSlice: StateCreator<AuthState, [], [], any> = (set, ge
       tableName: 'thoughts',
       localId: thought.id,
       storagePath: storagePath,
-      createdAt: Date.now(),
+      createdAt: new Date().toISOString(),
     }).catch(() => {});
 
     // Try immediate deletion
