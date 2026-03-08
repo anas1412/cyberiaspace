@@ -138,10 +138,10 @@ export const SystemTray: React.FC<SystemTrayProps> = ({
           <button 
             onClick={() => { 
               openModal({ 
-                title: 'Clear Workspace?', 
-                description: 'This will delete all spaces, thoughts, and stacks, leaving one fresh workspace. This cannot be undone.', 
+                title: 'Clear Everything?', 
+                description: 'This will permanently delete ALL local data and your Cloud Backup (including files). This action is irreversible.', 
                 type: 'reset_confirm', 
-                confirmText: 'Clear All', 
+                confirmText: 'Nuclear Wipe', 
                 onConfirm: () => useStore.getState().clearWorkspace() 
               }); 
               setIsSystemMenuOpen(false); 
@@ -153,10 +153,10 @@ export const SystemTray: React.FC<SystemTrayProps> = ({
           <button 
             onClick={() => { 
               openModal({ 
-                title: 'Reset App & Data?', 
-                description: 'This will permanently delete all your data, clear your session, and reset the onboarding. This cannot be undone.', 
+                title: 'Factory Reset App?', 
+                description: 'This will clear your local session and log you out. Your cloud data remains safe and can be restored by signing in again.', 
                 type: 'reset_confirm', 
-                confirmText: 'Reset App', 
+                confirmText: 'Reset Local', 
                 onConfirm: () => useStore.getState().clearLocalData() 
               }); 
               setIsSystemMenuOpen(false); 

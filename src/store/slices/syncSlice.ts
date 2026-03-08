@@ -79,22 +79,27 @@ export const createSyncSlice: StateCreator<AuthState, [], [], SyncSlice> = (set,
         // Check if there is an entry in the blobs table for its id.
         const blobEntry = await db.blobs.where('thoughtId').equals(t.id).first();
         
-        // AGGRESSIVE: If we have a local blob, we clear the cloud URL and path 
-        // to prevent stale or duplicate URLs from causing issues.
-        // This ensures local priority - we will re-upload to a fresh unique URL.
+        // CASE 1: We have a local blob but no cloud link, or stale cloud link
         if (blobEntry) {
-          // Only mark for healing if it's not already in a local/syncing state with no storage path
-          // OR if it has a storage path that we want to override with the local blob
-          if (t.storagePath || t.syncStatus === 'synced' || t.syncStatus === 'error') {
+          if (!t.storagePath || t.syncStatus !== 'synced') {
             console.log(`[Maintenance] Marking thought ${t.id} for healing (has local blob)`);
+            const currentData = (t.data || {}) as any;
             await db.thoughts.update(t.id, {
               syncStatus: 'local',
-              storageUrl: undefined,
-              storagePath: undefined,
-              data: { ...(t.data || {}), url: '' } as any
+              storageUrl: t.storageUrl || undefined, // Keep existing if present
+              storagePath: t.storagePath || undefined,
+              data: { ...currentData, url: currentData.url || t.storageUrl || '' } as any
             });
             markedForHealingCount++;
           }
+        } 
+        // CASE 2: We have a cloud link but the modular payload is empty (Device 2 issue)
+        else if (t.storageUrl && (!(t.data as any)?.url)) {
+          console.log(`[Maintenance] Healing thought ${t.id} metadata (missing modular URL)`);
+          await db.thoughts.update(t.id, {
+            data: { ...(t.data || {}), url: t.storageUrl } as any
+          });
+          markedForHealingCount++;
         }
       }
 
@@ -167,10 +172,25 @@ export const createSyncSlice: StateCreator<AuthState, [], [], SyncSlice> = (set,
             t.id
           );
 
+          const currentData = (t.data || {}) as any;
           const updates = {
             storageUrl: result.url,
             storagePath: result.path,
-            syncStatus: 'synced' as const
+            syncStatus: 'synced' as const,
+            data: {
+              ...currentData,
+              type: 'file',
+              url: result.url,
+              meta: {
+                ...(currentData.meta || {}),
+                file: {
+                  ...(currentData.meta?.file || {}),
+                  name: blobEntry.name,
+                  size: blobEntry.blob.size,
+                  type: blobEntry.blob.type
+                }
+              }
+            }
           };
 
           await db.thoughts.update(t.id, updates);

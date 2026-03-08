@@ -222,36 +222,69 @@ export const syncOrchestrator = {
         const nonOnboardingThoughts = activeLocalThoughts.filter(t => !onboardingSpaceIds.has(t.spaceId));
 
         // Upload new files if user has auto-sync enabled
+        let anyMediaUploaded = false;
         if (authState.autoSync || bypassBlock) {
-          for (const thought of nonOnboardingThoughts) {
+          for (let i = 0; i < nonOnboardingThoughts.length; i++) {
+            const thought = nonOnboardingThoughts[i];
             // Upload new files if thought has a blob and no storagePath (or is in local/error state)
             if (thought.type === 'file' && (!thought.storagePath || thought.syncStatus === 'local' || thought.syncStatus === 'error')) {
               const blob = await db.blobs.where('thoughtId').equals(thought.id).first();
               if (blob?.blob) {
                 console.log(`[Sync] Uploading media for thought ${thought.id}...`);
                 const result = await supabaseStorage.uploadFile(userId, blob.blob, blob.name, thought.id);
-                await db.thoughts.update(thought.id, {
+                
+                // Update MODULAR data payload to ensure cloud metadata is in sync
+                const currentData = (thought.data || {}) as any;
+                const updatedData = { 
+                  ...currentData, 
+                  url: result.url,
+                  meta: {
+                    ...(currentData.meta || {}),
+                    file: {
+                      ...(currentData.meta?.file || {}),
+                      name: blob.name,
+                      size: blob.blob.size,
+                      type: blob.blob.type
+                    }
+                  }
+                };
+
+                const updates = {
                   storageUrl: result.url,
                   storagePath: result.path,
-                  syncStatus: 'synced',
-                });
+                  syncStatus: 'synced' as const,
+                  data: updatedData
+                };
+
+                await db.thoughts.update(thought.id, updates);
+                
+                // CRITICAL: Update the in-memory object so the final cloud push has the correct links
+                nonOnboardingThoughts[i] = { ...thought, ...updates };
+                
                 validStoragePaths.add(result.path);
+                anyMediaUploaded = true;
                 console.log(`[Sync] Uploaded file for thought ${thought.id}: ${result.path}`);
               }
             }
           }
         }
         
+        // Final sanity check: If we uploaded media, re-fetch to ensure memory is 100% aligned with DB
+        let thoughtsToPush: any[] = [];
+        if (anyMediaUploaded) {
+          console.log('[Sync] Refreshing thought list after media uploads...');
+          const refreshedThoughts = await db.thoughts.where('id').anyOf(nonOnboardingThoughts.map(t => t.id)).toArray();
+          thoughtsToPush = refreshedThoughts.map(rt => ({ ...rt, user_id: userId }));
+        } else {
+          thoughtsToPush = nonOnboardingThoughts.map(t => ({ ...t, user_id: userId }));
+        }
+
         // Push thoughts to cloud
-        const cleanedThoughts = nonOnboardingThoughts.map(t => ({
-          ...t,
-          user_id: userId,
-        }));
-        if (cleanedThoughts.length > 0) {
-          await supabaseSync.createThoughts(cleanedThoughts);
+        if (thoughtsToPush.length > 0) {
+          await supabaseSync.createThoughts(thoughtsToPush);
           // Mark as synced locally
-          await db.thoughts.where('id').anyOf(cleanedThoughts.map(t => t.id)).modify({ syncStatus: 'synced' });
-          console.log(`[Sync] ${cleanedThoughts.length} thoughts synced successfully`);
+          await db.thoughts.where('id').anyOf(thoughtsToPush.map(t => t.id)).modify({ syncStatus: 'synced' });
+          console.log(`[Sync] ${thoughtsToPush.length} thoughts synced successfully`);
         }
       }
       
