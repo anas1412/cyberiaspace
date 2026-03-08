@@ -190,7 +190,7 @@ export const createStorageSlice: StateCreator<AuthState, [], [], any> = (set, ge
       // Dynamic import to avoid circular dependency
       const { useStore } = await import('../useStore');
       // "Ping" the UI by updating updatedAt
-      await useStore.getState().updateThought(thoughtId, { updatedAt: Date.now() }, { skipSync: true });
+      await useStore.getState().updateThought(thoughtId, { updatedAt: new Date().toISOString() }, { skipSync: true });
       console.log(`[Storage] Priority download complete: ${thoughtId}`);
     } catch (err) {
       console.error(`[Storage] Priority download failed for ${thoughtId}:`, err);
@@ -243,7 +243,7 @@ export const createStorageSlice: StateCreator<AuthState, [], [], any> = (set, ge
             });
 
             // Ping UI for each thought in the batch
-            await useStore.getState().updateThought(t.id, { updatedAt: Date.now() }, { skipSync: true });
+            await useStore.getState().updateThought(t.id, { updatedAt: new Date().toISOString() }, { skipSync: true });
           } catch (e) {
             console.warn(`[Storage] Background download failed for ${t.id}:`, e);
           }
