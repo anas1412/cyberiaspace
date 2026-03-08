@@ -70,6 +70,7 @@ interface Thought {
   y: number;
   vx: number;
   vy: number;
+  createdAt?: string | null;
   text: string;
   placeholder?: string;
   description: string;

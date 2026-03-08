@@ -5,6 +5,8 @@ import { syncOrchestrator } from '../../services/sync/syncOrchestrator';
 import { useModalStore } from '../useModalStore';
 import { sanitizeDate } from '../../utils/date';
 
+
+
 export const createThoughtSlice: StateCreator<CyberiaState, [], [], any> = (set, get) => ({
   thoughts: [],
   totalThoughtCount: 0,

@@ -2,29 +2,28 @@
  * Sanitizes a date string to ensure it is in YYYY-MM-DD format.
  * Handles inputs like ISO strings, date-time strings, or malformed text.
  */
-export const sanitizeDate = (dateStr: string | null | undefined): string => {
+export const sanitizeDate = (dateStr: string | number | null | undefined): string => {
   if (!dateStr) return '';
   
   try {
-    // Try to parse the date. AI often returns ISO strings or "YYYY-MM-DD HH:mm:ss"
+    // Handle numeric timestamps
+    if (typeof dateStr === 'number') {
+      return new Date(dateStr).toISOString().split('T')[0];
+    }
+
     const date = new Date(dateStr);
     
     if (isNaN(date.getTime())) {
-      // Fallback: If it contains a dash, try to extract YYYY-MM-DD via regex
-      const match = dateStr.match(/(\d{4}-\d{2}-\d{2})/);
+      const match = String(dateStr).match(/(d{4}-d{2}-d{2})/);
       return match ? match[1] : '';
     }
     
-    // Return only the date part in YYYY-MM-DD format
     return date.toISOString().split('T')[0];
   } catch (e) {
     return '';
   }
 };
 
-/**
- * Formats a date string into a relative human-readable string (Today, Tomorrow, etc.)
- */
 export const formatRelativeDate = (dateStr: string | null | undefined): string => {
   const sanitized = sanitizeDate(dateStr);
   if (!sanitized) return '';
