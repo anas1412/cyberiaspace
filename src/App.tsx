@@ -266,7 +266,7 @@ function App() {
               blob: bestFile,
               name: fileName,
               type: actualType,
-              updatedAt: Date.now()
+              updatedAt: new Date().toISOString()
             });
             
             setSelectedThoughtId(id);

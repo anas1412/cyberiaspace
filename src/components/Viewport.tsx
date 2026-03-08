@@ -386,7 +386,7 @@ const Viewport: React.FC<{ isInteracting?: boolean }> = ({ isInteracting }) => {
               blob: file,
               name: file.name,
               type: file.type,
-              updatedAt: Date.now()
+              updatedAt: new Date().toISOString()
             });
             setSelectedThoughtId(id);
             uploadThoughtBlob(id);
@@ -424,7 +424,7 @@ const Viewport: React.FC<{ isInteracting?: boolean }> = ({ isInteracting }) => {
               blob: file,
               name: file.name,
               type: file.type,
-              updatedAt: Date.now()
+              updatedAt: new Date().toISOString()
             });
             setSelectedThoughtId(id);
             setInspectorOpen(true);

@@ -71,6 +71,16 @@ export const createSyncSlice: StateCreator<AuthState, [], [], SyncSlice> = (set,
 
   repairEmptyFileThoughts: async () => {
     console.log('[Maintenance] Starting repair of empty file thoughts...');
+      // HEALER: Convert numeric updatedAt to ISO string if needed
+      console.log('[Maintenance] Checking for numeric timestamps...');
+      const allThoughts = await db.thoughts.toArray();
+      for (const t of allThoughts) {
+        if (t.updatedAt && typeof t.updatedAt === 'number') {
+          console.log(`[Maintenance] Healing numeric updatedAt for thought ${t.id}`);
+          await db.thoughts.update(t.id, { updatedAt: new Date(t.updatedAt).toISOString() });
+        }
+      }
+
     try {
       const fileThoughts = await db.thoughts.where('type').equals('file').toArray();
       let markedForHealingCount = 0;

@@ -89,7 +89,7 @@ interface Thought {
   googleCalendarEventId?: string;
   syncStatus?: 'local' | 'synced' | 'pending' | 'syncing' | 'error';
   retryCount?: number;
-  updatedAt?: number | null;
+  updatedAt?: string | null;
 
   // Modular Payload (Discriminated Union)
   data?: ThoughtPayload;
