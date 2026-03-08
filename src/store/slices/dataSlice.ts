@@ -219,6 +219,7 @@ export const createDataSlice: StateCreator<CyberiaState, [], [], any> = (set, ge
     }
   },
 
+  
   clearWorkspace: async () => {
     if (get().isReadOnly) return;
     try {
@@ -226,20 +227,36 @@ export const createDataSlice: StateCreator<CyberiaState, [], [], any> = (set, ge
       const authStore = dynamicAuthStore.getState();
       const isAuthenticated = authStore.status === 'authenticated';
       
+      console.log('[Store] Initiating GLOBAL workspace clear...');
+      
+      // Block sync during destructive operation
+      await syncOrchestrator.setSyncBlocked(true);
+
       const workspaceId = String(Date.now());
       
-      await db.transaction('rw', db.spaces, db.thoughts, db.stacks, db.blobs, async () => {
-        await db.spaces.clear();
-        await db.thoughts.clear();
-        await db.stacks.clear();
-        await db.blobs.clear();
+      // 1. Deep Local Wipe (ALL tables)
+      await db.transaction('rw', [db.spaces, db.thoughts, db.stacks, db.blobs, db.pendingBlobs, db.pendingDeletions], async () => {
+        await Promise.all([
+          db.spaces.clear(),
+          db.thoughts.clear(),
+          db.stacks.clear(),
+          db.blobs.clear(),
+          db.pendingBlobs.clear(),
+          db.pendingDeletions.clear()
+        ]);
         
-        // Create one empty workspace
+        // Create one fresh entry
         await db.spaces.add({ id: workspaceId, name: 'Workspace', mode: 'spatial', physics: true, order: 0 });
         localStorage.setItem('cyberia-active-space-id', workspaceId);
       });
-      
-      // Refresh state without reload
+
+      // 2. Global Cloud Wipe (if authenticated)
+      if (isAuthenticated) {
+        console.log('[Store] Cleaning cloud backup to match local slate...');
+        await authStore.deleteCloudData(); // This handles Storage + DB reset logic we built
+      }
+
+      // 3. Update Store State
       set({ 
         spaces: [{ id: workspaceId, name: 'Workspace', mode: 'spatial', physics: true, order: 0 }], 
         stacks: [], 
@@ -248,13 +265,13 @@ export const createDataSlice: StateCreator<CyberiaState, [], [], any> = (set, ge
         transform: { x: 0, y: 0, scale: 1 }
       });
       
-      if (isAuthenticated) {
-        await syncOrchestrator.triggerSync();
-      }
-      
-    } catch (err) { console.error('Clear failed', err); }
+      console.log('[Store] Global clear complete.');
+    } catch (err) { 
+      console.error('Global clear failed:', err); 
+    } finally {
+      await syncOrchestrator.setSyncBlocked(false);
+    }
   },
-
   importFullState: async (data: any) => {
     if (get().isReadOnly) return;
     try {
@@ -297,34 +314,38 @@ export const createDataSlice: StateCreator<CyberiaState, [], [], any> = (set, ge
     }
   },
 
+  
   clearLocalData: async () => {
     try {
-      // Clear database
-      await db.transaction('rw', db.spaces, db.thoughts, db.stacks, db.blobs, async () => {
-        await db.spaces.clear();
-        await db.thoughts.clear();
-        await db.stacks.clear();
-        await db.blobs.clear();
+      console.log('[Store] Initiating LOCAL Factory Reset...');
+      const { useAuthStore: dynamicAuthStore } = await import('../useAuthStore');
+      const authStore = dynamicAuthStore.getState();
+
+      // 1. Deep Database Purge
+      await db.transaction('rw', [db.spaces, db.thoughts, db.stacks, db.blobs, db.pendingBlobs, db.pendingDeletions], async () => {
+        await Promise.all([
+          db.spaces.clear(),
+          db.thoughts.clear(),
+          db.stacks.clear(),
+          db.blobs.clear(),
+          db.pendingBlobs.clear(),
+          db.pendingDeletions.clear()
+        ]);
       });
       
-      // Clear localStorage
-      localStorage.clear();
-      
-      // Clear cookies
-      const cookies = document.cookie.split(";");
-      for (let i = 0; i < cookies.length; i++) {
-        const cookie = cookies[i];
-        const eqPos = cookie.indexOf("=");
-        const name = eqPos > -1 ? cookie.substring(0, eqPos) : cookie;
-        document.cookie = name + "=;expires=Thu, 01 Jan 1970 00:00:00 GMT;path=/";
+      // 2. Graceful Session Termination (Handles localStorage + Tokens)
+      if (authStore.status === 'authenticated') {
+        await authStore.signOut();
+      } else {
+        localStorage.clear();
       }
       
-      // Load onboarding data into store (this populates the demo thoughts)
-      get().loadOnboardingData();
+      // 3. Reload Tutorial Slate
+      await get().loadOnboardingData();
+      console.log('[Store] Factory reset complete.');
       
-    } catch (err) { console.error('Local data clear failed', err); }
+    } catch (err) { console.error('Local reset failed:', err); }
   },
-
   exportData: async () => {
     const allSpaces = await db.spaces.toArray();
     const allThoughts = await db.thoughts.toArray();

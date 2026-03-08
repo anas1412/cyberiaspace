@@ -1,3 +1,5 @@
+import { supabaseStorage } from '../../services/supabaseStorage';
+import { syncOrchestrator } from '../../services/sync/syncOrchestrator';
 import { type StateCreator } from 'zustand';
 import { type User, type SubscriptionPlan, type AccessPeriod } from '../../constants';
 import { db } from '../../db';
@@ -327,34 +329,62 @@ export const createAuthSlice: StateCreator<AuthState, [], [], any> = (set, get, 
     localStorage.setItem('cyberia-user', JSON.stringify(updatedUser));
   },
 
+
   deleteCloudData: async () => {
     const { accessToken, isOnline, user } = get();
     if (!accessToken || !isOnline || !user) return;
 
     set({ syncStatus: 'syncing' });
+    console.log('[Auth] Starting Atomic Nuclear Wipe of cloud data...');
 
     try {
-      // Delete all data from Supabase
-      const spaces = await supabaseSync.getSpaces(user.id);
-      for (const space of spaces?.spaces || []) {
-        await supabaseSync.deleteSpace(space.id, user.id);
-      }
+      // 1. Block Sync
+      await syncOrchestrator.setSyncBlocked(true);
 
-      const thoughts = await supabaseSync.getThoughts(user.id);
-      for (const thought of thoughts?.thoughts || []) {
-        await supabaseSync.deleteThought(thought.id, user.id);
-      }
+      // 2. Wipe Postgres (Database)
+      const [spacesData, thoughtsData, stacksData] = await Promise.all([
+        supabaseSync.getSpaces(user.id),
+        supabaseSync.getThoughts(user.id),
+        supabaseSync.getStacks(user.id)
+      ]);
 
-      const stacks = await supabaseSync.getStacks(user.id);
-      for (const stack of stacks?.stacks || []) {
-        await supabaseSync.deleteStack(stack.id, user.id);
-      }
+      const deleteOperations = [];
+      if (spacesData?.spaces) deleteOperations.push(...spacesData.spaces.map(s => supabaseSync.deleteSpace(s.id, user.id)));
+      if (thoughtsData?.thoughts) deleteOperations.push(...thoughtsData.thoughts.map(t => supabaseSync.deleteThought(t.id, user.id)));
+      if (stacksData?.stacks) deleteOperations.push(...stacksData.stacks.map(s => supabaseSync.deleteStack(s.id, user.id)));
+      
+      await Promise.all(deleteOperations);
+
+      // 3. Wipe Storage (Files)
+      await supabaseStorage.deleteAllUserFiles(user.id);
+
+      // 4. Reset Local Metadata (Heal IndexedDB)
+      console.log('[Auth] Cloud wiped. Resetting local IndexedDB metadata...');
+      await db.transaction('rw', [db.spaces, db.stacks, db.thoughts], async () => {
+        await db.spaces.toCollection().modify({ syncStatus: 'local' });
+        await db.stacks.toCollection().modify({ syncStatus: 'local' });
+        await db.thoughts.toCollection().modify({ 
+          syncStatus: 'local', 
+          storageUrl: undefined, 
+          storagePath: undefined,
+          data: { type: 'file', url: '', name: '', size: 0 } as any
+        });
+      });
+
+      // 5. Disable Auto-Sync (Permanent Safe Exit)
+      await get().setAutoSync(false);
 
       localStorage.removeItem('cyberia-last-sync');
       set({ syncStatus: 'offline', lastSync: null });
+      
+      console.log('[Auth] Nuclear Wipe complete. System in Local-Only state.');
     } catch (error) {
-      console.error('Delete error:', error);
+      console.error('[Auth] Nuclear Wipe failed:', error);
       set({ syncStatus: 'error' });
+    } finally {
+      // 6. Resume Sync (Unblock)
+      await syncOrchestrator.setSyncBlocked(false);
     }
   }
+
 });

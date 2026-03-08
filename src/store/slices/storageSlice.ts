@@ -131,10 +131,20 @@ export const createStorageSlice: StateCreator<AuthState, [], [], any> = (set, ge
 
       // Modular data update
       if (thought.type === 'file') {
+        const currentData = (thought.data || {}) as any;
         updates.data = {
-          ...(thought.data || {}),
+          ...currentData,
           type: 'file',
-          url: result.url
+          url: result.url,
+          meta: {
+            ...(currentData.meta || {}),
+            file: {
+              ...(currentData.meta?.file || {}),
+              name: blobEntry.name,
+              size: blobEntry.blob.size,
+              type: blobEntry.blob.type
+            }
+          }
         };
       }
 
@@ -407,10 +417,20 @@ export const createStorageSlice: StateCreator<AuthState, [], [], any> = (set, ge
 
           // Modular data update
           if (thought && thought.type === 'file') {
+            const currentData = (thought.data || {}) as any;
             updates.data = {
-              ...(thought.data || {}),
+              ...currentData,
               type: 'file',
-              url: result.url
+              url: result.url,
+              meta: {
+                ...(currentData.meta || {}),
+                file: {
+                  ...(currentData.meta?.file || {}),
+                  name: blobEntry.name,
+                  size: blobEntry.blob.size,
+                  type: blobEntry.blob.type
+                }
+              }
             };
           }
 
