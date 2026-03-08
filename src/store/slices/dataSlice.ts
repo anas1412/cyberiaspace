@@ -135,7 +135,7 @@ export const createDataSlice: StateCreator<CyberiaState, [], [], any> = (set, ge
     const demoStacks: Stack[] = [
       { id: s1, name: 'Spatial Flux', color: '#6366f1', spaceId: demoSpaceId, isOnboarding: true },
       { id: s2, name: 'Dynamic Views', color: '#8b5cf6', spaceId: demoSpaceId, isOnboarding: true },
-      { id: s3, name: 'Oracle AI', color: '#3b82f6', spaceId: demoSpaceId, isOnboarding: true },
+      { id: s3, name: 'Knowledge Graph', color: '#3b82f6', spaceId: demoSpaceId, isOnboarding: true },
     ];
 
       const demoThoughts: Thought[] = [
@@ -145,8 +145,8 @@ export const createDataSlice: StateCreator<CyberiaState, [], [], any> = (set, ge
       { id: 1004, text: 'Infinite Canvas.jpg', type: 'file', description: 'Visual mapping across infinite space.', x: 600, y: 300, vx: 0, vy: 0, stackId: s2, status: 'none', spaceId: demoSpaceId, layer: 3, priority: 'high', author: 'Cyberia', size: 1.3, order: 0, date: '2026-03-05', data: { type: 'file', url: '/onboarding.jpg', name: 'onboarding.jpg', size: 0, meta: { file: { name: 'onboarding.jpg', type: 'image/jpeg', size: 0 } } } },
         { id: 1005, text: 'Dynamic Stacks', type: 'tasks', x: 600, y: 500, vx: 0, vy: 0, stackId: s2, status: 'none', spaceId: demoSpaceId, layer: 4, priority: 'medium', description: '', author: 'Cyberia', size: 1.0, order: 1, date: '2026-03-05', data: { type: 'tasks', tasks: [{ text: 'Move a node', done: true }, { text: 'Toggle View', done: false }] } },
         { id: 1006, text: 'Morphing Views', type: 'label', x: 600, y: 200, vx: 0, vy: 0, stackId: s2, status: 'todo', spaceId: demoSpaceId, layer: 501, priority: 'none', description: '', author: 'Cyberia', size: 1.0, order: 2, date: '', data: { type: 'label' } },
-        { id: 1007, text: 'Autonomous Agents', type: 'text', x: 900, y: 200, vx: 0, vy: 0, stackId: s3, status: 'none', spaceId: demoSpaceId, layer: 5, priority: 'urgent', description: '', author: 'Cyberia', size: 1.4, order: 0, date: '2026-03-10', data: { type: 'text', content: 'Deploy AI to research the web and automate connections.' } },
-      { id: 1008, text: 'Data Structures', type: 'table', x: 900, y: 400, vx: 0, vy: 0, stackId: s3, status: 'todo', spaceId: demoSpaceId, layer: 6, priority: 'high', description: '', author: 'Cyberia', size: 1.1, order: 1, date: '2026-03-10', data: { type: 'table', rows: [['Type', 'Function'], ['Text', 'Knowledge'], ['AI', 'Oracle']] } },
+        { id: 1007, text: 'Relational Logic', type: 'text', x: 900, y: 200, vx: 0, vy: 0, stackId: s3, status: 'none', spaceId: demoSpaceId, layer: 5, priority: 'urgent', description: '', author: 'Cyberia', size: 1.4, order: 0, date: '2026-03-10', data: { type: 'text', content: 'Organize your data into semantic clusters and deep hierarchies.' } },
+      { id: 1008, text: 'Data Structures', type: 'table', x: 900, y: 400, vx: 0, vy: 0, stackId: s3, status: 'todo', spaceId: demoSpaceId, layer: 6, priority: 'high', description: '', author: 'Cyberia', size: 1.1, order: 1, date: '2026-03-10', data: { type: 'table', rows: [['Type', 'Function'], ['Text', 'Knowledge'], ['Logic', 'Hierarchy']] } },
       { id: 1009, text: 'Cognitive Layer', type: 'label', x: 900, y: 100, vx: 0, vy: 0, stackId: s3, status: 'none', spaceId: demoSpaceId, layer: 502, priority: 'none', description: '', author: 'Cyberia', size: 1.0, order: 2, date: '', data: { type: 'label' } },
     ];
 

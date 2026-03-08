@@ -394,6 +394,9 @@ if (['get_thought_details', 'read_file_content', 'read_files_content'].includes(
     }
   };
 
+  // Oracle Chat disabled
+  if (true) return null;
+
   if (!oracleMode) return null;
 
   return (

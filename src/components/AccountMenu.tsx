@@ -280,7 +280,7 @@ const AccountMenu: React.FC = () => {
                 <Zap className="w-4 h-4 text-blue-400 animate-pulse" />
                 <div className="text-left">
                   <p className="text-[9px] font-black uppercase tracking-widest text-white">Upgrade to Pro</p>
-                  <p className="text-[7px] font-bold text-blue-400/70 uppercase tracking-widest">Unlock Oracle & More Spaces</p>
+                  <p className="text-[7px] font-bold text-blue-400/70 uppercase tracking-widest">Unlock More Spaces & Assets</p>
                 </div>
               </div>
               <Star className="w-3.5 h-3.5 text-blue-400 fill-blue-400" />
@@ -288,6 +288,8 @@ const AccountMenu: React.FC = () => {
           )}
 
           <div className="space-y-1 mb-4">
+            {/* Cloud Sync disabled */}
+            {false && (
             <div className={cn(
               "flex items-center justify-between p-2.5 rounded-xl md:rounded-2xl border transition-all",
               !isOnline ? "bg-red-500/5 border-red-500/10" : "bg-white/[0.03] border-white/[0.05]"
@@ -305,7 +307,7 @@ const AccountMenu: React.FC = () => {
                     {!isOnline ? 'Network Offline' : 'Cloud Sync'}
                   </p>
                   <p className="text-[9px] font-bold text-slate-500 uppercase tracking-widest">
-                    {!isOnline ? 'Changes saved locally' : lastSync ? `Last: ${lastSync.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}` : 'Not synced yet'}
+                    {!isOnline ? 'Changes saved locally' : lastSync ? `Last: ${lastSync?.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}` : 'Not synced yet'}
                   </p>
                 </div>
               </div>
@@ -321,7 +323,10 @@ const AccountMenu: React.FC = () => {
                 <RefreshCw className="w-3 h-3 text-slate-400" />
               </button>
             </div>
+            )}
 
+            {/* Restore Backup disabled */}
+            {false && (
             <button 
               onClick={handleRestore}
               disabled={!isOnline || syncStatus === 'syncing'}
@@ -333,7 +338,10 @@ const AccountMenu: React.FC = () => {
                 <p className="text-[9px] font-bold text-slate-500 uppercase tracking-widest">Download cloud backup</p>
               </div>
             </button>
+            )}
 
+            {/* Auto-Sync disabled */}
+            {false && (
             <button 
               onClick={() => setAutoSync(!autoSync)}
               className="w-full flex items-center justify-between p-2.5 rounded-xl md:rounded-2xl hover:bg-white/5 transition-colors group"
@@ -355,6 +363,7 @@ const AccountMenu: React.FC = () => {
                 )} />
               </div>
             </button>
+            )}
           </div>
           
 
@@ -386,6 +395,8 @@ const AccountMenu: React.FC = () => {
 
 
           <div className="grid grid-cols-2 gap-2 mb-4">
+            {/* Nuclear Wipe disabled */}
+            {false && (
             <button
               onClick={handleClearCloudData}
               disabled={syncStatus === 'syncing' || !lastSync || !isOnline}
@@ -395,6 +406,7 @@ const AccountMenu: React.FC = () => {
               <Trash2 className="w-3 h-3" />
               Clear
             </button>
+            )}
             <button
               onClick={() => {
                 signOut();

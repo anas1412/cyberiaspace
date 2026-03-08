@@ -1,7 +1,7 @@
 import { type StateCreator } from 'zustand';
 import { db } from '../../db';
 import { syncOrchestrator } from '../../services/sync/syncOrchestrator';
-import { useModalStore } from '../useModalStore';
+// import { useModalStore } from '../useModalStore';
 import { type CyberiaState } from '../types';
 
 export const createUiSlice: StateCreator<CyberiaState, [], [], any> = (set, get, _api) => ({
@@ -52,6 +52,8 @@ export const createUiSlice: StateCreator<CyberiaState, [], [], any> = (set, get,
   setDeferredPrompt: (prompt: any) => set({ deferredPrompt: prompt }),
 
   toggleOracleMode: async () => {
+    // Oracle AI features disabled
+    /*
     const { useAuthStore } = await import('../useAuthStore');
     const user = useAuthStore.getState().user;
     if (!user) {
@@ -64,6 +66,7 @@ export const createUiSlice: StateCreator<CyberiaState, [], [], any> = (set, get,
       return;
     }
     set({ oracleMode: true });
+    */
   },
 
   setChatOpen: (isOpen: boolean) => set({ isChatOpen: isOpen }),

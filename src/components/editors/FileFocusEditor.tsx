@@ -429,6 +429,8 @@ const FileFocusEditor: React.FC = () => {
       headerActions={
         <div className="flex items-center gap-2">
           {/* Status Badges */}
+          {/* Sync status badges disabled */}
+          {false && (
           <div className="flex items-center gap-2 mr-2">
             {isSynced ? (
               <div className="flex items-center gap-1.5 px-3 py-1 bg-emerald-500/10 border border-emerald-500/20 rounded-lg">
@@ -442,6 +444,7 @@ const FileFocusEditor: React.FC = () => {
               </div>
             )}
           </div>
+          )}
 
           {(localPreviewUrl || thought.storageUrl) && (
             <button onClick={handleDownload} className="p-3 md:p-4 hover:bg-white/5 rounded-xl md:rounded-2xl text-slate-400 hover:text-white transition-all" title="Download Locally">
@@ -461,6 +464,9 @@ const FileFocusEditor: React.FC = () => {
       footerActions={
         authStatus === 'authenticated' && !isReadOnly && (
           <div className="flex gap-2">
+            {/* Sync actions disabled */}
+            {false && (
+            <>
             {isSynced ? (
               <button 
                 onClick={handleRemoveFromCloud}
@@ -472,7 +478,7 @@ const FileFocusEditor: React.FC = () => {
             ) : (
               <button 
                 onClick={handleSyncToCloud}
-                disabled={isSyncing || isSyncBlocked || (!localPreviewUrl && !thought.storageUrl)}
+                disabled={isSyncing || isSyncBlocked || (!localPreviewUrl && !thought?.storageUrl)}
                 className={cn(
                   "flex items-center gap-2 px-4 py-2 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all border",
                   (isSyncing || isSyncBlocked) 
@@ -483,6 +489,8 @@ const FileFocusEditor: React.FC = () => {
                 {isSyncing || isSyncBlocked ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Cloud className="w-3.5 h-3.5" />}
                 {isSyncing ? 'Syncing...' : isSyncBlocked ? 'Pending Sync' : 'Sync to Cloud'}
               </button>
+            )}
+            </>
             )}
           </div>
         )

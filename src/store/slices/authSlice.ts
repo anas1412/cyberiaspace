@@ -24,7 +24,7 @@ const getInitialUser = (): User | null => {
       },
       settings: {
         theme: user.settings?.theme ?? 'cyberia',
-        autoSync: user.settings?.autoSync ?? true,
+        autoSync: false, // user.settings?.autoSync ?? true,
       }
     };
   } catch (e) {
@@ -90,7 +90,7 @@ export const createAuthSlice: StateCreator<AuthState, [], [], any> = (set, get, 
       },
       settings: {
         theme: user.settings?.theme ?? 'cyberia',
-        autoSync: user.settings?.autoSync ?? true,
+        autoSync: false, // user.settings?.autoSync ?? true,
       }
     };
     
@@ -272,7 +272,7 @@ export const createAuthSlice: StateCreator<AuthState, [], [], any> = (set, get, 
         const supabaseUser = supabaseProfile.user;
         
         // Extract auto_sync from Supabase (column) vs settings.autoSync (JSON)
-        const cloudAutoSync = supabaseUser.auto_sync ?? supabaseUser.settings?.autoSync;
+        // const cloudAutoSync = supabaseUser.auto_sync ?? supabaseUser.settings?.autoSync;
         
         const updatedUser = { 
           ...user, 
@@ -280,16 +280,17 @@ export const createAuthSlice: StateCreator<AuthState, [], [], any> = (set, get, 
           settings: {
             ...user.settings,
             ...supabaseUser.settings,
-            // Prefer cloud auto_sync value, fallback to local
-            autoSync: cloudAutoSync !== undefined ? cloudAutoSync : user.settings?.autoSync
+            // Force disable autoSync
+            autoSync: false // cloudAutoSync !== undefined ? cloudAutoSync : user.settings?.autoSync
           }
         };
         
-        // Update autoSync state from cloud
+        /* Disable cloud sync state update
         if (cloudAutoSync !== undefined && cloudAutoSync !== get().autoSync) {
           set({ autoSync: cloudAutoSync });
           localStorage.setItem('cyberia-auto-sync', String(cloudAutoSync));
         }
+        */
         
         set({ user: updatedUser });
         localStorage.setItem('cyberia-user', JSON.stringify(updatedUser));
@@ -310,8 +311,9 @@ export const createAuthSlice: StateCreator<AuthState, [], [], any> = (set, get, 
     localStorage.setItem('cyberia-user', JSON.stringify(updatedUser));
 
     if (settings.autoSync !== undefined) {
-      set({ autoSync: settings.autoSync });
-      localStorage.setItem('cyberia-auto-sync', String(settings.autoSync));
+      // Force disable autoSync update
+      // set({ autoSync: settings.autoSync });
+      // localStorage.setItem('cyberia-auto-sync', String(settings.autoSync));
     }
 
     try {

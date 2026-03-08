@@ -277,11 +277,10 @@ const PricingModal: React.FC<PricingModalProps> = ({ isOpen, onClose }) => {
 
           <div className="space-y-6 flex-1">
             {[
-              { title: 'Premium Oracle AI', desc: `Access advanced Premium models with ${PLAN_CONFIG.pro.AI_DAILY_LIMIT} daily interactions. Free tier uses mini models with ${PLAN_CONFIG.free.AI_DAILY_LIMIT} daily.` },
+              { title: 'Advanced Reasoning', desc: 'Gain exclusive early access to next-generation logic, enhanced reasoning capabilities, and upcoming premium workflow tools.' },
               { title: 'Expanded Workspaces', desc: `Create up to ${PLAN_CONFIG.pro.MAX_SPACES} different spaces to organize your workflow. (Free limits to ${PLAN_CONFIG.free.MAX_SPACES})` },
               { title: 'High Frequency Flow', desc: `Add up to ${PLAN_CONFIG.pro.MAX_THOUGHTS_PER_SPACE} thoughts in every single space without hitting limits.` },
               { title: 'Expanded File Storage', desc: `Get ${Math.round(PLAN_CONFIG.pro.MAX_STORAGE_MB / 1024)}GB of secure cloud storage for your files and attachments (Free tier is limited to ${PLAN_CONFIG.free.MAX_STORAGE_MB}MB).` },
-              { title: 'Advanced Functionalities', desc: 'Gain exclusive early access to next-generation AI models, enhanced reasoning capabilities, and upcoming premium workflow tools.' }
             ].map((feature, i) => (
               <motion.div 
                 key={i} 
