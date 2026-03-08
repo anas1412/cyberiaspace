@@ -10,6 +10,19 @@ function toSnakeCase(obj: any): any {
   const result: any = {}
   for (const key in obj) {
     let value = obj[key]
+    
+    // GATEKEEPER: Ensure date fields are never raw numbers when sending to Supabase
+    const dateKeys = ['date', 'createdAt', 'updatedAt', 'created_at', 'updated_at', 'last_published', 'lastPublished', 'expiryDate', 'expiry_date'];
+    if (dateKeys.includes(key)) {
+      if (typeof value === 'number') {
+        value = new Date(value).toISOString();
+      }
+      // Special: Force 'date' to YYYY-MM-DD for thought nodes consistency
+      if (key === 'date' && typeof value === 'string' && value.length > 10) {
+        value = value.substring(0, 10);
+      }
+    }
+
     if (key === 'date' && (value === '' || value === undefined)) {
       value = null
     }

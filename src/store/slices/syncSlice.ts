@@ -69,64 +69,90 @@ export const createSyncSlice: StateCreator<AuthState, [], [], SyncSlice> = (set,
     }
   },
 
+  
   repairEmptyFileThoughts: async () => {
-    console.log('[Maintenance] Starting repair of empty file thoughts...');
-      // HEALER: Convert numeric updatedAt to ISO string if needed
-      console.log('[Maintenance] Checking for numeric timestamps...');
-      const allThoughts = await db.thoughts.toArray();
-      for (const t of allThoughts) {
-        if (t.updatedAt && typeof t.updatedAt === 'number') {
-          console.log(`[Maintenance] Healing numeric updatedAt for thought ${t.id}`);
-          await db.thoughts.update(t.id, { updatedAt: new Date(t.updatedAt).toISOString() });
-        }
-      }
-
+    console.log('[Maintenance] Starting system-wide date and metadata repair...');
     try {
-      const fileThoughts = await db.thoughts.where('type').equals('file').toArray();
-      let markedForHealingCount = 0;
+      const allThoughts = await db.thoughts.toArray();
+      const allSpaces = await db.spaces.toArray();
+      const allStacks = await db.stacks.toArray();
+      const { useStore } = await import('../useStore');
+      
+      let repairCount = 0;
 
-      for (const t of fileThoughts) {
-        // Check if there is an entry in the blobs table for its id.
+      // Helper to ensure date is ISO string (for system)
+      const toISO = (val: any) => (typeof val === 'number' ? new Date(val).toISOString() : val);
+      
+      // Helper to ensure date is YYYY-MM-DD (for user)
+      const toDateOnly = (val: any) => {
+        if (!val) return val;
+        if (typeof val === 'number') return new Date(val).toISOString().split('T')[0];
+        if (typeof val === 'string' && val.includes('T')) return val.split('T')[0];
+        return val;
+      };
+
+      // 1. Heal Thoughts
+      for (const t of allThoughts) {
+        let needsUpdate = false;
+        const updates: any = {};
+
+        // System Dates
+        if (t.updatedAt && typeof t.updatedAt === 'number') {
+          updates.updatedAt = toISO(t.updatedAt);
+          needsUpdate = true;
+        }
+        if ((t as any).createdAt && typeof (t as any).createdAt === 'number') {
+          updates.createdAt = toISO((t as any).createdAt);
+          needsUpdate = true;
+        }
+
+        // User Date (YYYY-MM-DD)
+        const cleanDate = toDateOnly(t.date);
+        if (cleanDate !== t.date) {
+          updates.date = cleanDate;
+          needsUpdate = true;
+        }
+
+        // Metadata / Empty Slots
         const blobEntry = await db.blobs.where('thoughtId').equals(t.id).first();
-        
-        // CASE 1: We have a local blob but no cloud link, or stale cloud link
-        if (blobEntry) {
-          if (!t.storagePath || t.syncStatus !== 'synced') {
-            console.log(`[Maintenance] Marking thought ${t.id} for healing (has local blob)`);
-            const currentData = (t.data || {}) as any;
-            await db.thoughts.update(t.id, {
-              syncStatus: 'local',
-              storageUrl: t.storageUrl || undefined, // Keep existing if present
-              storagePath: t.storagePath || undefined,
-              data: { ...currentData, url: currentData.url || t.storageUrl || '' } as any
-            });
-            markedForHealingCount++;
-          }
-        } 
-        // CASE 2: We have a cloud link but the modular payload is empty (Device 2 issue)
-        else if (t.storageUrl && (!(t.data as any)?.url)) {
-          console.log(`[Maintenance] Healing thought ${t.id} metadata (missing modular URL)`);
-          await db.thoughts.update(t.id, {
-            data: { ...(t.data || {}), url: t.storageUrl } as any
-          });
-          markedForHealingCount++;
+        if (blobEntry && (!t.storagePath || t.syncStatus !== 'synced')) {
+          updates.syncStatus = 'local';
+          const currentData = (t.data || {}) as any;
+          updates.data = { ...currentData, url: currentData.url || t.storageUrl || '' };
+          needsUpdate = true;
+        } else if (t.storageUrl && (!(t.data as any)?.url)) {
+          const currentData = (t.data || {}) as any;
+          updates.data = { ...currentData, url: t.storageUrl };
+          needsUpdate = true;
+        }
+
+        if (needsUpdate) {
+          await db.thoughts.update(t.id, updates);
+          repairCount++;
         }
       }
 
-      console.log(`[Maintenance] Total thoughts marked for healing: ${markedForHealingCount}`);
-
-      if (markedForHealingCount > 0) {
-        console.log(`[Maintenance] ${markedForHealingCount} thoughts need re-upload. Starting mediaSweep...`);
-        await get().mediaSweep();
+      // 2. Heal Spaces
+      for (const s of allSpaces) {
+        if (s.updatedAt && typeof s.updatedAt === 'number') {
+          await db.spaces.update(s.id, { updatedAt: toISO(s.updatedAt) });
+          repairCount++;
+        }
       }
 
-      return markedForHealingCount;
+      console.log(`[Maintenance] Repair complete. Items fixed: ${repairCount}`);
+      
+      if (repairCount > 0) {
+        await useStore.getState().refreshThoughts();
+        await useStore.getState().refreshSpaces();
+      }
+
+      return repairCount;
     } catch (err) {
       console.error('[Maintenance] Repair failed:', err);
       return 0;
     }
   },
-
   mediaSweep: async () => {
 
     const { autoSync, user, isOnline } = get();
