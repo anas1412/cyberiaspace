@@ -1,1 +1,0 @@
-    setStartPos({ x: touch.clientX, y: touch.clientY });
