@@ -120,9 +120,9 @@ const ThoughtNode: React.FC<ThoughtNodeProps> = React.memo(({ thought, registerE
     // CASE 1: Someone ELSE is already the source -> Link them to this node (Join Stack)
     if (linkingSourceId && linkingSourceId !== thought.id) {
       store.setSelectedThoughtIds([linkingSourceId, thought.id]);
+      setLinkingSourceId(null); // Clear line immediately for zero-lag feel
       await store.linkSelectedThoughts();
       store.setSelectedThoughtId(thought.id);
-      setLinkingSourceId(null);
       return;
     }
 
@@ -130,9 +130,9 @@ const ThoughtNode: React.FC<ThoughtNodeProps> = React.memo(({ thought, registerE
     // If I have a stackId, any click on the button UNLINKS me.
     if (thought.stackId) {
       store.setSelectedThoughtIds([thought.id]);
+      setLinkingSourceId(null); // Clear immediately
       await store.unlinkSelectedThoughts();
       store.setSelectedThoughtIds([]);
-      setLinkingSourceId(null);
     } else {
       // If no stackId, toggle linking mode
       if (linkingSourceId === thought.id) setLinkingSourceId(null);

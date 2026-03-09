@@ -1,5 +1,5 @@
 import React from 'react';
-import { LinkIcon, Link2Off } from 'lucide-react';
+import { Link2, Link2Off } from 'lucide-react';
 import { type Thought } from '../../db';
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
@@ -85,7 +85,7 @@ export const ThoughtFooter: React.FC<ThoughtFooterProps> = ({
           {thought.stackId && linkingSourceId !== thought.id ? (
             <Link2Off className="w-4 h-4" />
           ) : (
-            <LinkIcon className="w-4 h-4" />
+            <Link2 className="w-4 h-4" />
           )}
         </button>
       )}

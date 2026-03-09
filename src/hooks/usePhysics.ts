@@ -513,6 +513,9 @@ export const usePhysics = (
       // 2. Set Origin to Center (5000, 5000) so world coordinates match 1:1
       ctx.translate(5000, 5000);
 
+      const style = getComputedStyle(document.body);
+      const accent = style.getPropertyValue('--accent').trim() || '#6366f1';
+
       if (mode === 'spatial') {
         const stackGroups = new Map<string, string[]>();
         // Use fresh IDs from the current frame
@@ -523,9 +526,6 @@ export const usePhysics = (
             stackGroups.get(t.stackId)!.push(id);
           }
         });
-
-        const style = getComputedStyle(document.body);
-        const accent = style.getPropertyValue('--accent').trim() || '#6366f1';
 
         stackGroups.forEach((memberIds, stackId) => {
           if (memberIds.length < 2) return;
@@ -551,23 +551,15 @@ export const usePhysics = (
             }
           }
 
-          // 2. GLOW PASS
+          // Minimalist baseline: single subtle line with stack color, no glow
           ctx.setLineDash([]);
-          ctx.lineWidth = 4;
-          ctx.strokeStyle = stackColor.startsWith('hsla') 
-            ? stackColor.replace(/[\d\.]+\)$/, '0.15)') 
-            : (stackColor.startsWith('#') ? stackColor + '26' : stackColor.replace(')', ', 0.15)'));
+          ctx.lineWidth = 1.0;
+          // Use a light alpha to keep lines unobtrusive
+          const prevAlpha = ctx.globalAlpha;
+          ctx.strokeStyle = stackColor;
+          ctx.globalAlpha = 0.2; // barely visible
           ctx.stroke();
-
-          // 3. INK PASS (Dashed Blueprint)
-          ctx.setLineDash([12, 6]);
-          ctx.lineWidth = 1.5;
-          ctx.strokeStyle = stackColor.startsWith('hsla') 
-            ? stackColor.replace(/[\d\.]+\)$/, '0.6)') 
-            : (stackColor.startsWith('#') ? stackColor + '99' : stackColor.replace(')', ', 0.6)'));
-          ctx.stroke();
-          
-          ctx.setLineDash([]);
+          ctx.globalAlpha = prevAlpha;
         });
       }
       
@@ -581,9 +573,9 @@ export const usePhysics = (
           const worldMouseY = (mousePosRef.current.y - visualTransformRef.current.y) / visualTransformRef.current.scale;
 
           ctx.beginPath(); 
-          ctx.setLineDash([5, 5]); 
-          ctx.strokeStyle = 'rgba(99, 102, 241, 0.8)'; 
-          ctx.lineWidth = 2;
+          ctx.setLineDash([5, 5]); // Keep linking line dashed for distinction
+          ctx.strokeStyle = accent.startsWith('#') ? accent + 'CC' : accent.replace('rgb', 'rgba').replace(')', ', 0.8)'); 
+          ctx.lineWidth = 1.5;
           ctx.moveTo(pS.x + 140, pS.y + hS / 2); 
           ctx.lineTo(worldMouseX, worldMouseY);
           ctx.stroke(); 
