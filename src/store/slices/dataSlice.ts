@@ -8,6 +8,8 @@ import { type CyberiaState } from '../types';
 import { migrateThoughtsToModular } from '../../utils/migrations';
 import { ulid } from 'ulid';
 
+let isCreatingInitialWorkspace = false;
+
 export const createDataSlice: StateCreator<CyberiaState, [], [], any> = (set, get, _api) => ({
   isInitializing: true,
   isDemo: false,
@@ -97,15 +99,15 @@ export const createDataSlice: StateCreator<CyberiaState, [], [], any> = (set, ge
         await get().refreshTotalThoughtCount();
         await get().cleanupTrash();
       } catch (err) {
-        console.error('Failed to load data, resetting to onboarding:', err);
-        await get().loadOnboardingData();
+        console.error('Failed to load data, resetting to initial workspace:', err);
+        await get().createInitialWorkspace();
         return;
       }
       
       const { spaces } = get();
       if (spaces.length === 0) {
-        // No data in DB, load onboarding
-        await get().loadOnboardingData();
+        // No data in DB, create initial empty workspace
+        await get().createInitialWorkspace();
       } else {
         const savedSpaceId = localStorage.getItem('cyberia-active-space-id');
         const spaceExists = savedSpaceId ? spaces.find((s: Space) => s.id === savedSpaceId) : null;
@@ -117,7 +119,45 @@ export const createDataSlice: StateCreator<CyberiaState, [], [], any> = (set, ge
     }
   },
 
-  loadOnboardingData: async () => {
+  createInitialWorkspace: async () => {
+    if (isCreatingInitialWorkspace) return;
+    isCreatingInitialWorkspace = true;
+    
+    try {
+      // IDEMPOTENCY CHECK: Ensure we don't create multiple initial workspaces
+      const existingCount = await db.spaces.filter(s => !s.deletedAt).count();
+      if (existingCount > 0) {
+        console.log('[Store] Initial workspace already exists, skipping creation.');
+        await get().refreshSpaces();
+        return;
+      }
+
+      const workspaceId = ulid();
+      const now = Date.now();
+      
+      const initialSpace: Space = {
+        id: workspaceId,
+        name: 'Workspace',
+        mode: 'spatial',
+        physics: true,
+        order: 0,
+        updatedAt: now,
+        syncStatus: 'local'
+      };
+
+      await db.spaces.add(initialSpace);
+      localStorage.setItem('cyberia-active-space-id', workspaceId);
+      await get().refreshSpaces();
+      await get().setActiveSpace(workspaceId);
+    } catch (err) {
+      console.error('Failed to create initial workspace:', err);
+    } finally {
+      isCreatingInitialWorkspace = false;
+    }
+  },
+
+  loadDemoData: async () => {
+    // This is purely for demo/temporary use (e.g., Homepage)
     const demoSpaceId = ulid();
     const s1 = ulid();
     const s2 = ulid();
@@ -138,32 +178,20 @@ export const createDataSlice: StateCreator<CyberiaState, [], [], any> = (set, ge
     const demoStacks: Stack[] = [
       { id: s1, name: 'Spatial Flux', color: '#6366f1', spaceId: demoSpaceId, isOnboarding: true, updatedAt: now, syncStatus: 'local' },
       { id: s2, name: 'Dynamic Views', color: '#8b5cf6', spaceId: demoSpaceId, isOnboarding: true, updatedAt: now, syncStatus: 'local' },
-      { id: s3, name: 'Knowledge Graph', color: '#3b82f6', spaceId: demoSpaceId, isOnboarding: true, updatedAt: now, syncStatus: 'local' },
+      { id: s3, name: 'Oracle AI', color: '#3b82f6', spaceId: demoSpaceId, isOnboarding: true, updatedAt: now, syncStatus: 'local' },
     ];
 
-      const demoThoughts: Thought[] = [
-        { id: ulid(), text: 'Physical Thinking', type: 'text', x: 300, y: 200, vx: 0, vy: 0, stackId: s1, status: 'none', spaceId: demoSpaceId, layer: 1, priority: 'urgent', description: '', author: 'Cyberia', size: 1.2, order: 0, date: '2026-03-01', data: { type: 'text', content: 'Thoughts have mass and velocity. Drag them to interact with the engine.' }, updatedAt: now, syncStatus: 'local' },
-        { id: ulid(), text: 'Physical Links', type: 'text', x: 300, y: 400, vx: 0, vy: 0, stackId: s1, status: 'doing', spaceId: demoSpaceId, layer: 2, priority: 'high', description: '', author: 'Cyberia', size: 1.0, order: 1, date: '2026-03-01', data: { type: 'text', content: 'Nodes in a stack physically orbit each other.' }, updatedAt: now, syncStatus: 'local' },
-        { id: ulid(), text: 'Spatial Logic', type: 'label', x: 300, y: 100, vx: 0, vy: 0, stackId: s1, status: 'todo', spaceId: demoSpaceId, layer: 500, priority: 'none', description: '', author: 'Cyberia', size: 1.0, order: 2, date: '', data: { type: 'label' }, updatedAt: now, syncStatus: 'local' },
+    const demoThoughts: Thought[] = [
+      { id: ulid(), text: 'Physical Thinking', type: 'text', x: 300, y: 200, vx: 0, vy: 0, stackId: s1, status: 'none', spaceId: demoSpaceId, layer: 1, priority: 'urgent', description: '', author: 'Cyberia', size: 1.2, order: 0, date: '2026-03-01', data: { type: 'text', content: 'Thoughts have mass and velocity. Drag them to interact with the engine.' }, updatedAt: now, syncStatus: 'local' },
+      { id: ulid(), text: 'Physical Links', type: 'text', x: 300, y: 400, vx: 0, vy: 0, stackId: s1, status: 'doing', spaceId: demoSpaceId, layer: 2, priority: 'high', description: '', author: 'Cyberia', size: 1.0, order: 1, date: '2026-03-01', data: { type: 'text', content: 'Nodes in a stack physically orbit each other.' }, updatedAt: now, syncStatus: 'local' },
+      { id: ulid(), text: 'Spatial Logic', type: 'label', x: 300, y: 100, vx: 0, vy: 0, stackId: s1, status: 'todo', spaceId: demoSpaceId, layer: 500, priority: 'none', description: '', author: 'Cyberia', size: 1.0, order: 2, date: '', data: { type: 'label' }, updatedAt: now, syncStatus: 'local' },
       { id: ulid(), text: 'Infinite Canvas.jpg', type: 'file', description: 'Visual mapping across infinite space.', x: 600, y: 300, vx: 0, vy: 0, stackId: s2, status: 'none', spaceId: demoSpaceId, layer: 3, priority: 'high', author: 'Cyberia', size: 1.3, order: 0, date: '2026-03-05', data: { type: 'file', url: '/onboarding.jpg', name: 'onboarding.jpg', size: 0, meta: { file: { name: 'onboarding.jpg', type: 'image/jpeg', size: 0 } } }, updatedAt: now, syncStatus: 'local' },
-        { id: ulid(), text: 'Dynamic Stacks', type: 'tasks', x: 600, y: 500, vx: 0, vy: 0, stackId: s2, status: 'none', spaceId: demoSpaceId, layer: 4, priority: 'medium', description: '', author: 'Cyberia', size: 1.0, order: 1, date: '2026-03-05', data: { type: 'tasks', tasks: [{ text: 'Move a node', done: true }, { text: 'Toggle View', done: false }] }, updatedAt: now, syncStatus: 'local' },
-        { id: ulid(), text: 'Morphing Views', type: 'label', x: 600, y: 200, vx: 0, vy: 0, stackId: s2, status: 'todo', spaceId: demoSpaceId, layer: 501, priority: 'none', description: '', author: 'Cyberia', size: 1.0, order: 2, date: '', data: { type: 'label' }, updatedAt: now, syncStatus: 'local' },
-        { id: ulid(), text: 'Relational Logic', type: 'text', x: 900, y: 200, vx: 0, vy: 0, stackId: s3, status: 'none', spaceId: demoSpaceId, layer: 5, priority: 'urgent', description: '', author: 'Cyberia', size: 1.4, order: 0, date: '2026-03-10', data: { type: 'text', content: 'Organize your data into semantic clusters and deep hierarchies.' }, updatedAt: now, syncStatus: 'local' },
-      { id: ulid(), text: 'Data Structures', type: 'table', x: 900, y: 400, vx: 0, vy: 0, stackId: s3, status: 'todo', spaceId: demoSpaceId, layer: 6, priority: 'high', description: '', author: 'Cyberia', size: 1.1, order: 1, date: '2026-03-10', data: { type: 'table', rows: [['Type', 'Function'], ['Text', 'Knowledge'], ['Logic', 'Hierarchy']] }, updatedAt: now, syncStatus: 'local' },
+      { id: ulid(), text: 'Dynamic Stacks', type: 'tasks', x: 600, y: 500, vx: 0, vy: 0, stackId: s2, status: 'none', spaceId: demoSpaceId, layer: 4, priority: 'medium', description: '', author: 'Cyberia', size: 1.0, order: 1, date: '2026-03-05', data: { type: 'tasks', tasks: [{ text: 'Move a node', done: true }, { text: 'Toggle View', done: false }] }, updatedAt: now, syncStatus: 'local' },
+      { id: ulid(), text: 'Morphing Views', type: 'label', x: 600, y: 200, vx: 0, vy: 0, stackId: s2, status: 'todo', spaceId: demoSpaceId, layer: 501, priority: 'none', description: '', author: 'Cyberia', size: 1.0, order: 2, date: '', data: { type: 'label' }, updatedAt: now, syncStatus: 'local' },
+      { id: ulid(), text: 'Artificial Reasoning', type: 'text', x: 900, y: 200, vx: 0, vy: 0, stackId: s3, status: 'none', spaceId: demoSpaceId, layer: 5, priority: 'urgent', description: '', author: 'Cyberia', size: 1.4, order: 0, date: '2026-03-10', data: { type: 'text', content: 'Ask Oracle to analyze your workspace, suggest connections, or automate repetitive tasks.' }, updatedAt: now, syncStatus: 'local' },
+      { id: ulid(), text: 'Action Intelligence', type: 'tasks', x: 900, y: 400, vx: 0, vy: 0, stackId: s3, status: 'todo', spaceId: demoSpaceId, layer: 6, priority: 'high', description: '', author: 'Cyberia', size: 1.1, order: 1, date: '2026-03-10', data: { type: 'tasks', tasks: [{ text: 'Toggle Oracle Mode', done: true }, { text: 'Enable Action Mode', done: false }] }, updatedAt: now, syncStatus: 'local' },
       { id: ulid(), text: 'Cognitive Layer', type: 'label', x: 900, y: 100, vx: 0, vy: 0, stackId: s3, status: 'none', spaceId: demoSpaceId, layer: 502, priority: 'none', description: '', author: 'Cyberia', size: 1.0, order: 2, date: '', data: { type: 'label' }, updatedAt: now, syncStatus: 'local' },
     ];
-
-    // Save to database
-    try {
-      await db.transaction('rw', db.spaces, db.thoughts, db.stacks, async () => {
-        await db.spaces.bulkPut(demoSpaces);
-        await db.stacks.bulkPut(demoStacks);
-        await db.thoughts.bulkPut(demoThoughts);
-      });
-      localStorage.setItem('cyberia-active-space-id', demoSpaceId);
-    } catch (err) {
-      console.error('Failed to save onboarding data to DB:', err);
-    }
 
     set({ 
       spaces: demoSpaces, 
@@ -175,55 +203,6 @@ export const createDataSlice: StateCreator<CyberiaState, [], [], any> = (set, ge
     });
   },
 
-  completeOnboarding: async () => {
-    const { spaces } = get();
-    if (spaces.length === 0) {
-      set({ isSpaceLoading: true });
-      const workspaceId = ulid();
-      const onboardingId = ulid();
-      const now = Date.now();
-      await db.spaces.bulkAdd([
-        { id: workspaceId, name: 'Workspace', mode: 'spatial', physics: true, order: 0, updatedAt: now, syncStatus: 'local' },
-        { id: onboardingId, name: 'Onboarding', mode: 'spatial', physics: true, order: 1, isOnboarding: true, updatedAt: now, syncStatus: 'local' }
-      ]);
-      await get().refreshSpaces();
-      set({ activeSpaceId: onboardingId });
-      localStorage.setItem('cyberia-active-space-id', onboardingId);
-      const cx = window.innerWidth / 2;
-      const cy = window.innerHeight / 2;
-      const spatialId = ulid();
-      const toolsId = ulid();
-      const logicId = ulid();
-      await db.stacks.bulkAdd([
-        { id: spatialId, name: 'Spatial Engine', color: 'hsla(230, 80%, 60%, 1)', spaceId: onboardingId, isOnboarding: true, updatedAt: now, syncStatus: 'local' },
-        { id: toolsId, name: 'Universal Tools', color: 'hsla(280, 80%, 65%, 1)', spaceId: onboardingId, isOnboarding: true, updatedAt: now, syncStatus: 'local' },
-        { id: logicId, name: 'Logic Matrix', color: 'hsla(40, 90%, 55%, 1)', spaceId: onboardingId, isOnboarding: true, updatedAt: now, syncStatus: 'local' }
-      ]);
-      
-      // 3. Populate Onboarding Constellation
-      
-      // --- STACK 1: STACK 1: SPATIAL ---
-      await get().addThought({ text: 'Physical Thinking', type: 'text', x: cx - 500, y: cy - 100, stackId: spatialId, status: 'none', spaceId: onboardingId, layer: 1, data: { type: 'text', content: 'Thoughts have mass and velocity. Drag them to interact with the engine.' } });
-      await get().addThought({ text: 'Physical Links', type: 'text', x: cx - 500, y: cy + 100, stackId: spatialId, status: 'doing', spaceId: onboardingId, layer: 2, data: { type: 'text', content: 'Use the Link tool to form Stacks. Nodes in a stack physically orbit each other.' } });
-      await get().addThought({ text: 'Spatial Foundations', type: 'label', x: cx - 500, y: cy - 200, stackId: spatialId, spaceId: onboardingId, layer: 500, data: { type: 'label' } });
-
-      // --- STACK 2: TOOLS ---
-      await get().addThought({ text: 'Interface Asset.jpg', type: 'file', description: 'Automated thumbnail processing for all visual formats.', x: cx + 500, y: cy - 100, stackId: toolsId, status: 'none', spaceId: onboardingId, layer: 3, data: { type: 'file', url: '/onboarding.jpg', name: 'onboarding.jpg', size: 0, meta: { file: { name: 'onboarding.jpg', type: 'image/jpeg', size: 0 } } } });
-      await get().addThought({ text: 'Media Stream', type: 'embed', description: 'Zero-latency media embedding.', x: cx + 500, y: cy + 100, stackId: toolsId, status: 'doing', spaceId: onboardingId, layer: 4, data: { type: 'embed', url: 'https://www.youtube.com/watch?v=kvlbwbuJUiw' } });
-      await get().addThought({ text: 'Creative Layers', type: 'label', x: cx + 500, y: cy - 200, stackId: toolsId, spaceId: onboardingId, layer: 501, data: { type: 'label' } });
-
-      // --- STACK 3: LOGIC ---
-      await get().addThought({ text: 'System Checklist', type: 'tasks', x: cx, y: cy + 350, stackId: logicId, status: 'todo', spaceId: onboardingId, layer: 5, data: { type: 'tasks', tasks: [{ text: 'Move a thought', done: true }, { text: 'Toggle Board view', done: false }, { text: 'Call the Oracle', done: false }] } });
-      await get().addThought({ text: 'Format Specs', type: 'table', x: cx, y: cy + 550, stackId: logicId, status: 'todo', spaceId: onboardingId, layer: 6, data: { type: 'table', rows: [['Type', 'Function'], ['Label', 'Header'], ['Text', 'Knowledge'], ['Tasks', 'Action']] } });
-      await get().addThought({ text: 'Data Structures', type: 'label', x: cx, y: cy + 250, stackId: logicId, spaceId: onboardingId, layer: 502, data: { type: 'label' } });
-      
-      await get().refreshThoughts(onboardingId);
-      await get().refreshStacks(onboardingId);
-      set({ isSpaceLoading: false });
-    }
-  },
-
-  
   clearWorkspace: async () => {
     if (get().isReadOnly) return;
     try {
@@ -275,6 +254,7 @@ export const createDataSlice: StateCreator<CyberiaState, [], [], any> = (set, ge
       await syncOrchestrator.setSyncBlocked(false);
     }
   },
+
   importFullState: async (data: any) => {
     if (get().isReadOnly) return;
     try {
@@ -339,12 +319,13 @@ export const createDataSlice: StateCreator<CyberiaState, [], [], any> = (set, ge
         localStorage.clear();
       }
       
-      // 3. Reload Tutorial Slate
-      await get().loadOnboardingData();
+      // 3. Reload Initial Workspace
+      await get().createInitialWorkspace();
       console.log('[Store] Factory reset complete.');
       
     } catch (err) { console.error('Local reset failed:', err); }
   },
+
   exportData: async () => {
     const allSpaces = await db.spaces.toArray();
     const allThoughts = await db.thoughts.toArray();
@@ -430,6 +411,7 @@ export const createDataSlice: StateCreator<CyberiaState, [], [], any> = (set, ge
   setDemoMode: (enabled: boolean) => {
     const state = get();
     if (enabled) {
+      // Temporary IDs for demo
       const demoSpaceId = ulid();
       const s1 = ulid();
       const s2 = ulid();
@@ -454,13 +436,13 @@ export const createDataSlice: StateCreator<CyberiaState, [], [], any> = (set, ge
       ];
 
       const demoThoughts: Thought[] = [
-      { id: ulid(), text: 'Physical Thinking', type: 'text', x: 300, y: 200, vx: 0, vy: 0, stackId: s1, status: 'none', spaceId: demoSpaceId, layer: 1, priority: 'urgent', description: '', author: 'Cyberia', size: 1.2, order: 0, date: '2026-03-01', data: { type: 'text', content: 'Thoughts have mass and velocity. Drag them to interact with the engine.' }, updatedAt: now, syncStatus: 'synced' },
+        { id: ulid(), text: 'Physical Thinking', type: 'text', x: 300, y: 200, vx: 0, vy: 0, stackId: s1, status: 'none', spaceId: demoSpaceId, layer: 1, priority: 'urgent', description: '', author: 'Cyberia', size: 1.2, order: 0, date: '2026-03-01', data: { type: 'text', content: 'Thoughts have mass and velocity. Drag them to interact with the engine.' }, updatedAt: now, syncStatus: 'synced' },
         { id: ulid(), text: 'Physical Links', type: 'text', x: 300, y: 400, vx: 0, vy: 0, stackId: s1, status: 'doing', spaceId: demoSpaceId, layer: 2, priority: 'high', description: '', author: 'Cyberia', size: 1.0, order: 1, date: '2026-03-01', data: { type: 'text', content: 'Nodes in a stack physically orbit each other.' }, updatedAt: now, syncStatus: 'synced' },
         { id: ulid(), text: 'Spatial Logic', type: 'label', x: 300, y: 100, vx: 0, vy: 0, stackId: s1, status: 'todo', spaceId: demoSpaceId, layer: 500, priority: 'none', description: '', author: 'Cyberia', size: 1.0, order: 2, date: '', data: { type: 'label' }, updatedAt: now, syncStatus: 'synced' },
-      { id: ulid(), text: 'Infinite Canvas.jpg', type: 'file', description: 'Visual mapping across infinite space.', x: 600, y: 300, vx: 0, vy: 0, stackId: s2, status: 'none', spaceId: demoSpaceId, layer: 3, priority: 'high', author: 'Cyberia', size: 1.3, order: 0, date: '2026-03-05', data: { type: 'file', url: '/onboarding.jpg', name: 'onboarding.jpg', size: 0, meta: { file: { name: 'onboarding.jpg', type: 'image/jpeg', size: 0 } } }, updatedAt: now, syncStatus: 'synced' },
+        { id: ulid(), text: 'Infinite Canvas.jpg', type: 'file', description: 'Visual mapping across infinite space.', x: 600, y: 300, vx: 0, vy: 0, stackId: s2, status: 'none', spaceId: demoSpaceId, layer: 3, priority: 'high', author: 'Cyberia', size: 1.3, order: 0, date: '2026-03-05', data: { type: 'file', url: '/onboarding.jpg', name: 'onboarding.jpg', size: 0, meta: { file: { name: 'onboarding.jpg', type: 'image/jpeg', size: 0 } } }, updatedAt: now, syncStatus: 'synced' },
         { id: ulid(), text: 'Dynamic Stacks', type: 'tasks', x: 600, y: 500, vx: 0, vy: 0, stackId: s2, status: 'none', spaceId: demoSpaceId, layer: 4, priority: 'medium', description: '', author: 'Cyberia', size: 1.0, order: 1, date: '2026-03-05', data: { type: 'tasks', tasks: [{ text: 'Move a node', done: true }, { text: 'Toggle View', done: false }] }, updatedAt: now, syncStatus: 'synced' },
         { id: ulid(), text: 'Morphing Views', type: 'label', x: 600, y: 200, vx: 0, vy: 0, stackId: s2, status: 'todo', spaceId: demoSpaceId, layer: 501, priority: 'none', description: '', author: 'Cyberia', size: 1.0, order: 2, date: '', data: { type: 'label' }, updatedAt: now, syncStatus: 'synced' },
-      { id: ulid(), text: 'Autonomous Agents', type: 'text', x: 900, y: 200, vx: 0, vy: 0, stackId: s3, status: 'none', spaceId: demoSpaceId, layer: 5, priority: 'urgent', description: '', author: 'Cyberia', size: 1.4, order: 0, date: '2026-03-10', data: { type: 'text', content: 'Deploy AI to research the web and automate connections.' }, updatedAt: now, syncStatus: 'synced' },
+        { id: ulid(), text: 'Autonomous Agents', type: 'text', x: 900, y: 200, vx: 0, vy: 0, stackId: s3, status: 'none', spaceId: demoSpaceId, layer: 5, priority: 'urgent', description: '', author: 'Cyberia', size: 1.4, order: 0, date: '2026-03-10', data: { type: 'text', content: 'Deploy AI to research the web and automate connections.' }, updatedAt: now, syncStatus: 'synced' },
         { id: ulid(), text: 'Data Structures', type: 'table', x: 900, y: 400, vx: 0, vy: 0, stackId: s3, status: 'todo', spaceId: demoSpaceId, layer: 6, priority: 'high', description: '', author: 'Cyberia', size: 1.1, order: 1, date: '2026-03-10', data: { type: 'table', rows: [['Type', 'Function'], ['Text', 'Knowledge'], ['AI', 'Oracle']] }, updatedAt: now, syncStatus: 'synced' },
         { id: ulid(), text: 'Cognitive Layer', type: 'label', x: 900, y: 100, vx: 0, vy: 0, stackId: s3, status: 'none', spaceId: demoSpaceId, layer: 502, priority: 'none', description: '', author: 'Cyberia', size: 1.0, order: 2, date: '', data: { type: 'label' }, updatedAt: now, syncStatus: 'synced' },
       ];

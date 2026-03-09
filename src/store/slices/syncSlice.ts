@@ -24,7 +24,7 @@ export const createSyncSlice: StateCreator<AuthState, [], [], SyncSlice> = (set,
     ? (localStorage.getItem('cyberia-user') ? 'synced' : 'offline') 
     : 'offline',
   lastSync: localStorage.getItem('cyberia-last-sync') ? new Date(localStorage.getItem('cyberia-last-sync')!) : null,
-  autoSync: false, // Forced to false per user request
+  autoSync: localStorage.getItem('cyberia-auto-sync') === 'true',
   isOnline: typeof navigator !== 'undefined' ? navigator.onLine : true,
   _syncPromise: null,
 
@@ -77,6 +77,10 @@ export const createSyncSlice: StateCreator<AuthState, [], [], SyncSlice> = (set,
   setAutoSync: async (enabled: boolean) => {
     localStorage.setItem('cyberia-auto-sync', String(enabled));
     set({ autoSync: enabled });
+    
+    if (enabled) {
+      syncOrchestrator.triggerSync(true);
+    }
     
     const { user, accessToken } = get();
     if (user && accessToken) {

@@ -113,20 +113,34 @@ const ThoughtNode: React.FC<ThoughtNodeProps> = React.memo(({ thought, registerE
     onTouchStart(thought.id, e);
   };
 
-  const handleLinkAction = (e: React.MouseEvent) => {
+  const handleLinkAction = async (e: React.MouseEvent) => {
     e.stopPropagation();
+    const store = useStore.getState();
+    
+    // CASE 1: Someone ELSE is already the source -> Link them to this node (Join Stack)
+    if (linkingSourceId && linkingSourceId !== thought.id) {
+      store.setSelectedThoughtIds([linkingSourceId, thought.id]);
+      await store.linkSelectedThoughts();
+      store.setSelectedThoughtId(thought.id);
+      setLinkingSourceId(null);
+      return;
+    }
+
+    // CASE 2: No session active OR I am the current source
+    // If I have a stackId, any click on the button UNLINKS me.
     if (thought.stackId) {
-      const store = useStore.getState();
       store.setSelectedThoughtIds([thought.id]);
-      store.unlinkSelectedThoughts();
+      await store.unlinkSelectedThoughts();
       store.setSelectedThoughtIds([]);
+      setLinkingSourceId(null);
     } else {
+      // If no stackId, toggle linking mode
       if (linkingSourceId === thought.id) setLinkingSourceId(null);
       else setLinkingSourceId(thought.id);
     }
   };
 
-  const handleClick = (e: React.MouseEvent) => {
+  const handleClick = async (e: React.MouseEvent) => {
     const dist = Math.sqrt(Math.pow(e.clientX - startPos.x, 2) + Math.pow(e.clientY - startPos.y, 2));
     if (dist > 10) return;
     if (e.ctrlKey || e.metaKey) { e.stopPropagation(); return; }
@@ -135,12 +149,17 @@ const ThoughtNode: React.FC<ThoughtNodeProps> = React.memo(({ thought, registerE
 
     if (linkingSourceId && linkingSourceId !== thought.id) {
       const store = useStore.getState();
+      // Set selection for the linking operation
       store.setSelectedThoughtIds([linkingSourceId, thought.id]);
-      store.linkSelectedThoughts();
+      // Await the linking process to ensure DB integrity
+      await store.linkSelectedThoughts();
+      // Restore focus to the target thought
       store.setSelectedThoughtId(thought.id);
+      // Clear linking state
       setLinkingSourceId(null);
       return;
     }
+    
     if (linkingSourceId === thought.id) return;
     const target = e.target as HTMLElement;
     if (target.closest('.checkbox')) return;

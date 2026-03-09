@@ -39,7 +39,8 @@ export interface CyberiaState {
   isDemo: boolean;
   _savedUserState: { spaces: Space[]; thoughts: Thought[]; stacks: Stack[]; activeSpaceId: string | null } | null;
   setDemoMode: (enabled: boolean) => void;
-  loadOnboardingData: () => void;
+  createInitialWorkspace: () => Promise<void>;
+  loadDemoData: () => Promise<void>;
 
   getLimits: () => typeof PLAN_CONFIG['free'];
 
@@ -62,7 +63,6 @@ export interface CyberiaState {
   zoomOut: () => void;
   resetTransform: () => void;
   clearWorkspace: () => Promise<void>;
-  completeOnboarding: () => Promise<void>;
 
   setTheme: (theme: 'cyberia' | 'sea' | 'forest' | 'rain') => void;
   setCustomBg: (bg: string | null) => Promise<void>;

@@ -1,6 +1,7 @@
 import { type StateCreator } from 'zustand';
 import { db } from '../../db';
 import { type CyberiaState } from '../types';
+import { syncOrchestrator } from '../../services/sync/syncOrchestrator';
 
 export const createHistorySlice: StateCreator<CyberiaState, [], [], any> = (set, get, _api) => ({
   history: [],
@@ -50,6 +51,11 @@ export const createHistorySlice: StateCreator<CyberiaState, [], [], any> = (set,
     
     await get().refreshThoughts();
     set({ historyIndex: newIndex });
+
+    const { useAuthStore } = await import('../useAuthStore');
+    if (useAuthStore.getState().status === 'authenticated') {
+      syncOrchestrator.triggerSync();
+    }
   },
 
   redo: async () => {
@@ -83,5 +89,10 @@ export const createHistorySlice: StateCreator<CyberiaState, [], [], any> = (set,
     
     await get().refreshThoughts();
     set({ historyIndex: newIndex });
+
+    const { useAuthStore } = await import('../useAuthStore');
+    if (useAuthStore.getState().status === 'authenticated') {
+      syncOrchestrator.triggerSync();
+    }
   },
 });

@@ -62,8 +62,13 @@ export const createSpaceSlice: StateCreator<CyberiaState, [], [], any> = (set, g
   },
 
   refreshSpaces: async () => {
-    const spaces = await db.spaces.orderBy('order').toArray();
-    set({ spaces });
+    // Robust fetching: Get all non-deleted spaces and sort by order
+    const allSpaces = await db.spaces.toArray();
+    const activeSpaces = allSpaces
+      .filter(s => !s.deletedAt)
+      .sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
+    
+    set({ spaces: activeSpaces });
   },
 
   addSpace: async (name: string) => {
@@ -127,54 +132,65 @@ export const createSpaceSlice: StateCreator<CyberiaState, [], [], any> = (set, g
   deleteSpace: async (id: string) => {
     if (get().isReadOnly || get().isDemo) return;
     const { spaces, activeSpaceId } = get();
-    const space = spaces.find((s: Space) => s.id === id);
     
-    if (space?.publishedId) {
+    // Prevent deleting the last space
+    const remainingSpaces = spaces.filter(s => s.id !== id && !s.deletedAt);
+    if (remainingSpaces.length === 0) {
+      useModalStore.getState().openModal({
+        title: 'Core Workspace Required',
+        description: 'You must have at least one active workspace. Create a new one before removing this dimension.',
+        type: 'alert',
+        confirmText: 'Acknowledged'
+      });
+      return;
+    }
+
+    const space = spaces.find((s: Space) => s.id === id);
+    if (!space) return;
+    
+    if (space.publishedId) {
       try { await get().unpublishSpace(id); } catch (err) { console.warn('Unpublish failed', err); }
     }
     
-    const thoughtsInSpace = await db.thoughts.where('spaceId').equals(id).toArray();
-    const stacksInSpace = await db.stacks.where('spaceId').equals(id).toArray();
     const authStore = useAuthStore.getState();
     
     // SOFT DELETE: Mark everything as deleted
     const now = Date.now();
-    await db.transaction('rw', [db.spaces, db.thoughts, db.stacks], async () => {
-      await db.spaces.update(id, { 
-        deletedAt: now, 
-        updatedAt: now, 
-        syncStatus: 'local' 
+    try {
+      await db.transaction('rw', [db.spaces, db.thoughts, db.stacks], async () => {
+        await db.spaces.update(id, { 
+          deletedAt: now, 
+          updatedAt: now, 
+          syncStatus: 'local' 
+        });
+        
+        await db.thoughts.where('spaceId').equals(id).modify({ 
+          deletedAt: now, 
+          updatedAt: now, 
+          syncStatus: 'local' 
+        });
+        
+        await db.stacks.where('spaceId').equals(id).modify({ 
+          deletedAt: now, 
+          updatedAt: now, 
+          syncStatus: 'local' 
+        });
       });
-      
-      const thoughtIds = thoughtsInSpace.map(t => t.id);
-      await db.thoughts.where('id').anyOf(thoughtIds).modify({ 
-        deletedAt: now, 
-        updatedAt: now, 
-        syncStatus: 'local' 
-      });
-      
-      const stackIds = stacksInSpace.map(s => s.id);
-      await db.stacks.where('id').anyOf(stackIds).modify({ 
-        deletedAt: now, 
-        updatedAt: now, 
-        syncStatus: 'local' 
-      });
-    });
 
-    await get().refreshSpaces();
-    
-    const updatedSpaces = get().spaces.filter(s => !s.deletedAt);
-    if (updatedSpaces.length > 0) {
-      if (id === activeSpaceId) {
-        await get().setActiveSpace(updatedSpaces[Math.max(0, updatedSpaces.length - 1)].id);
+      // Update store immediately to reflect disappearance in UI
+      await get().refreshSpaces();
+      
+      // Switch to another space if we deleted the active one
+      const freshSpaces = get().spaces;
+      if (id === activeSpaceId && freshSpaces.length > 0) {
+        await get().setActiveSpace(freshSpaces[Math.max(0, freshSpaces.length - 1)].id);
       }
-    } else {
-      localStorage.removeItem('cyberia-active-space-id');
-      set({ activeSpaceId: null, thoughts: [], stacks: [] });
-    }
 
-    if (authStore.status === 'authenticated') {
-      await syncOrchestrator.triggerSync();
+      if (authStore.status === 'authenticated') {
+        await syncOrchestrator.triggerSync();
+      }
+    } catch (err) {
+      console.error('[Space] Deletion failed:', err);
     }
   },
 

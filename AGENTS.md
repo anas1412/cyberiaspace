@@ -93,7 +93,8 @@ This section serves as a definitive reference for patterns that are deprecated. 
     - Standardize on a single `SYNC_DEBOUNCE_MS = 10000` (10 seconds) across all store slices.
 - **Backend:** Supabase Edge Functions (`supabase/functions/`) are deprecated in favor of Vercel Serverless Functions (`api/`).
 - **Entity Types:** The `image` thought type is deprecated. Use `type: 'file'` for all image assets to ensure consistent handling and storage.
-- **Onboarding:** Static string IDs like `s-onboarding` are deprecated. Use the `isOnboarding: true` flag on the Space object.
+- **Onboarding:** Generating initial thoughts, stacks, or multiple spaces for new users is deprecated. Use `createInitialWorkspace` to provide a single, empty "Workspace" for a pure start. The `isOnboarding: true` flag is deprecated for general space use and only remains for the `Homepage` live demo.
+- **Conflict Resolution:** The "Local vs Cloud" choice screen is deprecated. All synchronization conflicts must be resolved automatically using **Last-Write-Wins (LWW)** logic based on the `updatedAt` field.
 
 ---
 

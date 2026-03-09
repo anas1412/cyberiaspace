@@ -28,8 +28,13 @@ export const createStackSlice: StateCreator<CyberiaState, [], [], any> = (set, g
     if (get().isDemo) return;
     const { activeSpaceId, stacks } = get();
     if (!activeSpaceId) return;
-    const trimmedName = name?.trim() || 'Unnamed Stack';
-    const existingStack = stacks.find((s: Stack) => s.name.toLowerCase() === trimmedName.toLowerCase() && s.spaceId === activeSpaceId);
+    const trimmedName = name?.trim();
+    // Only search for existing stacks if a name was explicitly provided
+    const existingStack = trimmedName 
+      ? stacks.find((s: Stack) => s.name.toLowerCase() === trimmedName.toLowerCase() && s.spaceId === activeSpaceId)
+      : null;
+    
+    const finalName = trimmedName || 'New Collection';
     const authStore = useAuthStore.getState();
     const now = Date.now();
     
@@ -50,7 +55,7 @@ export const createStackSlice: StateCreator<CyberiaState, [], [], any> = (set, g
     const newStackId = ulid();
     await db.stacks.add({ 
       id: newStackId, 
-      name: trimmedName, 
+      name: finalName, 
       color: `hsla(${Math.floor(Math.random() * 360)}, 70%, 50%, 1)`, 
       spaceId: activeSpaceId,
       updatedAt: now,
@@ -123,7 +128,7 @@ export const createStackSlice: StateCreator<CyberiaState, [], [], any> = (set, g
     const { activeSpaceId } = get();
     if (!activeSpaceId) return;
     const authStore = useAuthStore.getState();
-    const unlinkedThoughtIds: string[] = [];
+    let wasModified = false;
     const now = Date.now();
     
     await db.transaction('rw', db.thoughts, db.stacks, async () => {
@@ -133,8 +138,8 @@ export const createStackSlice: StateCreator<CyberiaState, [], [], any> = (set, g
         if (stack.deletedAt) continue;
         const stackThoughts = allThoughts.filter(t => t.stackId === stack.id && !t.deletedAt);
         if (stackThoughts.length < 2) {
+          wasModified = true;
           if (stackThoughts.length === 1) {
-            unlinkedThoughtIds.push(stackThoughts[0].id);
             await db.thoughts.update(stackThoughts[0].id, { 
               stackId: null,
               updatedAt: now,
@@ -152,7 +157,7 @@ export const createStackSlice: StateCreator<CyberiaState, [], [], any> = (set, g
     await get().refreshThoughts();
     await get().refreshStacks();
     
-    if (authStore.status === 'authenticated' && unlinkedThoughtIds.length > 0) {
+    if (authStore.status === 'authenticated' && wasModified) {
       await syncOrchestrator.triggerSync();
     }
   },

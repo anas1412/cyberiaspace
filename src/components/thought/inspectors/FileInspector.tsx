@@ -51,7 +51,7 @@ export const FileInspector: React.FC<InspectorPanelProps> = ({ thought, isReadOn
                   blob: file,
                   name: file.name,
                   type: file.type,
-                  updatedAt: new Date().toISOString()
+                  updatedAt: Date.now()
                 });
 
                 // 2. Then update thought to trigger re-render

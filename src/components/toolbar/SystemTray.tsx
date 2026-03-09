@@ -172,7 +172,7 @@ export const SystemTray: React.FC<SystemTrayProps> = ({
         {/* Engine Cluster: Intelligence, Physics, Performance */}
         <div className="flex items-center gap-1.5 glass p-1.5 rounded-[1.5rem] border border-white/5">
           {/* Ask Oracle disabled */}
-          {false && !isReadOnly && (
+          {!isReadOnly && (
             <div className="relative group">
               <div className="absolute bottom-full mb-4 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-all duration-300 translate-y-2 group-hover:translate-y-0 pointer-events-none whitespace-nowrap z-[10001]">
                 <div className="glass px-3 py-1.5 rounded-xl border border-white/10 flex items-center gap-2 shadow-2xl bg-[var(--bg-main)]/90 backdrop-blur-xl">

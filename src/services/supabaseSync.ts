@@ -240,7 +240,6 @@ export const supabaseSync = {
       .select('id')
       .maybeSingle()
     if (error) {
-      cons
       console.error('[Supabase] updateThought error:', error.message)
       throw new Error(error.message)
     }

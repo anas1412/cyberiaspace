@@ -23,7 +23,7 @@ const getInitialUser = (): User | null => {
       },
       settings: {
         theme: user.settings?.theme ?? 'cyberia',
-        autoSync: false, // Forced to false
+        autoSync: user.settings?.autoSync ?? true,
       }
     };
   } catch (e) {
@@ -84,7 +84,7 @@ export const createAuthSlice: StateCreator<AuthState, [], [], any> = (set, get, 
       },
       settings: {
         theme: user.settings?.theme ?? 'cyberia',
-        autoSync: false, // Forced to false
+        autoSync: user.settings?.autoSync ?? true,
       }
     };
     
@@ -254,7 +254,7 @@ export const createAuthSlice: StateCreator<AuthState, [], [], any> = (set, get, 
           settings: {
             ...user.settings,
             ...supabaseUser.settings,
-            autoSync: false // Force false
+            autoSync: supabaseUser.settings?.autoSync ?? user.settings?.autoSync ?? true
           }
         };
         
@@ -270,7 +270,7 @@ export const createAuthSlice: StateCreator<AuthState, [], [], any> = (set, get, 
     const { accessToken, user } = get();
     if (!accessToken || !user) return;
     
-    const updatedUser = { ...user, settings: { ...user.settings, ...settings, autoSync: false } };
+    const updatedUser = { ...user, settings: { ...user.settings, ...settings } };
     set({ user: updatedUser });
     localStorage.setItem('cyberia-user', JSON.stringify(updatedUser));
 

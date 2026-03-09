@@ -122,12 +122,11 @@ db.on('versionchange', () => {
   window.location.reload();
 });
 
-// Version 16: Transition to ULIDs and Delta Sync schema
-// Removed pendingDeletions and pendingBlobs
-db.version(16).stores({
-  spaces: 'id, name, order, syncStatus, updatedAt',
+// Version 17: Added deletedAt index to spaces and stacks for robust filtering
+db.version(17).stores({
+  spaces: 'id, name, order, syncStatus, deletedAt, updatedAt',
   thoughts: 'id, spaceId, stackId, text, type, status, date, priority, order, author, storageUrl, syncStatus, deletedAt, updatedAt',
-  stacks: 'id, spaceId, name, syncStatus, updatedAt',
+  stacks: 'id, spaceId, name, syncStatus, deletedAt, updatedAt',
   blobs: 'id, thoughtId'
 });
 

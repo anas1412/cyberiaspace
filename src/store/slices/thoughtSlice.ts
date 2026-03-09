@@ -355,24 +355,47 @@ export const createThoughtSlice: StateCreator<CyberiaState, [], [], any> = (set,
   },
 
   linkSelectedThoughts: async (name?: string) => {
-    const { selectedThoughtIds, activeSpaceId, stacks } = get();
+    const { selectedThoughtIds, activeSpaceId, thoughts } = get();
     if (selectedThoughtIds.length < 2 || !activeSpaceId) return;
 
-    const trimmedName = name?.trim() || 'New Collection';
-    const existingStack = stacks.find((s: any) => s.name.toLowerCase() === trimmedName.toLowerCase() && s.spaceId === activeSpaceId);
+    const selectedThoughts = thoughts.filter(t => selectedThoughtIds.includes(t.id));
+    // Find all unique existing stacks among the selected thoughts
+    const existingStackIds = Array.from(new Set(selectedThoughts.map(t => t.stackId).filter(Boolean))) as string[];
     
     const { useAuthStore } = await import('../useAuthStore');
     const authStore = useAuthStore.getState();
 
     let targetStackId: string;
 
-    if (existingStack) {
-      targetStackId = existingStack.id;
+    if (existingStackIds.length > 0) {
+      // Logic: Join existing stack. If multiple exist (merging), pick the first one.
+      targetStackId = existingStackIds[0];
+      
+      if (existingStackIds.length > 1) {
+        const otherStackIds = existingStackIds.slice(1);
+        const now = Date.now();
+        // Move all thoughts from other stacks to the primary one
+        await db.thoughts.where('stackId').anyOf(otherStackIds).modify({ 
+          stackId: targetStackId,
+          updatedAt: now,
+          syncStatus: 'local'
+        });
+        // Delete the now empty stacks
+        await db.stacks.where('id').anyOf(otherStackIds).modify({
+          deletedAt: now,
+          updatedAt: now,
+          syncStatus: 'local'
+        });
+      }
     } else {
+      // Logic: Create new unique stack
       targetStackId = ulid();
+      const trimmedName = name?.trim();
+      const finalName = trimmedName || 'New Collection';
+      
       await db.stacks.add({ 
         id: targetStackId, 
-        name: trimmedName, 
+        name: finalName, 
         color: `hsla(${Math.floor(Math.random() * 360)}, 70%, 50%, 1)`, 
         spaceId: activeSpaceId,
         updatedAt: Date.now(),
@@ -380,11 +403,13 @@ export const createThoughtSlice: StateCreator<CyberiaState, [], [], any> = (set,
       });
     }
 
+    // Assign all selected thoughts to the target stack
     await db.thoughts.where('id').anyOf(selectedThoughtIds).modify({ 
       stackId: targetStackId,
       updatedAt: Date.now(),
       syncStatus: 'local'
     });
+
     await get().refreshThoughts();
     await get().refreshStacks();
     get().pushHistory();
@@ -408,7 +433,7 @@ export const createThoughtSlice: StateCreator<CyberiaState, [], [], any> = (set,
     });
     await get().refreshThoughts();
     
-    for (const _sid of affectedStackIds) {
+    if (affectedStackIds.length > 0) {
       await get().cleanupStacks();
     }
 

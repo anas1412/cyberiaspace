@@ -59,7 +59,7 @@ export const ThoughtFooter: React.FC<ThoughtFooterProps> = ({
               borderColor: stack.color ? toRgba(stack.color, 0.3) : 'rgba(255,255,255,0.2)'
             }}
           >
-            {stack.name || "Unnamed Stack"}
+            {stack.name || "New Collection"}
           </div>
         )}
       </div>
@@ -72,11 +72,17 @@ export const ThoughtFooter: React.FC<ThoughtFooterProps> = ({
             linkingSourceId === thought.id
               ? "bg-[var(--accent)] text-white shadow-[0_0_20px_var(--accent-glow)]"
               : "bg-white/5 text-slate-500 hover:text-white hover:bg-white/10 border border-white/5",
-            thought.stackId && "hover:text-red-400 hover:bg-red-500/10"
+            thought.stackId && !linkingSourceId && "hover:text-red-400 hover:bg-red-500/10"
           )}
-          title={thought.stackId ? "Remove from stack" : "Link to another thought"}
+          title={
+            linkingSourceId === thought.id 
+              ? "Cancel Linking" 
+              : thought.stackId 
+                ? "Remove from collection" 
+                : "Link to another thought"
+          }
         >
-          {thought.stackId ? (
+          {thought.stackId && linkingSourceId !== thought.id ? (
             <Link2Off className="w-4 h-4" />
           ) : (
             <LinkIcon className="w-4 h-4" />

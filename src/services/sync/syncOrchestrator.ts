@@ -144,9 +144,9 @@ export const syncOrchestrator = {
         supabaseSync.getThoughts(userId, 'id, updated_at, space_id, type, storage_url'),
       ]);
 
-      const cloudSpaceMap = new Map(cloudSpaces.spaces.map(s => [s.id, s]));
-      const cloudStackMap = new Map(cloudStacks.stacks.map(s => [s.id, s]));
-      const cloudThoughtMap = new Map(cloudThoughts.thoughts.map(t => [t.id, t]));
+      const cloudSpaceMap = new Map<string, any>(cloudSpaces.spaces.map((s: any) => [s.id, s]));
+      const cloudStackMap = new Map<string, any>(cloudStacks.stacks.map((s: any) => [s.id, s]));
+      const cloudThoughtMap = new Map<string, any>(cloudThoughts.thoughts.map((t: any) => [t.id, t]));
 
       const localAllSpaces = await db.spaces.toArray();
       const localAllStacks = await db.stacks.toArray();

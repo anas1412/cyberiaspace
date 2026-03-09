@@ -29,7 +29,7 @@ export const serializeWorkspace = (
       status: t.status !== 'none' ? t.status : undefined,
       priority: t.priority !== 'none' ? t.priority : undefined,
       date: t.date || undefined,
-      stack: t.stackId ? stackMap.get(t.stackId) || "Unnamed Stack" : undefined,
+      stack: t.stackId ? stackMap.get(t.stackId) || "New Collection" : undefined,
       isSelected: isSelected || undefined,
       syncStatus: t.syncStatus,
       // Metadata indicators - tell AI that data exists without sending it all
