@@ -20,6 +20,7 @@ export const usePhysics = (
 ) => {
   const thoughts = useStore((state) => state.thoughts);
   const spaces = useStore((state) => state.spaces);
+  const stacks = useStore((state) => state.stacks);
   const activeSpaceId = useStore((state) => state.activeSpaceId);
   const activeSpace = spaces.find((s) => s.id === activeSpaceId);
   const updateThought = useStore((state) => state.updateThought);
@@ -183,9 +184,9 @@ export const usePhysics = (
         }
       });
 
-      const ids = new Set(thoughts.map(t => t.id));
+      const idsSet = new Set(thoughts.map(t => t.id));
       for (const id of physics.keys()) {
-        if (!ids.has(id)) {
+        if (!idsSet.has(id)) {
           physics.delete(id);
           els.delete(id);
           thoughtsCache.delete(id);
@@ -319,7 +320,6 @@ export const usePhysics = (
   }, [getGlobalScale, transform.scale, updateThought, activeSpace, calendarViewDate]);
 
   const loop = useCallback(() => {
-    const vT = transform;
     const globalScale = getGlobalScale();
     const ids = Array.from(physicsState.current.keys());
     const state = physicsState.current;
@@ -436,7 +436,7 @@ export const usePhysics = (
       calendarStackFilter,
       kanbanSearchQuery,
       kanbanStackFilter,
-      kanbanY: vT.y,
+      kanbanY: vT_visual.y,
       sidebarScrollTop: sbContent?.scrollTop || 0,
       sidebarTop: sbRect ? (sbRect.top / globalScale) : 320,
       isMobile,
@@ -452,7 +452,6 @@ export const usePhysics = (
     let sidebarHeight = 0;
 
     frameCount.current++;
-    // Physics is disabled in performanceMode unless we are explicitly returning home or dragging
     const shouldCalculatePhysics = !performanceMode && (activeSpace?.physics ?? true);
 
     // 1. Calculate Targets & Apply Forces
@@ -480,11 +479,9 @@ export const usePhysics = (
           p.scale += (targetScale - p.scale) * 0.1;
         }
       } else if (mode === 'spatial' && isReturningHome.current) {
-        // Handled by applyHomeReturn() below for simplicity, or we could inline it
+        // Handled by applyHomeReturn()
       } else if (!isDragging) {
-        // Structured Layouts (Kanban, Calendar)
         const result = strategist.calculateLayout(t, allThoughts, context, elementHeights);
-        
         if (snapNextFrame.current) {
           p.x = result.targetX; p.y = result.targetY; p.scale = result.targetScale;
         } else {
@@ -494,8 +491,6 @@ export const usePhysics = (
           p.scale += (result.targetScale - p.scale) * 0.1;
         }
         p.vx = 0; p.vy = 0;
-
-        // Metadata Tracking
         if (result.columnHeight && result.columnHeight > maxColHeight) maxColHeight = result.columnHeight;
         if (result.isSidebar && result.columnHeight && result.columnHeight > sidebarHeight) sidebarHeight = result.columnHeight;
       }
@@ -503,60 +498,85 @@ export const usePhysics = (
 
     if (mode === 'spatial' && isReturningHome.current) applyHomeReturn();
 
-    // Update global measurements
     kMaxHeight.current = maxColHeight;
     sbHeight.current = sidebarHeight;
     const spacer = document.getElementById('cal-sidebar-spacer');
     if (spacer) spacer.style.height = `${sidebarHeight + 40}px`;
 
-    // --- Connections & Styles (Unchanged logic) ---
+    // --- Connections & Styles ---
     const ctx = canvasRef?.current?.getContext('2d');
     if (ctx && canvasRef.current) {
-      // NORMALIZE CANVAS RESOLUTION
-      const dpr = window.devicePixelRatio || 1;
-      const rect = canvasRef.current.getBoundingClientRect();
-      const nextW = rect.width * dpr;
-      const nextH = rect.height * dpr;
-      if (canvasRef.current.width !== nextW || canvasRef.current.height !== nextH) {
-        canvasRef.current.width = nextW;
-        canvasRef.current.height = nextH;
-      }
-      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      // Clear the huge world canvas
+      ctx.setTransform(1, 0, 0, 1, 0, 0);
+      ctx.clearRect(0, 0, 5000, 5000);
 
-      ctx.clearRect(0, 0, rect.width, rect.height);
       if (mode === 'spatial') {
-        const { x: tx, y: ty, scale: s } = effectiveTransform;
+        const stackGroups = new Map<string, string[]>();
+        ids.forEach(id => {
+          const t = thoughtMap.current.get(id);
+          if (t?.stackId) {
+            if (!stackGroups.has(t.stackId)) stackGroups.set(t.stackId, []);
+            stackGroups.get(t.stackId)!.push(id);
+          }
+        });
+
         const style = getComputedStyle(document.body);
         const accent = style.getPropertyValue('--accent').trim() || '#6366f1';
-        ctx.strokeStyle = accent.startsWith('#') ? accent + '1F' : accent.replace('rgb', 'rgba').replace(')', ', 0.12)');
-        ctx.lineWidth = 1.5;
-        ctx.beginPath();
-        for (let i = 0; i < ids.length; i++) {
-          const tA = thoughtMap.current.get(ids[i]); const pA = state.get(ids[i]); if (!tA?.stackId || !pA) continue;
-          const hA = elementHeights.get(ids[i]) || 120;
-          for (let j = i + 1; j < ids.length; j++) {
-            const tB = thoughtMap.current.get(ids[j]); const pB = state.get(ids[j]); 
-            if (tB && tA.stackId === tB.stackId && pB) {
-              const hB = elementHeights.get(ids[j]) || 120;
-              ctx.moveTo((pA.x + 140) * s + tx, (pA.y + hA / 2) * s + ty); 
-              ctx.lineTo((pB.x + 140) * s + tx, (pB.y + hB / 2) * s + ty);
+
+        stackGroups.forEach((memberIds, stackId) => {
+          if (memberIds.length < 2) return;
+          const stack = stacks.find(s => s.id === stackId);
+          const stackColor = stack?.color || accent;
+          
+          ctx.lineCap = 'round';
+          ctx.lineJoin = 'round';
+          
+          // 1. PATH DEFINITION
+          ctx.beginPath();
+          for (let i = 0; i < memberIds.length; i++) {
+            const pA = state.get(memberIds[i]); if (!pA) continue;
+            const hA = elementHeights.get(memberIds[i]) || 120;
+            const xA = pA.x + 140;
+            const yA = pA.y + hA / 2;
+
+            for (let j = i + 1; j < memberIds.length; j++) {
+              const pB = state.get(memberIds[j]); if (!pB) continue;
+              const hB = elementHeights.get(memberIds[j]) || 120;
+              ctx.moveTo(xA, yA);
+              ctx.lineTo(pB.x + 140, pB.y + hB / 2);
             }
           }
-        }
-        ctx.stroke();
+
+          // 2. GLOW PASS
+          ctx.setLineDash([]);
+          ctx.lineWidth = 4;
+          ctx.strokeStyle = stackColor.startsWith('hsla') ? stackColor.replace(/[\d\.]+\)$/, '0.15)') : (stackColor.startsWith('#') ? stackColor + '26' : stackColor.replace(')', ', 0.15)'));
+          ctx.stroke();
+
+          // 3. INK PASS (Dashed Blueprint)
+          ctx.setLineDash([12, 6]);
+          ctx.lineWidth = 1.5;
+          ctx.strokeStyle = stackColor.startsWith('hsla') ? stackColor.replace(/[\d\.]+\)$/, '0.6)') : (stackColor.startsWith('#') ? stackColor + '99' : stackColor.replace(')', ', 0.6)'));
+          ctx.stroke();
+          
+          ctx.setLineDash([]);
+        });
       }
       
-      // OPTIMIZATION: High-speed linking line (Using mousePosRef directly)
       if (linkingSourceId) {
         const pS = state.get(linkingSourceId);
         if (pS) {
           const hS = elementHeights.get(linkingSourceId) || 120;
+          // Convert screen mouse to world mouse for the world-canvas
+          const worldMouseX = (mousePosRef.current.x - effectiveTransform.x) / effectiveTransform.scale;
+          const worldMouseY = (mousePosRef.current.y - effectiveTransform.y) / effectiveTransform.scale;
+
           ctx.beginPath(); 
           ctx.setLineDash([5, 5]); 
           ctx.strokeStyle = 'rgba(99, 102, 241, 0.8)'; 
           ctx.lineWidth = 2;
-          ctx.moveTo((pS.x + 140) * effectiveTransform.scale + effectiveTransform.x, (pS.y + hS / 2) * effectiveTransform.scale + effectiveTransform.y); 
-          ctx.lineTo(mousePosRef.current.x, mousePosRef.current.y);
+          ctx.moveTo(pS.x + 140, pS.y + hS / 2); 
+          ctx.lineTo(worldMouseX, worldMouseY);
           ctx.stroke(); 
           ctx.setLineDash([]);
         }
@@ -567,41 +587,32 @@ export const usePhysics = (
       const el = elements.current.get(id); const t = thoughtMap.current.get(id); if (!el || !t) return;
       const h = el.offsetHeight || 120;
       el.style.transform = `translate3d(${p.x}px, ${p.y}px, 0) scale(${p.scale})`;
-      
       const isSelected = t.id === selectedThoughtId;
       const isDraggingThis = dragRef.current?.initialPositions.has(id) && dragRef.current.moved;
-
-
-      // Re-calculate layout results for styling (clipPath, etc)
       const res = strategist.calculateLayout(t, allThoughts, context, elementHeights);
-
       el.style.opacity = (res.opacity ?? 1).toString();
       el.style.visibility = res.visibility ?? 'visible';
       el.style.pointerEvents = res.pointerEvents ?? 'auto';
       el.style.clipPath = res.clipPath ?? 'none';
       el.style.zIndex = isSelected ? '10001' : (isDraggingThis ? '1000' : (res.zIndex || (20 + (t.layer || 0)).toString()));
-
       if (res.rotation && !isSelected) el.style.transform += ` rotate(${res.rotation}deg)`;
-      
-      // Special Sidebar Clipping override (needs global context)
       if (mode === 'calendar' && !t.date && !isDraggingThis && !isSelected) {
         const contentEl = document.getElementById('cal-sidebar-content');
         const cRectRaw = contentEl?.getBoundingClientRect();
         if (cRectRaw) {
           const cRect = { top: cRectRaw.top / globalScale, bottom: cRectRaw.bottom / globalScale };
-          const cardTop = (p.y * vT.scale + vT.y);
-          const cardBottom = (p.y + h * p.scale) * vT.scale + vT.y;
-          const topClip = Math.max(0, ((cRect.top - cardTop) / ((h * p.scale) * vT.scale)) * 100);
-          const bottomClip = Math.max(0, ((cardBottom - cRect.bottom) / ((h * p.scale) * vT.scale)) * 100);
+          const cardTop = (p.y * vT_visual.scale + vT_visual.y);
+          const cardBottom = (p.y + h * p.scale) * vT_visual.scale + vT_visual.y;
+          const topClip = Math.max(0, ((cRect.top - cardTop) / ((h * p.scale) * vT_visual.scale)) * 100);
+          const bottomClip = Math.max(0, ((cardBottom - cRect.bottom) / ((h * p.scale) * vT_visual.scale)) * 100);
           el.style.clipPath = `inset(${topClip}% 0% ${bottomClip}% 0% round 32px)`;
           el.style.visibility = (topClip > 95 || bottomClip > 95) ? 'hidden' : 'visible';
-
           el.style.pointerEvents = (topClip > 80 || bottomClip > 80) ? 'none' : 'auto';
         }
       }
     });
     if (ids.length > 0) snapNextFrame.current = false;
-  }, [activeSpace, activeSpaceId, calendarViewDate, hoveredCalDate, calendarSearchQuery, calendarStackFilter, kanbanSearchQuery, kanbanStackFilter, transform, linkingSourceId, getGlobalScale, applyHomeReturn, selectedThoughtId, performanceMode]);
+  }, [activeSpace, activeSpaceId, calendarViewDate, hoveredCalDate, calendarSearchQuery, calendarStackFilter, kanbanSearchQuery, kanbanStackFilter, transform, linkingSourceId, getGlobalScale, applyHomeReturn, selectedThoughtId, performanceMode, stacks]);
 
   useEffect(() => {
     const animate = () => { loop(); requestRef.current = requestAnimationFrame(animate); };

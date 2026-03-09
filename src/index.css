@@ -172,7 +172,7 @@ body {
   position: fixed;
   inset: -100px;
   pointer-events: none;
-  z-index: 0;
+  z-index: -10; /* Guaranteed Background */
 }
 
 .stars-1 {
@@ -212,7 +212,7 @@ body {
 .sea-layer {
   position: fixed;
   inset: -200px;
-  z-index: 0;
+  z-index: -10;
   opacity: 0;
   transition: opacity 2s ease;
   pointer-events: none;
@@ -267,7 +267,7 @@ body {
 .forest-layer {
   position: fixed;
   inset: -200px;
-  z-index: 0;
+  z-index: -10;
   opacity: 0;
   transition: opacity 2s ease;
   pointer-events: none;
@@ -323,7 +323,7 @@ body {
 .rain-layer {
   position: fixed;
   inset: -500px;
-  z-index: 0;
+  z-index: -10;
   opacity: 0;
   transition: opacity 2s ease;
   pointer-events: none;
@@ -499,7 +499,7 @@ body.low-perf .animate-breathe {
   inset: -50%;
   width: 200%;
   height: 200%;
-  z-index: 0;
+  z-index: -10;
   pointer-events: none;
   opacity: 0.6;
   filter: blur(80px);
@@ -522,7 +522,7 @@ body.low-perf .animate-breathe {
 
 #connection-canvas {
   will-change: transform;
-  image-rendering: pixelated;
+  z-index: 5;
 }
 
 /* Global Interactive Cursors */
