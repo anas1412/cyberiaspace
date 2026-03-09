@@ -322,7 +322,7 @@ const AccountMenu: React.FC = () => {
               </button>
             </div>
 
-            <button 
+            {/* <button 
               onClick={handleRestore}
               disabled={!isOnline || syncStatus === 'syncing'}
               className="w-full flex items-center gap-2.5 p-2.5 rounded-xl md:rounded-2xl hover:bg-white/5 transition-colors group"
@@ -332,7 +332,7 @@ const AccountMenu: React.FC = () => {
                 <p className="text-[8px] md:text-[9px] font-black uppercase tracking-widest text-white">Restore Backup</p>
                 <p className="text-[9px] font-bold text-slate-500 uppercase tracking-widest">Download cloud backup</p>
               </div>
-            </button>
+            </button> */}
 
             <button 
               onClick={() => setAutoSync(!autoSync)}

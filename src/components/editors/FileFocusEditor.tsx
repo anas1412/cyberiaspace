@@ -312,7 +312,7 @@ const FileFocusEditor: React.FC = () => {
     if (isVisible && thought && !localPreviewUrl) {
       loadLocalBlob();
     }
-  }, [isVisible, thought?.id, localPreviewUrl]);
+  }, [isVisible, thought?.id, thought?.updatedAt, localPreviewUrl]);
 
   const loadLocalBlob = async () => {
     if (!thought) return;
@@ -322,6 +322,11 @@ const FileFocusEditor: React.FC = () => {
       if (blobEntry) {
         const url = URL.createObjectURL(blobEntry.blob);
         setLocalPreviewUrl(url);
+        // Trigger a store update to notify UI that local blob is now available
+        try {
+          const { useStore } = await import('../../store/useStore');
+          useStore.getState().updateThought(thought.id, { updatedAt: Date.now() }, { skipSync: true });
+        } catch {}
       } else if (thought.storageUrl) {
         // High priority download for focused item
         useAuthStore.getState().downloadSingleBlob(thought.id);

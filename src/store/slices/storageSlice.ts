@@ -118,6 +118,20 @@ export const createStorageSlice: StateCreator<AuthState, [], [], any> = (set, ge
 
       await db.thoughts.update(thoughtId, updates);
       store.patchThought(thoughtId, updates);
+      // Refresh storage usage after cloud update
+      try {
+        const { useStore } = await import('../useStore');
+        const st: any = useStore.getState();
+        st?.calculateUsage?.(st.totalThoughtCount || 0);
+      } catch {
+        // best-effort only
+      }
+      // Trigger storage usage recalculation after cloud upload/update
+      try {
+        const { useStore } = await import('../useStore');
+        const st: any = useStore.getState();
+        st?.calculateUsage?.(st.totalThoughtCount || 0);
+      } catch {}
 
     } catch (err) {
       console.error('[Storage] Failed to upload blob:', err);
@@ -161,6 +175,16 @@ export const createStorageSlice: StateCreator<AuthState, [], [], any> = (set, ge
       const { useStore } = await import('../useStore');
       // Update locally without triggering another sync
       await useStore.getState().updateThought(thoughtId, { updatedAt: Date.now() }, { skipSync: true });
+      // Refresh storage usage after local update
+      try {
+        const st: any = useStore.getState();
+        st?.calculateUsage?.(st.totalThoughtCount || 0);
+      } catch {}
+      // Recalculate storage usage after local blob write
+      try {
+        const st: any = useStore.getState();
+        st?.calculateUsage?.(st.totalThoughtCount || 0);
+      } catch {}
     } catch (err) {
       console.error(`[Storage] Download failed for ${thoughtId}:`, err);
     } finally {

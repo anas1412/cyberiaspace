@@ -16,6 +16,8 @@ Welcome to the Cyberia codebase! This project is a modern, high-performance spat
 
 ---
 
+
+- **handlePostAuthSync:** Not deprecated. It remains as part of the auth flow for initial hydration; prefer Lazy Loading/Delta Hydration for normal operation going forward.
 ##  Core Architecture
 
 ###  Data Flow & Synchronization
@@ -86,11 +88,11 @@ This section serves as a definitive reference for patterns that are deprecated. 
 - **Auto-Increment IDs & Mapping:** Numeric `++id` primary keys and the local-to-cloud ID mapping system are deprecated. All new entities must use **ULIDs** (Universally Unique Lexicographically Sortable Identifiers) as their primary IDs across both IndexedDB and Supabase to prevent multi-device collisions and maintain temporal sorting. 
 - **ID Handling:** Purge all `parseInt(id, 10)` logic and mapping lookups as IDs transition to strings.
 - **Sync Logic:** 
-    - `handlePostAuthSync` and brute-force full syncing are deprecated in favor of **Lazy Loading** and **Delta Sync**.
-    - Aggressive `mediaSweep` is replaced by **Event-Driven Deletion** (Ack-based) and a 30-day local purge.
-    - `repairEmptyFileThoughts` is replaced by the **Healing Rule** (re-downloading missing blobs for synced thoughts).
-    - Standardize on the **4-state machine** (`local`, `syncing`, `synced`, `error`).
-    - Standardize on a single `SYNC_DEBOUNCE_MS = 10000` (10 seconds) across all store slices.
+  - `FullPushSync` and brute-force full syncing are deprecated in favor of **Lazy Loading** and **Delta Sync**.
+  - Aggressive `mediaSweep` is replaced by **Event-Driven Deletion** (Ack-based) and a 30-day local purge.
+  - `repairEmptyFileThoughts` is replaced by the **Healing Rule** (re-downloading missing blobs for synced thoughts).
+  - Standardize on the **4-state machine** (`local`, `syncing`, `synced`, `error`).
+  - Standardize on a single `SYNC_DEBOUNCE_MS = 10000` (10 seconds) across all store slices.
 - **Backend:** Supabase Edge Functions (`supabase/functions/`) are deprecated in favor of Vercel Serverless Functions (`api/`).
 - **Entity Types:** The `image` thought type is deprecated. Use `type: 'file'` for all image assets to ensure consistent handling and storage.
 - **Onboarding:** Generating initial thoughts, stacks, or multiple spaces for new users is deprecated. Use `createInitialWorkspace` to provide a single, empty "Workspace" for a pure start. The `isOnboarding: true` flag is deprecated for general space use and only remains for the `Homepage` live demo.

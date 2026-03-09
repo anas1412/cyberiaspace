@@ -31,6 +31,14 @@ export const createSyncSlice: StateCreator<AuthState, [], [], SyncSlice> = (set,
   syncData: async () => {
     console.log('[Auth] syncData called');
     await syncOrchestrator.fullPushSync();
+    // After a full push sync, refresh storage usage to reflect recent changes
+    try {
+      const { useStore } = await import('../useStore');
+      const st: any = useStore.getState();
+      st?.calculateUsage?.(st.totalThoughtCount || 0);
+    } catch {
+      // best-effort only
+    }
   },
 
   syncToServices: async () => {
@@ -70,7 +78,33 @@ export const createSyncSlice: StateCreator<AuthState, [], [], SyncSlice> = (set,
 
   handlePostAuthSync: async () => {
     console.log('[Sync] handlePostAuthSync: Triggering delta hydration...');
-    // In the future, this will trigger the Metadata-First Hydration logic
+    // Fast path: try lazy cloud hydration first
+    try {
+      const cloudData = await get().importCloudData();
+      if (cloudData) {
+        const { useStore } = await import('../useStore');
+        await useStore.getState().importFullState(cloudData);
+        try {
+          const st: any = useStore.getState();
+          st?.calculateUsage?.(st.totalThoughtCount || 0);
+        } catch {}
+        return;
+      }
+    } catch (e) {
+      console.warn('[Sync] Lazy cloud hydration failed:', e);
+    }
+    // Second path: try a direct cloud hydrate from the backend if available
+    try {
+      const cloudData2 = await syncOrchestrator.fetchCloudData();
+      if (cloudData2) {
+        const { useStore } = await import('../useStore');
+        await useStore.getState().importFullState(cloudData2);
+        return;
+      }
+    } catch (e) {
+      console.warn('[Sync] Direct cloud hydration failed:', e);
+    }
+    // Fallback to the existing full push sync
     await get().syncData();
   },
 
