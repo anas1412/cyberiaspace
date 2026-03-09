@@ -58,10 +58,13 @@ const EditorContent: React.FC<{
   setActiveFocus: (id: string | null, type: any) => void;
   scrollerRef: React.RefObject<HTMLDivElement | null>;
   stack: any;
+  isReadOnly: boolean;
+  isDemo: boolean;
 }> = ({ 
   thought, fileInfo, image, localPreviewUrl, isUploading, isFetching,
   handleFileSelect, 
-  stackItems, setActiveFocus, scrollerRef, stack 
+  stackItems, setActiveFocus, scrollerRef, stack,
+  isReadOnly, isDemo
 }) => {
   const isStranded = !thought.storageUrl && !localPreviewUrl && !image && !!thought.storagePath;
 
@@ -86,11 +89,12 @@ const EditorContent: React.FC<{
 
   // SAVE ANALYSIS RESULT (Triggered in parent to avoid render-loop)
   useEffect(() => {
-    if (thought && !isReadOnly && !get().isDemo) {
+    if (thought && !isReadOnly && !isDemo) {
       const needsUpdate = cached.isPdf === undefined || 
                           cached.isImage === undefined || 
                           cached.isVideo === undefined || 
                           cached.isAudio === undefined;
+
       
       if (needsUpdate && (mimeType || extension)) {
         const updateStore = async () => {
@@ -111,7 +115,7 @@ const EditorContent: React.FC<{
         updateStore();
       }
     }
-  }, [thought?.id, isPdf, isImage, isVideo, isAudio, cached.isPdf]);
+  }, [thought?.id, isPdf, isImage, isVideo, isAudio, cached.isPdf, isReadOnly, isDemo]);
 
   return (
     <div className="flex-1 flex flex-col min-h-0 bg-black">
@@ -254,6 +258,7 @@ const FileFocusEditor: React.FC = () => {
   const stacks = useStore((state) => state.stacks);
   const updateThought = useStore((state) => state.updateThought);
   const isReadOnly = useStore((state) => state.isReadOnly);
+  const isDemo = useStore((state) => state.isDemo);
   const { 
     uploadThoughtBlob, 
     removeCloudAsset, 
@@ -522,6 +527,8 @@ const FileFocusEditor: React.FC = () => {
         setActiveFocus={setActiveFocus}
         scrollerRef={scrollerRef}
         stack={stack}
+        isReadOnly={isReadOnly}
+        isDemo={isDemo}
       />
     </FocusEditorShell>
   );

@@ -50,6 +50,9 @@ const Viewport: React.FC<{ isInteracting?: boolean }> = ({ isInteracting }) => {
   const [selectionRect, setSelectionRect] = useState<{ x: number, y: number, w: number, h: number } | null>(null);
 
   const mouseWorldPos = useRef({ x: 0, y: 0 });
+  const transformRef = useRef(transform);
+  useEffect(() => { transformRef.current = transform; }, [transform]);
+
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const saveTimeoutRef = useRef<number | null>(null);
 
@@ -135,8 +138,8 @@ const Viewport: React.FC<{ isInteracting?: boolean }> = ({ isInteracting }) => {
 
       // Always update world position for shortcuts and placement
       mouseWorldPos.current = {
-        x: (lx - transform.x) / transform.scale,
-        y: (ly - transform.y) / transform.scale
+        x: (lx - transformRef.current.x) / transformRef.current.scale,
+        y: (ly - transformRef.current.y) / transformRef.current.scale
       };
 
       // Store context globally for the FAB and other UI elements to access without re-rendering
@@ -160,22 +163,21 @@ const Viewport: React.FC<{ isInteracting?: boolean }> = ({ isInteracting }) => {
       }
       (window as any)._cyberia_hover_context = context;
       
-      // Update last mouse pos for shortcut logic (Kanban/Calendar detection)
-      lastMousePos.current = { rawX: e.clientX, rawY: e.clientY };
-
-      if (!isPanningRef.current && !isSelectingRef.current) return;
+      if (!isPanningRef.current && !isSelectingRef.current) {
+        lastMousePos.current = { rawX: e.clientX, rawY: e.clientY };
+        return;
+      }
 
       if (isPanningRef.current) {
-        const dx = (e.clientX - lastMousePos.current.rawX) / (s * transform.scale);
-        const dy = (e.clientY - lastMousePos.current.rawY) / (s * transform.scale);
+        const dx = (e.clientX - lastMousePos.current.rawX) / (s * transformRef.current.scale);
+        const dy = (e.clientY - lastMousePos.current.rawY) / (s * transformRef.current.scale);
 
         setTransform(applyConstraints({
-          ...transform,
-          x: transform.x + dx,
-          y: transform.y + dy,
+          ...transformRef.current,
+          x: transformRef.current.x + dx,
+          y: transformRef.current.y + dy,
         }));
       } else if (isSelectingRef.current) {
-
         const startLX = selectionStartRef.current.rawX / s;
         const startLY = selectionStartRef.current.rawY / s;
         const x = Math.min(lx, startLX);
@@ -186,10 +188,10 @@ const Viewport: React.FC<{ isInteracting?: boolean }> = ({ isInteracting }) => {
         if (w > 5 || h > 5) {
           setSelectionRect({ x, y, w, h });
 
-          const rectX = (x - transform.x) / transform.scale;
-          const rectY = (y - transform.y) / transform.scale;
-          const rectW = w / transform.scale;
-          const rectH = h / transform.scale;
+          const rectX = (x - transformRef.current.x) / transformRef.current.scale;
+          const rectY = (y - transformRef.current.y) / transformRef.current.scale;
+          const rectW = w / transformRef.current.scale;
+          const rectH = h / transformRef.current.scale;
 
           const selectedIds = thoughts.filter(t => {
             const tx = t.x;
@@ -203,6 +205,8 @@ const Viewport: React.FC<{ isInteracting?: boolean }> = ({ isInteracting }) => {
           setSelectedThoughtIds(selectedIds);
         }
       }
+
+      lastMousePos.current = { rawX: e.clientX, rawY: e.clientY };
     };
 
     const handleMouseUp = () => {
@@ -223,7 +227,7 @@ const Viewport: React.FC<{ isInteracting?: boolean }> = ({ isInteracting }) => {
       const dist = Math.sqrt(Math.pow(e.clientX - selectionStartRef.current.rawX, 2) + Math.pow(e.clientY - selectionStartRef.current.rawY, 2));
       if (dist > 5) return;
 
-      if (!target.closest('.thought-bulb, #inspector, .expand-img, button, input, textarea, #chat-overlay, .modal-content, .focus-box')) {
+      if (!target.closest('.thought-bulb, #inspector, .expand-img, button, input, textarea, #chat-overlay, .modal-content, .focus-box, #space-switcher-list')) {
         setInspectorOpen(false);
         clearSelection();
         setSelectedThoughtId(null);
@@ -538,7 +542,7 @@ const Viewport: React.FC<{ isInteracting?: boolean }> = ({ isInteracting }) => {
       window.removeEventListener('touchmove', handleTouchMove);
       window.removeEventListener('touchend', handleTouchEnd);
     };
-  }, [activeSpace, setInspectorOpen, isGrabbing, selectedThoughtId, selectedThoughtIds, openModal, deleteThought, deleteSelectedThoughts, thoughts, addThought, setSelectedThoughtId, setSelectedThoughtIds, clearSelection, transform, setTransform, isReadOnly, handleWheel, handleTouchStartLocal, handleTouchMove, handleTouchEnd, getGlobalScale, uploadThoughtBlob, applyConstraints, lastMousePos, selectionStartRef, isPanningRef, isSelectingRef, isDemo, isInteracting]);
+  }, [activeSpace, setInspectorOpen, isGrabbing, selectedThoughtId, selectedThoughtIds, openModal, deleteThought, deleteSelectedThoughts, thoughts, addThought, setSelectedThoughtId, setSelectedThoughtIds, clearSelection, setTransform, isReadOnly, handleWheel, handleTouchStartLocal, handleTouchMove, handleTouchEnd, getGlobalScale, uploadThoughtBlob, applyConstraints, lastMousePos, selectionStartRef, isPanningRef, isSelectingRef, isDemo, isInteracting]);
 
 
   return (

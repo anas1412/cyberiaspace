@@ -84,24 +84,56 @@ export const syncOrchestrator = {
 
       // Handle deletions first (Synchronized Tombstones)
       for (const space of localSpaces.filter(s => s.deletedAt)) {
-        await supabaseSync.deleteSpace(space.id, userId);
-        await db.spaces.delete(space.id);
+        try {
+          await supabaseSync.deleteSpace(space.id, userId);
+          await db.spaces.delete(space.id);
+        } catch (e) {
+          console.warn('[Sync] Space deletion failed, will retry:', e);
+        }
       }
       for (const stack of localStacks.filter(s => s.deletedAt)) {
-        await supabaseSync.deleteStack(stack.id, userId);
-        await db.stacks.delete(stack.id);
+        try {
+          await supabaseSync.deleteStack(stack.id, userId);
+          await db.stacks.delete(stack.id);
+        } catch (e) {
+          console.warn('[Sync] Stack deletion failed, will retry:', e);
+        }
       }
       for (const thought of localThoughts.filter(t => t.deletedAt)) {
+        let storageDeleted = true;
         if (thought.storagePath) {
           try {
             await supabaseStorage.deleteFile(thought.storagePath);
-          } catch (e) {
-            console.warn('[Sync] Storage deletion skipped or failed:', e);
+          } catch (e: any) {
+            // Treat non-network errors or 404s as success (already gone)
+            const isNetworkError = e.message?.toLowerCase().includes('network') || e.message?.toLowerCase().includes('fetch');
+            const is404 = e.message?.includes('404') || e.status === 404;
+            
+            if (isNetworkError && !is404) {
+              console.warn('[Sync] Storage deletion failed due to network, will retry:', thought.id);
+              storageDeleted = false;
+            } else {
+              console.log('[Sync] Storage asset already gone or inaccessible, proceeding with thought deletion:', thought.id);
+            }
           }
         }
-        await supabaseSync.deleteThought(thought.id, userId);
-        await db.thoughts.delete(thought.id);
-        await db.blobs.where('thoughtId').equals(thought.id).delete();
+        
+        if (storageDeleted) {
+          try {
+            await supabaseSync.deleteThought(thought.id, userId);
+            await db.thoughts.delete(thought.id);
+            await db.blobs.where('thoughtId').equals(thought.id).delete();
+          } catch (e: any) {
+            // If the thought is already gone from the cloud, metadata deletion is a success
+            const is404 = e.status === 404 || e.message?.includes('not found');
+            if (is404) {
+              await db.thoughts.delete(thought.id);
+              await db.blobs.where('thoughtId').equals(thought.id).delete();
+            } else {
+              console.warn('[Sync] Metadata deletion failed, will retry:', e);
+            }
+          }
+        }
       }
 
       // Handle Creates/Updates
