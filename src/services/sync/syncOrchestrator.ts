@@ -92,7 +92,13 @@ export const syncOrchestrator = {
         await db.stacks.delete(stack.id);
       }
       for (const thought of localThoughts.filter(t => t.deletedAt)) {
-        if (thought.storagePath) await supabaseStorage.deleteFile(thought.storagePath);
+        if (thought.storagePath) {
+          try {
+            await supabaseStorage.deleteFile(thought.storagePath);
+          } catch (e) {
+            console.warn('[Sync] Storage deletion skipped or failed:', e);
+          }
+        }
         await supabaseSync.deleteThought(thought.id, userId);
         await db.thoughts.delete(thought.id);
         await db.blobs.where('thoughtId').equals(thought.id).delete();

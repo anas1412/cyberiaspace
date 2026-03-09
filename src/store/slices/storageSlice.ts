@@ -53,6 +53,7 @@ export const createStorageSlice: StateCreator<AuthState, [], [], any> = (set, ge
 
     try {
       const { useStore } = await import('../useStore');
+      const store = useStore.getState();
 
       const blobEntry = await db.blobs.where('thoughtId').equals(thoughtId).first();
       const thought = await db.thoughts.get(thoughtId);
@@ -69,8 +70,9 @@ export const createStorageSlice: StateCreator<AuthState, [], [], any> = (set, ge
       const sizeCheck = supabaseStorage.checkFileSize(blobEntry.blob);
       if (!sizeCheck.valid) {
         console.error('[Storage] File too large:', sizeCheck.message);
-        await db.thoughts.update(thoughtId, { syncStatus: 'error', updatedAt: Date.now() });
-        useStore.getState().updateThought(thoughtId, { syncStatus: 'error' }, { skipSync: true });
+        const now = Date.now();
+        await db.thoughts.update(thoughtId, { syncStatus: 'error', updatedAt: now });
+        store.patchThought(thoughtId, { syncStatus: 'error', updatedAt: now });
         return;
       }
 
@@ -79,7 +81,8 @@ export const createStorageSlice: StateCreator<AuthState, [], [], any> = (set, ge
         return;
       }
 
-      useStore.getState().updateThought(thoughtId, { syncStatus: 'syncing' }, { skipSync: true });
+      // Use patchThought for immediate store update without debounce
+      store.patchThought(thoughtId, { syncStatus: 'syncing' });
 
       const result = await supabaseStorage.uploadFile(
         user.id,
@@ -114,13 +117,17 @@ export const createStorageSlice: StateCreator<AuthState, [], [], any> = (set, ge
       }
 
       await db.thoughts.update(thoughtId, updates);
-      useStore.getState().updateThought(thoughtId, updates, { skipSync: true });
+      store.patchThought(thoughtId, updates);
 
     } catch (err) {
       console.error('[Storage] Failed to upload blob:', err);
-      const { useStore } = await import('../useStore');
-      await db.thoughts.update(thoughtId, { syncStatus: 'error', updatedAt: Date.now() });
-      useStore.getState().updateThought(thoughtId, { syncStatus: 'error' }, { skipSync: true });
+      const now = Date.now();
+      try {
+        const { useStore } = await import('../useStore');
+        const store = useStore.getState();
+        await db.thoughts.update(thoughtId, { syncStatus: 'error', updatedAt: now });
+        store.patchThought(thoughtId, { syncStatus: 'error', updatedAt: now });
+      } catch (e) {}
     }
   },
 
@@ -244,11 +251,6 @@ export const createStorageSlice: StateCreator<AuthState, [], [], any> = (set, ge
     } catch (err) {
       console.error('[Storage] Failed to remove cloud asset:', err);
     }
-  },
-
-  deleteServiceContent: async (_thought: any) => {
-    // This will be handled by the new Delta Sync Ack-based deletion in Phase 4
-    console.log('[Storage] deleteServiceContent deferred to Sync Engine');
   },
 
   processPendingDeletions: async () => {

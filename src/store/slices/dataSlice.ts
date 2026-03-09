@@ -383,22 +383,11 @@ export const createDataSlice: StateCreator<CyberiaState, [], [], any> = (set, ge
     const thoughtsCount = await db.thoughts.filter(t => !t.deletedAt).count();
     const spacesCount = await db.spaces.filter(s => !s.deletedAt).count();
     
-    if (thoughtsCount === 0) return true;
+    // If there are any thoughts, it's not empty
+    if (thoughtsCount > 0) return false;
 
-    const mediaCount = await db.thoughts.filter(t => t.type === 'file' && !t.deletedAt).count();
-    if (mediaCount > 0) return false;
-
-    const allSpaces = await db.spaces.toArray();
-    const onboardingSpaceIds = new Set(allSpaces.filter(s => s.isOnboarding === true).map(s => s.id));
-    
-    const customThoughts = await db.thoughts
-      .filter(t => !onboardingSpaceIds.has(t.spaceId) && !t.deletedAt)
-      .count();
-    
-    if (customThoughts > 0) return false;
-    
-    if (thoughtsCount > 1) return false;
-    if (spacesCount > 2) return false;
+    // If there is more than 1 space (the default one), it's not empty
+    if (spacesCount > 1) return false;
 
     return true; 
   },

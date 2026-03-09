@@ -5,6 +5,8 @@ import { db } from '../../db';
 import { supabaseSync } from '../../services/supabaseSync';
 import { type AuthState } from '../types';
 
+let refreshProfilePromise: Promise<void> | null = null;
+
 const getInitialUser = (): User | null => {
   try {
     const stored = localStorage.getItem('cyberia-user');
@@ -216,54 +218,75 @@ export const createAuthSlice: StateCreator<AuthState, [], [], any> = (set, get, 
   refreshProfile: async () => {
     const { accessToken, user, refreshSecret } = get();
     if (!accessToken || !user) return;
-    try {
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 8000);
 
+    // Deduplication: If a refresh is already in progress, join it
+    if (refreshProfilePromise) return refreshProfilePromise;
+
+    refreshProfilePromise = (async () => {
       try {
-        const refreshRes = await fetch('/api/google-auth?action=refresh', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ userId: user.id, refreshSecret }),
-          signal: controller.signal
-        });
-        
-        let currentToken = accessToken;
-        if (refreshRes.ok) {
-          const refreshData = await refreshRes.json();
-          currentToken = refreshData.access_token;
-          set({ accessToken: currentToken });
-          localStorage.setItem('cyberia-token', currentToken);
-        } else if (refreshRes.status === 401) {
-          clearTimeout(timeoutId);
-          get().signOut();
-          return;
-        }
-      } catch (err: any) {
-        console.warn('[Auth] Refresh failed:', err);
-      }
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 20000); // Increased to 20s
 
-      const supabaseProfile = await supabaseSync.getProfile(user.id);
-      clearTimeout(timeoutId);
-
-      if (supabaseProfile?.user) {
-        const supabaseUser = supabaseProfile.user;
-        const updatedUser = { 
-          ...user, 
-          ...supabaseUser,
-          settings: {
-            ...user.settings,
-            ...supabaseUser.settings,
-            autoSync: supabaseUser.settings?.autoSync ?? user.settings?.autoSync ?? true
+        // 1. Background Token Refresh
+        try {
+          const refreshRes = await fetch('/api/google-auth?action=refresh', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ userId: user.id, refreshSecret }),
+            signal: controller.signal
+          });
+          
+          if (refreshRes.ok) {
+            const refreshData = await refreshRes.json();
+            const currentToken = refreshData.access_token;
+            set({ accessToken: currentToken });
+            localStorage.setItem('cyberia-token', currentToken);
+          } else if (refreshRes.status === 401) {
+            console.warn('[Auth] Session expired (401), signing out');
+            clearTimeout(timeoutId);
+            get().signOut();
+            return;
           }
-        };
-        
-        set({ user: updatedUser });
-        localStorage.setItem('cyberia-user', JSON.stringify(updatedUser));
+        } catch (err: any) {
+          // Silent failure for background refresh unless it's a critical error
+          if (err.name === 'AbortError') {
+            console.log('[Auth] Token refresh timed out (Silent)');
+          } else {
+            console.warn('[Auth] Token refresh error:', err.message);
+          }
+        }
+
+        // 2. Profile Sync
+        try {
+          const supabaseProfile = await supabaseSync.getProfile(user.id);
+          if (supabaseProfile?.user) {
+            const supabaseUser = supabaseProfile.user;
+            const updatedUser = { 
+              ...user, 
+              ...supabaseUser,
+              settings: {
+                ...user.settings,
+                ...supabaseUser.settings,
+                autoSync: supabaseUser.settings?.autoSync ?? user.settings?.autoSync ?? true
+              }
+            };
+            
+            set({ user: updatedUser });
+            localStorage.setItem('cyberia-user', JSON.stringify(updatedUser));
+          }
+        } catch (err: any) {
+          console.warn('[Auth] Profile sync failed:', err.message);
+        } finally {
+          clearTimeout(timeoutId);
+        }
+      } catch (e) {
+        console.warn('[Auth] Refresh profile critical failure:', e);
+      } finally {
+        refreshProfilePromise = null;
       }
-    } catch (e) {
-      console.warn('Failed to refresh profile', e);
-    }
+    })();
+
+    return refreshProfilePromise;
   },
 
   updateSettings: async (settings: Partial<User['settings']>) => {

@@ -65,31 +65,53 @@ const EditorContent: React.FC<{
 }) => {
   const isStranded = !thought.storageUrl && !localPreviewUrl && !image && !!thought.storagePath;
 
-  // Robust type detection using fileInfo and extension
-  const fileName = (fileInfo?.name || thought.text || '').toLowerCase();
-  const mimeType = (fileInfo?.type || '').toLowerCase();
+  // Robust type detection using cached flags or re-analyzing
+  const cached = fileInfo || {};
+  const fileName = (cached.name || thought.text || '').toLowerCase();
+  const mimeType = (cached.type || '').toLowerCase();
   const extension = fileName.split('.').pop() || '';
   
   const isLocalOnly = thought.syncStatus === 'local' || thought.syncStatus === 'error';
   const activeSource = isLocalOnly ? localPreviewUrl : (localPreviewUrl || thought.storageUrl || image);
 
-  const isPdf = mimeType.includes('pdf') || extension === 'pdf';
-  const isVideo = mimeType.startsWith('video/') || ['mp4', 'webm', 'mov', 'm4v'].includes(extension);
-  const isAudio = mimeType.startsWith('audio/') || ['mp3', 'wav', 'ogg'].includes(extension);
+  // Use cached values if available, otherwise analyze
+  const isPdf = cached.isPdf ?? (mimeType.includes('pdf') || extension === 'pdf');
+  const isVideo = cached.isVideo ?? (mimeType.startsWith('video/') || ['mp4', 'webm', 'mov', 'm4v'].includes(extension));
+  const isAudio = cached.isAudio ?? (mimeType.startsWith('audio/') || ['mp3', 'wav', 'ogg'].includes(extension));
   
   // Strict Image Detection (Exclude Audio, Video, and PDF)
-  const isImage = (mimeType.startsWith('image/') || 
+  const isImage = cached.isImage ?? ((mimeType.startsWith('image/') || 
                   ['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg'].includes(extension)) && 
-                  !isAudio && !isVideo && !isPdf;
+                  !isAudio && !isVideo && !isPdf);
 
-  console.log('[FileFocus] Type Detection:', { 
-    fileName, 
-    mimeType, 
-    isImage, 
-    isPdf, 
-    isVideo,
-    activeSource: !!activeSource 
-  });
+  // SAVE ANALYSIS RESULT (Triggered in parent to avoid render-loop)
+  useEffect(() => {
+    if (thought && !isReadOnly && !get().isDemo) {
+      const needsUpdate = cached.isPdf === undefined || 
+                          cached.isImage === undefined || 
+                          cached.isVideo === undefined || 
+                          cached.isAudio === undefined;
+      
+      if (needsUpdate && (mimeType || extension)) {
+        const updateStore = async () => {
+          const { useStore } = await import('../../store/useStore');
+          const meta = { 
+            ...(thought.meta || {}), 
+            file: { 
+              ...(thought.meta?.file || {}), 
+              isPdf, isImage, isVideo, isAudio 
+            } 
+          };
+          
+          await useStore.getState().updateThought(thought.id, { 
+            meta,
+            data: thought.data?.type === 'file' ? { ...thought.data, meta } : thought.data
+          }, { skipSync: true });
+        };
+        updateStore();
+      }
+    }
+  }, [thought?.id, isPdf, isImage, isVideo, isAudio, cached.isPdf]);
 
   return (
     <div className="flex-1 flex flex-col min-h-0 bg-black">

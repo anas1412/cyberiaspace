@@ -8,7 +8,34 @@ export function toSnakeCase(obj: any): any {
   if (typeof obj !== 'object') return obj
   
   const result: any = {}
+  
+  // SPECIAL HANDLING: Spaces Transform JSONB
+  if ('transformX' in obj || 'transformY' in obj || 'transformScale' in obj) {
+    result.transform = {
+      x: obj.transformX ?? 0,
+      y: obj.transformY ?? 0,
+      scale: obj.transformScale ?? 1
+    };
+  }
+
+  // SPECIAL HANDLING: Thought Data Modular Payload
+  if (obj.data && typeof obj.data === 'object' && !Array.isArray(obj.data)) {
+    const d = obj.data;
+    if (d.type === 'text') result.content = d.content;
+    if (d.type === 'tasks') result.tasks = d.tasks;
+    if (d.type === 'table') result.table = d.rows;
+    if (d.type === 'paint') result.drawing = d.drawing;
+    if (d.type === 'embed') result.content = d.url;
+    if (d.type === 'file') {
+      result.storage_url = d.url;
+      result.meta = d.meta;
+    }
+  }
+
   for (const key in obj) {
+    // Skip processed special fields
+    if (key === 'transformX' || key === 'transformY' || key === 'transformScale' || key === 'data') continue;
+    
     let value = obj[key]
     
     // GATEKEEPER: Ensure date fields are never raw numbers when sending to Supabase
@@ -31,7 +58,11 @@ export function toSnakeCase(obj: any): any {
       continue
     }
     const snakeKey = key.replace(/([A-Z])/g, '_$1').toLowerCase()
-    result[snakeKey] = toSnakeCase(value)
+    
+    // Don't overwrite if already set by special handling
+    if (result[snakeKey] === undefined) {
+      result[snakeKey] = toSnakeCase(value)
+    }
   }
   return result
 }
@@ -42,9 +73,39 @@ export function toCamelCase(obj: any): any {
   if (typeof obj !== 'object') return obj
   
   const result: any = {}
+  
+  // SPECIAL HANDLING: Spaces Transform JSONB
+  if (obj.transform && typeof obj.transform === 'object' && !Array.isArray(obj.transform)) {
+    result.transformX = obj.transform.x ?? 0;
+    result.transformY = obj.transform.y ?? 0;
+    result.transformScale = obj.transform.scale ?? 1;
+  }
+
+  // SPECIAL HANDLING: Thought Data Reconstruction
+  // We need the 'type' to know how to reconstruct 'data'
+  const type = obj.type;
+  if (type) {
+    if (type === 'text') result.data = { type: 'text', content: obj.content || '' };
+    else if (type === 'tasks') result.data = { type: 'tasks', tasks: obj.tasks || [] };
+    else if (type === 'table') result.data = { type: 'table', rows: obj.table || [] };
+    else if (type === 'paint') result.data = { type: 'paint', drawing: obj.drawing || '' };
+    else if (type === 'embed') result.data = { type: 'embed', url: obj.content || '' };
+    else if (type === 'file') result.data = { type: 'file', url: obj.storage_url || '', name: obj.text || '', size: obj.meta?.size || 0, meta: obj.meta };
+    else if (type === 'label') result.data = { type: 'label' };
+  }
+
   for (const key in obj) {
+    // Skip raw special columns
+    if (key === 'transform' || key === 'tasks' || key === 'table' || key === 'drawing') continue;
+    // content is tricky because it can be text content or embed url, but it's already in 'data'
+    // but if it's text type, we should skip it to avoid redundancy
+    if ((type === 'text' || type === 'embed') && key === 'content') continue;
+
     const camelKey = key.replace(/_([a-z])/g, (_, letter) => letter.toUpperCase())
-    result[camelKey] = toCamelCase(obj[key])
+    
+    if (result[camelKey] === undefined) {
+      result[camelKey] = toCamelCase(obj[key])
+    }
   }
   return result
 }

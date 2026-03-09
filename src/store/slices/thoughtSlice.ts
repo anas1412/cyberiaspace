@@ -16,16 +16,27 @@ export const createThoughtSlice: StateCreator<CyberiaState, [], [], any> = (set,
   deletingThoughtIds: [] as string[],
 
   addThought: async (partialThought: Partial<Thought>) => {
-    const { activeSpaceId, totalThoughtCount, isReadOnly } = get();
+    const { activeSpaceId, isReadOnly, getLimits } = get();
     if (isReadOnly) return '';
     if (!activeSpaceId) return '';
 
-    if (totalThoughtCount >= 1000) {
+    const limits = getLimits();
+    
+    // STRICT ENFORCEMENT: Check thoughts in CURRENT space directly from DB for truth
+    const count = await db.thoughts.where('spaceId').equals(activeSpaceId).and(t => !t.deletedAt).count();
+    
+    if (count >= limits.MAX_THOUGHTS_PER_SPACE) {
+      const { useAuthStore } = await import('../useAuthStore');
+      const isPro = useAuthStore.getState().user?.plan === 'pro';
+      
       useModalStore.getState().openModal({
-        title: 'Workspace Saturation',
-        description: 'You have reached the maximum storage capacity for this dimension.',
-        type: 'alert',
-        confirmText: 'Acknowledged'
+        title: isPro ? 'Space Limit Reached' : 'Thinking Limit Reached',
+        description: isPro 
+          ? `You’ve reached the pro limit of ${limits.MAX_THOUGHTS_PER_SPACE} thoughts for this space.` 
+          : `You’ve reached the free limit of ${limits.MAX_THOUGHTS_PER_SPACE} thoughts for this space. Upgrade to Cyberia Pro to unlock unlimited mapping and premium Oracle AI features.`,
+        type: 'limit_thought',
+        confirmText: isPro ? 'Acknowledged' : 'Upgrade to Pro',
+        onConfirm: isPro ? undefined : () => useModalStore.getState().openPricing()
       });
       return '';
     }
@@ -198,6 +209,16 @@ export const createThoughtSlice: StateCreator<CyberiaState, [], [], any> = (set,
     }
   },
 
+  patchThought: (id: string, updates: Partial<Thought>) => {
+    const { thoughts } = get();
+    const index = thoughts.findIndex(t => t.id === id);
+    if (index !== -1) {
+      const nextThoughts = [...thoughts];
+      nextThoughts[index] = { ...nextThoughts[index], ...updates };
+      set({ thoughts: nextThoughts });
+    }
+  },
+
   deleteThought: async (id: string) => {
     if (get().isReadOnly || get().isDemo) return;
     const thought = get().thoughts.find((t: Thought) => t.id === id);
@@ -209,15 +230,11 @@ export const createThoughtSlice: StateCreator<CyberiaState, [], [], any> = (set,
     
     if (thought) {
       await get().updateSpace(thought.spaceId, { updatedAt: Date.now() });
-      if (authStore.status === 'authenticated') {
-        await authStore.deleteServiceContent(thought);
-      }
       
+      // MARK FOR DELETION: Preserve storage info so sync engine can clean up cloud assets
       await db.thoughts.update(id, { 
         deletedAt: Date.now(),
         updatedAt: Date.now(),
-        storageUrl: undefined,
-        storagePath: undefined,
         syncStatus: 'local'
       });
     }
@@ -252,23 +269,17 @@ export const createThoughtSlice: StateCreator<CyberiaState, [], [], any> = (set,
     
     const affectedStackIds = Array.from(new Set(thoughts.filter((t: Thought) => ids.includes(t.id)).map((t: Thought) => t.stackId).filter(Boolean))) as string[];
     
-    if (authStore.status === 'authenticated') {
-      for (const t of thoughts.filter((t: Thought) => ids.includes(t.id))) {
-        try { await authStore.deleteServiceContent(t); } catch (e) { console.warn('Delete failed', e); }
-      }
-    }
-
+    // MARK FOR DELETION: Preserve storage info so sync engine can clean up cloud assets
     await db.thoughts.where('id').anyOf(ids).modify({ 
       deletedAt: Date.now(),
       updatedAt: Date.now(),
-      storageUrl: undefined,
-      storagePath: undefined,
       syncStatus: 'local'
     });
 
     await get().refreshThoughts();
     await get().refreshTotalThoughtCount();
     if (affectedStackIds.length > 0) await get().cleanupStacks();
+
     
     set((state: CyberiaState) => ({ 
       selectedThoughtId: ids.includes(state.selectedThoughtId as string) ? null : state.selectedThoughtId,

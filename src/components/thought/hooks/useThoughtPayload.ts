@@ -12,6 +12,10 @@ export interface UseThoughtPayloadResult {
     name: string;
     size: number;
     type: string;
+    isImage?: boolean;
+    isPdf?: boolean;
+    isVideo?: boolean;
+    isAudio?: boolean;
   } | null;
 }
 
@@ -63,7 +67,11 @@ export function useThoughtPayload(thought: Thought | null | undefined): UseThoug
       fileInfo: fileInfo ? {
         name: fileInfo.name || thought.text || 'Untitled',
         size: fileInfo.size || 0,
-        type: fileInfo.type || ''
+        type: fileInfo.type || '',
+        isImage: fileInfo.isImage,
+        isPdf: fileInfo.isPdf,
+        isVideo: fileInfo.isVideo,
+        isAudio: fileInfo.isAudio
       } : null
     };
   }, [thought]);

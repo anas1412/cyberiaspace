@@ -10,6 +10,10 @@ export interface FileMeta {
   name?: string;
   size?: number;
   type?: string;
+  isImage?: boolean;
+  isPdf?: boolean;
+  isVideo?: boolean;
+  isAudio?: boolean;
   file?: {
     name: string;
     size: number;

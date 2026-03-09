@@ -81,6 +81,7 @@ export interface CyberiaState {
   saveSpaceTransform: (id: string, transform: { x: number; y: number; scale: number }) => Promise<void>;
 
   addThought: (thought: Partial<Thought>) => Promise<string>;
+  patchThought: (id: string, updates: Partial<Thought>) => void;
   updateThought: (id: string, updates: Partial<Thought>, options?: { skipSync?: boolean }) => Promise<void>;
   updateThoughts: (ids: string[], updates: Partial<Thought>, options?: { skipSync?: boolean }) => Promise<void>;
   bulkUpdateThoughts: (updates: { id: string; updates: Partial<Thought> }[], options?: { skipSync?: boolean }) => Promise<void>;
@@ -144,7 +145,6 @@ export interface AuthState {
   signOut: () => Promise<void>;
   syncData: () => Promise<void>;
   syncToServices: () => Promise<void>;
-  deleteServiceContent: (thought: any) => Promise<void>;
   processPendingDeletions: () => Promise<void>;
   processOfflineChanges: () => Promise<void>;
   processPendingBlobs: () => Promise<void>;
