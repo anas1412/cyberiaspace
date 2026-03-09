@@ -118,10 +118,11 @@ const ThoughtNode: React.FC<ThoughtNodeProps> = React.memo(({ thought, registerE
     const store = useStore.getState();
     
     // CASE 1: Someone ELSE is already the source -> Link them to this node (Join Stack)
-    if (linkingSourceId && linkingSourceId !== thought.id) {
+  if (linkingSourceId && linkingSourceId !== thought.id) {
       store.setSelectedThoughtIds([linkingSourceId, thought.id]);
       setLinkingSourceId(null); // Clear line immediately for zero-lag feel
-      await store.linkSelectedThoughts();
+      // Fire linking operation without awaiting to minimize UI latency
+      store.linkSelectedThoughts();
       store.setSelectedThoughtId(thought.id);
       return;
     }
@@ -151,11 +152,11 @@ const ThoughtNode: React.FC<ThoughtNodeProps> = React.memo(({ thought, registerE
       const store = useStore.getState();
       // Set selection for the linking operation
       store.setSelectedThoughtIds([linkingSourceId, thought.id]);
-      // Await the linking process to ensure DB integrity
-      await store.linkSelectedThoughts();
+      // Trigger linking without awaiting to minimize latency
+      store.linkSelectedThoughts();
       // Restore focus to the target thought
       store.setSelectedThoughtId(thought.id);
-      // Clear linking state
+      // Clear linking state immediately
       setLinkingSourceId(null);
       return;
     }
