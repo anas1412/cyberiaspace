@@ -26,12 +26,10 @@ const AccountMenu: React.FC = () => {
   const { 
     user, status, signOut, 
     syncData, autoSync, setAutoSync, deleteCloudData, 
-    storageUsageMB, calculateUsage, isOnline,
-    importCloudData
+    storageUsageMB, calculateUsage, isOnline
   } = authStore;
   
   const totalThoughtCount = useStore((state) => state.totalThoughtCount);
-  const importFullState = useStore((state) => state.importFullState);
   const { openModal, openPricing } = useModalStore();
 
   const [isOpen, setIsOpen] = useState(false);
@@ -67,28 +65,6 @@ const AccountMenu: React.FC = () => {
       await syncData();
     } catch (err) {
       console.error('[AccountMenu] Sync failed:', err);
-    }
-  };
-
-  const handleRestore = async () => {
-    const cloudData = await importCloudData();
-    if (cloudData) {
-      openModal({
-        title: 'Restore from Cloud?',
-        description: 'This will replace your current local workspace with the cloud backup. This cannot be undone.',
-        type: 'import_confirm',
-        confirmText: 'Restore Now',
-        onConfirm: () => {
-          importFullState(cloudData);
-        }
-      });
-    } else {
-      openModal({
-        title: 'No Cloud Data',
-        description: 'No workspace backup was found in the cloud for this account.',
-        type: 'alert',
-        confirmText: 'Got it'
-      });
     }
   };
 
@@ -321,18 +297,6 @@ const AccountMenu: React.FC = () => {
                 <RefreshCw className="w-3 h-3 text-slate-400" />
               </button>
             </div>
-
-            {/* <button 
-              onClick={handleRestore}
-              disabled={!isOnline || syncStatus === 'syncing'}
-              className="w-full flex items-center gap-2.5 p-2.5 rounded-xl md:rounded-2xl hover:bg-white/5 transition-colors group"
-            >
-              <Cloud className="w-3.5 h-3.5 text-blue-400" />
-              <div className="text-left">
-                <p className="text-[8px] md:text-[9px] font-black uppercase tracking-widest text-white">Restore Backup</p>
-                <p className="text-[9px] font-bold text-slate-500 uppercase tracking-widest">Download cloud backup</p>
-              </div>
-            </button> */}
 
             <button 
               onClick={() => setAutoSync(!autoSync)}
