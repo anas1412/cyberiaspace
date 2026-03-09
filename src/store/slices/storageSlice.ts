@@ -11,23 +11,38 @@ export const createStorageSlice: StateCreator<AuthState, [], [], any> = (set, ge
   activeDownloads: [],
 
   calculateUsage: async (thoughtCount: number) => {
-    const { user } = get();
+    const { user, isOnline } = get();
     const plan = (user?.plan || 'free') as SubscriptionPlan;
     
-    // Calculate cloud thoughts usage
-    const thoughtLimit = PLAN_CONFIG[plan].MAX_CLOUD_THOUGHTS;
-    const currentCount = user?.usage?.sync_thoughts ?? thoughtCount;
-    
-    // Calculate storage usage
+    // 1. Calculate Local Usage (Instant & Offline friendly)
+    // This provides immediate feedback even before sync
     let storageMB = 0;
-    if (user?.id) {
+    try {
+      const allBlobs = await db.blobs.toArray();
+      const localBytes = allBlobs.reduce((sum, b) => sum + (b.blob?.size || 0), 0);
+      storageMB = localBytes / (1024 * 1024);
+    } catch (e) {
+      console.warn('[Storage] Could not calculate local usage:', e);
+    }
+    
+    // 2. If Online, fetch Cloud Usage for definitive quota status
+    if (user?.id && isOnline) {
       try {
-        const bytes = await supabaseStorage.getStorageUsage(user.id);
-        storageMB = bytes / (1024 * 1024);
+        const cloudBytes = await supabaseStorage.getStorageUsage(user.id);
+        const cloudMB = cloudBytes / (1024 * 1024);
+        
+        // We use the MAX of local vs cloud to be safe
+        // This handles cases where local cache is cleared but cloud is full,
+        // OR when local has new files that haven't hit the cloud yet.
+        storageMB = Math.max(storageMB, cloudMB);
       } catch (e) {
-        console.warn('[Storage] Could not fetch storage usage:', e);
+        console.warn('[Storage] Could not fetch cloud storage usage:', e);
       }
     }
+    
+    // 3. Calculate cloud thoughts usage (DB quota)
+    const thoughtLimit = PLAN_CONFIG[plan].MAX_CLOUD_THOUGHTS;
+    const currentCount = user?.usage?.sync_thoughts ?? thoughtCount;
     
     set({ 
       cloudUsage: (currentCount / thoughtLimit) * 100,

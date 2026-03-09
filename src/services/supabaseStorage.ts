@@ -63,7 +63,7 @@ export const supabaseStorage = {
     console.log('[Storage] Deleted:', storagePath)
   },
 
-  async getSignedUrl(storagePath: string, _expiresIn = 3600): Promise<string> {
+  async getSignedUrl(storagePath: string): Promise<string> {
     // Bucket is public, use getPublicUrl for direct access
     const { data } = await storageClient
       .storage
@@ -124,9 +124,52 @@ export const supabaseStorage = {
   },
 
   async getStorageUsage(userId: string): Promise<number> {
-    const files = await supabaseStorage.listFiles(userId)
-    const totalBytes = files.reduce((sum, f) => sum + f.size, 0)
-    return totalBytes
+    try {
+      const { data: rootItems, error } = await storageClient
+        .storage
+        .from(BUCKET_NAME)
+        .list(userId, { limit: 1000 });
+
+      if (error || !rootItems) return 0;
+
+      let totalBytes = 0;
+      const subFolders: string[] = [];
+
+      for (const item of rootItems) {
+        if (item.id) {
+          // It's a file in the root directory (legacy style)
+          totalBytes += item.metadata?.size || 0;
+        } else {
+          // It's a folder (new style: userId/thoughtId/)
+          subFolders.push(item.name);
+        }
+      }
+
+      // If no subfolders, we are done
+      if (subFolders.length === 0) return totalBytes;
+
+      // Process subfolders to get sizes of files inside
+      // We use a small batch size to avoid overwhelming the API
+      const BATCH_SIZE = 10;
+      for (let i = 0; i < subFolders.length; i += BATCH_SIZE) {
+        const batch = subFolders.slice(i, i + BATCH_SIZE);
+        const results = await Promise.all(batch.map(async (folderName) => {
+          const { data: files } = await storageClient
+            .storage
+            .from(BUCKET_NAME)
+            .list(`${userId}/${folderName}`, { limit: 100 });
+          
+          return files?.reduce((sum, f) => sum + (f.metadata?.size || 0), 0) || 0;
+        }));
+        
+        totalBytes += results.reduce((sum, size) => sum + size, 0);
+      }
+
+      return totalBytes;
+    } catch (err) {
+      console.error('[Storage] getStorageUsage failed:', err);
+      return 0;
+    }
   },
 
 

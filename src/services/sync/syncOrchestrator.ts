@@ -220,6 +220,23 @@ export const syncOrchestrator = {
         }
       }
 
+      for (const [id, cloudStack] of cloudStackMap) {
+        const localStack = localAllStacks.find(ls => ls.id === id);
+        const cloudTime = cloudStack.updatedAt ? new Date(cloudStack.updatedAt).getTime() : 0;
+        const localTime = localStack?.updatedAt || 0;
+
+        if (!localStack || cloudTime > localTime) {
+          const { data } = await supabase.from('stacks').select('*').eq('id', id).single();
+          if (data) {
+            await db.stacks.put({ ...toCamelCase(data), syncStatus: 'synced' } as any);
+            cloudChanges = true;
+          }
+        } else if (localStack && localStack.syncStatus === 'local' && cloudTime === localTime) {
+          await db.stacks.update(id, { syncStatus: 'synced' });
+          cloudChanges = true;
+        }
+      }
+
       const wokenSpaceIds = new Set(localAllThoughts.map(t => t.spaceId));
       if (currentActiveSpaceId) wokenSpaceIds.add(currentActiveSpaceId);
 
@@ -265,12 +282,20 @@ export const syncOrchestrator = {
       console.error('[Sync] Full push failed:', err);
       syncStore.setStatus('error');
       return { success: false, error: String(err) };
-    } finally {
-      if (syncRequestedDuringActiveSync) {
-        syncRequestedDuringActiveSync = false;
-        setTimeout(() => syncOrchestrator.triggerSync(), SYNC_DEBOUNCE_MS);
-      }
+  } finally {
+    // Refresh storage usage after any sync to reflect new blobs on disk/cloud
+    try {
+      const { useStore } = await import('../../store/useStore');
+      const st: any = useStore.getState();
+      st?.calculateUsage?.(st.totalThoughtCount || 0);
+    } catch {
+      // best-effort only
     }
+    if (syncRequestedDuringActiveSync) {
+      syncRequestedDuringActiveSync = false;
+      setTimeout(() => syncOrchestrator.triggerSync(), SYNC_DEBOUNCE_MS);
+    }
+  }
   },
 
   async fetchCloudData(): Promise<SyncConflictData | null> {
