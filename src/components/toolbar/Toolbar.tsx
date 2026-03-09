@@ -217,7 +217,16 @@ const Toolbar: React.FC = () => {
       });
       return;
     }
-    const id = await addThought({});
+
+    // Use current hover context for placement if available
+    const hoverContext = (window as any)._cyberia_hover_context || {};
+    const id = await addThought({
+      x: hoverContext.x,
+      y: hoverContext.y,
+      status: hoverContext.status,
+      date: hoverContext.date
+    });
+    
     if (id !== '') { setSelectedThoughtId(id); setInspectorOpen(true); }
   };
 

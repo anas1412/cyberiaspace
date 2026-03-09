@@ -129,16 +129,41 @@ const Viewport: React.FC<{ isInteracting?: boolean }> = ({ isInteracting }) => {
     };
 
     const handleMouseMove = (e: MouseEvent) => {
-      if (!isPanningRef.current && !isSelectingRef.current) return;
-
       const s = getGlobalScale();
       const lx = e.clientX / s;
       const ly = e.clientY / s;
 
+      // Always update world position for shortcuts and placement
       mouseWorldPos.current = {
         x: (lx - transform.x) / transform.scale,
         y: (ly - transform.y) / transform.scale
       };
+
+      // Store context globally for the FAB and other UI elements to access without re-rendering
+      const context: any = {
+        x: mouseWorldPos.current.x,
+        y: mouseWorldPos.current.y
+      };
+
+      if (activeSpace?.mode === 'kanban') {
+        const width = window.innerWidth / s;
+        if (lx < width * 0.25) context.status = 'none';
+        else if (lx < width * 0.50) context.status = 'todo';
+        else if (lx < width * 0.75) context.status = 'doing';
+        else context.status = 'done';
+      } else if (activeSpace?.mode === 'calendar') {
+        const elements = document.elementsFromPoint(e.clientX, e.clientY);
+        const cell = elements.find(el => (el as HTMLElement).classList.contains('cal-cell'));
+        if (cell) {
+          context.date = (cell as HTMLElement).dataset.date;
+        }
+      }
+      (window as any)._cyberia_hover_context = context;
+      
+      // Update last mouse pos for shortcut logic (Kanban/Calendar detection)
+      lastMousePos.current = { rawX: e.clientX, rawY: e.clientY };
+
+      if (!isPanningRef.current && !isSelectingRef.current) return;
 
       if (isPanningRef.current) {
         const dx = (e.clientX - lastMousePos.current.rawX) / (s * transform.scale);
@@ -178,7 +203,6 @@ const Viewport: React.FC<{ isInteracting?: boolean }> = ({ isInteracting }) => {
           setSelectedThoughtIds(selectedIds);
         }
       }
-      lastMousePos.current = { rawX: e.clientX, rawY: e.clientY };
     };
 
     const handleMouseUp = () => {
