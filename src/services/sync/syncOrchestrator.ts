@@ -71,6 +71,8 @@ export const syncOrchestrator = {
     
     try {
       const userId = authState.user!.id;
+      const { useStore } = await import('../../store/useStore');
+      const store = useStore.getState();
       
       // Step 1: Push Local Changes (Deltas)
       console.log('[Sync] Step 1: Pushing local changes...');
@@ -105,15 +107,10 @@ export const syncOrchestrator = {
           try {
             await supabaseStorage.deleteFile(thought.storagePath);
           } catch (e: any) {
-            // Treat non-network errors or 404s as success (already gone)
             const isNetworkError = e.message?.toLowerCase().includes('network') || e.message?.toLowerCase().includes('fetch');
             const is404 = e.message?.includes('404') || e.status === 404;
-            
             if (isNetworkError && !is404) {
-              console.warn('[Sync] Storage deletion failed due to network, will retry:', thought.id);
               storageDeleted = false;
-            } else {
-              console.log('[Sync] Storage asset already gone or inaccessible, proceeding with thought deletion:', thought.id);
             }
           }
         }
@@ -124,13 +121,10 @@ export const syncOrchestrator = {
             await db.thoughts.delete(thought.id);
             await db.blobs.where('thoughtId').equals(thought.id).delete();
           } catch (e: any) {
-            // If the thought is already gone from the cloud, metadata deletion is a success
             const is404 = e.status === 404 || e.message?.includes('not found');
             if (is404) {
               await db.thoughts.delete(thought.id);
               await db.blobs.where('thoughtId').equals(thought.id).delete();
-            } else {
-              console.warn('[Sync] Metadata deletion failed, will retry:', e);
             }
           }
         }
@@ -144,13 +138,15 @@ export const syncOrchestrator = {
       if (spacesToPush.length > 0) {
         await supabaseSync.createSpaces(spacesToPush.map(s => ({ ...s, user_id: userId })), userId);
         await db.spaces.where('id').anyOf(spacesToPush.map(s => s.id)).modify({ syncStatus: 'synced' });
+        await store.refreshSpaces();
       }
       if (stacksToPush.length > 0) {
         await supabaseSync.createStacks(stacksToPush.map(s => ({ ...s, user_id: userId })), userId);
         await db.stacks.where('id').anyOf(stacksToPush.map(s => s.id)).modify({ syncStatus: 'synced' });
+        await store.refreshStacks();
       }
 
-      // Special handling for file thoughts (Upload binary first)
+      let filesUploaded = false;
       for (let i = 0; i < thoughtsToPush.length; i++) {
         const t = thoughtsToPush[i];
         if (t.type === 'file' && !t.storagePath) {
@@ -165,13 +161,18 @@ export const syncOrchestrator = {
             };
             await db.thoughts.update(t.id, updates);
             thoughtsToPush[i] = { ...t, ...updates };
+            filesUploaded = true;
           }
         }
       }
 
       if (thoughtsToPush.length > 0) {
         await supabaseSync.createThoughts(thoughtsToPush.map(t => ({ ...t, user_id: userId })));
-        await db.thoughts.where('id').anyOf(thoughtsToPush.map(t => t.id)).modify({ syncStatus: 'synced' });
+        const ids = thoughtsToPush.map(t => t.id);
+        await db.thoughts.where('id').anyOf(ids).modify({ syncStatus: 'synced' });
+        await store.refreshThoughts();
+      } else if (filesUploaded) {
+        await store.refreshThoughts();
       }
 
       // Step 2: Fetch Cloud Metadata & Reconcile
@@ -205,36 +206,58 @@ export const syncOrchestrator = {
       }
 
       // Updates (Cloud is newer) - Lazy loading aware
+      let cloudChanges = false;
+      const currentActiveSpaceId = store.activeSpaceId;
+
       for (const [id, cloudS] of cloudSpaceMap) {
         const localS = localAllSpaces.find(ls => ls.id === id);
         if (!localS || (cloudS.updatedAt && localS.updatedAt && new Date(cloudS.updatedAt).getTime() > localS.updatedAt)) {
           const { data } = await supabase.from('spaces').select('*').eq('id', id).single();
-          if (data) await db.spaces.put({ ...toCamelCase(data), syncStatus: 'synced' } as any);
+          if (data) {
+            await db.spaces.put({ ...toCamelCase(data), syncStatus: 'synced' } as any);
+            cloudChanges = true;
+          }
         }
       }
 
       const wokenSpaceIds = new Set(localAllThoughts.map(t => t.spaceId));
+      if (currentActiveSpaceId) wokenSpaceIds.add(currentActiveSpaceId);
+
       for (const [id, cloudT] of cloudThoughtMap) {
         if (wokenSpaceIds.has(cloudT.spaceId)) {
           const localT = localAllThoughts.find(lt => lt.id === id);
           const needsHealing = localT && localT.type === 'file' && localT.storageUrl && !(await db.blobs.where('thoughtId').equals(id).first());
           
-          if (!localT || (cloudT.updatedAt && localT.updatedAt && new Date(cloudT.updatedAt).getTime() > (localT.updatedAt || 0)) || needsHealing) {
+          const cloudTime = cloudT.updatedAt ? new Date(cloudT.updatedAt).getTime() : 0;
+          const localTime = localT?.updatedAt || 0;
+          
+          if (!localT || cloudTime > localTime || needsHealing) {
             const { data } = await supabase.from('thoughts').select('*').eq('id', id).single();
             if (data) {
-          
               await db.thoughts.put({ ...toCamelCase(data), syncStatus: 'synced' } as any);
-              // Trigger healing if blob is missing
+              cloudChanges = true;
               if (data.type === 'file' && data.storage_url) {
                 authState.downloadSingleBlob(id);
               }
             }
+          } else if (localT && localT.syncStatus === 'local' && cloudTime === localTime) {
+            await db.thoughts.update(id, { syncStatus: 'synced' });
+            cloudChanges = true;
           }
         }
       }
 
+      if (cloudChanges) {
+        await Promise.all([
+          store.refreshSpaces(),
+          store.refreshThoughts(),
+          store.refreshStacks()
+        ]);
+      }
+
       const now = new Date();
       useSyncStore.setState({ status: 'synced', lastSyncTime: now, pendingCount: 0 });
+      useAuthStore.setState({ lastSync: now });
       localStorage.setItem('cyberia-last-sync', now.toISOString());
       
       return { success: true };
@@ -270,8 +293,7 @@ export const syncOrchestrator = {
 
   async isLocalEmpty(): Promise<boolean> {
     const thoughtsCount = await db.thoughts.filter(t => !t.deletedAt).count();
-    if (thoughtsCount === 0) return true;
-    return false;
+    return thoughtsCount === 0;
   },
 
   async restoreFromCloud(choice: 'cloud' | 'local'): Promise<void> {

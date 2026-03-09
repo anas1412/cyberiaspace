@@ -130,7 +130,15 @@ export const usePhysics = (
           const t = thoughtsCache.get(id);
           if (t) {
             const h = heights.get(id) || 120;
-            updates.push({ id, updates: { x: p.x + 140, y: p.y + h / 2 } });
+            const newX = p.x + 140;
+            const newY = p.y + h / 2;
+            
+            // Only update if movement is meaningful (> 0.5px) to prevent "Blue Flicker" on space switch
+            const hasMoved = Math.abs(t.x - newX) > 0.5 || Math.abs(t.y - newY) > 0.5;
+            
+            if (hasMoved) {
+              updates.push({ id, updates: { x: newX, y: newY } });
+            }
           }
         });
 
@@ -311,14 +319,17 @@ export const usePhysics = (
   }, [getGlobalScale, transform.scale, updateThought, activeSpace, calendarViewDate]);
 
   const loop = useCallback(() => {
-    const state = physicsState.current;
-    const ids = Array.from(state.keys());
-    const mode = activeSpace?.mode || 'spatial';
-    const currentSpaceId = activeSpaceId || null;
+    const vT = transform;
     const globalScale = getGlobalScale();
+    const ids = Array.from(physicsState.current.keys());
+    const state = physicsState.current;
+    
     const logicalWidth = worldRef.current?.clientWidth || window.innerWidth;
     const logicalHeight = worldRef.current?.clientHeight || window.innerHeight;
     const isMobile = window.innerWidth < 768;
+
+    const currentSpaceId = activeSpaceId || 'default';
+    const mode = activeSpace?.mode || 'spatial';
 
     if (currentSpaceId !== lastLoopSpaceId.current) {
       lastLoopSpaceId.current = currentSpaceId;
@@ -331,21 +342,20 @@ export const usePhysics = (
     visualTransformRef.current.y += (transform.y - visualTransformRef.current.y) * lerpFactor;
     visualTransformRef.current.scale += (transform.scale - visualTransformRef.current.scale) * lerpFactor;
 
-    const vT = visualTransformRef.current;
+    const vT_visual = visualTransformRef.current;
     const effectiveTransform = mode === 'spatial' 
-      ? vT 
+      ? vT_visual 
       : (mode === 'kanban' 
-          ? { x: 0, y: vT.y, scale: 1 } 
+          ? { x: 0, y: vT_visual.y, scale: 1 } 
           : { x: 0, y: 0, scale: 1 });
 
     if (worldRef.current) {
-      worldRef.current.style.transform = `translate(${effectiveTransform.x}px, ${effectiveTransform.y}px) scale(${effectiveTransform.scale})`;
+      worldRef.current.style.transform = `translate3d(${effectiveTransform.x}px, ${effectiveTransform.y}px, 0) scale(${effectiveTransform.scale})`;
     }
     if (gridRef.current) {
-      gridRef.current.style.transform = `translate(${effectiveTransform.x}px, ${effectiveTransform.y}px) scale(${effectiveTransform.scale})`;
+      gridRef.current.style.transform = `translate3d(${effectiveTransform.x}px, ${effectiveTransform.y}px, 0) scale(${effectiveTransform.scale})`;
       gridRef.current.style.opacity = mode === 'calendar' ? '0' : '0.03';
     }
-
 
     // --- Modular Physics Engine ---
     const strategist = getStrategist(mode);
@@ -502,12 +512,24 @@ export const usePhysics = (
     // --- Connections & Styles (Unchanged logic) ---
     const ctx = canvasRef?.current?.getContext('2d');
     if (ctx && canvasRef.current) {
-      ctx.clearRect(0, 0, canvasRef.current.width, canvasRef.current.height);
+      // NORMALIZE CANVAS RESOLUTION
+      const dpr = window.devicePixelRatio || 1;
+      const rect = canvasRef.current.getBoundingClientRect();
+      const nextW = rect.width * dpr;
+      const nextH = rect.height * dpr;
+      if (canvasRef.current.width !== nextW || canvasRef.current.height !== nextH) {
+        canvasRef.current.width = nextW;
+        canvasRef.current.height = nextH;
+      }
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+
+      ctx.clearRect(0, 0, rect.width, rect.height);
       if (mode === 'spatial') {
-        const { x: tx, y: ty, scale: s } = vT;
+        const { x: tx, y: ty, scale: s } = effectiveTransform;
         const style = getComputedStyle(document.body);
         const accent = style.getPropertyValue('--accent').trim() || '#6366f1';
         ctx.strokeStyle = accent.startsWith('#') ? accent + '1F' : accent.replace('rgb', 'rgba').replace(')', ', 0.12)');
+        ctx.lineWidth = 1.5;
         ctx.beginPath();
         for (let i = 0; i < ids.length; i++) {
           const tA = thoughtMap.current.get(ids[i]); const pA = state.get(ids[i]); if (!tA?.stackId || !pA) continue;
@@ -523,13 +545,20 @@ export const usePhysics = (
         }
         ctx.stroke();
       }
+      
+      // OPTIMIZATION: High-speed linking line (Using mousePosRef directly)
       if (linkingSourceId) {
         const pS = state.get(linkingSourceId);
         if (pS) {
           const hS = elementHeights.get(linkingSourceId) || 120;
-          ctx.beginPath(); ctx.setLineDash([5, 5]); ctx.strokeStyle = 'rgba(99, 102, 241, 0.5)'; ctx.lineWidth = 2;
-          ctx.moveTo((pS.x + 140) * vT.scale + vT.x, (pS.y + hS / 2) * vT.scale + vT.y); ctx.lineTo(mousePosRef.current.x, mousePosRef.current.y);
-          ctx.stroke(); ctx.setLineDash([]);
+          ctx.beginPath(); 
+          ctx.setLineDash([5, 5]); 
+          ctx.strokeStyle = 'rgba(99, 102, 241, 0.8)'; 
+          ctx.lineWidth = 2;
+          ctx.moveTo((pS.x + 140) * effectiveTransform.scale + effectiveTransform.x, (pS.y + hS / 2) * effectiveTransform.scale + effectiveTransform.y); 
+          ctx.lineTo(mousePosRef.current.x, mousePosRef.current.y);
+          ctx.stroke(); 
+          ctx.setLineDash([]);
         }
       }
     }

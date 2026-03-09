@@ -9,33 +9,12 @@ export function toSnakeCase(obj: any): any {
   
   const result: any = {}
   
-  // SPECIAL HANDLING: Spaces Transform JSONB
-  if ('transformX' in obj || 'transformY' in obj || 'transformScale' in obj) {
-    result.transform = {
-      x: obj.transformX ?? 0,
-      y: obj.transformY ?? 0,
-      scale: obj.transformScale ?? 1
-    };
-  }
-
-  // SPECIAL HANDLING: Thought Data Modular Payload
-  if (obj.data && typeof obj.data === 'object' && !Array.isArray(obj.data)) {
-    const d = obj.data;
-    if (d.type === 'text') result.content = d.content;
-    if (d.type === 'tasks') result.tasks = d.tasks;
-    if (d.type === 'table') result.table = d.rows;
-    if (d.type === 'paint') result.drawing = d.drawing;
-    if (d.type === 'embed') result.content = d.url;
-    if (d.type === 'file') {
-      result.storage_url = d.url;
-      result.meta = d.meta;
-    }
-  }
-
   for (const key in obj) {
-    // Skip processed special fields
-    if (key === 'transformX' || key === 'transformY' || key === 'transformScale' || key === 'data') continue;
-    
+    // Skip local-only synchronization metadata
+    if (key === 'syncStatus' || key === 'retryCount' || key === 'isOnboarding' || key === 'data') {
+      continue
+    }
+
     let value = obj[key]
     
     // GATEKEEPER: Ensure date fields are never raw numbers when sending to Supabase
@@ -53,17 +32,38 @@ export function toSnakeCase(obj: any): any {
     if (key === 'date' && (value === '' || value === undefined)) {
       value = null
     }
-    // Skip local-only synchronization metadata
-    if (key === 'syncStatus' || key === 'retryCount' || key === 'isOnboarding') {
-      continue
-    }
+
     const snakeKey = key.replace(/([A-Z])/g, '_$1').toLowerCase()
-    
-    // Don't overwrite if already set by special handling
-    if (result[snakeKey] === undefined) {
-      result[snakeKey] = toSnakeCase(value)
+    result[snakeKey] = toSnakeCase(value)
+  }
+
+  // SPECIAL HANDLING: Spaces Transform JSONB
+  if ('transformX' in obj || 'transformY' in obj || 'transformScale' in obj) {
+    result.transform = {
+      x: obj.transformX ?? 0,
+      y: obj.transformY ?? 0,
+      scale: obj.transformScale ?? 1
+    };
+    delete result.transform_x;
+    delete result.transform_y;
+    delete result.transform_scale;
+  }
+
+  // SPECIAL HANDLING: Thought Data Modular Payload
+  // Map 'data' properties to flat database columns
+  if (obj.data && typeof obj.data === 'object' && !Array.isArray(obj.data)) {
+    const d = obj.data;
+    if (d.type === 'text') result.content = d.content;
+    else if (d.type === 'tasks') result.tasks = toSnakeCase(d.tasks);
+    else if (d.type === 'table') result.table = toSnakeCase(d.rows);
+    else if (d.type === 'paint') result.drawing = d.drawing;
+    else if (d.type === 'embed') result.content = d.url;
+    else if (d.type === 'file') {
+      result.storage_url = d.url;
+      result.meta = toSnakeCase(d.meta);
     }
   }
+
   return result
 }
 
@@ -74,6 +74,14 @@ export function toCamelCase(obj: any): any {
   
   const result: any = {}
   
+  for (const key in obj) {
+    // Skip raw special columns that we reconstruct later
+    if (key === 'transform' || key === 'tasks' || key === 'table' || key === 'drawing') continue;
+
+    const camelKey = key.replace(/_([a-z])/g, (_, letter) => letter.toUpperCase())
+    result[camelKey] = toCamelCase(obj[key])
+  }
+
   // SPECIAL HANDLING: Spaces Transform JSONB
   if (obj.transform && typeof obj.transform === 'object' && !Array.isArray(obj.transform)) {
     result.transformX = obj.transform.x ?? 0;
@@ -82,31 +90,23 @@ export function toCamelCase(obj: any): any {
   }
 
   // SPECIAL HANDLING: Thought Data Reconstruction
-  // We need the 'type' to know how to reconstruct 'data'
-  const type = obj.type;
+  // Use 'result' properties because they are already camelCased
+  const type = result.type;
   if (type) {
-    if (type === 'text') result.data = { type: 'text', content: obj.content || '' };
-    else if (type === 'tasks') result.data = { type: 'tasks', tasks: obj.tasks || [] };
-    else if (type === 'table') result.data = { type: 'table', rows: obj.table || [] };
-    else if (type === 'paint') result.data = { type: 'paint', drawing: obj.drawing || '' };
-    else if (type === 'embed') result.data = { type: 'embed', url: obj.content || '' };
-    else if (type === 'file') result.data = { type: 'file', url: obj.storage_url || '', name: obj.text || '', size: obj.meta?.size || 0, meta: obj.meta };
+    if (type === 'text') result.data = { type: 'text', content: result.content || '' };
+    else if (type === 'tasks') result.data = { type: 'tasks', tasks: result.tasks || [] };
+    else if (type === 'table') result.data = { type: 'table', rows: result.table || [] };
+    else if (type === 'paint') result.data = { type: 'paint', drawing: result.drawing || '' };
+    else if (type === 'embed') result.data = { type: 'embed', url: result.content || '' };
+    else if (type === 'file') result.data = { type: 'file', url: result.storageUrl || '', name: result.text || '', size: result.meta?.size || 0, meta: result.meta };
     else if (type === 'label') result.data = { type: 'label' };
   }
 
-  for (const key in obj) {
-    // Skip raw special columns
-    if (key === 'transform' || key === 'tasks' || key === 'table' || key === 'drawing') continue;
-    // content is tricky because it can be text content or embed url, but it's already in 'data'
-    // but if it's text type, we should skip it to avoid redundancy
-    if ((type === 'text' || type === 'embed') && key === 'content') continue;
-
-    const camelKey = key.replace(/_([a-z])/g, (_, letter) => letter.toUpperCase())
-    
-    if (result[camelKey] === undefined) {
-      result[camelKey] = toCamelCase(obj[key])
-    }
+  // Final cleanup of redundant content fields
+  if ((type === 'text' || type === 'embed') && result.content !== undefined) {
+    delete result.content;
   }
+
   return result
 }
 

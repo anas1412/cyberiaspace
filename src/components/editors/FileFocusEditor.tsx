@@ -440,9 +440,10 @@ const FileFocusEditor: React.FC = () => {
 
   if (!thought) return null;
 
-  const isSynced = thought.syncStatus === 'synced' && !!thought.storageUrl;
+  const isSynced = !!thought.storageUrl;
   const isSyncing = thought.syncStatus === 'syncing';
   const sourceLabel = localPreviewUrl ? 'Local' : (thought.storageUrl ? 'Cloud' : 'None');
+
 
   return (
     <FocusEditorShell

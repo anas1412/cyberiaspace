@@ -20,15 +20,15 @@ const formatStorage = (mb: number) => {
 
 const AccountMenu: React.FC = () => {
   const authStore = useAuthStore();
-  const syncStore = useSyncStore();
+  const lastSyncTime = useSyncStore((state) => state.lastSyncTime);
+  const syncStatus = useSyncStore((state) => state.status);
+  
   const { 
-    user, status, signOut, lastSync, 
+    user, status, signOut, 
     syncData, autoSync, setAutoSync, deleteCloudData, 
     storageUsageMB, calculateUsage, isOnline,
     importCloudData
   } = authStore;
-  
-  const syncStatus = syncStore.status;
   
   const totalThoughtCount = useStore((state) => state.totalThoughtCount);
   const importFullState = useStore((state) => state.importFullState);
@@ -305,7 +305,7 @@ const AccountMenu: React.FC = () => {
                     {!isOnline ? 'Network Offline' : 'Cloud Sync'}
                   </p>
                   <p className="text-[9px] font-bold text-slate-500 uppercase tracking-widest">
-                    {!isOnline ? 'Changes saved locally' : lastSync ? `Last: ${lastSync?.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}` : 'Not synced yet'}
+                    {!isOnline ? 'Changes saved locally' : lastSyncTime ? `Last: ${lastSyncTime?.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}` : 'Not synced yet'}
                   </p>
                 </div>
               </div>
@@ -388,10 +388,11 @@ const AccountMenu: React.FC = () => {
           <div className="grid grid-cols-2 gap-2 mb-4">
             <button
               onClick={handleClearCloudData}
-              disabled={syncStatus === 'syncing' || !lastSync || !isOnline}
+              disabled={syncStatus === 'syncing' || !lastSyncTime || !isOnline}
               className="flex items-center justify-center gap-1.5 py-2.5 rounded-lg md:rounded-xl hover:bg-red-500/10 text-red-500/60 hover:text-red-400 text-[8px] md:text-[9px] font-black uppercase tracking-widest transition-all border border-transparent hover:border-red-500/10 disabled:opacity-30"
               title="Delete cloud data only"
             >
+
               <Trash2 className="w-3 h-3" />
               Clear
             </button>

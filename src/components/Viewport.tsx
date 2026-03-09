@@ -136,13 +136,13 @@ const Viewport: React.FC<{ isInteracting?: boolean }> = ({ isInteracting }) => {
       const lx = e.clientX / s;
       const ly = e.clientY / s;
 
-      // Always update world position for shortcuts and placement
+      // Update world coordinates with absolute precision (Accounting for resolution scale)
       mouseWorldPos.current = {
         x: (lx - transformRef.current.x) / transformRef.current.scale,
         y: (ly - transformRef.current.y) / transformRef.current.scale
       };
 
-      // Store context globally for the FAB and other UI elements to access without re-rendering
+      // Store context globally for the FAB and other UI elements
       const context: any = {
         x: mouseWorldPos.current.x,
         y: mouseWorldPos.current.y
@@ -155,8 +155,8 @@ const Viewport: React.FC<{ isInteracting?: boolean }> = ({ isInteracting }) => {
         else if (lx < width * 0.75) context.status = 'doing';
         else context.status = 'done';
       } else if (activeSpace?.mode === 'calendar') {
-        const elements = document.elementsFromPoint(e.clientX, e.clientY);
-        const cell = elements.find(el => (el as HTMLElement).classList.contains('cal-cell'));
+        const elementsAtPoint = document.elementsFromPoint(e.clientX, e.clientY);
+        const cell = elementsAtPoint.find(el => (el as HTMLElement).classList.contains('cal-cell'));
         if (cell) {
           context.date = (cell as HTMLElement).dataset.date;
         }
@@ -172,10 +172,19 @@ const Viewport: React.FC<{ isInteracting?: boolean }> = ({ isInteracting }) => {
         const dx = (e.clientX - lastMousePos.current.rawX) / (s * transformRef.current.scale);
         const dy = (e.clientY - lastMousePos.current.rawY) / (s * transformRef.current.scale);
 
+        // OPTIMIZATION: Direct DOM manipulation for buttery smooth panning
+        const worldEl = document.getElementById('world');
+        const gridEl = document.querySelector('.dot-grid') as HTMLElement;
+        const newX = transformRef.current.x + dx;
+        const newY = transformRef.current.y + dy;
+        
+        if (worldEl) worldEl.style.transform = `translate3d(${newX}px, ${newY}px, 0) scale(${transformRef.current.scale})`;
+        if (gridEl) gridEl.style.transform = `translate3d(${newX * 0.5}px, ${newY * 0.5}px, 0)`; // Parallax grid
+
         setTransform(applyConstraints({
           ...transformRef.current,
-          x: transformRef.current.x + dx,
-          y: transformRef.current.y + dy,
+          x: newX,
+          y: newY,
         }));
       } else if (isSelectingRef.current) {
         const startLX = selectionStartRef.current.rawX / s;
@@ -185,7 +194,7 @@ const Viewport: React.FC<{ isInteracting?: boolean }> = ({ isInteracting }) => {
         const w = Math.abs(lx - startLX);
         const h = Math.abs(ly - startLY);
 
-        if (w > 5 || h > 5) {
+        if (w > 2 || h > 2) { // Lower threshold for sensitivity
           setSelectionRect({ x, y, w, h });
 
           const rectX = (x - transformRef.current.x) / transformRef.current.scale;
@@ -194,12 +203,30 @@ const Viewport: React.FC<{ isInteracting?: boolean }> = ({ isInteracting }) => {
           const rectH = h / transformRef.current.scale;
 
           const selectedIds = thoughts.filter(t => {
+            // ACCURACY FIX: Unified coordinate mapping for all resolutions
+            // Standard thought card is 280px wide. 
+            // We calculate the thought's screen-space rectangle boundaries in "World Units"
+            const tw = 140; // Half-width (280/2)
+            const th = 60;  // Conservative half-height (most cards are ~120px tall)
+            
             const tx = t.x;
             const ty = t.y;
-            const tw = 280 / 2;
-            const th = 200 / 2;
-            return tx + tw > rectX && tx - tw < rectX + rectW &&
-              ty + th > rectY && ty - th < rectY + rectH;
+            
+            // Check if the thought's bounding box overlaps with the selection rectangle
+            const thoughtLeft = tx - tw;
+            const thoughtRight = tx + tw;
+            const thoughtTop = ty - th;
+            const thoughtBottom = ty + th;
+
+            const rectLeft = rectX;
+            const rectRight = rectX + rectW;
+            const rectTop = rectY;
+            const rectBottom = rectY + rectH;
+
+            return !(thoughtLeft > rectRight || 
+                     thoughtRight < rectLeft || 
+                     thoughtTop > rectBottom || 
+                     thoughtBottom < rectTop);
           }).map(t => t.id);
 
           setSelectedThoughtIds(selectedIds);
