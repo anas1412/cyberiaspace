@@ -12,7 +12,7 @@ function cn(...inputs: ClassValue[]) {
 interface TableRendererProps {
   thought: Thought;
   isReadOnly: boolean;
-  setActiveFocus: (id: number, type: 'text' | 'tasks' | 'paint' | 'table' | 'embed' | 'file' | 'image') => void;
+  setActiveFocus: (id: string, type: 'text' | 'tasks' | 'paint' | 'table' | 'embed' | 'file' | 'image') => void;
 
 }
 

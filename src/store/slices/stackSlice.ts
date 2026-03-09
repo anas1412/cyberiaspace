@@ -3,6 +3,7 @@ import { db, type Stack } from '../../db';
 import { useAuthStore } from '../useAuthStore';
 import { syncOrchestrator } from '../../services/sync/syncOrchestrator';
 import { type CyberiaState } from '../types';
+import { ulid } from 'ulid';
 
 export const createStackSlice: StateCreator<CyberiaState, [], [], any> = (set, get, _api) => ({
   stacks: [],
@@ -11,7 +12,11 @@ export const createStackSlice: StateCreator<CyberiaState, [], [], any> = (set, g
     const targetId = spaceId || get().activeSpaceId;
     if (!targetId) return;
     
-    const stacks = await db.stacks.where('spaceId').equals(targetId).toArray();
+    const stacks = await db.stacks
+      .where('spaceId')
+      .equals(targetId)
+      .and(s => !s.deletedAt)
+      .toArray();
     
     // Only update if it's still the active space or if we are refreshing for initial load
     if (!spaceId || targetId === get().activeSpaceId) {
@@ -19,16 +24,21 @@ export const createStackSlice: StateCreator<CyberiaState, [], [], any> = (set, g
     }
   },
 
-  createStack: async (name: string, thoughtId: number) => {
+  createStack: async (name: string, thoughtId: string) => {
     if (get().isDemo) return;
     const { activeSpaceId, stacks } = get();
     if (!activeSpaceId) return;
     const trimmedName = name?.trim() || 'Unnamed Stack';
     const existingStack = stacks.find((s: Stack) => s.name.toLowerCase() === trimmedName.toLowerCase() && s.spaceId === activeSpaceId);
     const authStore = useAuthStore.getState();
+    const now = Date.now();
     
     if (existingStack) {
-      await db.thoughts.update(thoughtId, { stackId: existingStack.id });
+      await db.thoughts.update(thoughtId, { 
+        stackId: existingStack.id,
+        updatedAt: now,
+        syncStatus: 'local'
+      });
       await get().refreshThoughts();
       
       if (authStore.status === 'authenticated') {
@@ -37,9 +47,20 @@ export const createStackSlice: StateCreator<CyberiaState, [], [], any> = (set, g
       return;
     }
     
-    const newStackId = String(Date.now());
-    await db.stacks.add({ id: newStackId, name: trimmedName, color: `hsla(${Math.floor(Math.random() * 360)}, 70%, 50%, 1)`, spaceId: activeSpaceId });
-    await db.thoughts.update(thoughtId, { stackId: newStackId });
+    const newStackId = ulid();
+    await db.stacks.add({ 
+      id: newStackId, 
+      name: trimmedName, 
+      color: `hsla(${Math.floor(Math.random() * 360)}, 70%, 50%, 1)`, 
+      spaceId: activeSpaceId,
+      updatedAt: now,
+      syncStatus: 'local'
+    });
+    await db.thoughts.update(thoughtId, { 
+      stackId: newStackId,
+      updatedAt: now,
+      syncStatus: 'local'
+    });
     await get().refreshThoughts();
     await get().refreshStacks();
     get().pushHistory();
@@ -58,7 +79,13 @@ export const createStackSlice: StateCreator<CyberiaState, [], [], any> = (set, g
       set({ stacks: newStacks });
     }
     if (get().isReadOnly || get().isDemo) return;
-    await db.stacks.update(id, updates);
+    
+    const now = Date.now();
+    await db.stacks.update(id, {
+      ...updates,
+      updatedAt: now,
+      syncStatus: 'local'
+    });
     await get().refreshStacks();
     
     const authStore = useAuthStore.getState();
@@ -69,9 +96,18 @@ export const createStackSlice: StateCreator<CyberiaState, [], [], any> = (set, g
 
   deleteStack: async (id: string) => {
     if (get().isReadOnly || get().isDemo) return;
+    const now = Date.now();
     await db.transaction('rw', db.thoughts, db.stacks, async () => {
-      await db.thoughts.where('stackId').equals(id).modify({ stackId: null });
-      await db.stacks.delete(id);
+      await db.thoughts.where('stackId').equals(id).modify({ 
+        stackId: null,
+        updatedAt: now,
+        syncStatus: 'local'
+      });
+      await db.stacks.update(id, {
+        deletedAt: now,
+        updatedAt: now,
+        syncStatus: 'local'
+      });
     });
     await get().refreshThoughts();
     await get().refreshStacks();
@@ -87,19 +123,29 @@ export const createStackSlice: StateCreator<CyberiaState, [], [], any> = (set, g
     const { activeSpaceId } = get();
     if (!activeSpaceId) return;
     const authStore = useAuthStore.getState();
-    const unlinkedThoughtIds: number[] = [];
+    const unlinkedThoughtIds: string[] = [];
+    const now = Date.now();
     
     await db.transaction('rw', db.thoughts, db.stacks, async () => {
       const allThoughts = await db.thoughts.where('spaceId').equals(activeSpaceId).toArray();
       const allStacks = await db.stacks.where('spaceId').equals(activeSpaceId).toArray();
       for (const stack of allStacks) {
-        const stackThoughts = allThoughts.filter(t => t.stackId === stack.id);
+        if (stack.deletedAt) continue;
+        const stackThoughts = allThoughts.filter(t => t.stackId === stack.id && !t.deletedAt);
         if (stackThoughts.length < 2) {
           if (stackThoughts.length === 1) {
             unlinkedThoughtIds.push(stackThoughts[0].id);
-            await db.thoughts.update(stackThoughts[0].id, { stackId: null });
+            await db.thoughts.update(stackThoughts[0].id, { 
+              stackId: null,
+              updatedAt: now,
+              syncStatus: 'local'
+            });
           }
-          await db.stacks.delete(stack.id);
+          await db.stacks.update(stack.id, {
+            deletedAt: now,
+            updatedAt: now,
+            syncStatus: 'local'
+          });
         }
       }
     });

@@ -1,4 +1,3 @@
-import { supabaseStorage } from '../../services/supabaseStorage';
 import { syncOrchestrator } from '../../services/sync/syncOrchestrator';
 import { type StateCreator } from 'zustand';
 import { type User, type SubscriptionPlan, type AccessPeriod } from '../../constants';
@@ -24,7 +23,7 @@ const getInitialUser = (): User | null => {
       },
       settings: {
         theme: user.settings?.theme ?? 'cyberia',
-        autoSync: false, // user.settings?.autoSync ?? true,
+        autoSync: false, // Forced to false
       }
     };
   } catch (e) {
@@ -43,11 +42,7 @@ export const createAuthSlice: StateCreator<AuthState, [], [], any> = (set, get, 
   initAuth: async () => {
     window.addEventListener('online', async () => { 
       set({ isOnline: true });
-      // Process offline changes when back online
       await get().processOfflineChanges();
-      // Process pending blob uploads
-      await get().processPendingBlobs();
-      // Also trigger a regular sync
       if (get().autoSync) {
         await get().syncData();
       }
@@ -55,22 +50,21 @@ export const createAuthSlice: StateCreator<AuthState, [], [], any> = (set, get, 
     window.addEventListener('offline', () => set({ isOnline: false, syncStatus: 'offline' }));
     get().checkExpiry();
 
-    // Safety cleanup: Reset any stuck 'syncing' states back to 'local' on app boot
-    try {
-      await db.thoughts.where('syncStatus').equals('syncing').modify({ syncStatus: 'local' });
-    } catch (e) {
-      console.warn('[Auth] Syncing state cleanup failed:', e);
-    }
-
     if (get().status === 'authenticated') {
-      console.log('[Auth] Initializing authenticated session...');
+      // Phase 1: Auto-Migration for missing updatedAt
+      try {
+        const now = Date.now();
+        await db.transaction('rw', [db.thoughts, db.spaces, db.stacks], async () => {
+          await db.thoughts.filter(t => t.updatedAt === undefined || t.updatedAt === null).modify({ updatedAt: now, syncStatus: 'local' });
+          await db.spaces.filter(s => s.updatedAt === undefined || s.updatedAt === null).modify({ updatedAt: now, syncStatus: 'local' });
+          await db.stacks.filter(s => s.updatedAt === undefined || s.updatedAt === null).modify({ updatedAt: now, syncStatus: 'local' });
+        });
+      } catch (e) {
+        console.warn('[Auth] Auto-migration failed:', e);
+      }
+
       try {
         await get().refreshProfile();
-        // After profile is refreshed, check for initial sync
-        if (!get().lastSync) {
-          console.log('[Auth] No lastSync found, triggering post-auth sync...');
-          await get().handlePostAuthSync();
-        }
       } catch (err) {
         console.warn('[Auth] Initialization failed:', err);
       }
@@ -90,7 +84,7 @@ export const createAuthSlice: StateCreator<AuthState, [], [], any> = (set, get, 
       },
       settings: {
         theme: user.settings?.theme ?? 'cyberia',
-        autoSync: false, // user.settings?.autoSync ?? true,
+        autoSync: false, // Forced to false
       }
     };
     
@@ -104,11 +98,6 @@ export const createAuthSlice: StateCreator<AuthState, [], [], any> = (set, get, 
     if (scopes) {
       localStorage.setItem('cyberia-scopes', JSON.stringify(scopes));
     }
-
-    // Backend /api/google-auth?action=exchange already handles the initial sync and merging.
-    // Calling it again from the frontend with only 4 fields is potentially risky and unnecessary.
-    console.log('[Supabase] Authenticated via Google, backend sync already handled by exchange action.')
-
 
     const { useStore } = await import('../useStore');
     useStore.getState().isInitializing = true;
@@ -228,11 +217,9 @@ export const createAuthSlice: StateCreator<AuthState, [], [], any> = (set, get, 
     const { accessToken, user, refreshSecret } = get();
     if (!accessToken || !user) return;
     try {
-      // Create a timeout controller
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 8000); // 8 second timeout
+      const timeoutId = setTimeout(() => controller.abort(), 8000);
 
-      // 1. Try a silent refresh using refreshSecret
       try {
         const refreshRes = await fetch('/api/google-auth?action=refresh', {
           method: 'POST',
@@ -248,54 +235,31 @@ export const createAuthSlice: StateCreator<AuthState, [], [], any> = (set, get, 
           set({ accessToken: currentToken });
           localStorage.setItem('cyberia-token', currentToken);
         } else if (refreshRes.status === 401) {
-          console.warn('[Auth] Refresh failed (401), signing out...');
           clearTimeout(timeoutId);
           get().signOut();
           return;
         }
       } catch (err: any) {
-        if (err.name === 'AbortError') {
-          console.warn('[Auth] Refresh request timed out');
-        } else {
-          console.warn('[Auth] Refresh failed:', err);
-        }
+        console.warn('[Auth] Refresh failed:', err);
       }
 
-      // 2. Fetch profile from Supabase
-      console.log('[Auth] Refreshing profile for:', user.id);
       const supabaseProfile = await supabaseSync.getProfile(user.id);
-      console.log('[Auth] Supabase profile result:', JSON.stringify(supabaseProfile));
-
       clearTimeout(timeoutId);
 
       if (supabaseProfile?.user) {
         const supabaseUser = supabaseProfile.user;
-        
-        // Extract auto_sync from Supabase (column) vs settings.autoSync (JSON)
-        // const cloudAutoSync = supabaseUser.auto_sync ?? supabaseUser.settings?.autoSync;
-        
         const updatedUser = { 
           ...user, 
           ...supabaseUser,
           settings: {
             ...user.settings,
             ...supabaseUser.settings,
-            // Force disable autoSync
-            autoSync: false // cloudAutoSync !== undefined ? cloudAutoSync : user.settings?.autoSync
+            autoSync: false // Force false
           }
         };
         
-        /* Disable cloud sync state update
-        if (cloudAutoSync !== undefined && cloudAutoSync !== get().autoSync) {
-          set({ autoSync: cloudAutoSync });
-          localStorage.setItem('cyberia-auto-sync', String(cloudAutoSync));
-        }
-        */
-        
         set({ user: updatedUser });
         localStorage.setItem('cyberia-user', JSON.stringify(updatedUser));
-      } else {
-        console.warn('[Auth] No profile found in Supabase for user:', user.id);
       }
     } catch (e) {
       console.warn('Failed to refresh profile', e);
@@ -306,15 +270,9 @@ export const createAuthSlice: StateCreator<AuthState, [], [], any> = (set, get, 
     const { accessToken, user } = get();
     if (!accessToken || !user) return;
     
-    const updatedUser = { ...user, settings: { ...user.settings, ...settings } };
+    const updatedUser = { ...user, settings: { ...user.settings, ...settings, autoSync: false } };
     set({ user: updatedUser });
     localStorage.setItem('cyberia-user', JSON.stringify(updatedUser));
-
-    if (settings.autoSync !== undefined) {
-      // Force disable autoSync update
-      // set({ autoSync: settings.autoSync });
-      // localStorage.setItem('cyberia-auto-sync', String(settings.autoSync));
-    }
 
     try {
       await supabaseSync.updateSettings(user.id, updatedUser.settings);
@@ -337,54 +295,32 @@ export const createAuthSlice: StateCreator<AuthState, [], [], any> = (set, get, 
     if (!accessToken || !isOnline || !user) return;
 
     set({ syncStatus: 'syncing' });
-    console.log('[Auth] Starting Atomic Nuclear Wipe of cloud data...');
+    console.log('[Auth] Starting cloud data wipe...');
 
     try {
-      // 1. Block Sync
       await syncOrchestrator.setSyncBlocked(true);
+      await syncOrchestrator.deleteCloudContent();
 
-      // 2. Wipe Postgres (Database)
-      const [spacesData, thoughtsData, stacksData] = await Promise.all([
-        supabaseSync.getSpaces(user.id),
-        supabaseSync.getThoughts(user.id),
-        supabaseSync.getStacks(user.id)
-      ]);
-
-      const deleteOperations = [];
-      if (spacesData?.spaces) deleteOperations.push(...spacesData.spaces.map(s => supabaseSync.deleteSpace(s.id, user.id)));
-      if (thoughtsData?.thoughts) deleteOperations.push(...thoughtsData.thoughts.map(t => supabaseSync.deleteThought(t.id, user.id)));
-      if (stacksData?.stacks) deleteOperations.push(...stacksData.stacks.map(s => supabaseSync.deleteStack(s.id, user.id)));
-      
-      await Promise.all(deleteOperations);
-
-      // 3. Wipe Storage (Files)
-      await supabaseStorage.deleteAllUserFiles(user.id);
-
-      // 4. Reset Local Metadata (Heal IndexedDB)
-      console.log('[Auth] Cloud wiped. Resetting local IndexedDB metadata...');
       await db.transaction('rw', [db.spaces, db.stacks, db.thoughts], async () => {
-        await db.spaces.toCollection().modify({ syncStatus: 'local' });
-        await db.stacks.toCollection().modify({ syncStatus: 'local' });
+        await db.spaces.toCollection().modify({ syncStatus: 'local', updatedAt: Date.now() });
+        await db.stacks.toCollection().modify({ syncStatus: 'local', updatedAt: Date.now() });
         await db.thoughts.toCollection().modify({ 
           syncStatus: 'local', 
+          updatedAt: Date.now(),
           storageUrl: undefined, 
-          storagePath: undefined,
-          data: { type: 'file', url: '', name: '', size: 0 } as any
+          storagePath: undefined
         });
       });
 
-      // 5. Disable Auto-Sync (Permanent Safe Exit)
       await get().setAutoSync(false);
-
       localStorage.removeItem('cyberia-last-sync');
       set({ syncStatus: 'offline', lastSync: null });
       
-      console.log('[Auth] Nuclear Wipe complete. System in Local-Only state.');
+      console.log('[Auth] Wipe complete.');
     } catch (error) {
-      console.error('[Auth] Nuclear Wipe failed:', error);
+      console.error('[Auth] Wipe failed:', error);
       set({ syncStatus: 'error' });
     } finally {
-      // 6. Resume Sync (Unblock)
       await syncOrchestrator.setSyncBlocked(false);
     }
   }

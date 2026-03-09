@@ -26,15 +26,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       return res.status(400).json({ error: 'Missing space data' });
     }
 
-    // Get cloud UUID and user_id from local ID
-    const { data: cloudSpace } = await supabase
-      .from('spaces')
-      .select('id, user_id')
-      .eq('local_id', space.id)
-      .maybeSingle();
-
-    const spaceId = cloudSpace?.id || space.id;
-    const userId = cloudSpace?.user_id || space.user_id || space.userId || '';
+    // Unified IDs: local ID is the cloud ID
+    const spaceId = space.id;
+    const userId = space.user_id || space.userId || '';
     const snapshot = { space, thoughts, stacks, creatorName };
     const newPublishedId = existingPublishedId || randomUUID();
     const expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();

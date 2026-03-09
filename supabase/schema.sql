@@ -1,5 +1,5 @@
--- Cyberia Database Schema v3
--- UUIDs with local_id mapping for Dexie sync
+-- Cyberia Database Schema v4
+-- Unified ULID string IDs for Dexie sync
 
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
@@ -17,15 +17,15 @@ CREATE TABLE IF NOT EXISTS users (
     polar_customer_id TEXT,
     polar_subscription_id TEXT,
     payment_provider TEXT,
-    created_at TIMESTAMP DEFAULT NOW(),
-    updated_at TIMESTAMP DEFAULT NOW()
+    auto_sync BOOLEAN DEFAULT false,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
--- Spaces: id = UUID, local_id = original Dexie string ID
+-- Spaces: id = ULID (TEXT)
 CREATE TABLE IF NOT EXISTS spaces (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    local_id TEXT,
-    user_id TEXT NOT NULL,
+    id TEXT PRIMARY KEY,
+    user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     name TEXT NOT NULL,
     mode TEXT DEFAULT 'spatial',
     physics BOOLEAN DEFAULT true,
@@ -34,28 +34,29 @@ CREATE TABLE IF NOT EXISTS spaces (
     theme TEXT DEFAULT 'cyberia',
     custom_bg TEXT,
     published_id TEXT,
-    created_at TIMESTAMP DEFAULT NOW(),
-    updated_at TIMESTAMP DEFAULT NOW()
+    deleted_at TIMESTAMP WITH TIME ZONE,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
--- Stacks: id = UUID, local_id = original Dexie string ID
+-- Stacks: id = ULID (TEXT)
 CREATE TABLE IF NOT EXISTS stacks (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    local_id TEXT,
-    user_id TEXT NOT NULL,
-    space_id UUID,
+    id TEXT PRIMARY KEY,
+    user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    space_id TEXT NOT NULL REFERENCES spaces(id) ON DELETE CASCADE,
     name TEXT NOT NULL,
     color TEXT DEFAULT '#6366f1',
-    created_at TIMESTAMP DEFAULT NOW()
+    deleted_at TIMESTAMP WITH TIME ZONE,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
--- Thoughts: id = UUID, local_id = original Dexie number ID
+-- Thoughts: id = ULID (TEXT)
 CREATE TABLE IF NOT EXISTS thoughts (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    local_id BIGINT,
-    user_id TEXT NOT NULL,
-    space_id UUID,
-    stack_id UUID,
+    id TEXT PRIMARY KEY,
+    user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    space_id TEXT NOT NULL REFERENCES spaces(id) ON DELETE CASCADE,
+    stack_id TEXT REFERENCES stacks(id) ON DELETE SET NULL,
     x REAL DEFAULT 0,
     y REAL DEFAULT 0,
     vx REAL DEFAULT 0,
@@ -71,7 +72,7 @@ CREATE TABLE IF NOT EXISTS thoughts (
     tasks JSONB DEFAULT '[]',
     table_data JSONB DEFAULT '[]',
     "table" JSONB DEFAULT '[]',
-    date TIMESTAMP,
+    date TIMESTAMP WITH TIME ZONE,
     priority TEXT DEFAULT 'none',
     size REAL DEFAULT 1,
     "order" INT DEFAULT 0,
@@ -82,42 +83,45 @@ CREATE TABLE IF NOT EXISTS thoughts (
     google_task_list_id TEXT,
     google_calendar_event_id TEXT,
     sync_status TEXT DEFAULT 'local',
-    created_at TIMESTAMP DEFAULT NOW(),
-    updated_at TIMESTAMP DEFAULT NOW()
+    storage_url TEXT,
+    storage_path TEXT,
+    deleted_at TIMESTAMP WITH TIME ZONE,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
 -- Published spaces
 CREATE TABLE IF NOT EXISTS published_spaces (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    space_id UUID,
-    user_id TEXT NOT NULL,
+    space_id TEXT REFERENCES spaces(id) ON DELETE CASCADE,
+    user_id TEXT REFERENCES users(id) ON DELETE CASCADE,
     snapshot JSONB NOT NULL,
-    last_published TIMESTAMP DEFAULT NOW(),
-    created_at TIMESTAMP DEFAULT NOW(),
-    expires_at TIMESTAMP
+    last_published TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    expires_at TIMESTAMP WITH TIME ZONE
 );
 
 -- Feedback
 CREATE TABLE IF NOT EXISTS feedback (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    user_id TEXT,
+    user_id TEXT REFERENCES users(id) ON DELETE SET NULL,
     type TEXT NOT NULL,
     content TEXT NOT NULL,
     metadata JSONB DEFAULT '{}',
-    created_at TIMESTAMP DEFAULT NOW()
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
 -- Payments
 CREATE TABLE IF NOT EXISTS payments (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    user_id TEXT NOT NULL,
+    user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     payment_ref TEXT UNIQUE NOT NULL,
     amount INT NOT NULL,
     currency TEXT DEFAULT 'USD',
     status TEXT DEFAULT 'pending',
     metadata JSONB DEFAULT '{}',
-    created_at TIMESTAMP DEFAULT NOW(),
-    updated_at TIMESTAMP DEFAULT NOW()
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
 -- Indexes
@@ -130,4 +134,4 @@ CREATE INDEX IF NOT EXISTS idx_thoughts_type ON thoughts(type);
 CREATE INDEX IF NOT EXISTS idx_thoughts_status ON thoughts(status);
 CREATE INDEX IF NOT EXISTS idx_users_polar_customer ON users(polar_customer_id);
 
-SELECT 'Schema v3 created successfully!' as result;
+SELECT 'Schema v4 (ULID Unified) created successfully!' as result;

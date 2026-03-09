@@ -4,8 +4,7 @@ import { db, type Thought } from '../../db';
 import { syncOrchestrator } from '../../services/sync/syncOrchestrator';
 import { useModalStore } from '../useModalStore';
 import { sanitizeDate } from '../../utils/date';
-
-
+import { ulid } from 'ulid';
 
 export const createThoughtSlice: StateCreator<CyberiaState, [], [], any> = (set, get) => ({
   thoughts: [],
@@ -14,12 +13,12 @@ export const createThoughtSlice: StateCreator<CyberiaState, [], [], any> = (set,
   selectedThoughtIds: [],
   activeFocusId: null,
   focusType: null as 'text' | 'table' | 'paint' | 'tasks' | 'embed' | 'file' | null,
-  deletingThoughtIds: [] as number[],
+  deletingThoughtIds: [] as string[],
 
   addThought: async (partialThought: Partial<Thought>) => {
     const { activeSpaceId, totalThoughtCount, isReadOnly } = get();
-    if (isReadOnly) return -1;
-    if (!activeSpaceId) return -1;
+    if (isReadOnly) return '';
+    if (!activeSpaceId) return '';
 
     if (totalThoughtCount >= 1000) {
       useModalStore.getState().openModal({
@@ -28,7 +27,7 @@ export const createThoughtSlice: StateCreator<CyberiaState, [], [], any> = (set,
         type: 'alert',
         confirmText: 'Acknowledged'
       });
-      return -1;
+      return '';
     }
 
     const thoughtType = partialThought.type || 'label';
@@ -46,7 +45,9 @@ export const createThoughtSlice: StateCreator<CyberiaState, [], [], any> = (set,
 
     const authStatus = useAuthStore.getState().status;
 
+    const thoughtId = ulid();
     const thought = {
+      id: thoughtId,
       spaceId: activeSpaceId,
       stackId: null,
       x: window.innerWidth / 2,
@@ -62,7 +63,8 @@ export const createThoughtSlice: StateCreator<CyberiaState, [], [], any> = (set,
       order: Date.now(),
       layer: 0,
       author: '',
-      syncStatus: (isBlobType && autoSync && authStatus === 'authenticated') ? 'pending' : 'local',
+      syncStatus: (isBlobType && autoSync && authStatus === 'authenticated') ? 'local' : 'local',
+      updatedAt: Date.now(),
       ...partialThought,
       date: partialThought.date ? sanitizeDate(partialThought.date) : '',
       data: partialThought.data || payload
@@ -79,13 +81,14 @@ export const createThoughtSlice: StateCreator<CyberiaState, [], [], any> = (set,
         await syncOrchestrator.triggerSync();
       }
     }
-    return result as number;
+    return thoughtId;
   },
 
-  updateThought: async (id: number, updates: Partial<Thought>, options?: { skipSync?: boolean }) => {
+  updateThought: async (id: string, updates: Partial<Thought>, options?: { skipSync?: boolean }) => {
     const { thoughts, activeSpaceId, isReadOnly } = get();
     const thought = thoughts.find((t: Thought) => t.id === id);
-    const isBlobType = thought?.type === 'file' || updates.type === 'file';
+    if (!thought) return;
+    const isBlobType = thought.type === 'file' || updates.type === 'file';
     
     // Sanitize date if present
     if (updates.date) {
@@ -107,12 +110,17 @@ export const createThoughtSlice: StateCreator<CyberiaState, [], [], any> = (set,
     }
 
     if (isReadOnly || get().isDemo) return;
-    if (activeSpaceId) get().updateSpace(activeSpaceId, { updatedAt: new Date().toISOString() }, options);
+    if (activeSpaceId) get().updateSpace(activeSpaceId, { updatedAt: Date.now() }, options);
 
     const saveTimers = (window as any)._cyberia_save_timers || {};
     if (saveTimers[id]) clearTimeout(saveTimers[id]);
     saveTimers[id] = setTimeout(async () => {
-      await db.thoughts.update(id, updates);
+      const finalUpdates = {
+        ...updates,
+        updatedAt: Date.now(),
+        syncStatus: 'local' as const
+      };
+      await db.thoughts.update(id, finalUpdates);
       delete saveTimers[id];
       get().pushHistory();
       
@@ -125,18 +133,24 @@ export const createThoughtSlice: StateCreator<CyberiaState, [], [], any> = (set,
     (window as any)._cyberia_save_timers = saveTimers;
   },
 
-  updateThoughts: async (ids: number[], updates: Partial<Thought>, options?: { skipSync?: boolean }) => {
+  updateThoughts: async (ids: string[], updates: Partial<Thought>, options?: { skipSync?: boolean }) => {
     if (get().isReadOnly) return;
     const { thoughts, activeSpaceId } = get();
-    if (activeSpaceId) get().updateSpace(activeSpaceId, { updatedAt: new Date().toISOString() }, options);
+    if (activeSpaceId) get().updateSpace(activeSpaceId, { updatedAt: Date.now() }, options);
 
     // Sanitize date if present
     if (updates.date) {
       updates.date = sanitizeDate(updates.date);
     }
 
+    const finalUpdates = {
+      ...updates,
+      updatedAt: Date.now(),
+      syncStatus: 'local' as const
+    };
+
     set({ thoughts: thoughts.map((t: Thought) => ids.includes(t.id) ? { ...t, ...updates } : t) } as Partial<CyberiaState>);
-    await db.thoughts.where('id').anyOf(ids).modify(updates);
+    await db.thoughts.where('id').anyOf(ids).modify(finalUpdates);
     get().pushHistory();
     
     const { useAuthStore } = await import('../useAuthStore');
@@ -146,7 +160,7 @@ export const createThoughtSlice: StateCreator<CyberiaState, [], [], any> = (set,
     }
   },
 
-  bulkUpdateThoughts: async (updates: { id: number; updates: Partial<Thought> }[], options?: { skipSync?: boolean }) => {
+  bulkUpdateThoughts: async (updates: { id: string; updates: Partial<Thought> }[], options?: { skipSync?: boolean }) => {
     if (get().isReadOnly || !updates.length) return;
     const { thoughts, activeSpaceId } = get();
 
@@ -165,11 +179,16 @@ export const createThoughtSlice: StateCreator<CyberiaState, [], [], any> = (set,
         if (u.date) {
           u.date = sanitizeDate(u.date);
         }
-        await db.thoughts.update(id, u);
+        const finalUpdates = {
+          ...u,
+          updatedAt: Date.now(),
+          syncStatus: 'local' as const
+        };
+        await db.thoughts.update(id, finalUpdates);
       }
     });
 
-    if (activeSpaceId) get().updateSpace(activeSpaceId, { updatedAt: new Date().toISOString() }, options);
+    if (activeSpaceId) get().updateSpace(activeSpaceId, { updatedAt: Date.now() }, options);
     get().pushHistory();
 
     const { useAuthStore } = await import('../useAuthStore');
@@ -179,7 +198,7 @@ export const createThoughtSlice: StateCreator<CyberiaState, [], [], any> = (set,
     }
   },
 
-  deleteThought: async (id: number) => {
+  deleteThought: async (id: string) => {
     if (get().isReadOnly || get().isDemo) return;
     const thought = get().thoughts.find((t: Thought) => t.id === id);
     const affectedStackId = thought?.stackId;
@@ -189,13 +208,14 @@ export const createThoughtSlice: StateCreator<CyberiaState, [], [], any> = (set,
     set((state: CyberiaState) => ({ deletingThoughtIds: [...state.deletingThoughtIds, id] } as Partial<CyberiaState>));
     
     if (thought) {
-      await get().updateSpace(thought.spaceId, { updatedAt: new Date().toISOString() });
+      await get().updateSpace(thought.spaceId, { updatedAt: Date.now() });
       if (authStore.status === 'authenticated') {
         await authStore.deleteServiceContent(thought);
       }
       
       await db.thoughts.update(id, { 
         deletedAt: Date.now(),
+        updatedAt: Date.now(),
         storageUrl: undefined,
         storagePath: undefined,
         syncStatus: 'local'
@@ -211,10 +231,10 @@ export const createThoughtSlice: StateCreator<CyberiaState, [], [], any> = (set,
     }
     
     if (get().selectedThoughtIds.includes(id)) {
-      set((state: CyberiaState) => ({ selectedThoughtIds: state.selectedThoughtIds.filter((tid: number) => tid !== id) } as Partial<CyberiaState>));
+      set((state: CyberiaState) => ({ selectedThoughtIds: state.selectedThoughtIds.filter((tid: string) => tid !== id) } as Partial<CyberiaState>));
     }
     
-    set((state: CyberiaState) => ({ deletingThoughtIds: state.deletingThoughtIds.filter((tid: number) => tid !== id) } as Partial<CyberiaState>));
+    set((state: CyberiaState) => ({ deletingThoughtIds: state.deletingThoughtIds.filter((tid: string) => tid !== id) } as Partial<CyberiaState>));
     get().pushHistory();
     
     if (authStore.status === 'authenticated') {
@@ -222,7 +242,7 @@ export const createThoughtSlice: StateCreator<CyberiaState, [], [], any> = (set,
     }
   },
 
-  deleteThoughts: async (ids: number[]) => {
+  deleteThoughts: async (ids: string[]) => {
     if (get().isReadOnly || !ids.length) return;
     const { thoughts } = get();
     const { useAuthStore } = await import('../useAuthStore');
@@ -240,6 +260,7 @@ export const createThoughtSlice: StateCreator<CyberiaState, [], [], any> = (set,
 
     await db.thoughts.where('id').anyOf(ids).modify({ 
       deletedAt: Date.now(),
+      updatedAt: Date.now(),
       storageUrl: undefined,
       storagePath: undefined,
       syncStatus: 'local'
@@ -250,9 +271,9 @@ export const createThoughtSlice: StateCreator<CyberiaState, [], [], any> = (set,
     if (affectedStackIds.length > 0) await get().cleanupStacks();
     
     set((state: CyberiaState) => ({ 
-      selectedThoughtId: ids.includes(state.selectedThoughtId as number) ? null : state.selectedThoughtId,
-      selectedThoughtIds: state.selectedThoughtIds.filter((tid: number) => !ids.includes(tid)),
-      deletingThoughtIds: state.deletingThoughtIds.filter((tid: number) => !ids.includes(tid))
+      selectedThoughtId: ids.includes(state.selectedThoughtId as string) ? null : state.selectedThoughtId,
+      selectedThoughtIds: state.selectedThoughtIds.filter((tid: string) => !ids.includes(tid)),
+      deletingThoughtIds: state.deletingThoughtIds.filter((tid: string) => !ids.includes(tid))
     } as Partial<CyberiaState>));
     
     get().pushHistory();
@@ -282,36 +303,36 @@ export const createThoughtSlice: StateCreator<CyberiaState, [], [], any> = (set,
     set({ totalThoughtCount: count } as Partial<CyberiaState>);
   },
 
-  setActiveFocus: (id: number | null, type: 'text' | 'table' | 'paint' | 'tasks' | 'embed' | 'file' | null) => {
+  setActiveFocus: (id: string | null, type: 'text' | 'table' | 'paint' | 'tasks' | 'embed' | 'file' | null) => {
     set({ activeFocusId: id, focusType: type } as Partial<CyberiaState>);
   },
 
-  bringToFront: async (id: number) => {
+  bringToFront: async (id: string) => {
     const { thoughts } = get();
     const maxLayer = Math.max(...thoughts.map(t => t.layer || 0), 0);
     await get().updateThought(id, { layer: maxLayer + 1 });
     set({ layerActionTrigger: { id, time: Date.now() } } as Partial<CyberiaState>);
   },
 
-  sendToBack: async (id: number) => {
+  sendToBack: async (id: string) => {
     const { thoughts } = get();
     const minLayer = Math.min(...thoughts.map(t => t.layer || 0), 0);
     await get().updateThought(id, { layer: minLayer - 1 });
     set({ layerActionTrigger: { id, time: Date.now() } } as Partial<CyberiaState>);
   },
 
-  setSelectedThoughtId: (id: number | null) => {
+  setSelectedThoughtId: (id: string | null) => {
     set({ 
       selectedThoughtId: id,
       selectedThoughtIds: id ? [id] : []
     } as Partial<CyberiaState>);
   },
   
-  setSelectedThoughtIds: (ids: number[]) => set({ selectedThoughtIds: ids } as Partial<CyberiaState>),
+  setSelectedThoughtIds: (ids: string[]) => set({ selectedThoughtIds: ids } as Partial<CyberiaState>),
   
-  toggleThoughtSelection: (id: number) => {
+  toggleThoughtSelection: (id: string) => {
     const { selectedThoughtIds } = get();
-    let nextIds: number[];
+    let nextIds: string[];
     if (selectedThoughtIds.includes(id)) {
       nextIds = selectedThoughtIds.filter(tid => tid !== id);
     } else {
@@ -348,16 +369,22 @@ export const createThoughtSlice: StateCreator<CyberiaState, [], [], any> = (set,
     if (existingStack) {
       targetStackId = existingStack.id;
     } else {
-      targetStackId = String(Date.now());
+      targetStackId = ulid();
       await db.stacks.add({ 
         id: targetStackId, 
         name: trimmedName, 
         color: `hsla(${Math.floor(Math.random() * 360)}, 70%, 50%, 1)`, 
-        spaceId: activeSpaceId 
+        spaceId: activeSpaceId,
+        updatedAt: Date.now(),
+        syncStatus: 'local'
       });
     }
 
-    await db.thoughts.where('id').anyOf(selectedThoughtIds).modify({ stackId: targetStackId });
+    await db.thoughts.where('id').anyOf(selectedThoughtIds).modify({ 
+      stackId: targetStackId,
+      updatedAt: Date.now(),
+      syncStatus: 'local'
+    });
     await get().refreshThoughts();
     await get().refreshStacks();
     get().pushHistory();
@@ -374,7 +401,11 @@ export const createThoughtSlice: StateCreator<CyberiaState, [], [], any> = (set,
     const thoughtsToUnlink = get().thoughts.filter(t => selectedThoughtIds.includes(t.id));
     const affectedStackIds = Array.from(new Set(thoughtsToUnlink.map(t => t.stackId).filter(Boolean))) as string[];
 
-    await db.thoughts.where('id').anyOf(selectedThoughtIds).modify({ stackId: null });
+    await db.thoughts.where('id').anyOf(selectedThoughtIds).modify({ 
+      stackId: null,
+      updatedAt: Date.now(),
+      syncStatus: 'local'
+    });
     await get().refreshThoughts();
     
     for (const _sid of affectedStackIds) {

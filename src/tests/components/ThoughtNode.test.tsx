@@ -47,7 +47,7 @@ vi.mock('../../store/useModalStore', () => ({
 }));
 
 const mockThought: Thought = {
-  id: 1,
+  id: 't1',
   spaceId: 's1',
   stackId: null,
   x: 100,

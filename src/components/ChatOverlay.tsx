@@ -515,7 +515,7 @@ if (['get_thought_details', 'read_file_content', 'read_files_content'].includes(
                   <div className="bg-blue-500/10 border border-blue-500/20 px-4 py-2 rounded-xl flex items-center gap-3 shadow-[0_0_20px_rgba(99,102,241,0.1)]">
                     <Loader2 className="w-3 h-3 text-blue-400 animate-spin" />
                     <span className="text-[10px] font-black uppercase tracking-widest text-blue-300">
-                      {getFriendlyToolName(activeTool.name)}
+                      {getFriendlyToolName(activeTool!.name)}
                     </span>
                   </div>
                 ) : (

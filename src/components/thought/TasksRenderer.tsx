@@ -12,7 +12,7 @@ function cn(...inputs: ClassValue[]) {
 interface TasksRendererProps {
   thought: Thought;
   isReadOnly: boolean;
-  setActiveFocus: (id: number, type: 'text' | 'tasks' | 'paint' | 'table' | 'embed' | 'file' | 'image') => void;
+  setActiveFocus: (id: string, type: 'text' | 'tasks' | 'paint' | 'table' | 'embed' | 'file' | 'image') => void;
 
 }
 
@@ -25,7 +25,7 @@ export const TasksRenderer: React.FC<TasksRendererProps> = ({
   const { tasks } = useThoughtPayload(thought);
   
   const done = tasks.filter((t) => t.done).length;
-  const progress = (done / tasks.length) * 100;
+  const progress = tasks.length > 0 ? (done / tasks.length) * 100 : 0;
   const previewTasks = tasks.slice(0, 3);
   const hasRemoteContent = thought.storageUrl && tasks.length === 0 && thought.syncStatus !== 'synced' && !isReadOnly;
 

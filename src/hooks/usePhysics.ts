@@ -33,9 +33,9 @@ export const usePhysics = (
   const linkingSourceId = useStore((state) => state.linkingSourceId);
   const performanceMode = useStore((state) => state.performanceMode);
 
-  const physicsState = useRef<Map<number, PhysicsPoint>>(new Map());
+  const physicsState = useRef<Map<string, PhysicsPoint>>(new Map());
   const frameCount = useRef(0);
-  const elements = useRef<Map<number, HTMLDivElement>>(new Map());
+  const elements = useRef<Map<string, HTMLDivElement>>(new Map());
   const worldRef = useRef<HTMLDivElement | null>(null);
   const gridRef = useRef<HTMLDivElement | null>(null);
   const mousePosRef = useRef({ x: 0, y: 0 });
@@ -50,15 +50,15 @@ export const usePhysics = (
   const visualTransformRef = useRef(transform);
   const isReturningHome = useRef(false);
 
-  const thoughtMap = useRef<Map<number, Thought>>(new Map());
+  const thoughtMap = useRef<Map<string, Thought>>(new Map());
   const dragRef = useRef<{
-    id: number;
+    id: string;
     startX: number;
     startY: number;
     moved: boolean;
     lastMouseX: number;
     lastMouseY: number;
-    initialPositions: Map<number, { x: number, y: number }>;
+    initialPositions: Map<string, { x: number, y: number }>;
     cellRectMap?: Map<string, DOMRect>;
   } | null>(null);
 
@@ -120,12 +120,12 @@ export const usePhysics = (
         const store = useStore.getState();
 
         // Capture heights immediately before updates
-        const heights = new Map<number, number>();
+        const heights = new Map<string, number>();
         physics.forEach((_, id) => {
           heights.set(id, els.get(id)?.offsetHeight || 120);
         });
 
-        const updates: { id: number; updates: Partial<Thought> }[] = [];
+        const updates: { id: string; updates: Partial<Thought> }[] = [];
         physics.forEach((p, id) => {
           const t = thoughtsCache.get(id);
           if (t) {
@@ -390,7 +390,7 @@ export const usePhysics = (
       });
     }
 
-    const elementHeights = new Map<number, number>();
+    const elementHeights = new Map<string, number>();
     ids.forEach(id => elementHeights.set(id, elements.current.get(id)?.offsetHeight || 120));
 
     const sbContent = document.getElementById('cal-sidebar-content');
@@ -579,7 +579,7 @@ export const usePhysics = (
     requestRef.current = requestAnimationFrame(animate); return () => { if (requestRef.current) cancelAnimationFrame(requestRef.current); };
   }, [loop]);
 
-  const handleMouseDown = useCallback((id: number, e: React.MouseEvent) => {
+  const handleMouseDown = useCallback((id: string, e: React.MouseEvent) => {
     if (e.button !== 0 || (e.target as HTMLElement).closest('.prevent-drag')) return;
     const s = getGlobalScale(); const store = useStore.getState();
     const targets = new Set(store.selectedThoughtIds); if (!targets.has(id)) targets.add(id);
@@ -596,7 +596,7 @@ export const usePhysics = (
     dragRef.current = { id, startX: e.clientX / s, startY: e.clientY / s, moved: false, lastMouseX: e.clientX / s, lastMouseY: e.clientY / s, initialPositions, cellRectMap };
   }, [getGlobalScale, activeSpace?.mode]);
 
-  const handleTouchStart = useCallback((id: number, e: React.TouchEvent) => {
+  const handleTouchStart = useCallback((id: string, e: React.TouchEvent) => {
     const s = getGlobalScale(); const store = useStore.getState();
     const touch = e.touches[0];
     const targets = new Set(store.selectedThoughtIds); if (!targets.has(id)) targets.add(id);
@@ -613,5 +613,5 @@ export const usePhysics = (
     dragRef.current = { id, startX: touch.clientX / s, startY: touch.clientY / s, moved: false, lastMouseX: touch.clientX / s, lastMouseY: touch.clientY / s, initialPositions, cellRectMap };
   }, [getGlobalScale, activeSpace?.mode]);
 
-  return { registerElement: (id: number, el: HTMLDivElement | null) => { if (el) elements.current.set(id, el); else elements.current.delete(id); }, registerWorld: (el: HTMLDivElement | null) => { worldRef.current = el; }, registerGrid: (el: HTMLDivElement | null) => { gridRef.current = el; }, handleMouseDown: handleMouseDown as (id: number, e: React.MouseEvent) => void, handleTouchStart: handleTouchStart as (id: number, e: React.TouchEvent) => void, isDragging: (id: number) => !!dragRef.current?.initialPositions.has(id), sidebarHeight: sbHeight, kanbanHeight: kMaxHeight };
+  return { registerElement: (id: string, el: HTMLDivElement | null) => { if (el) elements.current.set(id, el); else elements.current.delete(id); }, registerWorld: (el: HTMLDivElement | null) => { worldRef.current = el; }, registerGrid: (el: HTMLDivElement | null) => { gridRef.current = el; }, handleMouseDown: handleMouseDown as (id: string, e: React.MouseEvent) => void, handleTouchStart: handleTouchStart as (id: string, e: React.TouchEvent) => void, isDragging: (id: string) => !!dragRef.current?.initialPositions.has(id), sidebarHeight: sbHeight, kanbanHeight: kMaxHeight };
 };

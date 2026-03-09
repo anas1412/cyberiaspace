@@ -3,10 +3,10 @@ export type SyncAction = 'create' | 'update' | 'delete';
 export type SyncStatus = 'idle' | 'syncing' | 'synced' | 'error';
 
 export interface SyncChange {
-  id?: number;
+  id?: string;
   tableName: SyncTableName;
   action: SyncAction;
-  localId: string | number;
+  localId: string;
   data?: Record<string, unknown>;
   createdAt: number;
   retryCount: number;

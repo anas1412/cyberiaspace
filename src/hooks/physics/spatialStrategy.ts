@@ -17,7 +17,7 @@ const PRIORITY_WEIGHT = {
 export const spatialStrategy: LayoutStrategist = {
   name: 'spatial',
   
-  calculateLayout: (thought: Thought, _allThoughts: Thought[], _context: LayoutContext, elementHeights: Map<number, number>): LayoutResult => {
+  calculateLayout: (thought: Thought, _allThoughts: Thought[], _context: LayoutContext, elementHeights: Map<string, number>): LayoutResult => {
     const prioLevel = PRIORITY_WEIGHT[thought.priority] || 0;
     const targetScale = (1 + prioLevel * 0.05) * (thought.size || 1);
     

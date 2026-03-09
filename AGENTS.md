@@ -22,14 +22,15 @@ Welcome to the Cyberia codebase! This project is a modern, high-performance spat
 1.  **Local First:** All user data (Spaces, Thoughts, Stacks) is stored in **IndexedDB** using **Dexie**. This ensures offline functionality and low latency.
 2.  **Local-First Priority:** The UI must always prioritize local Blobs over cloud URLs. Assets should be rendered from local storage whenever available to ensure instant feedback and offline reliability.
 3.  **The Sync Shield:** Large data operations (like imports) are protected by `isSyncBlocked` in the auth store. This prevents race conditions and sync conflicts by pausing background synchronization during heavy write operations.
-4.  **Safe Orphan Cleanup:** Deletion follows a soft-delete pattern using the `deletedAt` timestamp. Local binary assets (blobs) that are no longer referenced by any thought are subject to a 30-day TTL (Time-To-Live) before being permanently purged from local storage.
+4.  **Synchronized Tombstones:** Deletion follows a soft-delete pattern using the `deletedAt` timestamp. Local records are only permanently purged from IndexedDB after a Supabase "Ack" (Acknowledgment) confirms the cloud deletion. Local binary assets (blobs) that are no longer referenced by any thought are subject to a 30-day TTL (Time-To-Live) before being permanently purged from local storage.
 5.  **Cloud Sync:** Synchronization with Supabase is managed by `src/services/sync/syncOrchestrator.ts`.
 6.  **Backend Services:**
     *   **Vercel Serverless Functions:** Primary API layer located in `api/` (e.g., `api/feedback.ts`, `api/publish.ts`), keep in mind that we are using hobby ter 12 functions max. These are the source of truth for custom backend functionality.
     *   **Supabase:** Acts as a "Backend-as-a-Service" (BaaS) for:
         *   **PostgreSQL Database:** Cloud storage for synced Dexie data.
         *   **Storage (Buckets):** Storage for binary assets like images and files.
-    *   **Note:** Supabase Edge Functions (`supabase/functions/`) are deprecated/unused in favor of Vercel functions.
+7.  **Sync State Machine:** Synchronization follows a 4-state machine (`local`, `syncing`, `synced`, `error`) with a 10s debounce timer to prevent API hammering during active editing.
+8.  **Boundary Translation:** The application strictly enforces `camelCase` in the frontend (JS/TS/Dexie) and `snake_case` in the backend (Postgres). All data crossing this boundary MUST be translated using `toCamelCase` (incoming) or `toSnakeCase` (outgoing) utilities from `src/services/supabaseSync.ts`. This prevents property mismatches and ensures standard naming conventions in both environments.
 
 ###  Spatial Thinking Engine
 - Thoughts are not just static entries; they are physical entities with `x, y` (position) and `vx, vy` (velocity) properties.
@@ -42,7 +43,7 @@ Welcome to the Cyberia codebase! This project is a modern, high-performance spat
 
 ###  Storage
 - **Unique Folder Protocol:** To prevent filename collisions and ensure clean user isolation, all file assets in cloud storage are organized using the path structure: `${userId}/${thoughtId}/${fileName}`.
-- **Background Downloader:** The application implements a proactive synchronization strategy where the cloud-to-local sync engine automatically populates IndexedDB with remote assets in the background, ensuring they are ready for offline use.
+- **Lazy Loading / On-Demand:** To minimize egress, the application uses an on-demand strategy where thoughts and assets are only "woken" (downloaded) into local IndexedDB when a space is opened by the user.
 
 
 ###  State Management (Zustand)
@@ -74,11 +75,25 @@ The application uses a modular, slice-based architecture for state management to
 - **Multimodal Standards**:
   - Strictly follow OpenRouter Unified Schema.
   - Use `type: 'file'` with `media_type: 'application/pdf'` for documents. Never use `image_url` for PDFs.
-  - **Deprecated:** The `image` thought type is deprecated. Use `type: 'file'` for all image assets to ensure consistent handling and storage.
 - **Internal ID Protocol**:
   - IDs are private handles for tools. NEVER show IDs to users or ask users for IDs. Look them up proactively from the provided context.
-  - **Temporal IDs:** All new Spaces and Stacks must use numeric timestamp-based IDs (e.g., `Date.now()`). 
-  - **Onboarding:** Static string IDs like `s-onboarding` are deprecated. Use the `isOnboarding: true` flag on the Space object to identify and filter tutorial content.
+  - **ULID Standard:** All new Spaces, Stacks, and Thoughts must use **ULIDs** (Universally Unique Lexicographically Sortable Identifiers) as their primary IDs to prevent multi-device collisions and maintain temporal sorting. 
+
+### Legacy & Deprecated Systems
+This section serves as a definitive reference for patterns that are deprecated. Agents must avoid these when writing new code or refactoring.
+
+- **Database Tables:** `pendingDeletions` and `pendingBlobs` are deprecated. All deletion tracking now uses the `deletedAt` tombstone pattern and `syncStatus`.
+- **Auto-Increment IDs & Mapping:** Numeric `++id` primary keys and the local-to-cloud ID mapping system are deprecated. All new entities must use **ULIDs** (Universally Unique Lexicographically Sortable Identifiers) as their primary IDs across both IndexedDB and Supabase to prevent multi-device collisions and maintain temporal sorting. 
+- **ID Handling:** Purge all `parseInt(id, 10)` logic and mapping lookups as IDs transition to strings.
+- **Sync Logic:** 
+    - `handlePostAuthSync` and brute-force full syncing are deprecated in favor of **Lazy Loading** and **Delta Sync**.
+    - Aggressive `mediaSweep` is replaced by **Event-Driven Deletion** (Ack-based) and a 30-day local purge.
+    - `repairEmptyFileThoughts` is replaced by the **Healing Rule** (re-downloading missing blobs for synced thoughts).
+    - Standardize on the **4-state machine** (`local`, `syncing`, `synced`, `error`).
+    - Standardize on a single `SYNC_DEBOUNCE_MS = 10000` (10 seconds) across all store slices.
+- **Backend:** Supabase Edge Functions (`supabase/functions/`) are deprecated in favor of Vercel Serverless Functions (`api/`).
+- **Entity Types:** The `image` thought type is deprecated. Use `type: 'file'` for all image assets to ensure consistent handling and storage.
+- **Onboarding:** Static string IDs like `s-onboarding` are deprecated. Use the `isOnboarding: true` flag on the Space object.
 
 ---
 
@@ -134,3 +149,9 @@ The application uses a modular, slice-based architecture for state management to
 - **No Direct DOM Manipulation:** Except where strictly necessary for the spatial canvas (using Matrix transforms).
 - **Security:** NEVER commit Supabase keys or secrets. Use `import.meta.env.VITE_...` for environment variables.
 - **Unused Code:** Be aware that `supabase/functions/` and some scripts in `scripts/` may be legacy or for testing only. Always refer to `api/` for the active backend logic.
+- **Delta Sync:** Always ensure `updatedAt` is updated to `Date.now()` on every mutation (create/update/delete) to support incremental Delta Sync logic.
+
+### Communication & Language
+- Use simple, user-friendly language in all UI text, alerts, and documentation.
+- Avoid technical jargon or 'cool' sounding complex terms just because of the app's theme (Cyberia/Kinetic). For example, use 'Saving...' instead of 'Syncing Metadata' and 'Deleting everything' instead of 'Recursive Tombstoning'.
+- The goal is to be accessible and friendly, not intimidatingly technical.

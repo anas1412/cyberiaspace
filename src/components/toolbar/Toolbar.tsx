@@ -218,7 +218,7 @@ const Toolbar: React.FC = () => {
       return;
     }
     const id = await addThought({});
-    if (id !== -1) { setSelectedThoughtId(id); setInspectorOpen(true); }
+    if (id !== '') { setSelectedThoughtId(id); setInspectorOpen(true); }
   };
 
   const setViewMode = (mode: 'spatial' | 'kanban' | 'calendar') => {

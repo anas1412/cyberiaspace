@@ -55,7 +55,7 @@ const EditorContent: React.FC<{
   isFetching: boolean;
   handleFileSelect: (e: React.ChangeEvent<HTMLInputElement>) => void;
   stackItems: any[];
-  setActiveFocus: (id: number | null, type: any) => void;
+  setActiveFocus: (id: string | null, type: any) => void;
   scrollerRef: React.RefObject<HTMLDivElement | null>;
   stack: any;
 }> = ({ 

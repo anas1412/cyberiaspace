@@ -77,6 +77,6 @@ export const createUiSlice: StateCreator<CyberiaState, [], [], any> = (set, get,
   setCalendarStackFilter: (stackId: string | null) => set({ calendarStackFilter: stackId }),
   setKanbanSearchQuery: (query: string) => set({ kanbanSearchQuery: query }),
   setKanbanStackFilter: (stackId: string | null) => set({ kanbanStackFilter: stackId }),
-  setLinkingSourceId: (id: number | null) => set({ linkingSourceId: id }),
+  setLinkingSourceId: (id: string | null) => set({ linkingSourceId: id }),
   setInspectorOpen: (open: boolean) => set({ isInspectorOpen: open }),
 });

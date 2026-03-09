@@ -6,14 +6,14 @@ export interface CyberiaState {
   spaces: Space[];
   thoughts: Thought[];
   stacks: Stack[];
-  selectedThoughtId: number | null;
-  selectedThoughtIds: number[];
+  selectedThoughtId: string | null;
+  selectedThoughtIds: string[];
   isInspectorOpen: boolean;
-  activeFocusId: number | null;
+  activeFocusId: string | null;
   focusType: 'text' | 'table' | 'paint' | 'tasks' | 'embed' | 'file' | null;
   calendarViewDate: Date;
   hoveredCalDate: string | null;
-  linkingSourceId: number | null;
+  linkingSourceId: string | null;
   calendarSearchQuery: string;
   calendarStackFilter: string | null;
   kanbanSearchQuery: string;
@@ -28,14 +28,14 @@ export interface CyberiaState {
   setPerformanceMode: (mode: boolean) => void;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   deferredPrompt: any;
-  layerActionTrigger: { id: number; time: number } | null;
+  layerActionTrigger: { id: string; time: number } | null;
   history: any[];
   historyIndex: number;
   isLightboxOpen: boolean;
   lightboxImage: string | null;
-  lightboxThoughtId: number | null;
+  lightboxThoughtId: string | null;
   transform: { x: number; y: number; scale: number };
-  deletingThoughtIds: number[];
+  deletingThoughtIds: string[];
   isDemo: boolean;
   _savedUserState: { spaces: Space[]; thoughts: Thought[]; stacks: Stack[]; activeSpaceId: string | null } | null;
   setDemoMode: (enabled: boolean) => void;
@@ -55,7 +55,7 @@ export interface CyberiaState {
   pushHistory: () => void;
   undo: () => void;
   redo: () => void;
-  openLightbox: (image: string, thoughtId: number) => void;
+  openLightbox: (image: string, thoughtId: string) => void;
   closeLightbox: () => void;
   setTransform: (transform: { x: number; y: number; scale: number }) => void;
   zoomIn: () => void;
@@ -80,32 +80,32 @@ export interface CyberiaState {
   reorderSpaces: (spaces: Space[]) => Promise<void>;
   saveSpaceTransform: (id: string, transform: { x: number; y: number; scale: number }) => Promise<void>;
 
-  addThought: (thought: Partial<Thought>) => Promise<number>;
-  updateThought: (id: number, updates: Partial<Thought>, options?: { skipSync?: boolean }) => Promise<void>;
-  updateThoughts: (ids: number[], updates: Partial<Thought>, options?: { skipSync?: boolean }) => Promise<void>;
-  bulkUpdateThoughts: (updates: { id: number; updates: Partial<Thought> }[], options?: { skipSync?: boolean }) => Promise<void>;
-  deleteThought: (id: number) => Promise<void>;
-  deleteThoughts: (ids: number[]) => Promise<void>;
-  bringToFront: (id: number) => Promise<void>;
-  sendToBack: (id: number) => Promise<void>;
-  setSelectedThoughtId: (id: number | null) => void;
-  setSelectedThoughtIds: (ids: number[]) => void;
-  toggleThoughtSelection: (id: number) => void;
+  addThought: (thought: Partial<Thought>) => Promise<string>;
+  updateThought: (id: string, updates: Partial<Thought>, options?: { skipSync?: boolean }) => Promise<void>;
+  updateThoughts: (ids: string[], updates: Partial<Thought>, options?: { skipSync?: boolean }) => Promise<void>;
+  bulkUpdateThoughts: (updates: { id: string; updates: Partial<Thought> }[], options?: { skipSync?: boolean }) => Promise<void>;
+  deleteThought: (id: string) => Promise<void>;
+  deleteThoughts: (ids: string[]) => Promise<void>;
+  bringToFront: (id: string) => Promise<void>;
+  sendToBack: (id: string) => Promise<void>;
+  setSelectedThoughtId: (id: string | null) => void;
+  setSelectedThoughtIds: (ids: string[]) => void;
+  toggleThoughtSelection: (id: string) => void;
   clearSelection: () => void;
   deleteSelectedThoughts: () => Promise<void>;
   linkSelectedThoughts: (name?: string) => Promise<void>;
   unlinkSelectedThoughts: () => Promise<void>;
   setInspectorOpen: (open: boolean) => void;
-  setActiveFocus: (id: number | null, type: 'text' | 'table' | 'paint' | 'tasks' | 'embed' | 'file' | null) => void;
+  setActiveFocus: (id: string | null, type: 'text' | 'table' | 'paint' | 'tasks' | 'embed' | 'file' | null) => void;
 
   setHoveredCalDate: (date: string | null) => void;
   setCalendarSearchQuery: (query: string) => void;
   setCalendarStackFilter: (stackId: string | null) => void;
   setKanbanSearchQuery: (query: string) => void;
   setKanbanStackFilter: (stackId: string | null) => void;
-  setLinkingSourceId: (id: number | null) => void;
+  setLinkingSourceId: (id: string | null) => void;
 
-  createStack: (name: string, thoughtId: number) => Promise<void>;
+  createStack: (name: string, thoughtId: string) => Promise<void>;
   updateStack: (id: string, updates: Partial<Stack>) => Promise<void>;
   deleteStack: (id: string) => Promise<void>;
   cleanupStacks: () => Promise<void>;
@@ -135,7 +135,7 @@ export interface AuthState {
   autoSync: boolean;
   cloudUsage: number;
   storageUsageMB: number;
-  activeDownloads: number[];
+  activeDownloads: string[];
   isOnline: boolean;
 
   setAuthenticatedUser: (user: User, token: string, refreshSecret?: string, scopes?: string[]) => Promise<void>;
@@ -148,10 +148,10 @@ export interface AuthState {
   processPendingDeletions: () => Promise<void>;
   processOfflineChanges: () => Promise<void>;
   processPendingBlobs: () => Promise<void>;
-  uploadThoughtBlob: (thoughtId: number, force?: boolean) => Promise<void>;
-  downloadSingleBlob: (thoughtId: number) => Promise<void>;
+  uploadThoughtBlob: (thoughtId: string, force?: boolean) => Promise<void>;
+  downloadSingleBlob: (thoughtId: string) => Promise<void>;
   downloadMissingBlobs: () => Promise<void>;
-  removeCloudAsset: (thoughtId: number) => Promise<void>;
+  removeCloudAsset: (thoughtId: string) => Promise<void>;
   importCloudData: () => Promise<unknown | null>;
   setAutoSync: (enabled: boolean) => void;
   deleteCloudData: () => Promise<void>;

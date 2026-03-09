@@ -24,7 +24,7 @@ export interface LayoutContext {
   isMobile: boolean;
   isReadOnly: boolean;
   calendarCellMap?: Map<string, { x: number; y: number; w: number; h: number }>;
-  thoughtMap: Map<number, Thought>;
+  thoughtMap: Map<string, Thought>;
   columnMap?: Map<string, Thought[]>;
   dateMap?: Map<string, Thought[]>;
 }
@@ -51,16 +51,16 @@ export interface LayoutStrategist {
     thought: Thought,
     allThoughts: Thought[],
     context: LayoutContext,
-    elementHeights: Map<number, number>
+    elementHeights: Map<string, number>
   ) => LayoutResult;
   
   applyForces?: (
-    id: number,
+    id: string,
     p: PhysicsPoint,
-    allStates: Map<number, PhysicsPoint>,
+    allStates: Map<string, PhysicsPoint>,
     thought: Thought,
     allThoughts: Thought[],
     context: LayoutContext,
-    elementHeights: Map<number, number>
+    elementHeights: Map<string, number>
   ) => { vx: number; vy: number };
 }

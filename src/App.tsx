@@ -258,7 +258,7 @@ function App() {
             }
           });
           
-          if (id !== -1) {
+          if (id !== '') {
             const { db } = await import('./db');
             await db.blobs.add({
               id: `local-${Date.now()}-${id}`,
@@ -266,7 +266,7 @@ function App() {
               blob: bestFile,
               name: fileName,
               type: actualType,
-              updatedAt: new Date().toISOString()
+              updatedAt: Date.now()
             });
             
             setSelectedThoughtId(id);
@@ -289,7 +289,7 @@ function App() {
             data: { type: 'embed', url: cleanText }
           });
 
-          if (id !== -1) {
+          if (id !== '') {
             setSelectedThoughtId(id);
             fetchEmbedMeta(cleanText)
               .then(metadata => {
@@ -321,7 +321,7 @@ function App() {
           text: "Note",
           data: { type: 'text', content: cleanText }
         });
-        if (id !== -1) {
+        if (id !== '') {
           setSelectedThoughtId(id);
           setInspectorOpen(true);
         }

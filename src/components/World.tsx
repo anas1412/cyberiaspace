@@ -5,11 +5,11 @@ import ThoughtNode from './ThoughtNode';
 interface WorldProps {
   canvasRef: React.RefObject<HTMLCanvasElement | null>;
   physicsResults: {
-    registerElement: (id: number, el: HTMLDivElement | null) => void;
+    registerElement: (id: string, el: HTMLDivElement | null) => void;
     registerWorld: (el: HTMLDivElement | null) => void;
-    handleMouseDown: (id: number, e: React.MouseEvent) => void;
-    handleTouchStart: (id: number, e: React.TouchEvent) => void;
-    isDragging: (id: number) => boolean;
+    handleMouseDown: (id: string, e: React.MouseEvent) => void;
+    handleTouchStart: (id: string, e: React.TouchEvent) => void;
+    isDragging: (id: string) => boolean;
   };
 }
 

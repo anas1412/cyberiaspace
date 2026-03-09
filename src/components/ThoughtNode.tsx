@@ -11,13 +11,6 @@ import { ThoughtHeader } from './thought/ThoughtHeader';
 import { ThoughtFooter } from './thought/ThoughtFooter';
 import { getThoughtConfig, type ThoughtRendererProps } from './thought/registry';
 
-
-
-
-
-
-
-
 import { Loader2, Trash2 } from 'lucide-react';
 
 
@@ -27,9 +20,9 @@ function cn(...inputs: ClassValue[]) {
 
 interface ThoughtNodeProps {
   thought: Thought;
-  registerElement: (id: number, el: HTMLDivElement | null) => void;
-  onMouseDown: (id: number, e: React.MouseEvent) => void;
-  onTouchStart: (id: number, e: React.TouchEvent) => void;
+  registerElement: (id: string, el: HTMLDivElement | null) => void;
+  onMouseDown: (id: string, e: React.MouseEvent) => void;
+  onTouchStart: (id: string, e: React.TouchEvent) => void;
   isDragging: boolean;
 }
 
@@ -138,9 +131,6 @@ const ThoughtNode: React.FC<ThoughtNodeProps> = React.memo(({ thought, registerE
     if (dist > 10) return;
     if (e.ctrlKey || e.metaKey) { e.stopPropagation(); return; }
 
-    // On mobile, selection happens on touchend (usePhysics).
-    // This click fires after. To avoid opening both inspector and focus editor,
-    // we require the thought to be already selected to open the focus editor on mobile.
     if (!isSelected && (window.innerWidth < 1024)) return;
 
     if (linkingSourceId && linkingSourceId !== thought.id) {
@@ -158,7 +148,7 @@ const ThoughtNode: React.FC<ThoughtNodeProps> = React.memo(({ thought, registerE
     const triggers = ['label', 'text', 'table', 'tasks', 'paint', 'embed', 'file'];
     for (const t of triggers) {
       if (target.closest(`[data-trigger="${t}"]`)) {
-        if (t === 'label') return; // Labels don't have focus mode
+        if (t === 'label') return; 
         setActiveFocus(thought.id, t as any);
         return;
       }

@@ -275,7 +275,7 @@ const Viewport: React.FC<{ isInteracting?: boolean }> = ({ isInteracting }) => {
         }
 
         addThought(newThoughtProps).then(id => {
-          if (id !== -1) {
+          if (id !== '') {
             setSelectedThoughtId(id);
             setInspectorOpen(true);
           }
@@ -379,7 +379,7 @@ const Viewport: React.FC<{ isInteracting?: boolean }> = ({ isInteracting }) => {
             }
           });
 
-          if (id !== -1) {
+          if (id !== '') {
             await db.blobs.put({
               id: `temp-${Date.now()}-${id}`,
               thoughtId: id,
@@ -417,7 +417,7 @@ const Viewport: React.FC<{ isInteracting?: boolean }> = ({ isInteracting }) => {
             }
           });
 
-          if (id !== -1) {
+          if (id !== '') {
             await db.blobs.put({
               id: `temp-${Date.now()}-${id}`,
               thoughtId: id,
@@ -587,35 +587,31 @@ const Viewport: React.FC<{ isInteracting?: boolean }> = ({ isInteracting }) => {
       <AnimatePresence>
         {(isSpaceLoading && !isDemo) && (
           <motion.div
-
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[10005] bg-[#020408]/60 backdrop-blur-2xl flex flex-col items-center justify-center pointer-events-auto"
+            className="fixed inset-0 z-[10005] bg-[#020408]/80 backdrop-blur-3xl flex flex-col items-center justify-center pointer-events-auto"
           >
-            <div className="relative">
-              <motion.div
-                animate={{ scale: [1, 1.2, 1], opacity: [0.3, 0.6, 0.3] }}
-                transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
-                className="absolute inset-0 bg-blue-500/20 blur-[60px] rounded-full"
-              />
-
-              <div className="flex flex-col items-center gap-6 relative z-10">
-                <div className="w-16 h-16 border-2 border-blue-500/20 border-t-blue-500 rounded-full animate-spin" />
-
-                <div className="text-center">
-                  <h2 className="text-white/80 text-[10px] font-black uppercase tracking-[0.5em] mb-2">Accessing Workspace</h2>
-                  <div className="flex gap-1 justify-center">
-                    {[0, 1, 2].map((i) => (
-                      <motion.div
-                        key={i}
-                        animate={{ opacity: [0.2, 1, 0.2] }}
-                        transition={{ duration: 1, repeat: Infinity, delay: i * 0.2 }}
-                        className="w-1 h-1 bg-blue-400 rounded-full"
-                      />
-                    ))}
-                  </div>
+            <div className="relative flex flex-col items-center gap-8">
+              <div className="relative w-24 h-24">
+                <motion.div
+                  animate={{ rotate: 360 }}
+                  transition={{ duration: 8, repeat: Infinity, ease: "linear" }}
+                  className="absolute inset-0 border-2 border-dashed border-blue-500/20 rounded-full"
+                />
+                <motion.div
+                  animate={{ rotate: -360 }}
+                  transition={{ duration: 12, repeat: Infinity, ease: "linear" }}
+                  className="absolute inset-2 border border-dashed border-indigo-500/20 rounded-full"
+                />
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <div className="w-12 h-12 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
                 </div>
+              </div>
+
+              <div className="text-center space-y-2">
+                <h2 className="text-white/90 text-xs font-black uppercase tracking-[0.6em] animate-pulse">Waking Dimension</h2>
+                <p className="text-[8px] text-blue-400/40 font-black uppercase tracking-[0.3em]">Retrieving Spatial Fragments</p>
               </div>
             </div>
           </motion.div>

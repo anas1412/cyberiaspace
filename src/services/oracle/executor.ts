@@ -34,7 +34,7 @@ const processDrawing = (args: any) => {
   return args;
 };
 
-const readFileHelper = async (id: number, store: any) => {
+const readFileHelper = async (id: string, store: any) => {
   const t = store.thoughts.find((thought: any) => thought.id === id);
   if (!t) return { id, success: false, error: 'Not found' };
 
@@ -119,13 +119,13 @@ export const executeOracleTool = async (toolCall: any, store: any) => {
       case 'read_file_content': {
         const { id } = args;
         if (!id) return { success: false, error: 'Missing ID' };
-        return await readFileHelper(Number(id), store);
+        return await readFileHelper(String(id), store);
       }
 
       case 'read_files_content': {
         const { ids } = args;
         if (!ids || !Array.isArray(ids)) return { success: false, error: 'Invalid IDs' };
-        const results = await Promise.all(ids.map(id => readFileHelper(Number(id), store)));
+        const results = await Promise.all(ids.map(id => readFileHelper(String(id), store)));
         return { success: true, files: results };
       }
 
@@ -140,7 +140,7 @@ export const executeOracleTool = async (toolCall: any, store: any) => {
         const y = typeof thoughtArgs.y !== 'undefined' ? Number(thoughtArgs.y) : window.innerHeight / 2;
 
         const id = await store.addThought({ ...thoughtArgs, x, y });
-        if (id === -1) {
+        if (id === '') {
           return { success: false, error: 'Thought creation limit reached or invalid data' };
         } else {
           if (stackName) await store.createStack(stackName, id);
@@ -165,7 +165,7 @@ export const executeOracleTool = async (toolCall: any, store: any) => {
           const y = typeof thoughtArgs.y !== 'undefined' ? Number(thoughtArgs.y) : window.innerHeight / 2;
           
           const id = await store.addThought({ ...thoughtArgs, x, y });
-          if (id !== -1) {
+          if (id !== '') {
             createdCount++;
             if (stackName) await store.createStack(stackName, id);
           }
@@ -220,8 +220,8 @@ export const executeOracleTool = async (toolCall: any, store: any) => {
           if (typeof updates.y !== 'undefined') sanitizedUpdates.y = Number(updates.y);
           if (updates.type === ('image' as any)) sanitizedUpdates.type = 'file';
 
-          await store.updateThought(id, sanitizedUpdates);
-          if (stackName) await store.createStack(stackName, id);
+          await store.updateThought(String(id), sanitizedUpdates);
+          if (stackName) await store.createStack(stackName, String(id));
           return { success: true };
         }
       }
@@ -238,8 +238,8 @@ export const executeOracleTool = async (toolCall: any, store: any) => {
           if (updates.type === ('image' as any)) sanitizedUpdates.type = 'file';
 
           for (const id of ids) {
-            await store.updateThought(id, sanitizedUpdates);
-            if (stackName) await store.createStack(stackName, id);
+            await store.updateThought(String(id), sanitizedUpdates);
+            if (stackName) await store.createStack(stackName, String(id));
           }
           return { success: true };
         }
@@ -260,7 +260,7 @@ export const executeOracleTool = async (toolCall: any, store: any) => {
         if (!id || !name) {
           return { success: false, error: 'Missing ID or Name' };
         } else {
-          await store.updateStack(id, { name });
+          await store.updateStack(String(id), { name });
           return { success: true };
         }
       }
@@ -273,7 +273,7 @@ export const executeOracleTool = async (toolCall: any, store: any) => {
         let updatedCount = 0;
         for (const stack of stacks) {
           if (stack.id && stack.name) {
-            await store.updateStack(stack.id, { name: stack.name });
+            await store.updateStack(String(stack.id), { name: stack.name });
             updatedCount++;
           }
         }
@@ -285,7 +285,7 @@ export const executeOracleTool = async (toolCall: any, store: any) => {
         if (!id) {
           return { success: false, error: 'Missing ID' };
         } else {
-          await store.deleteStack(id);
+          await store.deleteStack(String(id));
           return { success: true };
         }
       }
@@ -296,7 +296,7 @@ export const executeOracleTool = async (toolCall: any, store: any) => {
           return { success: false, error: 'No IDs provided' };
         } else {
           for (const id of ids) {
-            await store.deleteStack(id);
+            await store.deleteStack(String(id));
           }
           return { success: true };
         }

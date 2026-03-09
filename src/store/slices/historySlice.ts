@@ -20,32 +20,68 @@ export const createHistorySlice: StateCreator<CyberiaState, [], [], any> = (set,
   },
 
   undo: async () => {
-    const { history, historyIndex, activeSpaceId } = get();
+    const { history, historyIndex, activeSpaceId, thoughts } = get();
     if (historyIndex <= 0 || !activeSpaceId) return;
     
     const newIndex = historyIndex - 1;
-    const prevThoughts = history[newIndex];
+    const prevThoughts = history[newIndex] as any[];
+    const now = Date.now();
     
     await db.transaction('rw', db.thoughts, async () => {
-      await db.thoughts.where('spaceId').equals(activeSpaceId).filter(t => !t.deletedAt).delete();
-      await db.thoughts.bulkPut(prevThoughts);
+      const currentIds = new Set(thoughts.map(t => t.id));
+      const prevIds = new Set(prevThoughts.map(t => t.id));
+      
+      // Mark as deleted items that are in current but not in previous
+      for (const id of currentIds) {
+        if (!prevIds.has(id)) {
+          await db.thoughts.update(id, { deletedAt: now, syncStatus: 'local', updatedAt: now });
+        }
+      }
+      
+      // Restore items from snapshot with new updatedAt
+      const restored = prevThoughts.map(t => ({
+        ...t,
+        updatedAt: now,
+        syncStatus: 'local'
+      }));
+      
+      await db.thoughts.bulkPut(restored);
     });
     
-    set({ thoughts: prevThoughts, historyIndex: newIndex });
+    await get().refreshThoughts();
+    set({ historyIndex: newIndex });
   },
 
   redo: async () => {
-    const { history, historyIndex, activeSpaceId } = get();
+    const { history, historyIndex, activeSpaceId, thoughts } = get();
     if (historyIndex >= history.length - 1 || !activeSpaceId) return;
     
     const newIndex = historyIndex + 1;
-    const nextThoughts = history[newIndex];
+    const nextThoughts = history[newIndex] as any[];
+    const now = Date.now();
     
     await db.transaction('rw', db.thoughts, async () => {
-      await db.thoughts.where('spaceId').equals(activeSpaceId).filter(t => !t.deletedAt).delete();
-      await db.thoughts.bulkPut(nextThoughts);
+      const currentIds = new Set(thoughts.map(t => t.id));
+      const nextIds = new Set(nextThoughts.map(t => t.id));
+      
+      // Mark as deleted items that are in current but not in next
+      for (const id of currentIds) {
+        if (!nextIds.has(id)) {
+          await db.thoughts.update(id, { deletedAt: now, syncStatus: 'local', updatedAt: now });
+        }
+      }
+      
+      // Restore items from snapshot with new updatedAt
+      const restored = nextThoughts.map(t => ({
+        ...t,
+        updatedAt: now,
+        syncStatus: 'local'
+      }));
+      
+      await db.thoughts.bulkPut(restored);
     });
     
-    set({ thoughts: nextThoughts, historyIndex: newIndex });
+    await get().refreshThoughts();
+    set({ historyIndex: newIndex });
   },
 });

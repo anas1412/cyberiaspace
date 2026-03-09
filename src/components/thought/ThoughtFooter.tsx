@@ -35,7 +35,7 @@ interface ThoughtFooterProps {
   stack: any;
   isReadOnly: boolean;
   isSpatial: boolean;
-  linkingSourceId: number | null;
+  linkingSourceId: string | null;
   handleLinkAction: (e: React.MouseEvent) => void;
 }
 

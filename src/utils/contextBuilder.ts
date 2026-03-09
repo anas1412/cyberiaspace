@@ -5,7 +5,7 @@ export const serializeWorkspace = (
   thoughts: Thought[], 
   spaces: Space[], 
   stacks: Stack[],
-  selectedThoughtIds: number[] = [],
+  selectedThoughtIds: string[] = [],
   user?: any // Pass user for usage context
 ) => {
   const activeSpace = spaces.find(s => s.id === activeSpaceId);

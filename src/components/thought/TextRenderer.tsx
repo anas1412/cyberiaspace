@@ -15,7 +15,7 @@ interface TextRendererProps {
   isCalendar: boolean;
   isSpatial: boolean;
   parsedContent: string | Promise<string>;
-  setActiveFocus: (id: number, type: 'text' | 'tasks' | 'paint' | 'table' | 'embed' | 'file' | 'image') => void;
+  setActiveFocus: (id: string, type: 'text' | 'tasks' | 'paint' | 'table' | 'embed' | 'file' | 'image') => void;
 }
 
 export const TextRenderer: React.FC<TextRendererProps> = ({ 

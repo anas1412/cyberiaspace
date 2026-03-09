@@ -9,7 +9,7 @@ function cn(...inputs: ClassValue[]) {
 
 interface ThoughtContainerProps {
   children: React.ReactNode;
-  thoughtId: number;
+  thoughtId: string;
   isDragging: boolean;
   isSelected: boolean;
   isDeleting: boolean;
@@ -19,7 +19,7 @@ interface ThoughtContainerProps {
   isSpatial: boolean;
   isDemo: boolean;
   isInspectorOpen: boolean;
-  linkingSourceId: number | null;
+  linkingSourceId: string | null;
   altitudeStyles: React.CSSProperties;
   showPing: boolean;
   onMouseDown: (e: React.MouseEvent) => void;

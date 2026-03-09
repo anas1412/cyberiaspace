@@ -43,13 +43,13 @@ export interface ThoughtRendererProps {
   isCalendar?: boolean;
   isSpatial?: boolean;
   parsedContent?: string | Promise<string>;
-  setActiveFocus: (id: number, type: any) => void;
-  setSelectedThoughtId?: (id: number | null) => void;
+  setActiveFocus: (id: string, type: any) => void;
+  setSelectedThoughtId?: (id: string | null) => void;
   setInspectorOpen?: (open: boolean) => void;
 }
 
 export interface FocusEditorProps {
-  thoughtId: number;
+  thoughtId: string;
   onClose: () => void;
 }
 

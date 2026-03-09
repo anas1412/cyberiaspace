@@ -32,7 +32,7 @@ export type ThoughtPayload =
 // ============================================
 
 interface Space {
-  id: string;
+  id: string; // ULID
   name: string;
   mode: 'spatial' | 'kanban' | 'calendar';
   physics: boolean;
@@ -44,26 +44,27 @@ interface Space {
   transformScale?: number;
   publishedId?: string | null;
   lastPublished?: string | null;
-  updatedAt?: string | null;
+  updatedAt?: number | null; // Changed to number (Unix ms)
   theme?: 'cyberia' | 'sea' | 'forest' | 'rain';
   customBg?: string | null;
-  syncStatus?: 'local' | 'synced' | 'pending' | 'syncing' | 'error';
+  syncStatus?: 'local' | 'synced' | 'syncing' | 'error';
   retryCount?: number;
 }
 
 interface Stack {
-  id: string;
+  id: string; // ULID
   name: string;
   color: string;
   spaceId: string;
   isOnboarding?: boolean;
   deletedAt?: number | null;
-  syncStatus?: 'local' | 'synced' | 'pending' | 'syncing' | 'error';
+  syncStatus?: 'local' | 'synced' | 'syncing' | 'error';
   retryCount?: number;
+  updatedAt?: number | null; // Added field
 }
 
 interface Thought {
-  id: number;
+  id: string; // Changed from number to string (ULID)
   spaceId: string;
   stackId: string | null;
   x: number;
@@ -88,9 +89,9 @@ interface Thought {
   storagePath?: string;
   googleTaskListId?: string;
   googleCalendarEventId?: string;
-  syncStatus?: 'local' | 'synced' | 'pending' | 'syncing' | 'error';
+  syncStatus?: 'local' | 'synced' | 'syncing' | 'error';
   retryCount?: number;
-  updatedAt?: string | null;
+  updatedAt?: number | null; // Standardized to number
 
   // Modular Payload (Discriminated Union)
   data?: ThoughtPayload;
@@ -98,28 +99,11 @@ interface Thought {
 
 interface LocalBlob {
   id: string;
-  thoughtId: number;
+  thoughtId: string; // Changed from number to string
   blob: Blob;
   name: string;
   type: string;
-  updatedAt: string;
-}
-
-interface PendingDeletion {
-  id?: number;
-  tableName: 'spaces' | 'stacks' | 'thoughts';
-  localId: string | number;
-  storagePath?: string;
-  createdAt: string;
-}
-
-interface PendingBlob {
-  id?: number;
-  thoughtId: number;
-  name: string;
-  type: string;
-  createdAt: string;
-  retryCount: number;
+  updatedAt: number;
 }
 
 // ============================================
@@ -131,8 +115,6 @@ const db = new Dexie('CyberiaDB') as Dexie & {
   thoughts: EntityTable<Thought, 'id'>;
   stacks: EntityTable<Stack, 'id'>;
   blobs: EntityTable<LocalBlob, 'id'>;
-  pendingDeletions: EntityTable<PendingDeletion, 'id'>;
-  pendingBlobs: EntityTable<PendingBlob, 'id'>;
 };
 
 db.on('versionchange', () => {
@@ -140,15 +122,14 @@ db.on('versionchange', () => {
   window.location.reload();
 });
 
-// Version 15: Removed legacy thought data field indexes
-db.version(15).stores({
-  spaces: 'id, name, order, syncStatus',
-  thoughts: '++id, spaceId, stackId, text, type, status, date, priority, order, author, storageUrl, syncStatus, deletedAt, data',
-  stacks: 'id, spaceId, name, syncStatus',
-  blobs: 'id, thoughtId',
-  pendingDeletions: '++id, tableName, localId',
-  pendingBlobs: '++id, thoughtId, createdAt'
+// Version 16: Transition to ULIDs and Delta Sync schema
+// Removed pendingDeletions and pendingBlobs
+db.version(16).stores({
+  spaces: 'id, name, order, syncStatus, updatedAt',
+  thoughts: 'id, spaceId, stackId, text, type, status, date, priority, order, author, storageUrl, syncStatus, deletedAt, updatedAt',
+  stacks: 'id, spaceId, name, syncStatus, updatedAt',
+  blobs: 'id, thoughtId'
 });
 
-export type { Space, Thought, Stack, PendingDeletion, PendingBlob };
+export type { Space, Thought, Stack };
 export { db };
