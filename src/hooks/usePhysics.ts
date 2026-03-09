@@ -506,12 +506,16 @@ export const usePhysics = (
     // --- Connections & Styles ---
     const ctx = canvasRef?.current?.getContext('2d');
     if (ctx && canvasRef.current) {
-      // Clear the huge world canvas
+      // 1. Reset & Clear the massive 10000x10000 world canvas
       ctx.setTransform(1, 0, 0, 1, 0, 0);
-      ctx.clearRect(0, 0, 5000, 5000);
+      ctx.clearRect(0, 0, 10000, 10000);
+
+      // 2. Set Origin to Center (5000, 5000) so world coordinates match 1:1
+      ctx.translate(5000, 5000);
 
       if (mode === 'spatial') {
         const stackGroups = new Map<string, string[]>();
+        // Use fresh IDs from the current frame
         ids.forEach(id => {
           const t = thoughtMap.current.get(id);
           if (t?.stackId) {
@@ -531,7 +535,7 @@ export const usePhysics = (
           ctx.lineCap = 'round';
           ctx.lineJoin = 'round';
           
-          // 1. PATH DEFINITION
+          // 1. PATH DEFINITION (Raw World Coordinates)
           ctx.beginPath();
           for (let i = 0; i < memberIds.length; i++) {
             const pA = state.get(memberIds[i]); if (!pA) continue;
@@ -550,13 +554,17 @@ export const usePhysics = (
           // 2. GLOW PASS
           ctx.setLineDash([]);
           ctx.lineWidth = 4;
-          ctx.strokeStyle = stackColor.startsWith('hsla') ? stackColor.replace(/[\d\.]+\)$/, '0.15)') : (stackColor.startsWith('#') ? stackColor + '26' : stackColor.replace(')', ', 0.15)'));
+          ctx.strokeStyle = stackColor.startsWith('hsla') 
+            ? stackColor.replace(/[\d\.]+\)$/, '0.15)') 
+            : (stackColor.startsWith('#') ? stackColor + '26' : stackColor.replace(')', ', 0.15)'));
           ctx.stroke();
 
           // 3. INK PASS (Dashed Blueprint)
           ctx.setLineDash([12, 6]);
           ctx.lineWidth = 1.5;
-          ctx.strokeStyle = stackColor.startsWith('hsla') ? stackColor.replace(/[\d\.]+\)$/, '0.6)') : (stackColor.startsWith('#') ? stackColor + '99' : stackColor.replace(')', ', 0.6)'));
+          ctx.strokeStyle = stackColor.startsWith('hsla') 
+            ? stackColor.replace(/[\d\.]+\)$/, '0.6)') 
+            : (stackColor.startsWith('#') ? stackColor + '99' : stackColor.replace(')', ', 0.6)'));
           ctx.stroke();
           
           ctx.setLineDash([]);
@@ -567,9 +575,10 @@ export const usePhysics = (
         const pS = state.get(linkingSourceId);
         if (pS) {
           const hS = elementHeights.get(linkingSourceId) || 120;
-          // Convert screen mouse to world mouse for the world-canvas
-          const worldMouseX = (mousePosRef.current.x - effectiveTransform.x) / effectiveTransform.scale;
-          const worldMouseY = (mousePosRef.current.y - effectiveTransform.y) / effectiveTransform.scale;
+          
+          // World mouse conversion
+          const worldMouseX = (mousePosRef.current.x - visualTransformRef.current.x) / visualTransformRef.current.scale;
+          const worldMouseY = (mousePosRef.current.y - visualTransformRef.current.y) / visualTransformRef.current.scale;
 
           ctx.beginPath(); 
           ctx.setLineDash([5, 5]); 

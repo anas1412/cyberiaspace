@@ -26,10 +26,10 @@ const World: React.FC<WorldProps> = ({ canvasRef, physicsResults }) => {
       <canvas
         ref={canvasRef}
         id="connection-canvas"
-        className="absolute inset-0 pointer-events-none z-[-1]"
-        style={{ width: '5000px', height: '5000px', left: '-2500px', top: '-2500px' }}
-        width={5000}
-        height={5000}
+        className="absolute pointer-events-none z-[-1]"
+        style={{ width: '10000px', height: '10000px', left: '-5000px', top: '-5000px' }}
+        width={10000}
+        height={10000}
       />
       {thoughts.map((thought) => (
         <ThoughtNode
