@@ -112,8 +112,16 @@ export const createSyncSlice: StateCreator<AuthState, [], [], SyncSlice> = (set,
           }, 1500);
         }
 
-        // 2. Perform Smart Hydration (Merge local guest work with cloud data)
-        await store.importFullState(cloudData, true);
+        // 2. Perform Smart Hydration
+        // If local is just the default empty workspace, we overwrite to prevent "Space 1, Space 2, Workspace" clutter.
+        // If local has real work (guest session), we merge.
+        // CRITICAL: If we have a conflict, we MUST merge so the user can resolve it in the QuotaResolver.
+        const isEmpty = await store.isLocalWorkspaceEmpty();
+        const hasConflict = totalUniqueSpaces > limit;
+        const shouldMerge = !isEmpty || hasConflict;
+        
+        console.log(`[Sync] Local empty: ${isEmpty}, Conflict: ${hasConflict}. Mode: ${shouldMerge ? 'Merge' : 'Overwrite'}`);
+        await store.importFullState(cloudData, shouldMerge);
         
         // 3. Auto-select first space if none active
         const updatedSpaces = await db.spaces.toArray();

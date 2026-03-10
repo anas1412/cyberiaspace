@@ -7,7 +7,7 @@ import { Merge, Trash2, Zap, ArrowRight, BrainCircuit, ShieldCheck } from 'lucid
 import { PLAN_CONFIG } from '../constants';
 
 const QuotaResolver: React.FC = () => {
-  const { mergeGuestSpace, replaceCloudSpace, setActiveSpace } = useStore();
+  const { mergeGuestSpace, replaceCloudSpace, discardGuestSpace, setActiveSpace } = useStore();
   const { user } = useAuthStore();
   const { closeModal, openPricing } = useModalStore();
   const plan = user?.plan || 'free';
@@ -17,7 +17,7 @@ const QuotaResolver: React.FC = () => {
   const [cloudSpaces, setCloudSpaces] = useState<any[]>([]);
   const [selectedGuestId, setSelectedGuestId] = useState<string | null>(null);
   const [selectedCloudId, setSelectedCloudId] = useState<string | null>(null);
-  const [step, setStep] = useState<'options' | 'merge' | 'replace'>('options');
+  const [step, setStep] = useState<'options' | 'merge' | 'replace' | 'discard'>('options');
   const [isProcessing, setIsProcessing] = useState(false);
 
   useEffect(() => {
@@ -70,6 +70,25 @@ const QuotaResolver: React.FC = () => {
     }
   };
 
+  const handleDiscard = async () => {
+    if (!selectedGuestId) return;
+    setIsProcessing(true);
+    const success = await discardGuestSpace(selectedGuestId);
+    setIsProcessing(false);
+    if (success) {
+      // Re-load to see if more conflicts remain
+      const allSpaces = await db.spaces.toArray();
+      const guests = allSpaces.filter(s => s.syncStatus === 'local' && !s.deletedAt);
+      setGuestSpaces(guests);
+      if (guests.length > 0) {
+        setSelectedGuestId(guests[0].id);
+        setStep('options');
+      } else {
+        closeModal();
+      }
+    }
+  };
+
   if (guestSpaces.length === 0) {
     return (
       <div className="text-center py-8">
@@ -119,6 +138,20 @@ const QuotaResolver: React.FC = () => {
               <p className="text-slate-500 text-[10px] leading-tight mt-0.5">Delete an old cloud space to make room for this one.</p>
             </div>
             <ArrowRight className="ml-auto w-4 h-4 text-slate-600 group-hover:text-white transition-colors" />
+          </button>
+
+          <button 
+            onClick={() => setStep('discard')}
+            className="w-full flex items-center gap-4 p-4 bg-red-500/5 hover:bg-red-500/10 border border-red-500/10 rounded-2xl transition-all group text-left"
+          >
+            <div className="w-10 h-10 rounded-xl bg-red-500/20 flex items-center justify-center shrink-0">
+              <Trash2 className="w-5 h-5 text-red-400" />
+            </div>
+            <div>
+              <h4 className="text-red-400 text-[11px] font-black uppercase tracking-widest">Discard Guest Work</h4>
+              <p className="text-slate-500 text-[10px] leading-tight mt-0.5">Permanently delete local work to enter your workspace.</p>
+            </div>
+            <ArrowRight className="ml-auto w-4 h-4 text-slate-600 group-hover:text-red-400 transition-colors" />
           </button>
 
           <button 
@@ -226,6 +259,43 @@ const QuotaResolver: React.FC = () => {
               className="flex-[2] py-3 bg-red-500/80 hover:bg-red-500 text-white rounded-xl text-[10px] font-black uppercase tracking-widest transition-all shadow-lg shadow-red-500/20 disabled:opacity-50"
             >
               {isProcessing ? 'Processing...' : 'Confirm Replace'}
+            </button>
+          </div>
+        </div>
+      )}
+
+      {step === 'discard' && (
+        <div className="space-y-6">
+          <div className="p-4 bg-red-500/10 border border-red-500/20 rounded-2xl">
+            <p className="text-[10px] text-red-400 font-bold leading-relaxed uppercase tracking-wider">
+              DANGER: This will permanently delete your guest session work. This action cannot be undone.
+            </p>
+          </div>
+
+          <div>
+            <label className="text-[9px] font-black uppercase tracking-widest text-slate-500 mb-2 block ml-1">Select work to discard:</label>
+            <select 
+              value={selectedGuestId || ''} 
+              onChange={(e) => setSelectedGuestId(e.target.value)}
+              className="w-full bg-black/40 border border-white/10 rounded-xl p-3 text-xs text-white outline-none focus:border-red-500"
+            >
+              {guestSpaces.map(s => <option key={s.id} value={s.id}>{s.name || 'Untitled'}</option>)}
+            </select>
+          </div>
+
+          <div className="flex gap-3 pt-4">
+            <button 
+              onClick={() => setStep('options')}
+              className="flex-1 py-3 bg-white/5 hover:bg-white/10 text-white rounded-xl text-[10px] font-black uppercase tracking-widest transition-all"
+            >
+              Back
+            </button>
+            <button 
+              onClick={handleDiscard}
+              disabled={isProcessing}
+              className="flex-[2] py-3 bg-red-600 text-white rounded-xl text-[10px] font-black uppercase tracking-widest transition-all shadow-lg shadow-red-600/20 disabled:opacity-50"
+            >
+              {isProcessing ? 'Discarding...' : 'Confirm Discard'}
             </button>
           </div>
         </div>

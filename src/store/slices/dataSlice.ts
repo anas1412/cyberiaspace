@@ -114,6 +114,14 @@ export const createDataSlice: StateCreator<CyberiaState, [], [], any> = (set, ge
         if (spaceExists) await get().setActiveSpace(savedSpaceId!);
         else await get().setActiveSpace(spaces[0].id);
       }
+
+      // NEW: If authenticated but never synced, wait for the cloud handshake
+      // This ensures the "Space Resolver" loading screen works as intended.
+      const authState = dynamicAuthStore.getState();
+      if (authState.status === 'authenticated' && !localStorage.getItem('cyberia-last-sync')) {
+        console.log('[Store] Fresh login detected, awaiting cloud handshake...');
+        await authState.handlePostAuthSync();
+      }
     } finally {
       set({ isInitializing: false, isSpaceLoading: false });
     }
@@ -259,19 +267,24 @@ export const createDataSlice: StateCreator<CyberiaState, [], [], any> = (set, ge
     if (get().isReadOnly) return;
     try {
       console.log(`[Store] ${merge ? 'Merging' : 'Importing'} full state from cloud...`);
-      await db.transaction('rw', db.spaces, db.thoughts, db.stacks, async () => {
-        // Clear and add only if data exists
-        if (data.spaces && data.spaces.length > 0) {
+      
+      // Ensure syncStatus is set to 'synced' for incoming cloud data
+      const cloudSpaces = (data.spaces || []).map((s: any) => ({ ...s, syncStatus: 'synced' }));
+      const cloudThoughts = (data.thoughts || []).map((t: any) => ({ ...t, syncStatus: 'synced' }));
+      const cloudStacks = (data.stacks || []).map((s: any) => ({ ...s, syncStatus: 'synced' }));
+
+      await db.transaction('rw', [db.spaces, db.thoughts, db.stacks], async () => {
+        if (cloudSpaces.length > 0) {
           if (!merge) await db.spaces.clear();
-          await db.spaces.bulkPut(data.spaces);
+          await db.spaces.bulkPut(cloudSpaces);
         }
-        if (data.thoughts && data.thoughts.length > 0) {
+        if (cloudThoughts.length > 0) {
           if (!merge) await db.thoughts.clear();
-          await db.thoughts.bulkPut(data.thoughts);
+          await db.thoughts.bulkPut(cloudThoughts);
         }
-        if (data.stacks && data.stacks.length > 0) {
+        if (cloudStacks.length > 0) {
           if (!merge) await db.stacks.clear();
-          await db.stacks.bulkPut(data.stacks);
+          await db.stacks.bulkPut(cloudStacks);
         }
       });
 
@@ -381,13 +394,20 @@ export const createDataSlice: StateCreator<CyberiaState, [], [], any> = (set, ge
 
   isLocalWorkspaceEmpty: async () => {
     const thoughtsCount = await db.thoughts.filter(t => !t.deletedAt).count();
-    const spacesCount = await db.spaces.filter(s => !s.deletedAt).count();
+    const spaces = await db.spaces.filter(s => !s.deletedAt).toArray();
     
     // If there are any thoughts, it's not empty
     if (thoughtsCount > 0) return false;
 
-    // If there is more than 1 space (the default one), it's not empty
-    if (spacesCount > 1) return false;
+    // If there is more than 1 space, it's not empty
+    if (spaces.length > 1) return false;
+
+    // If there is 1 space, check if it has been touched (renamed)
+    if (spaces.length === 1) {
+      const s = spaces[0];
+      const defaultNames = ['Workspace', 'New Space', 'Personal'];
+      if (!defaultNames.includes(s.name)) return false;
+    }
 
     return true; 
   },

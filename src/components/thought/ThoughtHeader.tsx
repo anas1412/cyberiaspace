@@ -61,7 +61,7 @@ export const ThoughtHeader: React.FC<ThoughtHeaderProps> = ({ thought, isCalenda
             <span className="uppercase tracking-wider">{formattedDate}</span>
           </div>
         )}
-        {isAuthenticated && thought.syncStatus && thought.type !== 'label' && (
+        {isAuthenticated && thought.syncStatus && thought.type === 'file' && (
           <div className="flex items-center justify-center ml-1 group/sync relative">
             {thought.syncStatus === 'synced' || (thought.type === 'file' && thought.storageUrl) ? (
               <div className="w-3 h-3 flex items-center justify-center rounded-full bg-green-500/10 border border-green-500/20 shadow-[0_0_8px_rgba(34,197,94,0.2)]">

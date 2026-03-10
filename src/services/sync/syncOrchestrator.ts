@@ -222,9 +222,14 @@ export const syncOrchestrator = {
         }
       }
 
-      // Updates (Cloud is newer) - Lazy loading aware
+      // Updates (Cloud is newer) - Reconcile ALL spaces
       let cloudChanges = false;
       const currentActiveSpaceId = store.activeSpaceId;
+
+      const allKnownSpaceIds = new Set([
+        ...localAllSpaces.filter(s => !s.deletedAt).map(s => s.id),
+        ...Array.from(cloudSpaceMap.keys())
+      ]);
 
       for (const [id, cloudS] of cloudSpaceMap) {
         const localS = localAllSpaces.find(ls => ls.id === id);
@@ -254,11 +259,9 @@ export const syncOrchestrator = {
         }
       }
 
-      const wokenSpaceIds = new Set(localAllThoughts.map(t => t.spaceId));
-      if (currentActiveSpaceId) wokenSpaceIds.add(currentActiveSpaceId);
-
       for (const [id, cloudT] of cloudThoughtMap) {
-        if (wokenSpaceIds.has(cloudT.spaceId)) {
+        // Reconcile ALL thoughts for ALL spaces known to this device
+        if (allKnownSpaceIds.has(cloudT.spaceId)) {
           const localT = localAllThoughts.find(lt => lt.id === id);
           const needsHealing = localT && localT.type === 'file' && localT.storageUrl && !(await db.blobs.where('thoughtId').equals(id).first());
           
@@ -270,8 +273,14 @@ export const syncOrchestrator = {
             if (data) {
               await db.thoughts.put({ ...toCamelCase(data), syncStatus: 'synced' } as any);
               cloudChanges = true;
+              
+              // HEALING & ASSET PREFETCH RULE: 
+              // We only auto-download blobs for the ACTIVE space to save bandwidth.
+              // Other spaces will download assets on-demand when opened.
               if (data.type === 'file' && data.storage_url) {
-                authState.downloadSingleBlob(id);
+                if (data.space_id === currentActiveSpaceId || localT) {
+                  authState.downloadSingleBlob(id);
+                }
               }
             }
           } else if (localT && localT.syncStatus === 'local' && cloudTime === localTime) {

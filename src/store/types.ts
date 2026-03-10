@@ -125,6 +125,7 @@ export interface CyberiaState {
   isLocalWorkspaceEmpty: () => Promise<boolean>;
   mergeGuestSpace: (sourceSpaceId: string, targetSpaceId: string) => Promise<boolean>;
   replaceCloudSpace: (sourceSpaceId: string, targetSpaceIdToReplace: string) => Promise<boolean>;
+  discardGuestSpace: (id: string) => Promise<boolean>;
 }
 
 export interface AuthState {

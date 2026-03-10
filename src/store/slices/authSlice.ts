@@ -102,7 +102,7 @@ export const createAuthSlice: StateCreator<AuthState, [], [], any> = (set, get, 
     }
 
     const { useStore } = await import('../useStore');
-    useStore.getState().isInitializing = true;
+    useStore.setState({ isInitializing: true });
 
     set({
       user: userWithDefaults,
@@ -120,7 +120,7 @@ export const createAuthSlice: StateCreator<AuthState, [], [], any> = (set, get, 
       console.error('Initial login sync failed', e);
       set({ syncStatus: 'error' });
     } finally {
-      useStore.getState().isInitializing = false;
+      useStore.setState({ isInitializing: false });
     }
   },
 

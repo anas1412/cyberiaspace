@@ -187,7 +187,7 @@ export const createSpaceSlice: StateCreator<CyberiaState, [], [], any> = (set, g
       }
 
       if (authStore.status === 'authenticated') {
-        await syncOrchestrator.triggerSync();
+        await syncOrchestrator.triggerSync(true);
       }
     } catch (err) {
       console.error('[Space] Deletion failed:', err);
@@ -448,6 +448,25 @@ export const createSpaceSlice: StateCreator<CyberiaState, [], [], any> = (set, g
       return true;
     } catch (err) {
       console.error('[Space] Replace failed:', err);
+      return false;
+    }
+  },
+
+  discardGuestSpace: async (id: string) => {
+    try {
+      await db.transaction('rw', [db.spaces, db.thoughts, db.stacks, db.blobs], async () => {
+        const thoughtIds = await db.thoughts.where('spaceId').equals(id).primaryKeys() as string[];
+        await db.thoughts.where('spaceId').equals(id).delete();
+        await db.stacks.where('spaceId').equals(id).delete();
+        if (thoughtIds.length > 0) {
+          await db.blobs.where('thoughtId').anyOf(thoughtIds).delete();
+        }
+        await db.spaces.delete(id);
+      });
+      await get().refreshSpaces();
+      return true;
+    } catch (err) {
+      console.error('[Space] Discard failed:', err);
       return false;
     }
   }
