@@ -17,16 +17,23 @@ Welcome to the Cyberia codebase! This project is a modern, high-performance spat
 ---
 
 
-- **handlePostAuthSync:** Not deprecated. It remains as part of the auth flow for initial hydration; prefer Lazy Loading/Delta Hydration for normal operation going forward.
+- **handlePostAuthSync:** Not deprecated. It remains as part of the auth flow for initial hydration; must be awaited during `init()` on fresh logins to ensure cloud data resolution before the loading screen fades.
+- **isLocalWorkspaceEmpty:** Standard utility to distinguish between fresh devices (overwrite) and guest sessions (merge).
+- **Synchronized Tombstones:** Standardized on using `timestamp = Date.now()` for both `updatedAt` and `deletedAt` within transactions to ensure atomic cloud reconciliation.
+
 ##  Core Architecture
 
 ###  Data Flow & Synchronization
 1.  **Local First:** All user data (Spaces, Thoughts, Stacks) is stored in **IndexedDB** using **Dexie**. This ensures offline functionality and low latency.
 2.  **Local-First Priority:** The UI must always prioritize local Blobs over cloud URLs. Assets should be rendered from local storage whenever available to ensure instant feedback and offline reliability.
 3.  **The Sync Shield:** Large data operations (like imports) are protected by `isSyncBlocked` in the auth store. This prevents race conditions and sync conflicts by pausing background synchronization during heavy write operations.
-4.  **Synchronized Tombstones:** Deletion follows a soft-delete pattern using the `deletedAt` timestamp. Local records are only permanently purged from IndexedDB after a Supabase "Ack" (Acknowledgment) confirms the cloud deletion. Local binary assets (blobs) that are no longer referenced by any thought are subject to a 30-day TTL (Time-To-Live) before being permanently purged from local storage.
+4.  **Synchronized Tombstones:** Deletion follows a soft-delete pattern using the `deletedAt` timestamp. Local records are only permanently purged from IndexedDB after a Supabase "Ack" (Acknowledgment) confirms the cloud deletion. Direct `db.delete()` is FORBIDDEN for synced entities; always use `deletedAt` + `updatedAt` + `syncStatus: 'local'`.
 5.  **Cloud Sync:** Synchronization with Supabase is managed by `src/services/sync/syncOrchestrator.ts`.
-6.  **Backend Services:**
+6.  **Handshake Sequence:** On fresh logins (`authenticated` + `!lastSync`), the `init()` function MUST await `handlePostAuthSync()` before setting `isInitializing: false`. This prevents the UI from landing in an empty local state while cloud data is still resolving.
+7.  **Smart Hydration:** `handlePostAuthSync` employs `isLocalWorkspaceEmpty()` to decide:
+    *   **Overwrite:** If local is empty, replace with cloud data to prevent clutter.
+    *   **Merge:** If local has guest work, merge with cloud data to preserve user progress.
+8.  **Backend Services:**
     *   **Vercel Serverless Functions:** Primary API layer located in `api/` (e.g., `api/feedback.ts`, `api/publish.ts`), keep in mind that we are using hobby ter 12 functions max. These are the source of truth for custom backend functionality.
     *   **Supabase:** Acts as a "Backend-as-a-Service" (BaaS) for:
         *   **PostgreSQL Database:** Cloud storage for synced Dexie data.
@@ -93,6 +100,8 @@ This section serves as a definitive reference for patterns that are deprecated. 
   - `repairEmptyFileThoughts` is replaced by the **Healing Rule** (re-downloading missing blobs for synced thoughts).
   - Standardize on the **4-state machine** (`local`, `syncing`, `synced`, `error`).
   - Standardize on a single `SYNC_DEBOUNCE_MS = 10000` (10 seconds) across all store slices.
+  - **Handshake Sequence:** Prematurely setting `isInitializing: false` on fresh logins is deprecated.
+  - **Smart Hydration:** Unconditional merging in `handlePostAuthSync` is deprecated in favor of `isLocalWorkspaceEmpty` logic.
 - **Backend:** Supabase Edge Functions (`supabase/functions/`) are deprecated in favor of Vercel Serverless Functions (`api/`).
 - **Entity Types:** The `image` thought type is deprecated. Use `type: 'file'` for all image assets to ensure consistent handling and storage.
 - **Onboarding:** Generating initial thoughts, stacks, or multiple spaces for new users is deprecated. Use `createInitialWorkspace` to provide a single, empty "Workspace" for a pure start. The `isOnboarding: true` flag is deprecated for general space use and only remains for the `Homepage` live demo.
