@@ -266,6 +266,7 @@ const ThoughtNode: React.FC<ThoughtNodeProps> = React.memo(({ thought, registerE
           thought={thought} 
           isReadOnly={isReadOnly} 
           isSpatial={isSpatial}
+          isCalendar={isCalendar}
           isExpanded={!isCalendar || isExpanded}
           linkingSourceId={linkingSourceId} 
           handleLinkAction={handleLinkAction} 

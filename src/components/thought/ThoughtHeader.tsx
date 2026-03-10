@@ -1,10 +1,9 @@
 import React from 'react';
 import { type Thought } from '../../db';
-import { PRIO_COLORS, STATUS_COLORS } from './constants';
+import { PRIO_COLORS } from './constants';
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
-import { formatRelativeDate } from '../../utils/date';
-import { Calendar, Globe, RefreshCw, AlertCircle } from 'lucide-react';
+import { Globe, RefreshCw, AlertCircle } from 'lucide-react';
 
 import { useAuthStore } from '../../store/useAuthStore';
 
@@ -19,7 +18,6 @@ interface ThoughtHeaderProps {
 }
 
 export const ThoughtHeader: React.FC<ThoughtHeaderProps> = ({ thought, isCalendar, isExpanded }) => {
-  const formattedDate = React.useMemo(() => formatRelativeDate(thought.date), [thought.date]);
   const isAuthenticated = useAuthStore(state => state.status === 'authenticated');
 
   return (
@@ -44,23 +42,6 @@ export const ThoughtHeader: React.FC<ThoughtHeaderProps> = ({ thought, isCalenda
       </div>
 
       <div className="flex items-center gap-1.5 flex-shrink-0 mt-0.5">
-        {thought.status !== 'none' && !isCalendar && (
-          <div
-            className="text-[7px] font-black uppercase tracking-widest px-1.5 py-0.5 rounded-full border border-white/10 shadow-sm"
-            style={{
-              color: 'white',
-              backgroundColor: STATUS_COLORS[thought.status as keyof typeof STATUS_COLORS],
-            }}
-          >
-            {thought.status}
-          </div>
-        )}
-        {thought.date && formattedDate && !isCalendar && (
-          <div className="flex items-center gap-1 text-[9px] font-bold text-blue-400 bg-blue-500/10 border border-blue-500/20 px-2 py-0.5 rounded-lg shadow-[0_0_15px_rgba(99,102,241,0.1)]">
-            <Calendar className="w-2.5 h-2.5" />
-            <span className="uppercase tracking-wider">{formattedDate}</span>
-          </div>
-        )}
         {isAuthenticated && thought.syncStatus && thought.type === 'file' && (
           <div className="flex items-center justify-center ml-1 group/sync relative">
             {thought.syncStatus === 'synced' || (thought.type === 'file' && thought.storageUrl) ? (

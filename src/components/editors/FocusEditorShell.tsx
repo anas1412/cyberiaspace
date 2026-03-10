@@ -10,7 +10,6 @@ interface FocusEditorShellProps {
   description?: string;
   isReadOnly?: boolean;
   maxWidth?: string;
-  stack?: { name: string; color: string } | null;
   
   // Custom slots for flexibility
   headerSubContent?: React.ReactNode; // e.g., Progress bar in Tasks
@@ -29,7 +28,6 @@ export const FocusEditorShell: React.FC<FocusEditorShellProps> = ({
   description,
   isReadOnly = false,
   maxWidth = "1000px",
-  stack,
   headerSubContent,
   headerActions,
   footerActions,

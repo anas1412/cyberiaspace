@@ -26,8 +26,7 @@ const StackItemThumbnail: React.FC<{
   isActive: boolean;
   onClick: () => void;
 }> = ({ item, isActive, onClick }) => {
-  const itemPayload = useThoughtPayload(item);
-  const thumb = itemPayload.image;
+  const thumb = item.data?.url;
   
   return (
     <button
@@ -252,28 +251,33 @@ const EditorContent: React.FC<{
 
       <AnimatePresence>
         {stackItems.length > 0 && (
-          <div className="relative z-10 mx-6 mb-6">
-            <div className="bg-white/[0.03] backdrop-blur-2xl border border-white/10 p-4 md:p-5 rounded-2xl shadow-2xl">
-              <div className="flex items-center justify-between mb-4 px-1">
+          <div className={cn("relative z-10 mx-6", showPreviews ? "mb-6" : "mb-3")}>
+            <div className={cn(
+              "bg-white/[0.03] backdrop-blur-2xl border border-white/10 rounded-2xl shadow-2xl transition-all duration-300",
+              showPreviews ? "p-4 md:p-5" : "p-2 px-4"
+            )}>
+              <div className="flex items-center justify-between px-1">
                 <div className="flex items-center gap-2">
-                  <div className="w-1.5 h-1.5 rounded-full bg-[var(--accent)] animate-pulse" />
+                  <div className="w-1 h-1 rounded-full bg-[var(--accent)] animate-pulse" />
                   <span className="text-[9px] font-black uppercase tracking-[0.3em] text-slate-400">
-                    Collection: {stack?.name || 'Untitled'}
+                    {stack?.name || 'Collection'}
+                  </span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="text-[8px] font-bold text-slate-500 uppercase tracking-[0.2em]">
+                    {stackItems.findIndex(i => i.id === thought.id) + 1} / {stackItems.length}
                   </span>
                   <button 
                     onClick={() => setShowPreviews(!showPreviews)}
-                    className="p-1 hover:bg-white/5 rounded-md text-slate-500 hover:text-white transition-all ml-1"
+                    className="p-1 hover:bg-white/5 rounded-md text-slate-500 hover:text-white transition-all"
                     title={showPreviews ? "Hide Previews" : "Show Previews"}
                   >
                     {showPreviews ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
                   </button>
                 </div>
-                <span className="text-[8px] font-bold text-slate-500 uppercase tracking-[0.2em]">
-                  {stackItems.findIndex(i => i.id === thought.id) + 1} / {stackItems.length}
-                </span>
               </div>
               {showPreviews && (
-                <div className="flex gap-4 overflow-x-auto custom-scroll pb-1 w-full snap-x" ref={scrollerRef}>
+                <div className="flex gap-4 overflow-x-auto custom-scroll pb-1 w-full snap-x mt-4" ref={scrollerRef}>
                   {stackItems.map((item) => (
                     <StackItemThumbnail 
                       key={item.id} 
@@ -495,7 +499,6 @@ const FileFocusEditor: React.FC = () => {
       onTitleChange={(val) => { if (!isReadOnly) updateThought(thought.id, { text: val }); }}
       description={thought.description}
       isReadOnly={isReadOnly}
-      stack={stack}
       headerActions={
         <div className="flex items-center gap-3">
           {/* Status Badges */}
