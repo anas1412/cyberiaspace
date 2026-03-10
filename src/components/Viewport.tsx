@@ -34,6 +34,8 @@ const Viewport: React.FC<{ isInteracting?: boolean }> = ({ isInteracting }) => {
   const deleteSelectedThoughts = useStore((state) => state.deleteSelectedThoughts);
   const deleteThought = useStore((state) => state.deleteThought);
   const addThought = useStore((state) => state.addThought);
+  const setLinkingSourceId = useStore((state) => state.setLinkingSourceId);
+  const linkingSourceId = useStore((state) => state.linkingSourceId);
   const uploadThoughtBlob = useAuthStore((state) => state.uploadThoughtBlob);
   const saveSpaceTransform = useStore((state) => state.saveSpaceTransform);
 
@@ -253,6 +255,11 @@ const Viewport: React.FC<{ isInteracting?: boolean }> = ({ isInteracting }) => {
 
       const dist = Math.sqrt(Math.pow(e.clientX - selectionStartRef.current.rawX, 2) + Math.pow(e.clientY - selectionStartRef.current.rawY, 2));
       if (dist > 5) return;
+
+      // Cancel linking if we clicked anywhere that didn't stop propagation (i.e., not a successful link click)
+      if (linkingSourceId) {
+        setLinkingSourceId(null);
+      }
 
       if (!target.closest('.thought-bulb, #inspector, .expand-img, button, input, textarea, #chat-overlay, .modal-content, .focus-box, #space-switcher-menu')) {
         setInspectorOpen(false);

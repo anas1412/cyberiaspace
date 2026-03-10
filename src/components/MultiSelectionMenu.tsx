@@ -1,8 +1,81 @@
 import React from 'react';
 import { useStore } from '../store/useStore';
 import { useModalStore } from '../store/useModalStore';
-import { X, Trash2, Calendar, ChevronLeft, ChevronRight } from 'lucide-react';
+import { X, Trash2, Calendar, ChevronLeft, ChevronRight, Palette } from 'lucide-react';
+import { STACK_COLORS } from '../constants';
 import { motion, AnimatePresence } from 'framer-motion';
+import { clsx, type ClassValue } from 'clsx';
+import { twMerge } from 'tailwind-merge';
+
+function cn(...inputs: ClassValue[]) {
+  return twMerge(clsx(inputs));
+}
+
+const ColorPicker: React.FC<{ value: string; onChange: (val: string) => void; disabled?: boolean }> = ({ value, onChange, disabled }) => {
+  const [isOpen, setIsOpen] = React.useState(false);
+  const containerRef = React.useRef<HTMLDivElement>(null);
+
+  React.useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
+        setIsOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  return (
+    <div className="relative" ref={containerRef}>
+      <button
+        onClick={() => !disabled && setIsOpen(!isOpen)}
+        className={cn(
+          "w-8 h-8 rounded-full border border-white/20 transition-all flex items-center justify-center group relative overflow-hidden",
+          disabled && "opacity-50 cursor-default"
+        )}
+        style={{ backgroundColor: value, boxShadow: `0 0 15px ${value}44` }}
+      >
+        <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+          <Palette className="w-3 h-3 text-white" />
+        </div>
+      </button>
+
+      <AnimatePresence>
+        {isOpen && (
+          <motion.div
+            initial={{ opacity: 0, y: 10, scale: 0.95 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 10, scale: 0.95 }}
+            className="absolute bottom-full mb-3 left-0 z-[100] glass border border-white/10 rounded-2xl p-3 shadow-2xl min-w-[180px]"
+          >
+            <div className="grid grid-cols-4 gap-2 mb-3">
+              {STACK_COLORS.map(color => (
+                <button
+                  key={color}
+                  onClick={() => { onChange(color); setIsOpen(false); }}
+                  className={cn(
+                    "w-8 h-8 rounded-lg border-2 transition-all hover:scale-110",
+                    value === color ? "border-white" : "border-transparent"
+                  )}
+                  style={{ backgroundColor: color }}
+                />
+              ))}
+            </div>
+            <div className="relative pt-2 border-t border-white/5">
+              <input 
+                type="color" 
+                value={value.startsWith('#') ? value : '#6366f1'} 
+                onChange={(e) => onChange(e.target.value)}
+                className="w-full h-8 bg-transparent cursor-pointer rounded-lg overflow-hidden"
+              />
+              <p className="text-[7px] font-black uppercase tracking-widest text-slate-500 mt-1 text-center">Custom Hex</p>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+};
 
 const BatchDatePicker: React.FC<{ onSelect: (val: string) => void }> = ({ onSelect }) => {
   const [isOpen, setIsOpen] = React.useState(false);
@@ -166,13 +239,25 @@ const MultiSelectionMenu: React.FC = () => {
           <div className="space-y-3 pt-4 border-t border-white/5">
             <label className="text-[9px] uppercase font-bold tracking-widest text-slate-500 ml-1">Group</label>
             <div className="p-4 bg-[var(--bg-page)]/20 border border-white/10 rounded-2xl space-y-4">
-              <input
-                type="text"
-                value={localStackName}
-                onChange={(e) => setLocalStackName(e.target.value)}
-                placeholder="Name your group..."
-                className="w-full bg-transparent text-[10px] font-black uppercase tracking-widest text-white outline-none border-b border-white/5 pb-2"
-              />
+              <div className="flex items-center gap-3">
+                {sharedStack ? (
+                  <ColorPicker 
+                    value={sharedStack.color} 
+                    onChange={(color) => useStore.getState().updateStack(sharedStack.id, { color })} 
+                  />
+                ) : (
+                  <div className="w-8 h-8 rounded-full border border-white/5 bg-white/5 flex items-center justify-center">
+                    <Palette className="w-3.5 h-3.5 text-slate-600" />
+                  </div>
+                )}
+                <input
+                  type="text"
+                  value={localStackName}
+                  onChange={(e) => setLocalStackName(e.target.value)}
+                  placeholder="Name your group..."
+                  className="bg-transparent text-[10px] font-black uppercase tracking-widest text-white outline-none flex-1"
+                />
+              </div>
               <button
                 onClick={async () => {
                   if (sharedStack && localStackName.trim() !== sharedStack.name) {

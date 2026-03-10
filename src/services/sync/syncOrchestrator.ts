@@ -8,6 +8,7 @@ let isSyncBlocked = false;
 let syncRequestedDuringActiveSync = false;
 let realtimeChannel: RealtimeChannel | null = null;
 let remoteSyncDebounceTimer: ReturnType<typeof setTimeout> | null = null;
+let outgoingSyncDebounceTimer: ReturnType<typeof setTimeout> | null = null;
 
 export const syncOrchestrator = {
   async setSyncBlocked(blocked: boolean) {
@@ -39,9 +40,24 @@ export const syncOrchestrator = {
       syncRequestedDuringActiveSync = true;
       return;
     }
-    
-    // INSTANT: Removed 10s debounce for immediate sync
-    await syncOrchestrator.fullPushSync(force);
+
+    // Clear any existing outgoing debounce
+    if (outgoingSyncDebounceTimer) {
+      clearTimeout(outgoingSyncDebounceTimer);
+      outgoingSyncDebounceTimer = null;
+    }
+
+    if (force) {
+      // Immediate execution for remote changes or forced triggers
+      await syncOrchestrator.deltaSync(force);
+    } else {
+      // 2.5s Debounce for local modifications (typing, dragging, etc)
+      // This prevents "Save Storms" while the user is actively working.
+      outgoingSyncDebounceTimer = setTimeout(async () => {
+        await syncOrchestrator.deltaSync(false);
+        outgoingSyncDebounceTimer = null;
+      }, 2500);
+    }
   },
 
   setupRealtimeListener(userId: string) {
@@ -114,9 +130,13 @@ export const syncOrchestrator = {
       clearTimeout(remoteSyncDebounceTimer);
       remoteSyncDebounceTimer = null;
     }
+    if (outgoingSyncDebounceTimer) {
+      clearTimeout(outgoingSyncDebounceTimer);
+      outgoingSyncDebounceTimer = null;
+    }
   },
 
-  async fullPushSync(bypassBlock: boolean = false): Promise<{ success: boolean; error?: string }> {
+  async deltaSync(bypassBlock: boolean = false): Promise<{ success: boolean; error?: string }> {
     const { useSyncStore } = await import('../../store/useSyncStore');
     const { useAuthStore } = await import('../../store/useAuthStore');
     
@@ -232,7 +252,18 @@ export const syncOrchestrator = {
           if (!localT || cloudTime > localTime || needsHealing) {
             const { data } = await supabase.from('thoughts').select('*').eq('id', id).single();
             if (data) {
-              await db.thoughts.put({ ...toCamelCase(data), syncStatus: 'synced' } as any);
+              const incoming = toCamelCase(data);
+              
+              // PRESERVE SPATIAL: If we already have this thought locally, 
+              // keep our local x,y,vx,vy instead of resetting to defaults.
+              if (localT) {
+                incoming.x = localT.x;
+                incoming.y = localT.y;
+                incoming.vx = localT.vx;
+                incoming.vy = localT.vy;
+              }
+
+              await db.thoughts.put({ ...incoming, syncStatus: 'synced' } as any);
               cloudChanges = true;
               
               if (data.type === 'file' && data.storage_url) {
@@ -460,7 +491,7 @@ export const syncOrchestrator = {
       const cloudData = await syncOrchestrator.fetchCloudData();
       if (cloudData) await useStore.getState().importFullState(cloudData);
     } else {
-      await syncOrchestrator.fullPushSync();
+      await syncOrchestrator.deltaSync();
     }
   },
 

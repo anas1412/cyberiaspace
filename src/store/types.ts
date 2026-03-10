@@ -94,7 +94,7 @@ export interface CyberiaState {
   toggleThoughtSelection: (id: string) => void;
   clearSelection: () => void;
   deleteSelectedThoughts: () => Promise<void>;
-  linkSelectedThoughts: (name?: string) => Promise<void>;
+  linkSelectedThoughts: (name?: string, targetIds?: string[]) => Promise<void>;
   unlinkSelectedThoughts: () => Promise<void>;
   setInspectorOpen: (open: boolean) => void;
   setActiveFocus: (id: string | null, type: 'text' | 'table' | 'paint' | 'tasks' | 'embed' | 'file' | null) => void;

@@ -238,8 +238,14 @@ export const usePhysics = (
 
       if (dist <= 10) {
         const store = useStore.getState();
+        const target = e.target as HTMLElement;
+        
+        // Fix: Don't open inspector if we clicked a trigger (which opens Focus mode)
+        const isTrigger = target.closest('[data-trigger]');
+        const isCheckbox = target.closest('.checkbox');
+        
         if (e.ctrlKey || e.metaKey) store.toggleThoughtSelection(id);
-        else { 
+        else if (!isTrigger && !isCheckbox && !store.linkingSourceId) { 
           if (store.selectedThoughtId === id) {
             store.clearSelection();
           } else {
@@ -355,6 +361,21 @@ export const usePhysics = (
     if (gridRef.current) {
       gridRef.current.style.transform = `translate3d(${effectiveTransform.x}px, ${effectiveTransform.y}px, 0) scale(${effectiveTransform.scale})`;
       gridRef.current.style.opacity = mode === 'calendar' ? '0' : '0.03';
+    }
+
+    // Parallax Background Logic
+    if (!performanceMode) {
+      const body = document.body;
+      // We use the effective transform to drive background parallax
+      // Factors are applied in CSS via calc() for maximum flexibility
+      body.style.setProperty('--vp-x', `${effectiveTransform.x}px`);
+      body.style.setProperty('--vp-y', `${effectiveTransform.y}px`);
+      body.style.setProperty('--vp-scale', `${effectiveTransform.scale}`);
+    } else {
+      const body = document.body;
+      body.style.removeProperty('--vp-x');
+      body.style.removeProperty('--vp-y');
+      body.style.removeProperty('--vp-scale');
     }
 
     // --- Modular Physics Engine ---

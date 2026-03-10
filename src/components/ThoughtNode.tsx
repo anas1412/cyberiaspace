@@ -118,11 +118,10 @@ const ThoughtNode: React.FC<ThoughtNodeProps> = React.memo(({ thought, registerE
     
     // CASE 1: Someone ELSE is already the source -> Link them to this node (Join Stack)
   if (linkingSourceId && linkingSourceId !== thought.id) {
-      store.setSelectedThoughtIds([linkingSourceId, thought.id]);
+      const idsToLink = [linkingSourceId, thought.id];
       setLinkingSourceId(null); // Clear line immediately for zero-lag feel
-      // Fire linking operation
-      await store.linkSelectedThoughts();
-      store.setSelectedThoughtId(thought.id);
+      // Fire linking operation with explicit IDs so we don't need to change selection
+      await store.linkSelectedThoughts(undefined, idsToLink);
       return;
     }
 
@@ -148,19 +147,21 @@ const ThoughtNode: React.FC<ThoughtNodeProps> = React.memo(({ thought, registerE
     if (!isSelected && (window.innerWidth < 1024)) return;
 
     if (linkingSourceId && linkingSourceId !== thought.id) {
+      e.stopPropagation();
       const store = useStore.getState();
-      // Set selection for the linking operation
-      store.setSelectedThoughtIds([linkingSourceId, thought.id]);
-      // Trigger linking
-      await store.linkSelectedThoughts();
-      // Restore focus to the target thought
-      store.setSelectedThoughtId(thought.id);
+      const idsToLink = [linkingSourceId, thought.id];
       // Clear linking state immediately
       setLinkingSourceId(null);
+      // Trigger linking with explicit IDs to avoid changing selection
+      await store.linkSelectedThoughts(undefined, idsToLink);
       return;
     }
     
-    if (linkingSourceId === thought.id) return;
+    if (linkingSourceId === thought.id) {
+      e.stopPropagation();
+      setLinkingSourceId(null);
+      return;
+    }
     const target = e.target as HTMLElement;
     if (target.closest('.checkbox')) return;
 
@@ -237,6 +238,7 @@ const ThoughtNode: React.FC<ThoughtNodeProps> = React.memo(({ thought, registerE
         className={cn(
           "thought-bulb-content group backdrop-blur-[20px] border rounded-2xl flex flex-col relative transition-all duration-300 overflow-hidden",
           isCalendar && !isExpanded ? "p-3 gap-0" : "p-4.5 gap-2",
+          isSpatial && !isSelected && "gap-0",
           isSelected
             ? "border-[var(--accent)]/50 shadow-[0_0_40px_var(--accent-glow)] bg-[var(--node-bg)]/80"
             : "border-[var(--glass-border)] shadow-[0_10px_40px_rgba(0,0,0,0.5)] bg-[var(--node-bg)]/60",
@@ -262,15 +264,16 @@ const ThoughtNode: React.FC<ThoughtNodeProps> = React.memo(({ thought, registerE
           )}
           {renderContent()}
         </div>
-        <ThoughtFooter 
-          thought={thought} 
-          isReadOnly={isReadOnly} 
-          isSpatial={isSpatial}
-          isCalendar={isCalendar}
-          isExpanded={!isCalendar || isExpanded}
-          linkingSourceId={linkingSourceId} 
-          handleLinkAction={handleLinkAction} 
-        />
+        {isSpatial && (
+          <ThoughtFooter 
+            thought={thought} 
+            isReadOnly={isReadOnly} 
+            isSpatial={isSpatial}
+            isSelected={isSelected}
+            linkingSourceId={linkingSourceId} 
+            handleLinkAction={handleLinkAction} 
+          />
+        )}
       </div>
     </div>
   );

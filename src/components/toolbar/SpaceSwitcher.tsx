@@ -1,6 +1,6 @@
 import React from 'react';
 import { 
-  Edit3, Share2, ChevronLeft, ChevronRight, 
+  Edit3, Share2, ChevronUp, 
   Trash2, Plus, ChevronDown, Check, Layers
 } from 'lucide-react';
 import ShareDialog from '../ShareDialog';
@@ -40,7 +40,7 @@ export const SpaceSwitcher: React.FC<SpaceSwitcherProps> = ({
   const isActive = (id: string) => id === activeSpaceId;
 
   return (
-    <div className="lg:absolute lg:left-1/2 lg:-translate-x-1/2 flex flex-col items-center pointer-events-none z-[9999] w-auto relative">
+    <div className="space-switcher-container lg:absolute lg:left-1/2 lg:-translate-x-1/2 flex flex-col items-center pointer-events-none z-[9999] w-auto relative">
       <div className="max-w-full flex items-center h-[48px] md:h-[52px] glass rounded-2xl shadow-[0_0_80px_rgba(0,0,0,0.5)] transition-all pointer-events-auto border border-white/10 p-1.5">
         {isReadOnly ? (
           <div className="px-6 flex items-center justify-center gap-3">
@@ -157,7 +157,6 @@ export const SpaceSwitcher: React.FC<SpaceSwitcherProps> = ({
                   </div>
                   <div className="flex flex-col items-start">
                     <span className="leading-tight">Create Space</span>
-                    <span className="text-[7px] font-bold text-slate-600 group-hover:text-slate-400 transition-colors uppercase tracking-[0.1em]">Expand Dimension</span>
                   </div>
                 </button>
               )}
@@ -190,14 +189,14 @@ export const SpaceSwitcher: React.FC<SpaceSwitcherProps> = ({
                     className="flex-1 h-10 rounded-xl bg-white/5 border border-white/5 text-slate-500 hover:text-white hover:bg-white/10 transition-all flex items-center justify-center group" 
                     title="Move Left"
                   >
-                    <ChevronLeft className="w-4 h-4 group-hover:-translate-x-0.5 transition-transform" />
+                    <ChevronUp className="w-4 h-4 group-hover:scale-110 transition-transform" />
                   </button>
                   <button 
                     onClick={() => handleMoveSpace(1)} 
                     className="flex-1 h-10 rounded-xl bg-white/5 border border-white/5 text-slate-500 hover:text-white hover:bg-white/10 transition-all flex items-center justify-center group" 
                     title="Move Right"
                   >
-                    <ChevronRight className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" />
+                    <ChevronDown className="w-4 h-4 group-hover:scale-110 transition-transform" />
                   </button>
                   <div className="w-px h-5 bg-white/10 mx-1" />
                   <button 

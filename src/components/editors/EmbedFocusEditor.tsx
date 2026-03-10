@@ -1,21 +1,93 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useStore } from '../../store/useStore';
 import { useThoughtPayload } from '../thought/hooks/useThoughtPayload';
-import { Youtube, ExternalLink, Music, MessageCircle, Share2, Link as LinkIcon, ChevronDown, ChevronUp } from 'lucide-react';
+import { Youtube, ExternalLink, Music, MessageCircle, Share2, Link as LinkIcon, ChevronDown, ChevronUp, Palette } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { getEmbedInfo } from '../../utils/embeds';
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 import { FocusEditorShell } from './FocusEditorShell';
+import { STACK_COLORS } from '../../constants';
 
 function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
 
+const ColorPicker: React.FC<{ value: string; onChange: (val: string) => void; disabled?: boolean }> = ({ value, onChange, disabled }) => {
+  const [isOpen, setIsOpen] = React.useState(false);
+  const containerRef = React.useRef<HTMLDivElement>(null);
+
+  React.useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
+        setIsOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  return (
+    <div className="relative" ref={containerRef}>
+      <button
+        onClick={(e) => {
+          e.stopPropagation();
+          if (!disabled) setIsOpen(!isOpen);
+        }}
+        className={cn(
+          "w-3 h-3 rounded-full border border-white/20 transition-all flex items-center justify-center group relative overflow-hidden",
+          disabled && "opacity-50 cursor-default"
+        )}
+        style={{ backgroundColor: value, boxShadow: `0 0 10px ${value}88` }}
+      >
+        <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+          <Palette className="w-1.5 h-1.5 text-white" />
+        </div>
+      </button>
+
+      <AnimatePresence>
+        {isOpen && (
+          <motion.div
+            initial={{ opacity: 0, y: 10, scale: 0.95 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 10, scale: 0.95 }}
+            onClick={(e) => e.stopPropagation()}
+            className="absolute bottom-full mb-3 left-0 z-[100] glass border border-white/10 rounded-2xl p-3 shadow-2xl min-w-[180px]"
+          >
+            <div className="grid grid-cols-4 gap-2 mb-3">
+              {STACK_COLORS.map(color => (
+                <button
+                  key={color}
+                  onClick={() => { onChange(color); setIsOpen(false); }}
+                  className={cn(
+                    "w-8 h-8 rounded-lg border-2 transition-all hover:scale-110",
+                    value === color ? "border-white" : "border-transparent"
+                  )}
+                  style={{ backgroundColor: color }}
+                />
+              ))}
+            </div>
+            <div className="relative pt-2 border-t border-white/5">
+              <input 
+                type="color" 
+                value={value.startsWith('#') ? value : '#6366f1'} 
+                onChange={(e) => onChange(e.target.value)}
+                className="w-full h-8 bg-transparent cursor-pointer rounded-lg overflow-hidden"
+              />
+              <p className="text-[7px] font-black uppercase tracking-widest text-slate-500 mt-1 text-center">Custom Hex</p>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+};
+
 const PROVIDER_CONFIG: Record<string, { icon: any, color: string, label: string, themeColor: string }> = {
   youtube: { icon: Youtube, color: 'text-red-500', themeColor: 'bg-red-500/10', label: 'YouTube' },
   spotify: { icon: Music, color: 'text-[#1db954]', themeColor: 'bg-[#1db954]/10', label: 'Spotify' },
   twitter: { icon: MessageCircle, color: 'text-[#1da1f2]', themeColor: 'bg-[#1da1f2]/10', label: 'Twitter' },
+  x: { icon: MessageCircle, color: 'text-white', themeColor: 'bg-white/10', label: 'X' },
   reddit: { icon: MessageCircle, color: 'text-[#ff4500]', themeColor: 'bg-[#ff4500]/10', label: 'Reddit' },
   facebook: { icon: Share2, color: 'text-[#1877f2]', themeColor: 'bg-[#1877f2]/10', label: 'Facebook' },
   instagram: { icon: Share2, color: 'text-[#e1306c]', themeColor: 'bg-[#e1306c]/10', label: 'Instagram' },
@@ -27,7 +99,8 @@ const StackItemThumbnail: React.FC<{
   item: any; 
   isActive: boolean;
   onClick: () => void;
-}> = ({ item, isActive, onClick }) => {
+  color?: string;
+}> = ({ item, isActive, onClick, color }) => {
   const itemPayload = (item.data?.type === 'embed' ? item.data.url : (item as any).content) || '';
   const itemInfo = getEmbedInfo(itemPayload);
   const itemConfig = PROVIDER_CONFIG[itemInfo.provider] || PROVIDER_CONFIG.unknown;
@@ -36,6 +109,8 @@ const StackItemThumbnail: React.FC<{
     ? `https://img.youtube.com/vi/${itemInfo.id}/mqdefault.jpg`
     : (item.data?.url || (item as any).image);
 
+  const accentColor = color || '#6366f1';
+
   return (
     <button
       onClick={onClick}
@@ -43,27 +118,39 @@ const StackItemThumbnail: React.FC<{
       className={cn(
         "flex-shrink-0 w-28 md:w-36 aspect-video rounded-xl overflow-hidden border transition-all duration-300 group/item snap-start relative bg-white/[0.03]",
         isActive 
-          ? "border-[var(--accent)] ring-2 ring-[var(--accent)]/30 scale-105 z-10 shadow-[0_0_20px_rgba(var(--accent-rgb),0.3)]" 
+          ? "scale-105 z-10" 
           : "border-white/5 hover:border-white/20 hover:scale-[1.02]"
       )}
+      style={isActive ? { 
+        borderColor: accentColor,
+        boxShadow: `0 0 20px ${accentColor}33`,
+      } : {}}
     >
-      {thumb ? (
-        <img 
-          src={thumb} 
-          alt={item.text} 
-          className={cn(
-            "w-full h-full object-cover transition-all duration-500",
-            isActive ? "opacity-100" : "opacity-40 group-hover/item:opacity-80"
-          )} 
+      <div className="absolute inset-0 flex items-center justify-center">
+        {thumb ? (
+          <img 
+            src={thumb} 
+            alt={item.text} 
+            className={cn(
+              "w-full h-full object-cover transition-all duration-500",
+              isActive ? "opacity-100" : "opacity-40 group-hover/item:opacity-80"
+            )} 
+          />
+        ) : (
+          <div className="flex flex-col items-center gap-1 opacity-20 group-hover/item:opacity-60 transition-opacity">
+            <ItemIcon className="w-6 h-6 text-slate-400" />
+          </div>
+        )}
+      </div>
+
+      {/* Active Indicator Border */}
+      {isActive && (
+        <div 
+          className="absolute inset-0 border-2 pointer-events-none rounded-xl"
+          style={{ borderColor: accentColor }}
         />
-      ) : (
-        <div className="w-full h-full flex items-center justify-center">
-          <ItemIcon className={cn(
-            "w-5 h-5 transition-colors",
-            isActive ? "text-[var(--accent)]" : "opacity-20 text-slate-400"
-          )} />
-        </div>
       )}
+
       <div className={cn(
         "absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent transition-opacity flex items-end p-2 text-left",
         isActive ? "opacity-100" : "opacity-0 group-hover/item:opacity-100"
@@ -73,7 +160,10 @@ const StackItemThumbnail: React.FC<{
         </p>
       </div>
       {isActive && (
-        <div className="absolute top-1 right-1 w-1.5 h-1.5 rounded-full bg-[var(--accent)] shadow-[0_0_10px_var(--accent)] animate-pulse" />
+        <div 
+          className="absolute top-1.5 right-1.5 w-1.5 h-1.5 rounded-full animate-pulse z-20" 
+          style={{ backgroundColor: accentColor, boxShadow: `0 0 10px ${accentColor}` }}
+        />
       )}
     </button>
   );
@@ -86,7 +176,8 @@ const EditorContent: React.FC<{
   stack: any;
   setActiveFocus: (id: string | null, type: "text" | "tasks" | "paint" | "table" | "embed" | "file" | null) => void;
   scrollerRef: React.RefObject<HTMLDivElement | null>;
-}> = ({ thought, renderPlayer, stackItems, stack, setActiveFocus, scrollerRef }) => {
+  isReadOnly: boolean;
+}> = ({ thought, renderPlayer, stackItems, stack, setActiveFocus, scrollerRef, isReadOnly }) => {
   const [showPreviews, setShowPreviews] = useState(true);
   
   return (
@@ -105,24 +196,32 @@ const EditorContent: React.FC<{
               showPreviews ? "p-4 md:p-5" : "p-2 px-4"
             )}
           >
-            <div className="flex items-center justify-between px-1">
-                <div className="flex items-center gap-2">
-                  <div className="w-1 h-1 rounded-full bg-[var(--accent)] animate-pulse" />
-                  <span className="text-[9px] font-black uppercase tracking-[0.3em] text-slate-400">
+            <div 
+              className="flex items-center justify-between px-1 cursor-pointer select-none group/stackheader"
+              onClick={() => setShowPreviews(!showPreviews)}
+            >
+                <div className="flex items-center gap-3">
+                  <div className="flex items-center">
+                    <ColorPicker 
+                      value={stack?.color || '#6366f1'} 
+                      disabled={isReadOnly}
+                      onChange={(color) => useStore.getState().updateStack(stack.id, { color })} 
+                    />
+                  </div>
+                  <span className="text-[9px] font-black uppercase tracking-[0.3em] text-slate-400 group-hover/stackheader:text-slate-200 transition-colors pt-[1px]">
                     {stack?.name || 'Collection'}
                   </span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <span className="text-[8px] font-bold text-slate-500 uppercase tracking-[0.2em]">
+                  <span className="text-[8px] font-bold text-slate-500 uppercase tracking-[0.2em] group-hover/stackheader:text-slate-300 transition-colors">
                     {stackItems.findIndex(i => i.id === thought.id) + 1} / {stackItems.length}
                   </span>
-                  <button 
-                    onClick={() => setShowPreviews(!showPreviews)}
-                    className="p-1 hover:bg-white/5 rounded-md text-slate-500 hover:text-white transition-all"
+                  <div 
+                    className="p-1 hover:bg-white/5 rounded-md text-slate-500 group-hover/stackheader:text-white transition-all"
                     title={showPreviews ? "Hide Previews" : "Show Previews"}
                   >
                     {showPreviews ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
-                  </button>
+                  </div>
                 </div>
               </div>
               {showPreviews && (
@@ -132,6 +231,7 @@ const EditorContent: React.FC<{
                       key={item.id} 
                       item={item} 
                       isActive={item.id === thought.id}
+                      color={stack?.color}
                       onClick={() => setActiveFocus(item.id, 'embed')} 
                     />
                   ))}
@@ -279,13 +379,7 @@ const EmbedFocusEditor: React.FC = () => {
       onTitleChange={(val) => { if (!isReadOnly) updateThought(thought.id, { text: val }); }}
       description={thought.description}
       isReadOnly={isReadOnly}
-      headerActions={
-        <div className="flex items-center gap-3">
-          <a href={content} target="_blank" rel="noopener noreferrer" className="p-3 bg-white/5 hover:bg-white/10 rounded-xl text-slate-400 hover:text-white transition-all border border-white/5">
-            <ExternalLink className="w-4 h-4" />
-          </a>
-        </div>
-      }
+      headerActions={null}
       footerStatus={
         <div className="flex items-center gap-4">
           <div className="flex flex-col">
@@ -308,6 +402,19 @@ const EmbedFocusEditor: React.FC = () => {
           )}
         </div>
       }
+      footerActions={
+        <div className="flex items-center gap-2">
+          <a 
+            href={content} 
+            target="_blank" 
+            rel="noopener noreferrer" 
+            className="p-2.5 bg-white/5 hover:bg-white/10 rounded-xl text-slate-400 hover:text-white transition-all border border-white/5 group active:scale-95"
+            title="Open in New Tab"
+          >
+            <ExternalLink className="w-3.5 h-3.5 group-hover:scale-110 transition-transform" />
+          </a>
+        </div>
+      }
     >
       <EditorContent 
         thought={thought}
@@ -316,6 +423,7 @@ const EmbedFocusEditor: React.FC = () => {
         stack={stack}
         setActiveFocus={setActiveFocus}
         scrollerRef={scrollerRef}
+        isReadOnly={isReadOnly}
       />
     </FocusEditorShell>
   );

@@ -63,6 +63,21 @@ export const PLAN_CONFIG: Record<SubscriptionPlan, PlanLimits> = {
   },
 };
 
+export const STACK_COLORS = [
+  '#6366f1', // Indigo
+  '#10b981', // Emerald
+  '#f43f5e', // Rose
+  '#f59e0b', // Amber
+  '#3b82f6', // Blue
+  '#8b5cf6', // Violet
+  '#06b6d4', // Cyan
+  '#ec4899', // Pink
+  '#f97316', // Orange
+  '#14b8a6', // Teal
+  '#71717a', // Zinc
+  '#a855f7', // Purple
+];
+
 export const MAX_FILE_SIZE_MB = 10;
 
 export const APP_VERSION = '1.0.5';

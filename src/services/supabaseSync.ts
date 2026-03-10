@@ -11,8 +11,14 @@ export function toSnakeCase(obj: any): any {
   const result: any = {}
   
   for (const key in obj) {
-    // Skip local-only synchronization metadata
-    if (key === 'syncStatus' || key === 'retryCount' || key === 'isOnboarding' || key === 'data') {
+    // Skip local-only synchronization metadata and spatial properties
+    if (
+      key === 'syncStatus' || 
+      key === 'retryCount' || 
+      key === 'isOnboarding' || 
+      key === 'data' ||
+      key === 'x' || key === 'y' || key === 'vx' || key === 'vy'
+    ) {
       continue
     }
 
@@ -105,6 +111,12 @@ export function toCamelCase(obj: any): any {
     else if (type === 'embed') result.data = { type: 'embed', url: result.content || '' };
     else if (type === 'file') result.data = { type: 'file', url: result.storageUrl || '', name: result.text || '', size: result.meta?.size || 0, meta: result.meta };
     else if (type === 'label') result.data = { type: 'label' };
+
+    // Provide default spatial values if missing (new device hydration)
+    if (result.x === undefined) result.x = (typeof window !== 'undefined' ? window.innerWidth / 2 : 500);
+    if (result.y === undefined) result.y = (typeof window !== 'undefined' ? window.innerHeight / 2 : 500);
+    if (result.vx === undefined) result.vx = 0;
+    if (result.vy === undefined) result.vy = 0;
   }
 
   // Final cleanup of redundant content fields

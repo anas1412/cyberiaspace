@@ -25,7 +25,7 @@
 ####  Priority 3: Refactor Sync Orchestrator
 - **Goal:** Switch from "Brute Force" to "Delta Sync".
 - **Steps:**
-  1. **Metadata Comparison:** Step 2 of `fullPushSync` should only fetch metadata (`id, updated_at`) from Supabase for comparison, not the full objects.
+  1. **Metadata Comparison:** Step 2 of `deltaSync` should only fetch metadata (`id, updated_at`) from Supabase for comparison, not the full objects.
   2. **Push Deltas Only:** Filter local records to only push those where `syncStatus !== 'synced'` or `updatedAt > lastSyncTime`.
   3. **LastSync State:** Persist the timestamp of the last successful sync in `localStorage` and the `users` table.
 
@@ -55,7 +55,7 @@
 - **Goal:** Prevent orphaned data and storage bloat.
 - **Logic:** When a Space is deleted:
     1.  **Local:** Recursively mark all associated Thoughts and Stacks as `deletedAt = Date.now()` and `syncStatus = 'local'`.
-    2.  **Cloud:** Ensure `fullPushSync` detects these `deletedAt` flags.
+    2.  **Cloud:** Ensure `deltaSync` detects these `deletedAt` flags.
     3.  **Storage:** Explicitly trigger `supabaseStorage.deleteAllUserFiles(userId, spaceId)` (if applicable) or ensure the orphan cleanup handles all associated `storagePath` entries for that space's thoughts.
 
 ---
@@ -272,9 +272,9 @@
 
 #### 4. Potential Race Conditions & Infinite Loops
 - **The "Media Upload Ping":** `downloadSingleBlob` currently calls `updateThought` to notify the UI.
-    - **Risk:** This bumps `updatedAt`, which could trigger a new `fullPushSync`, causing an infinite loop.
+    - **Risk:** This bumps `updatedAt`, which could trigger a new `deltaSync`, causing an infinite loop.
     - **Fix:** Ensure "UI-only" updates use a `skipSync` flag that also **prevents** bumping the `updatedAt` timestamp.
-- **Concurrent Edits during Upload:** `fullPushSync` is a long-running process.
+- **Concurrent Edits during Upload:** `deltaSync` is a long-running process.
     - **Risk:** If a user edits a thought while its media is uploading, the final `db.thoughts.update` call at the end of the upload could overwrite the user's recent changes.
     - **Fix:** Use atomic updates or only update the specific `storagePath` and `syncStatus` fields, preserving the `data` and `updatedAt` set by the user.
 
@@ -374,7 +374,7 @@
 
 ###  Phase 3: Delta Sync Orchestration
 - [x] Implement `SYNC_DEBOUNCE_MS = 10000` (10s) globally.
-- [x] Refactor `fullPushSync`: Implement Metadata-first comparison.
+- [x] Refactor `deltaSync`: Implement Metadata-first comparison.
 - [x] Implement "Absence = Deletion" rule (restricted to `synced` items).
 - [x] Implement `lastSyncTime` persistence in `localStorage` and `users` table.
 - [x] Implement batching for cloud-to-local downloads.

@@ -146,7 +146,15 @@ export const createThoughtSlice: StateCreator<CyberiaState, [], [], any> = (set,
       const { useAuthStore } = await import('../useAuthStore');
       const authStore = useAuthStore.getState();
       if (authStore.status === 'authenticated' && !options?.skipSync) {
-        await syncOrchestrator.triggerSync();
+        // SKIP SYNC: If the update only contains spatial/physics data, 
+        // save locally but don't trigger a cloud push.
+        const spatialKeys = ['x', 'y', 'vx', 'vy'];
+        const updateKeys = Object.keys(updates);
+        const isSpatialOnly = updateKeys.length > 0 && updateKeys.every(k => spatialKeys.includes(k));
+        
+        if (!isSpatialOnly) {
+          await syncOrchestrator.triggerSync();
+        }
       }
     }, 500);
     (window as any)._cyberia_save_timers = saveTimers;
@@ -177,7 +185,13 @@ export const createThoughtSlice: StateCreator<CyberiaState, [], [], any> = (set,
     const { useAuthStore } = await import('../useAuthStore');
     const authStore = useAuthStore.getState();
     if (authStore.autoSync && authStore.status === 'authenticated' && !options?.skipSync) {
-      await syncOrchestrator.triggerSync();
+      const spatialKeys = ['x', 'y', 'vx', 'vy'];
+      const updateKeys = Object.keys(updates);
+      const isSpatialOnly = updateKeys.length > 0 && updateKeys.every(k => spatialKeys.includes(k));
+
+      if (!isSpatialOnly) {
+        await syncOrchestrator.triggerSync();
+      }
     }
   },
 
@@ -217,7 +231,15 @@ export const createThoughtSlice: StateCreator<CyberiaState, [], [], any> = (set,
     const { useAuthStore } = await import('../useAuthStore');
     const authStore = useAuthStore.getState();
     if (authStore.autoSync && authStore.status === 'authenticated' && !options?.skipSync) {
-      await syncOrchestrator.triggerSync();
+      const spatialKeys = ['x', 'y', 'vx', 'vy'];
+      const allSpatialOnly = updates.every(u => {
+        const keys = Object.keys(u.updates);
+        return keys.length > 0 && keys.every(k => spatialKeys.includes(k));
+      });
+
+      if (!allSpatialOnly) {
+        await syncOrchestrator.triggerSync();
+      }
     }
   },
 
@@ -377,11 +399,12 @@ export const createThoughtSlice: StateCreator<CyberiaState, [], [], any> = (set,
     get().clearSelection();
   },
 
-  linkSelectedThoughts: async (name?: string) => {
-    const { selectedThoughtIds, activeSpaceId, thoughts } = get();
-    if (selectedThoughtIds.length < 2 || !activeSpaceId) return;
+  linkSelectedThoughts: async (name?: string, targetIds?: string[]) => {
+    const idsToLink = targetIds || get().selectedThoughtIds;
+    const { activeSpaceId, thoughts } = get();
+    if (idsToLink.length < 2 || !activeSpaceId) return;
 
-    const selectedThoughts = thoughts.filter(t => selectedThoughtIds.includes(t.id));
+    const selectedThoughts = thoughts.filter(t => idsToLink.includes(t.id));
     // Find all unique existing stacks among the selected thoughts
     const existingStackIds = Array.from(new Set(selectedThoughts.map(t => t.stackId).filter(Boolean))) as string[];
     
@@ -413,7 +436,7 @@ export const createThoughtSlice: StateCreator<CyberiaState, [], [], any> = (set,
         }
 
         // Assign all selected thoughts to the target stack
-        await db.thoughts.where('id').anyOf(selectedThoughtIds).modify({ 
+        await db.thoughts.where('id').anyOf(idsToLink).modify({ 
           stackId: targetStackId,
           updatedAt: Date.now(),
           syncStatus: 'local'
@@ -436,7 +459,7 @@ export const createThoughtSlice: StateCreator<CyberiaState, [], [], any> = (set,
         });
 
         // Assign all selected thoughts to the target stack
-        await db.thoughts.where('id').anyOf(selectedThoughtIds).modify({ 
+        await db.thoughts.where('id').anyOf(idsToLink).modify({ 
           stackId: targetStackId,
           updatedAt: Date.now(),
           syncStatus: 'local'

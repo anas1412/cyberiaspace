@@ -74,19 +74,19 @@ describe('syncOrchestrator', () => {
 
   it('triggers sync with debounce', async () => {
     vi.useFakeTimers();
-    const fullPushSpy = vi.spyOn(syncOrchestrator, 'fullPushSync').mockImplementation(async () => ({ success: true }));
+    const deltaSyncSpy = vi.spyOn(syncOrchestrator, 'deltaSync').mockImplementation(async () => ({ success: true }));
     
     await syncOrchestrator.triggerSync();
     await syncOrchestrator.triggerSync();
     
-    expect(fullPushSpy).not.toHaveBeenCalled();
+    expect(deltaSyncSpy).not.toHaveBeenCalled();
     
     vi.runAllTimers();
-    expect(fullPushSpy).toHaveBeenCalledTimes(1);
+    expect(deltaSyncSpy).toHaveBeenCalledTimes(1);
     vi.useRealTimers();
   });
 
-  it('performs full push sync correctly', async () => {
+  it('performs delta sync correctly', async () => {
     // 1. Add local data
     await db.spaces.add({ id: 's1', name: 'Space 1', order: 0, physics: true, mode: 'spatial', syncStatus: 'local' });
     await db.thoughts.add({ id: 't1', text: 'Thought 1', spaceId: 's1', stackId: null, x: 0, y: 0, vx: 0, vy: 0, type: 'text', author: '', order: 0, date: '', priority: 'none', description: '', status: 'none', size: 1, data: { type: 'text', content: '' }, syncStatus: 'local' });
@@ -97,7 +97,7 @@ describe('syncOrchestrator', () => {
     vi.mocked(supabaseSync.getThoughts).mockResolvedValue({ thoughts: [] });
     
     // 3. Run sync
-    const result = await syncOrchestrator.fullPushSync();
+    const result = await syncOrchestrator.deltaSync();
     
     expect(result.success).toBe(true);
     expect(supabaseSync.createSpaces).toHaveBeenCalled();
@@ -105,7 +105,7 @@ describe('syncOrchestrator', () => {
     expect(mockSyncStore.status).toBe('synced');
   });
 
-  it('identifies and deletes orphaned cloud data', async () => {
+  it('identifies and handles orphaned cloud data', async () => {
     // 1. Local is empty
     
     // 2. Cloud has one space
@@ -114,7 +114,7 @@ describe('syncOrchestrator', () => {
     vi.mocked(supabaseSync.getThoughts).mockResolvedValue({ thoughts: [] });
     
     // 3. Run sync
-    await syncOrchestrator.fullPushSync();
+    await syncOrchestrator.deltaSync();
     
     // In delta sync, orphaned cloud data is NOT deleted unless marked deleted locally
     // expect(supabaseSync.deleteSpace).toHaveBeenCalledWith('orphan-s', 'test-user');
@@ -131,7 +131,7 @@ describe('syncOrchestrator', () => {
     vi.mocked(supabaseStorage.uploadFile).mockResolvedValue({ url: 'http://cloud.com/test.png', path: 'test-user/test.png', size: 5 });
     
     // 2. Run sync
-    await syncOrchestrator.fullPushSync();
+    await syncOrchestrator.deltaSync();
     
     expect(supabaseStorage.uploadFile).toHaveBeenCalled();
     const updatedThought = await db.thoughts.get('t2');

@@ -41,7 +41,7 @@ This document serves as the technical specification for the Cyberia synchronizat
 - **Happy Path:**
     1. User creates a Thought/Space.
     2. ULID is generated; `updatedAt` = `Date.now()`; `syncStatus` = `local`.
-    3. 10s debounce finishes → `fullPushSync` triggers.
+    3. 10s debounce finishes → `deltaSync` triggers.
     4. Supabase `upsert` succeeds.
     5. Local `syncStatus` = `synced`.
 - **Edge Case: App Close during Debounce**
@@ -51,7 +51,7 @@ This document serves as the technical specification for the Cyberia synchronizat
 - **Happy Path:**
     1. User moves a Thought ($x, y$).
     2. `updatedAt` = `Date.now()`; `syncStatus` = `local`.
-    3. Debounce triggers → `fullPushSync` sends the delta.
+    3. Debounce triggers → `deltaSync` sends the delta.
     4. Local `syncStatus` = `synced`.
 - **Edge Case: Network Drop during Push**
     - **Logic:** `syncStatus` remains `local` (or transitions to `error`). The record is re-pushed during the next successful sync cycle.
@@ -148,7 +148,7 @@ This document serves as the technical specification for the Cyberia synchronizat
 - **Happy Path:**
     1. User deletes a Space.
     2. Local engine marks Space + all child Thoughts/Stacks as `deletedAt`.
-    3. `fullPushSync` propagates the mass-tombstone.
+    3. `deltaSync` propagates the mass-tombstone.
     4. Supabase confirms deletion; local IndexedDB is purged.
 
 ---
@@ -168,7 +168,7 @@ This document serves as the technical specification for the Cyberia synchronizat
 
 ###  Phase 2: Delta Sync Refactor
 - [ ] Update `supabaseSync.ts` to support selective column fetching (`id, local_id, updated_at`).
-- [ ] Refactor `fullPushSync` to compare metadata BEFORE downloading/uploading.
+- [ ] Refactor `deltaSync` to compare metadata BEFORE downloading/uploading.
 - [ ] Implement "Absence = Deletion" rule for `synced` items.
 - [ ] Implement Ack-based permanent deletion from local DB.
 

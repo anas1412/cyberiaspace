@@ -32,7 +32,7 @@ export const createSyncSlice: StateCreator<AuthState, [], [], SyncSlice> = (set,
 
   syncData: async () => {
     console.log('[Auth] syncData called');
-    await syncOrchestrator.fullPushSync();
+    await syncOrchestrator.deltaSync();
     // After a full push sync, refresh storage usage to reflect recent changes
     try {
       const { useStore } = await import('../useStore');
@@ -50,7 +50,7 @@ export const createSyncSlice: StateCreator<AuthState, [], [], SyncSlice> = (set,
   processOfflineChanges: async () => {
     const { isOnline, user } = get();
     if (!isOnline || !user) return;
-    await syncOrchestrator.fullPushSync();
+    await syncOrchestrator.deltaSync();
   },
 
   importCloudData: async () => {

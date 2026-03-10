@@ -131,10 +131,11 @@ const Toolbar: React.FC = () => {
     const handleGlobalClick = (e: MouseEvent) => {
       const target = e.target as HTMLElement;
       if (isSystemMenuOpen && !target.closest('.system-tray-container')) setIsSystemMenuOpen(false);
+      if (isSpaceMenuOpen && !target.closest('.space-switcher-container')) setIsSpaceMenuOpen(false);
     };
     window.addEventListener('mousedown', handleGlobalClick);
     return () => window.removeEventListener('mousedown', handleGlobalClick);
-  }, [isSystemMenuOpen]);
+  }, [isSystemMenuOpen, isSpaceMenuOpen]);
 
   const handleExport = () => { exportData(); setIsSystemMenuOpen(false); };
   const handleImport = (e: React.ChangeEvent<HTMLInputElement>) => {
