@@ -69,6 +69,43 @@ export const syncOrchestrator = {
     console.log(`[Sync] Setting up instant realtime listener for user: ${userId}`);
     
     const handleRemoteChange = async (payload: any, table: string) => {
+      // Profile/Settings update - handle immediately without full delta sync
+      if (table === 'users') {
+        const id = payload.new?.id;
+        if (!id) return;
+
+        console.log('[Sync] Remote user settings change detected, updating local profile...');
+        const { useAuthStore } = await import('../../store/useAuthStore');
+        const { useStore } = await import('../../store/useStore');
+        const authStore = useAuthStore.getState();
+        
+        const { data } = await supabase.from('users').select('settings, theme, avatar, name').eq('id', id).single();
+        if (data) {
+          const camelData = toCamelCase(data);
+          const newSettings = camelData.settings || {};
+          
+          // Sync theme and customBg to global store (Silent update to avoid sync loops)
+          if (newSettings.theme) {
+            useStore.setState({ theme: newSettings.theme });
+            document.body.setAttribute('data-theme', newSettings.theme);
+            localStorage.setItem('cyberia-theme', newSettings.theme);
+          }
+          if (newSettings.customBg !== undefined) {
+            useStore.setState({ customBg: newSettings.customBg });
+          }
+
+          // Update user object in auth store
+          const updatedUser = { 
+            ...authStore.user, 
+            ...camelData,
+            settings: { ...authStore.user?.settings, ...newSettings }
+          };
+          useAuthStore.setState({ user: updatedUser as any });
+          localStorage.setItem('cyberia-user', JSON.stringify(updatedUser));
+        }
+        return;
+      }
+
       // ECHO FILTER: Ignore if we already have this or newer data locally
       // This prevents infinite loops from self-broadcasts
       if (payload.new && payload.new.updated_at) {
@@ -115,6 +152,12 @@ export const syncOrchestrator = {
         table: 'stacks', 
         filter: `user_id=eq.${userId}` 
       }, (payload) => handleRemoteChange(payload, 'stacks'))
+      .on('postgres_changes', {
+        event: 'UPDATE',
+        schema: 'public',
+        table: 'users',
+        filter: `id=eq.${userId}`
+      }, (payload) => handleRemoteChange(payload, 'users'))
       .subscribe((status) => {
         console.log(`[Sync] Realtime subscription status: ${status}`);
       });
@@ -215,11 +258,24 @@ export const syncOrchestrator = {
 
       for (const [id, cloudS] of cloudSpaceMap) {
         const localS = localAllSpacesBefore.find(ls => ls.id === id);
-        if (!localS || (cloudS.updatedAt && localS.updatedAt && new Date(cloudS.updatedAt).getTime() > localS.updatedAt)) {
+        if (!localS || (cloudS.updatedAt && new Date(cloudS.updatedAt).getTime() > (localS.updatedAt || 0))) {
           const { data } = await supabase.from('spaces').select('*').eq('id', id).single();
           if (data) {
-            await db.spaces.put({ ...toCamelCase(data), syncStatus: 'synced' } as any);
+            const incomingSpace = toCamelCase(data);
+            await db.spaces.put({ ...incomingSpace, syncStatus: 'synced' } as any);
             cloudChanges = true;
+
+            // REAL-TIME UI SYNC: If this is the active space, update current theme/bg (Silent)
+            if (id === store.activeSpaceId) {
+              if (incomingSpace.theme) {
+                useStore.setState({ theme: incomingSpace.theme });
+                document.body.setAttribute('data-theme', incomingSpace.theme);
+                localStorage.setItem('cyberia-theme', incomingSpace.theme);
+              }
+              if (incomingSpace.customBg !== undefined) {
+                useStore.setState({ customBg: incomingSpace.customBg });
+              }
+            }
           }
         }
       }
@@ -308,7 +364,7 @@ export const syncOrchestrator = {
       // This order ensures FK safety during individual cloud delete calls.
       for (const thought of localThoughts.filter(t => t.deletedAt)) {
         let storageDeleted = true;
-        if (thought.storagePath && !isFirstSync) {
+        if (thought.storagePath) {
           try {
             await supabaseStorage.deleteFile(thought.storagePath);
           } catch (e: any) {
@@ -319,7 +375,7 @@ export const syncOrchestrator = {
         
         if (storageDeleted) {
           try {
-            if (!isFirstSync) await supabaseSync.deleteThought(thought.id, userId);
+            await supabaseSync.deleteThought(thought.id, userId);
             await db.thoughts.delete(thought.id);
             await db.blobs.where('thoughtId').equals(thought.id).delete();
           } catch (e: any) {
@@ -333,7 +389,7 @@ export const syncOrchestrator = {
 
       for (const stack of localStacks.filter(s => s.deletedAt)) {
         try {
-          if (!isFirstSync) await supabaseSync.deleteStack(stack.id, userId);
+          await supabaseSync.deleteStack(stack.id, userId);
           await db.stacks.delete(stack.id);
         } catch (e: any) {
           if (e.status === 404 || e.message?.includes('not found')) await db.stacks.delete(stack.id);
@@ -343,7 +399,7 @@ export const syncOrchestrator = {
 
       for (const space of localSpaces.filter(s => s.deletedAt)) {
         try {
-          if (!isFirstSync) await supabaseSync.deleteSpace(space.id, userId);
+          await supabaseSync.deleteSpace(space.id, userId);
           await db.spaces.delete(space.id);
         } catch (e: any) {
           if (e.status === 404 || e.message?.includes('not found')) await db.spaces.delete(space.id);

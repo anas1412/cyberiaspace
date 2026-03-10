@@ -78,6 +78,12 @@ const AccountMenu: React.FC = () => {
       onConfirm: async () => {
         await deleteCloudData();
         setIsOpen(false);
+        // Trigger a sync to reconcile local state with the now-empty cloud
+        try {
+          await syncData();
+        } catch (err) {
+          console.error('[AccountMenu] Post-clear sync failed:', err);
+        }
       }
     });
   };
