@@ -7,6 +7,7 @@ import { type RealtimeChannel } from '@supabase/supabase-js';
 let isSyncBlocked = false;
 let syncRequestedDuringActiveSync = false;
 let realtimeChannel: RealtimeChannel | null = null;
+let remoteSyncDebounceTimer: ReturnType<typeof setTimeout> | null = null;
 
 export const syncOrchestrator = {
   async setSyncBlocked(blocked: boolean) {
@@ -51,6 +52,33 @@ export const syncOrchestrator = {
 
     console.log(`[Sync] Setting up instant realtime listener for user: ${userId}`);
     
+    const handleRemoteChange = async (payload: any, table: string) => {
+      // ECHO FILTER: Ignore if we already have this or newer data locally
+      // This prevents infinite loops from self-broadcasts
+      if (payload.new && payload.new.updated_at) {
+        const id = payload.new.id;
+        const cloudTime = new Date(payload.new.updated_at).getTime();
+        
+        let localItem;
+        if (table === 'thoughts') localItem = await db.thoughts.get(id);
+        else if (table === 'spaces') localItem = await db.spaces.get(id);
+        else if (table === 'stacks') localItem = await db.stacks.get(id);
+
+        if (localItem && localItem.updatedAt && localItem.updatedAt >= cloudTime) {
+          // console.log(`[Sync] Ignoring echo for ${table}:${id}`);
+          return;
+        }
+      }
+
+      // BATCH REMOTE TRIGGERS: Small 500ms debounce for remote events
+      // to handle bursts (e.g. moving multiple thoughts) efficiently.
+      if (remoteSyncDebounceTimer) clearTimeout(remoteSyncDebounceTimer);
+      remoteSyncDebounceTimer = setTimeout(() => {
+        console.log(`[Sync] Remote ${table} change detected, triggering sync...`);
+        this.triggerSync(true);
+      }, 500);
+    };
+
     realtimeChannel = supabase
       .channel(`sync:${userId}`)
       .on('postgres_changes', { 
@@ -58,28 +86,19 @@ export const syncOrchestrator = {
         schema: 'public', 
         table: 'thoughts', 
         filter: `user_id=eq.${userId}` 
-      }, (payload) => {
-        console.log('[Sync] Remote thought change detected:', payload.eventType);
-        this.triggerSync(true);
-      })
+      }, (payload) => handleRemoteChange(payload, 'thoughts'))
       .on('postgres_changes', { 
         event: '*', 
         schema: 'public', 
         table: 'spaces', 
         filter: `user_id=eq.${userId}` 
-      }, (payload) => {
-        console.log('[Sync] Remote space change detected:', payload.eventType);
-        this.triggerSync(true);
-      })
+      }, (payload) => handleRemoteChange(payload, 'spaces'))
       .on('postgres_changes', { 
         event: '*', 
         schema: 'public', 
         table: 'stacks', 
         filter: `user_id=eq.${userId}` 
-      }, (payload) => {
-        console.log('[Sync] Remote stack change detected:', payload.eventType);
-        this.triggerSync(true);
-      })
+      }, (payload) => handleRemoteChange(payload, 'stacks'))
       .subscribe((status) => {
         console.log(`[Sync] Realtime subscription status: ${status}`);
       });
@@ -90,6 +109,10 @@ export const syncOrchestrator = {
       console.log('[Sync] Cleaning up realtime listener...');
       realtimeChannel.unsubscribe();
       realtimeChannel = null;
+    }
+    if (remoteSyncDebounceTimer) {
+      clearTimeout(remoteSyncDebounceTimer);
+      remoteSyncDebounceTimer = null;
     }
   },
 
@@ -402,8 +425,8 @@ export const syncOrchestrator = {
       }
       if (syncRequestedDuringActiveSync) {
         syncRequestedDuringActiveSync = false;
-        // INSTANT: No debounce for follow-up sync
-        setTimeout(() => syncOrchestrator.triggerSync(), 50);
+        // INSTANT: 500ms cooldown for follow-up sync to prevent hammering
+        setTimeout(() => syncOrchestrator.triggerSync(), 500);
       }
     }
   },

@@ -22,26 +22,51 @@ function cn(...inputs: ClassValue[]) {
 
 const StackItemThumbnail: React.FC<{ 
   item: any; 
+  isActive: boolean;
   onClick: () => void;
-}> = ({ item, onClick }) => {
+}> = ({ item, isActive, onClick }) => {
   const itemPayload = useThoughtPayload(item);
   const thumb = itemPayload.image;
   
   return (
     <button
       onClick={onClick}
-      className="flex-shrink-0 w-32 md:w-40 aspect-video rounded-xl overflow-hidden border border-white/5 hover:border-[var(--accent)]/50 transition-all group/item snap-start relative bg-white/[0.02]"
+      data-active={isActive}
+      className={cn(
+        "flex-shrink-0 w-24 md:w-32 aspect-video rounded-xl overflow-hidden border transition-all duration-300 group/item snap-start relative bg-white/[0.03]",
+        isActive 
+          ? "border-[var(--accent)] ring-2 ring-[var(--accent)]/30 scale-105 z-10 shadow-[0_0_20px_rgba(var(--accent-rgb),0.3)]" 
+          : "border-white/5 hover:border-white/20 hover:scale-[1.02]"
+      )}
     >
       {thumb ? (
-        <img src={thumb} alt={item.text} className="w-full h-full object-cover opacity-50 group-hover/item:opacity-100 transition-opacity" />
+        <img 
+          src={thumb} 
+          alt={item.text} 
+          className={cn(
+            "w-full h-full object-cover transition-all duration-500",
+            isActive ? "opacity-100" : "opacity-40 group-hover/item:opacity-80"
+          )} 
+        />
       ) : (
         <div className="w-full h-full flex items-center justify-center">
-          <FileIcon className="w-5 h-5 opacity-20 text-slate-400" />
+          <FileIcon className={cn(
+            "w-5 h-5 transition-colors",
+            isActive ? "text-[var(--accent)]" : "opacity-20 text-slate-400"
+          )} />
         </div>
       )}
-      <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent opacity-0 group-hover/item:opacity-100 transition-opacity flex items-end p-2 text-left">
-        <p className="text-[8px] font-bold text-white truncate w-full">{item.text || "Untitled"}</p>
+      <div className={cn(
+        "absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent transition-opacity flex items-end p-2 text-left",
+        isActive ? "opacity-100" : "opacity-0 group-hover/item:opacity-100"
+      )}>
+        <p className="text-[7px] md:text-[8px] font-black uppercase tracking-widest text-white truncate w-full">
+          {item.text || "Untitled"}
+        </p>
       </div>
+      {isActive && (
+        <div className="absolute top-1 right-1 w-1.5 h-1.5 rounded-full bg-[var(--accent)] shadow-[0_0_10px_var(--accent)] animate-pulse" />
+      )}
     </button>
   );
 };
@@ -118,15 +143,15 @@ const EditorContent: React.FC<{
   }, [thought?.id, isPdf, isImage, isVideo, isAudio, cached.isPdf, isReadOnly, isDemo]);
 
   return (
-    <div className="flex-1 flex flex-col min-h-0 bg-black">
-      <div className="flex-1 relative min-h-0">
+    <div className="flex-1 flex flex-col min-h-0 relative">
+      <div className="flex-1 relative min-h-0 z-0">
         {isFetching && !activeSource ? (
-          <div className="absolute inset-0 flex flex-col items-center justify-center bg-[#020408] gap-4">
+          <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/20 gap-4 backdrop-blur-sm">
             <Loader2 className="w-10 h-10 text-[var(--accent)] animate-spin" />
-            <p className="text-[10px] font-black uppercase tracking-[0.2em] text-[var(--accent)]">Retrieving Data...</p>
+            <p className="text-[10px] font-black uppercase tracking-[0.3em] text-[var(--accent)] animate-pulse">Retrieving Data...</p>
           </div>
         ) : isStranded ? (
-          <div className="absolute inset-0 flex flex-col items-center justify-center bg-[#020408] p-8 text-center gap-6">
+          <div className="absolute inset-0 flex flex-col items-center justify-center bg-[#020408]/40 p-8 text-center gap-6">
             <div className="w-24 h-24 bg-amber-500/5 rounded-[2rem] border border-amber-500/10 flex items-center justify-center shadow-2xl relative">
               <Database className="w-10 h-10 text-amber-500 opacity-40" />
               <div className="absolute -bottom-1 -right-1 bg-black rounded-full p-1 border border-amber-500/20">
@@ -141,85 +166,82 @@ const EditorContent: React.FC<{
             </div>
           </div>
         ) : activeSource ? (
-          <div className="absolute inset-0 flex items-center justify-center p-4">
+          <div className="absolute inset-0 flex items-center justify-center p-4 md:p-12">
             {isPdf ? (
               <iframe 
                 src={activeSource}
-                className="w-full h-full border-none bg-white rounded-xl shadow-2xl"
+                className="w-full h-full border border-white/5 bg-white rounded-2xl shadow-2xl"
                 title="PDF Preview"
               />
             ) : isImage ? (
-              <div className="flex flex-col items-center justify-center w-full h-full p-4 md:p-8">
-                <div className="relative w-full h-full flex items-center justify-center overflow-hidden rounded-2xl">
-                  <img 
-                    src={activeSource}
-                    alt={thought.text}
-                    className="max-w-full max-h-full object-contain shadow-2xl transition-opacity duration-300"
-                    style={{ opacity: isFetching ? 0.5 : 1 }}
-                  />
-                </div>
+              <div className="relative w-full h-full flex items-center justify-center">
+                <div className="absolute inset-0 blur-3xl opacity-20 bg-[var(--accent)]/10 scale-75 -z-10" />
+                <img 
+                  src={activeSource}
+                  alt={thought.text}
+                  className="max-w-full max-h-full object-contain rounded-xl shadow-[0_20px_60px_-15px_rgba(0,0,0,0.5)] transition-opacity duration-700"
+                  style={{ opacity: isFetching ? 0.5 : 1 }}
+                />
               </div>
             ) : isVideo ? (
-              <div className="flex flex-col items-center justify-center w-full h-full p-4 md:p-8">
-                <div className="relative w-full h-full flex items-center justify-center overflow-hidden rounded-2xl bg-black shadow-2xl">
-                  <video 
-                    src={activeSource}
-                    poster={image || undefined}
-                    controls
-                    playsInline
-                    loop
-                    className="w-full h-full object-contain"
-                  />
-                </div>
+              <div className="relative w-full h-full flex items-center justify-center overflow-hidden rounded-2xl bg-black/40 shadow-2xl border border-white/5">
+                <video 
+                  src={activeSource}
+                  poster={image || undefined}
+                  controls
+                  playsInline
+                  loop
+                  className="w-full h-full object-contain"
+                />
               </div>
             ) : isAudio ? (
-              <div className="flex flex-col items-center justify-center w-full h-full p-4 md:p-8">
-                <div className="relative w-full h-full flex flex-col items-center justify-center overflow-hidden rounded-2xl bg-[#020408] shadow-2xl">
-                  <div className="flex-1 flex items-center justify-center">
-                    <div className="relative">
-                      <div className="absolute inset-0 bg-blue-500/10 rounded-full blur-3xl animate-pulse scale-150" />
-                      <div className="relative w-32 h-32 md:w-40 md:h-40 bg-blue-500/5 rounded-full flex items-center justify-center border border-blue-500/10">
-                        <FileAudio className="w-16 h-12 md:w-20 md:h-16 text-blue-400 opacity-60" />
-                      </div>
+              <div className="relative w-full h-full flex flex-col items-center justify-center rounded-2xl bg-black/20 shadow-2xl border border-white/5">
+                <div className="flex-1 flex items-center justify-center">
+                  <div className="relative">
+                    <div className="absolute inset-0 bg-[var(--accent)]/10 rounded-full blur-3xl animate-pulse scale-150" />
+                    <div className="relative w-32 h-32 md:w-40 md:h-40 bg-white/5 rounded-full flex items-center justify-center border border-white/10">
+                      <FileAudio className="w-16 h-12 md:w-20 md:h-16 text-[var(--accent)] opacity-60" />
                     </div>
                   </div>
-                  <div className="w-full p-6 md:p-10 bg-black/40 backdrop-blur-xl border-t border-white/5">
-                    <audio 
-                      controls 
-                      autoPlay 
-                      className="w-full h-10 invert brightness-200 hue-rotate-[240deg]"
-                      src={activeSource}
-                    />
-                  </div>
+                </div>
+                <div className="w-full p-6 md:p-10 bg-black/40 backdrop-blur-xl border-t border-white/5">
+                  <audio 
+                    controls 
+                    autoPlay 
+                    className="w-full h-10 invert brightness-200 hue-rotate-[240deg]"
+                    src={activeSource}
+                  />
                 </div>
               </div>
             ) : (
               <div className="flex flex-col items-center justify-center p-8 text-center">
-                <FileIcon className="w-24 h-24 text-slate-600 mb-4" />
-                <p className="text-slate-500 text-sm font-medium uppercase tracking-widest opacity-50">Preview not available for this format</p>
+                <div className="w-24 h-24 bg-white/5 rounded-3xl border border-white/10 flex items-center justify-center mb-6">
+                  <FileIcon className="w-10 h-10 text-slate-600" />
+                </div>
+                <p className="text-slate-500 text-[10px] font-black uppercase tracking-[0.3em] opacity-50">Preview unavailable for this format</p>
               </div>
             )}
           </div>
         ) : (
-          <div className="absolute inset-0 flex flex-col items-center justify-center bg-[#020408] p-8 text-center">
-            <div className="w-24 h-24 bg-white/5 rounded-[2rem] border border-white/10 flex items-center justify-center mb-8 shadow-2xl relative group">
-              <Upload className="w-10 h-10 text-slate-500 group-hover:text-blue-400 transition-colors" />
+          <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/10 p-8 text-center">
+            <div className="w-24 h-24 bg-white/5 rounded-[2.5rem] border border-white/10 flex items-center justify-center mb-8 shadow-2xl relative group transition-all hover:scale-110 hover:border-[var(--accent)]/30">
+              <Upload className="w-10 h-10 text-slate-500 group-hover:text-[var(--accent)] transition-colors" />
               {isUploading && (
-                <div className="absolute inset-0 bg-black/60 rounded-[2rem] flex items-center justify-center backdrop-blur-sm">
-                  <Loader2 className="w-8 h-8 text-blue-400 animate-spin" />
+                <div className="absolute inset-0 bg-black/60 rounded-[2.5rem] flex items-center justify-center backdrop-blur-sm">
+                  <Loader2 className="w-8 h-8 text-[var(--accent)] animate-spin" />
                 </div>
               )}
             </div>
-            <h3 className="text-xl font-black uppercase tracking-[0.2em] text-white mb-3">Empty Slot</h3>
-            <p className="text-xs font-medium text-slate-500 leading-relaxed mb-8 uppercase tracking-widest">
-              Drop a file or select one to begin.
+            <h3 className="text-xl font-black uppercase tracking-[0.3em] text-white mb-3">Empty Slot</h3>
+            <p className="text-[10px] font-bold text-slate-500 leading-relaxed mb-8 uppercase tracking-[0.2em] opacity-60">
+              Drop a file or select one to begin
             </p>
             <label className={cn(
-              "inline-flex items-center gap-3 px-8 py-4 bg-blue-500 hover:bg-blue-600 text-white rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] transition-all cursor-pointer shadow-lg shadow-blue-500/20 active:scale-95",
+              "inline-flex items-center gap-3 px-10 py-5 bg-[var(--accent)] hover:brightness-110 text-white rounded-2xl text-[10px] font-black uppercase tracking-[0.3em] transition-all cursor-pointer shadow-xl shadow-[var(--accent)]/10 active:scale-95",
               isUploading && "opacity-50 pointer-events-none"
             )}>
               <Upload className="w-4 h-4" />
-              Upload Asset
+              Initialize Asset
               <input type="file" className="hidden" onChange={handleFileSelect} disabled={isUploading} />
             </label>
           </div>
@@ -228,19 +250,29 @@ const EditorContent: React.FC<{
 
       <AnimatePresence>
         {stackItems.length > 0 && (
-          <div className="bg-black/40 backdrop-blur-md border-t border-white/5 p-4 md:p-6">
-            <div className="flex items-center justify-between mb-3 px-1">
-              <span className="text-[9px] font-black uppercase tracking-[0.2em] text-slate-500">Collection: {stack?.name}</span>
-              <span className="text-[8px] font-bold text-slate-600 uppercase tracking-widest">{stackItems.length + 1} items total</span>
-            </div>
-            <div className="flex gap-3 overflow-x-auto custom-scroll pb-2 w-full snap-x" ref={scrollerRef}>
-              {stackItems.map((item) => (
-                <StackItemThumbnail 
-                  key={item.id} 
-                  item={item} 
-                  onClick={() => setActiveFocus(item.id, 'file')} 
-                />
-              ))}
+          <div className="relative z-10 mx-6 mb-6">
+            <div className="bg-white/[0.03] backdrop-blur-2xl border border-white/10 p-4 md:p-5 rounded-2xl shadow-2xl">
+              <div className="flex items-center justify-between mb-4 px-1">
+                <div className="flex items-center gap-2">
+                  <div className="w-1.5 h-1.5 rounded-full bg-[var(--accent)] animate-pulse" />
+                  <span className="text-[9px] font-black uppercase tracking-[0.3em] text-slate-400">
+                    Collection: {stack?.name || 'Untitled'}
+                  </span>
+                </div>
+                <span className="text-[8px] font-bold text-slate-500 uppercase tracking-[0.2em]">
+                  {stackItems.findIndex(i => i.id === thought.id) + 1} / {stackItems.length}
+                </span>
+              </div>
+              <div className="flex gap-4 overflow-x-auto custom-scroll pb-1 w-full snap-x" ref={scrollerRef}>
+                {stackItems.map((item) => (
+                  <StackItemThumbnail 
+                    key={item.id} 
+                    item={item} 
+                    isActive={item.id === thought.id}
+                    onClick={() => setActiveFocus(item.id, 'file')} 
+                  />
+                ))}
+              </div>
             </div>
           </div>
         )}
@@ -294,8 +326,12 @@ const FileFocusEditor: React.FC = () => {
 
   const stackItems = useMemo(() => {
     if (!thought?.stackId) return [];
-    return thoughts.filter(t => t.stackId === thought.stackId && t.id !== thought.id && t.type === 'file');
-  }, [thoughts, thought]);
+    const sid = thought.stackId;
+    return thoughts
+      .filter(t => t.stackId === sid && t.type === 'file')
+      .sort((a, b) => (Number(a.createdAt) || 0) - (Number(b.createdAt) || 0));
+  }, [thoughts, thought?.stackId]);
+
 
   useEffect(() => {
     const el = scrollerRef.current;
@@ -304,6 +340,16 @@ const FileFocusEditor: React.FC = () => {
     el.addEventListener('wheel', onWheel, { passive: false });
     return () => el.removeEventListener('wheel', onWheel);
   }, [isVisible, stackItems.length]);
+
+  useEffect(() => {
+    // Scroll the active item into view
+    if (scrollerRef.current) {
+      const activeEl = scrollerRef.current.querySelector('[data-active="true"]');
+      if (activeEl) {
+        activeEl.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+      }
+    }
+  }, [thought?.id, stackItems.length]);
 
   useEffect(() => {
     // Only load if visible, has thought, and NO local URL already set
@@ -440,36 +486,63 @@ const FileFocusEditor: React.FC = () => {
       isReadOnly={isReadOnly}
       stack={stack}
       headerActions={
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-3">
           {/* Status Badges */}
           <div className="flex items-center gap-2 mr-2">
             {isSynced ? (
-              <div className="flex items-center gap-1.5 px-3 py-1 bg-emerald-500/10 border border-emerald-500/20 rounded-lg">
+              <div className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-500/5 border border-emerald-500/10 rounded-xl">
                 <Cloud className="w-3 h-3 text-emerald-400" />
-                <span className="text-[8px] font-black uppercase tracking-widest text-emerald-400">Cloud Synced</span>
+                <span className="text-[7px] font-black uppercase tracking-[0.2em] text-emerald-400">Cloud Synced</span>
               </div>
             ) : (
-              <div className="flex items-center gap-1.5 px-3 py-1 bg-blue-500/10 border border-blue-500/20 rounded-lg">
+              <div className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-500/5 border border-blue-500/10 rounded-xl">
                 <Shield className="w-3 h-3 text-blue-400" />
-                <span className="text-[8px] font-black uppercase tracking-widest text-blue-400">Local Only</span>
+                <span className="text-[7px] font-black uppercase tracking-[0.2em] text-blue-400">Local Only</span>
               </div>
             )}
           </div>
 
           {(localPreviewUrl || thought.storageUrl) && (
-            <button onClick={handleDownload} className="p-3 md:p-4 hover:bg-white/5 rounded-xl md:rounded-2xl text-slate-400 hover:text-white transition-all" title="Download Locally">
-              <Download className="w-5 h-5 md:w-6 md:h-6" />
+            <button 
+              onClick={handleDownload} 
+              className="p-3 bg-white/5 hover:bg-white/10 rounded-xl text-slate-400 hover:text-white transition-all border border-white/5" 
+              title="Download Locally"
+            >
+              <Download className="w-4 h-4" />
             </button>
           )}
-          <a href={thought.storageUrl || localPreviewUrl || undefined} target="_blank" rel="noreferrer" className="p-3 md:p-4 hover:bg-white/5 rounded-xl md:rounded-2xl text-slate-400 hover:text-white transition-all" title="Open in New Tab">
-            <ExternalLink className="w-5 h-5 md:w-6 md:h-6" />
+          <a 
+            href={thought.storageUrl || localPreviewUrl || undefined} 
+            target="_blank" 
+            rel="noreferrer" 
+            className="p-3 bg-white/5 hover:bg-white/10 rounded-xl text-slate-400 hover:text-white transition-all border border-white/5" 
+            title="Open in New Tab"
+          >
+            <ExternalLink className="w-4 h-4" />
           </a>
         </div>
       }
       footerStatus={
-        <p className="text-[8px] md:text-[10px] uppercase font-black tracking-widest text-slate-600 italic">
-          <span className="text-slate-500 font-black">SOURCE: {sourceLabel}</span> • {fileInfo?.size ? `${(fileInfo.size / 1024).toFixed(1)}KB` : 'Empty'} • {fileInfo?.type || 'Generic Asset'}
-        </p>
+        <div className="flex items-center gap-4">
+          <div className="flex flex-col">
+            <span className="text-[7px] font-black text-slate-500 uppercase tracking-widest mb-0.5">Origin</span>
+            <span className="text-[9px] font-black text-slate-300 uppercase tracking-widest">{sourceLabel}</span>
+          </div>
+          <div className="w-px h-6 bg-white/5" />
+          <div className="flex flex-col">
+            <span className="text-[7px] font-black text-slate-500 uppercase tracking-widest mb-0.5">Format</span>
+            <span className="text-[9px] font-black text-slate-300 uppercase tracking-widest truncate max-w-[100px]">
+              {fileInfo?.type?.split('/')[1]?.toUpperCase() || 'GENERIC'}
+            </span>
+          </div>
+          <div className="w-px h-6 bg-white/5" />
+          <div className="flex flex-col">
+            <span className="text-[7px] font-black text-slate-500 uppercase tracking-widest mb-0.5">Payload</span>
+            <span className="text-[9px] font-black text-slate-300 uppercase tracking-widest">
+              {fileInfo?.size ? `${(fileInfo.size / (1024 * 1024)).toFixed(2)}MB` : '0.00MB'}
+            </span>
+          </div>
+        </div>
       }
       footerActions={
         authStatus === 'authenticated' && !isReadOnly && (
@@ -477,24 +550,24 @@ const FileFocusEditor: React.FC = () => {
             {isSynced ? (
               <button 
                 onClick={handleRemoveFromCloud}
-                className="flex items-center gap-2 px-4 py-2 bg-red-500/10 hover:bg-red-500/20 border border-red-500/20 text-red-400 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all"
+                className="flex items-center gap-2 px-5 py-2.5 bg-red-500/5 hover:bg-red-500/10 border border-red-500/10 text-red-400 rounded-xl text-[8px] font-black uppercase tracking-widest transition-all"
               >
                 <CloudOff className="w-3.5 h-3.5" />
-                Remove from Cloud
+                Delete Cloud Node
               </button>
             ) : (
               <button 
                 onClick={handleSyncToCloud}
                 disabled={isSyncing || isSyncBlocked || (!localPreviewUrl && !thought?.storageUrl)}
                 className={cn(
-                  "flex items-center gap-2 px-4 py-2 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all border",
+                  "flex items-center gap-2 px-5 py-2.5 rounded-xl text-[8px] font-black uppercase tracking-widest transition-all border",
                   (isSyncing || isSyncBlocked) 
                     ? "bg-blue-500/5 border-blue-500/10 text-blue-400 opacity-50 cursor-wait" 
                     : "bg-blue-500/10 hover:bg-blue-500/20 border-blue-500/20 text-blue-400"
                 )}
               >
                 {isSyncing || isSyncBlocked ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Cloud className="w-3.5 h-3.5" />}
-                {isSyncing ? 'Syncing...' : isSyncBlocked ? 'Pending Sync' : 'Sync to Cloud'}
+                {isSyncing ? 'Synchronizing...' : isSyncBlocked ? 'Sync Blocked' : 'Propagate to Cloud'}
               </button>
             )}
           </div>

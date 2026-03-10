@@ -188,8 +188,14 @@ export const createStorageSlice: StateCreator<AuthState, [], [], any> = (set, ge
       });
 
       const { useStore } = await import('../useStore');
-      // Update locally without triggering another sync
-      await useStore.getState().updateThought(thoughtId, { updatedAt: Date.now() }, { skipSync: true });
+      const store = useStore.getState();
+      const now = Date.now();
+
+      // Update locally without triggering another sync or marking as 'local'
+      // We use direct DB update + patchThought to bypass the store's debounced updateThought logic
+      await db.thoughts.update(thoughtId, { updatedAt: now });
+      store.patchThought(thoughtId, { updatedAt: now });
+
       // Refresh storage usage after local update
       try {
         const st: any = useStore.getState();
@@ -245,7 +251,9 @@ export const createStorageSlice: StateCreator<AuthState, [], [], any> = (set, ge
               updatedAt: Date.now()
             });
 
-            await useStore.getState().updateThought(t.id, { updatedAt: Date.now() }, { skipSync: true });
+            const now = Date.now();
+            await db.thoughts.update(t.id, { updatedAt: now });
+            useStore.getState().patchThought(t.id, { updatedAt: now });
           } catch (e) {
             console.warn(`[Storage] Background download failed for ${t.id}:`, e);
           }
