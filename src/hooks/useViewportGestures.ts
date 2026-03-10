@@ -62,7 +62,7 @@ export const useViewportGestures = (config: GestureConfig) => {
     }
 
     // Standard exclusions
-    if (target.closest('#inspector, #text-focus-overlay, #table-focus-overlay, #chat-overlay, .focus-box, #space-switcher-list')) return;
+    if (target.closest('#inspector, #text-focus-overlay, #table-focus-overlay, #chat-overlay, .focus-box, #space-switcher-menu')) return;
 
     const isUnscheduledNode = target.closest('[data-unscheduled="true"]');
     const isSidebar = target.closest('#cal-sidebar-content');
@@ -128,7 +128,7 @@ export const useViewportGestures = (config: GestureConfig) => {
     }
 
     if (isDemo && !target.closest('[data-demo-workspace="true"]')) return;
-    if (target.closest('button, input, textarea, .thought-bulb, #inspector, .ui-layer, .expand-img, #chat-overlay, .focus-box')) return;
+    if (target.closest('button, input, textarea, .thought-bulb, #inspector, .ui-layer, .expand-img, #chat-overlay, .focus-box, #space-switcher-menu')) return;
 
 
     isTouchingRef.current = true;
