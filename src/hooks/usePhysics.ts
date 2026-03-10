@@ -363,21 +363,11 @@ export const usePhysics = (
       gridRef.current.style.opacity = mode === 'calendar' ? '0' : '0.03';
     }
 
-    // Parallax Background Logic
-    if (!performanceMode) {
-      const body = document.body;
-      // We use the effective transform to drive background parallax
-      // We use negative values for panning so layers drift correctly
-      // We normalize scale to 0 (default 1.0 = 0 offset)
-      body.style.setProperty('--bg-px', `${-effectiveTransform.x}px`);
-      body.style.setProperty('--bg-py', `${-effectiveTransform.y}px`);
-      body.style.setProperty('--bg-zoom', `${effectiveTransform.scale - 1}`);
-    } else {
-      const body = document.body;
-      body.style.removeProperty('--bg-px');
-      body.style.removeProperty('--bg-py');
-      body.style.removeProperty('--bg-zoom');
-    }
+    // Parallax Background Logic removed for performance optimization
+    const body = document.body;
+    body.style.removeProperty('--bg-px');
+    body.style.removeProperty('--bg-py');
+    body.style.removeProperty('--bg-zoom');
 
     // --- Modular Physics Engine ---
     const strategist = getStrategist(mode);

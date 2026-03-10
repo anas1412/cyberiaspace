@@ -176,13 +176,11 @@ const Viewport: React.FC<{ isInteracting?: boolean }> = ({ isInteracting }) => {
 
         // OPTIMIZATION: Direct DOM manipulation for buttery smooth panning
         const worldEl = document.getElementById('world');
-        const gridEl = document.querySelector('.dot-grid') as HTMLElement;
         const newX = transformRef.current.x + dx;
         const newY = transformRef.current.y + dy;
         
         if (worldEl) worldEl.style.transform = `translate3d(${newX}px, ${newY}px, 0) scale(${transformRef.current.scale})`;
-        if (gridEl) gridEl.style.transform = `translate3d(${newX * 0.5}px, ${newY * 0.5}px, 0)`; // Parallax grid
-
+        
         setTransform(applyConstraints({
           ...transformRef.current,
           x: newX,

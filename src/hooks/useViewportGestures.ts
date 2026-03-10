@@ -94,7 +94,9 @@ export const useViewportGestures = (config: GestureConfig) => {
       const delta = -e.deltaY;
       // Smoother zoom speed: 0.001 for mouse, potentially 0.002 for trackpad pinch (ctrlKey)
       const zoomSpeed = e.ctrlKey ? 0.002 : 0.001;
-      const newScale = Math.min(Math.max(0.1, transform.scale + delta * zoomSpeed * transform.scale), 2);
+      
+      // Optimization: Deactivate zooming in demo mode
+      const newScale = isDemo ? transform.scale : Math.min(Math.max(0.1, transform.scale + delta * zoomSpeed * transform.scale), 2);
       
       const wx = (lx - transform.x) / transform.scale;
       const wy = (ly - transform.y) / transform.scale;
@@ -199,7 +201,8 @@ export const useViewportGestures = (config: GestureConfig) => {
       };
 
       const scaleFactor = currentDist / initialTouchDistance.current;
-      const newScale = Math.min(Math.max(0.1, initialTouchScale.current * scaleFactor), 2);
+      // Optimization: Deactivate zooming in demo mode
+      const newScale = isDemo ? transform.scale : Math.min(Math.max(0.1, initialTouchScale.current * scaleFactor), 2);
 
       newTransform = {
         x: currentMidpoint.x - initialMidpointWorld.current.x * newScale,

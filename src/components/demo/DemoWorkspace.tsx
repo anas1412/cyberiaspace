@@ -24,9 +24,10 @@ const DemoWorkspace: React.FC = () => {
 
   useEffect(() => {
     setDemoMode(true);
-    if (window.innerWidth < 768) {
-      setTransform({ x: 0, y: 0, scale: 0.5 });
-    }
+    // Set a locked zoomed-out state for the demo
+    const initialScale = window.innerWidth < 768 ? 0.5 : 0.7;
+    setTransform({ x: 0, y: 0, scale: initialScale });
+    
     return () => setDemoMode(false);
   }, [setDemoMode, setTransform]);
 
