@@ -42,7 +42,7 @@ export const syncOrchestrator = {
     if (syncDebounceTimer) clearTimeout(syncDebounceTimer);
     
     if (force) {
-      await syncOrchestrator.fullPushSync();
+      await syncOrchestrator.fullPushSync(true);
     } else {
       syncDebounceTimer = setTimeout(async () => {
         await syncOrchestrator.fullPushSync();

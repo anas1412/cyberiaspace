@@ -383,20 +383,25 @@ export const createSpaceSlice: StateCreator<CyberiaState, [], [], any> = (set, g
       }
 
       await db.transaction('rw', [db.thoughts, db.stacks, db.spaces], async () => {
+        const timestamp = Date.now();
         // Move thoughts
         await db.thoughts.where('spaceId').equals(sourceSpaceId).modify({ 
           spaceId: targetSpaceId,
           syncStatus: 'local',
-          updatedAt: Date.now()
+          updatedAt: timestamp
         });
         // Move stacks
         await db.stacks.where('spaceId').equals(sourceSpaceId).modify({ 
           spaceId: targetSpaceId,
           syncStatus: 'local',
-          updatedAt: Date.now()
+          updatedAt: timestamp
         });
-        // Delete source space
-        await db.spaces.delete(sourceSpaceId);
+        // SOFT DELETE source space to ensure cloud removal
+        await db.spaces.update(sourceSpaceId, {
+          deletedAt: timestamp,
+          updatedAt: timestamp,
+          syncStatus: 'local'
+        });
       });
 
       await get().refreshSpaces();
@@ -454,16 +459,34 @@ export const createSpaceSlice: StateCreator<CyberiaState, [], [], any> = (set, g
 
   discardGuestSpace: async (id: string) => {
     try {
-      await db.transaction('rw', [db.spaces, db.thoughts, db.stacks, db.blobs], async () => {
-        const thoughtIds = await db.thoughts.where('spaceId').equals(id).primaryKeys() as string[];
-        await db.thoughts.where('spaceId').equals(id).delete();
-        await db.stacks.where('spaceId').equals(id).delete();
-        if (thoughtIds.length > 0) {
-          await db.blobs.where('thoughtId').anyOf(thoughtIds).delete();
-        }
-        await db.spaces.delete(id);
+      const timestamp = Date.now();
+      await db.transaction('rw', [db.spaces, db.thoughts, db.stacks], async () => {
+        // SOFT DELETE: Create synchronized tombstones
+        await db.spaces.update(id, { 
+          deletedAt: timestamp, 
+          updatedAt: timestamp, 
+          syncStatus: 'local' 
+        });
+        
+        await db.thoughts.where('spaceId').equals(id).modify({ 
+          deletedAt: timestamp, 
+          updatedAt: timestamp, 
+          syncStatus: 'local' 
+        });
+        
+        await db.stacks.where('spaceId').equals(id).modify({ 
+          deletedAt: timestamp, 
+          updatedAt: timestamp, 
+          syncStatus: 'local' 
+        });
       });
+
       await get().refreshSpaces();
+      
+      const authStore = useAuthStore.getState();
+      if (authStore.status === 'authenticated') {
+        syncOrchestrator.triggerSync(true);
+      }
       return true;
     } catch (err) {
       console.error('[Space] Discard failed:', err);
