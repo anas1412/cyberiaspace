@@ -74,8 +74,126 @@ export const syncOrchestrator = {
       const { useStore } = await import('../../store/useStore');
       const store = useStore.getState();
       
-      // Step 1: Push Local Changes (Deltas)
-      console.log('[Sync] Step 1: Pushing local changes...');
+      const lastSync = localStorage.getItem('cyberia-last-sync');
+      const isFirstSync = !lastSync;
+
+      // ==========================================
+      // Step 1: Fetch Cloud Metadata & Reconcile
+      // ==========================================
+      // CRITICAL: We fetch cloud state BEFORE pushing so we learn about 
+      // parent deletions (Stacks/Spaces) before trying to push children (Thoughts).
+      console.log('[Sync] Step 1: Reconciling with cloud...');
+      const [cloudSpaces, cloudStacks, cloudThoughts] = await Promise.all([
+        supabaseSync.getSpaces(userId, 'id, updated_at'),
+        supabaseSync.getStacks(userId, 'id, updated_at'),
+        supabaseSync.getThoughts(userId, 'id, updated_at, space_id, type, storage_url'),
+      ]);
+
+      const cloudSpaceMap = new Map<string, any>(cloudSpaces.spaces.map((s: any) => [s.id, s]));
+      const cloudStackMap = new Map<string, any>(cloudStacks.stacks.map((s: any) => [s.id, s]));
+      const cloudThoughtMap = new Map<string, any>(cloudThoughts.thoughts.map((t: any) => [t.id, t]));
+
+      const localAllSpacesBefore = await db.spaces.toArray();
+      const localAllStacksBefore = await db.stacks.toArray();
+      const localAllThoughtsBefore = await db.thoughts.toArray();
+
+      // Deletion (Absence Rule)
+      // Only run this if we have established a local baseline (lastSync exists)
+      if (!isFirstSync) {
+        for (const s of localAllSpacesBefore) {
+          if (s.syncStatus === 'synced' && !cloudSpaceMap.has(s.id)) await db.spaces.delete(s.id);
+        }
+        for (const s of localAllStacksBefore) {
+          if (s.syncStatus === 'synced' && !cloudStackMap.has(s.id)) {
+            // Dexie Cleanup: Since Dexie has no CASCADE, we manually clear stackId from orphans
+            await db.thoughts.where('stackId').equals(s.id).modify({ stackId: null });
+            await db.stacks.delete(s.id);
+          }
+        }
+        for (const t of localAllThoughtsBefore) {
+          if (t.syncStatus === 'synced' && !cloudThoughtMap.has(t.id)) {
+            await db.thoughts.delete(t.id);
+            await db.blobs.where('thoughtId').equals(t.id).delete();
+          }
+        }
+      }
+
+      // Updates (Cloud is newer)
+      let cloudChanges = false;
+      const currentActiveSpaceId = store.activeSpaceId;
+
+      const allKnownSpaceIds = new Set([
+        ...localAllSpacesBefore.filter(s => !s.deletedAt).map(s => s.id),
+        ...Array.from(cloudSpaceMap.keys())
+      ]);
+
+      for (const [id, cloudS] of cloudSpaceMap) {
+        const localS = localAllSpacesBefore.find(ls => ls.id === id);
+        if (!localS || (cloudS.updatedAt && localS.updatedAt && new Date(cloudS.updatedAt).getTime() > localS.updatedAt)) {
+          const { data } = await supabase.from('spaces').select('*').eq('id', id).single();
+          if (data) {
+            await db.spaces.put({ ...toCamelCase(data), syncStatus: 'synced' } as any);
+            cloudChanges = true;
+          }
+        }
+      }
+
+      for (const [id, cloudStack] of cloudStackMap) {
+        const localStack = localAllStacksBefore.find(ls => ls.id === id);
+        const cloudTime = cloudStack.updatedAt ? new Date(cloudStack.updatedAt).getTime() : 0;
+        const localTime = localStack?.updatedAt || 0;
+
+        if (!localStack || cloudTime > localTime) {
+          const { data } = await supabase.from('stacks').select('*').eq('id', id).single();
+          if (data) {
+            await db.stacks.put({ ...toCamelCase(data), syncStatus: 'synced' } as any);
+            cloudChanges = true;
+          }
+        } else if (localStack && localStack.syncStatus === 'local' && cloudTime === localTime) {
+          await db.stacks.update(id, { syncStatus: 'synced' });
+          cloudChanges = true;
+        }
+      }
+
+      for (const [id, cloudT] of cloudThoughtMap) {
+        if (allKnownSpaceIds.has(cloudT.spaceId)) {
+          const localT = localAllThoughtsBefore.find(lt => lt.id === id);
+          const needsHealing = localT && localT.type === 'file' && localT.storageUrl && !(await db.blobs.where('thoughtId').equals(id).first());
+          
+          const cloudTime = cloudT.updatedAt ? new Date(cloudT.updatedAt).getTime() : 0;
+          const localTime = localT?.updatedAt || 0;
+          
+          if (!localT || cloudTime > localTime || needsHealing) {
+            const { data } = await supabase.from('thoughts').select('*').eq('id', id).single();
+            if (data) {
+              await db.thoughts.put({ ...toCamelCase(data), syncStatus: 'synced' } as any);
+              cloudChanges = true;
+              
+              if (data.type === 'file' && data.storage_url) {
+                if (data.space_id === currentActiveSpaceId || localT) {
+                  authState.downloadSingleBlob(id);
+                }
+              }
+            }
+          } else if (localT && localT.syncStatus === 'local' && cloudTime === localTime) {
+            await db.thoughts.update(id, { syncStatus: 'synced' });
+            cloudChanges = true;
+          }
+        }
+      }
+
+      if (cloudChanges) {
+        await Promise.all([
+          store.refreshSpaces(),
+          store.refreshThoughts(),
+          store.refreshStacks()
+        ]);
+      }
+
+      // ==========================================
+      // Step 2: Push Local Changes (Deltas)
+      // ==========================================
+      console.log('[Sync] Step 2: Pushing local changes...');
       
       const [localSpaces, localStacks, localThoughts] = await Promise.all([
         db.spaces.filter(s => s.syncStatus === 'local').toArray(),
@@ -83,46 +201,22 @@ export const syncOrchestrator = {
         db.thoughts.filter(t => t.syncStatus === 'local').toArray(),
       ]);
 
-      // HANDSHAKE GUARD: On a new device, we must NEVER push deletions
-      // until we have confirmed we are fully hydrated from the cloud.
-      const lastSync = localStorage.getItem('cyberia-last-sync');
-      const isFirstSync = !lastSync;
-      
       if (isFirstSync) {
         console.log('[Sync] New device detected. Outgoing cloud deletions are disabled for safety.');
       }
 
       const onboardingSpaceIds = new Set(localSpaces.filter(s => s.isOnboarding).map(s => s.id));
 
-      // Handle deletions first (Synchronized Tombstones)
-      for (const space of localSpaces.filter(s => s.deletedAt)) {
-        try {
-          if (!isFirstSync) await supabaseSync.deleteSpace(space.id, userId);
-          await db.spaces.delete(space.id);
-        } catch (e) {
-          console.warn('[Sync] Space deletion failed, will retry:', e);
-        }
-      }
-      for (const stack of localStacks.filter(s => s.deletedAt)) {
-        try {
-          if (!isFirstSync) await supabaseSync.deleteStack(stack.id, userId);
-          await db.stacks.delete(stack.id);
-        } catch (e) {
-          console.warn('[Sync] Stack deletion failed, will retry:', e);
-        }
-      }
+      // 2.1 Handle Deletions (Reverse Order: Thoughts -> Stacks -> Spaces)
+      // This order ensures FK safety during individual cloud delete calls.
       for (const thought of localThoughts.filter(t => t.deletedAt)) {
         let storageDeleted = true;
-        // Only delete from cloud storage if we aren't in a "first sync" state
         if (thought.storagePath && !isFirstSync) {
           try {
             await supabaseStorage.deleteFile(thought.storagePath);
           } catch (e: any) {
-            const isNetworkError = e.message?.toLowerCase().includes('network') || e.message?.toLowerCase().includes('fetch');
             const is404 = e.message?.includes('404') || e.status === 404;
-            if (isNetworkError && !is404) {
-              storageDeleted = false;
-            }
+            if (!is404) storageDeleted = false;
           }
         }
         
@@ -132,8 +226,7 @@ export const syncOrchestrator = {
             await db.thoughts.delete(thought.id);
             await db.blobs.where('thoughtId').equals(thought.id).delete();
           } catch (e: any) {
-            const is404 = e.status === 404 || e.message?.includes('not found');
-            if (is404) {
+            if (e.status === 404 || e.message?.includes('not found')) {
               await db.thoughts.delete(thought.id);
               await db.blobs.where('thoughtId').equals(thought.id).delete();
             }
@@ -141,9 +234,27 @@ export const syncOrchestrator = {
         }
       }
 
-      // Handle Creates/Updates
-      // During first sync, we allow pushing new work (guest sessions) 
-      // but we filter out the default empty onboarding space if cloud data already exists.
+      for (const stack of localStacks.filter(s => s.deletedAt)) {
+        try {
+          if (!isFirstSync) await supabaseSync.deleteStack(stack.id, userId);
+          await db.stacks.delete(stack.id);
+        } catch (e: any) {
+          if (e.status === 404 || e.message?.includes('not found')) await db.stacks.delete(stack.id);
+          else console.warn('[Sync] Stack deletion failed:', e);
+        }
+      }
+
+      for (const space of localSpaces.filter(s => s.deletedAt)) {
+        try {
+          if (!isFirstSync) await supabaseSync.deleteSpace(space.id, userId);
+          await db.spaces.delete(space.id);
+        } catch (e: any) {
+          if (e.status === 404 || e.message?.includes('not found')) await db.spaces.delete(space.id);
+          else console.warn('[Sync] Space deletion failed:', e);
+        }
+      }
+
+      // 2.2 Handle Creates/Updates (Order: Spaces -> Stacks -> Thoughts)
       const spacesToPush = localSpaces.filter(s => !s.deletedAt && !s.isOnboarding);
       const stacksToPush = localStacks.filter(s => !s.deletedAt && !s.isOnboarding);
       const thoughtsToPush = localThoughts.filter(t => !t.deletedAt && !onboardingSpaceIds.has(t.spaceId));
@@ -180,122 +291,24 @@ export const syncOrchestrator = {
       }
 
       if (thoughtsToPush.length > 0) {
-        await supabaseSync.createThoughts(thoughtsToPush.map(t => ({ ...t, user_id: userId })));
+        // FK Safety: If any thought still has a stackId that doesn't exist in cloud or in stacksToPush, clear it
+        const existingCloudStackIds = new Set(Array.from(cloudStackMap.keys()));
+        const pushingStackIds = new Set(stacksToPush.map(s => s.id));
+        
+        const safeThoughts = thoughtsToPush.map(t => {
+          if (t.stackId && !existingCloudStackIds.has(t.stackId) && !pushingStackIds.has(t.stackId)) {
+            console.warn(`[Sync] Clearing invalid stackId ${t.stackId} from thought ${t.id} to prevent FK violation`);
+            return { ...t, stackId: null, user_id: userId };
+          }
+          return { ...t, user_id: userId };
+        });
+
+        await supabaseSync.createThoughts(safeThoughts);
         const ids = thoughtsToPush.map(t => t.id);
         await db.thoughts.where('id').anyOf(ids).modify({ syncStatus: 'synced' });
         await store.refreshThoughts();
       } else if (filesUploaded) {
         await store.refreshThoughts();
-      }
-
-      // Step 2: Fetch Cloud Metadata & Reconcile
-      console.log('[Sync] Step 2: Reconciling with cloud...');
-      const [cloudSpaces, cloudStacks, cloudThoughts] = await Promise.all([
-        supabaseSync.getSpaces(userId, 'id, updated_at'),
-        supabaseSync.getStacks(userId, 'id, updated_at'),
-        supabaseSync.getThoughts(userId, 'id, updated_at, space_id, type, storage_url'),
-      ]);
-
-      const cloudSpaceMap = new Map<string, any>(cloudSpaces.spaces.map((s: any) => [s.id, s]));
-      const cloudStackMap = new Map<string, any>(cloudStacks.stacks.map((s: any) => [s.id, s]));
-      const cloudThoughtMap = new Map<string, any>(cloudThoughts.thoughts.map((t: any) => [t.id, t]));
-
-      const localAllSpaces = await db.spaces.toArray();
-      const localAllStacks = await db.stacks.toArray();
-      const localAllThoughts = await db.thoughts.toArray();
-
-      // Deletion (Absence Rule)
-      // Only run this if we have established a local baseline (lastSync exists)
-      // This prevents an empty local database from thinking cloud items were deleted elsewhere.
-      if (!isFirstSync) {
-        for (const s of localAllSpaces) {
-          if (s.syncStatus === 'synced' && !cloudSpaceMap.has(s.id)) await db.spaces.delete(s.id);
-        }
-        for (const s of localAllStacks) {
-          if (s.syncStatus === 'synced' && !cloudStackMap.has(s.id)) await db.stacks.delete(s.id);
-        }
-        for (const t of localAllThoughts) {
-          if (t.syncStatus === 'synced' && !cloudThoughtMap.has(t.id)) {
-            await db.thoughts.delete(t.id);
-            await db.blobs.where('thoughtId').equals(t.id).delete();
-          }
-        }
-      }
-
-      // Updates (Cloud is newer) - Reconcile ALL spaces
-      let cloudChanges = false;
-      const currentActiveSpaceId = store.activeSpaceId;
-
-      const allKnownSpaceIds = new Set([
-        ...localAllSpaces.filter(s => !s.deletedAt).map(s => s.id),
-        ...Array.from(cloudSpaceMap.keys())
-      ]);
-
-      for (const [id, cloudS] of cloudSpaceMap) {
-        const localS = localAllSpaces.find(ls => ls.id === id);
-        if (!localS || (cloudS.updatedAt && localS.updatedAt && new Date(cloudS.updatedAt).getTime() > localS.updatedAt)) {
-          const { data } = await supabase.from('spaces').select('*').eq('id', id).single();
-          if (data) {
-            await db.spaces.put({ ...toCamelCase(data), syncStatus: 'synced' } as any);
-            cloudChanges = true;
-          }
-        }
-      }
-
-      for (const [id, cloudStack] of cloudStackMap) {
-        const localStack = localAllStacks.find(ls => ls.id === id);
-        const cloudTime = cloudStack.updatedAt ? new Date(cloudStack.updatedAt).getTime() : 0;
-        const localTime = localStack?.updatedAt || 0;
-
-        if (!localStack || cloudTime > localTime) {
-          const { data } = await supabase.from('stacks').select('*').eq('id', id).single();
-          if (data) {
-            await db.stacks.put({ ...toCamelCase(data), syncStatus: 'synced' } as any);
-            cloudChanges = true;
-          }
-        } else if (localStack && localStack.syncStatus === 'local' && cloudTime === localTime) {
-          await db.stacks.update(id, { syncStatus: 'synced' });
-          cloudChanges = true;
-        }
-      }
-
-      for (const [id, cloudT] of cloudThoughtMap) {
-        // Reconcile ALL thoughts for ALL spaces known to this device
-        if (allKnownSpaceIds.has(cloudT.spaceId)) {
-          const localT = localAllThoughts.find(lt => lt.id === id);
-          const needsHealing = localT && localT.type === 'file' && localT.storageUrl && !(await db.blobs.where('thoughtId').equals(id).first());
-          
-          const cloudTime = cloudT.updatedAt ? new Date(cloudT.updatedAt).getTime() : 0;
-          const localTime = localT?.updatedAt || 0;
-          
-          if (!localT || cloudTime > localTime || needsHealing) {
-            const { data } = await supabase.from('thoughts').select('*').eq('id', id).single();
-            if (data) {
-              await db.thoughts.put({ ...toCamelCase(data), syncStatus: 'synced' } as any);
-              cloudChanges = true;
-              
-              // HEALING & ASSET PREFETCH RULE: 
-              // We only auto-download blobs for the ACTIVE space to save bandwidth.
-              // Other spaces will download assets on-demand when opened.
-              if (data.type === 'file' && data.storage_url) {
-                if (data.space_id === currentActiveSpaceId || localT) {
-                  authState.downloadSingleBlob(id);
-                }
-              }
-            }
-          } else if (localT && localT.syncStatus === 'local' && cloudTime === localTime) {
-            await db.thoughts.update(id, { syncStatus: 'synced' });
-            cloudChanges = true;
-          }
-        }
-      }
-
-      if (cloudChanges) {
-        await Promise.all([
-          store.refreshSpaces(),
-          store.refreshThoughts(),
-          store.refreshStacks()
-        ]);
       }
 
       const now = new Date();
