@@ -116,13 +116,15 @@ export interface CyberiaState {
   lastUpdated: string | null;
   publishSpace: (id: string) => Promise<string | void>;
   unpublishSpace: (id: string) => Promise<void>;
-  importFullState: (data: any) => Promise<void>;
+  importFullState: (data: any, merge?: boolean) => Promise<void>;
 
   clearLocalData: () => Promise<void>;
   exportData: () => Promise<void>;
   importData: (file: File) => Promise<void>;
   cleanupTrash: () => Promise<void>;
   isLocalWorkspaceEmpty: () => Promise<boolean>;
+  mergeGuestSpace: (sourceSpaceId: string, targetSpaceId: string) => Promise<boolean>;
+  replaceCloudSpace: (sourceSpaceId: string, targetSpaceIdToReplace: string) => Promise<boolean>;
 }
 
 export interface AuthState {

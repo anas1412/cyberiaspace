@@ -262,8 +262,6 @@ const FileFocusEditor: React.FC = () => {
   const { 
     uploadThoughtBlob, 
     removeCloudAsset, 
-    autoSync, 
-    setAutoSync,
     status: authStatus 
   } = useAuthStore();
   const openModal = useModalStore(state => state.openModal);
@@ -409,25 +407,7 @@ const FileFocusEditor: React.FC = () => {
 
   const handleSyncToCloud = async () => {
     if (!thought || isReadOnly) return;
-    
-    if (!autoSync) {
-      openModal({
-        title: 'Enable Auto-Sync?',
-        description: 'Auto-sync is currently disabled. Would you like to enable it for all files, or just sync this specific asset once?',
-        type: 'confirm_cancel',
-        confirmText: 'Enable & Sync',
-        cancelText: 'Sync This Only',
-        onConfirm: async () => {
-          await setAutoSync(true);
-          await uploadThoughtBlob(thought.id, true);
-        },
-        onCancel: async () => {
-          await uploadThoughtBlob(thought.id, true);
-        }
-      });
-    } else {
-      await uploadThoughtBlob(thought.id, true);
-    }
+    await uploadThoughtBlob(thought.id, true);
   };
 
   const handleRemoveFromCloud = () => {

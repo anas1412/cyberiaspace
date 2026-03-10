@@ -255,22 +255,22 @@ export const createDataSlice: StateCreator<CyberiaState, [], [], any> = (set, ge
     }
   },
 
-  importFullState: async (data: any) => {
+  importFullState: async (data: any, merge: boolean = false) => {
     if (get().isReadOnly) return;
     try {
-      console.log('[Store] Importing full state from cloud...');
+      console.log(`[Store] ${merge ? 'Merging' : 'Importing'} full state from cloud...`);
       await db.transaction('rw', db.spaces, db.thoughts, db.stacks, async () => {
         // Clear and add only if data exists
         if (data.spaces && data.spaces.length > 0) {
-          await db.spaces.clear();
+          if (!merge) await db.spaces.clear();
           await db.spaces.bulkPut(data.spaces);
         }
         if (data.thoughts && data.thoughts.length > 0) {
-          await db.thoughts.clear();
+          if (!merge) await db.thoughts.clear();
           await db.thoughts.bulkPut(data.thoughts);
         }
         if (data.stacks && data.stacks.length > 0) {
-          await db.stacks.clear();
+          if (!merge) await db.stacks.clear();
           await db.stacks.bulkPut(data.stacks);
         }
       });
@@ -283,9 +283,9 @@ export const createDataSlice: StateCreator<CyberiaState, [], [], any> = (set, ge
       await get().refreshTotalThoughtCount();
       await get().cleanupTrash();
       
-      const { spaces } = get();
+      const { spaces, activeSpaceId } = get();
       if (spaces.length > 0) {
-        const targetId = data.activeSpaceId || spaces[0].id;
+        const targetId = activeSpaceId || data.activeSpaceId || spaces[0].id;
         await get().setActiveSpace(targetId);
       }
       

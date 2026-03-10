@@ -4,7 +4,7 @@ import { useStore } from '../store/useStore';
 import { useSyncStore } from '../store/useSyncStore';
 import { PLAN_CONFIG } from '../constants';
 import { useModalStore } from '../store/useModalStore';
-import { LogOut, Cloud, CloudOff, RefreshCw, ChevronDown, Trash2, Power, Database, WifiOff, Zap, Star, CreditCard, Calendar, LogIn } from 'lucide-react';
+import { LogOut, Cloud, CloudOff, RefreshCw, ChevronDown, Trash2, Database, WifiOff, Zap, Star, CreditCard, Calendar, LogIn } from 'lucide-react';
 
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
@@ -25,7 +25,7 @@ const AccountMenu: React.FC = () => {
   
   const { 
     user, status, signOut, 
-    syncData, autoSync, setAutoSync, deleteCloudData, 
+    syncData, deleteCloudData, 
     storageUsageMB, calculateUsage, isOnline
   } = authStore;
   
@@ -298,27 +298,6 @@ const AccountMenu: React.FC = () => {
               </button>
             </div>
 
-            <button 
-              onClick={() => setAutoSync(!autoSync)}
-              className="w-full flex items-center justify-between p-2.5 rounded-xl md:rounded-2xl hover:bg-white/5 transition-colors group"
-            >
-              <div className="flex items-center gap-2.5">
-                <Power className={cn("w-3.5 h-3.5 transition-colors", autoSync ? "text-blue-400" : "text-slate-500")} />
-                <div className="text-left">
-                  <p className="text-[8px] md:text-[9px] font-black uppercase tracking-widest text-white">Auto-Sync</p>
-                  <p className="text-[9px] font-bold text-slate-500 uppercase tracking-widest">{autoSync ? 'Always active' : 'Manual only'}</p>
-                </div>
-              </div>
-              <div className={cn(
-                "w-7 h-3.5 rounded-full p-1 transition-colors relative",
-                autoSync ? "bg-blue-500" : "bg-slate-700"
-              )}>
-                <div className={cn(
-                  "w-1.5 h-1.5 rounded-full bg-white transition-transform",
-                  autoSync ? "translate-x-3.5" : "translate-x-0"
-                )} />
-              </div>
-            </button>
           </div>
           
 

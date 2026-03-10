@@ -335,7 +335,7 @@ export const createAuthSlice: StateCreator<AuthState, [], [], any> = (set, get, 
         });
       });
 
-      await get().setAutoSync(false);
+      // After wipe, we keep autoSync on as it is now mandatory
       localStorage.removeItem('cyberia-last-sync');
       set({ syncStatus: 'offline', lastSync: null });
       

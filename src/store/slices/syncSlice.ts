@@ -26,7 +26,7 @@ export const createSyncSlice: StateCreator<AuthState, [], [], SyncSlice> = (set,
     ? (localStorage.getItem('cyberia-user') ? 'synced' : 'offline') 
     : 'offline',
   lastSync: localStorage.getItem('cyberia-last-sync') ? new Date(localStorage.getItem('cyberia-last-sync')!) : null,
-  autoSync: localStorage.getItem('cyberia-auto-sync') === 'true',
+  autoSync: true,
   isOnline: typeof navigator !== 'undefined' ? navigator.onLine : true,
   _syncPromise: null,
 
@@ -80,17 +80,17 @@ export const createSyncSlice: StateCreator<AuthState, [], [], SyncSlice> = (set,
 
   handlePostAuthSync: async () => {
     console.log('[Sync] Starting initial handshake...');
+    const { useStore } = await import('../useStore');
+    const store = useStore.getState();
     
     // Fast path: try cloud hydration first
     try {
       const cloudData = await syncOrchestrator.fetchCloudData();
       if (cloudData) {
-        const { useStore } = await import('../useStore');
-        const store = useStore.getState();
-        
         // 1. Check for Quota Conflict
         const localSpaces = await db.spaces.filter(s => s.syncStatus === 'local').toArray();
         const cloudSpaces = (cloudData.spaces || []) as any[];
+        
         const totalUniqueSpaces = new Set([
           ...localSpaces.map(s => s.id),
           ...cloudSpaces.map(s => s.id)
@@ -107,24 +107,32 @@ export const createSyncSlice: StateCreator<AuthState, [], [], SyncSlice> = (set,
             const { useModalStore } = await import('../useModalStore');
             useModalStore.getState().openModal({
               title: 'Space Limit Reached',
-              description: `You have extra work from your guest session, but your ${plan} account is at its ${limit}-space limit. Your guest work will stay on this device only until you upgrade or merge it.`,
-              type: 'alert',
-              confirmText: 'Got it'
+              type: 'quota_resolver'
             });
-          }, 1000);
+          }, 1500);
         }
 
-        // 2. Perform Smart Hydration (Merge)
-        await store.importFullState(cloudData);
+        // 2. Perform Smart Hydration (Merge local guest work with cloud data)
+        await store.importFullState(cloudData, true);
         
+        // 3. Auto-select first space if none active
+        const updatedSpaces = await db.spaces.toArray();
+        if (updatedSpaces.length > 0 && !store.activeSpaceId) {
+          const firstSpace = updatedSpaces[0];
+          await store.setActiveSpace(firstSpace.id);
+        }
+
         try {
           const st: any = useStore.getState();
           st?.calculateUsage?.(st.totalThoughtCount || 0);
         } catch {}
         
-        // 3. Mark first sync as successful to unlock deletions
+        // 4. Mark first sync as successful to unlock deletions
         localStorage.setItem('cyberia-last-sync', new Date().toISOString());
         set({ lastSync: new Date(), syncStatus: 'synced' });
+
+        // 5. Trigger an immediate push sync to upload any local guest work
+        syncOrchestrator.triggerSync(true);
         return;
       }
     } catch (e) {
@@ -135,6 +143,16 @@ export const createSyncSlice: StateCreator<AuthState, [], [], SyncSlice> = (set,
     await get().syncData();
     localStorage.setItem('cyberia-last-sync', new Date().toISOString());
     set({ lastSync: new Date(), syncStatus: 'synced' });
+    
+    // Final auto-selection check
+    const finalSpaces = await db.spaces.toArray();
+    if (finalSpaces.length > 0 && !store.activeSpaceId) {
+      const { useStore: dynamicStore } = await import('../useStore');
+      await dynamicStore.getState().setActiveSpace(finalSpaces[0].id);
+    }
+
+    // Trigger an immediate push sync to upload any local guest work
+    syncOrchestrator.triggerSync(true);
   },
 
   setAutoSync: async (enabled: boolean) => {

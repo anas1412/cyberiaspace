@@ -327,20 +327,21 @@ export const createSpaceSlice: StateCreator<CyberiaState, [], [], any> = (set, g
     }
   },
 
-  importFullState: async (data: any) => {
+  importFullState: async (data: any, merge: boolean = false) => {
     if (get().isReadOnly) return;
     try {
-      await db.transaction('rw', db.spaces, db.thoughts, db.stacks, async () => {
+      console.log(`[Store] ${merge ? 'Merging' : 'Importing'} full state from cloud...`);
+      await db.transaction('rw', [db.spaces, db.thoughts, db.stacks], async () => {
         if (data.spaces && data.spaces.length > 0) {
-          await db.spaces.clear();
+          if (!merge) await db.spaces.clear();
           await db.spaces.bulkPut(data.spaces);
         }
         if (data.thoughts && data.thoughts.length > 0) {
-          await db.thoughts.clear();
+          if (!merge) await db.thoughts.clear();
           await db.thoughts.bulkPut(data.thoughts);
         }
         if (data.stacks && data.stacks.length > 0) {
-          await db.stacks.clear();
+          if (!merge) await db.stacks.clear();
           await db.stacks.bulkPut(data.stacks);
         }
       });
@@ -353,13 +354,101 @@ export const createSpaceSlice: StateCreator<CyberiaState, [], [], any> = (set, g
       await get().refreshTotalThoughtCount();
       await get().cleanupTrash();
       
-      const { spaces } = get();
+      const { spaces, activeSpaceId } = get();
       if (spaces.length > 0) {
-        const targetId = data.activeSpaceId || spaces[0].id;
+        const targetId = activeSpaceId || data.activeSpaceId || spaces[0].id;
         await get().setActiveSpace(targetId);
       }
+      
+      console.log('[Store] Full state import complete.');
     } catch (err) {
       console.error('Full state import failed', err);
+    }
+  },
+
+  mergeGuestSpace: async (sourceSpaceId: string, targetSpaceId: string) => {
+    try {
+      const sourceThoughts = await db.thoughts.where('spaceId').equals(sourceSpaceId).and(t => !t.deletedAt).toArray();
+      const targetThoughtsCount = await db.thoughts.where('spaceId').equals(targetSpaceId).and(t => !t.deletedAt).count();
+      
+      const limits = get().getLimits();
+      if (sourceThoughts.length + targetThoughtsCount > limits.MAX_THOUGHTS_PER_SPACE) {
+        useModalStore.getState().openModal({
+          title: 'Thought Limit Reached',
+          description: `Merging would result in ${sourceThoughts.length + targetThoughtsCount} thoughts, which exceeds the ${limits.MAX_THOUGHTS_PER_SPACE} limit for this space.`,
+          type: 'alert',
+          confirmText: 'Acknowledged'
+        });
+        return false;
+      }
+
+      await db.transaction('rw', [db.thoughts, db.stacks, db.spaces], async () => {
+        // Move thoughts
+        await db.thoughts.where('spaceId').equals(sourceSpaceId).modify({ 
+          spaceId: targetSpaceId,
+          syncStatus: 'local',
+          updatedAt: Date.now()
+        });
+        // Move stacks
+        await db.stacks.where('spaceId').equals(sourceSpaceId).modify({ 
+          spaceId: targetSpaceId,
+          syncStatus: 'local',
+          updatedAt: Date.now()
+        });
+        // Delete source space
+        await db.spaces.delete(sourceSpaceId);
+      });
+
+      await get().refreshSpaces();
+      await get().refreshThoughts(targetSpaceId);
+      await get().refreshStacks(targetSpaceId);
+      
+      const authStore = useAuthStore.getState();
+      if (authStore.status === 'authenticated') {
+        syncOrchestrator.triggerSync(true);
+      }
+      return true;
+    } catch (err) {
+      console.error('[Space] Merge failed:', err);
+      return false;
+    }
+  },
+
+  replaceCloudSpace: async (sourceSpaceId: string, targetSpaceIdToReplace: string) => {
+    try {
+      const authStore = useAuthStore.getState();
+      if (authStore.status !== 'authenticated') return false;
+
+      // Check Global Cloud Thought Limit
+      const sourceThoughtsCount = await db.thoughts.where('spaceId').equals(sourceSpaceId).and(t => !t.deletedAt).count();
+      const targetThoughtsCount = await db.thoughts.where('spaceId').equals(targetSpaceIdToReplace).and(t => !t.deletedAt).count();
+      const currentCloudThoughts = authStore.user?.usage?.sync_thoughts || 0;
+      
+      const limits = get().getLimits();
+      // Total will be: CurrentCloud - OldSpaceThoughts + NewSpaceThoughts
+      if (currentCloudThoughts - targetThoughtsCount + sourceThoughtsCount > limits.MAX_CLOUD_THOUGHTS) {
+        useModalStore.getState().openModal({
+          title: 'Account Limit Reached',
+          description: `Replacing this space would put you at ${currentCloudThoughts - targetThoughtsCount + sourceThoughtsCount} total thoughts, exceeding your ${authStore.user?.plan} account limit of ${limits.MAX_CLOUD_THOUGHTS}.`,
+          type: 'alert',
+          confirmText: 'Acknowledged'
+        });
+        return false;
+      }
+
+      await get().deleteSpace(targetSpaceIdToReplace);
+      
+      // Mark source space as synced (will be pushed on next sync)
+      await db.spaces.update(sourceSpaceId, { 
+        syncStatus: 'local',
+        updatedAt: Date.now()
+      });
+
+      await syncOrchestrator.triggerSync(true);
+      return true;
+    } catch (err) {
+      console.error('[Space] Replace failed:', err);
+      return false;
     }
   }
 });

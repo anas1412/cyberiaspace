@@ -142,9 +142,11 @@ export const syncOrchestrator = {
       }
 
       // Handle Creates/Updates
-      const spacesToPush = isFirstSync ? [] : localSpaces.filter(s => !s.deletedAt && !s.isOnboarding);
-      const stacksToPush = isFirstSync ? [] : localStacks.filter(s => !s.deletedAt && !s.isOnboarding);
-      const thoughtsToPush = isFirstSync ? [] : localThoughts.filter(t => !t.deletedAt && !onboardingSpaceIds.has(t.spaceId));
+      // During first sync, we allow pushing new work (guest sessions) 
+      // but we filter out the default empty onboarding space if cloud data already exists.
+      const spacesToPush = localSpaces.filter(s => !s.deletedAt && !s.isOnboarding);
+      const stacksToPush = localStacks.filter(s => !s.deletedAt && !s.isOnboarding);
+      const thoughtsToPush = localThoughts.filter(t => !t.deletedAt && !onboardingSpaceIds.has(t.spaceId));
 
       if (spacesToPush.length > 0) {
         await supabaseSync.createSpaces(spacesToPush.map(s => ({ ...s, user_id: userId })), userId);
