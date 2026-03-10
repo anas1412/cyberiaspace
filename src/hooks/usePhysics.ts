@@ -453,6 +453,8 @@ export const usePhysics = (
       sidebarTop: sbRect ? (sbRect.top / globalScale) : 320,
       isMobile,
       isReadOnly: useStore.getState().isReadOnly,
+      isDemo: useStore.getState().isDemo,
+      transform: vT_visual,
       calendarCellMap,
       thoughtMap: thoughtMap.current,
       columnMap,

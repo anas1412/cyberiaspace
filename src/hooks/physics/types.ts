@@ -23,6 +23,8 @@ export interface LayoutContext {
   sidebarTop: number;
   isMobile: boolean;
   isReadOnly: boolean;
+  isDemo?: boolean;
+  transform: { x: number; y: number; scale: number };
   calendarCellMap?: Map<string, { x: number; y: number; w: number; h: number }>;
   thoughtMap: Map<string, Thought>;
   columnMap?: Map<string, Thought[]>;

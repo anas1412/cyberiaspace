@@ -25,7 +25,7 @@ const DemoWorkspace: React.FC = () => {
   useEffect(() => {
     setDemoMode(true);
     // Set a locked zoomed-out state for the demo
-    const initialScale = window.innerWidth < 768 ? 0.5 : 0.7;
+    const initialScale = window.innerWidth < 768 ? 0.3 : 0.6;
     setTransform({ x: 0, y: 0, scale: initialScale });
     
     return () => setDemoMode(false);
@@ -39,7 +39,7 @@ const DemoWorkspace: React.FC = () => {
     <div 
       id="demo-workspace-container"
       data-demo-workspace="true"
-      className="w-full h-[400px] md:h-[600px] glass rounded-[2rem] md:rounded-[3rem] overflow-hidden relative border border-white/5 shadow-2xl group pointer-events-auto"
+      className="w-full h-[400px] md:h-[600px] glass rounded-2xl overflow-hidden relative border border-white/5 shadow-2xl group pointer-events-auto"
     >
       {/* Real App Layers */}
       <div className={cn("w-full h-full", !isInteracting && "md:pointer-events-auto pointer-events-none")}>

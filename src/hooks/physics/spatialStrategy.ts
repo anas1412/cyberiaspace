@@ -40,11 +40,15 @@ export const spatialStrategy: LayoutStrategist = {
     const prioLevel = PRIORITY_WEIGHT[thought.priority] || 0;
     const gravityMultiplier = 1 + prioLevel * 0.5;
     
-    // Gravity toward center
+    // Gravity toward visual center in world coordinates
     const centerX = p.x + 140;
     const centerY = p.y + (elementHeights.get(id) || 120) / 2;
-    dvx += (context.logicalWidth / 2 - centerX) * (GRAVITY * gravityMultiplier);
-    dvy += (context.logicalHeight / 2 - centerY) * (GRAVITY * gravityMultiplier);
+    
+    const targetX = (context.logicalWidth / 2 - context.transform.x) / context.transform.scale;
+    const targetY = (context.logicalHeight / 2 - context.transform.y) / context.transform.scale;
+    
+    dvx += (targetX - centerX) * (GRAVITY * gravityMultiplier);
+    dvy += (targetY - centerY) * (GRAVITY * gravityMultiplier);
 
     allStates.forEach((otherP, otherId) => {
       if (id === otherId) return;
