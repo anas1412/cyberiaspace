@@ -76,18 +76,28 @@ export const syncOrchestrator = {
       
       // Step 1: Push Local Changes (Deltas)
       console.log('[Sync] Step 1: Pushing local changes...');
+      
       const [localSpaces, localStacks, localThoughts] = await Promise.all([
         db.spaces.filter(s => s.syncStatus === 'local').toArray(),
         db.stacks.filter(s => s.syncStatus === 'local').toArray(),
         db.thoughts.filter(t => t.syncStatus === 'local').toArray(),
       ]);
 
+      // HANDSHAKE GUARD: On a new device, we must NEVER push deletions
+      // until we have confirmed we are fully hydrated from the cloud.
+      const lastSync = localStorage.getItem('cyberia-last-sync');
+      const isFirstSync = !lastSync;
+      
+      if (isFirstSync) {
+        console.log('[Sync] New device detected. Outgoing cloud deletions are disabled for safety.');
+      }
+
       const onboardingSpaceIds = new Set(localSpaces.filter(s => s.isOnboarding).map(s => s.id));
 
       // Handle deletions first (Synchronized Tombstones)
       for (const space of localSpaces.filter(s => s.deletedAt)) {
         try {
-          await supabaseSync.deleteSpace(space.id, userId);
+          if (!isFirstSync) await supabaseSync.deleteSpace(space.id, userId);
           await db.spaces.delete(space.id);
         } catch (e) {
           console.warn('[Sync] Space deletion failed, will retry:', e);
@@ -95,7 +105,7 @@ export const syncOrchestrator = {
       }
       for (const stack of localStacks.filter(s => s.deletedAt)) {
         try {
-          await supabaseSync.deleteStack(stack.id, userId);
+          if (!isFirstSync) await supabaseSync.deleteStack(stack.id, userId);
           await db.stacks.delete(stack.id);
         } catch (e) {
           console.warn('[Sync] Stack deletion failed, will retry:', e);
@@ -103,7 +113,8 @@ export const syncOrchestrator = {
       }
       for (const thought of localThoughts.filter(t => t.deletedAt)) {
         let storageDeleted = true;
-        if (thought.storagePath) {
+        // Only delete from cloud storage if we aren't in a "first sync" state
+        if (thought.storagePath && !isFirstSync) {
           try {
             await supabaseStorage.deleteFile(thought.storagePath);
           } catch (e: any) {
@@ -117,7 +128,7 @@ export const syncOrchestrator = {
         
         if (storageDeleted) {
           try {
-            await supabaseSync.deleteThought(thought.id, userId);
+            if (!isFirstSync) await supabaseSync.deleteThought(thought.id, userId);
             await db.thoughts.delete(thought.id);
             await db.blobs.where('thoughtId').equals(thought.id).delete();
           } catch (e: any) {
@@ -131,9 +142,9 @@ export const syncOrchestrator = {
       }
 
       // Handle Creates/Updates
-      const spacesToPush = localSpaces.filter(s => !s.deletedAt && !s.isOnboarding);
-      const stacksToPush = localStacks.filter(s => !s.deletedAt && !s.isOnboarding);
-      const thoughtsToPush = localThoughts.filter(t => !t.deletedAt && !onboardingSpaceIds.has(t.spaceId));
+      const spacesToPush = isFirstSync ? [] : localSpaces.filter(s => !s.deletedAt && !s.isOnboarding);
+      const stacksToPush = isFirstSync ? [] : localStacks.filter(s => !s.deletedAt && !s.isOnboarding);
+      const thoughtsToPush = isFirstSync ? [] : localThoughts.filter(t => !t.deletedAt && !onboardingSpaceIds.has(t.spaceId));
 
       if (spacesToPush.length > 0) {
         await supabaseSync.createSpaces(spacesToPush.map(s => ({ ...s, user_id: userId })), userId);
@@ -192,16 +203,20 @@ export const syncOrchestrator = {
       const localAllThoughts = await db.thoughts.toArray();
 
       // Deletion (Absence Rule)
-      for (const s of localAllSpaces) {
-        if (s.syncStatus === 'synced' && !cloudSpaceMap.has(s.id)) await db.spaces.delete(s.id);
-      }
-      for (const s of localAllStacks) {
-        if (s.syncStatus === 'synced' && !cloudStackMap.has(s.id)) await db.stacks.delete(s.id);
-      }
-      for (const t of localAllThoughts) {
-        if (t.syncStatus === 'synced' && !cloudThoughtMap.has(t.id)) {
-          await db.thoughts.delete(t.id);
-          await db.blobs.where('thoughtId').equals(t.id).delete();
+      // Only run this if we have established a local baseline (lastSync exists)
+      // This prevents an empty local database from thinking cloud items were deleted elsewhere.
+      if (!isFirstSync) {
+        for (const s of localAllSpaces) {
+          if (s.syncStatus === 'synced' && !cloudSpaceMap.has(s.id)) await db.spaces.delete(s.id);
+        }
+        for (const s of localAllStacks) {
+          if (s.syncStatus === 'synced' && !cloudStackMap.has(s.id)) await db.stacks.delete(s.id);
+        }
+        for (const t of localAllThoughts) {
+          if (t.syncStatus === 'synced' && !cloudThoughtMap.has(t.id)) {
+            await db.thoughts.delete(t.id);
+            await db.blobs.where('thoughtId').equals(t.id).delete();
+          }
         }
       }
 
@@ -282,20 +297,20 @@ export const syncOrchestrator = {
       console.error('[Sync] Full push failed:', err);
       syncStore.setStatus('error');
       return { success: false, error: String(err) };
-  } finally {
-    // Refresh storage usage after any sync to reflect new blobs on disk/cloud
-    try {
-      const { useStore } = await import('../../store/useStore');
-      const st: any = useStore.getState();
-      st?.calculateUsage?.(st.totalThoughtCount || 0);
-    } catch {
-      // best-effort only
+    } finally {
+      // Refresh storage usage after any sync to reflect new blobs on disk/cloud
+      try {
+        const { useStore } = await import('../../store/useStore');
+        const st: any = useStore.getState();
+        st?.calculateUsage?.(st.totalThoughtCount || 0);
+      } catch {
+        // best-effort only
+      }
+      if (syncRequestedDuringActiveSync) {
+        syncRequestedDuringActiveSync = false;
+        setTimeout(() => syncOrchestrator.triggerSync(), SYNC_DEBOUNCE_MS);
+      }
     }
-    if (syncRequestedDuringActiveSync) {
-      syncRequestedDuringActiveSync = false;
-      setTimeout(() => syncOrchestrator.triggerSync(), SYNC_DEBOUNCE_MS);
-    }
-  }
   },
 
   async fetchCloudData(): Promise<SyncConflictData | null> {

@@ -1,5 +1,7 @@
 import { type StateCreator } from 'zustand';
+import { db } from '../../db';
 import { syncOrchestrator } from '../../services/sync/syncOrchestrator';
+import { PLAN_CONFIG } from '../../constants';
 import { type AuthState } from '../types';
 
 export interface SyncSlice {
@@ -77,35 +79,62 @@ export const createSyncSlice: StateCreator<AuthState, [], [], SyncSlice> = (set,
   },
 
   handlePostAuthSync: async () => {
-    console.log('[Sync] handlePostAuthSync: Triggering delta hydration...');
-    // Fast path: try lazy cloud hydration first
+    console.log('[Sync] Starting initial handshake...');
+    
+    // Fast path: try cloud hydration first
     try {
-      const cloudData = await get().importCloudData();
+      const cloudData = await syncOrchestrator.fetchCloudData();
       if (cloudData) {
         const { useStore } = await import('../useStore');
-        await useStore.getState().importFullState(cloudData);
+        const store = useStore.getState();
+        
+        // 1. Check for Quota Conflict
+        const localSpaces = await db.spaces.filter(s => s.syncStatus === 'local').toArray();
+        const cloudSpaces = (cloudData.spaces || []) as any[];
+        const totalUniqueSpaces = new Set([
+          ...localSpaces.map(s => s.id),
+          ...cloudSpaces.map(s => s.id)
+        ]).size;
+        
+        const { user } = get();
+        const plan = user?.plan || 'free';
+        const limit = PLAN_CONFIG[plan].MAX_SPACES;
+        
+        if (totalUniqueSpaces > limit) {
+          console.warn('[Sync] Quota conflict detected during login');
+          // We will show a modal AFTER the loading screen fades
+          setTimeout(async () => {
+            const { useModalStore } = await import('../useModalStore');
+            useModalStore.getState().openModal({
+              title: 'Space Limit Reached',
+              description: `You have extra work from your guest session, but your ${plan} account is at its ${limit}-space limit. Your guest work will stay on this device only until you upgrade or merge it.`,
+              type: 'alert',
+              confirmText: 'Got it'
+            });
+          }, 1000);
+        }
+
+        // 2. Perform Smart Hydration (Merge)
+        await store.importFullState(cloudData);
+        
         try {
           const st: any = useStore.getState();
           st?.calculateUsage?.(st.totalThoughtCount || 0);
         } catch {}
+        
+        // 3. Mark first sync as successful to unlock deletions
+        localStorage.setItem('cyberia-last-sync', new Date().toISOString());
+        set({ lastSync: new Date(), syncStatus: 'synced' });
         return;
       }
     } catch (e) {
-      console.warn('[Sync] Lazy cloud hydration failed:', e);
+      console.warn('[Sync] Initial cloud hydration failed:', e);
     }
-    // Second path: try a direct cloud hydrate from the backend if available
-    try {
-      const cloudData2 = await syncOrchestrator.fetchCloudData();
-      if (cloudData2) {
-        const { useStore } = await import('../useStore');
-        await useStore.getState().importFullState(cloudData2);
-        return;
-      }
-    } catch (e) {
-      console.warn('[Sync] Direct cloud hydration failed:', e);
-    }
-    // Fallback to the existing full push sync
+    
+    // Fallback to standard sync if hydration was empty
     await get().syncData();
+    localStorage.setItem('cyberia-last-sync', new Date().toISOString());
+    set({ lastSync: new Date(), syncStatus: 'synced' });
   },
 
   setAutoSync: async (enabled: boolean) => {

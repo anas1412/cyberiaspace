@@ -70,10 +70,10 @@ const AccountMenu: React.FC = () => {
 
   const handleClearCloudData = () => {
     openModal({
-      title: 'Clear Cloud Backup?',
-      description: 'This will permanently delete your workspace backup from the cloud. Your local data will remain intact.',
+      title: 'DANGER: Wipe Cloud Backup?',
+      description: 'THIS ACTION IS IRREVERSIBLE. This will permanently delete your entire workspace backup from the cloud, including all synced files. Only proceed if you want to start with a fresh slate on all devices.',
       type: 'delete_thought',
-      confirmText: 'Clear Backup',
+      confirmText: 'Wipe Everything',
       onConfirm: async () => {
         await deleteCloudData();
         setIsOpen(false);
