@@ -11,26 +11,26 @@ const FEATURES = [
   {
     id: 'spatial',
     icon: MousePointer2,
-    title: 'Spaces, Collections & Thoughts',
-    description: 'Organize your mind in a space using thoughts that have mass and physical inertia. Link related thoughts into physical collections. '
+    title: 'Spatial Thinking',
+   description: 'Think visually in an infinite space. Thoughts have presence, momentum, and can be grouped into living collections.'
   },
   {
     id: 'views',
     icon: Layout,
     title: 'Dynamic Views',
-    description: 'Morph space into Spatial, Kanban or Calendar instantly.'
+    description: 'Instantly transform your workspace between Spatial, Kanban, and Calendar depending on how you want to work.'
   },
   {
     id: 'cloud',
     icon: Database,
-    title: 'Cloud Storage',
-    description: 'Cloud storage for research assets, PDFs, and media synced across all devices.'
+    title: 'Real-time Sync',
+    description: 'Everything updates instantly across your devices so your workspace is always perfectly in sync.'
   },
   {
     id: 'agentic',
     icon: Zap,
     title: 'Agentic Workspace',
-    description: 'Deploy advanced agents to research the web and automate your workspace connections.'
+    description: 'Intelligent agents help research, gather information, and automate tasks across your workspace.'
   }
 ];
 

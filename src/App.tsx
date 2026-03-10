@@ -485,7 +485,7 @@ function App() {
     <div className="w-full h-full relative overflow-hidden bg-black">
       {customBg && (
         <div 
-          className="fixed inset-0 z-0 bg-cover bg-center bg-no-repeat transition-opacity duration-700 animate-in fade-in"
+          className="custom-bg-layer transition-opacity duration-700 animate-in fade-in"
           style={{ backgroundImage: `url(${staticBg || customBg})`, opacity: 0.6 }}
         />
       )}

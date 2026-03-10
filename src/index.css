@@ -12,6 +12,10 @@
 
 
 :root {
+  /* Parallax Variables (Driven by usePhysics.ts) */
+  --bg-px: 0px;
+  --bg-py: 0px;
+  --bg-zoom: 0;
   
   /* Cyberia (Default) */
   --bg-main: #0f172a; 
@@ -170,9 +174,13 @@ body {
 /* Animations & Star Layers */
 .stars-layer {
   position: fixed;
-  inset: -100px;
+  inset: -20%;
+  width: 140%;
+  height: 140%;
   pointer-events: none;
   z-index: -10; /* Guaranteed Background */
+  transform: translate3d(calc(var(--bg-px) * 0.02), calc(var(--bg-py) * 0.02), 0) scale(calc(1 + var(--bg-zoom) * 0.02));
+  will-change: transform;
 }
 
 .stars-1 {
@@ -211,11 +219,15 @@ body {
 /* Sea Theme Layers */
 .sea-layer {
   position: fixed;
-  inset: -200px;
+  inset: -20%;
+  width: 140%;
+  height: 140%;
   z-index: -10;
   opacity: 0;
   transition: opacity 2s ease;
   pointer-events: none;
+  transform: translate3d(calc(var(--bg-px) * 0.04), calc(var(--bg-py) * 0.04), 0) scale(calc(1 + var(--bg-zoom) * 0.04));
+  will-change: transform;
 }
 
 [data-theme='sea'] .sea-layer {
@@ -266,11 +278,15 @@ body {
 /* Forest Theme Layers */
 .forest-layer {
   position: fixed;
-  inset: -200px;
+  inset: -20%;
+  width: 140%;
+  height: 140%;
   z-index: -10;
   opacity: 0;
   transition: opacity 2s ease;
   pointer-events: none;
+  transform: translate3d(calc(var(--bg-px) * 0.04), calc(var(--bg-py) * 0.04), 0) scale(calc(1 + var(--bg-zoom) * 0.04));
+  will-change: transform;
 }
 
 [data-theme='forest'] .forest-layer {
@@ -322,11 +338,15 @@ body {
 /* Rain Theme Layers */
 .rain-layer {
   position: fixed;
-  inset: -500px;
+  inset: -20%;
+  width: 140%;
+  height: 140%;
   z-index: -10;
   opacity: 0;
   transition: opacity 2s ease;
   pointer-events: none;
+  transform: translate3d(calc(var(--bg-px) * 0.06), calc(var(--bg-py) * 0.06), 0) scale(calc(1 + var(--bg-zoom) * 0.06));
+  will-change: transform;
 }
 
 [data-theme='rain'] .rain-layer {
@@ -362,7 +382,7 @@ body {
 @keyframes firefly-sway { 0%, 100% { transform: translate(0, 0); } 50% { transform: translate(20px, -20px); } }
 @keyframes rain-fall { from { transform: translateY(-800px); } to { transform: translateY(800px); } }
 @keyframes atmospheric-heave { 0%, 45%, 55%, 100% { opacity: 0; } 50% { opacity: 1; } }
-@keyframes nebula-float { from { transform: rotate(0deg) scale(1); } to { transform: rotate(5deg) scale(1.1); } }
+@keyframes nebula-float { from { opacity: 0.4; } to { opacity: 0.8; } }
 @keyframes twinkle { 0% { opacity: 0.1; } 100% { opacity: 0.6; } }
 
 /* UI Utilities */
@@ -496,15 +516,31 @@ body.low-perf .animate-breathe {
 
 .nebula-cloud {
   position: fixed;
-  inset: -50%;
-  width: 200%;
-  height: 200%;
+  inset: -30%;
+  width: 160%;
+  height: 160%;
   z-index: -10;
   pointer-events: none;
   opacity: 0.6;
   filter: blur(80px);
   background: var(--bg-nebula);
+  transform: translate3d(calc(var(--bg-px) * 0.05), calc(var(--bg-py) * 0.05), 0) scale(calc(1 + var(--bg-zoom) * 0.05));
   animation: nebula-float 60s ease-in-out infinite alternate;
+  will-change: transform;
+}
+
+.custom-bg-layer {
+  position: fixed;
+  inset: -15%;
+  width: 130%;
+  height: 130%;
+  z-index: 0;
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  pointer-events: none;
+  transform: translate3d(calc(var(--bg-px) * 0.08), calc(var(--bg-py) * 0.08), 0) scale(calc(1 + var(--bg-zoom) * 0.08));
+  will-change: transform;
 }
 
 .grain {

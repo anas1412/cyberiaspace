@@ -367,15 +367,16 @@ export const usePhysics = (
     if (!performanceMode) {
       const body = document.body;
       // We use the effective transform to drive background parallax
-      // Factors are applied in CSS via calc() for maximum flexibility
-      body.style.setProperty('--vp-x', `${effectiveTransform.x}px`);
-      body.style.setProperty('--vp-y', `${effectiveTransform.y}px`);
-      body.style.setProperty('--vp-scale', `${effectiveTransform.scale}`);
+      // We use negative values for panning so layers drift correctly
+      // We normalize scale to 0 (default 1.0 = 0 offset)
+      body.style.setProperty('--bg-px', `${-effectiveTransform.x}px`);
+      body.style.setProperty('--bg-py', `${-effectiveTransform.y}px`);
+      body.style.setProperty('--bg-zoom', `${effectiveTransform.scale - 1}`);
     } else {
       const body = document.body;
-      body.style.removeProperty('--vp-x');
-      body.style.removeProperty('--vp-y');
-      body.style.removeProperty('--vp-scale');
+      body.style.removeProperty('--bg-px');
+      body.style.removeProperty('--bg-py');
+      body.style.removeProperty('--bg-zoom');
     }
 
     // --- Modular Physics Engine ---
