@@ -216,11 +216,11 @@ const Inspector: React.FC = () => {
       {isInspectorOpen && thought && (
         <motion.div
           id="inspector"
-          initial={{ opacity: 0, x: -20 }}
-          animate={{ opacity: 1, x: 0 }}
-          exit={{ opacity: 0, x: -20 }}
+          initial={{ x: '-100%', opacity: 0 }}
+          animate={{ x: 0, opacity: 1 }}
+          exit={{ x: '-100%', opacity: 0 }}
           transition={{ type: 'spring', damping: 28, stiffness: 200 }}
-          className="ui-layer focus-box fixed top-4 md:top-24 bottom-4 md:bottom-24 left-4 md:left-8 w-[calc(100%-32px)] md:w-[400px] glass md:rounded-[2rem] shadow-[0_0_80px_rgba(0,0,0,0.5)] flex flex-col overflow-hidden z-[9999] border border-white/10"
+          className="ui-layer focus-box fixed top-4 md:top-24 bottom-4 md:bottom-24 left-4 md:left-8 w-[calc(100%-32px)] md:w-[400px] glass rounded-2xl shadow-[0_0_80px_rgba(0,0,0,0.5)] flex flex-col overflow-hidden z-[9999] border border-white/10"
         >
           {/* HEADER AREA */}
           <div className="p-4 md:p-5 border-b border-white/5 bg-black/20 backdrop-blur-md sticky top-0 z-20">
@@ -395,7 +395,7 @@ const Inspector: React.FC = () => {
                             disabled={isReadOnly}
                             onClick={() => !isReadOnly && updateThought(thought.id, { status: s })}
                             className={cn(
-                              "border rounded-lg py-2.5 text-[8px] font-bold uppercase transition-colors",
+                              "border rounded-xl py-2.5 text-[8px] font-bold uppercase transition-colors",
                               thought.status === s
                                 ? {
                                   'none': 'bg-white/10 border-white/30 text-white',
@@ -422,7 +422,7 @@ const Inspector: React.FC = () => {
                             disabled={isReadOnly}
                             onClick={() => handlePriorityChange(p)}
                             className={cn(
-                              "border rounded-lg py-2.5 text-[8px] font-bold uppercase transition-colors",
+                              "border rounded-xl py-2.5 text-[8px] font-bold uppercase transition-colors",
                               thought.priority === p
                                 ? {
                                   'none': 'bg-white/10 border-white/30 text-white',
@@ -599,7 +599,7 @@ const Inspector: React.FC = () => {
             <div className="bg-black/40 border-t border-white/5 p-4 md:p-6 mt-auto flex items-center gap-3">
               <button
                 onClick={handleDeleteThought}
-                className="flex-1 bg-red-500/10 hover:bg-red-500/20 text-red-400 py-4 rounded-2xl text-[10px] font-bold uppercase tracking-widest transition-colors border border-red-500/20 flex items-center justify-center gap-2"
+                className="flex-1 bg-red-500/10 hover:bg-red-500/20 text-red-400 py-4 rounded-xl text-[10px] font-bold uppercase tracking-widest transition-colors border border-red-500/20 flex items-center justify-center gap-2"
               >
                 <Trash2 className="w-4 h-4" />
                 Delete
@@ -613,7 +613,7 @@ const Inspector: React.FC = () => {
                     const focusType = (triggers[thought.type] || 'text') as any;
                     setActiveFocus(thought.id, focusType);
                   }}
-                  className="flex-1 bg-[var(--accent)]/10 hover:bg-[var(--accent)]/20 border border-[var(--accent)]/30 text-[var(--accent-secondary)] py-4 rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] transition-all flex items-center justify-center gap-2"
+                  className="flex-1 bg-[var(--accent)]/10 hover:bg-[var(--accent)]/20 border border-[var(--accent)]/30 text-[var(--accent-secondary)] py-4 rounded-xl text-[10px] font-black uppercase tracking-[0.2em] transition-all flex items-center justify-center gap-2"
                 >
                   <Maximize2 className="w-4 h-4" />
                   Open

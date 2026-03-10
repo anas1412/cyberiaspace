@@ -36,7 +36,7 @@ export const calendarStrategy: LayoutStrategist = {
         const isTopCard = index === count - 1;
 
         const currentCompactH = thought.stackId ? H_STACK : H_PLAIN;
-        const dynamicClip = 'inset(0px 0px calc(100% - ' + currentCompactH + 'px) 0px round 32px)';
+        const dynamicClip = 'inset(0px 0px calc(100% - ' + currentCompactH + 'px) 0px round 16px)';
 
         const uniformScale = Math.min((cellWidth - 12) / 280, (cellHeight - 12) / currentCompactH, 0.85);
         const targetScale = isFilteredOut ? 0 : (isHovered ? uniformScale * 1.05 : uniformScale);
@@ -79,7 +79,7 @@ export const calendarStrategy: LayoutStrategist = {
       const h = elementHeights.get(thought.id) || 120;
       
       const currentCompactH = thought.stackId ? H_STACK : H_PLAIN;
-      const dynamicClip = 'inset(0px 0px calc(100% - ' + currentCompactH + 'px) 0px round 32px)';
+      const dynamicClip = 'inset(0px 0px calc(100% - ' + currentCompactH + 'px) 0px round 16px)';
       
       // Sum previous heights in sidebar
       let yOffset = 0;

@@ -38,7 +38,7 @@ Welcome to the Cyberia codebase! This project is a modern, high-performance spat
     *   **Supabase:** Acts as a "Backend-as-a-Service" (BaaS) for:
         *   **PostgreSQL Database:** Cloud storage for synced Dexie data.
         *   **Storage (Buckets):** Storage for binary assets like images and files.
-7.  **Sync State Machine:** Synchronization follows a 4-state machine (`local`, `syncing`, `synced`, `error`) with a 10s debounce timer to prevent API hammering during active editing.
+7.  **Sync State Machine:** Synchronization follows a 4-state machine (`local`, `syncing`, `synced`, `error`). It uses **Supabase Realtime** for instant cross-device updates and immediate delta synchronization upon local mutations.
 8.  **Boundary Translation:** The application strictly enforces `camelCase` in the frontend (JS/TS/Dexie) and `snake_case` in the backend (Postgres). All data crossing this boundary MUST be translated using `toCamelCase` (incoming) or `toSnakeCase` (outgoing) utilities from `src/services/supabaseSync.ts`. This prevents property mismatches and ensures standard naming conventions in both environments.
 
 ###  Spatial Thinking Engine
@@ -99,7 +99,7 @@ This section serves as a definitive reference for patterns that are deprecated. 
   - Aggressive `mediaSweep` is replaced by **Event-Driven Deletion** (Ack-based) and a 30-day local purge.
   - `repairEmptyFileThoughts` is replaced by the **Healing Rule** (re-downloading missing blobs for synced thoughts).
   - Standardize on the **4-state machine** (`local`, `syncing`, `synced`, `error`).
-  - Standardize on a single `SYNC_DEBOUNCE_MS = 10000` (10 seconds) across all store slices.
+  - Standardize on a single `SYNC_DEBOUNCE_MS = 10000` (10 seconds) across all store slices. (Deprecated - Now Instant via Realtime)
   - **Handshake Sequence:** Prematurely setting `isInitializing: false` on fresh logins is deprecated.
   - **Smart Hydration:** Unconditional merging in `handlePostAuthSync` is deprecated in favor of `isLocalWorkspaceEmpty` logic.
 - **Backend:** Supabase Edge Functions (`supabase/functions/`) are deprecated in favor of Vercel Serverless Functions (`api/`).

@@ -6,9 +6,5 @@ interface LabelRendererProps {
 }
 
 export const LabelRenderer: React.FC<LabelRendererProps> = () => {
-  return (
-    <div data-trigger="label" className="py-1 opacity-20">
-      <div className="h-[1px] w-full bg-blue-500/50 rounded-full" />
-    </div>
-  );
+  return null;
 };

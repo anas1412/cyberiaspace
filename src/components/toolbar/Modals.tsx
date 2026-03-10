@@ -38,7 +38,7 @@ export const HelpModal: React.FC<HelpModalProps> = ({
 }) => (
   isOpen && (
     <div className="fixed inset-0 z-[10001] bg-black/60 backdrop-blur-md flex items-center justify-center p-10 pointer-events-auto" onClick={onClose}>
-      <div className="glass max-w-xl w-full p-10 rounded-[3rem] border border-white/10 flex flex-col max-h-[90vh]" onClick={e => e.stopPropagation()}>
+      <div className="glass max-w-xl w-full p-10 rounded-2xl border border-white/10 flex flex-col max-h-[90vh]" onClick={e => e.stopPropagation()}>
         
         {/* Header */}
         <div className="flex justify-between items-center mb-8 shrink-0">
@@ -204,7 +204,7 @@ export const HelpModal: React.FC<HelpModalProps> = ({
 export const ShortcutsModal: React.FC<{ isOpen: boolean; onClose: () => void }> = ({ isOpen, onClose }) => (
   isOpen && (
     <div className="fixed inset-0 z-[10001] bg-black/60 backdrop-blur-md flex items-center justify-center p-10 pointer-events-auto" onClick={onClose}>
-      <div className="glass max-w-md w-full p-10 rounded-[3rem] border border-white/10" onClick={e => e.stopPropagation()}>
+      <div className="glass max-w-md w-full p-10 rounded-2xl border border-white/10" onClick={e => e.stopPropagation()}>
         <div className="flex justify-between items-center mb-8">
           <h3 className="text-sm font-black uppercase tracking-[0.2em] text-[var(--accent-secondary)]">Command Center</h3>
           <button onClick={onClose} className="text-slate-500 hover:text-white">

@@ -236,7 +236,7 @@ const FeedbackPage: React.FC = () => {
             {isAdminAuthenticated && (
               <button 
                 onClick={handleAdminLogout}
-                className="h-12 w-12 glass rounded-2xl border border-white/5 shadow-2xl transition-all hover:bg-red-500/10 text-slate-400 hover:text-red-400 flex items-center justify-center group"
+                className="h-12 w-12 glass rounded-xl border border-white/5 shadow-2xl transition-all hover:bg-red-500/10 text-slate-400 hover:text-red-400 flex items-center justify-center group"
                 title="Admin Logout"
               >
                 <LogOut className="w-4 h-4" />
@@ -246,7 +246,7 @@ const FeedbackPage: React.FC = () => {
               <button 
                 onClick={() => setView(view === 'admin' ? 'list' : 'admin')}
                 className={cn(
-                  "h-12 w-12 glass rounded-2xl border border-white/5 shadow-2xl transition-all flex items-center justify-center group",
+                  "h-12 w-12 glass rounded-xl border border-white/5 shadow-2xl transition-all flex items-center justify-center group",
                   view === 'admin' ? "bg-purple-500/20 text-purple-400" : "text-slate-500 hover:text-white hover:bg-white/5"
                 )}
                 title="Admin Login"
@@ -256,7 +256,7 @@ const FeedbackPage: React.FC = () => {
             )}
             <button 
               onClick={() => setView(view === 'list' ? 'submit' : 'list')}
-              className="h-12 px-8 glass rounded-2xl border border-white/5 shadow-2xl transition-all hover:bg-white/10 active:scale-95 flex items-center justify-center gap-3 group pointer-events-auto"
+              className="h-12 px-8 glass rounded-xl border border-white/5 shadow-2xl transition-all hover:bg-white/10 active:scale-95 flex items-center justify-center gap-3 group pointer-events-auto"
             >
               {view === 'list' || view === 'admin' ? (
                 <>
@@ -283,8 +283,8 @@ const FeedbackPage: React.FC = () => {
                 exit={{ opacity: 0, scale: 0.95 }}
                 className="max-w-md mx-auto"
               >
-                <div className="glass rounded-[2.5rem] p-10 border border-white/10 shadow-2xl">
-                  <div className="w-16 h-16 bg-purple-500/10 rounded-2xl flex items-center justify-center text-purple-400 mx-auto mb-6">
+                <div className="glass rounded-2xl p-10 border border-white/10 shadow-2xl">
+                  <div className="w-16 h-16 bg-purple-500/10 rounded-xl flex items-center justify-center text-purple-400 mx-auto mb-6">
                     <Lock className="w-8 h-8" />
                   </div>
                   <h3 className="text-xl font-bold text-white text-center mb-2">Admin Authorization</h3>
@@ -298,7 +298,7 @@ const FeedbackPage: React.FC = () => {
                       placeholder="Access Password"
                       value={adminPassword}
                       onChange={(e) => setAdminPassword(e.target.value)}
-                      className="w-full h-14 bg-black/40 border border-white/5 rounded-2xl px-6 text-sm text-white outline-none focus:border-purple-500/50 transition-all text-center tracking-[0.5em] disabled:opacity-50"
+                      className="w-full h-14 bg-black/40 border border-white/5 rounded-xl px-6 text-sm text-white outline-none focus:border-purple-500/50 transition-all text-center tracking-[0.5em] disabled:opacity-50"
                     />
                     {loginError && (
                       <p className="text-[9px] font-black uppercase tracking-widest text-red-400 text-center">Invalid Credentials</p>
@@ -306,7 +306,7 @@ const FeedbackPage: React.FC = () => {
                     <button 
                       type="submit"
                       disabled={isAuthenticating || !adminPassword}
-                      className="w-full h-14 bg-purple-600 hover:bg-purple-500 text-white rounded-2xl font-black uppercase text-[10px] tracking-[0.2em] transition-all shadow-lg shadow-purple-500/20 flex items-center justify-center gap-3"
+                      className="w-full h-14 bg-purple-600 hover:bg-purple-500 text-white rounded-xl font-black uppercase text-[10px] tracking-[0.2em] transition-all shadow-lg shadow-purple-500/20 flex items-center justify-center gap-3"
                     >
                       {isAuthenticating ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Authenticate'}
                     </button>
@@ -327,7 +327,7 @@ const FeedbackPage: React.FC = () => {
                     <p className="text-[10px] font-black uppercase tracking-widest">Accessing Feedback Stream...</p>
                   </div>
                 ) : feedbackList.length === 0 ? (
-                  <div className="glass rounded-[2.5rem] p-12 md:p-20 text-center border border-white/5">
+                  <div className="glass rounded-2xl p-12 md:p-20 text-center border border-white/5">
                     <MessageSquare className="w-12 h-12 text-slate-800 mx-auto mb-6" />
                     <h3 className="text-lg font-bold text-white mb-2">No Reports Yet</h3>
                     <p className="text-xs text-slate-500 uppercase tracking-widest">The feedback stream is currently empty.</p>
@@ -338,7 +338,7 @@ const FeedbackPage: React.FC = () => {
                       key={item.id}
                       initial={{ opacity: 0, x: -10 }}
                       animate={{ opacity: 1, x: 0 }}
-                      className="glass rounded-[2rem] p-6 md:p-8 border border-white/5 hover:border-white/10 transition-all group relative"
+                      className="glass rounded-2xl p-6 md:p-8 border border-white/5 hover:border-white/10 transition-all group relative"
                     >
                       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
                         <div className="flex flex-wrap items-center gap-3">
@@ -491,11 +491,11 @@ const FeedbackPage: React.FC = () => {
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -20 }}
-                className="glass rounded-[2.5rem] p-8 md:p-12 border border-white/10 shadow-2xl relative overflow-hidden"
+                className="glass rounded-2xl p-8 md:p-12 border border-white/10 shadow-2xl relative overflow-hidden"
               >
                 {submitStatus === 'success' ? (
                   <div className="py-12 md:py-20 text-center space-y-6">
-                    <div className="w-20 h-20 bg-green-500/10 rounded-[2rem] flex items-center justify-center text-green-400 mx-auto border border-green-500/20">
+                    <div className="w-20 h-20 bg-green-500/10 rounded-xl flex items-center justify-center text-green-400 mx-auto border border-green-500/20">
                       <CheckCircle className="w-10 h-10" />
                     </div>
                     <div>
@@ -509,7 +509,7 @@ const FeedbackPage: React.FC = () => {
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div className="space-y-2">
                           <label className="text-[9px] font-black uppercase tracking-widest text-slate-500 ml-1">Transmission Type</label>
-                          <div className="flex gap-2 p-1.5 bg-black/40 border border-white/5 rounded-2xl">
+                          <div className="flex gap-2 p-1.5 bg-black/40 border border-white/5 rounded-xl">
                             {(['issue', 'feedback', 'feature'] as const).map((t) => (
                               <button
                                 key={t}
@@ -534,7 +534,7 @@ const FeedbackPage: React.FC = () => {
                             placeholder="user@cyberia.net"
                             value={email}
                             onChange={(e) => setEmail(e.target.value)}
-                            className="w-full h-14 bg-black/40 border border-white/5 rounded-2xl px-6 text-sm text-white outline-none focus:border-[var(--accent)]/50 transition-all"
+                            className="w-full h-14 bg-black/40 border border-white/5 rounded-xl px-6 text-sm text-white outline-none focus:border-[var(--accent)]/50 transition-all"
                           />
                         </div>
                       </div>
@@ -546,13 +546,13 @@ const FeedbackPage: React.FC = () => {
                           placeholder="Describe the issue or share your thoughts..."
                           value={message}
                           onChange={(e) => setMessage(e.target.value)}
-                          className="w-full h-48 bg-black/40 border border-white/5 rounded-[2rem] p-6 text-base text-white outline-none focus:border-[var(--accent)]/50 transition-all resize-none custom-scroll"
+                          className="w-full h-48 bg-black/40 border border-white/5 rounded-xl p-6 text-base text-white outline-none focus:border-[var(--accent)]/50 transition-all resize-none custom-scroll"
                         />
                       </div>
                     </div>
 
                     {submitStatus === 'error' && (
-                      <div className="flex items-center gap-3 p-4 rounded-2xl bg-red-500/10 border border-red-500/20 text-red-400">
+                      <div className="flex items-center gap-3 p-4 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400">
                         <AlertCircle className="w-4 h-4" />
                         <span className="text-[10px] font-black uppercase tracking-widest">Transmission Failure. Please try again.</span>
                       </div>
@@ -561,7 +561,7 @@ const FeedbackPage: React.FC = () => {
                     <button 
                       type="submit"
                       disabled={isSubmitting || !message.trim()}
-                      className="w-full h-16 bg-[var(--accent)] hover:bg-[var(--accent)]/90 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-2xl shadow-xl shadow-[var(--accent-glow)] transition-all flex items-center justify-center gap-3 group"
+                      className="w-full h-16 bg-[var(--accent)] hover:bg-[var(--accent)]/90 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-xl shadow-xl shadow-[var(--accent-glow)] transition-all flex items-center justify-center gap-3 group"
                     >
                       {isSubmitting ? (
                         <Loader2 className="w-5 h-5 animate-spin" />

@@ -222,13 +222,13 @@ const PricingModal: React.FC<PricingModalProps> = ({ isOpen, onClose }) => {
         initial={{ opacity: 0, scale: 0.95, y: 10 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}
         transition={{ type: "spring", duration: 0.5, bounce: 0.3 }}
-        className="glass bg-[#0B0F19]/90 w-full max-w-5xl rounded-[2rem] border border-white/10 overflow-hidden relative flex flex-col md:flex-row my-auto shadow-2xl"
+        className="glass bg-[#0B0F19]/90 w-full max-w-5xl rounded-2xl border border-white/10 overflow-hidden relative flex flex-col md:flex-row my-auto shadow-2xl"
       >
         
         {/* Close Button */}
         <button 
           onClick={onClose} 
-          className="absolute top-4 right-4 md:top-6 md:right-6 text-slate-400 hover:text-white transition-all z-[50] w-10 h-10 flex items-center justify-center bg-white/5 hover:bg-white/10 rounded-full active:scale-95 backdrop-blur-md"
+          className="absolute top-4 right-4 md:top-6 md:right-6 text-slate-400 hover:text-white transition-all z-[50] w-10 h-10 flex items-center justify-center bg-white/5 hover:bg-white/10 rounded-xl active:scale-95 backdrop-blur-md"
           aria-label="Close modal"
         >
           <X className="w-5 h-5" />
@@ -266,7 +266,7 @@ const PricingModal: React.FC<PricingModalProps> = ({ isOpen, onClose }) => {
           activeTab === 'features' ? 'flex' : 'hidden md:flex'
         )}>
           <div className="flex items-center gap-4 mb-8">
-            <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-blue-500/20 to-blue-600/20 border border-blue-500/20 flex items-center justify-center text-blue-400 shrink-0 shadow-lg shadow-blue-500/10">
+            <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-blue-500/20 to-blue-600/20 border border-blue-500/20 flex items-center justify-center text-blue-400 shrink-0 shadow-lg shadow-blue-500/10">
               <Zap className="w-7 h-7" />
             </div>
             <div>
@@ -343,11 +343,11 @@ const PricingModal: React.FC<PricingModalProps> = ({ isOpen, onClose }) => {
           activeTab === 'upgrade' ? 'flex' : 'hidden md:flex'
         )}>
           <div className="flex flex-col items-center text-center mb-8">
-            <div className="flex p-1 bg-black/40 border border-white/5 rounded-2xl mb-8 w-full">
+            <div className="flex p-1 bg-black/40 border border-white/5 rounded-xl mb-8 w-full">
               <button
                 onClick={() => setBillingCycle('monthly')}
                 className={cn(
-                  "flex-1 py-2.5 rounded-xl text-xs font-bold uppercase tracking-wide transition-all",
+                  "flex-1 py-2.5 rounded-lg text-xs font-bold uppercase tracking-wide transition-all",
                   billingCycle === 'monthly' ? "bg-white/15 text-white shadow-sm" : "text-slate-400 hover:text-slate-200"
                 )}
               >
@@ -356,12 +356,12 @@ const PricingModal: React.FC<PricingModalProps> = ({ isOpen, onClose }) => {
               <button
                 onClick={() => setBillingCycle('yearly')}
                 className={cn(
-                  "flex-1 py-2.5 rounded-xl text-xs font-bold uppercase tracking-wide transition-all flex items-center justify-center gap-2",
+                  "flex-1 py-2.5 rounded-lg text-xs font-bold uppercase tracking-wide transition-all flex items-center justify-center gap-2",
                   billingCycle === 'yearly' ? "bg-white/15 text-white shadow-sm" : "text-slate-400 hover:text-slate-200"
                 )}
               >
                 Yearly
-                <span className="bg-emerald-500/15 text-emerald-400 border border-emerald-500/20 text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-tight shadow-sm whitespace-nowrap">
+                <span className="bg-emerald-500/15 text-emerald-400 border border-emerald-500/20 text-[10px] font-bold px-2 py-0.5 rounded-lg uppercase tracking-tight shadow-sm whitespace-nowrap">
                   Save ${savings}
                 </span>
               </button>
@@ -412,7 +412,7 @@ const PricingModal: React.FC<PricingModalProps> = ({ isOpen, onClose }) => {
               <motion.div 
                 initial={{ opacity: 0, scale: 0.95 }}
                 animate={{ opacity: 1, scale: 1 }}
-                className="text-center mb-6 bg-blue-500/10 p-8 rounded-[2rem] border border-blue-500/20 backdrop-blur-md"
+                className="text-center mb-6 bg-blue-500/10 p-8 rounded-2xl border border-blue-500/20 backdrop-blur-md"
               >
                 <div className="relative w-16 h-16 mx-auto mb-4">
                   <div className="absolute inset-0 rounded-full border-2 border-blue-500/20" />
@@ -427,7 +427,7 @@ const PricingModal: React.FC<PricingModalProps> = ({ isOpen, onClose }) => {
               <motion.div 
                 initial={{ opacity: 0, scale: 0.9, y: 10 }}
                 animate={{ opacity: 1, scale: 1, y: 0 }}
-                className="text-center mb-6 bg-gradient-to-br from-green-500/20 to-emerald-500/20 p-8 rounded-[2rem] border border-green-500/30 shadow-xl shadow-green-500/10"
+                className="text-center mb-6 bg-gradient-to-br from-green-500/20 to-emerald-500/20 p-8 rounded-2xl border border-green-500/30 shadow-xl shadow-green-500/10"
               >
                 <div className="w-16 h-16 bg-green-500/20 rounded-full flex items-center justify-center mx-auto mb-4 border border-green-500/30">
                   <Check className="w-8 h-8 text-green-400" />
@@ -442,7 +442,7 @@ const PricingModal: React.FC<PricingModalProps> = ({ isOpen, onClose }) => {
                <motion.div 
                 initial={{ opacity: 0, y: -10 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="text-center mb-6 bg-white/5 p-8 rounded-[2rem] border border-white/10"
+                className="text-center mb-6 bg-white/5 p-8 rounded-2xl border border-white/10"
               >
                 <Loader2 className="w-12 h-12 text-slate-400 animate-spin mx-auto mb-4 opacity-50" />
                 <p className="text-sm text-slate-300 font-medium leading-relaxed">{paymentMessage}</p>

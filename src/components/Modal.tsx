@@ -48,7 +48,7 @@ const Modal: React.FC = () => {
   return (
     <div id="modal-overlay" className="fixed inset-0 bg-black/90 backdrop-blur-[10px] z-[11000] flex items-center justify-center animate-in fade-in duration-200 p-4">
       <div className={cn(
-        "modal-box glass w-full p-6 md:p-10 rounded-[2rem] md:rounded-[40px] border border-white/10",
+        "modal-box glass w-full p-6 md:p-10 rounded-2xl border border-white/10",
         type !== 'custom' && "text-center",
         type === 'terms' ? "max-w-[500px]" : "max-w-[420px]"
       )}>
@@ -153,14 +153,14 @@ const Modal: React.FC = () => {
           <div className="flex flex-col md:flex-row gap-3 md:gap-4">
             <button
               onClick={() => handleConfirm()}
-              className="order-1 md:order-2 flex-1 py-3.5 md:py-4 text-[10px] md:text-xs font-bold uppercase tracking-widest bg-[var(--accent)] rounded-xl md:rounded-2xl text-white hover:opacity-90 transition-colors shadow-lg shadow-[var(--accent-glow)]"
+              className="order-1 md:order-2 flex-1 py-3.5 md:py-4 text-[10px] md:text-xs font-bold uppercase tracking-widest bg-[var(--accent)] rounded-xl text-white hover:opacity-90 transition-colors shadow-lg shadow-[var(--accent-glow)]"
             >
               {confirmText || 'Confirm'}
             </button>
             {showCancel && (
               <button
                 onClick={handleCancel}
-                className="order-2 md:order-1 flex-1 py-3.5 md:py-4 text-[10px] md:text-xs font-bold uppercase tracking-widest bg-white/5 rounded-xl md:rounded-2xl text-white hover:bg-white/10 transition-colors"
+                className="order-2 md:order-1 flex-1 py-3.5 md:py-4 text-[10px] md:text-xs font-bold uppercase tracking-widest bg-white/5 rounded-xl text-white hover:bg-white/10 transition-colors"
               >
                 {cancelText || 'Cancel'}
               </button>

@@ -407,7 +407,7 @@ if (['get_thought_details', 'read_file_content', 'read_files_content'].includes(
           animate={{ x: 0, opacity: 1 }}
           exit={{ x: '100%', opacity: 0 }}
           transition={{ type: 'spring', damping: 28, stiffness: 200 }}
-          className="fixed top-4 md:top-24 bottom-4 md:bottom-24 right-4 w-[calc(100%-32px)] md:w-[520px] glass md:rounded-[2rem] shadow-[0_0_80px_rgba(0,0,0,0.5)] flex flex-col overflow-hidden z-[9999] border border-white/10"
+          className="fixed top-4 md:top-24 bottom-4 md:bottom-24 right-4 w-[calc(100%-32px)] md:w-[520px] glass rounded-2xl shadow-[0_0_80px_rgba(0,0,0,0.5)] flex flex-col overflow-hidden z-[9999] border border-white/10"
         >
 
           {/* Header */}
@@ -476,7 +476,7 @@ if (['get_thought_details', 'read_file_content', 'read_files_content'].includes(
                   Ready to map your thoughts. Ask me to research, organize, or create.
                 </p>
                 {plan === 'free' && (
-                  <div className="mt-6 p-4 rounded-2xl bg-blue-500/5 border border-blue-500/10 mx-4">
+                  <div className="mt-6 p-4 rounded-xl bg-blue-500/5 border border-blue-500/10 mx-4">
                     <p className="text-[12px] uppercase font-black tracking-[0.2em] text-blue-400 mb-1.5">Limited Capabilities</p>
                     <p className="text-[10px] font-bold text-slate-500 leading-relaxed uppercase tracking-widest">
                       Upgrade to Pro for <strong className="text-blue-300">more</strong> usage and <strong className="text-blue-300">premium advanced</strong> reasoning models.
@@ -494,7 +494,7 @@ if (['get_thought_details', 'read_file_content', 'read_files_content'].includes(
                   m.role === 'user' ? "items-end" : "items-start"
                 )}>
                   <div className={cn(
-                    "max-w-[95%] p-4 rounded-2xl text-[12px] leading-relaxed border shadow-sm prose prose-invert prose-xs break-words overflow-hidden",
+                    "max-w-[95%] p-4 rounded-xl text-[12px] leading-relaxed border shadow-sm prose prose-invert prose-xs break-words overflow-hidden",
                     m.role === 'user' 
                       ? "bg-blue-500/20 text-white border-blue-400/30 rounded-tr-sm" 
                       : "bg-white/[0.03] text-slate-200 border-white/5 rounded-tl-sm"
@@ -531,7 +531,7 @@ if (['get_thought_details', 'read_file_content', 'read_files_content'].includes(
 
           {/* Footer Area */}
           <div className="p-4 md:p-6 bg-black/40 border-t border-white/5 space-y-3">
-            <form onSubmit={handleSubmit} className="relative flex items-center gap-2 bg-white/[0.03] border border-white/10 rounded-2xl p-1.5 focus-within:border-blue-500/50 focus-within:bg-white/[0.05] transition-all">
+            <form onSubmit={handleSubmit} className="relative flex items-center gap-2 bg-white/[0.03] border border-white/10 rounded-xl p-1.5 focus-within:border-blue-500/50 focus-within:bg-white/[0.05] transition-all">
 
               <textarea
                 ref={inputRef}
@@ -573,7 +573,7 @@ if (['get_thought_details', 'read_file_content', 'read_files_content'].includes(
                 <button
                   onClick={() => store.setOracleChatMode('chat')}
                   className={cn(
-                    "px-3 h-6 rounded-lg transition-all duration-300 flex items-center gap-2",
+                    "px-3 h-6 rounded-xl transition-all duration-300 flex items-center gap-2",
                     store.oracleChatMode === 'chat' 
                       ? "bg-blue-500/20 text-blue-400 shadow-[0_0_10px_rgba(59,130,246,0.2)]" 
                       : "text-slate-500 hover:text-slate-300 hover:bg-white/[0.03]"
@@ -586,7 +586,7 @@ if (['get_thought_details', 'read_file_content', 'read_files_content'].includes(
                 <button
                   onClick={() => store.setOracleChatMode('action')}
                   className={cn(
-                    "px-3 h-6 rounded-lg transition-all duration-300 flex items-center gap-2",
+                    "px-3 h-6 rounded-xl transition-all duration-300 flex items-center gap-2",
                     store.oracleChatMode === 'action' 
                       ? "bg-amber-500/20 text-amber-400 shadow-[0_0_10px_rgba(245,158,11,0.2)]" 
                       : "text-slate-500 hover:text-slate-300 hover:bg-white/[0.03]"

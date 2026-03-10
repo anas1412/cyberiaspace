@@ -557,7 +557,7 @@ export const usePhysics = (
           // Use a light alpha to keep lines unobtrusive
           const prevAlpha = ctx.globalAlpha;
           ctx.strokeStyle = stackColor;
-          ctx.globalAlpha = 0.2; // barely visible
+          ctx.globalAlpha = 0.5; // barely visible
           ctx.stroke();
           ctx.globalAlpha = prevAlpha;
         });
@@ -606,7 +606,7 @@ export const usePhysics = (
           const cardBottom = (p.y + h * p.scale) * vT_visual.scale + vT_visual.y;
           const topClip = Math.max(0, ((cRect.top - cardTop) / ((h * p.scale) * vT_visual.scale)) * 100);
           const bottomClip = Math.max(0, ((cardBottom - cRect.bottom) / ((h * p.scale) * vT_visual.scale)) * 100);
-          el.style.clipPath = `inset(${topClip}% 0% ${bottomClip}% 0% round 32px)`;
+          el.style.clipPath = `inset(${topClip}% 0% ${bottomClip}% 0% round 16px)`;
           el.style.visibility = (topClip > 95 || bottomClip > 95) ? 'hidden' : 'visible';
           el.style.pointerEvents = (topClip > 80 || bottomClip > 80) ? 'none' : 'auto';
         }

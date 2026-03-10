@@ -103,10 +103,11 @@ const MultiSelectionMenu: React.FC = () => {
   return (
     <AnimatePresence>
       <motion.div
-        initial={isMobile ? { y: '100%' } : { opacity: 0, x: -20 }}
-        animate={isMobile ? (isInspectorOpen || isChatOpen ? { y: '100%', opacity: 0 } : { y: 0, opacity: 1 }) : { opacity: 1, x: 0 }}
-        exit={isMobile ? { y: '100%' } : { opacity: 0, x: -20 }}
-        className="ui-layer focus-box fixed top-4 md:top-24 bottom-4 md:bottom-24 left-4 md:left-8 w-[calc(100%-32px)] md:w-[400px] glass md:rounded-[2rem] shadow-[0_0_80px_rgba(0,0,0,0.5)] pointer-events-auto z-[9999] border border-white/10 flex flex-col overflow-hidden"
+        initial={isMobile ? { y: '100%' } : { x: '-100%', opacity: 0 }}
+        animate={isMobile ? (isInspectorOpen || isChatOpen ? { y: '100%', opacity: 0 } : { y: 0, opacity: 1 }) : { x: 0, opacity: 1 }}
+        exit={isMobile ? { y: '100%' } : { x: '-100%', opacity: 0 }}
+        transition={{ type: 'spring', damping: 28, stiffness: 200 }}
+        className="ui-layer focus-box fixed top-4 md:top-24 bottom-4 md:bottom-24 left-4 md:left-8 w-[calc(100%-32px)] md:w-[400px] glass rounded-2xl shadow-[0_0_80px_rgba(0,0,0,0.5)] pointer-events-auto z-[9999] border border-white/10 flex flex-col overflow-hidden"
       >
         {/* MATCHING HEADER STYLE */}
         <div className="p-4 md:p-5 border-b border-white/5 bg-black/20 backdrop-blur-md sticky top-0 z-20">
@@ -131,7 +132,7 @@ const MultiSelectionMenu: React.FC = () => {
                 <button
                   key={s}
                   onClick={() => updateThoughts(selectedThoughtIds, { status: s })}
-                  className="py-2.5 rounded-lg border border-white/10 bg-white/[0.03] text-[8px] font-bold uppercase text-slate-400 hover:bg-white/10 hover:text-white transition-all"
+                  className="py-2.5 rounded-xl border border-white/10 bg-white/[0.03] text-[8px] font-bold uppercase text-slate-400 hover:bg-white/10 hover:text-white transition-all"
                 >
                   {s}
                 </button>
@@ -147,7 +148,7 @@ const MultiSelectionMenu: React.FC = () => {
                 <button
                   key={p}
                   onClick={() => updateThoughts(selectedThoughtIds, { priority: p })}
-                  className="py-2.5 rounded-lg border border-white/10 bg-white/[0.03] text-[8px] font-bold uppercase text-slate-400 hover:bg-white/10 hover:text-white transition-all"
+                  className="py-2.5 rounded-xl border border-white/10 bg-white/[0.03] text-[8px] font-bold uppercase text-slate-400 hover:bg-white/10 hover:text-white transition-all"
                 >
                   {p === 'medium' ? 'Med' : p}
                 </button>
@@ -216,7 +217,7 @@ const MultiSelectionMenu: React.FC = () => {
         <div className="p-4 md:p-6 bg-black/40 border-t border-white/5 mt-auto">
           <button
             onClick={() => openModal({ title: `Delete ${selectedThoughtIds.length} Nodes?`, description: 'This action is permanent and clears them from all views.', type: 'delete_thought', confirmText: 'Delete Selected', onConfirm: () => deleteSelectedThoughts() })}
-            className="w-full py-4 bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/20 rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] transition-all flex items-center justify-center gap-3 group"
+            className="w-full py-4 bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/20 rounded-xl text-[10px] font-black uppercase tracking-[0.2em] transition-all flex items-center justify-center gap-3 group"
           >
             <Trash2 className="w-4 h-4 group-hover:scale-110 transition-transform" />
             Delete Selected

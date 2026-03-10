@@ -97,12 +97,12 @@ const ShareDialog: React.FC<ShareDialogProps> = ({ spaceId }) => {
                             )}
                         </div>
                         <div className="flex gap-2">
-                            <div className="flex-1 bg-black/40 border border-white/5 rounded-lg px-3 py-2 text-sm text-blue-300 truncate font-mono">
+                            <div className="flex-1 bg-black/40 border border-white/5 rounded-xl px-3 py-2 text-sm text-blue-300 truncate font-mono">
                                 {shareUrl}
                             </div>
                             <button
                                 onClick={handleCopy}
-                                className="p-2 bg-slate-800 hover:bg-slate-700 rounded-lg text-slate-300 transition-colors shrink-0"
+                                className="p-2 bg-slate-800 hover:bg-slate-700 rounded-xl text-slate-300 transition-colors shrink-0"
                             >
                                 {copySuccess ? <CheckCircle2 className="w-5 h-5 text-green-400" /> : <Copy className="w-5 h-5" />}
                             </button>
@@ -113,13 +113,13 @@ const ShareDialog: React.FC<ShareDialogProps> = ({ spaceId }) => {
                         <button
                             onClick={handlePublish}
                             disabled={isPublishing}
-                            className="flex-1 py-2.5 bg-slate-800 hover:bg-slate-700 text-white rounded-lg text-sm font-semibold transition-all flex items-center justify-center gap-2"
+                            className="flex-1 py-2.5 bg-slate-800 hover:bg-slate-700 text-white rounded-xl text-sm font-semibold transition-all flex items-center justify-center gap-2"
                         >
                             {isPublishing ? 'Syncing...' : 'Update Snapshot'}
                         </button>
                         <button
                             onClick={() => setShowQR(!showQR)}
-                            className={`p-2.5 rounded-lg transition-all flex items-center justify-center gap-2 ${showQR ? 'bg-blue-600 text-white' : 'bg-slate-800 text-slate-300 hover:bg-slate-700'}`}
+                            className={`p-2.5 rounded-xl transition-all flex items-center justify-center gap-2 ${showQR ? 'bg-blue-600 text-white' : 'bg-slate-800 text-slate-300 hover:bg-slate-700'}`}
                         >
                             <QrCode className="w-5 h-5" />
                         </button>
@@ -146,7 +146,7 @@ const ShareDialog: React.FC<ShareDialogProps> = ({ spaceId }) => {
                     <button
                         onClick={handleUnpublish}
                         disabled={isUnpublishing}
-                        className="w-full py-2.5 border border-red-500/20 hover:bg-red-500/10 text-red-400 rounded-lg text-sm font-semibold transition-all flex items-center justify-center gap-2 mt-2 disabled:opacity-50"
+                        className="w-full py-2.5 border border-red-500/20 hover:bg-red-500/10 text-red-400 rounded-xl text-sm font-semibold transition-all flex items-center justify-center gap-2 mt-2 disabled:opacity-50"
                     >
                         {isUnpublishing ? (
                             <div className="w-4 h-4 border-2 border-red-400/30 border-t-red-400 rounded-full animate-spin" />

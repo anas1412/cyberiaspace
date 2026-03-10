@@ -55,7 +55,6 @@ const ThoughtNode: React.FC<ThoughtNodeProps> = React.memo(({ thought, registerE
   const isExpanded = isDateHovered || (isCalendar && isSelected);
 
   const { content } = useThoughtPayload(thought);
-  const stack = useStore((state) => state.stacks.find(s => s.id === thought.stackId));
 
   const [startPos, setStartPos] = useState({ x: 0, y: 0 });
   const [showPing, setShowPing] = useState(false);
@@ -121,8 +120,8 @@ const ThoughtNode: React.FC<ThoughtNodeProps> = React.memo(({ thought, registerE
   if (linkingSourceId && linkingSourceId !== thought.id) {
       store.setSelectedThoughtIds([linkingSourceId, thought.id]);
       setLinkingSourceId(null); // Clear line immediately for zero-lag feel
-      // Fire linking operation without awaiting to minimize UI latency
-      store.linkSelectedThoughts();
+      // Fire linking operation
+      await store.linkSelectedThoughts();
       store.setSelectedThoughtId(thought.id);
       return;
     }
@@ -152,8 +151,8 @@ const ThoughtNode: React.FC<ThoughtNodeProps> = React.memo(({ thought, registerE
       const store = useStore.getState();
       // Set selection for the linking operation
       store.setSelectedThoughtIds([linkingSourceId, thought.id]);
-      // Trigger linking without awaiting to minimize latency
-      store.linkSelectedThoughts();
+      // Trigger linking
+      await store.linkSelectedThoughts();
       // Restore focus to the target thought
       store.setSelectedThoughtId(thought.id);
       // Clear linking state immediately
@@ -221,11 +220,11 @@ const ThoughtNode: React.FC<ThoughtNodeProps> = React.memo(({ thought, registerE
         }
       }}
     >
-      {showPing && <div className="absolute inset-0 rounded-[32px] border-2 border-[var(--accent)] animate-sonar pointer-events-none z-0" />}
+      {showPing && <div className="absolute inset-0 rounded-2xl border-2 border-[var(--accent)] animate-sonar pointer-events-none z-0" />}
       
       {/* DELETING OVERLAY */}
       {isDeleting && (
-        <div className="absolute inset-0 z-[50] rounded-[32px] bg-black/60 backdrop-blur-sm border border-red-500/30 flex flex-col items-center justify-center gap-3 animate-in fade-in duration-300">
+        <div className="absolute inset-0 z-[50] rounded-2xl bg-black/60 backdrop-blur-sm border border-red-500/30 flex flex-col items-center justify-center gap-3 animate-in fade-in duration-300">
           <div className="relative">
             <Loader2 className="w-8 h-8 text-red-500 animate-spin" />
             <Trash2 className="w-4 h-4 text-red-500 absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2" />
@@ -236,7 +235,7 @@ const ThoughtNode: React.FC<ThoughtNodeProps> = React.memo(({ thought, registerE
 
       <div
         className={cn(
-          "thought-bulb-content group backdrop-blur-[20px] border rounded-[32px] flex flex-col relative transition-all duration-300",
+          "thought-bulb-content group backdrop-blur-[20px] border rounded-2xl flex flex-col relative transition-all duration-300 overflow-hidden",
           isCalendar && !isExpanded ? "p-3 gap-0" : "p-4.5 gap-2",
           isSelected
             ? "border-[var(--accent)]/50 shadow-[0_0_40px_var(--accent-glow)] bg-[var(--node-bg)]/80"
@@ -265,9 +264,9 @@ const ThoughtNode: React.FC<ThoughtNodeProps> = React.memo(({ thought, registerE
         </div>
         <ThoughtFooter 
           thought={thought} 
-          stack={stack} 
           isReadOnly={isReadOnly} 
           isSpatial={isSpatial}
+          isExpanded={!isCalendar || isExpanded}
           linkingSourceId={linkingSourceId} 
           handleLinkAction={handleLinkAction} 
         />

@@ -52,7 +52,11 @@ export const createAuthSlice: StateCreator<AuthState, [], [], any> = (set, get, 
     window.addEventListener('offline', () => set({ isOnline: false, syncStatus: 'offline' }));
     get().checkExpiry();
 
-    if (get().status === 'authenticated') {
+    const currentUser = get().user;
+    if (get().status === 'authenticated' && currentUser?.id) {
+      // Phase 0: Start Realtime Listener for instant sync
+      syncOrchestrator.setupRealtimeListener(currentUser.id);
+
       // Phase 1: Auto-Migration for missing updatedAt
       try {
         const now = Date.now();
@@ -112,6 +116,9 @@ export const createAuthSlice: StateCreator<AuthState, [], [], any> = (set, get, 
       status: 'authenticated',
       syncStatus: 'syncing'
     });
+
+    // Start instant realtime listener
+    syncOrchestrator.setupRealtimeListener(userWithDefaults.id);
 
     try {
       await get().refreshProfile();
@@ -173,6 +180,7 @@ export const createAuthSlice: StateCreator<AuthState, [], [], any> = (set, get, 
     
     set({ status: 'loading' });
     await new Promise(resolve => setTimeout(resolve, 500));
+    syncOrchestrator.cleanupRealtimeListener();
     localStorage.removeItem('cyberia-user');
     localStorage.removeItem('cyberia-token');
     localStorage.removeItem('cyberia-last-sync');

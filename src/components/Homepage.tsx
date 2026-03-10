@@ -1100,13 +1100,13 @@ const FeatureVisual: React.FC<{ activeFeature: number }> = React.memo(({ activeF
             initial={{ opacity: 0, y: -10 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -10 }}
-            className="absolute top-8 left-1/2 -translate-x-1/2 z-[110] flex items-center gap-1.5 p-1.5 glass rounded-full border border-white/5 max-w-[90vw]"
-          >
+              className="absolute top-8 left-1/2 -translate-x-1/2 z-[110] flex items-center gap-1.5 p-1.5 glass rounded-2xl border border-white/5 max-w-[90vw]"          >
             {SPACES_DATA.map((space, idx) => (
               <button
                 key={space.name}
                 onClick={() => setActiveSpaceIdx(idx)}
-                className={`px-2 py-1 md:px-4 md:py-1.5 rounded-full text-[7px] md:text-[8px] font-black uppercase tracking-[0.1em] md:tracking-[0.2em] transition-all duration-300 ${
+                // Must be TOP centered
+                className={`px-2 py-1 md:px-4 md:py-1.5 rounded-xl text-[7px] md:text-[8px] font-black uppercase tracking-[0.1em] md:tracking-[0.2em] transition-all duration-300 ${
                   activeSpaceIdx === idx 
                     ? 'bg-white text-black shadow-lg shadow-white/10' 
                     : 'text-white/40 hover:text-white hover:bg-white/5'
@@ -1123,13 +1123,14 @@ const FeatureVisual: React.FC<{ activeFeature: number }> = React.memo(({ activeF
             initial={{ opacity: 0, y: -10 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -10 }}
-            className="absolute top-8 left-1/2 -translate-x-1/2 z-[110] flex items-center gap-1.5 p-1.5 glass rounded-full border border-white/5 max-w-[90vw]"
+            // Must be aligned to the TOP RIGHT corner
+            className="absolute top-8 right-8 z-[110] flex items-center gap-1.5 p-1.5 glass rounded-2xl border border-white/5 max-w-[90vw]"
           >
             {(['spatial', 'kanban', 'calendar'] as const).map((v) => (
               <button
                 key={v}
                 onClick={() => setView(v)}
-                className={`px-2 py-1 md:px-4 md:py-1.5 rounded-full text-[7px] md:text-[8px] font-black uppercase tracking-[0.1em] md:tracking-[0.2em] transition-all duration-300 ${
+                className={`px-2 py-1 md:px-4 md:py-1.5 rounded-xl text-[7px] md:text-[8px] font-black uppercase tracking-[0.1em] md:tracking-[0.2em] transition-all duration-300 ${
                   view === v 
                     ? 'bg-white text-black shadow-lg shadow-white/10' 
                     : 'text-white/40 hover:text-white hover:bg-white/5'
@@ -1328,13 +1329,13 @@ const Homepage: React.FC = () => {
             <div className="flex flex-col sm:flex-row items-center justify-center gap-5">
               <button 
                 onClick={() => scrollToSection('features')}
-                className="w-full sm:w-auto px-10 py-5 glass hover:bg-white/10 rounded-[1.5rem] text-xs font-black uppercase tracking-[0.3em] transition-all flex items-center justify-center gap-3"
+                className="w-full sm:w-auto px-10 py-5 glass hover:bg-white/10 rounded-2xl text-xs font-black uppercase tracking-[0.3em] transition-all flex items-center justify-center gap-3"
               >
                 Explore Features
               </button>
               <a 
                 href="https://app.cyberia.tn"
-                className="w-full sm:w-auto px-10 py-5 bg-[var(--accent)] hover:bg-[var(--accent-secondary)] text-white rounded-[1.5rem] text-xs font-black uppercase tracking-[0.3em] transition-all shadow-2xl shadow-[var(--accent)]/30 active:scale-[0.98] flex items-center justify-center gap-3 group"
+                className="w-full sm:w-auto px-10 py-5 bg-[var(--accent)] hover:bg-[var(--accent-secondary)] text-white rounded-2xl text-xs font-black uppercase tracking-[0.3em] transition-all shadow-2xl shadow-[var(--accent)]/30 active:scale-[0.98] flex items-center justify-center gap-3 group"
               >
                 Enter Cyberia
                 <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
@@ -1351,7 +1352,7 @@ const Homepage: React.FC = () => {
           className="block max-w-6xl mx-auto mt-16 md:mt-24 px-4 md:px-0 relative"
         >
           <Suspense fallback={
-            <div className="w-full h-[400px] md:h-[600px] glass rounded-[2rem] md:rounded-[3rem] animate-pulse flex items-center justify-center">
+            <div className="w-full h-[400px] md:h-[600px] glass rounded-2xl animate-pulse flex items-center justify-center">
               <span className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-500">Initializing Core Engine...</span>
             </div>
           }>
@@ -1383,14 +1384,14 @@ const Homepage: React.FC = () => {
                 <motion.div
                   key={feature.id}
                   onClick={() => setActiveFeature(index)}
-                  className={`relative p-8 rounded-[2.5rem] transition-all duration-500 cursor-pointer group overflow-hidden ${
+                  className={`relative p-8 rounded-2xl transition-all duration-500 cursor-pointer group overflow-hidden ${
                     activeFeature === index 
                       ? 'glass border-[var(--accent)]/30 bg-[var(--accent)]/5 shadow-2xl shadow-[var(--accent)]/10' 
                       : 'border border-transparent hover:bg-white/5'
                   }`}
                 >
                   <div className="relative z-10 flex items-start gap-6">
-                    <div className={`w-14 h-14 rounded-2xl flex items-center justify-center transition-all duration-500 ${
+                    <div className={`w-14 h-14 rounded-xl flex items-center justify-center transition-all duration-500 ${
                       activeFeature === index 
                         ? 'bg-[var(--accent)] text-white shadow-lg shadow-[var(--accent)]/40' 
                         : 'bg-white/5 text-slate-500 group-hover:text-slate-300'
@@ -1442,7 +1443,7 @@ const Homepage: React.FC = () => {
 
             {/* Right Column: Visual Stage */}
             <div className="hidden lg:block lg:w-1/2 sticky top-32">
-              <div className="bg-[#020408] aspect-square lg:aspect-auto lg:h-[600px] rounded-[3rem] border border-white/10 overflow-hidden relative group isolate">
+              <div className="bg-[#020408] aspect-square lg:aspect-auto lg:h-[600px] rounded-2xl border border-white/10 overflow-hidden relative group isolate">
                 <div className="absolute inset-0 bg-gradient-to-br from-[var(--accent)]/10 via-transparent to-transparent opacity-50" />
                 <FeatureVisual activeFeature={activeFeature} />
               </div>
@@ -1465,7 +1466,7 @@ const Homepage: React.FC = () => {
               initial={{ opacity: 0, x: -20 }}
               whileInView={{ opacity: 1, x: 0 }}
               viewport={{ once: true }}
-              className="glass rounded-3xl p-6 shadow-[0_10px_40px_rgba(0,0,0,0.5)]"
+              className="glass rounded-2xl p-6 shadow-[0_10px_40px_rgba(0,0,0,0.5)]"
             >
               <h3 className="text-[14px] font-black uppercase tracking-[0.2em] text-white mb-4">The Problem</h3>
               <p className="text-sm text-[var(--text-dimmed)] leading-relaxed">
@@ -1477,7 +1478,7 @@ const Homepage: React.FC = () => {
               initial={{ opacity: 0, x: 20 }}
               whileInView={{ opacity: 1, x: 0 }}
               viewport={{ once: true }}
-              className="glass rounded-3xl p-6 shadow-[0_10px_40px_rgba(0,0,0,0.5)]"
+              className="glass rounded-2xl p-6 shadow-[0_10px_40px_rgba(0,0,0,0.5)]"
             >
               <h3 className="text-[14px] font-black uppercase tracking-[0.2em] text-white mb-4">The Physics</h3>
               <p className="text-sm text-[var(--text-dimmed)] leading-relaxed">
@@ -1490,7 +1491,7 @@ const Homepage: React.FC = () => {
               whileInView={{ opacity: 1, x: 0 }}
               viewport={{ once: true }}
               transition={{ delay: 0.1 }}
-              className="glass rounded-3xl p-6 shadow-[0_10px_40px_rgba(0,0,0,0.5)]"
+              className="glass rounded-2xl p-6 shadow-[0_10px_40px_rgba(0,0,0,0.5)]"
             >
               <h3 className="text-[14px] font-black uppercase tracking-[0.2em] text-white mb-4">The Agentic Space</h3>
               <p className="text-sm text-[var(--text-dimmed)] leading-relaxed">
@@ -1503,7 +1504,7 @@ const Homepage: React.FC = () => {
               whileInView={{ opacity: 1, x: 0 }}
               viewport={{ once: true }}
               transition={{ delay: 0.1 }}
-              className="glass rounded-3xl p-6 shadow-[0_10px_40px_rgba(0,0,0,0.5)]"
+              className="glass rounded-2xl p-6 shadow-[0_10px_40px_rgba(0,0,0,0.5)]"
             >
               <h3 className="text-[14px] font-black uppercase tracking-[0.2em] text-white mb-4">The Ownership</h3>
               <p className="text-sm text-[var(--text-dimmed)] leading-relaxed">
@@ -1528,7 +1529,7 @@ const Homepage: React.FC = () => {
               initial={{ opacity: 0, x: -20 }}
               whileInView={{ opacity: 1, x: 0 }}
               viewport={{ once: true }}
-              className="glass p-10 rounded-[3rem] border-white/5 flex flex-col hover:-translate-y-2 transition-all duration-500 group"
+              className="glass p-10 rounded-2xl border-white/5 flex flex-col hover:-translate-y-2 transition-all duration-500 group"
             >
               <div className="mb-8">
                 <h3 className="text-xl font-black uppercase tracking-[0.2em] text-white mb-2 group-hover:text-[var(--accent-secondary)] transition-colors">Explorer</h3>
@@ -1540,7 +1541,7 @@ const Homepage: React.FC = () => {
                 <PricingFeature text={`${PLAN_CONFIG.free.AI_DAILY_LIMIT} Daily Agentic AI Interactions`} />
                 <PricingFeature text={`${PLAN_CONFIG.free.MAX_STORAGE_MB}MB Cloud Storage`} />
               </div>
-              <a href="https://app.cyberia.tn" className="w-full py-5 bg-white/5 hover:bg-white/10 border border-white/10 text-white rounded-2xl text-[10px] font-black uppercase tracking-[0.3em] transition-all text-center">
+              <a href="https://app.cyberia.tn" className="w-full py-5 bg-white/5 hover:bg-white/10 border border-white/10 text-white rounded-xl text-[10px] font-black uppercase tracking-[0.3em] transition-all text-center">
                 Get Started Free
               </a>
 
@@ -1556,12 +1557,12 @@ const Homepage: React.FC = () => {
               initial={{ opacity: 0, x: 20 }}
               whileInView={{ opacity: 1, x: 0 }}
               viewport={{ once: true }}
-className="glass p-10 rounded-[3rem] border-[var(--accent)]/30 bg-[var(--accent)]/5 flex flex-col relative overflow-hidden hover:-translate-y-2 transition-all duration-500 group"
+              className="glass p-10 rounded-2xl border-[var(--accent)]/30 bg-[var(--accent)]/5 flex flex-col relative overflow-hidden hover:-translate-y-2 transition-all duration-500 group"
             >
               <div className="absolute top-0 right-0 w-32 h-32 bg-[var(--accent)]/10 blur-[50px] rounded-full translate-x-10 -translate-y-10 group-hover:scale-150 transition-transform duration-1000" />
 
               <div className="absolute top-6 right-6 z-10">
-                <div className="px-3 py-1 bg-[var(--accent)] text-white text-[9px] font-black uppercase tracking-[0.2em] rounded-full shadow-lg shadow-[var(--accent)]/20 group-hover:scale-110 transition-transform">
+                <div className="px-3 py-1 bg-[var(--accent)] text-white text-[9px] font-black uppercase tracking-[0.2em] rounded-xl shadow-lg shadow-[var(--accent)]/20 group-hover:scale-110 transition-transform">
                   Recommended
                 </div>
               </div>
@@ -1571,7 +1572,7 @@ className="glass p-10 rounded-[3rem] border-[var(--accent)]/30 bg-[var(--accent)
                 
                 {location?.isLocalPricing ? (
                   <div className="flex flex-col gap-2 mb-2">
-                    <span className="text-[9px] font-bold uppercase tracking-widest bg-[var(--accent)]/20 text-[var(--accent-secondary)] px-3 py-1 rounded-full border border-[var(--accent)]/30 w-fit">
+                    <span className="text-[9px] font-bold uppercase tracking-widest bg-[var(--accent)]/20 text-[var(--accent-secondary)] px-3 py-1 rounded-xl border border-[var(--accent)]/30 w-fit">
                       Local Pricing Active
                     </span>
                     <div className="flex items-baseline gap-2 group-hover:scale-105 transition-transform origin-left duration-500">
@@ -1606,7 +1607,7 @@ className="glass p-10 rounded-[3rem] border-[var(--accent)]/30 bg-[var(--accent)
                 <PricingFeature text="Shared Team Spaces (Coming Soon)" pro />
               </div>
 
-              <a href="https://app.cyberia.tn/pricing" className="w-full py-5 bg-[var(--accent)] hover:bg-[var(--accent-secondary)] text-white rounded-2xl text-[10px] font-black uppercase tracking-[0.3em] transition-all text-center shadow-xl shadow-[var(--accent)]/20 active:scale-95">
+              <a href="https://app.cyberia.tn/pricing" className="w-full py-5 bg-[var(--accent)] hover:bg-[var(--accent-secondary)] text-white rounded-xl text-[10px] font-black uppercase tracking-[0.3em] transition-all text-center shadow-xl shadow-[var(--accent)]/20 active:scale-95">
                 Go Pro
               </a>
 
@@ -1634,7 +1635,7 @@ className="glass p-10 rounded-[3rem] border-[var(--accent)]/30 bg-[var(--accent)
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
-            className="glass p-10 rounded-[3rem] border-white/5"
+            className="glass p-10 rounded-2xl border-white/5"
           >
             {contactSubmitStatus === 'success' ? (
               <div className="py-16 text-center space-y-4">
@@ -1654,7 +1655,7 @@ className="glass p-10 rounded-[3rem] border-[var(--accent)]/30 bg-[var(--accent)
                       placeholder="Your Name" 
                       value={contactName} 
                       onChange={(e) => setContactName(e.target.value)} 
-                      className="w-full h-14 bg-black/40 border border-white/5 rounded-2xl px-5 text-sm text-white outline-none focus:border-[var(--accent)]/50 transition-all" 
+                      className="w-full h-14 bg-black/40 border border-white/5 rounded-xl px-5 text-sm text-white outline-none focus:border-[var(--accent)]/50 transition-all" 
                     />
                   </div>
                   <div className="space-y-3">
@@ -1665,7 +1666,7 @@ className="glass p-10 rounded-[3rem] border-[var(--accent)]/30 bg-[var(--accent)
                       placeholder="your@email.com" 
                       value={contactEmail} 
                       onChange={(e) => setContactEmail(e.target.value)} 
-                      className="w-full h-14 bg-black/40 border border-white/5 rounded-2xl px-5 text-sm text-white outline-none focus:border-[var(--accent)]/50 transition-all" 
+                      className="w-full h-14 bg-black/40 border border-white/5 rounded-xl px-5 text-sm text-white outline-none focus:border-[var(--accent)]/50 transition-all" 
                     />
                   </div>
                 </div>
@@ -1676,18 +1677,18 @@ className="glass p-10 rounded-[3rem] border-[var(--accent)]/30 bg-[var(--accent)
                     value={contactMessage} 
                     onChange={(e) => setContactMessage(e.target.value)} 
                     placeholder="How can we help?" 
-                    className="w-full h-32 bg-black/40 border border-white/5 rounded-2xl p-5 text-sm text-white outline-none focus:border-[var(--accent)]/50 transition-all resize-none" 
+                    className="w-full h-32 bg-black/40 border border-white/5 rounded-xl p-5 text-sm text-white outline-none focus:border-[var(--accent)]/50 transition-all resize-none" 
                   />
                 </div>
                 {contactSubmitStatus === 'error' && (
-                  <div className="p-4 rounded-2xl bg-red-500/10 border border-red-500/20 text-red-400 text-[10px] font-black uppercase tracking-widest text-center">
+                  <div className="p-4 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 text-[10px] font-black uppercase tracking-widest text-center">
                     Failed to send message. Please try again.
                   </div>
                 )}
                 <button 
                   type="submit" 
                   disabled={isContactSubmitting || !contactMessage.trim()} 
-                  className="w-full h-14 bg-[var(--accent)] hover:bg-[var(--accent-secondary)] disabled:opacity-50 text-white rounded-2xl font-black uppercase text-xs tracking-[0.2em] transition-all flex items-center justify-center gap-3 shadow-lg shadow-[var(--accent)]/20 hover:shadow-[var(--accent)]/40"
+                  className="w-full h-14 bg-[var(--accent)] hover:bg-[var(--accent-secondary)] disabled:opacity-50 text-white rounded-xl font-black uppercase text-xs tracking-[0.2em] transition-all flex items-center justify-center gap-3 shadow-lg shadow-[var(--accent)]/20 hover:shadow-[var(--accent)]/40"
                 >
                   {isContactSubmitting ? (
                     <Loader2 className="w-5 h-5 animate-spin" />
@@ -1720,7 +1721,7 @@ className="glass p-10 rounded-[3rem] border-[var(--accent)]/30 bg-[var(--accent)
             </p>
             <a 
               href="https://app.cyberia.tn"
-              className="inline-flex items-center gap-4 px-12 py-6 bg-[var(--accent)] hover:bg-[var(--accent-secondary)] text-white rounded-[2rem] text-xs font-black uppercase tracking-[0.4em] transition-all shadow-[0_20px_50px_rgba(99,102,241,0.3)] hover:-translate-y-1 active:translate-y-0"
+              className="inline-flex items-center gap-4 px-12 py-6 bg-[var(--accent)] hover:bg-[var(--accent-secondary)] text-white rounded-2xl text-xs font-black uppercase tracking-[0.4em] transition-all shadow-[0_20px_50px_rgba(99,102,241,0.3)] hover:-translate-y-1 active:translate-y-0"
             >
               Try for Free
               <ArrowRight className="w-5 h-5" />

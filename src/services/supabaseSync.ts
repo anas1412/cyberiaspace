@@ -1,4 +1,5 @@
 import { supabase } from './supabase'
+import { sanitizeStatus, sanitizePriority } from '../utils/thought'
 
 export { supabase }
 
@@ -81,6 +82,10 @@ export function toCamelCase(obj: any): any {
     const camelKey = key.replace(/_([a-z])/g, (_, letter) => letter.toUpperCase())
     result[camelKey] = toCamelCase(obj[key])
   }
+
+  // Sanitize status and priority
+  if (result.status !== undefined) result.status = sanitizeStatus(result.status);
+  if (result.priority !== undefined) result.priority = sanitizePriority(result.priority);
 
   // SPECIAL HANDLING: Spaces Transform JSONB
   if (obj.transform && typeof obj.transform === 'object' && !Array.isArray(obj.transform)) {

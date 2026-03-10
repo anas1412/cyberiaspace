@@ -4,6 +4,7 @@ import { db, type Thought } from '../../db';
 import { syncOrchestrator } from '../../services/sync/syncOrchestrator';
 import { useModalStore } from '../useModalStore';
 import { sanitizeDate } from '../../utils/date';
+import { sanitizeStatus, sanitizePriority } from '../../utils/thought';
 import { ulid } from 'ulid';
 
 export const createThoughtSlice: StateCreator<CyberiaState, [], [], any> = (set, get) => ({
@@ -68,8 +69,8 @@ export const createThoughtSlice: StateCreator<CyberiaState, [], [], any> = (set,
       text: '',
       description: '',
       type: 'label',
-      status: 'none',
-      priority: 'none',
+      status: sanitizeStatus(partialThought.status || 'none'),
+      priority: sanitizePriority(partialThought.priority || 'none'),
       size: 1,
       order: Date.now(),
       layer: 0,
@@ -80,6 +81,10 @@ export const createThoughtSlice: StateCreator<CyberiaState, [], [], any> = (set,
       date: partialThought.date ? sanitizeDate(partialThought.date) : '',
       data: partialThought.data || payload
     } as Thought;
+    
+    // Ensure nested values win if they were explicitly provided in partialThought
+    thought.status = sanitizeStatus(thought.status);
+    thought.priority = sanitizePriority(thought.priority);
 
     const result = await db.thoughts.add(thought);
     if (result) {
@@ -105,6 +110,9 @@ export const createThoughtSlice: StateCreator<CyberiaState, [], [], any> = (set,
     if (updates.date) {
       updates.date = sanitizeDate(updates.date);
     }
+
+    if (updates.status) updates.status = sanitizeStatus(updates.status);
+    if (updates.priority) updates.priority = sanitizePriority(updates.priority);
 
     if (!(Object.keys(updates).length <= 4 && !updates.data) && !isBlobType) {
       if (JSON.stringify(updates).length > 2 * 1024 * 1024) {
@@ -153,6 +161,8 @@ export const createThoughtSlice: StateCreator<CyberiaState, [], [], any> = (set,
     if (updates.date) {
       updates.date = sanitizeDate(updates.date);
     }
+    if (updates.status) updates.status = sanitizeStatus(updates.status);
+    if (updates.priority) updates.priority = sanitizePriority(updates.priority);
 
     const finalUpdates = {
       ...updates,
@@ -190,6 +200,8 @@ export const createThoughtSlice: StateCreator<CyberiaState, [], [], any> = (set,
         if (u.date) {
           u.date = sanitizeDate(u.date);
         }
+        if (u.status) u.status = sanitizeStatus(u.status);
+        if (u.priority) u.priority = sanitizePriority(u.priority);
         const finalUpdates = {
           ...u,
           updatedAt: Date.now(),
@@ -382,44 +394,55 @@ export const createThoughtSlice: StateCreator<CyberiaState, [], [], any> = (set,
       // Logic: Join existing stack. If multiple exist (merging), pick the first one.
       targetStackId = existingStackIds[0];
       
-      if (existingStackIds.length > 1) {
-        const otherStackIds = existingStackIds.slice(1);
-        const now = Date.now();
-        // Move all thoughts from other stacks to the primary one
-        await db.thoughts.where('stackId').anyOf(otherStackIds).modify({ 
+      await db.transaction('rw', [db.thoughts, db.stacks], async () => {
+        if (existingStackIds.length > 1) {
+          const otherStackIds = existingStackIds.slice(1);
+          const now = Date.now();
+          // Move all thoughts from other stacks to the primary one
+          await db.thoughts.where('stackId').anyOf(otherStackIds).modify({ 
+            stackId: targetStackId,
+            updatedAt: now,
+            syncStatus: 'local'
+          });
+          // Delete the now empty stacks
+          await db.stacks.where('id').anyOf(otherStackIds).modify({
+            deletedAt: now,
+            updatedAt: now,
+            syncStatus: 'local'
+          });
+        }
+
+        // Assign all selected thoughts to the target stack
+        await db.thoughts.where('id').anyOf(selectedThoughtIds).modify({ 
           stackId: targetStackId,
-          updatedAt: now,
+          updatedAt: Date.now(),
           syncStatus: 'local'
         });
-        // Delete the now empty stacks
-        await db.stacks.where('id').anyOf(otherStackIds).modify({
-          deletedAt: now,
-          updatedAt: now,
-          syncStatus: 'local'
-        });
-      }
+      });
     } else {
       // Logic: Create new unique stack
       targetStackId = ulid();
       const trimmedName = name?.trim();
       const finalName = trimmedName || 'New Collection';
       
-      await db.stacks.add({ 
-        id: targetStackId, 
-        name: finalName, 
-        color: `hsla(${Math.floor(Math.random() * 360)}, 70%, 50%, 1)`, 
-        spaceId: activeSpaceId,
-        updatedAt: Date.now(),
-        syncStatus: 'local'
+      await db.transaction('rw', [db.thoughts, db.stacks], async () => {
+        await db.stacks.add({ 
+          id: targetStackId, 
+          name: finalName, 
+          color: `hsla(${Math.floor(Math.random() * 360)}, 70%, 50%, 1)`, 
+          spaceId: activeSpaceId,
+          updatedAt: Date.now(),
+          syncStatus: 'local'
+        });
+
+        // Assign all selected thoughts to the target stack
+        await db.thoughts.where('id').anyOf(selectedThoughtIds).modify({ 
+          stackId: targetStackId,
+          updatedAt: Date.now(),
+          syncStatus: 'local'
+        });
       });
     }
-
-    // Assign all selected thoughts to the target stack
-    await db.thoughts.where('id').anyOf(selectedThoughtIds).modify({ 
-      stackId: targetStackId,
-      updatedAt: Date.now(),
-      syncStatus: 'local'
-    });
 
     await get().refreshThoughts();
     await get().refreshStacks();

@@ -2,12 +2,11 @@ import { db } from '../../db';
 import { supabaseSync, supabase, toCamelCase } from '../supabaseSync';
 import { supabaseStorage } from '../supabaseStorage';
 import type { SyncConflictData } from './syncTypes';
-
-let syncDebounceTimer: ReturnType<typeof setTimeout> | null = null;
-const SYNC_DEBOUNCE_MS = 10000;
+import { type RealtimeChannel } from '@supabase/supabase-js';
 
 let isSyncBlocked = false;
 let syncRequestedDuringActiveSync = false;
+let realtimeChannel: RealtimeChannel | null = null;
 
 export const syncOrchestrator = {
   async setSyncBlocked(blocked: boolean) {
@@ -35,18 +34,62 @@ export const syncOrchestrator = {
     if (!force && !authState.autoSync) return;
     
     if (syncState.status === 'syncing') {
+      console.log('[Sync] Sync already in progress, queuing follow-up...');
       syncRequestedDuringActiveSync = true;
       return;
     }
     
-    if (syncDebounceTimer) clearTimeout(syncDebounceTimer);
+    // INSTANT: Removed 10s debounce for immediate sync
+    await syncOrchestrator.fullPushSync(force);
+  },
+
+  setupRealtimeListener(userId: string) {
+    if (realtimeChannel) {
+      console.log('[Sync] Existing realtime listener found, cleaning up...');
+      this.cleanupRealtimeListener();
+    }
+
+    console.log(`[Sync] Setting up instant realtime listener for user: ${userId}`);
     
-    if (force) {
-      await syncOrchestrator.fullPushSync(true);
-    } else {
-      syncDebounceTimer = setTimeout(async () => {
-        await syncOrchestrator.fullPushSync();
-      }, SYNC_DEBOUNCE_MS);
+    realtimeChannel = supabase
+      .channel(`sync:${userId}`)
+      .on('postgres_changes', { 
+        event: '*', 
+        schema: 'public', 
+        table: 'thoughts', 
+        filter: `user_id=eq.${userId}` 
+      }, (payload) => {
+        console.log('[Sync] Remote thought change detected:', payload.eventType);
+        this.triggerSync(true);
+      })
+      .on('postgres_changes', { 
+        event: '*', 
+        schema: 'public', 
+        table: 'spaces', 
+        filter: `user_id=eq.${userId}` 
+      }, (payload) => {
+        console.log('[Sync] Remote space change detected:', payload.eventType);
+        this.triggerSync(true);
+      })
+      .on('postgres_changes', { 
+        event: '*', 
+        schema: 'public', 
+        table: 'stacks', 
+        filter: `user_id=eq.${userId}` 
+      }, (payload) => {
+        console.log('[Sync] Remote stack change detected:', payload.eventType);
+        this.triggerSync(true);
+      })
+      .subscribe((status) => {
+        console.log(`[Sync] Realtime subscription status: ${status}`);
+      });
+  },
+
+  cleanupRealtimeListener() {
+    if (realtimeChannel) {
+      console.log('[Sync] Cleaning up realtime listener...');
+      realtimeChannel.unsubscribe();
+      realtimeChannel = null;
     }
   },
 
@@ -259,14 +302,32 @@ export const syncOrchestrator = {
       const stacksToPush = localStacks.filter(s => !s.deletedAt && !s.isOnboarding);
       const thoughtsToPush = localThoughts.filter(t => !t.deletedAt && !onboardingSpaceIds.has(t.spaceId));
 
+      // Capture timestamps to prevent race conditions (Sync Overwrite)
+      const spaceTimestamps = new Map(spacesToPush.map(s => [s.id, s.updatedAt]));
+      const stackTimestamps = new Map(stacksToPush.map(s => [s.id, s.updatedAt]));
+      const thoughtTimestamps = new Map(thoughtsToPush.map(t => [t.id, t.updatedAt]));
+
       if (spacesToPush.length > 0) {
         await supabaseSync.createSpaces(spacesToPush.map(s => ({ ...s, user_id: userId })), userId);
-        await db.spaces.where('id').anyOf(spacesToPush.map(s => s.id)).modify({ syncStatus: 'synced' });
+        
+        // Atomic update: Only mark as synced if not modified during push
+        await db.spaces.where('id').anyOf(spacesToPush.map(s => s.id)).modify((s: any) => {
+          if (s.updatedAt === spaceTimestamps.get(s.id)) {
+            s.syncStatus = 'synced';
+          }
+        });
         await store.refreshSpaces();
       }
+
       if (stacksToPush.length > 0) {
         await supabaseSync.createStacks(stacksToPush.map(s => ({ ...s, user_id: userId })), userId);
-        await db.stacks.where('id').anyOf(stacksToPush.map(s => s.id)).modify({ syncStatus: 'synced' });
+        
+        // Atomic update
+        await db.stacks.where('id').anyOf(stacksToPush.map(s => s.id)).modify((s: any) => {
+          if (s.updatedAt === stackTimestamps.get(s.id)) {
+            s.syncStatus = 'synced';
+          }
+        });
         await store.refreshStacks();
       }
 
@@ -281,10 +342,13 @@ export const syncOrchestrator = {
             const updates = { 
               storageUrl: result.url, 
               storagePath: result.path,
-              data: { ...currentData, url: result.url }
+              data: { ...currentData, url: result.url },
+              updatedAt: Date.now() // Bump timestamp for file metadata update
             };
             await db.thoughts.update(t.id, updates);
             thoughtsToPush[i] = { ...t, ...updates };
+            // Update the captured timestamp so the final 'synced' mark works
+            thoughtTimestamps.set(t.id, updates.updatedAt);
             filesUploaded = true;
           }
         }
@@ -305,7 +369,13 @@ export const syncOrchestrator = {
 
         await supabaseSync.createThoughts(safeThoughts);
         const ids = thoughtsToPush.map(t => t.id);
-        await db.thoughts.where('id').anyOf(ids).modify({ syncStatus: 'synced' });
+        
+        // Atomic update: Only mark as synced if not modified during push
+        await db.thoughts.where('id').anyOf(ids).modify((t: any) => {
+          if (t.updatedAt === thoughtTimestamps.get(t.id)) {
+            t.syncStatus = 'synced';
+          }
+        });
         await store.refreshThoughts();
       } else if (filesUploaded) {
         await store.refreshThoughts();
@@ -332,7 +402,8 @@ export const syncOrchestrator = {
       }
       if (syncRequestedDuringActiveSync) {
         syncRequestedDuringActiveSync = false;
-        setTimeout(() => syncOrchestrator.triggerSync(), SYNC_DEBOUNCE_MS);
+        // INSTANT: No debounce for follow-up sync
+        setTimeout(() => syncOrchestrator.triggerSync(), 50);
       }
     }
   },

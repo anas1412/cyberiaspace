@@ -5,6 +5,7 @@
  */
 
 import { db } from '../../db';
+import { sanitizeStatus, sanitizePriority } from '../../utils/thought';
 
 const svgToDataUrl = (svg: string): string => {
   if (svg.startsWith('data:image/svg+xml')) return svg;
@@ -139,6 +140,9 @@ export const executeOracleTool = async (toolCall: any, store: any) => {
         const x = typeof thoughtArgs.x !== 'undefined' ? Number(thoughtArgs.x) : window.innerWidth / 2;
         const y = typeof thoughtArgs.y !== 'undefined' ? Number(thoughtArgs.y) : window.innerHeight / 2;
 
+        if (thoughtArgs.status) thoughtArgs.status = sanitizeStatus(thoughtArgs.status);
+        if (thoughtArgs.priority) thoughtArgs.priority = sanitizePriority(thoughtArgs.priority);
+
         const id = await store.addThought({ ...thoughtArgs, x, y });
         if (id === '') {
           return { success: false, error: 'Thought creation limit reached or invalid data' };
@@ -164,6 +168,9 @@ export const executeOracleTool = async (toolCall: any, store: any) => {
           const x = typeof thoughtArgs.x !== 'undefined' ? Number(thoughtArgs.x) : window.innerWidth / 2;
           const y = typeof thoughtArgs.y !== 'undefined' ? Number(thoughtArgs.y) : window.innerHeight / 2;
           
+          if (thoughtArgs.status) thoughtArgs.status = sanitizeStatus(thoughtArgs.status);
+          if (thoughtArgs.priority) thoughtArgs.priority = sanitizePriority(thoughtArgs.priority);
+
           const id = await store.addThought({ ...thoughtArgs, x, y });
           if (id !== '') {
             createdCount++;
@@ -219,6 +226,9 @@ export const executeOracleTool = async (toolCall: any, store: any) => {
           if (typeof updates.x !== 'undefined') sanitizedUpdates.x = Number(updates.x);
           if (typeof updates.y !== 'undefined') sanitizedUpdates.y = Number(updates.y);
           if (updates.type === ('image' as any)) sanitizedUpdates.type = 'file';
+          
+          if (updates.status) sanitizedUpdates.status = sanitizeStatus(updates.status);
+          if (updates.priority) sanitizedUpdates.priority = sanitizePriority(updates.priority);
 
           await store.updateThought(String(id), sanitizedUpdates);
           if (stackName) await store.createStack(stackName, String(id));
@@ -236,6 +246,9 @@ export const executeOracleTool = async (toolCall: any, store: any) => {
           if (typeof updates.x !== 'undefined') sanitizedUpdates.x = Number(updates.x);
           if (typeof updates.y !== 'undefined') sanitizedUpdates.y = Number(updates.y);
           if (updates.type === ('image' as any)) sanitizedUpdates.type = 'file';
+
+          if (updates.status) sanitizedUpdates.status = sanitizeStatus(updates.status);
+          if (updates.priority) sanitizedUpdates.priority = sanitizePriority(updates.priority);
 
           for (const id of ids) {
             await store.updateThought(String(id), sanitizedUpdates);

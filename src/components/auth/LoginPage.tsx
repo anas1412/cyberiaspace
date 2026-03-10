@@ -108,7 +108,7 @@ const LoginPage: React.FC = () => {
           <span className="text-[10px] font-black uppercase tracking-widest">Back</span>
         </button>
 
-        <div className="glass p-8 md:p-16 rounded-[3rem] border border-white/10 shadow-2xl space-y-10 text-center">
+        <div className="glass p-8 md:p-16 rounded-2xl border border-white/10 shadow-2xl space-y-10 text-center">
           <div className="space-y-4">
 <h1 className="text-3xl md:text-5xl font-black text-white uppercase tracking-tighter leading-none">
               Welcome <span style={{ color: 'var(--accent)' }}>Back</span>

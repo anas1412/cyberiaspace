@@ -34,7 +34,7 @@ export const UnifiedMediaCard: React.FC<UnifiedMediaCardProps> = ({
 
       {overlayIcon && (
         <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-          <div className="w-10 h-10 rounded-full bg-black/40 backdrop-blur-sm border border-white/20 flex items-center justify-center group-hover:scale-110 transition-all duration-300">
+          <div className="w-10 h-10 rounded-xl bg-black/40 backdrop-blur-sm border border-white/20 flex items-center justify-center group-hover:scale-110 transition-all duration-300">
             {overlayIcon}
           </div>
         </div>

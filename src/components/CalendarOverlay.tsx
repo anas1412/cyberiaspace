@@ -97,7 +97,7 @@ const CalendarOverlay: React.FC = () => {
 
       {/* Sidebar */}
       <div 
-        className="cal-sidebar w-full md:w-[260px] min-h-[200px] md:min-h-0 glass rounded-3xl flex flex-col overflow-hidden pointer-events-auto z-[30] relative border border-white/10 shadow-2xl"
+        className="cal-sidebar w-full md:w-[260px] min-h-[200px] md:min-h-0 glass rounded-2xl flex flex-col overflow-hidden pointer-events-auto z-[30] relative border border-white/10 shadow-2xl"
         onMouseEnter={() => handleMouseEnter('')}
         onMouseLeave={handleMouseLeave}
       >
@@ -111,13 +111,13 @@ const CalendarOverlay: React.FC = () => {
       </div>
       
       {/* Main Grid */}
-      <div className="cal-main flex-1 flex flex-col min-h-[400px] md:min-h-0 glass rounded-3xl overflow-hidden pointer-events-auto z-[5] relative border border-white/10 shadow-xl" onMouseEnter={handleMouseLeave}>
+      <div className="cal-main flex-1 flex flex-col min-h-[400px] md:min-h-0 glass rounded-2xl overflow-hidden pointer-events-auto z-[5] relative border border-white/10 shadow-xl" onMouseEnter={handleMouseLeave}>
         <div className="cal-header h-[50px] md:h-[60px] flex items-center justify-between px-4 md:px-[30px] border-b border-white/[0.05] bg-black/20">
-          <button onClick={() => changeMonth(-1)} className="p-2 hover:bg-white/5 rounded-lg text-slate-400 transition-colors">
+          <button onClick={() => changeMonth(-1)} className="p-2 hover:bg-white/5 rounded-xl text-slate-400 transition-colors">
             <ChevronLeft className="w-4 h-4" />
           </button>
           <span className="cal-title text-sm md:text-base font-bold text-white">{monthTitle}</span>
-          <button onClick={() => changeMonth(1)} className="p-2 hover:bg-white/5 rounded-lg text-slate-400 transition-colors">
+          <button onClick={() => changeMonth(1)} className="p-2 hover:bg-white/5 rounded-xl text-slate-400 transition-colors">
             <ChevronRight className="w-4 h-4" />
           </button>
         </div>

@@ -52,12 +52,12 @@ export const FocusEditorShell: React.FC<FocusEditorShellProps> = ({
             animate={{ scale: 1, opacity: 1, y: 0 }}
             exit={{ scale: 0.95, opacity: 0, y: 20 }}
             transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-            className="focus-box glass rounded-[2rem] md:rounded-[3rem] overflow-hidden border border-white/10 shadow-2xl w-full h-full max-h-[95vh] md:max-h-[85vh] flex flex-col"
+            className="focus-box glass rounded-2xl overflow-hidden border border-white/10 shadow-2xl w-full h-full max-h-[95vh] md:max-h-[85vh] flex flex-col"
             style={{ maxWidth }}
             onClick={(e) => e.stopPropagation()}
           >
             {/* Header Area */}
-            <div className="flex flex-col md:flex-row justify-between items-start md:items-center p-6 md:p-8 border-b border-white/5 bg-black/20 gap-4 md:gap-0">
+            <div className="flex flex-col md:flex-row justify-between items-start md:items-center p-6 md:p-8 border-b border-white/5 gap-4 md:gap-0">
               <div className="flex items-center w-full md:w-auto flex-1 min-w-0">
                 <div className="flex flex-col flex-1 min-w-0">
                   <input
@@ -94,7 +94,7 @@ export const FocusEditorShell: React.FC<FocusEditorShellProps> = ({
             </div>
 
             {/* Footer Area */}
-            <div className="p-4 md:p-6 bg-black/40 border-t border-white/5 flex flex-col md:flex-row justify-between items-center gap-4 md:gap-0">
+            <div className="p-4 md:p-6 border-t border-white/5 flex flex-col md:flex-row justify-between items-center gap-4 md:gap-0">
               <div className="flex flex-wrap justify-center md:justify-start gap-2">
                 {stack && (
                   <span

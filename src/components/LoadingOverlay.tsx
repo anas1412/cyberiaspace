@@ -52,8 +52,8 @@ const LoadingOverlay: React.FC<LoadingOverlayProps> = ({ force }) => {
               transition={{ duration: 0.5 }}
               className="relative w-24 h-24 mb-12"
             >
-              <div className="absolute inset-0 border-2 border-blue-500/20 rounded-[2rem] rotate-45 animate-[spin_10s_linear_infinite]" />
-              <div className="absolute inset-0 border border-blue-400/40 rounded-[1.5rem] -rotate-12 animate-[spin_15s_linear_infinite_reverse]" />
+              <div className="absolute inset-0 border-2 border-blue-500/20 rounded-2xl rotate-45 animate-[spin_10s_linear_infinite]" />
+              <div className="absolute inset-0 border border-blue-400/40 rounded-xl -rotate-12 animate-[spin_15s_linear_infinite_reverse]" />
               
               <div className="absolute inset-0 flex items-center justify-center">
                 <img src="/logo.png" alt="Cyberia" className="w-12 h-12 relative z-10" />

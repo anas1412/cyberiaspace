@@ -619,7 +619,7 @@ const Viewport: React.FC<{ isInteracting?: boolean }> = ({ isInteracting }) => {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[10006] bg-blue-500/10 backdrop-blur-md flex flex-col items-center justify-center pointer-events-none border-[4px] border-dashed border-blue-500/30 m-4 rounded-[3rem]"
+            className="fixed inset-0 z-[10006] bg-blue-500/10 backdrop-blur-md flex flex-col items-center justify-center pointer-events-none border-[4px] border-dashed border-blue-500/30 m-4 rounded-2xl"
           >
             <motion.div
               initial={{ scale: 0.9, y: 20 }}
@@ -665,8 +665,8 @@ const Viewport: React.FC<{ isInteracting?: boolean }> = ({ isInteracting }) => {
               </div>
 
               <div className="text-center space-y-2">
-                <h2 className="text-white/90 text-xs font-black uppercase tracking-[0.6em] animate-pulse">Waking Dimension</h2>
-                <p className="text-[8px] text-blue-400/40 font-black uppercase tracking-[0.3em]">Retrieving Spatial Fragments</p>
+                <h2 className="text-white/90 text-xs font-black uppercase tracking-[0.6em] animate-pulse">Loading Workspace</h2>
+                <p className="text-[8px] text-blue-400/40 font-black uppercase tracking-[0.3em]">Preparing your thoughts</p>
               </div>
             </div>
           </motion.div>
