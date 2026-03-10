@@ -1,4 +1,5 @@
 import { useEffect, useRef, Suspense, lazy, useState } from 'react';
+import { isBrowser } from 'react-device-detect';
 import { Analytics } from '@vercel/analytics/react';
 import { SpeedInsights } from '@vercel/speed-insights/react';
 import { useStore } from './store/useStore';
@@ -38,6 +39,7 @@ const LegalNotice = lazy(() => import('./components/legal/LegalNotice'));
 const Contact = lazy(() => import('./components/legal/Contact'));
 const LoginPage = lazy(() => import('./components/auth/LoginPage'));
 const Homepage = lazy(() => import('./components/Homepage'));
+const MobilePage = lazy(() => import('./components/MobilePage'));
 const NotFound = lazy(() => import('./components/NotFound'));
 
 function App() {
@@ -477,6 +479,16 @@ function App() {
     return (
       <Suspense fallback={<LoadingOverlay force />}>
         <NotFound />
+      </Suspense>
+    );
+  }
+
+  // Guard: Mobile/Tablet access to workspace
+  const isWorkspacePath = path === '/' || path.startsWith('/s/');
+  if (!isBrowser && isWorkspacePath && !isMainDomain) {
+    return (
+      <Suspense fallback={<LoadingOverlay force />}>
+        <MobilePage />
       </Suspense>
     );
   }

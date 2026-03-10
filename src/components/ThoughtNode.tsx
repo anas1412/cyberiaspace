@@ -128,14 +128,26 @@ const ThoughtNode: React.FC<ThoughtNodeProps> = React.memo(({ thought, registerE
     // CASE 2: No session active OR I am the current source
     // If I have a stackId, any click on the button UNLINKS me.
     if (thought.stackId) {
-      store.setSelectedThoughtIds([thought.id]);
+      const prevSelectedIds = store.selectedThoughtIds;
+      store.setSelectedThoughtIds([thought.id]); // Target this specific thought
       setLinkingSourceId(null); // Clear immediately
       await store.unlinkSelectedThoughts();
-      store.setSelectedThoughtIds([]);
+      
+      // Restore previous selection if it wasn't the unlinked thought
+      if (!prevSelectedIds.includes(thought.id)) {
+        store.setSelectedThoughtIds(prevSelectedIds);
+      }
     } else {
       // If no stackId, toggle linking mode
-      if (linkingSourceId === thought.id) setLinkingSourceId(null);
-      else setLinkingSourceId(thought.id);
+      if (linkingSourceId === thought.id) {
+        setLinkingSourceId(null);
+      } else {
+        setLinkingSourceId(thought.id);
+        // Ensure the source is selected when we start linking from it
+        if (!isSelected) {
+          store.setSelectedThoughtId(thought.id);
+        }
+      }
     }
   };
 
@@ -242,7 +254,7 @@ const ThoughtNode: React.FC<ThoughtNodeProps> = React.memo(({ thought, registerE
           isSelected
             ? "border-[var(--accent)]/50 shadow-[0_0_40px_var(--accent-glow)] bg-[var(--node-bg)]/80"
             : "border-[var(--glass-border)] shadow-[0_10px_40px_rgba(0,0,0,0.5)] bg-[var(--node-bg)]/60",
-          linkingSourceId === thought.id && "ring-2 ring-[var(--accent)] ring-offset-4 ring-offset-[var(--bg-page)]",
+          linkingSourceId === thought.id && "ring-2 ring-[var(--accent)] shadow-[0_0_20px_var(--accent-glow)]",
           linkingSourceId && linkingSourceId !== thought.id && "hover:scale-105 hover:border-[var(--accent)]/50 cursor-pointer",
           isSelected && isInspectorOpen && "animate-breathe"
         )}

@@ -259,6 +259,7 @@ const Viewport: React.FC<{ isInteracting?: boolean }> = ({ isInteracting }) => {
       // Cancel linking if we clicked anywhere that didn't stop propagation (i.e., not a successful link click)
       if (linkingSourceId) {
         setLinkingSourceId(null);
+        return; // Fixed: Don't clear selection if we're just canceling a link
       }
 
       if (!target.closest('.thought-bulb, #inspector, .expand-img, button, input, textarea, #chat-overlay, .modal-content, .focus-box, #space-switcher-menu')) {

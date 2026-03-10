@@ -573,14 +573,22 @@ export const usePhysics = (
             }
           }
 
-          // Minimalist baseline: single subtle line with stack color, no glow
+          // Enhanced glow effect for stack connections
           ctx.setLineDash([]);
           ctx.lineWidth = 1.0;
-          // Use a light alpha to keep lines unobtrusive
+          
           const prevAlpha = ctx.globalAlpha;
           ctx.strokeStyle = stackColor;
-          ctx.globalAlpha = 0.5; // barely visible
+          ctx.globalAlpha = 0.5;
+          
+          // Glow properties
+          ctx.shadowBlur = 12;
+          ctx.shadowColor = stackColor;
+          
           ctx.stroke();
+          
+          // Reset shadow for next drawing operations
+          ctx.shadowBlur = 0;
           ctx.globalAlpha = prevAlpha;
         });
       }
@@ -595,12 +603,20 @@ export const usePhysics = (
           const worldMouseY = (mousePosRef.current.y - visualTransformRef.current.y) / visualTransformRef.current.scale;
 
           ctx.beginPath(); 
-          ctx.setLineDash([5, 5]); // Keep linking line dashed for distinction
+          ctx.setLineDash([5, 5]); 
           ctx.strokeStyle = accent.startsWith('#') ? accent + 'CC' : accent.replace('rgb', 'rgba').replace(')', ', 0.8)'); 
           ctx.lineWidth = 1.5;
+          
+          // Glow for the active linking line
+          ctx.shadowBlur = 15;
+          ctx.shadowColor = accent;
+          
           ctx.moveTo(pS.x + 140, pS.y + hS / 2); 
           ctx.lineTo(worldMouseX, worldMouseY);
           ctx.stroke(); 
+          
+          // Reset shadow and dash
+          ctx.shadowBlur = 0;
           ctx.setLineDash([]);
         }
       }

@@ -91,7 +91,7 @@ export const ThoughtContainer: React.FC<ThoughtContainerProps> = ({
           isSelected
             ? "border-[var(--accent)]/50 shadow-[0_0_40px_var(--accent-glow)] bg-[var(--node-bg)]/80"
             : "border-[var(--glass-border)] shadow-[0_10px_40px_rgba(0,0,0,0.5)] bg-[var(--node-bg)]/60",
-          linkingSourceId === thoughtId && "ring-2 ring-[var(--accent)] ring-offset-4 ring-offset-[var(--bg-page)]",
+          linkingSourceId === thoughtId && "ring-2 ring-[var(--accent)] shadow-[0_0_20px_var(--accent-glow)]",
           linkingSourceId && linkingSourceId !== thoughtId && "hover:scale-105 hover:border-[var(--accent)]/50 cursor-pointer",
           isSelected && isInspectorOpen && "animate-breathe"
         )}
