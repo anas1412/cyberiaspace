@@ -93,7 +93,7 @@ const LoadingOverlay: React.FC<LoadingOverlayProps> = ({ force }) => {
               <StatusItem delay={0.6} icon={<Shield className="w-3 h-3" />} label="Finding your account" active={isInitializing} />
               <StatusItem delay={0.8} icon={<Cpu className="w-3 h-3" />} label="Getting your spaces ready" active={isInitializing} />
               <StatusItem delay={1.0} icon={<Zap className="w-3 h-3" />} label="Putting things in place" active={isInitializing} />
-              <StatusItem delay={1.2} icon={<Bot className="w-3 h-3" />} label="Waking up the Oracle" active={isInitializing} />
+              <StatusItem delay={1.2} icon={<Bot className="w-3 h-3" />} label="Finalizing setup" active={isInitializing} />
             </div>
 
             {/* Progress Bar */}
