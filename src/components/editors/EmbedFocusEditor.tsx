@@ -279,24 +279,8 @@ const EmbedFocusEditor: React.FC = () => {
       onTitleChange={(val) => { if (!isReadOnly) updateThought(thought.id, { text: val }); }}
       description={thought.description}
       isReadOnly={isReadOnly}
-      headerSubContent={
-        <div className="flex items-center gap-3 mt-1.5 overflow-hidden">
-          {thought.author && (
-            <div className="flex items-center gap-1.5 px-2.5 py-1 bg-white/5 border border-white/10 rounded-lg">
-              <span className={cn("text-[8px] font-black uppercase tracking-widest whitespace-nowrap", config.color)}>{thought.author}</span>
-            </div>
-          )}
-          <div className="flex items-center gap-2 px-2.5 py-1 bg-white/5 border border-white/10 rounded-lg max-w-[200px] md:max-w-md">
-            <p className="text-[8px] text-slate-400 uppercase font-black tracking-widest truncate">{content}</p>
-          </div>
-        </div>
-      }
       headerActions={
         <div className="flex items-center gap-3">
-          <div className="flex items-center gap-1.5 px-3 py-1.5 bg-white/5 border border-white/10 rounded-xl">
-             <Icon className={cn("w-3.5 h-3.5", config.color)} />
-             <span className="text-[7px] font-black uppercase tracking-[0.2em] text-slate-400">{config.label}</span>
-          </div>
           <a href={content} target="_blank" rel="noopener noreferrer" className="p-3 bg-white/5 hover:bg-white/10 rounded-xl text-slate-400 hover:text-white transition-all border border-white/5">
             <ExternalLink className="w-4 h-4" />
           </a>
@@ -306,15 +290,22 @@ const EmbedFocusEditor: React.FC = () => {
         <div className="flex items-center gap-4">
           <div className="flex flex-col">
             <span className="text-[7px] font-black text-slate-500 uppercase tracking-widest mb-0.5">Platform</span>
-            <span className="text-[9px] font-black text-slate-300 uppercase tracking-widest">{config.label}</span>
+            <div className="flex items-center gap-1.5">
+              <Icon className={cn("w-3 h-3", config.color)} />
+              <span className="text-[9px] font-black text-slate-300 uppercase tracking-widest">{config.label}</span>
+            </div>
           </div>
-          <div className="w-px h-6 bg-white/5" />
-          <div className="flex flex-col">
-            <span className="text-[7px] font-black text-slate-500 uppercase tracking-widest mb-0.5">Source</span>
-            <span className="text-[9px] font-black text-slate-300 uppercase tracking-widest truncate max-w-[150px]">
-              {new URL(content || 'https://cyberia.app').hostname.toUpperCase()}
-            </span>
-          </div>
+          {thought.author && (
+            <>
+              <div className="w-px h-6 bg-white/5" />
+              <div className="flex flex-col">
+                <span className="text-[7px] font-black text-slate-500 uppercase tracking-widest mb-0.5">Author</span>
+                <span className={cn("text-[9px] font-black uppercase tracking-widest whitespace-nowrap", config.color)}>
+                  {thought.author}
+                </span>
+              </div>
+            </>
+          )}
         </div>
       }
     >

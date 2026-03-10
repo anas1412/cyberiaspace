@@ -1,6 +1,7 @@
 import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X } from 'lucide-react';
+import { type Stack } from '../../db';
 
 interface FocusEditorShellProps {
   isVisible: boolean;
@@ -10,6 +11,7 @@ interface FocusEditorShellProps {
   description?: string;
   isReadOnly?: boolean;
   maxWidth?: string;
+  stack?: Stack;
   
   // Custom slots for flexibility
   headerSubContent?: React.ReactNode; // e.g., Progress bar in Tasks
