@@ -347,21 +347,41 @@ body {
 
 .rain-drops {
   position: absolute;
-  inset: 0;
+  inset: -100px;
   background-image: 
-    radial-gradient(1px 60px at 10% 10%, rgba(214, 211, 209, 0.2), transparent),
-    radial-gradient(1px 60px at 30% 50%, rgba(214, 211, 209, 0.15), transparent);
-  background-size: 400px 400px;
-  animation: rain-fall 4s linear infinite;
+    radial-gradient(1.5px 120px at 10% 10%, rgba(214, 211, 209, 0.4), transparent),
+    radial-gradient(1.5px 80px at 20% 50%, rgba(214, 211, 209, 0.3), transparent),
+    radial-gradient(1px 60px at 40% 80%, rgba(214, 211, 209, 0.2), transparent),
+    radial-gradient(2px 100px at 60% 20%, rgba(214, 211, 209, 0.35), transparent),
+    radial-gradient(1px 90px at 80% 40%, rgba(214, 211, 209, 0.25), transparent),
+    radial-gradient(1.5px 70px at 95% 90%, rgba(214, 211, 209, 0.3), transparent);
+  background-size: 500px 500px;
+  background-repeat: repeat;
+  animation: rain-fall 2.5s linear infinite;
   transform: rotate(15deg);
+  opacity: 0.8;
+}
+
+.rain-drops-fast {
+  position: absolute;
+  inset: -100px;
+  background-image: 
+    radial-gradient(3px 180px at 30% 20%, rgba(214, 211, 209, 0.15), transparent),
+    radial-gradient(3px 200px at 70% 80%, rgba(214, 211, 209, 0.1), transparent);
+  background-size: 1000px 1000px;
+  background-repeat: repeat;
+  animation: rain-fall 1.5s linear infinite;
+  transform: rotate(15deg);
+  filter: blur(2px);
+  opacity: 0.6;
 }
 
 .thunder {
   position: absolute;
   inset: 0;
-  background: radial-gradient(circle at 50% 0%, rgba(255, 255, 255, 0.1), transparent);
+  background: radial-gradient(circle at 50% 0%, rgba(255, 255, 255, 0.2), transparent);
   opacity: 0;
-  animation: atmospheric-heave 15s ease-in-out infinite;
+  animation: atmospheric-heave 12s ease-in-out infinite alternate;
 }
 
 /* Animations */
@@ -372,7 +392,7 @@ body {
 @keyframes canopy-drift { 0% { transform: scale(1); } 100% { transform: scale(1.1); } }
 @keyframes god-ray-shift { 0% { transform: translateX(-5%); } 100% { transform: translateX(5%); } }
 @keyframes firefly-sway { 0%, 100% { transform: translate(0, 0); } 50% { transform: translate(20px, -20px); } }
-@keyframes rain-fall { from { transform: translateY(-800px); } to { transform: translateY(800px); } }
+@keyframes rain-fall { from { background-position-y: 0; } to { background-position-y: 1000px; } }
 @keyframes atmospheric-heave { 0%, 45%, 55%, 100% { opacity: 0; } 50% { opacity: 1; } }
 @keyframes nebula-float { from { opacity: 0.4; } to { opacity: 0.8; } }
 @keyframes twinkle { 0% { opacity: 0.1; } 100% { opacity: 0.6; } }

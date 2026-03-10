@@ -52,7 +52,7 @@ const ThoughtNode: React.FC<ThoughtNodeProps> = React.memo(({ thought, registerE
   const isSpatial = activeSpace?.mode === 'spatial';
   const isCalendar = activeSpace?.mode === 'calendar';
   const isDateHovered = isCalendar && hoveredCalDate !== null && (thought.date || "") === hoveredCalDate;
-  const isExpanded = isDateHovered || (isCalendar && isSelected);
+  const isExpanded = (isCalendar && !thought.date) || isDateHovered || (isCalendar && isSelected);
 
   const { content } = useThoughtPayload(thought);
 

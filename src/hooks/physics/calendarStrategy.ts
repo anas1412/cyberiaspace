@@ -73,7 +73,7 @@ export const calendarStrategy: LayoutStrategist = {
       // Unscheduled - Sidebar Logic
       const unscheduled = context.dateMap?.get("") || [];
       const index = unscheduled.findIndex(t => t.id === thought.id);
-      const isSidebarHovered = hoveredCalDate === "";
+      const isSidebarHovered = true;
       
       const currentScale = 0.78;
       const h = elementHeights.get(thought.id) || 120;

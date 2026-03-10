@@ -508,7 +508,7 @@ function App() {
           {theme === 'cyberia' && <><div className="stars-layer stars-1" /><div className="stars-layer stars-2" /><div className="stars-layer stars-twinkle" /></>}
           {theme === 'sea' && <div className="sea-layer"><div className="sea-caustics" /><div className="bubbles-distant" /><div className="bubbles-near" /><div className="sea-silt" /></div>}
           {theme === 'forest' && <div className="forest-layer"><div className="forest-canopy" /><div className="god-rays" /><div className="fireflies-distant" /><div className="fireflies-near" /></div>}
-          {theme === 'rain' && <div className="rain-layer"><div className="rain-drops" /><div className="thunder" /></div>}
+          {theme === 'rain' && <div className="rain-layer"><div className="rain-drops" /><div className="rain-drops-fast" /><div className="thunder" /></div>}
           <div className="nebula-cloud" /><div className="grain" />
         </>
       ) : (

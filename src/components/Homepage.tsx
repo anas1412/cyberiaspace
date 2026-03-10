@@ -1266,9 +1266,10 @@ const Homepage: React.FC = () => {
   {/* The CTA Button - Now height matched and radius matched */}
   <a 
     href="https://app.cyberia.tn" 
-    className="h-10 px-6 bg-[var(--accent)] hover:bg-[var(--accent-secondary)] text-white rounded-2xl text-[10px] font-black uppercase tracking-[0.15em] transition-all shadow-lg shadow-[var(--accent)]/20 hover:shadow-[var(--accent)]/40 flex items-center justify-center border border-white/10"
+    className="h-10 px-6 bg-[var(--accent)] hover:bg-[var(--accent-secondary)] text-white rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] transition-all shadow-lg shadow-[var(--accent)]/20 hover:shadow-[var(--accent)]/40 flex items-center justify-center border border-white/10 gap-2 group"
   >
-    Open Workspace
+    Enter Cyberia
+    <ArrowRight className="w-3 h-3 group-hover:translate-x-1 transition-transform" />
   </a>
 </div>
 
@@ -1300,8 +1301,9 @@ const Homepage: React.FC = () => {
                     {item}
                   </button>
                 ))}
-                <a href="https://app.cyberia.tn" className="w-full py-3 bg-[var(--accent)] text-white rounded-xl text-[10px] font-black uppercase tracking-[0.2em] transition-all text-center">
-                  Open Workspace
+                <a href="https://app.cyberia.tn" className="w-full py-3 bg-[var(--accent)] text-white rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] transition-all text-center flex items-center justify-center gap-2 group">
+                  Enter Cyberia
+                  <ArrowRight className="w-3 h-3 group-hover:translate-x-1 transition-transform" />
                 </a>
               </div>
             </motion.div>
@@ -1541,7 +1543,7 @@ const Homepage: React.FC = () => {
                 <PricingFeature text={`${PLAN_CONFIG.free.AI_DAILY_LIMIT} Daily Agentic AI Interactions`} />
                 <PricingFeature text={`${PLAN_CONFIG.free.MAX_STORAGE_MB}MB Cloud Storage`} />
               </div>
-              <a href="https://app.cyberia.tn" className="w-full py-5 bg-white/5 hover:bg-white/10 border border-white/10 text-white rounded-xl text-[10px] font-black uppercase tracking-[0.3em] transition-all text-center">
+              <a href="https://app.cyberia.tn" className="w-full py-5 bg-white/5 hover:bg-white/10 border border-white/10 text-white rounded-2xl text-[10px] font-black uppercase tracking-[0.3em] transition-all text-center">
                 Get Started Free
               </a>
 
@@ -1607,7 +1609,7 @@ const Homepage: React.FC = () => {
                 <PricingFeature text="Shared Team Spaces (Coming Soon)" pro />
               </div>
 
-              <a href="https://app.cyberia.tn/pricing" className="w-full py-5 bg-[var(--accent)] hover:bg-[var(--accent-secondary)] text-white rounded-xl text-[10px] font-black uppercase tracking-[0.3em] transition-all text-center shadow-xl shadow-[var(--accent)]/20 active:scale-95">
+              <a href="https://app.cyberia.tn/pricing" className="w-full py-5 bg-[var(--accent)] hover:bg-[var(--accent-secondary)] text-white rounded-2xl text-[10px] font-black uppercase tracking-[0.3em] transition-all text-center shadow-xl shadow-[var(--accent)]/20 active:scale-95">
                 Go Pro
               </a>
 
