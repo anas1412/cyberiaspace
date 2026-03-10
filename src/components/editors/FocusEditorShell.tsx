@@ -95,22 +95,10 @@ export const FocusEditorShell: React.FC<FocusEditorShellProps> = ({
 
             {/* Footer Area */}
             <div className="p-4 md:p-6 border-t border-white/5 flex flex-col md:flex-row justify-between items-center gap-4 md:gap-0">
-              <div className="flex flex-wrap justify-center md:justify-start gap-2">
-                {stack && (
-                  <span
-                    className="tag-pill text-[8px] md:text-[9px] font-700 px-2 md:px-2.5 py-1 rounded-lg border border-white/10"
-                    style={{
-                      backgroundColor: stack.color.replace('1)', '0.15)'),
-                      color: stack.color,
-                      borderColor: stack.color.replace('1)', '0.3)')
-                    }}
-                  >
-                    {stack.name}
-                  </span>
-                )}
-              </div>
               <div className="flex items-center gap-6">
                 {footerStatus}
+              </div>
+              <div className="flex items-center gap-6">
                 {footerActions}
               </div>
             </div>

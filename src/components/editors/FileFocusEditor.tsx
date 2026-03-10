@@ -6,7 +6,8 @@ import { useThoughtPayload } from '../thought/hooks/useThoughtPayload';
 import { useModalStore } from '../../store/useModalStore';
 import { 
   File as FileIcon, Upload, Download, Loader2, FileAudio, 
-  Database, CloudOff, Cloud, ExternalLink, Shield 
+  Database, CloudOff, Cloud, ExternalLink, Shield,
+  ChevronDown, ChevronUp
 } from 'lucide-react';
 import { FocusEditorShell } from './FocusEditorShell';
 import { MAX_FILE_SIZE_MB } from '../../constants';
@@ -88,9 +89,10 @@ const EditorContent: React.FC<{
 }> = ({ 
   thought, fileInfo, image, localPreviewUrl, isUploading, isFetching,
   handleFileSelect, 
-  stackItems, setActiveFocus, scrollerRef, stack,
+  stackItems, setActiveFocus,   scrollerRef, stack,
   isReadOnly, isDemo
 }) => {
+  const [showPreviews, setShowPreviews] = useState(true);
   const isStranded = !thought.storageUrl && !localPreviewUrl && !image && !!thought.storagePath;
 
   // Robust type detection using cached flags or re-analyzing
@@ -258,21 +260,30 @@ const EditorContent: React.FC<{
                   <span className="text-[9px] font-black uppercase tracking-[0.3em] text-slate-400">
                     Collection: {stack?.name || 'Untitled'}
                   </span>
+                  <button 
+                    onClick={() => setShowPreviews(!showPreviews)}
+                    className="p-1 hover:bg-white/5 rounded-md text-slate-500 hover:text-white transition-all ml-1"
+                    title={showPreviews ? "Hide Previews" : "Show Previews"}
+                  >
+                    {showPreviews ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
+                  </button>
                 </div>
                 <span className="text-[8px] font-bold text-slate-500 uppercase tracking-[0.2em]">
                   {stackItems.findIndex(i => i.id === thought.id) + 1} / {stackItems.length}
                 </span>
               </div>
-              <div className="flex gap-4 overflow-x-auto custom-scroll pb-1 w-full snap-x" ref={scrollerRef}>
-                {stackItems.map((item) => (
-                  <StackItemThumbnail 
-                    key={item.id} 
-                    item={item} 
-                    isActive={item.id === thought.id}
-                    onClick={() => setActiveFocus(item.id, 'file')} 
-                  />
-                ))}
-              </div>
+              {showPreviews && (
+                <div className="flex gap-4 overflow-x-auto custom-scroll pb-1 w-full snap-x" ref={scrollerRef}>
+                  {stackItems.map((item) => (
+                    <StackItemThumbnail 
+                      key={item.id} 
+                      item={item} 
+                      isActive={item.id === thought.id}
+                      onClick={() => setActiveFocus(item.id, 'file')} 
+                    />
+                  ))}
+                </div>
+              )}
             </div>
           </div>
         )}
