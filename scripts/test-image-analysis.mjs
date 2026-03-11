@@ -43,7 +43,7 @@ async function testImageAnalysis() {
           role: 'user',
           content: [
             { type: 'text', text: 'Describe this image in detail. What do you see?' },
-            { type: 'image_url', image_url: { url: dataUrl } }
+            { type: 'image', source: { type: 'url', url: dataUrl } }
           ]
         }
       ],
@@ -85,7 +85,7 @@ async function testWithUrl() {
           role: 'user',
           content: [
             { type: 'text', text: 'Describe this image. What animal is in it?' },
-            { type: 'image_url', image_url: { url: testUrl } }
+            { type: 'image', source: { type: 'url', url: testUrl } }
           ]
         }
       ],

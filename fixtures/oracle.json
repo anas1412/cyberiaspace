@@ -1,0 +1,41 @@
+{
+  "fixtures": [
+    {
+      "match": {
+        "userMessage": "hello"
+      },
+      "response": {
+        "content": "Hey! I'm Oracle. Ready to help you build out your Cyberia workspace. What's on your mind?"
+      }
+    },
+    {
+      "match": {
+        "userMessage": "create a test note"
+      },
+      "response": {
+        "toolCalls": [
+          {
+            "name": "create_thought",
+            "arguments": "{\"text\":\"Test Note\",\"type\":\"text\",\"content\":\"This is a note created via llmock deterministic response.\"}"
+          }
+        ]
+      }
+    },
+    {
+      "match": {
+        "predicate": "(req) => req.messages.some(m => Array.isArray(m.content) && m.content.some(c => (c.type === 'image' || c.type === 'image_url')))"
+      },
+      "response": {
+        "content": "I've analyzed that image! It looks like part of your Cyberia workspace. Would you like me to link it to a new stack?"
+      }
+    },
+    {
+      "match": {
+        "predicate": "(req) => req.messages.some(m => Array.isArray(m.content) && m.content.some(c => (c.type === 'file' || c.type === 'document') && (c.source?.media_type === 'application/pdf' || c.media_type === 'application/pdf')))"
+      },
+      "response": {
+        "content": "I see you've attached a PDF document. I can help you summarize it or extract specific data. What's your goal?"
+      }
+    }
+  ]
+}

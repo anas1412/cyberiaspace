@@ -29,7 +29,7 @@ function getFollowUpMessageContent(toolName: string, result: any) {
     if (result?.type === 'image' && result?.url) {
       return [
         { type: 'text', text: 'Analyze this image and describe what you see.' },
-        { type: 'image_url', image_url: { url: result.url } }
+        { type: 'image', source: { type: 'url', url: result.url } }
       ];
     }
     if (result?.type === 'pdf' && result?.url) {
@@ -54,7 +54,7 @@ function getFollowUpMessageContent(toolName: string, result: any) {
               title: f.name || `File ${f.id}` 
             });
           } else if (f.type === 'image' && f.url) {
-            contents.push({ type: 'image_url', image_url: { url: f.url } });
+            contents.push({ type: 'image', source: { type: 'url', url: f.url } });
           }
         }
       });

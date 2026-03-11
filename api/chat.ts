@@ -22,7 +22,8 @@ export const config = {
 };
 
 const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY;
-const OPENROUTER_API_URL = 'https://openrouter.ai/api/v1/chat/completions';
+const OPENROUTER_BASE_URL = process.env.OPENROUTER_BASE_URL || 'https://openrouter.ai/api/v1';
+const OPENROUTER_API_URL = `${OPENROUTER_BASE_URL}/chat/completions`;
 
 function sleep(ms: number) {
   return new Promise(resolve => setTimeout(resolve, ms));
@@ -787,7 +788,15 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         } else if (Array.isArray(m.content)) {
           msgContent = m.content.map((item: any) => {
             if (typeof item === 'string') return item;
-            if (item && typeof item === 'object' && (item.type === 'text' || item.type === 'image_url' || item.type === 'file' || item.type === 'document')) {
+            if (item && typeof item === 'object' && (
+              item.type === 'text' || 
+              item.type === 'input_text' || 
+              item.type === 'image' || 
+              item.type === 'input_image' || 
+              item.type === 'image_url' || 
+              item.type === 'file' || 
+              item.type === 'document'
+            )) {
               return item;
             }
             return null;
