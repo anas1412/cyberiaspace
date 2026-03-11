@@ -19,12 +19,142 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 }
 
 async function handleMetadata(req: VercelRequest, res: VercelResponse) {
-    const { url } = req.query;
+    let { url } = req.query;
     if (!url || typeof url !== 'string') return res.status(400).json({ error: 'Missing URL parameter' });
 
     res.setHeader('Access-Control-Allow-Origin', '*');
     res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
     res.setHeader('Cache-Control', 's-maxage=3600, stale-while-revalidate=1800');
+
+    // Special Case: Pinterest oEmbed (much more reliable than scraping)
+    if (url.includes('pinterest.com/pin/')) {
+        try {
+            const pinId = url.split('/pin/')[1]?.split('/')[0];
+            if (pinId) {
+                const oembedRes = await fetch(`https://www.pinterest.com/oembed.json?url=${encodeURIComponent(url)}`);
+                if (oembedRes.ok) {
+                    const oData = await oembedRes.json() as any;
+                    return res.status(200).json({
+                        title: oData.author_name ? `Pinned by ${oData.author_name}` : (oData.title || "Pinterest Pin"),
+                        description: oData.title || "",
+                        image: oData.thumbnail_url,
+                        author: oData.author_name || "Pinterest",
+                        publisher: "Pinterest",
+                        url: url
+                    });
+                }
+            }
+        } catch (e) {
+            console.warn('[Pinterest oEmbed Fallback] Failed:', e);
+        }
+    }
+
+    // Special Case: Reddit oEmbed (works without tokens)
+    if (url.includes('reddit.com')) {
+        try {
+            const redditOembed = `https://www.reddit.com/oembed?url=${encodeURIComponent(url)}`;
+            const redditRes = await fetch(redditOembed);
+            if (redditRes.ok) {
+                const rData = await redditRes.json() as any;
+                const author = rData.author_name || "Reddit User";
+                return res.status(200).json({
+                    title: `Posted by ${author}`,
+                    description: rData.title || "",
+                    image: rData.thumbnail_url,
+                    author: author,
+                    publisher: rData.provider_name || "Reddit",
+                    url: url
+                });
+            }
+        } catch (e) {}
+    }
+
+    // Special Case: Facebook Public Plugin oEmbed (Bypasses token for public content)
+    if (url.includes('facebook.com') || url.includes('fb.watch')) {
+        try {
+            const fbOembed = `https://www.facebook.com/plugins/post/oembed.json/?url=${encodeURIComponent(url)}`;
+            const fbRes = await fetch(fbOembed, { headers: { 'User-Agent': 'facebookexternalhit/1.1' } });
+            if (fbRes.ok) {
+                const fData = await fbRes.json() as any;
+                let author = fData.author_name;
+                // Fix: Filter out generic @facebookapp or "Facebook" names
+                if (!author || author.toLowerCase().includes('facebook')) {
+                    // Try to extract from author_url if available
+                    if (fData.author_url) {
+                        const parts = new URL(fData.author_url).pathname.split('/').filter(Boolean);
+                        if (parts[0]) author = parts[0];
+                    }
+                }
+                author = author || "Facebook User";
+
+                return res.status(200).json({
+                    title: `Post by ${author}`,
+                    description: fData.title || "",
+                    image: fData.thumbnail_url,
+                    author: author,
+                    publisher: "Facebook",
+                    url: url
+                });
+            }
+        } catch (e) {}
+    }
+
+    // Special Case: TikTok oEmbed
+    if (url.includes('tiktok.com')) {
+        try {
+            const ttRes = await fetch(`https://www.tiktok.com/oembed?url=${encodeURIComponent(url)}`);
+            if (ttRes.ok) {
+                const data = await ttRes.json() as any;
+                const author = data.author_name || "TikTok Creator";
+                return res.status(200).json({
+                    title: `Video by ${author}`,
+                    description: data.title || "",
+                    image: data.thumbnail_url,
+                    author: author,
+                    publisher: "TikTok",
+                    url: url
+                });
+            }
+        } catch (e) {}
+    }
+
+    // Special Case: Vimeo oEmbed
+    if (url.includes('vimeo.com')) {
+        try {
+            const viRes = await fetch(`https://vimeo.com/api/oembed.json?url=${encodeURIComponent(url)}`);
+            if (viRes.ok) {
+                const data = await viRes.json() as any;
+                const author = data.author_name || "Vimeo Creator";
+                return res.status(200).json({
+                    title: `Video by ${author}`,
+                    description: data.title || data.description || "",
+                    image: data.thumbnail_url,
+                    author: author,
+                    publisher: "Vimeo",
+                    url: url
+                });
+            }
+        } catch (e) {}
+    }
+
+    // Special Case: SoundCloud oEmbed
+    if (url.includes('soundcloud.com')) {
+        try {
+            const scRes = await fetch(`https://soundcloud.com/oembed?url=${encodeURIComponent(url)}&format=json`);
+            if (scRes.ok) {
+                const data = await scRes.json() as any;
+                const author = data.author_name || "SoundCloud Artist";
+                return res.status(200).json({
+                    title: `Track by ${author}`,
+                    description: data.title || data.description || "",
+                    image: data.thumbnail_url,
+                    author: author,
+                    publisher: "SoundCloud",
+                    url: url
+                });
+            }
+        } catch (e) {}
+    }
 
     try {
         const response = await fetch(url, {
@@ -33,13 +163,22 @@ async function handleMetadata(req: VercelRequest, res: VercelResponse) {
                 'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
                 'Referer': 'https://www.google.com/',
             },
-            signal: AbortSignal.timeout(6000),
         });
 
         if (!response.ok) return res.status(200).json({ title: null, url });
 
         const html = await response.text();
         const $ = cheerio.load(html);
+
+        const prettifyUrl = (u: string) => {
+            try {
+                const parsed = new URL(u);
+                let host = parsed.hostname.replace('www.', '');
+                return host.charAt(0).toUpperCase() + host.slice(1);
+            } catch (e) {
+                return u;
+            }
+        };
 
         const getMeta = (names: string[]) => {
             for (const name of names) {
@@ -49,12 +188,35 @@ async function handleMetadata(req: VercelRequest, res: VercelResponse) {
             return null;
         };
 
+        const author = getMeta(['article:author', 'og:author', 'twitter:creator', 'author', 'book:author']);
+        const publisher = getMeta(['og:site_name', 'twitter:site', 'publisher', 'p:domain_verify']);
+
+        // Clean up author if it's just the site name
+        const cleanAuthor = (a: string | null, p: string | null) => {
+            if (!a) return null;
+            if (p && a.toLowerCase() === p.toLowerCase()) return null;
+            const generic = ['facebook', 'twitter', 'x', 'instagram', 'pinterest', 'reddit', 'youtube', 'google', 'vimeo', 'soundcloud'];
+            if (generic.includes(a.toLowerCase())) return null;
+            return a;
+        };
+
+        const finalAuthor = cleanAuthor(author, publisher);
+        const rawTitle = getMeta(['og:title', 'twitter:title', 'title', 'h1']) || $('title').text() || $('h1').first().text() || prettifyUrl(url);
+        const rawDescription = getMeta(['og:description', 'twitter:description', 'description', 'abstract']) || $('meta[name="description"]').attr('content');
+
+        // Swap for Social Media sites (Facebook, Twitter, etc. that fall through to scraper)
+        const socialPublishers = ['facebook', 'twitter', 'x', 'instagram', 'pinterest', 'reddit', 'youtube', 'vimeo', 'soundcloud'];
+        const isSocial = publisher && socialPublishers.some(s => publisher.toLowerCase().includes(s));
+        
+        const displayTitle = (isSocial && finalAuthor) ? `${prettifyUrl(url)} by ${finalAuthor}` : rawTitle;
+        const displayDescription = (isSocial && finalAuthor) ? rawTitle : rawDescription;
+
         const metadata = {
-            title: getMeta(['og:title', 'twitter:title', 'title', 'h1']) || $('title').text() || $('h1').first().text() || url,
-            description: getMeta(['og:description', 'twitter:description', 'description', 'abstract']),
+            title: displayTitle,
+            description: displayDescription,
             image: getMeta(['og:image', 'twitter:image:src', 'twitter:image', 'image', 'thumbnailUrl']),
-            author: getMeta(['article:author', 'og:author', 'twitter:creator', 'author', 'book:author']),
-            publisher: getMeta(['og:site_name', 'twitter:site', 'publisher', 'p:domain_verify']),
+            author: finalAuthor || publisher || prettifyUrl(url),
+            publisher: publisher,
             url: getMeta(['og:url', 'canonical']) || url,
         };
 

@@ -88,6 +88,7 @@ interface Thought {
   order: number;
   layer?: number;
   author: string;
+  image?: string | null;
   meta?: any;
   storageUrl?: string;
   storagePath?: string;

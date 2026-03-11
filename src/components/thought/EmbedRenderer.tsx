@@ -22,7 +22,9 @@ export const EmbedRenderer: React.FC<EmbedRendererProps> = ({ thought }) => {
 
   // Automatic Metadata Sync
   useEffect(() => {
-    const shouldFetch = !image && !thought.author && content && !content.includes('localhost');
+    // Trigger if we are missing key pieces of metadata but have content
+    const isMissingMetadata = !image || !thought.author || !thought.description;
+    const shouldFetch = isMissingMetadata && content && !content.includes('localhost') && content.startsWith('http');
     
     if (shouldFetch) {
       const syncMetadata = async () => {
@@ -96,10 +98,15 @@ export const EmbedRenderer: React.FC<EmbedRendererProps> = ({ thought }) => {
       )}
 
       {(thought.author || isLoading) && (
-        <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent p-3 pt-8 pointer-events-none transition-opacity group-hover:opacity-100 opacity-60">
-          <p className="text-[10px] text-slate-200 line-clamp-2 leading-tight font-black uppercase tracking-wider italic">
+        <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent p-3 pt-10 pointer-events-none transition-opacity group-hover:opacity-100 opacity-80">
+          <p className="text-[10px] text-white font-black uppercase tracking-widest truncate">
             {isLoading ? 'Fetching metadata...' : thought.author}
           </p>
+          {thought.text && thought.text.includes(' by ') && (
+            <p className="text-[8px] text-white/60 font-medium italic mt-0.5 truncate">
+              {thought.text}
+            </p>
+          )}
         </div>
       )}
       
