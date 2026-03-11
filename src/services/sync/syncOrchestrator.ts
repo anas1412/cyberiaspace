@@ -229,20 +229,34 @@ export const syncOrchestrator = {
       // Deletion (Absence Rule)
       // Only run this if we have established a local baseline (lastSync exists)
       if (!isFirstSync) {
+        const DELETION_GRACE_PERIOD_MS = 30000; // 30s grace period for cloud visibility
+        const now = Date.now();
+
         for (const s of localAllSpacesBefore) {
-          if (s.syncStatus === 'synced' && !cloudSpaceMap.has(s.id)) await db.spaces.delete(s.id);
+          if (s.syncStatus === 'synced' && !cloudSpaceMap.has(s.id)) {
+            const timeSinceUpdate = now - (s.updatedAt || 0);
+            if (timeSinceUpdate > DELETION_GRACE_PERIOD_MS) {
+              await db.spaces.delete(s.id);
+            }
+          }
         }
         for (const s of localAllStacksBefore) {
           if (s.syncStatus === 'synced' && !cloudStackMap.has(s.id)) {
-            // Dexie Cleanup: Since Dexie has no CASCADE, we manually clear stackId from orphans
-            await db.thoughts.where('stackId').equals(s.id).modify({ stackId: null });
-            await db.stacks.delete(s.id);
+            const timeSinceUpdate = now - (s.updatedAt || 0);
+            if (timeSinceUpdate > DELETION_GRACE_PERIOD_MS) {
+              // Dexie Cleanup: Since Dexie has no CASCADE, we manually clear stackId from orphans
+              await db.thoughts.where('stackId').equals(s.id).modify({ stackId: null });
+              await db.stacks.delete(s.id);
+            }
           }
         }
         for (const t of localAllThoughtsBefore) {
           if (t.syncStatus === 'synced' && !cloudThoughtMap.has(t.id)) {
-            await db.thoughts.delete(t.id);
-            await db.blobs.where('thoughtId').equals(t.id).delete();
+            const timeSinceUpdate = now - (t.updatedAt || 0);
+            if (timeSinceUpdate > DELETION_GRACE_PERIOD_MS) {
+              await db.thoughts.delete(t.id);
+              await db.blobs.delete(t.id); // Optimized blob delete
+            }
           }
         }
       }
@@ -377,11 +391,11 @@ export const syncOrchestrator = {
           try {
             await supabaseSync.deleteThought(thought.id, userId);
             await db.thoughts.delete(thought.id);
-            await db.blobs.where('thoughtId').equals(thought.id).delete();
+            await db.blobs.delete(thought.id); // Deterministic delete
           } catch (e: any) {
             if (e.status === 404 || e.message?.includes('not found')) {
               await db.thoughts.delete(thought.id);
-              await db.blobs.where('thoughtId').equals(thought.id).delete();
+              await db.blobs.delete(thought.id);
             }
           }
         }
@@ -502,14 +516,24 @@ export const syncOrchestrator = {
       syncStore.setStatus('error');
       return { success: false, error: String(err) };
     } finally {
-      // Refresh storage usage after any sync to reflect new blobs on disk/cloud
+      // CRITICAL: Final UI Refresh to ensure 'synced' statuses and any remote 
+      // changes are perfectly reflected after the sync cycle completes.
       try {
         const { useStore } = await import('../../store/useStore');
-        const st: any = useStore.getState();
+        const store = useStore.getState();
+        await Promise.all([
+          store.refreshSpaces(),
+          store.refreshThoughts(),
+          store.refreshStacks()
+        ]);
+
+        // Refresh storage usage after any sync to reflect new blobs on disk/cloud
+        const st: any = store;
         st?.calculateUsage?.(st.totalThoughtCount || 0);
-      } catch {
-        // best-effort only
+      } catch (e) {
+        console.warn('[Sync] Post-sync refresh failed:', e);
       }
+
       if (syncRequestedDuringActiveSync) {
         syncRequestedDuringActiveSync = false;
         // INSTANT: 500ms cooldown for follow-up sync to prevent hammering

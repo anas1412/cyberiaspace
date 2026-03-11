@@ -557,7 +557,7 @@ const FileFocusEditor: React.FC = () => {
       });
 
       await db.blobs.put({
-        id: `local-${Date.now()}-${thought.id}`,
+        id: thought.id, // Deterministic ID
         thoughtId: thought.id,
         blob: file,
         name: file.name,

@@ -46,7 +46,7 @@ export const FileInspector: React.FC<InspectorPanelProps> = ({ thought, isReadOn
 
                 // 1. Put blob FIRST to avoid race condition in renderer
                 await db.blobs.put({
-                  id: `local-${Date.now()}-${thought.id}`,
+                  id: thought.id, // Deterministic ID
                   thoughtId: thought.id,
                   blob: file,
                   name: file.name,

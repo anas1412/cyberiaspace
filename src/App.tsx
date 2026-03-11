@@ -262,8 +262,8 @@ function App() {
           
           if (id !== '') {
             const { db } = await import('./db');
-            await db.blobs.add({
-              id: `local-${Date.now()}-${id}`,
+            await db.blobs.put({
+              id: id, // Deterministic ID
               thoughtId: id,
               blob: bestFile,
               name: fileName,

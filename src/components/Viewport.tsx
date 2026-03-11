@@ -442,7 +442,7 @@ const Viewport: React.FC<{ isInteracting?: boolean }> = ({ isInteracting }) => {
 
           if (id !== '') {
             await db.blobs.put({
-              id: `temp-${Date.now()}-${id}`,
+              id: id, // Deterministic ID
               thoughtId: id,
               blob: file,
               name: file.name,

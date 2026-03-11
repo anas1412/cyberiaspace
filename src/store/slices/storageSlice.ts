@@ -109,7 +109,10 @@ export const createStorageSlice: StateCreator<AuthState, [], [], any> = (set, ge
       const updates: any = {
         storageUrl: result.url,
         storagePath: result.path,
-        syncStatus: 'synced',
+        // CRITICAL: We don't mark as 'synced' here. 
+        // We leave it as 'local' (or 'syncing') and bump updatedAt.
+        // The syncOrchestrator will handle the official push and mark it 'synced' 
+        // after the DB record is confirmed on the cloud.
         updatedAt: Date.now()
       };
 
@@ -133,6 +136,11 @@ export const createStorageSlice: StateCreator<AuthState, [], [], any> = (set, ge
 
       await db.thoughts.update(thoughtId, updates);
       store.patchThought(thoughtId, updates);
+
+      // Force an immediate metadata push to cloud so the UI reflects 
+      // the 'synced' status ASAP after the file is physically uploaded.
+      syncOrchestrator.triggerSync(true);
+
       // Refresh storage usage after cloud update
       try {
         const { useStore } = await import('../useStore');
@@ -141,12 +149,6 @@ export const createStorageSlice: StateCreator<AuthState, [], [], any> = (set, ge
       } catch {
         // best-effort only
       }
-      // Trigger storage usage recalculation after cloud upload/update
-      try {
-        const { useStore } = await import('../useStore');
-        const st: any = useStore.getState();
-        st?.calculateUsage?.(st.totalThoughtCount || 0);
-      } catch {}
 
     } catch (err) {
       console.error('[Storage] Failed to upload blob:', err);
@@ -179,7 +181,7 @@ export const createStorageSlice: StateCreator<AuthState, [], [], any> = (set, ge
       const fileType = blob.type || 'application/octet-stream';
 
       await db.blobs.put({
-        id: `cloud-${Date.now()}-${thoughtId}`,
+        id: thoughtId, // Deterministic ID
         thoughtId,
         blob,
         name: fileName,
@@ -243,7 +245,7 @@ export const createStorageSlice: StateCreator<AuthState, [], [], any> = (set, ge
             const blob = await res.blob();
             
             await db.blobs.put({
-              id: `cloud-${Date.now()}-${t.id}`,
+              id: t.id, // Deterministic ID
               thoughtId: t.id,
               blob,
               name: t.text || 'asset',
