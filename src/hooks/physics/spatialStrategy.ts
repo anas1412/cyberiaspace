@@ -40,12 +40,13 @@ export const spatialStrategy: LayoutStrategist = {
     const prioLevel = PRIORITY_WEIGHT[thought.priority] || 0;
     const gravityMultiplier = 1 + prioLevel * 0.5;
     
-    // Gravity toward visual center in world coordinates
+    // Gravity toward a fixed stable center in world coordinates
     const centerX = p.x + 140;
     const centerY = p.y + (elementHeights.get(id) || 120) / 2;
     
-    const targetX = (context.logicalWidth / 2 - context.transform.x) / context.transform.scale;
-    const targetY = (context.logicalHeight / 2 - context.transform.y) / context.transform.scale;
+    // Lock gravity to the center of the coordinate system, independent of pan/zoom
+    const targetX = context.logicalWidth / 2;
+    const targetY = context.logicalHeight / 2;
     
     dvx += (targetX - centerX) * (GRAVITY * gravityMultiplier);
     dvy += (targetY - centerY) * (GRAVITY * gravityMultiplier);

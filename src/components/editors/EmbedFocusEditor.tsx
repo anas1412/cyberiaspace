@@ -98,7 +98,7 @@ const PROVIDER_CONFIG: Record<string, { icon: any, color: string, label: string,
 const StackItemThumbnail: React.FC<{ 
   item: any; 
   isActive: boolean;
-  onClick: () => void;
+  onClick: (type: any) => void;
   color?: string;
 }> = ({ item, isActive, onClick, color }) => {
   const itemPayload = (item.data?.type === 'embed' ? item.data.url : (item as any).content) || '';
@@ -107,13 +107,13 @@ const StackItemThumbnail: React.FC<{
   const ItemIcon = itemConfig.icon;
   const thumb = item.data?.url && itemInfo.provider === 'youtube' && itemInfo.id
     ? `https://img.youtube.com/vi/${itemInfo.id}/mqdefault.jpg`
-    : (item.data?.url || (item as any).image);
+    : (item.data?.url || item.image);
 
   const accentColor = color || '#6366f1';
 
   return (
     <button
-      onClick={onClick}
+      onClick={() => onClick(item.type)}
       data-active={isActive}
       className={cn(
         "flex-shrink-0 w-28 md:w-36 aspect-video rounded-xl overflow-hidden border transition-all duration-300 group/item snap-start relative bg-white/[0.03]",
@@ -232,7 +232,7 @@ const EditorContent: React.FC<{
                       item={item} 
                       isActive={item.id === thought.id}
                       color={stack?.color}
-                      onClick={() => setActiveFocus(item.id, 'embed')} 
+                      onClick={(type) => setActiveFocus(item.id, type)} 
                     />
                   ))}
                 </div>
@@ -270,7 +270,7 @@ const EmbedFocusEditor: React.FC = () => {
     if (!thought?.stackId) return [];
     const sid = thought.stackId;
     return thoughts
-      .filter(t => t.stackId === sid && t.type === 'embed')
+      .filter(t => t.stackId === sid && (t.type === 'embed' || t.type === 'file'))
       .sort((a, b) => (Number(a.createdAt) || 0) - (Number(b.createdAt) || 0));
   }, [thoughts, thought?.stackId]);
 

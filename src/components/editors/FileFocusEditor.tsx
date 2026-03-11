@@ -94,10 +94,10 @@ const ColorPicker: React.FC<{ value: string; onChange: (val: string) => void; di
 const StackItemThumbnail: React.FC<{ 
   item: any; 
   isActive: boolean;
-  onClick: () => void;
+  onClick: (type: any) => void;
   color?: string;
 }> = ({ item, isActive, onClick, color }) => {
-  const thumb = item.data?.url;
+  const thumb = item.data?.url || item.image;
   const accentColor = color || '#6366f1';
   
   // Detect file type for icon fallback
@@ -110,7 +110,7 @@ const StackItemThumbnail: React.FC<{
 
   return (
     <button
-      onClick={onClick}
+      onClick={() => onClick(item.type)}
       data-active={isActive}
       className={cn(
         "flex-shrink-0 w-24 md:w-32 aspect-video rounded-xl overflow-hidden border transition-all duration-300 group/item snap-start relative bg-white/[0.03]",
@@ -404,7 +404,7 @@ const EditorContent: React.FC<{
                       item={item} 
                       isActive={item.id === thought.id}
                       color={stack?.color}
-                      onClick={() => setActiveFocus(item.id, 'file')} 
+                      onClick={(type) => setActiveFocus(item.id, type)} 
                     />
                   ))}
                 </div>
@@ -463,7 +463,7 @@ const FileFocusEditor: React.FC = () => {
     if (!thought?.stackId) return [];
     const sid = thought.stackId;
     return thoughts
-      .filter(t => t.stackId === sid && t.type === 'file')
+      .filter(t => t.stackId === sid && (t.type === 'file' || t.type === 'embed'))
       .sort((a, b) => (Number(a.createdAt) || 0) - (Number(b.createdAt) || 0));
   }, [thoughts, thought?.stackId]);
 

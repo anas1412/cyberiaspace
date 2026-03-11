@@ -17,7 +17,7 @@ export const createThoughtSlice: StateCreator<CyberiaState, [], [], any> = (set,
   deletingThoughtIds: [] as string[],
 
   addThought: async (partialThought: Partial<Thought>) => {
-    const { activeSpaceId, isReadOnly, getLimits } = get();
+    const { activeSpaceId, isReadOnly, getLimits, transform } = get();
     if (isReadOnly) return '';
     if (!activeSpaceId) return '';
 
@@ -48,7 +48,7 @@ export const createThoughtSlice: StateCreator<CyberiaState, [], [], any> = (set,
     const { getThoughtConfig } = await import('../../components/thought/registry');
     const config = getThoughtConfig(thoughtType);
     const payload = config?.createPayload();
-
+    
     const isBlobType = partialThought.type === 'file';
     
     // Get autoSync status from AuthStore
@@ -62,8 +62,9 @@ export const createThoughtSlice: StateCreator<CyberiaState, [], [], any> = (set,
       id: thoughtId,
       spaceId: activeSpaceId,
       stackId: null,
-      x: window.innerWidth / 2,
-      y: window.innerHeight / 2,
+      // Place new thoughts at the center of the viewport in world coordinates
+      x: (window.innerWidth / 2 - transform.x) / transform.scale,
+      y: (window.innerHeight / 2 - transform.y) / transform.scale,
       vx: 0,
       vy: 0,
       text: '',
