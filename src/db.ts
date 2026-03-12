@@ -111,6 +111,15 @@ interface LocalBlob {
   updatedAt: number;
 }
 
+interface ChatMessage {
+  id: string;      // ULID for ordering
+  spaceId: string; // Per-space history
+  role: 'user' | 'assistant';
+  content: string;
+  timestamp: number;
+  msgType?: 'chat' | 'system'; //区分聊天消息和系统错误消息
+}
+
 // ============================================
 // Database Setup
 // ============================================
@@ -120,6 +129,7 @@ const db = new Dexie('CyberiaDB') as Dexie & {
   thoughts: EntityTable<Thought, 'id'>;
   stacks: EntityTable<Stack, 'id'>;
   blobs: EntityTable<LocalBlob, 'id'>;
+  chatHistory: EntityTable<ChatMessage, 'id'>;
 };
 
 db.on('versionchange', () => {
@@ -135,5 +145,10 @@ db.version(17).stores({
   blobs: 'id, thoughtId'
 });
 
-export type { Space, Thought, Stack };
+// Version 18: Added chatHistory for local persistent Oracle conversations
+db.version(18).stores({
+  chatHistory: 'id, spaceId, timestamp'
+});
+
+export type { Space, Thought, Stack, ChatMessage };
 export { db };

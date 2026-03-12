@@ -278,7 +278,7 @@ const PricingModal: React.FC<PricingModalProps> = ({ isOpen, onClose }) => {
           <div className="space-y-6 flex-1">
             {[
               { title: 'Premium Oracle AI', desc: 'Gain exclusive access to the Oracle, powered by advanced reasoning models for deep research and spatial problem solving.' },
-              { title: 'Advanced Functionalities', desc: 'Unlock Action Mode for Oracle, allowing the AI to proactively modify your workspace, create stacks, and organize your thoughts.' },
+              { title: 'File Intelligence', desc: 'Upload and analyze images & documents directly in your workspace. Ask Oracle to summarize PDFs, extract data from images, and more.' },
               { title: 'Expanded Workspaces', desc: `Create up to ${PLAN_CONFIG.pro.MAX_SPACES} different spaces to organize your workflow. (Free limits to ${PLAN_CONFIG.free.MAX_SPACES})` },
               { title: 'Expanded File Storage', desc: `Get ${Math.round(PLAN_CONFIG.pro.MAX_STORAGE_MB / 1024)}GB of secure cloud storage for your files and attachments (Free tier is limited to ${PLAN_CONFIG.free.MAX_STORAGE_MB}MB).` },
             ].map((feature, i) => (

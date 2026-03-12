@@ -7,20 +7,19 @@ import { motion, AnimatePresence } from 'framer-motion';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import rehypeRaw from 'rehype-raw';
-import { PLAN_CONFIG } from '../constants';
+import { PLAN_CONFIG, ORACLE_CONFIG } from '../constants';
 import { executeOracleTool } from '../services/oracle/executor';
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
+
+import { db, type ChatMessage } from '../db';
+import { ulid } from 'ulid';
 
 function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
 
-interface Message {
-  id: string;
-  role: 'user' | 'assistant';
-  content: string;
-}
+type Message = ChatMessage;
 
 // Build message content for follow-up - handle multimodal for images/PDFs
 function getFollowUpMessageContent(toolName: string, result: any) {
@@ -83,6 +82,33 @@ const ChatOverlay: React.FC = () => {
   const scrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const abortControllerRef = useRef<AbortController | null>(null);
+
+  // Load history from Dexie when spaceId changes
+  useEffect(() => {
+    if (store.activeSpaceId) {
+      db.chatHistory
+        .where('spaceId')
+        .equals(store.activeSpaceId)
+        .sortBy('timestamp')
+        .then(history => {
+          setMessages(history as Message[]);
+        })
+        .catch(err => console.error("[Oracle] Failed to load chat history:", err));
+    } else {
+      setMessages([]);
+    }
+  }, [store.activeSpaceId]);
+
+  const saveMessage = async (msg: Message) => {
+    // Don't save system messages to database - they clutter history
+    if (msg.msgType === 'system') return;
+    
+    try {
+      await db.chatHistory.add(msg);
+    } catch (err) {
+      console.error("[Oracle] Failed to save message:", err);
+    }
+  };
 
   // Auto-focus logic
   useEffect(() => {
@@ -148,8 +174,17 @@ const ChatOverlay: React.FC = () => {
     }
   }, [messages, isChatOpen, isLoading]);
 
-  const handleClear = () => {
-    setMessages([]);
+  const handleClear = async () => {
+    if (store.activeSpaceId) {
+      try {
+        await db.chatHistory.where('spaceId').equals(store.activeSpaceId).delete();
+        setMessages([]);
+      } catch (err) {
+        console.error("[Oracle] Failed to clear history:", err);
+      }
+    } else {
+      setMessages([]);
+    }
   };
 
   const handleCancel = () => {
@@ -163,21 +198,41 @@ const ChatOverlay: React.FC = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!input.trim() || isLoading) return;
+    if (!input.trim() || isLoading || !store.activeSpaceId) return;
 
     if (plan === 'free' && dailyUsage >= (limits.AI_DAILY_LIMIT || 0)) {
       const errorMsg: Message = { 
-        id: Date.now().toString(), 
+        id: ulid(),
+        spaceId: store.activeSpaceId,
         role: 'assistant', 
-        content: "### Limit Reached\nChoom, you've hit your daily data-stream limit for the Free tier. Upgrade to **Pro** for unlimited access and premium models!" 
+        content: "### Limit Reached\nChoom, you've hit your daily data-stream limit for the Free tier. Upgrade to **Pro** for unlimited access and premium models!",
+        timestamp: Date.now(),
+        msgType: 'system'
       };
-      setMessages(prev => [...prev, { id: (Date.now() - 1).toString(), role: 'user', content: input }, errorMsg]);
+      setMessages(prev => [...prev, { 
+        id: ulid(), 
+        spaceId: store.activeSpaceId!, 
+        role: 'user', 
+        content: input,
+        timestamp: Date.now() - 1,
+        msgType: 'chat'
+      }, errorMsg]);
       setInput('');
       return;
     }
 
-    const userMessage: Message = { id: Date.now().toString(), role: 'user', content: input };
+    const userMessage: Message = { 
+      id: ulid(), 
+      spaceId: store.activeSpaceId, 
+      role: 'user', 
+      content: input,
+      timestamp: Date.now(),
+      msgType: 'chat'
+    };
+    
     setMessages(prev => [...prev, userMessage]);
+    saveMessage(userMessage);
+    
     setInput('');
     setIsLoading(true);
     setStatus('thinking');
@@ -195,8 +250,11 @@ const ChatOverlay: React.FC = () => {
         },
         signal: controller.signal,
         body: JSON.stringify({
-// History Sliding Window: Only send last 5 messages
-          messages: [...messages.slice(-5), userMessage],
+// History Sliding Window: Filter out system messages to keep AI context clean
+          messages: [...messages.filter(m => m.msgType !== 'system').slice(-ORACLE_CONFIG.HISTORY_WINDOW_SIZE), userMessage].map(m => ({
+            role: m.role,
+            content: m.content
+          })),
           model: activeModel,
           plan: plan,
           mode: store.oracleChatMode,
@@ -215,22 +273,30 @@ const ChatOverlay: React.FC = () => {
       if (response.status === 429) {
         const errorData = await response.json();
         const errorMsg: Message = { 
-          id: Date.now().toString(), 
+          id: ulid(), 
+          spaceId: store.activeSpaceId,
           role: 'assistant', 
-          content: `### Connection Saturated\n${errorData.message}` 
+          content: `### Connection Saturated\n${errorData.message}`,
+          timestamp: Date.now(),
+          msgType: 'system'
         };
         setMessages(prev => [...prev, errorMsg]);
+        saveMessage(errorMsg);
         setDailyUsage(errorData.usage);
         return;
       }
 
       if (response.status === 401) {
         const errorMsg: Message = { 
-          id: Date.now().toString(), 
+          id: ulid(), 
+          spaceId: store.activeSpaceId,
           role: 'assistant', 
-          content: `### Connection Expired\nChoom, your session has timed out. Please sign in again to continue your data stream.` 
+          content: `### Connection Expired\nChoom, your session has timed out. Please sign in again to continue your data stream.`,
+          timestamp: Date.now(),
+          msgType: 'system'
         };
         setMessages(prev => [...prev, errorMsg]);
+        saveMessage(errorMsg);
         useAuthStore.getState().signOut(); // Graceful cleanup
         return;
       }
@@ -241,12 +307,26 @@ const ChatOverlay: React.FC = () => {
       if (!reader) throw new Error('No reader available');
 
       const decoder = new TextDecoder();
-      let assistantMessage: Message = { id: (Date.now() + 1).toString(), role: 'assistant', content: '' };
+      let assistantMessage: Message = { 
+        id: ulid(), 
+        spaceId: store.activeSpaceId,
+        role: 'assistant', 
+        content: '',
+        timestamp: Date.now(),
+        msgType: 'chat'
+      };
+      
       setMessages(prev => [...prev, assistantMessage]);
 
       while (true) {
         const { done, value } = await reader.read();
-        if (done) break;
+        if (done) {
+          // Final save when stream is done
+          if (assistantMessage.content.trim()) {
+            saveMessage(assistantMessage);
+          }
+          break;
+        }
 
         const chunk = decoder.decode(value, { stream: true });
         const lines = chunk.split('\n');
@@ -265,10 +345,19 @@ const ChatOverlay: React.FC = () => {
                   { ...assistantMessage }
                 ]);
               } else if (data.type === 'error') {
+                const errMsg: Message = { 
+                  id: ulid(), 
+                  spaceId: store.activeSpaceId,
+                  role: 'assistant', 
+                  content: `### Logic Snag\n${data.message}`,
+                  timestamp: Date.now(),
+                  msgType: 'system'
+                };
                 setMessages(prev => [
                   ...prev.slice(0, -1),
-                  { id: Date.now().toString(), role: 'assistant', content: `### Logic Snag\n${data.message}` }
+                  errMsg
                 ]);
+                saveMessage(errMsg);
               } else if (data.type === 'usage') {
                 setDailyUsage(data.count);
 } else if (data.type === 'tool_call') {
@@ -282,11 +371,16 @@ const ChatOverlay: React.FC = () => {
                   
                   // If there's an error in the result, display it
                   if (!result.success && result.error) {
-                    setMessages(prev => [...prev, {
-                      id: Date.now().toString(),
+                    const errResultMsg: Message = {
+                      id: ulid(),
+                      spaceId: store.activeSpaceId,
                       role: 'assistant',
-                      content: `⚠️ ${result.error}`
-                    }]);
+                      content: `⚠️ ${result.error}`,
+                      timestamp: Date.now(),
+                      msgType: 'system'
+                    };
+                    setMessages(prev => [...prev, errResultMsg]);
+                    saveMessage(errResultMsg);
                   }
                   
                   // DATA ROUND-TRIP: If the tool returned data (Retrieval), we need to send it back to Oracle
@@ -338,7 +432,12 @@ if (['get_thought_details', 'read_file_content', 'read_files_content'].includes(
                         const followUpDecoder = new TextDecoder();
                         while (true) {
                           const { done, value } = await followUpReader.read();
-                          if (done) break;
+                          if (done) {
+                            if (assistantMessage.content.trim()) {
+                               saveMessage(assistantMessage);
+                            }
+                            break;
+                          }
                           const followUpChunk = followUpDecoder.decode(value, { stream: true });
                           const followUpLines = followUpChunk.split('\n');
                           for (const fLine of followUpLines) {
@@ -358,11 +457,16 @@ if (['get_thought_details', 'read_file_content', 'read_files_content'].includes(
                                   const toolResult = await executeOracleTool(fData.toolCall, store);
                                   // If there's an error in the result, display it
                                   if (!toolResult.success && toolResult.error) {
-                                    setMessages(prev => [...prev, {
-                                      id: Date.now().toString(),
+                                    const errRecMsg: Message = {
+                                      id: ulid(),
+                                      spaceId: store.activeSpaceId,
                                       role: 'assistant',
-                                      content: `⚠️ ${toolResult.error}`
-                                    }]);
+                                      content: `⚠️ ${toolResult.error}`,
+                                      timestamp: Date.now(),
+                                      msgType: 'system'
+                                    };
+                                    setMessages(prev => [...prev, errRecMsg]);
+                                    saveMessage(errRecMsg);
                                   }
                                 }
                               } catch (e) {}

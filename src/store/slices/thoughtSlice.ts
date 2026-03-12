@@ -330,6 +330,7 @@ export const createThoughtSlice: StateCreator<CyberiaState, [], [], any> = (set,
   },
 
   refreshThoughts: async (spaceId?: string) => {
+    if (get().isReadOnly || get().isDemo) return;
     const targetId = spaceId || get().activeSpaceId;
     if (!targetId) return;
     const thoughts = await db.thoughts

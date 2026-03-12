@@ -1,5 +1,16 @@
 import type { Thought, Space, Stack } from '../db';
 
+const getRelativeTime = (timestamp: number | null | undefined) => {
+  if (!timestamp) return undefined;
+  const now = Date.now();
+  const diff = now - timestamp;
+  
+  if (diff < 60000) return 'Just now';
+  if (diff < 3600000) return `${Math.floor(diff / 60000)}m ago`;
+  if (diff < 86400000) return `${Math.floor(diff / 3600000)}h ago`;
+  return new Date(timestamp).toLocaleDateString();
+};
+
 export const serializeWorkspace = (
   activeSpaceId: string | null, 
   thoughts: Thought[], 
@@ -29,6 +40,7 @@ export const serializeWorkspace = (
       status: t.status !== 'none' ? t.status : undefined,
       priority: t.priority !== 'none' ? t.priority : undefined,
       date: t.date || undefined,
+      updatedAt: getRelativeTime(t.updatedAt),
       stack: t.stackId ? stackMap.get(t.stackId) || "New Collection" : undefined,
       isSelected: isSelected || undefined,
       syncStatus: t.syncStatus,

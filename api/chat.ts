@@ -4,7 +4,7 @@ const BASIC_MODELS = ['openrouter/free'];
 const PREMIUM_MODELS = ['openrouter/free'];
 const AI_PLAN_CONFIG = {
   free: { AI_DAILY_LIMIT: 15 },
-  pro: { AI_DAILY_LIMIT: 120 }
+  pro: { AI_DAILY_LIMIT: 60 }
 };
 
 
@@ -61,7 +61,9 @@ function safeParseJSON(str: string, fallback: any = null) {
   }
 }
 
-export const getSystemPrompt = (modelName: string, context?: string, _plan?: string, mode: string = 'chat') => {
+export const getSystemPrompt = (modelName: string, context?: string, plan: string = 'free', mode: string = 'chat') => {
+  const isPro = plan === 'pro';
+  
   return `
 === CURRENT MODE: ${mode.toUpperCase()} ===
 ${mode === 'chat' ? 'READ-ONLY: You can search and read, but CANNOT create/update/delete anything.' : 'FULL ACCESS: You can read and write (create/update/delete thoughts).'}
@@ -71,6 +73,10 @@ You are Oracle (${modelName}), a casual young assistant. Be helpful, casual, and
 [WORKSPACE CONTEXT]
 ${context || 'No workspace data provided.'}
 [/WORKSPACE CONTEXT]
+
+[TIER ACCESS]
+${isPro ? 'PRO PLAN: You have full access to analyze images and documents.' : 'FREE PLAN: You do NOT have access to analyze images or documents. If the user asks to analyze an image or PDF, tell them to upgrade to Pro.'}
+[/TIER ACCESS]
 
 [MODE RULES]
 - CHAT: Read-only. Use get_thought_details, read_file_content, web_search, search_youtube. Aim for responses that fit in a single viewport. Use bullet points for data and one-sentence summaries for analysis.
@@ -788,6 +794,21 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         } else if (Array.isArray(m.content)) {
           msgContent = m.content.map((item: any) => {
             if (typeof item === 'string') return item;
+            
+            // TIERED ACCESS: Free users cannot send images/PDFs to the AI
+            const isVisionContent = ['image', 'input_image', 'image_url', 'file', 'document'].includes(item?.type);
+            
+            if (plan === 'free' && isVisionContent) {
+              // Strip vision content for free users - replace with placeholder text
+              if (item.type === 'file' || item.type === 'document') {
+                return { type: 'text', text: `[Document: ${item.title || 'file'} - Upgrade to Pro to analyze files]` };
+              }
+              if (item.type === 'image' || item.type === 'input_image' || item.type === 'image_url') {
+                return { type: 'text', text: '[Image - Upgrade to Pro to analyze images]' };
+              }
+              return null;
+            }
+            
             if (item && typeof item === 'object' && (
               item.type === 'text' || 
               item.type === 'input_text' || 
@@ -882,6 +903,15 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             if (batch.length === 1) {
               const tc = batch[0];
               const args = safeParseJSON(tc.function.arguments, { _parseError: true, raw: tc.function.arguments });
+              
+              // FIX: If JSON parsing failed, send error to client instead of tool call
+              if (args._parseError) {
+                res.write(`data: ${JSON.stringify({ 
+                  type: 'error', 
+                  message: `Failed to parse arguments for ${tc.function.name}. Please try again.`
+                })}\n\n`);
+                continue;
+              }
               
               res.write(`data: ${JSON.stringify({ 
                 type: 'tool_call', 

@@ -80,6 +80,10 @@ export const STACK_COLORS = [
 
 export const MAX_FILE_SIZE_MB = 10;
 
+export const ORACLE_CONFIG = {
+  HISTORY_WINDOW_SIZE: 12
+};
+
 export const APP_VERSION = '1.0.5';
 
 // Use process.env for server-side (Vercel), import.meta.env for client-side
