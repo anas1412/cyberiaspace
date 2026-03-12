@@ -33,7 +33,7 @@ const CGV: React.FC = () => {
             To access Pro features, you must create an account and subscribe to a plan. Your subscription is tied to your Google identity.
           </p>
           <ul className="list-disc list-inside space-y-3 mt-4 ml-2 text-slate-400">
-            <li><strong className="text-white font-bold">Pro Tier:</strong> Grants enhanced storage, higher Oracle AI limits, and cloud synchronization.</li>
+            <li><strong className="text-white font-bold">Pro Tier:</strong> Grants enhanced storage, higher Oracle AI limits, and other premium features.</li>
             <li><strong className="text-white font-bold">Account Responsibility:</strong> You are responsible for all activity occurring under your account. We reserve the right to suspend accounts violating our policies.</li>
           </ul>
         </>
@@ -75,7 +75,7 @@ const CGV: React.FC = () => {
       content: (
         <>
           <p className="leading-relaxed text-slate-400">
-            Prices are indicated in the application and on the website in the local currency (TND for Tunisia) or USD/EUR for international users.
+            Prices are indicated in the application and on the website in the local currency (TND for Tunisia) or USD for international users.
           </p>
           <ul className="list-disc list-inside space-y-3 mt-4 ml-2 text-slate-400">
             <li><strong className="text-white font-bold">Local Payments (Tunisia):</strong> Handled securely via <strong className="text-white">Flouci</strong>.</li>
