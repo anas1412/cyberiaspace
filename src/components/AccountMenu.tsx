@@ -127,7 +127,7 @@ const AccountMenu: React.FC = () => {
       <button
         onClick={handleNavigateToLogin}
         disabled={status === 'loading'}
-        className="h-[48px] px-6 glass rounded-2xl border border-white/5 shadow-2xl hover:bg-white/10 text-white flex items-center justify-center gap-3 group pointer-events-auto active:scale-95 transition-all"
+        className="h-[48px] px-5 glass rounded-2xl border border-white/5 shadow-2xl hover:bg-white/10 text-white flex items-center justify-center gap-3 group pointer-events-auto active:scale-95 transition-all"
       >
         <LogIn className="w-4 h-4 text-blue-400 group-hover:scale-110 transition-transform" />
         <span className="text-[10px] font-black uppercase tracking-[0.2em] whitespace-nowrap">Sign In</span>
@@ -148,7 +148,7 @@ const AccountMenu: React.FC = () => {
       <button
         onClick={() => setIsOpen(!isOpen)}
         className={cn(
-          "h-[48px] px-2 glass rounded-2xl border border-white/5 shadow-2xl transition-all flex items-center gap-2 group",
+          "h-[48px] px-1.5 glass rounded-2xl border border-white/5 shadow-2xl transition-all flex items-center gap-2 group",
           isOpen ? "bg-white/10" : "hover:bg-white/5"
         )}
       >
@@ -157,7 +157,7 @@ const AccountMenu: React.FC = () => {
             src={user?.avatar} 
             alt={user?.name} 
             referrerPolicy="no-referrer"
-            className="w-8 h-8 rounded-xl border border-white/10 shadow-lg"
+            className="w-9 h-9 rounded-xl border border-white/10 shadow-lg"
           />
           <div className={cn(
             "absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full border-2 border-[#020408] shadow-sm",
@@ -167,7 +167,7 @@ const AccountMenu: React.FC = () => {
           )} />
         </div>
 
-        <ChevronDown className={cn("w-3.5 h-3.5 text-slate-500 transition-transform duration-300", isOpen && "rotate-180")} />
+        <ChevronDown className={cn("w-3.5 h-3.5 text-slate-500 transition-transform duration-300 mr-1", isOpen && "rotate-180")} />
       </button>
 
       {/* Dropdown Menu */}
@@ -178,7 +178,7 @@ const AccountMenu: React.FC = () => {
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: -8, scale: 0.95 }}
             transition={{ duration: 0.2, ease: [0.23, 1, 0.32, 1] }}
-            className="absolute top-full mt-2 right-0 w-64 md:w-72 glass rounded-2xl border border-white/10 shadow-2xl p-4 md:p-5 z-[10000]"
+            className="absolute top-full mt-4 right-0 w-64 md:w-72 glass rounded-2xl border border-white/10 shadow-2xl p-4 md:p-5 z-[10000]"
           >
             <div className="flex items-center gap-3 mb-4">
               <img 

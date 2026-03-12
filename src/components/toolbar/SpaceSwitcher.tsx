@@ -40,8 +40,8 @@ export const SpaceSwitcher: React.FC<SpaceSwitcherProps> = ({
   const isActive = (id: string) => id === activeSpaceId;
 
   return (
-    <div className="space-switcher-container lg:absolute lg:left-1/2 lg:-translate-x-1/2 flex flex-col items-center pointer-events-none z-[9999] w-auto relative">
-      <div className="max-w-full flex items-center h-[48px] md:h-[52px] glass rounded-2xl shadow-[0_0_80px_rgba(0,0,0,0.5)] transition-all pointer-events-auto border border-white/10 p-1.5">
+    <div className="space-switcher-container flex flex-col items-center pointer-events-none z-[9999] w-auto relative">
+      <div className="max-w-full flex items-center h-[48px] glass rounded-2xl shadow-2xl transition-all pointer-events-auto border border-white/5 p-1.5">
         {isReadOnly ? (
           <div className="px-6 flex items-center justify-center gap-3">
             {isSpaceLoading ? (
@@ -105,7 +105,7 @@ export const SpaceSwitcher: React.FC<SpaceSwitcherProps> = ({
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: -8, scale: 0.95 }}
             transition={{ duration: 0.2, ease: [0.23, 1, 0.32, 1] }}
-            className="absolute top-[calc(100%+16px)] left-0 md:left-1/2 md:-translate-x-1/2 min-w-[300px] glass rounded-2xl border border-white/10 shadow-[0_0_80px_rgba(0,0,0,0.5)] overflow-hidden pointer-events-auto z-50 flex flex-col"
+            className="absolute top-full mt-4 right-0 min-w-[300px] glass rounded-2xl border border-white/10 shadow-[0_0_80px_rgba(0,0,0,0.5)] overflow-hidden pointer-events-auto z-50 flex flex-col"
           >
             {/* Header Area */}
             <div className="p-4 md:p-5 border-b border-white/5 flex items-center justify-between bg-black/20 backdrop-blur-md sticky top-0 z-20">

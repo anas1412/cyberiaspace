@@ -79,7 +79,7 @@ const EmptyState: React.FC = () => {
             animate={{ opacity: 0.4, y: 0 }}
             className="font-['CyberiaBlueprint',_cursive,_sans-serif] text-white text-[32px] md:text-[48px] tracking-[4px] md:tracking-[8px] font-bold drop-shadow-[0_4px_8px_rgba(0,0,0,0.5)]"
           >
-            THIS SPACE IS EMPTY
+            THIS VIEW IS EMPTY
           </motion.h2>
           <motion.p
             initial={{ opacity: 0 }}
@@ -97,10 +97,10 @@ const EmptyState: React.FC = () => {
   return (
     <div id="empty-guide" className="fixed inset-0 z-[5] pointer-events-none flex items-center justify-center">
 
-      {/* 1. Switch Spaces (Top Center) - Points to Space Switcher */}
+      {/* 1. Switch View (Top Center) - Points to View Switcher */}
       <div className="absolute top-[80px] md:top-[95px] left-1/2 -translate-x-1/2 rotate-[1deg] text-center flex flex-col items-center">
         <ChalkArrow d="M 30 70 L 30 10 M 15 30 L 30 10 L 45 30" />
-        <p className="font-['CyberiaBlueprint',_cursive,_sans-serif] text-white/60 text-[10px] md:text-[12px] mt-2 tracking-widest uppercase drop-shadow-[0_2px_4px_rgba(0,0,0,0.5)]">Switch Spaces</p>
+        <p className="font-['CyberiaBlueprint',_cursive,_sans-serif] text-white/60 text-[10px] md:text-[12px] mt-2 tracking-widest uppercase drop-shadow-[0_2px_4px_rgba(0,0,0,0.5)]">Switch View</p>
       </div>
 
       {/* 2. Create Thought (Bottom Center - The FAB) */}
@@ -109,10 +109,10 @@ const EmptyState: React.FC = () => {
         <ChalkArrow d="M 30 10 L 30 70 M 15 50 L 30 70 L 45 50" />
       </div>
 
-      {/* 3. View Modes (Top Right) - Points to View Switcher (Modes) */}
-      <div className="hidden md:flex absolute top-[95px] right-[240px] -rotate-[3deg] text-center flex flex-col items-center">
+      {/* 3. Switch Space (Top Right) - Points to Space Switcher */}
+      <div className="hidden md:flex absolute top-[95px] right-[180px] -rotate-[-4deg] text-center flex flex-col items-center">
         <ChalkArrow d="M 30 70 L 30 10 M 15 30 L 30 10 L 45 30" />
-        <p className="font-['CyberiaBlueprint',_cursive,_sans-serif] text-white/60 text-[12px] mt-2 tracking-widest uppercase drop-shadow-[0_2px_4px_rgba(0,0,0,0.5)]">View Modes</p>
+        <p className="font-['CyberiaBlueprint',_cursive,_sans-serif] text-white/60 text-[12px] mt-2 tracking-widest uppercase drop-shadow-[0_2px_4px_rgba(0,0,0,0.5)]">Switch Space</p>
       </div>
 
       {/* 4. Account (Top Right) - Points to AccountMenu */}
@@ -122,13 +122,13 @@ const EmptyState: React.FC = () => {
       </div>
 
       {/* 5. AI Assistant (Bottom Right) - Points to Chat/Oracle button */}
-      <div className="hidden md:flex absolute bottom-[130px] right-[260px] rotate-[5deg] text-center flex flex-col items-center">
+      <div className="hidden md:flex absolute bottom-[130px] right-[245px] rotate-[5deg] text-center flex flex-col items-center">
         <p className="font-['CyberiaBlueprint',_cursive,_sans-serif] text-white/60 text-[12px] mb-2 tracking-widest uppercase drop-shadow-[0_2px_4px_rgba(0,0,0,0.5)]">AI Assistant</p>
         <ChalkArrow d="M 30 10 L 30 70 M 15 50 L 30 70 L 45 50" />
       </div>
 
       {/* 6. Settings (Bottom Right) - Points to System Menu button */}
-      <div className="hidden md:flex absolute bottom-[130px] right-[35px] -rotate-[3deg] text-center flex flex-col items-center">
+      <div className="hidden md:flex absolute bottom-[130px] right-[70px] -rotate-[3deg] text-center flex flex-col items-center">
         <p className="font-['CyberiaBlueprint',_cursive,_sans-serif] text-white/60 text-[12px] mb-2 tracking-widest uppercase drop-shadow-[0_2px_4px_rgba(0,0,0,0.5)]">Settings</p>
         <ChalkArrow d="M 30 10 L 30 70 M 15 50 L 30 70 L 45 50" />
       </div>

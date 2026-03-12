@@ -11,6 +11,7 @@ import { SpaceSwitcher } from './SpaceSwitcher';
 import { ViewSwitcher } from './ViewSwitcher';
 import { ActionFAB } from './ActionFAB';
 import { SystemTray } from './SystemTray';
+import AccountMenu from '../AccountMenu';
 import { StatusBar } from './StatusBar';
 import { ShortcutsModal, HelpModal } from './Modals';
 
@@ -274,27 +275,39 @@ const Toolbar: React.FC = () => {
 
   return (
     <>
-            <div className="fixed top-2 md:top-6 left-4 md:left-12 right-4 md:right-10 z-[9999] flex items-center justify-between gap-2 pointer-events-none">
-              <ToolbarLogo />
-              <SpaceSwitcher 
-                spaces={spaces}
-                activeSpaceId={activeSpaceId}
-                setActiveSpace={setActiveSpace}
-                isReadOnly={isReadOnly}
-                isSpaceLoading={isSpaceLoading}
-                creatorName={creatorName}
-                lastUpdated={lastUpdated || null}
-                activeSpace={activeSpace}
-                isSpaceMenuOpen={isSpaceMenuOpen}
-                setIsSpaceMenuOpen={setIsSpaceMenuOpen}
-                limits={limits}
-                handleCreateSpace={handleCreateSpace}
-                handleRenameSpace={handleRenameSpace}
-                handleMoveSpace={handleMoveSpace}
-                handleDeleteSpace={handleDeleteSpace}
-                openModal={openModal}
-              />
-        <ViewSwitcher activeSpace={activeSpace} setViewMode={setViewMode} />
+      <div className="fixed top-2 md:top-6 left-4 md:left-12 right-4 md:right-10 z-[9999] flex items-center justify-between gap-2 pointer-events-none">
+        {/* Left Side: Logo */}
+        <div className="flex-1 flex justify-start">
+          <ToolbarLogo />
+        </div>
+
+        {/* Center: View Modes (The primary "Lens" of the workspace) */}
+        <div className="lg:absolute lg:left-1/2 lg:-translate-x-1/2 flex flex-col items-center pointer-events-none z-[9999]">
+          <ViewSwitcher activeSpace={activeSpace} setViewMode={setViewMode} />
+        </div>
+
+        {/* Right Side: Context Navigation (Spaces & Profile) */}
+        <div className="flex-1 flex justify-end items-center gap-2 pointer-events-auto">
+          <SpaceSwitcher 
+            spaces={spaces}
+            activeSpaceId={activeSpaceId}
+            setActiveSpace={setActiveSpace}
+            isReadOnly={isReadOnly}
+            isSpaceLoading={isSpaceLoading}
+            creatorName={creatorName}
+            lastUpdated={lastUpdated || null}
+            activeSpace={activeSpace}
+            isSpaceMenuOpen={isSpaceMenuOpen}
+            setIsSpaceMenuOpen={setIsSpaceMenuOpen}
+            limits={limits}
+            handleCreateSpace={handleCreateSpace}
+            handleRenameSpace={handleRenameSpace}
+            handleMoveSpace={handleMoveSpace}
+            handleDeleteSpace={handleDeleteSpace}
+            openModal={openModal}
+          />
+          <AccountMenu />
+        </div>
       </div>
       <ActionFAB isReadOnly={isReadOnly} handleAddThought={handleAddThought} />
       <SystemTray 
