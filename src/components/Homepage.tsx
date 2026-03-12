@@ -1,6 +1,6 @@
 import React, { Suspense, useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { MousePointer2, Layout, Database, ArrowRight, Menu, X, Zap, Check, Compass, Rocket, Send, Loader2, CheckCircle, Shield } from 'lucide-react';
+import { MousePointer2, Layout, Database, ArrowRight, Menu, X, Zap, Check, Compass, Rocket, Send, Loader2, CheckCircle, Shield, ChevronDown } from 'lucide-react';
 import { PLAN_CONFIG } from '../constants';
 
 import InteractiveDemo from './demo/InteractiveDemo';
@@ -35,6 +35,71 @@ const FEATURES = [
     description: 'Intelligent agents help research, gather information, and automate tasks across your workspace.'
   }
 ];
+
+const FAQ_ITEMS = [
+  {
+    question: "What is a Spatial Workspace?",
+    answer: "Unlike traditional apps that use static grids or lists, Cyberia Workspace treats information as physical entities. Your thoughts have mass, velocity, and gravity, allowing you to organize data visually and discover non-linear connections through interaction."
+  },
+  {
+    question: "Is my data private and secure?",
+    answer: "Yes. Cyberia Workspace follows a Local-First philosophy. By default, all your work is stored locally in your browser's IndexedDB. When you authenticate, data is synced securely via Supabase using end-to-end encryption protocols."
+  },
+  {
+    question: "How does the 'Oracle' AI handle my data?",
+    answer: "Oracle uses advanced reasoning models to analyze your workspace snippets in real-time. We never use your personal data or workspace content to train AI models. Your history is stored locally on your device."
+  },
+  {
+    question: "Do subscriptions automatically renew?",
+    answer: "It depends on your provider. Local payments via Flouci are manual (no auto-charges). International subscriptions via Polar.sh are recurring and can be canceled at any time through the customer portal."
+  },
+  {
+    question: "What happens when I downgrade from Pro to Free?",
+    answer: "When you downgrade, your existing thoughts, spaces, and files stay safe—you keep full access to everything you created. However, premium features like advanced Oracle AI and higher limits become unavailable. You can still read and edit all your content, but won't be able to use Pro-only features until you resubscribe."
+  },
+  {
+    question: "Why is there no mobile app yet?",
+    answer: "The Cyberia spatial engine is designed for precision thinking and large-scale mapping, which requires a mouse and a large display. While we are working on companion apps, the full workspace experience is currently optimized for Desktop."
+  }
+];
+
+const FAQItem: React.FC<{ 
+  question: string; 
+  answer: string; 
+  isOpen: boolean; 
+  onToggle: () => void;
+}> = ({ question, answer, isOpen, onToggle }) => {
+  return (
+    <div className={`border-b border-white/5 transition-all duration-500 ${isOpen ? 'bg-white/[0.03]' : ''}`}>
+      <button 
+        onClick={onToggle}
+        className="w-full py-7 px-6 md:px-10 flex items-center justify-between group text-left transition-all"
+      >
+        <span className={`text-[12px] md:text-[13px] font-black uppercase tracking-[0.2em] transition-colors duration-300 pr-8 ${isOpen ? 'text-[var(--accent-secondary)]' : 'text-slate-300 group-hover:text-white'}`}>
+          {question}
+        </span>
+        <div className={`w-10 h-10 rounded-xl border border-white/10 flex items-center justify-center transition-all duration-500 shrink-0 ${isOpen ? 'rotate-180 bg-[var(--accent)] border-[var(--accent)] text-white shadow-lg shadow-[var(--accent)]/20' : 'group-hover:border-white/30 text-slate-500 bg-white/5'}`}>
+          <ChevronDown className="w-4 h-4" />
+        </div>
+      </button>
+      <AnimatePresence initial={false}>
+        {isOpen && (
+          <motion.div
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: 'auto', opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
+            className="overflow-hidden"
+          >
+            <div className="px-6 md:px-10 pb-8 text-sm text-slate-400 leading-relaxed font-medium uppercase tracking-widest max-w-3xl border-t border-white/5 pt-6 mt-2 mx-6 md:mx-10">
+              {answer}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+};
 
 const ResponsiveStage = React.memo(({ children }: { children: React.ReactNode }) => {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -117,6 +182,7 @@ const FeatureVisual: React.FC<{ activeFeature: number }> = React.memo(({ activeF
 
 const Homepage: React.FC = () => {
   const [activeFeature, setActiveFeature] = useState(0);
+  const [activeFAQIndex, setActiveFAQIndex] = useState<number | null>(null);
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [location, setLocation] = useState<{ country: string; currency: string; isLocalPricing: boolean } | null>(null);
@@ -217,7 +283,7 @@ const Homepage: React.FC = () => {
           <div className="hidden md:flex items-center gap-3"> {/* Increased gap slightly to 3 */}
   {/* The Nav Container */}
   <div className="flex items-center h-10 p-1 rounded-2xl">
-                {['features', 'about', 'pricing', 'contact'].map((item) => (
+                {['features', 'about', 'pricing', 'faq', 'contact'].map((item) => (
       <button 
         key={item}
         onClick={() => scrollToSection(item)} 
@@ -259,7 +325,7 @@ const Homepage: React.FC = () => {
               className="md:hidden glass border-t border-white/5 overflow-hidden"
             >
               <div className="flex flex-col p-6 gap-6">
-    {['features', 'about', 'pricing', 'contact'].map((item) => (
+    {['features', 'about', 'pricing', 'faq', 'contact'].map((item) => (
                   <button 
                     key={item}
                     onClick={() => scrollToSection(item)} 
@@ -585,11 +651,51 @@ const Homepage: React.FC = () => {
 <div className="mt-6 flex items-center justify-center gap-3 opacity-60">
                 <Shield className="w-4 h-4 text-[var(--accent-secondary)]" />
                 <span className="text-[9px] font-black uppercase tracking-widest text-slate-500">
-                  Secure local & global payments via Flouci
+                  Secure local & global payments via {location?.isLocalPricing ? 'Flouci' : 'Polar.sh'}
                 </span>
               </div>
             </motion.div>
           </div>
+        </div>
+      </section>
+
+      <section id="faq" className="py-32 px-6 relative z-10">
+        <div className="max-w-4xl mx-auto">
+          <div className="text-center mb-20">
+            <h2 className="text-4xl md:text-5xl font-black tracking-tighter uppercase mb-6">
+              Frequently Asked <span style={{ color: 'var(--accent)' }}>Questions</span>
+            </h2>
+            <p className="text-slate-400 font-medium uppercase tracking-[0.2em] text-[10px]">Everything you need to know about Cyberia Workspace</p>
+          </div>
+
+          <div className="glass rounded-2xl border border-white/5 overflow-hidden shadow-2xl shadow-black/50 transition-all duration-700">
+            {FAQ_ITEMS.map((item, index) => (
+              <FAQItem 
+                key={index} 
+                {...item} 
+                isOpen={activeFAQIndex === index}
+                onToggle={() => setActiveFAQIndex(activeFAQIndex === index ? null : index)}
+              />
+            ))}
+          </div>
+
+          <motion.div 
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            className="mt-16 p-8 rounded-2xl bg-white/[0.02] border border-white/5 flex flex-col md:flex-row items-center justify-between gap-8 text-center md:text-left hover:border-white/10 transition-colors"
+          >
+            <div>
+              <h3 className="text-sm font-black text-white uppercase tracking-widest mb-2">Still have questions?</h3>
+              <p className="text-xs text-slate-500 uppercase tracking-wider">Our team is here to help you build your perfect workspace.</p>
+            </div>
+            <button 
+              onClick={() => scrollToSection('contact')}
+              className="px-8 py-4 bg-white text-black text-[10px] font-black uppercase tracking-[0.2em] rounded-full hover:bg-[var(--accent)] hover:text-white transition-all shadow-xl shadow-white/5 active:scale-95"
+            >
+              Contact Support
+            </button>
+          </motion.div>
         </div>
       </section>
 

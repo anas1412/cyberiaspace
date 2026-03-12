@@ -487,7 +487,7 @@ const PricingModal: React.FC<PricingModalProps> = ({ isOpen, onClose }) => {
                 <Shield className="w-4 h-4 text-blue-400" />
               </div>
               <p className="text-xs text-slate-400 font-medium">
-                Secure local & global payments powered by <span className="text-white font-semibold">{location?.isLocalPricing ? 'Flouci' : 'Polar.sh'}</span>.
+                Secure local & global payments via <span className="text-white font-semibold">{location?.isLocalPricing ? 'Flouci' : 'Polar.sh'}</span>.
               </p>
             </div>
             
