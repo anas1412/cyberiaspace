@@ -33,7 +33,7 @@ const PrivacyPolicy: React.FC = () => {
             By default, all thoughts, tasks, drawings, and files you create are stored <strong>locally</strong> in your browser's internal database (IndexedDB). 
           </p>
           <p className="leading-relaxed text-white font-medium mt-2">
-            This data never leaves your device unless you explicitly enable Cloud Sync. You own your data and you are the only one who can access it locally in this default mode.
+            When you authenticate your account, your workspace is automatically synced to the cloud for backup and cross-device access.
           </p>
         </>
       )
@@ -63,7 +63,7 @@ const PrivacyPolicy: React.FC = () => {
       content: (
         <>
           <p className="leading-relaxed text-slate-300">
-            When you enable Cloud Sync, your workspace metadata and research assets are stored securely in <strong className="text-white">Supabase</strong> (PostgreSQL database and Cloud Storage). 
+            When you authenticate your account, your workspace metadata and research assets are stored securely in <strong className="text-white">Supabase</strong> (PostgreSQL database and Cloud Storage). 
           </p>
           <p className="leading-relaxed text-sm text-slate-400 mt-2">
             This allows for persistent storage across multiple devices and ensures data continuity if your browser cache is cleared.

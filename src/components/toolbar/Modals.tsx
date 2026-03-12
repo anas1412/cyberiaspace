@@ -176,7 +176,7 @@ export const HelpModal: React.FC<HelpModalProps> = ({
           <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-2">
             {[
               { label: 'Privacy Policy', path: '/privacy' },
-              { label: 'Terms of Sale (CGV)', path: '/cgv' },
+              { label: 'Terms of Sale (CGV)', path: '/terms' },
               { label: 'Legal Notice', path: '/legal' },
               { label: 'Contact', path: '/contact' }
             ].map((link, idx) => (

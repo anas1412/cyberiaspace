@@ -174,7 +174,7 @@ const LoginPage: React.FC = () => {
               <span className="w-0.5 h-0.5 rounded-full bg-white/20" />
               <button 
                 onClick={() => {
-                  window.history.pushState({}, '', '/cgv');
+                  window.history.pushState({}, '', '/terms');
                   window.dispatchEvent(new PopStateEvent('popstate'));
                 }}
                 className="text-[8px] font-black uppercase tracking-widest text-slate-400 hover:text-white transition-colors"

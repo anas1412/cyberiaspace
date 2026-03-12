@@ -402,7 +402,7 @@ function App() {
     );
   }
 
-  if (path === '/cgv') {
+  if (path === '/terms') {
     return (
       <Suspense fallback={<LoadingOverlay force />}>
         <CGV />
@@ -455,7 +455,7 @@ function App() {
   }
 
   // App domain: check for valid routes, otherwise show NotFound
-  const validAppRoutes = ['/feedback', '/privacy', '/cgv', '/legal', '/contact', '/login', '/pricing'];
+  const validAppRoutes = ['/feedback', '/privacy', '/terms', '/legal', '/contact', '/login', '/pricing'];
   const isValidAppRoute = path === '/' || path.startsWith('/s/') || validAppRoutes.includes(path) || (path === '/home' && canSeeLanding);
   
   if (!isValidAppRoute) {
