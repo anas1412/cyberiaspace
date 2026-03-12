@@ -27,7 +27,6 @@ const Toolbar: React.FC = () => {
   const updateSpace = useStore((state) => state.updateSpace);
   const deleteSpace = useStore((state) => state.deleteSpace);
   const addSpace = useStore((state) => state.addSpace);
-  const reorderSpaces = useStore((state) => state.reorderSpaces);
   const setSelectedThoughtId = useStore((state) => state.setSelectedThoughtId);
   const setInspectorOpen = useStore((state) => state.setInspectorOpen);
   const exportData = useStore((state) => state.exportData);
@@ -263,15 +262,6 @@ const Toolbar: React.FC = () => {
     openModal({ title: `Delete "${activeSpace.name}"?`, description: 'This will delete all thoughts in this space.', type: 'delete_space', confirmText: 'Delete', onConfirm: () => deleteSpace(activeSpace.id) });
     setIsSpaceMenuOpen(false);
   };
-  const handleMoveSpace = (dir: number) => {
-    if (!activeSpace) return;
-    const currentIndex = spaces.findIndex(s => s.id === activeSpaceId);
-    const newIndex = currentIndex + dir;
-    if (newIndex >= 0 && newIndex < spaces.length) {
-      const newSpaces = [...spaces]; [newSpaces[currentIndex], newSpaces[newIndex]] = [newSpaces[newIndex], newSpaces[currentIndex]];
-      reorderSpaces(newSpaces);
-    }
-  };
 
   return (
     <>
@@ -302,7 +292,6 @@ const Toolbar: React.FC = () => {
             limits={limits}
             handleCreateSpace={handleCreateSpace}
             handleRenameSpace={handleRenameSpace}
-            handleMoveSpace={handleMoveSpace}
             handleDeleteSpace={handleDeleteSpace}
             openModal={openModal}
           />
