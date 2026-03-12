@@ -22,18 +22,18 @@ const DynamicViewsVisual: React.FC = () => {
   }, []);
   
   const thoughts = [
-    { id: 1, title: 'ESSAY_01', color: 'var(--accent)' },
-    { id: 2, title: 'LECTURE', color: 'var(--accent-secondary)' },
-    { id: 3, title: 'RESEARCH', color: 'var(--accent)' },
-    { id: 4, title: 'NOTES', color: 'var(--accent-secondary)' },
-    { id: 5, title: 'SYNC', color: 'var(--accent)' },
-    { id: 6, title: 'BACKUP', color: 'var(--accent-secondary)' },
+    { id: 1, title: 'ESSAY_01', color: 'var(--accent)', type: 'doc' as const },
+    { id: 2, title: 'LECTURE', color: 'var(--accent-secondary)', type: 'text' as const },
+    { id: 3, title: 'RESEARCH', color: 'var(--accent)', type: 'image' as const },
+    { id: 4, title: 'NOTES', color: 'var(--accent-secondary)', type: 'text' as const },
+    { id: 5, title: 'SYNC', color: 'var(--accent)', type: 'file' as const },
+    { id: 6, title: 'BACKUP', color: 'var(--accent-secondary)', type: 'table' as const },
   ];
 
   const freeNodes = [
-    { id: 'f1', title: 'IDEAS', x: [290, -290], y: [-170, 170], duration: 30, delay: 0 },
-    { id: 'f2', title: 'NOTES', x: [-230, 230], y: [110, -110], duration: 40, delay: 5 },
-    { id: 'f3', title: 'LOGS', x: [170, -170], y: [230, -230], duration: 35, delay: 2 },
+    { id: 'f1', title: 'IDEAS', type: 'text' as const, x: [290, -290], y: [-170, 170], duration: 30, delay: 0 },
+    { id: 'f2', title: 'NOTES', type: 'doc' as const, x: [-230, 230], y: [110, -110], duration: 40, delay: 5 },
+    { id: 'f3', title: 'LOGS', type: 'table' as const, x: [170, -170], y: [230, -230], duration: 35, delay: 2 },
   ];
 
   const getPosition = (index: number, currentView: string) => {
@@ -105,7 +105,7 @@ const DynamicViewsVisual: React.FC = () => {
           }}
         >
           <div className="-translate-x-1/2 -translate-y-1/2">
-            <DemoThought title={node.title} className="scale-75 opacity-40" />
+            <DemoThought title={node.title} type={node.type} className="scale-75 opacity-40" />
           </div>
         </motion.div>
       ))}
@@ -202,7 +202,7 @@ const DynamicViewsVisual: React.FC = () => {
             transition={{ type: "spring", damping: 25, stiffness: 80, mass: 1.2 }}
           >
             <div className="-translate-x-1/2 -translate-y-1/2">
-              <DemoThought title={t.title} color={t.color} />
+              <DemoThought title={t.title} color={t.color} type={t.type} />
             </div>
           </motion.div>
         );

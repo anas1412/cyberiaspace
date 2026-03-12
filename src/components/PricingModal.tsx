@@ -392,7 +392,10 @@ const PricingModal: React.FC<PricingModalProps> = ({ isOpen, onClose }) => {
               </span>
             </div>
             <p className="text-xs text-slate-500 leading-relaxed px-4">
-              {billingCycle === 'yearly' ? `One-time payment of ${location?.isLocalPricing ? currentPrice.tnd + ' DT' : '$' + proPrice.yearly.usd} per year.` : 'Manual renewal. No surprise auto-charges.'}
+              {location?.isLocalPricing 
+                ? (billingCycle === 'yearly' ? `One-time payment of ${currentPrice.tnd} DT per year.` : 'Manual renewal via Flouci. No auto-charges.')
+                : (billingCycle === 'yearly' ? `Recurring payment of $${proPrice.yearly.usd} per year via Polar.sh.` : `Recurring monthly subscription via Polar.sh. Cancel anytime.`)
+              }
             </p>
           </div>
 
@@ -491,9 +494,8 @@ const PricingModal: React.FC<PricingModalProps> = ({ isOpen, onClose }) => {
             <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-2">
               {[
                 { label: 'Privacy Policy', path: '/privacy' },
-                { label: 'Terms of Service', path: '/terms' },
-                { label: 'Legal Notice', path: '/legal-notice' },
-                { label: 'Terms of Sale & Refund Policy', path: '/sales-conditions' },
+                { label: 'Terms of Sale (CGV)', path: '/cgv' },
+                { label: 'Legal Notice', path: '/legal' },
                 { label: 'Contact', path: '/contact' }
               ].map((link, idx) => (
                 <button 

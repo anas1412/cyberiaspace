@@ -10,27 +10,27 @@ const SPACES = [
     id: 'uni',
     name: 'University',
     stacks: [
-      { id: 's1', name: 'COMP_SCI', color: '#6366f1', thoughts: ['ALGORITHMS', 'AI_BASICS', 'DATABASE'] },
-      { id: 's2', name: 'HISTORY', color: '#8b5cf6', thoughts: ['RENAISSANCE', 'ANCIENT_ROME', 'WORLD_WARS'] },
-      { id: 's3', name: 'PHYSICS', color: '#3b82f6', thoughts: ['QUANTUM', 'RELATIVITY', 'ENERGY'] }
+      { id: 's1', name: 'COMP_SCI', color: '#6366f1', thoughts: [{title:'ALGORITHMS', type: 'text'}, {title:'AI_BASICS', type: 'doc'}, {title:'DATABASE', type: 'table'}] },
+      { id: 's2', name: 'HISTORY', color: '#8b5cf6', thoughts: [{title:'RENAISSANCE', type: 'image'}, {title:'ANCIENT_ROME', type: 'doc'}, {title:'WORLD_WARS', type: 'text'}] },
+      { id: 's3', name: 'PHYSICS', color: '#3b82f6', thoughts: [{title:'QUANTUM', type: 'text'}, {title:'RELATIVITY', type: 'file'}, {title:'ENERGY', type: 'text'}] }
     ]
   },
   {
     id: 'wrk',
     name: 'Work',
     stacks: [
-      { id: 's4', name: 'PROJECT_X', color: '#ec4899', thoughts: ['DASHBOARD', 'API_DOCS', 'AUTH_FLOW'] },
-      { id: 's5', name: 'MEETINGS', color: '#f43f5e', thoughts: ['SYNC_CALL', 'PLANNING', 'REVIEW'] },
-      { id: 's6', name: 'RESEARCH', color: '#d946ef', thoughts: ['MARKET_MAP', 'TRENDS', 'CLIENT_LOG'] }
+      { id: 's4', name: 'PROJECT_X', color: '#ec4899', thoughts: [{title:'DASHBOARD', type: 'table'}, {title:'API_DOCS', type: 'doc'}, {title:'AUTH_FLOW', type: 'text'}] },
+      { id: 's5', name: 'MEETINGS', color: '#f43f5e', thoughts: [{title:'SYNC_CALL', type: 'text'}, {title:'PLANNING', type: 'doc'}, {title:'REVIEW', type: 'image'}] },
+      { id: 's6', name: 'RESEARCH', color: '#d946ef', thoughts: [{title:'MARKET_MAP', type: 'image'}, {title:'TRENDS', type: 'table'}, {title:'CLIENT_LOG', type: 'file'}] }
     ]
   },
   {
     id: 'bmk',
     name: 'Bookmark',
     stacks: [
-      { id: 's7', name: 'VIDEOS', color: '#10b981', thoughts: ['TECH_REVIEW', 'COOKING', 'TRAVEL_VLOG'] },
-      { id: 's8', name: 'BOOKS', color: '#06b6d4', thoughts: ['SCI_FI', 'BIOGRAPHY', 'BUSINESS'] },
-      { id: 's9', name: 'MOVIES', color: '#84cc16', thoughts: ['ACTION', 'DRAMA', 'COMEDY'] }
+      { id: 's7', name: 'VIDEOS', color: '#10b981', thoughts: [{title:'TECH_REVIEW', type: 'image'}, {title:'COOKING', type: 'image'}, {title:'TRAVEL_VLOG', type: 'image'}] },
+      { id: 's8', name: 'BOOKS', color: '#06b6d4', thoughts: [{title:'SCI_FI', type: 'doc'}, {title:'BIOGRAPHY', type: 'text'}, {title:'BUSINESS', type: 'file'}] },
+      { id: 's9', name: 'MOVIES', color: '#84cc16', thoughts: [{title:'ACTION', type: 'text'}, {title:'DRAMA', type: 'text'}, {title:'COMEDY', type: 'text'}] }
     ]
   }
 ];
@@ -330,7 +330,7 @@ const InteractiveDemo: React.FC = () => {
         <div className="relative">
           <AnimatePresence mode="popLayout">
             {nodes.length > 0 && activeSpace.stacks.flatMap((stack, sIdx) => 
-              stack.thoughts.map((title, tIdx) => {
+              stack.thoughts.map((thought: any, tIdx) => {
                 const id = `${stack.id}-${tIdx}`;
                 const node = nodes.find(n => n.id === id);
                 if (!node) return null;
@@ -359,7 +359,9 @@ const InteractiveDemo: React.FC = () => {
                     }}
                   >
                     <DemoThought 
-                      title={title} color={stack.color} 
+                      title={thought.title} 
+                      type={thought.type}
+                      color={stack.color} 
                       onPointerDown={(e) => { 
                         if (viewMode !== 'spatial') return;
                         e.stopPropagation(); dragTargetRef.current = id; 

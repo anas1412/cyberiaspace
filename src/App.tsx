@@ -31,10 +31,8 @@ const TasksFocusEditor = lazy(() => import('./components/editors/TasksFocusEdito
 const EmbedFocusEditor = lazy(() => import('./components/editors/EmbedFocusEditor'));
 const FileFocusEditor = lazy(() => import('./components/editors/FileFocusEditor'));
 const FeedbackPage = lazy(() => import('./components/FeedbackPage'));
-const PrivacyPolicyGeneral = lazy(() => import('./components/legal/PrivacyPolicyGeneral'));
-const TermsOfService = lazy(() => import('./components/legal/TermsOfService'));
-const SalesConditions = lazy(() => import('./components/legal/SalesConditions'));
-const PrivacyPolicySales = lazy(() => import('./components/legal/PrivacyPolicySales'));
+const PrivacyPolicy = lazy(() => import('./components/legal/PrivacyPolicy'));
+const CGV = lazy(() => import('./components/legal/CGV'));
 const LegalNotice = lazy(() => import('./components/legal/LegalNotice'));
 const Contact = lazy(() => import('./components/legal/Contact'));
 const LoginPage = lazy(() => import('./components/auth/LoginPage'));
@@ -399,36 +397,20 @@ function App() {
   if (path === '/privacy') {
     return (
       <Suspense fallback={<LoadingOverlay force />}>
-        <PrivacyPolicyGeneral />
+        <PrivacyPolicy />
       </Suspense>
     );
   }
 
-  if (path === '/terms') {
+  if (path === '/cgv') {
     return (
       <Suspense fallback={<LoadingOverlay force />}>
-        <TermsOfService />
+        <CGV />
       </Suspense>
     );
   }
 
-  if (path === '/sales-conditions') {
-    return (
-      <Suspense fallback={<LoadingOverlay force />}>
-        <SalesConditions />
-      </Suspense>
-    );
-  }
-
-  if (path === '/privacy-policy') {
-    return (
-      <Suspense fallback={<LoadingOverlay force />}>
-        <PrivacyPolicySales />
-      </Suspense>
-    );
-  }
-
-  if (path === '/legal-notice') {
+  if (path === '/legal') {
     return (
       <Suspense fallback={<LoadingOverlay force />}>
         <LegalNotice />
@@ -473,7 +455,7 @@ function App() {
   }
 
   // App domain: check for valid routes, otherwise show NotFound
-  const validAppRoutes = ['/feedback', '/privacy', '/terms', '/sales-conditions', '/privacy-policy', '/legal-notice', '/contact', '/login', '/pricing'];
+  const validAppRoutes = ['/feedback', '/privacy', '/cgv', '/legal', '/contact', '/login', '/pricing'];
   const isValidAppRoute = path === '/' || path.startsWith('/s/') || validAppRoutes.includes(path) || (path === '/home' && canSeeLanding);
   
   if (!isValidAppRoute) {

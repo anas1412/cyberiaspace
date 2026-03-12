@@ -376,12 +376,12 @@ const AccountMenu: React.FC = () => {
               <span className="w-0.5 h-0.5 rounded-full bg-white/20" />
               <button 
                 onClick={() => {
-                  window.history.pushState({}, '', '/terms');
+                  window.history.pushState({}, '', '/cgv');
                   window.dispatchEvent(new PopStateEvent('popstate'));
                 }}
                 className="text-[8px] font-black uppercase tracking-widest text-slate-400 hover:text-white transition-colors"
               >
-                Terms of Service
+                Terms of Sale (CGV)
               </button>
             </div>
           </motion.div>

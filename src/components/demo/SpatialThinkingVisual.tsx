@@ -6,25 +6,50 @@ import DemoThought from './DemoThought';
 const SPACES_DATA = [
   {
     name: 'University',
-    cluster: ['ALGORITHMS', 'RENAISSANCE', 'QUANTUM'],
-    free: ['AI_BASICS', 'ROME_MAP', 'ENERGY_LOG']
+    cluster: [
+      { title: 'ALGORITHMS', type: 'text' as const }, 
+      { title: 'RENAISSANCE', type: 'image' as const }, 
+      { title: 'QUANTUM', type: 'doc' as const }
+    ],
+    free: [
+      { title: 'AI_BASICS', type: 'doc' as const }, 
+      { title: 'ROME_MAP', type: 'image' as const }, 
+      { title: 'ENERGY_LOG', type: 'text' as const }
+    ]
   },
   {
     name: 'Work',
-    cluster: ['DASHBOARD', 'SYNC_CALL', 'MARKET_MAP'],
-    free: ['API_DOCS', 'PLANNING', 'TRENDS']
+    cluster: [
+      { title: 'DASHBOARD', type: 'table' as const }, 
+      { title: 'SYNC_CALL', type: 'text' as const }, 
+      { title: 'MARKET_MAP', type: 'image' as const }
+    ],
+    free: [
+      { title: 'API_DOCS', type: 'doc' as const }, 
+      { title: 'PLANNING', type: 'text' as const }, 
+      { title: 'TRENDS', type: 'table' as const }
+    ]
   },
   {
     name: 'Bookmark',
-    cluster: ['TECH_REVIEW', 'SCI_FI_BOOK', 'ACTION_MOVIE'],
-    free: ['COOKING', 'BUSINESS', 'COMEDY']
+    cluster: [
+      { title: 'TECH_REVIEW', type: 'image' as const }, 
+      { title: 'SCI_FI_BOOK', type: 'doc' as const }, 
+      { title: 'ACTION_MOVIE', type: 'image' as const }
+    ],
+    free: [
+      { title: 'COOKING', type: 'image' as const }, 
+      { title: 'BUSINESS', type: 'text' as const }, 
+      { title: 'COMEDY', type: 'text' as const }
+    ]
   },
 ];
 
 interface NodeState {
   id: string;
   title: string;
-  type: 'cluster' | 'free';
+  type: 'text' | 'image' | 'file' | 'doc' | 'table';
+  nodeType: 'cluster' | 'free';
   x: any; 
   y: any;
   vx: number;
@@ -62,27 +87,29 @@ const SpatialThinkingVisual: React.FC = () => {
   useEffect(() => {
     const newNodes: NodeState[] = [];
     
-    currentSpace.cluster.forEach((title, i) => {
+    currentSpace.cluster.forEach((thought, i) => {
       newNodes.push({
         id: `cluster-${i}`,
-        title,
+        title: thought.title,
+        type: thought.type,
         x: motionValue((i - 1) * 100),
         y: motionValue(i === 1 ? 80 : -60),
         vx: 0,
         vy: 0,
-        type: 'cluster'
+        nodeType: 'cluster'
       });
     });
 
-    currentSpace.free.forEach((title, i) => {
+    currentSpace.free.forEach((thought, i) => {
       newNodes.push({
         id: `free-${i}`,
-        title,
+        title: thought.title,
+        type: thought.type,
         x: motionValue(i === 0 ? 240 : i === 1 ? -220 : 200),
         y: motionValue(i === 0 ? -270 : i === 1 ? 80 : -140),
         vx: (Math.random() - 0.5) * 0.5,
         vy: (Math.random() - 0.5) * 0.5,
-        type: 'free'
+        nodeType: 'free'
       });
     });
 
@@ -107,7 +134,7 @@ const SpatialThinkingVisual: React.FC = () => {
           }
 
           // 2. Gravity to center (cluster nodes only)
-          if (n.type === 'cluster' && n.id !== grabTargetRef.current) {
+          if (n.nodeType === 'cluster' && n.id !== grabTargetRef.current) {
             ax += (0 - nx) * 0.003;
             ay += (0 - ny) * 0.003;
           }
@@ -123,14 +150,14 @@ const SpatialThinkingVisual: React.FC = () => {
             const dx = nx - ox; const dy = ny - oy;
             const distSq = dx * dx + dy * dy || 1;
             if (distSq < 50000) {
-              const strength = n.type === 'cluster' && other.type === 'cluster' ? 60 : 30;
+              const strength = n.nodeType === 'cluster' && other.nodeType === 'cluster' ? 60 : 30;
               const force = strength / (distSq + 3000); // Softened
               ax += dx * force; ay += dy * force;
             }
           });
 
           // 5. Boundary drift for free nodes
-          if (n.type === 'free') {
+          if (n.nodeType === 'free') {
             if (Math.abs(nx) > 300) ax -= nx * 0.0005;
             if (Math.abs(ny) > 300) ay -= ny * 0.0005;
           }
@@ -235,8 +262,10 @@ const SpatialThinkingVisual: React.FC = () => {
             })}
           </svg>
           {nodes.map((node) => (
-            <motion.div key={node.id} className="absolute left-1/2 top-1/2" style={{ x: node.x, y: node.y, zIndex: node.type === 'cluster' ? 20 : 10 }}>
-              <div className="-translate-x-1/2 -translate-y-1/2"><DemoThought title={node.title} className={node.type === 'free' ? 'scale-90 opacity-40' : 'shadow-2xl'} /></div>
+            <motion.div key={node.id} className="absolute left-1/2 top-1/2" style={{ x: node.x, y: node.y, zIndex: node.nodeType === 'cluster' ? 20 : 10 }}>
+              <div className="-translate-x-1/2 -translate-y-1/2">
+                <DemoThought title={node.title} type={node.type} className={node.nodeType === 'free' ? 'scale-90 opacity-40' : 'shadow-2xl'} />
+              </div>
             </motion.div>
           ))}
         </motion.div>
