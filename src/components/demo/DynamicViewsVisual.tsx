@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { Orbit, Columns3, CalendarDays } from 'lucide-react';
 import DemoThought from './DemoThought';
 
 const DynamicViewsVisual: React.FC = () => {
@@ -63,20 +64,28 @@ const DynamicViewsVisual: React.FC = () => {
 
   return (
     <div className="relative w-full h-full flex items-center justify-center bg-transparent overflow-hidden pointer-events-none will-change-transform">
-      <div className="absolute top-8 right-8 z-[110] flex items-center gap-1.5 p-1.5 glass rounded-2xl border border-white/5 max-w-[90vw] pointer-events-auto">
-        {(['spatial', 'kanban', 'calendar'] as const).map((v) => (
-          <button
-            key={v}
-            onClick={() => setView(v)}
-            className={`px-2 py-1 md:px-4 md:py-1.5 rounded-xl text-[7px] md:text-[8px] font-black uppercase tracking-[0.1em] md:tracking-[0.2em] transition-all duration-300 ${
-              view === v 
-                ? 'bg-white text-black shadow-lg shadow-white/10' 
-                : 'text-white/40 hover:text-white hover:bg-white/5'
-            }`}
-          >
-            {v}
-          </button>
-        ))}
+      <div className="absolute top-8 left-1/2 -translate-x-1/2 z-[110] flex items-center gap-1.5 p-1.5 glass rounded-2xl border border-white/5 pointer-events-auto shadow-2xl">
+        {[
+          { id: 'spatial', icon: Orbit },
+          { id: 'kanban', icon: Columns3 },
+          { id: 'calendar', icon: CalendarDays }
+        ].map((mode) => {
+          const Icon = mode.icon;
+          const isActive = view === mode.id;
+          return (
+            <button 
+              key={mode.id} 
+              onClick={() => setView(mode.id as any)} 
+              className={`px-3 py-2 rounded-xl transition-all duration-300 flex items-center gap-2 ${isActive ? 'bg-white text-black shadow-lg shadow-white/10' : 'text-white/40 hover:text-white hover:bg-white/5'}`}
+              title={`${mode.id} View`}
+            >
+              <Icon className="w-4 h-4" />
+              <span className={`text-[9px] font-black uppercase tracking-widest transition-all overflow-hidden whitespace-nowrap ${isActive ? 'max-w-[60px] opacity-100' : 'max-w-0 opacity-0'}`}>
+                {mode.id}
+              </span>
+            </button>
+          );
+        })}
       </div>
       <div className="absolute inset-0 opacity-[0.03]" style={{ 
         backgroundImage: `radial-gradient(circle at 1px 1px, var(--accent) 1px, transparent 0)`,

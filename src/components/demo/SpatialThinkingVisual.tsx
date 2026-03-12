@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence, motionValue, animate } from 'framer-motion';
-import { MousePointer2 } from 'lucide-react';
+import { MousePointer2, ChevronDown } from 'lucide-react';
 import DemoThought from './DemoThought';
 
 const SPACES_DATA = [
@@ -35,6 +35,20 @@ const SpatialThinkingVisual: React.FC = () => {
   const [activeSpaceIdx, setActiveSpaceIdx] = useState(0);
   const currentSpace = SPACES_DATA[activeSpaceIdx];
   const [isGrabbing, setIsGrabbing] = useState(false);
+  const [isSpaceMenuOpen, setIsSpaceMenuOpen] = useState(false);
+  const spaceMenuRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (spaceMenuRef.current && !spaceMenuRef.current.contains(e.target as Node)) {
+        setIsSpaceMenuOpen(false);
+      }
+    };
+    if (isSpaceMenuOpen) {
+      window.addEventListener('mousedown', handleClickOutside);
+    }
+    return () => window.removeEventListener('mousedown', handleClickOutside);
+  }, [isSpaceMenuOpen]);
   
   const cursorX = useRef(motionValue(-300)).current;
   const cursorY = useRef(motionValue(-200)).current;
@@ -176,10 +190,39 @@ const SpatialThinkingVisual: React.FC = () => {
 
   return (
     <div className="relative w-full h-full flex items-center justify-center overflow-hidden bg-transparent pointer-events-none">
-      <div className="absolute top-8 left-1/2 -translate-x-1/2 z-[110] flex items-center gap-1.5 p-1.5 glass rounded-2xl border border-white/5 max-w-[90vw] pointer-events-auto">
-        {SPACES_DATA.map((space, idx) => (
-          <button key={space.name} onClick={() => setActiveSpaceIdx(idx)} className={`px-2 py-1 md:px-4 md:py-1.5 rounded-xl text-[7px] md:text-[8px] font-black uppercase tracking-[0.1em] md:tracking-[0.2em] transition-all duration-300 ${activeSpaceIdx === idx ? 'bg-white text-black shadow-lg shadow-white/10' : 'text-white/40 hover:text-white hover:bg-white/5'}`}>{space.name}</button>
-        ))}
+      <div className="absolute top-8 right-8 z-[110] pointer-events-auto" ref={spaceMenuRef}>
+        <div className="relative">
+          <button 
+            onClick={() => setIsSpaceMenuOpen(!isSpaceMenuOpen)}
+            className={`flex items-center gap-3 px-4 h-[44px] glass rounded-2xl border border-white/5 transition-all shadow-2xl ${isSpaceMenuOpen ? 'bg-white/10 text-white' : 'text-white/80 hover:text-white'}`}
+          >
+            <div className="w-1.5 h-1.5 rounded-full bg-blue-500 shadow-[0_0_8px_rgba(59,130,246,0.5)]" />
+            <span className="text-[10px] font-black uppercase tracking-[0.2em]">{currentSpace.name}</span>
+            <ChevronDown className={`w-3.5 h-3.5 opacity-50 transition-transform duration-300 ${isSpaceMenuOpen ? 'rotate-180 opacity-100' : ''}`} />
+          </button>
+          
+          <AnimatePresence>
+            {isSpaceMenuOpen && (
+              <motion.div 
+                initial={{ opacity: 0, y: -8, scale: 0.95 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                exit={{ opacity: 0, y: -8, scale: 0.95 }}
+                className="absolute top-full mt-2 right-0 w-40 glass rounded-2xl border border-white/10 shadow-2xl overflow-hidden z-50 py-1"
+              >
+                {SPACES_DATA.map((space, idx) => (
+                  <button 
+                    key={space.name} 
+                    onClick={() => { setActiveSpaceIdx(idx); setIsSpaceMenuOpen(false); }}
+                    className={`w-full px-4 py-3 text-left text-[9px] font-black uppercase tracking-widest flex items-center gap-3 transition-colors ${activeSpaceIdx === idx ? 'bg-white/10 text-white' : 'text-slate-500 hover:text-white hover:bg-white/5'}`}
+                  >
+                    <div className={`w-1.5 h-1.5 rounded-full ${activeSpaceIdx === idx ? 'bg-blue-500 shadow-[0_0_8px_rgba(59,130,246,0.5)]' : 'bg-slate-700'}`} />
+                    {space.name}
+                  </button>
+                ))}
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
       </div>
       <AnimatePresence mode="wait">
         <motion.div key={activeSpaceIdx} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0, scale: 0.95, transition: { duration: 0.5 } }} transition={{ duration: 0.5 }} className="absolute inset-0">

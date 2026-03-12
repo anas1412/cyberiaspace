@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence, motionValue, animate } from 'framer-motion';
-import { Zap, Rocket, Orbit, Columns3, CalendarDays } from 'lucide-react';
+import { Zap, Orbit, Columns3, CalendarDays, ChevronDown } from 'lucide-react';
 import DemoThought from './DemoThought';
 
 type ViewMode = 'spatial' | 'kanban' | 'calendar';
@@ -53,7 +53,21 @@ const InteractiveDemo: React.FC = () => {
   const [viewMode, setViewMode] = useState<ViewMode>('spatial');
   const [physicsEnabled, setPhysicsEnabled] = useState(true);
   const [isTransitioning, setIsTransitioning] = useState(false);
+  const [isSpaceMenuOpen, setIsSpaceMenuOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
+  const spaceMenuRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (spaceMenuRef.current && !spaceMenuRef.current.contains(e.target as Node)) {
+        setIsSpaceMenuOpen(false);
+      }
+    };
+    if (isSpaceMenuOpen) {
+      window.addEventListener('mousedown', handleClickOutside);
+    }
+    return () => window.removeEventListener('mousedown', handleClickOutside);
+  }, [isSpaceMenuOpen]);
   
   const [nodes, setNodes] = useState<ThoughtPos[]>([]);
   const dragTargetRef = useRef<string | null>(null);
@@ -170,17 +184,71 @@ const InteractiveDemo: React.FC = () => {
     }} onPointerUp={() => { dragTargetRef.current = null; }} className="w-full h-[400px] md:h-[600px] glass rounded-2xl overflow-hidden relative border border-white/5 shadow-2xl group pointer-events-auto bg-[#020408]/20">
       
       {/* Unified Switcher Header */}
-      <div className="absolute top-8 left-1/2 -translate-x-1/2 w-full max-w-[95%] z-[110] flex items-center justify-center pointer-events-none px-8">
+      <div className="absolute top-8 left-0 right-0 z-[110] flex items-center justify-between pointer-events-none px-8">
+        <div className="flex-1 invisible lg:visible" /> {/* Placeholder for logo alignment metaphor */}
+
+        {/* Center: View Modes */}
         <div className="flex items-center gap-1.5 p-1.5 glass rounded-2xl border border-white/5 pointer-events-auto shadow-2xl">
-          {SPACES.map((space, idx) => (
-            <button key={space.id} onClick={() => { if (activeSpaceIdx !== idx) { setIsTransitioning(true); setActiveSpaceIdx(idx); } }} className={`px-4 py-1.5 rounded-xl text-[8px] font-black uppercase tracking-[0.2em] transition-all duration-300 ${activeSpaceIdx === idx ? 'bg-white text-black shadow-lg shadow-white/10' : 'text-white/40 hover:text-white hover:bg-white/5'}`}>{space.name}</button>
-          ))}
+          {[
+            { id: 'spatial', icon: Orbit, label: 'Spatial' },
+            { id: 'kanban', icon: Columns3, label: 'Kanban' },
+            { id: 'calendar', icon: CalendarDays, label: 'Calendar' }
+          ].map((mode) => {
+            const isActive = viewMode === mode.id;
+            const Icon = mode.icon;
+            return (
+              <button 
+                key={mode.id}
+                onClick={() => setViewMode(mode.id as ViewMode)} 
+                className={`px-3 py-2 rounded-xl transition-all duration-300 flex items-center gap-2 ${isActive ? 'bg-white text-black shadow-lg shadow-white/10' : 'text-white/40 hover:text-white hover:bg-white/5'}`} 
+                title={`${mode.label} View`}
+              >
+                <Icon className="w-4 h-4" />
+                <span className={`text-[9px] font-black uppercase tracking-widest transition-all overflow-hidden whitespace-nowrap ${isActive ? 'max-w-[60px] opacity-100' : 'max-w-0 opacity-0'}`}>
+                  {mode.id}
+                </span>
+              </button>
+            );
+          })}
         </div>
 
-        <div className="absolute right-8 flex items-center gap-1.5 p-1.5 glass rounded-2xl border border-white/5 pointer-events-auto shadow-2xl">
-          <button onClick={() => setViewMode('spatial')} className={`p-2 rounded-xl transition-all ${viewMode === 'spatial' ? 'bg-white text-black' : 'text-white/40 hover:text-white hover:bg-white/5'}`} title="Spatial View"><Orbit className="w-4 h-4" /></button>
-          <button onClick={() => setViewMode('kanban')} className={`p-2 rounded-xl transition-all ${viewMode === 'kanban' ? 'bg-white text-black' : 'text-white/40 hover:text-white hover:bg-white/5'}`} title="Kanban View"><Columns3 className="w-4 h-4" /></button>
-          <button onClick={() => setViewMode('calendar')} className={`p-2 rounded-xl transition-all ${viewMode === 'calendar' ? 'bg-white text-black' : 'text-white/40 hover:text-white hover:bg-white/5'}`} title="Calendar View"><CalendarDays className="w-4 h-4" /></button>
+        {/* Right Side: Space Switcher (Click dropdown) */}
+        <div className="flex-1 flex justify-end">
+          <div className="relative pointer-events-auto" ref={spaceMenuRef}>
+            <button 
+              onClick={() => setIsSpaceMenuOpen(!isSpaceMenuOpen)}
+              className={`flex items-center gap-3 px-4 h-[44px] glass rounded-2xl border border-white/5 transition-all shadow-2xl ${isSpaceMenuOpen ? 'bg-white/10 text-white' : 'text-white/80 hover:text-white'}`}
+            >
+              <div className="w-1.5 h-1.5 rounded-full bg-blue-500 shadow-[0_0_8px_rgba(59,130,246,0.5)]" />
+              <span className="text-[10px] font-black uppercase tracking-[0.2em]">{activeSpace.name}</span>
+              <ChevronDown className={`w-3.5 h-3.5 opacity-50 transition-transform duration-300 ${isSpaceMenuOpen ? 'rotate-180 opacity-100' : ''}`} />
+            </button>
+            
+            <AnimatePresence>
+              {isSpaceMenuOpen && (
+                <motion.div 
+                  initial={{ opacity: 0, y: -8, scale: 0.95 }}
+                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                  exit={{ opacity: 0, y: -8, scale: 0.95 }}
+                  className="absolute top-full mt-2 right-0 w-48 glass rounded-2xl border border-white/10 shadow-2xl overflow-hidden z-50 py-1"
+                >
+                  {SPACES.map((space, idx) => (
+                    <button 
+                      key={space.id} 
+                      onClick={() => { 
+                        if (activeSpaceIdx !== idx) { setIsTransitioning(true); setActiveSpaceIdx(idx); }
+                        setIsSpaceMenuOpen(false);
+                      }}
+                      className={`w-full px-4 py-3 text-left text-[9px] font-black uppercase tracking-widest flex items-center gap-3 transition-colors ${activeSpaceIdx === idx ? 'bg-white/10 text-white' : 'text-slate-500 hover:text-white hover:bg-white/5'}`}
+                    >
+                      <div className={`w-1.5 h-1.5 rounded-full ${activeSpaceIdx === idx ? 'bg-blue-500 shadow-[0_0_8px_rgba(59,130,246,0.5)]' : 'bg-slate-700'}`} />
+                      {space.name}
+                    </button>
+                  ))}
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
         </div>
       </div>
 
@@ -310,9 +378,7 @@ const InteractiveDemo: React.FC = () => {
       </div>
 
       <div className="absolute bottom-6 left-6 z-[100] flex items-center gap-3 opacity-40 group-hover:opacity-100 transition-opacity">
-        <div className="w-8 h-8 rounded-lg flex items-center justify-center bg-blue-500/20 shadow-[0_0_15px_rgba(59,130,246,0.2)]">
-          <Rocket className="w-4 h-4 text-blue-400" />
-        </div>
+        
         <div className="flex flex-col">
           <span className="text-[10px] font-black uppercase tracking-widest text-white">Interactive Workspace</span>
           <span className="text-[8px] font-bold uppercase tracking-widest text-slate-500">
