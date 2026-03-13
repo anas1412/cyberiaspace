@@ -55,7 +55,7 @@ const Viewport: React.FC<{ isInteracting?: boolean }> = ({ isInteracting }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
   const camera = useCamera(activeSpace?.mode);
-  const { registerElement, registerWorld, registerGrid, handleMouseDown, handleTouchStart, isDragging, kanbanHeight } = usePhysics(canvasRef, camera);
+  const { registerElement, registerWorld, registerGrid, handleMouseDown, handleTouchStart, isDragging, kanbanHeight, physicsState, elementHeights } = usePhysics(canvasRef, camera);
 
   const getGlobalScale = useCallback(() => {
     const body = document.querySelector('.app-body') || document.body;
@@ -175,14 +175,18 @@ const Viewport: React.FC<{ isInteracting?: boolean }> = ({ isInteracting }) => {
           const rectH = h / currentScale;
 
           const selectedIds = thoughts.filter(t => {
-            // ACCURACY FIX: Unified coordinate mapping for all resolutions
-            // Standard thought card is 280px wide. 
-            // We calculate the thought's screen-space rectangle boundaries in "World Units"
+            // Standard thought card half-dimensions
             const tw = 140; // Half-width (280/2)
-            const th = 60;  // Conservative half-height (most cards are ~120px tall)
+            const th = 60;  // Conservative half-height (~120px tall)
             
-            const tx = t.x;
-            const ty = t.y;
+            // Live-position accuracy: Priority is given to the physics engine's current state
+            const p = physicsState.current.get(t.id);
+            const h = elementHeights.current.get(t.id) || 120;
+            
+            // In spatial mode, physics state is the "floating" truth.
+            // fallback to store position if physics is not yet initialized for this node.
+            const tx = (activeSpace?.mode === 'spatial' && p) ? p.x + 140 : t.x;
+            const ty = (activeSpace?.mode === 'spatial' && p) ? p.y + h / 2 : t.y;
             
             // Check if the thought's bounding box overlaps with the selection rectangle
             const thoughtLeft = tx - tw;
@@ -201,7 +205,13 @@ const Viewport: React.FC<{ isInteracting?: boolean }> = ({ isInteracting }) => {
                      thoughtBottom < rectTop);
           }).map(t => t.id);
 
-          setSelectedThoughtIds(selectedIds);
+          // PERFORMANCE FIX: Only update store if selection actually changed
+          const isChanged = selectedIds.length !== selectedThoughtIds.length || 
+                            selectedIds.some(id => !selectedThoughtIds.includes(id));
+          
+          if (isChanged) {
+            setSelectedThoughtIds(selectedIds);
+          }
         }
       }
 

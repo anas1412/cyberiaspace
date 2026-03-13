@@ -18,14 +18,27 @@ const World: React.FC<WorldProps> = ({ canvasRef, physicsResults }) => {
   const { registerElement, registerWorld, handleMouseDown, handleTouchStart, isDragging } = physicsResults;
 
   React.useLayoutEffect(() => {
-    const updateSize = () => {
-      if (!canvasRef.current) return;
-      canvasRef.current.width = window.innerWidth;
-      canvasRef.current.height = window.innerHeight;
-    };
-    window.addEventListener('resize', updateSize);
-    updateSize();
-    return () => window.removeEventListener('resize', updateSize);
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+
+    const resizeObserver = new ResizeObserver((entries) => {
+      for (const entry of entries) {
+        const { width, height } = entry.contentRect;
+        if (width > 0 && height > 0) {
+          // Senior Practice: Scale canvas resolution to match container exactly
+          // We use a small 1.2x buffer if we detect we're in a highly scaled environment
+          const buffer = 1.2;
+          canvas.width = Math.ceil(width * buffer);
+          canvas.height = Math.ceil(height * buffer);
+        }
+      }
+    });
+
+    if (canvas.parentElement) {
+      resizeObserver.observe(canvas.parentElement);
+    }
+
+    return () => resizeObserver.disconnect();
   }, [canvasRef]);
 
   return (
@@ -33,7 +46,13 @@ const World: React.FC<WorldProps> = ({ canvasRef, physicsResults }) => {
       <canvas
         ref={canvasRef}
         id="connection-canvas"
-        className="absolute inset-0 pointer-events-none z-0"
+        className="absolute pointer-events-none z-0"
+        style={{
+          left: '-10%',
+          top: '-10%',
+          width: '120%',
+          height: '120%'
+        }}
       />
       <div
         id="world"

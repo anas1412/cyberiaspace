@@ -37,6 +37,7 @@ export const usePhysics = (
 
   const physicsState = useRef<Map<string, PhysicsPoint>>(new Map());
   const lastAppliedStyles = useRef<Map<string, { x: number; y: number; scale: number; rotation: number }>>(new Map());
+  const elementHeightsRef = useRef<Map<string, number>>(new Map());
   const frameCount = useRef(0);
   const elements = useRef<Map<string, HTMLDivElement>>(new Map());
   const worldRef = useRef<HTMLDivElement | null>(null);
@@ -432,7 +433,8 @@ export const usePhysics = (
       });
     }
 
-    const elementHeights = new Map<string, number>();
+    const elementHeights = elementHeightsRef.current;
+    elementHeights.clear();
     ids.forEach(id => elementHeights.set(id, elements.current.get(id)?.offsetHeight || 120));
 
     const sbContent = document.getElementById('cal-sidebar-content');
@@ -552,9 +554,21 @@ export const usePhysics = (
       ctx.clearRect(0, 0, canvasRef.current.width, canvasRef.current.height);
 
       // 2. Sync with Viewport Transform (matches #world CSS transform)
+      // Senior Fix: Auto-Sensing Coordinate Alignment
+      const canvas = canvasRef.current;
+      const rect = canvas.getBoundingClientRect();
+      const parentRect = canvas.parentElement?.getBoundingClientRect() || rect;
+      
+      // Calculate how many internal pixels correspond to the CSS-defined offset
+      const resScaleX = canvas.width / (rect.width || 1);
+      const resScaleY = canvas.height / (rect.height || 1);
+      
+      const internalOffsetX = (parentRect.left - rect.left) * resScaleX;
+      const internalOffsetY = (parentRect.top - rect.top) * resScaleY;
+
       const scale = effectiveTransform.scale;
-      const tx = effectiveTransform.x;
-      const ty = effectiveTransform.y;
+      const tx = effectiveTransform.x + internalOffsetX;
+      const ty = effectiveTransform.y + internalOffsetY;
       ctx.setTransform(scale, 0, 0, scale, tx, ty);
 
       const style = getComputedStyle(document.body);
@@ -731,5 +745,17 @@ export const usePhysics = (
     dragRef.current = { id, startX: touch.clientX / s, startY: touch.clientY / s, moved: false, lastMouseX: touch.clientX / s, lastMouseY: touch.clientY / s, initialPositions, cellRectMap };
   }, [getGlobalScale, activeSpace?.mode]);
 
-  return { registerElement: (id: string, el: HTMLDivElement | null) => { if (el) elements.current.set(id, el); else elements.current.delete(id); }, registerWorld: (el: HTMLDivElement | null) => { worldRef.current = el; }, registerGrid: (el: HTMLDivElement | null) => { gridRef.current = el; }, handleMouseDown: handleMouseDown as (id: string, e: React.MouseEvent) => void, handleTouchStart: handleTouchStart as (id: string, e: React.TouchEvent) => void, isDragging: (id: string) => !!dragRef.current?.initialPositions.has(id), sidebarHeight: sbHeight, kanbanHeight: kMaxHeight };
+  return { 
+    registerElement: (id: string, el: HTMLDivElement | null) => { if (el) elements.current.set(id, el); else elements.current.delete(id); }, 
+    registerWorld: (el: HTMLDivElement | null) => { worldRef.current = el; }, 
+    registerGrid: (el: HTMLDivElement | null) => { gridRef.current = el; }, 
+    handleMouseDown: handleMouseDown as (id: string, e: React.MouseEvent) => void, 
+    handleTouchStart: handleTouchStart as (id: string, e: React.TouchEvent) => void, 
+    isDragging: (id: string) => !!dragRef.current?.initialPositions.has(id), 
+    sidebarHeight: sbHeight, 
+    kanbanHeight: kMaxHeight,
+    physicsState,
+    elements,
+    elementHeights: elementHeightsRef
+  };
 };
