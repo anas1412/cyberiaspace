@@ -2,6 +2,7 @@ import { useEffect, useRef, useCallback } from 'react';
 import { useStore } from '../store/useStore';
 import { type Thought } from '../db';
 import { getStrategist, type LayoutContext, type PhysicsPoint } from './physics';
+import { type Camera } from './useCamera';
 
 const DAMPING = 0.8;
 const MAX_VELOCITY = 10;
@@ -16,7 +17,7 @@ const PRIORITY_WEIGHT = {
 
 export const usePhysics = (
   canvasRef: React.RefObject<HTMLCanvasElement | null>,
-  transform: { x: number; y: number; scale: number }
+  camera: Camera
 ) => {
   const thoughts = useStore((state) => state.thoughts);
   const spaces = useStore((state) => state.spaces);
@@ -47,8 +48,7 @@ export const usePhysics = (
   const prevSpaceIdRef = useRef<string | null>(null);
   const lastLoopSpaceId = useRef<string | null>(null);
   const snapNextFrame = useRef(false);
-  const prevTransformRef = useRef(transform);
-  const visualTransformRef = useRef(transform);
+  const prevTransformRef = useRef({ x: camera.x.get(), y: camera.y.get(), scale: camera.scale.get() });
   const isReturningHome = useRef(false);
 
   const thoughtMap = useRef<Map<string, Thought>>(new Map());
@@ -197,15 +197,19 @@ export const usePhysics = (
 
   useEffect(() => {
     const currentMode = activeSpace?.mode || 'spatial'; const currentSpaceId = activeSpaceId;
+    const targetX = camera.x.get();
+    const targetY = camera.y.get();
+    const targetScale = camera.scale.get();
+
     if (currentSpaceId !== prevSpaceIdRef.current) {
-      prevSpaceIdRef.current = currentSpaceId || null; prevModeRef.current = currentMode; prevTransformRef.current = { ...transform }; return;
+      prevSpaceIdRef.current = currentSpaceId || null; prevModeRef.current = currentMode; prevTransformRef.current = { x: targetX, y: targetY, scale: targetScale }; return;
     }
     if (currentMode === 'spatial' && prevModeRef.current !== 'spatial' && prevModeRef.current !== null) {
       isReturningHome.current = true;
       const oldMode = prevModeRef.current;
       const oldT = (oldMode === 'calendar') ? { x: 0, y: 0, scale: 1 } : 
                    (oldMode === 'kanban' ? { x: 0, y: prevTransformRef.current.y, scale: 1 } : prevTransformRef.current);
-      const newT = transform;
+      const newT = { x: targetX, y: targetY, scale: targetScale };
       physicsState.current.forEach((p) => {
         const oldScreenX = p.x * oldT.scale + oldT.x;
         const oldScreenY = p.y * oldT.scale + oldT.y;
@@ -215,15 +219,15 @@ export const usePhysics = (
         p.vx = 0; p.vy = 0;
       });
     }
-    prevModeRef.current = currentMode; prevTransformRef.current = { ...transform };
-  }, [activeSpace?.mode, activeSpaceId, thoughts, transform]);
+    prevModeRef.current = currentMode; prevTransformRef.current = { x: targetX, y: targetY, scale: targetScale };
+  }, [activeSpace?.mode, activeSpaceId, thoughts, camera]);
 
   useEffect(() => {
     const handleMove = (clientX: number, clientY: number) => {
       if (!dragRef.current) return;
       const s = getGlobalScale(); const logicalX = clientX / s; const logicalY = clientY / s;
       const { startX, startY, initialPositions } = dragRef.current;
-      const dx = (logicalX - startX) / transform.scale; const dy = (logicalY - startY) / transform.scale;
+      const dx = (logicalX - startX) / camera.scale.get(); const dy = (logicalY - startY) / camera.scale.get();
       if (Math.abs(logicalX - startX) > 10 || Math.abs(logicalY - startY) > 10) dragRef.current.moved = true;
       if (dragRef.current.moved) initialPositions.forEach((pos, id) => {
         const p = physicsState.current.get(id); if (p) { p.x = pos.x + dx; p.y = pos.y + dy; p.vx = 0; p.vy = 0; }
@@ -323,7 +327,7 @@ export const usePhysics = (
       window.removeEventListener('touchmove', handleTouchMoveGlobal);
       window.removeEventListener('touchend', handleTouchEndGlobal);
     };
-  }, [getGlobalScale, transform.scale, updateThought, activeSpace, calendarViewDate]);
+  }, [getGlobalScale, camera, updateThought, activeSpace, calendarViewDate]);
 
   const loop = useCallback(() => {
     const globalScale = getGlobalScale();
@@ -339,16 +343,15 @@ export const usePhysics = (
 
     if (currentSpaceId !== lastLoopSpaceId.current) {
       lastLoopSpaceId.current = currentSpaceId;
-      visualTransformRef.current = { ...transform };
       snapNextFrame.current = true;
     }
 
-    const lerpFactor = 0.15;
-    visualTransformRef.current.x += (transform.x - visualTransformRef.current.x) * lerpFactor;
-    visualTransformRef.current.y += (transform.y - visualTransformRef.current.y) * lerpFactor;
-    visualTransformRef.current.scale += (transform.scale - visualTransformRef.current.scale) * lerpFactor;
+    const vT_visual = {
+      x: camera.springX.get(),
+      y: camera.springY.get(),
+      scale: camera.springScale.get()
+    };
 
-    const vT_visual = visualTransformRef.current;
     const effectiveTransform = mode === 'spatial' 
       ? vT_visual 
       : (mode === 'kanban' 
@@ -585,14 +588,14 @@ export const usePhysics = (
         });
       }
       
-      if (linkingSourceId) {
+    if (linkingSourceId) {
         const pS = state.get(linkingSourceId);
         if (pS) {
           const hS = elementHeights.get(linkingSourceId) || 120;
           
           // World mouse conversion
-          const worldMouseX = (mousePosRef.current.x - visualTransformRef.current.x) / visualTransformRef.current.scale;
-          const worldMouseY = (mousePosRef.current.y - visualTransformRef.current.y) / visualTransformRef.current.scale;
+          const worldMouseX = (mousePosRef.current.x - vT_visual.x) / vT_visual.scale;
+          const worldMouseY = (mousePosRef.current.y - vT_visual.y) / vT_visual.scale;
 
           ctx.beginPath(); 
           ctx.setLineDash([5, 5]); 
@@ -643,7 +646,7 @@ export const usePhysics = (
       }
     });
     if (ids.length > 0) snapNextFrame.current = false;
-  }, [activeSpace, activeSpaceId, calendarViewDate, hoveredCalDate, calendarSearchQuery, calendarStackFilter, kanbanSearchQuery, kanbanStackFilter, transform, linkingSourceId, getGlobalScale, applyHomeReturn, selectedThoughtId, performanceMode, stacks]);
+  }, [activeSpace, activeSpaceId, calendarViewDate, hoveredCalDate, calendarSearchQuery, calendarStackFilter, kanbanSearchQuery, kanbanStackFilter, camera, linkingSourceId, getGlobalScale, applyHomeReturn, selectedThoughtId, performanceMode, stacks, canvasRef]);
 
   useEffect(() => {
     const animate = () => { loop(); requestRef.current = requestAnimationFrame(animate); };

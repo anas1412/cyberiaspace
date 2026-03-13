@@ -1,9 +1,9 @@
 import { useRef, useCallback } from 'react';
+import { type Camera } from './useCamera';
 
 interface GestureConfig {
   activeSpaceMode: string | undefined;
-  transform: { x: number; y: number; scale: number };
-  setTransform: (t: { x: number; y: number; scale: number }) => void;
+  camera: Camera;
   kanbanHeight: number;
   getGlobalScale: () => number;
   isDemo?: boolean;
@@ -12,7 +12,7 @@ interface GestureConfig {
 
 export const useViewportGestures = (config: GestureConfig) => {
   const { 
-    activeSpaceMode, transform, setTransform, kanbanHeight, 
+    activeSpaceMode, camera, kanbanHeight, 
     getGlobalScale, isDemo, isInteracting
   } = config;
 
@@ -87,7 +87,11 @@ export const useViewportGestures = (config: GestureConfig) => {
     const lx = e.clientX / s;
     const ly = e.clientY / s;
 
-    let newTransform = { ...transform };
+    const currentScale = camera.scale.get();
+    const currentX = camera.x.get();
+    const currentY = camera.y.get();
+
+    let newTransform = { x: currentX, y: currentY, scale: currentScale };
 
     if (activeSpaceMode === 'spatial') {
       // Spatial Mode: Zoom via Wheel (Standard Cyberia behavior)
@@ -96,10 +100,10 @@ export const useViewportGestures = (config: GestureConfig) => {
       const zoomSpeed = e.ctrlKey ? 0.002 : 0.001;
       
       // Optimization: Deactivate zooming in demo mode
-      const newScale = isDemo ? transform.scale : Math.min(Math.max(0.1, transform.scale + delta * zoomSpeed * transform.scale), 2);
+      const newScale = isDemo ? currentScale : Math.min(Math.max(0.1, currentScale + delta * zoomSpeed * currentScale), 2);
       
-      const wx = (lx - transform.x) / transform.scale;
-      const wy = (ly - transform.y) / transform.scale;
+      const wx = (lx - currentX) / currentScale;
+      const wy = (ly - currentY) / currentScale;
       
       newTransform = {
         x: lx - wx * newScale,
@@ -109,14 +113,39 @@ export const useViewportGestures = (config: GestureConfig) => {
     } else if (activeSpaceMode === 'kanban') {
       // Kanban: Vertical Scroll only
       newTransform = {
-        ...transform,
-        y: transform.y - e.deltaY / s
+        ...newTransform,
+        y: currentY - e.deltaY / s
       };
     }
     
-    setTransform(applyConstraints(newTransform));
-  }, [activeSpaceMode, transform, setTransform, applyConstraints, getGlobalScale, isDemo, isInteracting]);
+    const constrained = applyConstraints(newTransform);
+    camera.set(constrained.x, constrained.y, constrained.scale);
+  }, [activeSpaceMode, camera, applyConstraints, getGlobalScale, isDemo, isInteracting]);
 
+
+  const handleMouseMove = useCallback((e: MouseEvent) => {
+    if (!isPanningRef.current) return false;
+
+    const s = getGlobalScale();
+    const currentScale = camera.scale.get();
+    const currentX = camera.x.get();
+    const currentY = camera.y.get();
+
+    const dx = (e.clientX - lastMousePos.current.rawX) / (s * currentScale);
+    const dy = (e.clientY - lastMousePos.current.rawY) / (s * currentScale);
+
+    const newTransform = {
+      x: currentX + dx,
+      y: currentY + dy,
+      scale: currentScale,
+    };
+
+    const constrained = applyConstraints(newTransform);
+    camera.pan(constrained.x - currentX, constrained.y - currentY);
+    
+    lastMousePos.current = { rawX: e.clientX, rawY: e.clientY };
+    return true;
+  }, [camera, activeSpaceMode, applyConstraints, getGlobalScale]);
 
   const handleTouchStart = useCallback((e: TouchEvent) => {
 
@@ -145,19 +174,23 @@ export const useViewportGestures = (config: GestureConfig) => {
       const t1 = e.touches[0];
       const t2 = e.touches[1];
       const dist = Math.sqrt(Math.pow(t2.clientX - t1.clientX, 2) + Math.pow(t2.clientY - t1.clientY, 2));
+      const currentScale = camera.scale.get();
+      const currentX = camera.x.get();
+      const currentY = camera.y.get();
+
       initialTouchDistance.current = dist;
-      initialTouchScale.current = transform.scale;
+      initialTouchScale.current = currentScale;
       
       const midX = (t1.clientX + t2.clientX) / 2 / s;
       const midY = (t1.clientY + t2.clientY) / 2 / s;
       
       lastTouchMidpoint.current = { x: midX, y: midY };
       initialMidpointWorld.current = {
-        x: (midX - transform.x) / transform.scale,
-        y: (midY - transform.y) / transform.scale
+        x: (midX - currentX) / currentScale,
+        y: (midY - currentY) / currentScale
       };
     }
-  }, [getGlobalScale, transform, activeSpaceMode, isDemo, isInteracting]);
+  }, [getGlobalScale, camera, activeSpaceMode, isDemo, isInteracting]);
 
   const handleTouchMove = useCallback((e: TouchEvent) => {
 
@@ -169,26 +202,22 @@ export const useViewportGestures = (config: GestureConfig) => {
     if (!isTouchingRef.current) return;
     const s = getGlobalScale();
 
-    let newTransform = { ...transform };
+    const currentScale = camera.scale.get();
+    const currentX = camera.x.get();
+    const currentY = camera.y.get();
 
     if (e.touches.length === 1 && isPanningRef.current) {
       const touch = e.touches[0];
-      const dx = (touch.clientX - lastMousePos.current.rawX) / (s * transform.scale);
-      const dy = (touch.clientY - lastMousePos.current.rawY) / (s * transform.scale);
+      const dx = (touch.clientX - lastMousePos.current.rawX) / (s * currentScale);
+      const dy = (touch.clientY - lastMousePos.current.rawY) / (s * currentScale);
 
+      const constrained = applyConstraints({
+        x: currentX + dx,
+        y: currentY + dy,
+        scale: currentScale
+      });
       
-      if (activeSpaceMode === 'spatial') {
-        newTransform = {
-          ...transform,
-          x: transform.x + dx,
-          y: transform.y + dy,
-        };
-      } else if (activeSpaceMode === 'kanban') {
-        newTransform = {
-          ...transform,
-          y: transform.y + dy,
-        };
-      }
+      camera.pan(constrained.x - currentX, constrained.y - currentY);
       lastMousePos.current = { rawX: touch.clientX, rawY: touch.clientY };
     } else if (e.touches.length === 2 && initialTouchDistance.current !== null && initialMidpointWorld.current && activeSpaceMode === 'spatial') {
       e.preventDefault();
@@ -201,19 +230,19 @@ export const useViewportGestures = (config: GestureConfig) => {
       };
 
       const scaleFactor = currentDist / initialTouchDistance.current;
-      // Optimization: Deactivate zooming in demo mode
-      const newScale = isDemo ? transform.scale : Math.min(Math.max(0.1, initialTouchScale.current * scaleFactor), 2);
+      const newScale = isDemo ? currentScale : Math.min(Math.max(0.1, initialTouchScale.current * scaleFactor), 2);
 
-      newTransform = {
+      const newTransform = {
         x: currentMidpoint.x - initialMidpointWorld.current.x * newScale,
         y: currentMidpoint.y - initialMidpointWorld.current.y * newScale,
         scale: newScale
       };
+      
+      const constrained = applyConstraints(newTransform);
+      camera.set(constrained.x, constrained.y, constrained.scale);
       lastTouchMidpoint.current = currentMidpoint;
     }
-    
-    setTransform(applyConstraints(newTransform));
-  }, [transform, setTransform, applyConstraints, getGlobalScale, activeSpaceMode, isDemo, isInteracting]);
+  }, [camera, applyConstraints, getGlobalScale, activeSpaceMode, isDemo, isInteracting]);
 
   const handleTouchEnd = useCallback(() => {
 
@@ -226,6 +255,7 @@ export const useViewportGestures = (config: GestureConfig) => {
 
   return {
     handleWheel,
+    handleMouseMove,
     handleTouchStart,
     handleTouchMove,
     handleTouchEnd,

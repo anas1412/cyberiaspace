@@ -9,6 +9,7 @@ import { twMerge } from 'tailwind-merge';
 import World from './World';
 import { usePhysics } from '../hooks/usePhysics';
 import { useViewportGestures } from '../hooks/useViewportGestures';
+import { useCamera } from '../hooks/useCamera';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Upload } from 'lucide-react';
 
@@ -37,11 +38,9 @@ const Viewport: React.FC<{ isInteracting?: boolean }> = ({ isInteracting }) => {
   const setLinkingSourceId = useStore((state) => state.setLinkingSourceId);
   const linkingSourceId = useStore((state) => state.linkingSourceId);
   const uploadThoughtBlob = useAuthStore((state) => state.uploadThoughtBlob);
-  const saveSpaceTransform = useStore((state) => state.saveSpaceTransform);
 
-  const transform = useStore((state) => state.transform);
-  const setTransform = useStore((state) => state.setTransform);
-  const isSpaceLoading = useStore((state) => state.isSpaceLoading);
+
+
   const isReadOnly = useStore((state) => state.isReadOnly);
   const isDemo = useStore((state) => state.isDemo);
 
@@ -52,13 +51,11 @@ const Viewport: React.FC<{ isInteracting?: boolean }> = ({ isInteracting }) => {
   const [selectionRect, setSelectionRect] = useState<{ x: number, y: number, w: number, h: number } | null>(null);
 
   const mouseWorldPos = useRef({ x: 0, y: 0 });
-  const transformRef = useRef(transform);
-  useEffect(() => { transformRef.current = transform; }, [transform]);
 
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const saveTimeoutRef = useRef<number | null>(null);
 
-  const { registerElement, registerWorld, registerGrid, handleMouseDown, handleTouchStart, isDragging, kanbanHeight } = usePhysics(canvasRef, transform);
+  const camera = useCamera(activeSpace?.mode);
+  const { registerElement, registerWorld, registerGrid, handleMouseDown, handleTouchStart, isDragging, kanbanHeight } = usePhysics(canvasRef, camera);
 
   const getGlobalScale = useCallback(() => {
     const body = document.querySelector('.app-body') || document.body;
@@ -69,6 +66,7 @@ const Viewport: React.FC<{ isInteracting?: boolean }> = ({ isInteracting }) => {
 
   const {
     handleWheel,
+    handleMouseMove: handleMouseMoveGesture,
     handleTouchStart: handleTouchStartLocal,
     handleTouchMove,
     handleTouchEnd,
@@ -79,30 +77,12 @@ const Viewport: React.FC<{ isInteracting?: boolean }> = ({ isInteracting }) => {
     lastMousePos
   } = useViewportGestures({
     activeSpaceMode: activeSpace?.mode,
-    transform,
-    setTransform,
+    camera,
     kanbanHeight: kanbanHeight.current,
     getGlobalScale,
     isDemo,
     isInteracting
   });
-
-  useEffect(() => {
-    if (activeSpace?.mode === 'spatial' && activeSpaceId) {
-      if (saveTimeoutRef.current) window.clearTimeout(saveTimeoutRef.current);
-      saveTimeoutRef.current = window.setTimeout(() => {
-        saveSpaceTransform(activeSpaceId, transform);
-      }, 1000);
-    }
-    return () => {
-      if (saveTimeoutRef.current) {
-        window.clearTimeout(saveTimeoutRef.current);
-        if (activeSpace?.mode === 'spatial' && activeSpaceId) {
-          saveSpaceTransform(activeSpaceId, transform);
-        }
-      }
-    };
-  }, [transform, activeSpaceId, activeSpace?.mode, saveSpaceTransform]);
 
   useEffect(() => {
     const handleMouseDownLocal = (e: MouseEvent) => {
@@ -140,12 +120,12 @@ const Viewport: React.FC<{ isInteracting?: boolean }> = ({ isInteracting }) => {
 
       // Update world coordinates with absolute precision (Accounting for resolution scale)
       mouseWorldPos.current = {
-        x: (lx - transformRef.current.x) / transformRef.current.scale,
-        y: (ly - transformRef.current.y) / transformRef.current.scale
+        x: (lx - camera.x.get()) / camera.scale.get(),
+        y: (ly - camera.y.get()) / camera.scale.get()
       };
 
       // Store context globally for the FAB and other UI elements
-      const context: any = {
+      const context: { x: number; y: number; status?: string; date?: string } = {
         x: mouseWorldPos.current.x,
         y: mouseWorldPos.current.y
       };
@@ -163,30 +143,22 @@ const Viewport: React.FC<{ isInteracting?: boolean }> = ({ isInteracting }) => {
           context.date = (cell as HTMLElement).dataset.date;
         }
       }
-      (window as any)._cyberia_hover_context = context;
+      (window as Window & { _cyberia_hover_context?: typeof context })._cyberia_hover_context = context;
       
+      // MODULAR: Try handling panning via gesture hook
+      const handled = handleMouseMoveGesture(e);
+      if (handled) return;
+
       if (!isPanningRef.current && !isSelectingRef.current) {
         lastMousePos.current = { rawX: e.clientX, rawY: e.clientY };
         return;
       }
 
-      if (isPanningRef.current) {
-        const dx = (e.clientX - lastMousePos.current.rawX) / (s * transformRef.current.scale);
-        const dy = (e.clientY - lastMousePos.current.rawY) / (s * transformRef.current.scale);
-
-        // OPTIMIZATION: Direct DOM manipulation for buttery smooth panning
-        const worldEl = document.getElementById('world');
-        const newX = transformRef.current.x + dx;
-        const newY = transformRef.current.y + dy;
+      if (isSelectingRef.current) {
+        const currentScale = camera.scale.get();
+        const currentX = camera.x.get();
+        const currentY = camera.y.get();
         
-        if (worldEl) worldEl.style.transform = `translate3d(${newX}px, ${newY}px, 0) scale(${transformRef.current.scale})`;
-        
-        setTransform(applyConstraints({
-          ...transformRef.current,
-          x: newX,
-          y: newY,
-        }));
-      } else if (isSelectingRef.current) {
         const startLX = selectionStartRef.current.rawX / s;
         const startLY = selectionStartRef.current.rawY / s;
         const x = Math.min(lx, startLX);
@@ -197,10 +169,10 @@ const Viewport: React.FC<{ isInteracting?: boolean }> = ({ isInteracting }) => {
         if (w > 2 || h > 2) { // Lower threshold for sensitivity
           setSelectionRect({ x, y, w, h });
 
-          const rectX = (x - transformRef.current.x) / transformRef.current.scale;
-          const rectY = (y - transformRef.current.y) / transformRef.current.scale;
-          const rectW = w / transformRef.current.scale;
-          const rectH = h / transformRef.current.scale;
+          const rectX = (x - currentX) / currentScale;
+          const rectY = (y - currentY) / currentScale;
+          const rectW = w / currentScale;
+          const rectH = h / currentScale;
 
           const selectedIds = thoughts.filter(t => {
             // ACCURACY FIX: Unified coordinate mapping for all resolutions
@@ -383,8 +355,12 @@ const Viewport: React.FC<{ isInteracting?: boolean }> = ({ isInteracting }) => {
       const files = Array.from(e.dataTransfer?.files || []);
       if (files.length === 0) return;
 
-      const dropX = e.clientX !== 0 ? (e.clientX - transform.x) / transform.scale : window.innerWidth / 2;
-      const dropY = e.clientY !== 0 ? (e.clientY - transform.y) / transform.scale : window.innerHeight / 2;
+      const currentScale = camera.scale.get();
+      const currentX = camera.x.get();
+      const currentY = camera.y.get();
+
+      const dropX = e.clientX !== 0 ? (e.clientX - currentX) / currentScale : window.innerWidth / 2;
+      const dropY = e.clientY !== 0 ? (e.clientY - currentY) / currentScale : window.innerHeight / 2;
 
       for (const file of files) {
         if (file.size > MAX_FILE_SIZE_MB * 1024 * 1024) {
@@ -575,7 +551,7 @@ const Viewport: React.FC<{ isInteracting?: boolean }> = ({ isInteracting }) => {
       window.removeEventListener('touchmove', handleTouchMove);
       window.removeEventListener('touchend', handleTouchEnd);
     };
-  }, [activeSpace, setInspectorOpen, isGrabbing, selectedThoughtId, selectedThoughtIds, openModal, deleteThought, deleteSelectedThoughts, thoughts, addThought, setSelectedThoughtId, setSelectedThoughtIds, clearSelection, setTransform, isReadOnly, handleWheel, handleTouchStartLocal, handleTouchMove, handleTouchEnd, getGlobalScale, uploadThoughtBlob, applyConstraints, lastMousePos, selectionStartRef, isPanningRef, isSelectingRef, isDemo, isInteracting]);
+  }, [activeSpace, setInspectorOpen, isGrabbing, selectedThoughtId, selectedThoughtIds, openModal, deleteThought, deleteSelectedThoughts, thoughts, addThought, setSelectedThoughtId, setSelectedThoughtIds, clearSelection, isReadOnly, handleWheel, handleTouchStartLocal, handleTouchMove, handleTouchEnd, getGlobalScale, uploadThoughtBlob, applyConstraints, lastMousePos, selectionStartRef, isPanningRef, isSelectingRef, isDemo, isInteracting, camera, linkingSourceId, setLinkingSourceId, handleMouseMoveGesture]);
 
 
   return (
@@ -644,40 +620,7 @@ const Viewport: React.FC<{ isInteracting?: boolean }> = ({ isInteracting }) => {
         )}
       </AnimatePresence>
 
-      {/* Loading Overlay */}
-      <AnimatePresence>
-        {(isSpaceLoading && !isDemo) && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[10005] bg-[#020408]/80 backdrop-blur-3xl flex flex-col items-center justify-center pointer-events-auto"
-          >
-            <div className="relative flex flex-col items-center gap-8">
-              <div className="relative w-24 h-24">
-                <motion.div
-                  animate={{ rotate: 360 }}
-                  transition={{ duration: 8, repeat: Infinity, ease: "linear" }}
-                  className="absolute inset-0 border-2 border-dashed border-blue-500/20 rounded-full"
-                />
-                <motion.div
-                  animate={{ rotate: -360 }}
-                  transition={{ duration: 12, repeat: Infinity, ease: "linear" }}
-                  className="absolute inset-2 border border-dashed border-indigo-500/20 rounded-full"
-                />
-                <div className="absolute inset-0 flex items-center justify-center">
-                  <div className="w-12 h-12 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
-                </div>
-              </div>
 
-              <div className="text-center space-y-2">
-                <h2 className="text-white/90 text-xs font-black uppercase tracking-[0.6em] animate-pulse">Loading Workspace</h2>
-                <p className="text-[8px] text-blue-400/40 font-black uppercase tracking-[0.3em]">Preparing your thoughts</p>
-              </div>
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
     </div>
   );
 };

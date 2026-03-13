@@ -10,8 +10,20 @@ interface LoadingOverlayProps {
 
 const LoadingOverlay: React.FC<LoadingOverlayProps> = ({ force }) => {
   const isInitializing = useStore((state) => state.isInitializing);
-  const show = force || isInitializing;
+  const isSpaceLoading = useStore((state) => state.isSpaceLoading);
+  const [isStabilizing, setIsStabilizing] = useState(true);
+  const show = force || isInitializing || isSpaceLoading || isStabilizing;
   const [showReset, setShowReset] = useState(false);
+
+  useEffect(() => {
+    if (!isInitializing && !isSpaceLoading) {
+      // Add a small buffer for the engine to stabilize
+      const timer = setTimeout(() => setIsStabilizing(false), 800);
+      return () => clearTimeout(timer);
+    } else {
+      setIsStabilizing(true);
+    }
+  }, [isInitializing, isSpaceLoading]);
 
   useEffect(() => {
     if (show) {
@@ -90,10 +102,10 @@ const LoadingOverlay: React.FC<LoadingOverlayProps> = ({ force }) => {
 
             {/* Status Steps */}
             <div className="flex flex-col gap-3 w-64">
-              <StatusItem delay={0.6} icon={<Shield className="w-3 h-3" />} label="Finding your account" active={isInitializing} />
-              <StatusItem delay={0.8} icon={<Cpu className="w-3 h-3" />} label="Getting your spaces ready" active={isInitializing} />
-              <StatusItem delay={1.0} icon={<Zap className="w-3 h-3" />} label="Putting things in place" active={isInitializing} />
-              <StatusItem delay={1.2} icon={<Bot className="w-3 h-3" />} label="Finalizing setup" active={isInitializing} />
+              <StatusItem delay={0.6} icon={<Shield className="w-3 h-3" />} label={isSpaceLoading ? "Connecting to Cloud" : "Finding your account"} active={isInitializing || isSpaceLoading} />
+              <StatusItem delay={0.8} icon={<Cpu className="w-3 h-3" />} label={isSpaceLoading ? "Resolving Space Data" : "Getting your spaces ready"} active={isInitializing || isSpaceLoading} />
+              <StatusItem delay={1.0} icon={<Zap className="w-3 h-3" />} label="Putting things in place" active={isInitializing || isSpaceLoading} />
+              <StatusItem delay={1.2} icon={<Bot className="w-3 h-3" />} label="Finalizing setup" active={isInitializing || isSpaceLoading} />
             </div>
 
             {/* Progress Bar */}

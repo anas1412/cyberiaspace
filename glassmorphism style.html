@@ -1,0 +1,738 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Starlight Premium Portfolio</title>
+    <style>
+        :root {
+            /* Deep Space & Starlight Theme Variables */
+            --bg-color: #05060a; 
+            --text-main: #ffffff;
+            --text-muted: #94a3b8;
+            --card-bg: rgba(20, 22, 30, 0.4);
+            --card-border: rgba(255, 255, 255, 0.05);
+            --card-hover: rgba(255, 255, 255, 0.1);
+            
+            --toolbar-bg: rgba(15, 17, 25, 0.7);
+            --plate-bg: #0b0c14;
+            --border-color: rgba(255, 255, 255, 0.08);
+            --icon-color: #64748b;
+            --icon-active: #ffffff;
+            --divider: rgba(255, 255, 255, 0.1);
+            
+            --accent: #e2e8f0; 
+            --accent-glow: rgba(226, 232, 240, 0.15);
+        }
+
+        [data-theme="light"] {
+            /* Light Theme Variables */
+            --bg-color: #e2e5eb;
+            --text-main: #0f172a;
+            --text-muted: #64748b;
+            --card-bg: rgba(255, 255, 255, 0.5);
+            --card-border: rgba(0, 0, 0, 0.05);
+            --card-hover: rgba(255, 255, 255, 0.8);
+
+            --toolbar-bg: rgba(255, 255, 255, 0.65);
+            --plate-bg: #f4f5f8;
+            --border-color: rgba(0, 0, 0, 0.1);
+            --icon-color: #94a3b8;
+            --icon-active: #0f172a;
+            --divider: rgba(0, 0, 0, 0.1);
+            
+            --accent: #475569; 
+            --accent-glow: rgba(71, 85, 105, 0.15);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            transition: background-color 0.5s ease, color 0.5s ease;
+            overflow-x: hidden;
+            min-height: 100vh;
+        }
+
+        /* -------------------------------------------
+           FX: ALIVE CANVAS STARFIELD & NEBULAE
+           ------------------------------------------- */
+        
+        #starfield {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            pointer-events: none;
+            z-index: 0;
+            opacity: 1;
+            transition: opacity 0.5s ease;
+        }
+        [data-theme="light"] #starfield { opacity: 0; }
+
+        .noise-overlay {
+            position: fixed;
+            inset: 0;
+            pointer-events: none;
+            z-index: 9999;
+            opacity: 0; 
+            background-image: url('data:image/svg+xml;utf8,%3Csvg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg"%3E%3Cfilter id="noiseFilter"%3E%3CfeTurbulence type="fractalNoise" baseFrequency="0.8" numOctaves="3" stitchTiles="stitch"/%3E%3C/filter%3E%3Crect width="100%25" height="100%25" filter="url(%23noiseFilter)"/%3E%3C/svg%3E');
+            transition: opacity 0.5s ease;
+        }
+        [data-theme="light"] .noise-overlay { opacity: 0.03; }
+
+        .nebula-container {
+            position: fixed;
+            inset: 0;
+            pointer-events: none;
+            z-index: 0;
+            filter: blur(80px);
+            opacity: 0.6;
+            transition: opacity 0.5s ease;
+        }
+        [data-theme="light"] .nebula-container { opacity: 0; }
+
+        .nebula-1 {
+            position: absolute;
+            top: 10%; left: 20%;
+            width: 50vw; height: 50vw;
+            background: radial-gradient(circle, rgba(148, 163, 184, 0.15) 0%, transparent 60%);
+            animation: float-1 25s ease-in-out infinite alternate;
+        }
+
+        .nebula-2 {
+            position: absolute;
+            bottom: 10%; right: 10%;
+            width: 60vw; height: 60vw;
+            background: radial-gradient(circle, rgba(30, 58, 138, 0.12) 0%, transparent 60%);
+            animation: float-2 30s ease-in-out infinite alternate-reverse;
+        }
+
+        @keyframes float-1 {
+            0% { transform: translate(0, 0) scale(1); }
+            100% { transform: translate(5%, 10%) scale(1.1); }
+        }
+        @keyframes float-2 {
+            0% { transform: translate(0, 0) scale(1); }
+            100% { transform: translate(-8%, -5%) scale(1.05); }
+        }
+
+        .ambient-glow {
+            position: fixed;
+            width: 60vw; height: 60vw;
+            max-width: 800px; max-height: 800px;
+            background: radial-gradient(circle at center, var(--accent-glow) 0%, transparent 60%);
+            top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
+            pointer-events: none;
+            z-index: 0;
+            will-change: transform;
+        }
+
+        /* -------------------------------------------
+           LAYOUT & SECTIONS
+           ------------------------------------------- */
+        .container {
+            position: relative;
+            z-index: 1;
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 100px 24px 140px 24px;
+            display: grid;
+            grid-template-columns: 1fr;
+        }
+
+        .section {
+            grid-area: 1 / 1;
+            opacity: 0;
+            visibility: hidden;
+            transform: translateY(20px) scale(0.98);
+            transition: all 0.6s cubic-bezier(0.34, 1.2, 0.64, 1);
+            pointer-events: none;
+        }
+
+        .section.active {
+            opacity: 1;
+            visibility: visible;
+            transform: translateY(0) scale(1);
+            pointer-events: auto;
+            z-index: 2;
+        }
+
+        h1 {
+            font-size: clamp(3rem, 6vw, 5rem);
+            font-weight: 800;
+            letter-spacing: -0.04em;
+            line-height: 1.1;
+            margin-bottom: 24px;
+        }
+
+        .accent-text {
+            background: linear-gradient(135deg, #ffffff 0%, #cbd5e1 50%, #475569 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        [data-theme="light"] .accent-text {
+            background: linear-gradient(135deg, #94a3b8 0%, #334155 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        p.lead {
+            font-size: clamp(1.1rem, 2vw, 1.5rem);
+            color: var(--text-muted);
+            line-height: 1.6;
+            max-width: 600px;
+            margin-bottom: 40px;
+        }
+
+        .section-header { margin-bottom: 2rem; }
+
+        /* -------------------------------------------
+           COMPONENTS (Updated to rounded-2xl / 16px)
+           ------------------------------------------- */
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 12px;
+            padding: 16px 32px;
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 16px; /* modern rounded-2xl */
+            color: var(--text-main);
+            text-decoration: none;
+            font-weight: 500;
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+        .btn:hover {
+            border-color: var(--accent);
+            transform: translateY(-2px);
+            box-shadow: 0 10px 30px var(--accent-glow);
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 24px;
+            margin-top: 40px;
+        }
+
+        .card {
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 16px; /* modern rounded-2xl */
+            padding: 32px;
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .card-icon {
+            width: 48px;
+            height: 48px;
+            border-radius: 12px; /* Propotionally nested inside 16px card */
+            background: rgba(255, 255, 255, 0.05);
+            color: var(--accent);
+            display: grid;
+            place-items: center;
+            margin-bottom: 8px;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+        [data-theme="light"] .card-icon { background: rgba(0,0,0,0.05); border-color: transparent; }
+
+        .card h3 { font-size: 1.5rem; font-weight: 600; }
+        .card p { color: var(--text-muted); line-height: 1.5; font-size: 0.95rem; }
+
+        a.card {
+            transition: all 0.4s cubic-bezier(0.34, 1.2, 0.64, 1);
+            text-decoration: none;
+            color: inherit;
+            cursor: pointer;
+        }
+        a.card:hover {
+            transform: translateY(-8px) scale(1.02);
+            border-color: rgba(255,255,255,0.2);
+            background: var(--card-hover);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4), 0 0 20px var(--accent-glow);
+        }
+        [data-theme="light"] a.card:hover { border-color: rgba(0,0,0,0.2); box-shadow: 0 20px 40px rgba(0,0,0,0.1); }
+
+        .tags { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 24px; }
+        .tag {
+            padding: 8px 16px;
+            border-radius: 10px; /* Proportionally nested styling */
+            border: 1px solid var(--border-color);
+            font-size: 0.85rem;
+            color: var(--text-main);
+            background: var(--card-bg);
+        }
+
+        /* -------------------------------------------
+           FLOATING NAVIGATION TOOLBAR
+           ------------------------------------------- */
+        .nav-container {
+            position: fixed;
+            bottom: 40px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 100;
+        }
+
+        .toolbar {
+            position: relative;
+            display: flex;
+            align-items: center;
+            padding: 12px;
+            gap: 8px;
+            background: var(--toolbar-bg);
+            backdrop-filter: blur(24px);
+            -webkit-backdrop-filter: blur(24px);
+            border: 1px solid var(--border-color);
+            border-radius: 28px; /* Inner 16px + padding 12px = 28px perfect concentic curve */
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4), 0 0 0 1px rgba(255,255,255,0.03) inset;
+        }
+
+        /* Active Indicator */
+        .indicator {
+            position: absolute;
+            left: 0;
+            top: 12px;
+            width: 48px;
+            height: 48px;
+            border-radius: 16px; /* modern rounded-2xl */
+            z-index: 1;
+            transition: transform 0.5s cubic-bezier(0.34, 1.2, 0.64, 1);
+            will-change: transform;
+        }
+
+        .indicator-glow {
+            position: absolute;
+            inset: 0;
+            background: #ffffff;
+            opacity: 0.15;
+            filter: blur(12px);
+            border-radius: inherit;
+        }
+
+        .indicator-clip {
+            position: absolute;
+            inset: 0;
+            overflow: hidden;
+            border-radius: 16px; /* modern rounded-2xl */
+        }
+
+        .indicator-gradient {
+            position: absolute;
+            width: 200%; height: 200%;
+            top: -50%; left: -50%;
+            background: conic-gradient(
+                from 0deg,
+                #ffffff 0%, #ffffff 3%,
+                #e0f2fe 3%, #e0f2fe 4.5%,
+                #bae6fd 4.5%, #bae6fd 6%,
+                #ffffff 6%, #ffffff 9%,
+                #f8fafc 9%, #cbd5e1 18%, #334155 28%, #334155 40%, #cbd5e1 48%, #ffffff 50%,
+                #ffffff 50%, #ffffff 53%,
+                #e0f2fe 53%, #e0f2fe 54.5%,
+                #bae6fd 54.5%, #bae6fd 56%,
+                #ffffff 56%, #ffffff 59%,
+                #f8fafc 59%, #cbd5e1 68%, #334155 78%, #334155 90%, #cbd5e1 98%, #ffffff 100%
+            );
+            animation: spin 4.5s linear infinite;
+        }
+
+        .indicator-plate {
+            position: absolute;
+            inset: 2px;
+            background: var(--plate-bg);
+            border-radius: 14px; /* Matches 16px clip minus the 2px inset */
+            transition: background 0.5s ease;
+        }
+
+        @keyframes spin { 100% { transform: rotate(360deg); } }
+
+        .nav-btn {
+            position: relative;
+            z-index: 2;
+            width: 48px; height: 48px;
+            border: none; background: none;
+            cursor: pointer;
+            color: var(--icon-color);
+            transition: color 0.3s ease;
+            display: flex; align-items: center; justify-content: center;
+            border-radius: 16px; /* modern rounded-2xl */
+        }
+        .nav-btn.active { color: var(--icon-active); }
+        .nav-btn svg { width: 24px; height: 24px; }
+
+        .divider {
+            position: relative;
+            z-index: 2;
+            width: 1px; height: 24px;
+            background: var(--divider);
+            margin: 0 4px;
+            transition: background 0.5s ease;
+        }
+
+        .theme-toggle {
+            position: relative;
+            z-index: 2;
+            width: 48px; height: 48px;
+            border: none; background: none;
+            cursor: pointer;
+            color: var(--icon-color);
+            display: grid; place-items: center;
+            border-radius: 16px; /* modern rounded-2xl */
+        }
+        .theme-toggle svg {
+            grid-area: 1 / 1;
+            width: 24px; height: 24px;
+            transition: all 0.5s cubic-bezier(0.34, 1.2, 0.64, 1);
+        }
+
+        [data-theme="light"] .sun { opacity: 0; transform: rotate(90deg) scale(0.5); }
+        [data-theme="light"] .moon { opacity: 1; transform: rotate(0) scale(1); }
+        [data-theme="dark"] .sun { opacity: 1; transform: rotate(0) scale(1); }
+        [data-theme="dark"] .moon { opacity: 0; transform: rotate(-90deg) scale(0.5); }
+
+        .bounce { animation: bounceScale 0.4s cubic-bezier(0.34, 1.2, 0.64, 1); }
+        @keyframes bounceScale {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.25); }
+            100% { transform: scale(1); }
+        }
+    </style>
+</head>
+<body data-theme="dark">
+
+    <!-- ALIVE ENVIRONMENT -->
+    <div class="noise-overlay"></div>
+    <canvas id="starfield"></canvas>
+    <div class="nebula-container">
+        <div class="nebula-1"></div>
+        <div class="nebula-2"></div>
+    </div>
+    <div class="ambient-glow" id="glow"></div>
+
+    <!-- MAIN CONTENT -->
+    <main class="container">
+        
+        <!-- HOME SECTION -->
+        <section id="s-home" class="section active">
+            <h1>Crafting digital <br><span class="accent-text">experiences.</span></h1>
+            <p class="lead">I'm a frontend developer and designer focused on building rich, interactive, and highly polished user interfaces through code.</p>
+            
+            <a href="#" class="btn" onclick="document.querySelector('[data-target=\'s-work\']').click(); return false;">
+                View My Work
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <line x1="5" y1="12" x2="19" y2="12"></line>
+                    <polyline points="12 5 19 12 12 19"></polyline>
+                </svg>
+            </a>
+        </section>
+
+        <!-- WORK SECTION -->
+        <section id="s-work" class="section">
+            <div class="section-header">
+                <h1>Selected <span class="accent-text">Work</span></h1>
+                <p class="lead">A collection of my recent frontend projects, UI explorations, and open-source contributions.</p>
+            </div>
+
+            <div class="grid">
+                <a href="#" class="card">
+                    <div class="card-icon">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 2 7 12 12 22 7 12 2"></polygon><polyline points="2 17 12 22 22 17"></polyline><polyline points="2 12 12 17 22 12"></polyline></svg>
+                    </div>
+                    <h3>Fintech Dashboard</h3>
+                    <p>A high-performance financial analytics dashboard with real-time WebGL data visualization.</p>
+                </a>
+                
+                <a href="#" class="card">
+                    <div class="card-icon">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect><line x1="8" y1="21" x2="16" y2="21"></line><line x1="12" y1="17" x2="12" y2="21"></line></svg>
+                    </div>
+                    <h3>Aura Design System</h3>
+                    <p>A completely custom, accessibility-first component library built for a modern enterprise platform.</p>
+                </a>
+
+                <a href="#" class="card">
+                    <div class="card-icon">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path><polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline><line x1="12" y1="22.08" x2="12" y2="12"></line></svg>
+                    </div>
+                    <h3>Web3 Identity</h3>
+                    <p>A decentralized application interface allowing seamless blockchain interactions and wallet management.</p>
+                </a>
+            </div>
+        </section>
+
+        <!-- ABOUT SECTION -->
+        <section id="s-about" class="section">
+            <div class="section-header">
+                <h1>About <span class="accent-text">Me</span></h1>
+                <p class="lead">Blending logic and creativity to craft digital solutions that feel magical. Based in San Francisco, working globally.</p>
+            </div>
+            
+            <div class="card" style="margin-bottom: 24px;">
+                <h3>Core Technologies</h3>
+                <div class="tags">
+                    <span class="tag">HTML5 / CSS3</span>
+                    <span class="tag">JavaScript (ES6+)</span>
+                    <span class="tag">TypeScript</span>
+                    <span class="tag">React & Next.js</span>
+                    <span class="tag">Vue & Nuxt</span>
+                    <span class="tag">Three.js / WebGL</span>
+                    <span class="tag">Tailwind CSS</span>
+                    <span class="tag">Figma</span>
+                </div>
+            </div>
+
+            <a href="mailto:hello@example.com" class="btn">
+                Let's Talk
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path>
+                    <polyline points="22,6 12,13 2,6"></polyline>
+                </svg>
+            </a>
+        </section>
+    </main>
+
+    <!-- FLOATING NAVIGATION TOOLBAR -->
+    <div class="nav-container">
+        <nav class="toolbar">
+            
+            <div class="indicator" id="indicator">
+                <div class="indicator-glow"></div>
+                <div class="indicator-clip">
+                    <div class="indicator-gradient"></div>
+                    <div class="indicator-plate"></div>
+                </div>
+            </div>
+
+            <button class="nav-btn active" data-target="s-home" aria-label="Home">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
+                    <polyline points="9 22 9 12 15 12 15 22"></polyline>
+                </svg>
+            </button>
+
+            <button class="nav-btn" data-target="s-work" aria-label="Work">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                    <rect x="3" y="3" width="7" height="7"></rect>
+                    <rect x="14" y="3" width="7" height="7"></rect>
+                    <rect x="14" y="14" width="7" height="7"></rect>
+                    <rect x="3" y="14" width="7" height="7"></rect>
+                </svg>
+            </button>
+
+            <button class="nav-btn" data-target="s-about" aria-label="About">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                    <circle cx="12" cy="7" r="4"></circle>
+                </svg>
+            </button>
+
+            <div class="divider"></div>
+
+            <button class="theme-toggle" id="themeToggle" aria-label="Toggle Theme">
+                <svg class="sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="12" cy="12" r="5"></circle>
+                    <line x1="12" y1="1" x2="12" y2="3"></line>
+                    <line x1="12" y1="21" x2="12" y2="23"></line>
+                    <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+                    <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+                    <line x1="1" y1="12" x2="3" y2="12"></line>
+                    <line x1="21" y1="12" x2="23" y2="12"></line>
+                    <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+                    <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+                </svg>
+                <svg class="moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+                </svg>
+            </button>
+
+        </nav>
+    </div>
+
+    <script>
+        /* -------------------------------------------
+           CANVAS PARTICLE SYSTEM: LIVING STARFIELD
+           ------------------------------------------- */
+        const canvas = document.getElementById('starfield');
+        const ctx = canvas.getContext('2d');
+        
+        let width, height;
+        let stars = [];
+        
+        // Mouse Tracking for Smooth Parallax
+        let targetMouseX = 0;
+        let targetMouseY = 0;
+        let mouseX = 0;
+        let mouseY = 0;
+
+        class Star {
+            constructor() {
+                this.reset();
+            }
+            
+            reset() {
+                this.x = Math.random() * width;
+                this.y = Math.random() * height;
+                this.z = Math.random() * 3 + 1; 
+                this.baseRadius = (Math.random() * 0.6 + 0.2) * (this.z * 0.5);
+                this.vx = (Math.random() - 0.5) * 0.1; 
+                this.vy = (Math.random() - 0.5) * 0.1;
+                this.alpha = Math.random();
+                this.targetAlpha = Math.random() > 0.4 ? Math.random() : 0; 
+                this.twinkleSpeed = Math.random() * 0.005 + 0.002;
+            }
+            
+            update() {
+                this.x += this.vx;
+                this.y += this.vy;
+
+                if (this.x < -10) this.x = width + 10;
+                if (this.x > width + 10) this.x = -10;
+                if (this.y < -10) this.y = height + 10;
+                if (this.y > height + 10) this.y = -10;
+
+                if (this.alpha < this.targetAlpha) {
+                    this.alpha += this.twinkleSpeed;
+                    if (this.alpha >= this.targetAlpha) {
+                        this.alpha = this.targetAlpha;
+                        this.targetAlpha = Math.random() > 0.3 ? Math.random() : 0; 
+                    }
+                } else {
+                    this.alpha -= this.twinkleSpeed;
+                    if (this.alpha <= this.targetAlpha) {
+                        this.alpha = this.targetAlpha;
+                        this.targetAlpha = Math.random() > 0.3 ? Math.random() : 0; 
+                    }
+                }
+            }
+            
+            draw() {
+                const offsetX = ((mouseX - width / 2) * (this.z * 0.015));
+                const offsetY = ((mouseY - height / 2) * (this.z * 0.015));
+
+                ctx.beginPath();
+                ctx.arc(this.x + offsetX, this.y + offsetY, this.baseRadius, 0, Math.PI * 2);
+                ctx.fillStyle = `rgba(226, 232, 240, ${this.alpha})`;
+                ctx.fill();
+            }
+        }
+
+        function initStars() {
+            stars = [];
+            const numStars = Math.floor((width * height) / 3000); 
+            for(let i = 0; i < numStars; i++) {
+                stars.push(new Star());
+            }
+        }
+
+        function resizeCanvas() {
+            width = window.innerWidth;
+            height = window.innerHeight;
+            canvas.width = width;
+            canvas.height = height;
+            
+            targetMouseX = width / 2;
+            targetMouseY = height / 2;
+            mouseX = targetMouseX;
+            mouseY = targetMouseY;
+            
+            initStars();
+        }
+
+        function animateCanvas() {
+            ctx.clearRect(0, 0, width, height);
+            
+            mouseX += (targetMouseX - mouseX) * 0.05;
+            mouseY += (targetMouseY - mouseY) * 0.05;
+
+            stars.forEach(star => {
+                star.update();
+                star.draw();
+            });
+            
+            requestAnimationFrame(animateCanvas);
+        }
+
+        window.addEventListener('resize', resizeCanvas);
+        resizeCanvas();
+        animateCanvas();
+
+        /* -------------------------------------------
+           UI, NAVIGATION & THEME LOGIC
+           ------------------------------------------- */
+        const navBtns = document.querySelectorAll('.nav-btn');
+        const indicator = document.getElementById('indicator');
+        const themeToggle = document.getElementById('themeToggle');
+        const sections = document.querySelectorAll('.section');
+        const body = document.body;
+        const glow = document.getElementById('glow');
+
+        function updateIndicator(btn) {
+            indicator.style.transform = `translateX(${btn.offsetLeft}px)`;
+        }
+
+        window.addEventListener('DOMContentLoaded', () => {
+            const activeBtn = document.querySelector('.nav-btn.active');
+            if(activeBtn) updateIndicator(activeBtn);
+        });
+
+        window.addEventListener('resize', () => {
+            const activeBtn = document.querySelector('.nav-btn.active');
+            if(activeBtn) updateIndicator(activeBtn);
+        });
+
+        navBtns.forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                e.preventDefault();
+                navBtns.forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                updateIndicator(btn);
+
+                const targetId = btn.getAttribute('data-target');
+                sections.forEach(sec => {
+                    if(sec.id === targetId) {
+                        sec.classList.add('active');
+                    } else {
+                        sec.classList.remove('active');
+                    }
+                });
+            });
+        });
+
+        themeToggle.addEventListener('click', () => {
+            themeToggle.classList.remove('bounce');
+            void themeToggle.offsetWidth; 
+            themeToggle.classList.add('bounce');
+            
+            const currentTheme = body.getAttribute('data-theme');
+            body.setAttribute('data-theme', currentTheme === 'light' ? 'dark' : 'light');
+        });
+
+        document.addEventListener('mousemove', (e) => {
+            targetMouseX = e.clientX;
+            targetMouseY = e.clientY;
+
+            const x = (e.clientX / window.innerWidth - 0.5) * 2;
+            const y = (e.clientY / window.innerHeight - 0.5) * 2;
+            glow.style.transform = `translate(calc(-50% + ${x * 40}px), calc(-50% + ${y * 40}px))`;
+        });
+    </script>
+</body>
+</html>

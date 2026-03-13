@@ -48,7 +48,10 @@ Welcome to the Cyberia codebase! This project is a modern, high-performance spat
     *   **Frame Pre-Processor:** Collision detection and spatial indexing use an optimized $O(N^2)$ pre-processor to manage entity interactions without jitter.
     *   **Selfish Selectors:** React components use highly granular "selfish selectors" to minimize re-renders, ensuring only the specific properties needed by a component (e.g., just `x` and `y`) trigger updates.
 - **Physics Architecture:** Detailed principles regarding Top-Left Anchoring, DOM Synchronization, and Persistence are documented in [docs/physics-engine.md](./docs/physics-engine.md).
-- **Canvas Scaling:** Managed via `DOMMatrix` transforms. Avoid direct DOM manipulation for the canvas; use the `useStore` transform state.
+- **Canvas Scaling:** Managed via `DOMMatrix` transforms.
+- **Smooth Camera System (`useCamera.ts`):** The spatial viewport uses a modular camera system powered by `framer-motion` springs. This decouples visual "flight" (zooming/panning) from React's render cycle, achieving 60fps performance by bypassing React reconciliation for high-frequency transforms.
+- **Direct Motion Injection:** Gesture handlers in `useViewportGestures.ts` push updates directly to the camera's motion values. The physics loop in `usePhysics.ts` reads these values to synchronize the `#world` and `.dot-grid` DOM elements directly via direct DOM manipulation.
+- **Persistence:** Camera movements are synchronized back to the Zustand store and cloud storage using an "on rest" or debounced mechanism to ensure data consistency without impacting UI responsiveness.
 
 ###  Storage
 - **Unique Folder Protocol:** To prevent filename collisions and ensure clean user isolation, all file assets in cloud storage are organized using the path structure: `${userId}/${thoughtId}/${fileName}`.
