@@ -17,31 +17,41 @@ const World: React.FC<WorldProps> = ({ canvasRef, physicsResults }) => {
   const thoughts = useStore((state) => state.thoughts);
   const { registerElement, registerWorld, handleMouseDown, handleTouchStart, isDragging } = physicsResults;
 
+  React.useLayoutEffect(() => {
+    const updateSize = () => {
+      if (!canvasRef.current) return;
+      canvasRef.current.width = window.innerWidth;
+      canvasRef.current.height = window.innerHeight;
+    };
+    window.addEventListener('resize', updateSize);
+    updateSize();
+    return () => window.removeEventListener('resize', updateSize);
+  }, [canvasRef]);
+
   return (
-    <div
-      id="world"
-      ref={registerWorld}
-      className="absolute origin-top-left will-change-transform pointer-events-none w-full h-full z-10"
-    >
+    <>
       <canvas
         ref={canvasRef}
         id="connection-canvas"
-        className="absolute pointer-events-none z-[-1]"
-        style={{ width: '10000px', height: '10000px', left: '-5000px', top: '-5000px' }}
-        width={10000}
-        height={10000}
+        className="absolute inset-0 pointer-events-none z-0"
       />
-      {thoughts.map((thought) => (
-        <ThoughtNode
-          key={thought.id}
-          thought={thought}
-          registerElement={registerElement}
-          onMouseDown={handleMouseDown}
-          onTouchStart={handleTouchStart}
-          isDragging={isDragging(thought.id)}
-        />
-      ))}
-    </div>
+      <div
+        id="world"
+        ref={registerWorld}
+        className="absolute origin-top-left will-change-transform pointer-events-none w-full h-full z-10"
+      >
+        {thoughts.map((thought) => (
+          <ThoughtNode
+            key={thought.id}
+            thought={thought}
+            registerElement={registerElement}
+            onMouseDown={handleMouseDown}
+            onTouchStart={handleTouchStart}
+            isDragging={isDragging(thought.id)}
+          />
+        ))}
+      </div>
+    </>
   );
 };
 

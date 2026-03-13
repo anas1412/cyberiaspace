@@ -25,7 +25,9 @@
   --accent-glow: rgba(226, 232, 240, 0.3);
   --glow-color: rgba(226, 232, 240, 0.1);
   --nebula-1: rgba(99, 102, 241, 0.2);
+  --nebula-1-soft: rgba(99, 102, 241, 0.05);
   --nebula-2: rgba(129, 140, 248, 0.15);
+  --nebula-2-soft: rgba(129, 140, 248, 0.04);
   --node-bg: rgba(15, 23, 42, 0.96);
   --glass-bg: rgba(10, 10, 15, 0.85);
   --glass-border: rgba(255, 255, 255, 0.1); 
@@ -60,7 +62,9 @@
   --accent-glow: rgba(0, 180, 216, 0.4);
   --glow-color: rgba(0, 180, 216, 0.12);
   --nebula-1: rgba(0, 180, 216, 0.15);
+  --nebula-1-soft: rgba(0, 180, 216, 0.04);
   --nebula-2: rgba(144, 224, 239, 0.1);
+  --nebula-2-soft: rgba(144, 224, 239, 0.03);
   --node-bg: rgba(0, 18, 25, 0.96);
   --glass-bg: rgba(0, 10, 15, 0.85);
   --glass-border: rgba(0, 180, 216, 0.12);
@@ -77,7 +81,9 @@
   --accent-glow: rgba(45, 206, 137, 0.4);
   --glow-color: rgba(45, 206, 137, 0.12);
   --nebula-1: rgba(45, 206, 137, 0.1);
+  --nebula-1-soft: rgba(45, 206, 137, 0.03);
   --nebula-2: rgba(45, 206, 204, 0.08);
+  --nebula-2-soft: rgba(45, 206, 204, 0.02);
   --node-bg: rgba(6, 26, 18, 0.96);
   --glass-bg: rgba(4, 12, 10, 0.85);
   --glass-border: rgba(45, 206, 137, 0.12);
@@ -94,7 +100,9 @@
   --accent-glow: rgba(214, 211, 209, 0.25);
   --glow-color: rgba(214, 211, 209, 0.12);
   --nebula-1: rgba(214, 211, 209, 0.08);
+  --nebula-1-soft: rgba(214, 211, 209, 0.02);
   --nebula-2: rgba(168, 162, 158, 0.05);
+  --nebula-2-soft: rgba(168, 162, 158, 0.01);
   --node-bg: rgba(28, 25, 23, 0.96);
   --glass-bg: rgba(12, 10, 9, 0.85);
   --glass-border: rgba(214, 211, 209, 0.1);

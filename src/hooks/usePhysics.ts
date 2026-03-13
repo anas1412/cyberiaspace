@@ -523,12 +523,15 @@ export const usePhysics = (
     // --- Connections & Styles ---
     const ctx = canvasRef?.current?.getContext('2d');
     if (ctx && canvasRef.current) {
-      // 1. Reset & Clear the massive 10000x10000 world canvas
+      // 1. Reset & Clear the viewport-sized canvas
       ctx.setTransform(1, 0, 0, 1, 0, 0);
-      ctx.clearRect(0, 0, 10000, 10000);
+      ctx.clearRect(0, 0, canvasRef.current.width, canvasRef.current.height);
 
-      // 2. Set Origin to Center (5000, 5000) so world coordinates match 1:1
-      ctx.translate(5000, 5000);
+      // 2. Sync with Viewport Transform (matches #world CSS transform)
+      const scale = effectiveTransform.scale;
+      const tx = effectiveTransform.x;
+      const ty = effectiveTransform.y;
+      ctx.setTransform(scale, 0, 0, scale, tx, ty);
 
       const style = getComputedStyle(document.body);
       const accent = style.getPropertyValue('--accent').trim() || '#6366f1';
