@@ -9,6 +9,7 @@ import { PLAN_CONFIG } from './constants';
 import { detectImageType, generateThumbnail } from './utils/image';
 import Viewport from './components/Viewport';
 import Toolbar from './components/toolbar/Toolbar';
+import BackgroundEngine from './components/background/BackgroundEngine';
 import MultiSelectionMenu from './components/MultiSelectionMenu';
 import EmptyState from './components/EmptyState';
 import Modal from './components/Modal';
@@ -51,7 +52,6 @@ function App() {
   const setInspectorOpen = useStore((state) => state.setInspectorOpen);
   const activeSpaceId = useStore((state) => state.activeSpaceId);
   const spaces = useStore((state) => state.spaces);
-  const theme = useStore((state) => state.theme);
   const performanceMode = useStore((state) => state.performanceMode);
   const customBg = useStore((state) => state.customBg);
 
@@ -477,25 +477,14 @@ function App() {
   }
 
   return (
-    <div className="w-full h-full relative overflow-hidden bg-black">
+    <div className="w-full h-full relative overflow-hidden">
+      <BackgroundEngine />
+      
       {customBg && (
         <div 
-          className="custom-bg-layer transition-opacity duration-700 animate-in fade-in"
-          style={{ backgroundImage: `url(${staticBg || customBg})`, opacity: 0.6 }}
+          className="custom-bg-layer transition-opacity duration-700 animate-in fade-in z-[5]"
+          style={{ backgroundImage: `url(${staticBg || customBg})`, opacity: 0.4 }}
         />
-      )}
-
-      {!performanceMode ? (
-        <>
-          <div className="fixed inset-0 z-[1] pointer-events-none transition-opacity duration-500" style={{ backgroundColor: customBg ? 'rgba(2, 4, 8, 0.2)' : 'transparent', mixBlendMode: customBg ? 'overlay' : 'normal' }} />
-          {theme === 'cyberia' && <><div className="stars-layer stars-1" /><div className="stars-layer stars-2" /><div className="stars-layer stars-twinkle" /></>}
-          {theme === 'sea' && <div className="sea-layer"><div className="sea-caustics" /><div className="bubbles-distant" /><div className="bubbles-near" /><div className="sea-silt" /></div>}
-          {theme === 'forest' && <div className="forest-layer"><div className="forest-canopy" /><div className="god-rays" /><div className="fireflies-distant" /><div className="fireflies-near" /></div>}
-          {theme === 'rain' && <div className="rain-layer"><div className="rain-drops" /><div className="rain-drops-fast" /><div className="thunder" /></div>}
-          <div className="nebula-cloud" /><div className="grain" />
-        </>
-      ) : (
-        <div className="fixed inset-0 z-[1] transition-colors duration-500" style={{ backgroundColor: theme === 'sea' ? '#000507' : theme === 'forest' ? '#020806' : theme === 'rain' ? '#0c0a09' : '#020408', opacity: customBg ? 0.8 : 1 }} />
       )}
 
       <Suspense fallback={null}>
