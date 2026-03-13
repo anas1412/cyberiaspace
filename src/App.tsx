@@ -52,8 +52,6 @@ function App() {
   const setInspectorOpen = useStore((state) => state.setInspectorOpen);
   const activeSpaceId = useStore((state) => state.activeSpaceId);
   const spaces = useStore((state) => state.spaces);
-  const performanceMode = useStore((state) => state.performanceMode);
-  const customBg = useStore((state) => state.customBg);
 
   const { isPricingOpen, closePricing, openModal } = useModalStore();
   
@@ -61,7 +59,6 @@ function App() {
   const mouseScreenPos = useRef({ x: 0, y: 0 });
   
   const [path, setPath] = useState(window.location.pathname);
-  const [staticBg, setStaticBg] = useState<string | null>(null);
 
   const hostname = typeof window !== 'undefined' ? window.location.hostname : '';
   const isMainDomain = hostname === 'cyberia.tn' || hostname === 'www.cyberia.tn';
@@ -334,8 +331,8 @@ function App() {
       processPasteData(e.clipboardData);
     };
 
-    const handleCustomPaste = (e: any) => {
-      const { dataTransfer, text } = e.detail;
+    const handleCustomPaste = (event: any) => {
+      const { dataTransfer, text } = event.detail;
       processPasteData(dataTransfer || null, text);
     };
 
@@ -346,31 +343,6 @@ function App() {
       window.removeEventListener('cyberia-paste-triggered', handleCustomPaste);
     };
   }, [addThought, setSelectedThoughtId, setInspectorOpen, thoughts.length, openModal, path, spaces, activeSpaceId]);
-
-  // Hook: Static background
-  useEffect(() => {
-    if (performanceMode && customBg && (customBg.includes('image/gif') || customBg.toLowerCase().endsWith('.gif'))) {
-      const img = new Image();
-      img.crossOrigin = "anonymous";
-      img.src = customBg;
-      img.onload = () => {
-        const canvas = document.createElement('canvas');
-        canvas.width = img.width;
-        canvas.height = img.height;
-        const ctx = canvas.getContext('2d');
-        if (ctx) {
-          ctx.drawImage(img, 0, 0);
-          try {
-            setStaticBg(canvas.toDataURL('image/webp', 0.8));
-          } catch (e) {
-            setStaticBg(null);
-          }
-        }
-      };
-    } else {
-      setStaticBg(null);
-    }
-  }, [performanceMode, customBg]);
 
   // Landing page is only available on main domain or localhost (for dev)
   const canSeeLanding = isMainDomain || hostname === 'localhost' || hostname === '127.0.0.1';
@@ -480,13 +452,6 @@ function App() {
     <div className="w-full h-full relative overflow-hidden">
       <BackgroundEngine />
       
-      {customBg && (
-        <div 
-          className="custom-bg-layer transition-opacity duration-700 animate-in fade-in z-[5]"
-          style={{ backgroundImage: `url(${staticBg || customBg})`, opacity: 0.4 }}
-        />
-      )}
-
       <Suspense fallback={null}>
         <Viewport />
         <EmptyState />

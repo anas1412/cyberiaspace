@@ -21,7 +21,10 @@ const LoadingOverlay: React.FC<LoadingOverlayProps> = ({ force }) => {
       const timer = setTimeout(() => setIsStabilizing(false), 800);
       return () => clearTimeout(timer);
     } else {
-      setIsStabilizing(true);
+      setIsStabilizing((prev) => {
+        if (!prev) return true;
+        return prev;
+      });
     }
   }, [isInitializing, isSpaceLoading]);
 
@@ -32,7 +35,10 @@ const LoadingOverlay: React.FC<LoadingOverlayProps> = ({ force }) => {
       }, 15000); // Show reset button after 15 seconds
       return () => clearTimeout(timer);
     } else {
-      setShowReset(false);
+      setShowReset((prev) => {
+        if (prev) return false;
+        return prev;
+      });
     }
   }, [show]);
 

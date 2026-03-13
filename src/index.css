@@ -22,10 +22,10 @@
   --bg-page: #05060a; 
   --accent: #6366f1;
   --accent-secondary: #818cf8;
-  --accent-glow: rgba(226, 232, 240, 0.5);
-  --glow-color: rgba(226, 232, 240, 0.15);
-  --nebula-1: rgba(148, 163, 184, 0.1);
-  --nebula-2: rgba(30, 58, 138, 0.08);
+  --accent-glow: rgba(226, 232, 240, 0.3);
+  --glow-color: rgba(226, 232, 240, 0.1);
+  --nebula-1: rgba(99, 102, 241, 0.2);
+  --nebula-2: rgba(129, 140, 248, 0.15);
   --node-bg: rgba(15, 23, 42, 0.96);
   --glass-bg: rgba(10, 10, 15, 0.85);
   --glass-border: rgba(255, 255, 255, 0.1); 
@@ -105,7 +105,7 @@
 
 
 body {
-  background-color: var(--bg-page);
+  background-color: transparent;
   color: var(--text-primary);
   font-family: 'Plus Jakarta Sans', sans-serif;
   position: relative;
@@ -127,6 +127,18 @@ body {
   position: fixed;
   top: 0;
   left: 0;
+}
+
+.custom-bg-layer {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 5;
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  pointer-events: none;
 }
 
 /* Global Scaling */

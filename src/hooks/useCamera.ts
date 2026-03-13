@@ -36,22 +36,43 @@ export const useCamera = (activeSpaceMode: string | undefined): Camera => {
   // Sync to store transform on space/mode change
   const lastActiveSpaceId = useRef(activeSpaceId);
   const lastActiveMode = useRef(activeSpaceMode);
+  const lastAcknowledgedStoreTransform = useRef(storeTransform);
 
   useEffect(() => {
-    if (activeSpaceId !== lastActiveSpaceId.current || activeSpaceMode !== lastActiveMode.current) {
-      x.set(storeTransform.x);
-      y.set(storeTransform.y);
-      scale.set(storeTransform.scale);
+    const isNewSpace = activeSpaceId !== lastActiveSpaceId.current || activeSpaceMode !== lastActiveMode.current;
+    
+    // Detect if the store was explicitly updated (e.g. by a button or another component)
+    const storeChanged = 
+      storeTransform.x !== lastAcknowledgedStoreTransform.current.x ||
+      storeTransform.y !== lastAcknowledgedStoreTransform.current.y ||
+      storeTransform.scale !== lastAcknowledgedStoreTransform.current.scale;
+
+    if (isNewSpace || storeChanged) {
+      // If the store update is extremely close to our current target, it's likely our own 
+      // debounced sync coming back. We ignore it to prevent visual micro-snapping.
+      const dx = Math.abs(x.get() - storeTransform.x);
+      const dy = Math.abs(y.get() - storeTransform.y);
+      const ds = Math.abs(scale.get() - storeTransform.scale);
+      const isInternalEcho = !isNewSpace && dx < 0.1 && dy < 0.1 && ds < 0.001;
+
+      if (isNewSpace || !isInternalEcho) {
+        x.set(storeTransform.x);
+        y.set(storeTransform.y);
+        scale.set(storeTransform.scale);
+        
+        if (isNewSpace) {
+          // Snap springs to avoid initial jump on space entry
+          springX.jump(storeTransform.x);
+          springY.jump(storeTransform.y);
+          springScale.jump(storeTransform.scale);
+        }
+      }
       
-      // Snap springs to avoid initial jump on space entry
-      springX.jump(storeTransform.x);
-      springY.jump(storeTransform.y);
-      springScale.jump(storeTransform.scale);
-      
+      lastAcknowledgedStoreTransform.current = storeTransform;
       lastActiveSpaceId.current = activeSpaceId;
       lastActiveMode.current = activeSpaceMode;
     }
-  }, [activeSpaceId, activeSpaceMode, storeTransform.x, storeTransform.y, storeTransform.scale, x, y, scale, springX, springY, springScale]);
+  }, [activeSpaceId, activeSpaceMode, storeTransform, x, y, scale, springX, springY, springScale]);
 
   const moveBy = useCallback((dx: number, dy: number) => {
     x.set(x.get() + dx);

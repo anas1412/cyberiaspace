@@ -7,7 +7,7 @@ import { useModalStore } from '../../store/useModalStore';
 import { 
   File as FileIcon, Upload, Download, Loader2, FileAudio, 
   Database, CloudOff, ExternalLink, 
-  ChevronDown, ChevronUp, Palette
+  ChevronDown, ChevronUp, Palette, Edit2, Check
 } from 'lucide-react';
 import { FocusEditorShell } from './FocusEditorShell';
 import { MAX_FILE_SIZE_MB, STACK_COLORS } from '../../constants';
@@ -204,7 +204,23 @@ const EditorContent: React.FC<{
   isReadOnly, isDemo
 }) => {
   const [showPreviews, setShowPreviews] = useState(true);
+  const [isRenamingStack, setIsRenamingStack] = useState(false);
+  const [tempStackName, setTempStackName] = useState(stack?.name || '');
   const isStranded = !thought.storageUrl && !localPreviewUrl && !image && !!thought.storagePath;
+
+  useEffect(() => {
+    setTempStackName(stack?.name || '');
+  }, [stack?.name]);
+
+  const handleStackRename = async () => {
+    if (!stack || isReadOnly || isDemo) return;
+    const finalName = tempStackName.trim();
+    if (finalName && finalName !== stack.name) {
+      const { useStore } = await import('../../store/useStore');
+      await useStore.getState().updateStack(stack.id, { name: finalName });
+    }
+    setIsRenamingStack(false);
+  };
 
   // Robust type detection using cached flags or re-analyzing
   const cached = fileInfo || {};
@@ -213,7 +229,10 @@ const EditorContent: React.FC<{
   const extension = fileName.split('.').pop() || '';
   
   const isLocalOnly = thought.syncStatus === 'local' || thought.syncStatus === 'error';
-  const activeSource = isLocalOnly ? localPreviewUrl : (localPreviewUrl || thought.storageUrl || image);
+  // LOCAL FIRST GUARD: If we are still fetching/checking local, don't fallback to cloud yet
+  const activeSource = isFetching 
+    ? localPreviewUrl 
+    : (localPreviewUrl || (isLocalOnly ? null : thought.storageUrl) || image);
 
   // Use cached values if available, otherwise analyze
   const isPdf = cached.isPdf ?? (mimeType.includes('pdf') || extension === 'pdf');
@@ -380,9 +399,49 @@ const EditorContent: React.FC<{
                       onChange={(color) => useStore.getState().updateStack(stack.id, { color })} 
                     />
                   </div>
-                  <span className="text-[9px] font-black uppercase tracking-[0.3em] text-slate-400 group-hover/stackheader:text-slate-200 transition-colors pt-[1px]">
-                    {stack?.name || 'Collection'}
-                  </span>
+                  <div className="flex items-center gap-2 group/stackname">
+                    {isRenamingStack ? (
+                      <div className="flex items-center gap-1 bg-white/5 rounded-lg px-2 py-1 border border-white/10">
+                        <input
+                          autoFocus
+                          className="bg-transparent text-[9px] font-black uppercase tracking-[0.3em] text-white border-none outline-none w-24"
+                          value={tempStackName}
+                          onChange={(e) => setTempStackName(e.target.value)}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter') handleStackRename();
+                            if (e.key === 'Escape') {
+                              setIsRenamingStack(false);
+                              setTempStackName(stack?.name || '');
+                            }
+                          }}
+                          onClick={(e) => e.stopPropagation()}
+                        />
+                        <button 
+                          onClick={(e) => { e.stopPropagation(); handleStackRename(); }}
+                          className="p-0.5 hover:bg-white/10 rounded transition-colors"
+                        >
+                          <Check className="w-2 h-2 text-emerald-400" />
+                        </button>
+                      </div>
+                    ) : (
+                      <>
+                        <span 
+                          className="text-[9px] font-black uppercase tracking-[0.3em] text-slate-400 group-hover/stackheader:text-slate-200 transition-colors pt-[1px]"
+                          onDoubleClick={() => { if (!isReadOnly && !isDemo) setIsRenamingStack(true); }}
+                        >
+                          {stack?.name || 'Collection'}
+                        </span>
+                        {!isReadOnly && !isDemo && (
+                          <button
+                            onClick={(e) => { e.stopPropagation(); setIsRenamingStack(true); }}
+                            className="p-1 opacity-0 group-hover/stackname:opacity-100 hover:bg-white/10 rounded transition-all"
+                          >
+                            <Edit2 className="w-2 h-2 text-slate-500 hover:text-white" />
+                          </button>
+                        )}
+                      </>
+                    )}
+                  </div>
                 </div>
                 <div className="flex items-center gap-2">
                   <span className="text-[8px] font-bold text-slate-500 uppercase tracking-[0.2em] group-hover/stackheader:text-slate-300 transition-colors">
@@ -440,7 +499,7 @@ const FileFocusEditor: React.FC = () => {
 
   const [localPreviewUrl, setLocalPreviewUrl] = useState<string | null>(null);
   const [isUploading, setIsUploading] = useState(false);
-  const [isFetching, setIsFetching] = useState(false);
+  const [isFetching, setIsFetching] = useState(true); // Start true to guard initial check
   const scrollerRef = useRef<HTMLDivElement>(null);
 
   // RESET LOGIC: When thought ID changes, clear state and revoke URLs
@@ -449,7 +508,7 @@ const FileFocusEditor: React.FC = () => {
       URL.revokeObjectURL(localPreviewUrl);
     }
     setLocalPreviewUrl(null);
-    setIsFetching(false);
+    setIsFetching(true); // Always reset to true when thought changes
     setIsUploading(false);
 
     return () => {
@@ -608,7 +667,11 @@ const FileFocusEditor: React.FC = () => {
 
   const isSynced = !!thought.storageUrl;
   const isSyncing = thought.syncStatus === 'syncing';
-  const sourceLabel = localPreviewUrl ? 'Local' : (thought.storageUrl ? 'Cloud' : 'None');
+  
+  // Guard the source label to avoid flashing "Cloud" while checking local
+  const sourceLabel = isFetching 
+    ? 'Checking...' 
+    : (localPreviewUrl ? 'Local' : (thought.storageUrl ? 'Cloud' : 'None'));
 
   const CloudPill = () => {
     const [isHovered, setIsHovered] = useState(false);
@@ -696,14 +759,14 @@ const FileFocusEditor: React.FC = () => {
           <div className="flex flex-col">
             <span className="text-[7px] font-black text-slate-500 uppercase tracking-widest mb-0.5">Format</span>
             <span className="text-[9px] font-black text-slate-300 uppercase tracking-widest truncate max-w-[100px]">
-              {fileInfo?.type?.split('/')[1]?.toUpperCase() || 'GENERIC'}
+              {isFetching ? '...' : (fileInfo?.type?.split('/')[1]?.toUpperCase() || 'GENERIC')}
             </span>
           </div>
           <div className="w-px h-6 bg-white/5" />
           <div className="flex flex-col">
             <span className="text-[7px] font-black text-slate-500 uppercase tracking-widest mb-0.5">Payload</span>
             <span className="text-[9px] font-black text-slate-300 uppercase tracking-widest">
-              {fileInfo?.size ? `${(fileInfo.size / (1024 * 1024)).toFixed(2)}MB` : '0.00MB'}
+              {isFetching ? '...' : (fileInfo?.size ? `${(fileInfo.size / (1024 * 1024)).toFixed(2)}MB` : '0.00MB')}
             </span>
           </div>
         </div>

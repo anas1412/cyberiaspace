@@ -28,63 +28,73 @@ class Star {
     this.x = Math.random() * this.width;
     this.y = Math.random() * this.height;
     this.z = Math.random() * 3 + 1; 
-    this.baseRadius = (Math.random() * 0.5 + 0.1) * (this.z * 0.4);
-    this.vx = (Math.random() - 0.5) * 0.05; 
-    this.vy = (Math.random() - 0.5) * 0.05;
-    this.alpha = Math.random();
-    this.targetAlpha = Math.random() > 0.4 ? Math.random() : 0; 
-    this.twinkleSpeed = Math.random() * 0.005 + 0.002;
+    this.baseRadius = (Math.random() * 0.6 + 0.1) * (this.z * 0.4);
+    this.vx = (Math.random() - 0.5) * 0.03; 
+    this.vy = (Math.random() - 0.5) * 0.03;
+    this.alpha = Math.random() * 0.6; // Lower initial alpha
+    this.targetAlpha = Math.random() > 0.6 ? Math.random() * 0.5 : 0; 
+    this.twinkleSpeed = Math.random() * 0.003 + 0.001;
   }
 
-  update() {
-    this.x += this.vx;
-    this.y += this.vy;
+  update(theme: string) {
+    if (theme === "rain") {
+      this.y += 15 + this.z * 5; // Rain fall speed
+      this.x += 2; // Slight wind
+    } else {
+      this.x += this.vx;
+      this.y += this.vy;
+    }
 
-    if (this.x < -20) this.x = this.width + 20;
-    if (this.x > this.width + 20) this.x = -20;
-    if (this.y < -20) this.y = this.height + 20;
-    if (this.y > this.height + 20) this.y = -20;
+    if (this.x < -50) this.x = this.width + 50;
+    if (this.x > this.width + 50) this.x = -50;
+    if (this.y < -50) this.y = this.height + 50;
+    if (this.y > this.height + 50) this.y = -50;
 
-    if (this.alpha < this.targetAlpha) {
-      this.alpha += this.twinkleSpeed;
-      if (this.alpha >= this.targetAlpha) {
-        this.alpha = this.targetAlpha;
-        this.targetAlpha = Math.random() > 0.3 ? Math.random() : 0; 
+    if (theme !== "rain") {
+      if (this.alpha < this.targetAlpha) {
+        this.alpha += this.twinkleSpeed;
+        if (this.alpha >= this.targetAlpha) {
+          this.alpha = this.targetAlpha;
+          this.targetAlpha = Math.random() > 0.3 ? Math.random() * 0.5 : 0; 
+        }
+      } else {
+        this.alpha -= this.twinkleSpeed;
+        if (this.alpha <= this.targetAlpha) {
+          this.alpha = this.targetAlpha;
+          this.targetAlpha = Math.random() > 0.3 ? Math.random() * 0.5 : 0; 
+        }
       }
     } else {
-      this.alpha -= this.twinkleSpeed;
-      if (this.alpha <= this.targetAlpha) {
-        this.alpha = this.targetAlpha;
-        this.targetAlpha = Math.random() > 0.3 ? Math.random() : 0; 
-      }
+      this.alpha = 0.3; // Static alpha for rain
     }
   }
 
   draw(ctx: CanvasRenderingContext2D, mouseX: number, mouseY: number, theme: string) {
-    const offsetX = (mouseX - this.width / 2) * (this.z * 0.02);
-    const offsetY = (mouseY - this.height / 2) * (this.z * 0.02);
+    const parallaxFactor = theme === "rain" ? 0.005 : 0.015;
+    const offsetX = (mouseX - this.width / 2) * (this.z * parallaxFactor);
+    const offsetY = (mouseY - this.height / 2) * (this.z * parallaxFactor);
 
     ctx.beginPath();
     
     if (theme === "sea") {
       ctx.arc(this.x + offsetX, this.y + offsetY, this.baseRadius * 1.5, 0, Math.PI * 2);
-      ctx.strokeStyle = `rgba(144, 224, 239, ${this.alpha * 0.4})`;
+      ctx.strokeStyle = `rgba(144, 224, 239, ${this.alpha * 0.6})`;
       ctx.lineWidth = 1;
       ctx.stroke();
     } else if (theme === "forest") {
       ctx.arc(this.x + offsetX, this.y + offsetY, this.baseRadius * 0.8, 0, Math.PI * 2);
-      ctx.fillStyle = `rgba(45, 206, 137, ${this.alpha})`;
+      ctx.fillStyle = `rgba(45, 206, 137, ${this.alpha * 0.6})`;
       ctx.fill();
     } else if (theme === "rain") {
       ctx.moveTo(this.x + offsetX, this.y + offsetY);
-      ctx.lineTo(this.x + offsetX + 1, this.y + offsetY + 15);
-      ctx.strokeStyle = `rgba(214, 211, 209, ${this.alpha * 0.3})`;
+      ctx.lineTo(this.x + offsetX + 1, this.y + offsetY + 25);
+      ctx.strokeStyle = `rgba(214, 211, 209, ${this.alpha * 0.6})`;
       ctx.lineWidth = 1;
       ctx.stroke();
     } else {
       // Standard sharp stars
       ctx.arc(this.x + offsetX, this.y + offsetY, this.baseRadius, 0, Math.PI * 2);
-      ctx.fillStyle = `rgba(255, 255, 255, ${this.alpha})`;
+      ctx.fillStyle = `rgba(255, 255, 255, ${0.2 + this.alpha * 0.8})`;
       ctx.fill();
     }
   }
@@ -111,7 +121,8 @@ const Starfield: React.FC<StarfieldProps> = ({ theme, performanceMode }) => {
       mousePos.current.x = mousePos.current.targetX;
       mousePos.current.y = mousePos.current.targetY;
       
-      const numStars = Math.floor((canvas.width * canvas.height) / 1200); // Increased density
+      const divisor = theme === "rain" ? 3000 : 4000; // Significantly lower density for stars
+      const numStars = Math.floor((canvas.width * canvas.height) / divisor); 
       starsRef.current = Array.from({ length: numStars }, () => new Star(canvas.width, canvas.height));
     };
 
@@ -123,11 +134,12 @@ const Starfield: React.FC<StarfieldProps> = ({ theme, performanceMode }) => {
     const animate = () => {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
       
+      // Smoothly interpolate mouse for parallax
       mousePos.current.x += (mousePos.current.targetX - mousePos.current.x) * 0.05;
       mousePos.current.y += (mousePos.current.targetY - mousePos.current.y) * 0.05;
 
       starsRef.current.forEach((star) => {
-        if (!performanceMode) star.update();
+        if (!performanceMode) star.update(theme);
         star.draw(ctx, mousePos.current.x, mousePos.current.y, theme);
       });
 
@@ -150,7 +162,7 @@ const Starfield: React.FC<StarfieldProps> = ({ theme, performanceMode }) => {
     <canvas 
       ref={canvasRef} 
       className="fixed inset-0 z-0 pointer-events-none transition-opacity duration-1000"
-      style={{ opacity: theme === "rain" ? 0.3 : 0.6 }}
+      style={{ opacity: theme === "rain" ? 0.5 : 1.0 }}
     />
   );
 };

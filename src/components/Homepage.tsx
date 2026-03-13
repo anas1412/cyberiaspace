@@ -9,6 +9,8 @@ import DynamicViewsVisual from './demo/DynamicViewsVisual';
 import CloudSyncVisual from './demo/CloudSyncVisual';
 import AgenticWorkspaceVisual from './demo/AgenticWorkspaceVisual';
 
+import BackgroundEngine from './background/BackgroundEngine';
+
 const FEATURES = [
   {
     id: 'spatial',
@@ -254,18 +256,12 @@ const Homepage: React.FC = () => {
   const savingsTnd = proPrice.monthly.tnd * 12 - proPrice.yearly.tnd;
 
   return (
-    <div className="min-h-screen bg-[#020408] text-[#e2e8f0] overflow-y-auto selection:bg-[var(--accent)]/30">
-      <div className="fixed inset-0 z-0 pointer-events-none">
-        <div className="stars-layer stars-1" />
-        <div className="stars-layer stars-2" />
-        <div className="stars-layer stars-twinkle" />
-        <div className="nebula-cloud" />
-        <div className="grain" />
-      </div>
+    <div className="min-h-screen text-[#e2e8f0] overflow-y-auto selection:bg-[var(--accent)]/30 relative">
+      <BackgroundEngine />
 
       <nav className={`fixed top-0 left-0 right-0 z-[100] transition-all duration-500 ${
         isScrolled 
-          ? 'bg-[#020408]/40 backdrop-blur-3xl shadow-sm shadow-white/5 py-3' 
+          ? 'bg-[#05060a]/40 backdrop-blur-3xl shadow-sm shadow-white/5 py-3' 
           : 'bg-transparent py-4'
       }`}>
         <div className="max-w-7xl mx-auto px-6 flex items-center justify-between">
@@ -352,13 +348,22 @@ const Homepage: React.FC = () => {
             transition={{ type: 'spring', damping: 25, stiffness: 120 }}
           >
             <h1 className="text-6xl md:text-8xl font-black tracking-tighter leading-[0.9] mb-8 uppercase">
-              Your Mind, <br />
-              <span style={{ color: 'var(--accent)' }}>In Motion</span>
-            </h1>
+            Your Mind, <br />
+          <motion.span 
+            initial={{ filter: 'blur(10px)', opacity: 0, x: -50 }}
+            animate={{ filter: 'blur(0px)', opacity: 1, x: 0 }}
+            transition={{ duration: 1.2, ease: "circOut" }}
+            style={{ color: 'var(--accent)', display: 'inline-block' }}
+          >
+            In Motion
+          </motion.span>
+          </h1>
             
             <p className="text-lg md:text-xl text-slate-400 max-w-2xl mx-auto mb-12 leading-relaxed font-medium">
-              Organize docs, tables, images, tasks, links, files, etc... in an infinite agentic workspace where thoughts have <span className="text-white font-bold">mass and gravity</span>. <br />
-              <span style={{ color: 'var(--accent-secondary)' }}>Powered by AI agents that research and connect your thoughts.</span>
+              Stop <span className="text-white font-bold">digging through folders</span>. 
+              Cyberia uses <span style={{ color: 'var(--accent-secondary)' }}>AI agents that find, connect, and organize</span> your 
+              notes, files, and links in a visual workspace where your ideas actually 
+              <span className="text-white font-bold"> stick together</span>.
             </p>
 
             <div className="flex flex-col sm:flex-row items-center justify-center gap-5">
@@ -379,7 +384,7 @@ const Homepage: React.FC = () => {
           </motion.div>
         </div>
 
-        <motion.div 
+        {/* <motion.div 
           initial={{ opacity: 0, y: 60 }}
           whileInView={{ opacity: 1, y: 0 }}
           transition={{ duration: 1, delay: 0.2 }}
@@ -398,7 +403,7 @@ const Homepage: React.FC = () => {
           
               <div className="absolute inset-0 bg-[var(--accent)]/10 blur-[100px] rounded-full pointer-events-none" />
               <div className="absolute -bottom-10 -left-10 w-40 h-40 bg-[var(--accent)]/10 blur-[100px] rounded-full pointer-events-none" />
-        </motion.div>
+        </motion.div> */}
       </section>
 
       <section id="features" className="py-32 px-6 relative z-10">
@@ -477,9 +482,8 @@ const Homepage: React.FC = () => {
               ))}
             </div>
 
-            {/* Right Column: Visual Stage */}
             <div className="hidden lg:block lg:w-1/2 sticky top-32">
-              <div className="bg-[#020408] aspect-square lg:aspect-auto lg:h-[600px] rounded-2xl border border-white/10 overflow-hidden relative group isolate">
+              <div className="bg-[#05060a] aspect-square lg:aspect-auto lg:h-[600px] rounded-2xl border border-white/10 overflow-hidden relative group isolate shadow-2xl">
                 <div className="absolute inset-0 bg-gradient-to-br from-[var(--accent)]/10 via-transparent to-transparent opacity-50" />
                 <FeatureVisual activeFeature={activeFeature} />
               </div>
