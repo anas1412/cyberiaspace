@@ -3,7 +3,8 @@ import type { LayoutStrategist, LayoutResult, LayoutContext } from './types';
 
 const REPULSION = 80000;
 const ATTRACTION = 0.01;
-const GRAVITY = 0.003;
+const GRAVITY_X = 0.002;
+const GRAVITY_Y = 0.004;
 const COMFORT_ZONE = 200;
 
 const PRIORITY_WEIGHT = {
@@ -48,8 +49,8 @@ export const spatialStrategy: LayoutStrategist = {
     const targetX = context.logicalWidth / 2;
     const targetY = context.logicalHeight / 2;
     
-    dvx += (targetX - centerX) * (GRAVITY * gravityMultiplier);
-    dvy += (targetY - centerY) * (GRAVITY * gravityMultiplier);
+    dvx += (targetX - centerX) * (GRAVITY_X * gravityMultiplier);
+    dvy += (targetY - centerY) * (GRAVITY_Y * gravityMultiplier);
 
     allStates.forEach((otherP, otherId) => {
       if (id === otherId) return;
