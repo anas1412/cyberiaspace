@@ -24,6 +24,7 @@ export interface LayoutContext {
   isMobile: boolean;
   isReadOnly: boolean;
   isDemo?: boolean;
+  timeScale: number;
   transform: { x: number; y: number; scale: number };
   calendarCellMap?: Map<string, { x: number; y: number; w: number; h: number }>;
   thoughtMap: Map<string, Thought>;

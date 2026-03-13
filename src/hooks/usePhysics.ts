@@ -50,6 +50,7 @@ export const usePhysics = (
   const snapNextFrame = useRef(false);
   const prevTransformRef = useRef({ x: camera.x.get(), y: camera.y.get(), scale: camera.scale.get() });
   const isReturningHome = useRef(false);
+  const lastTimeRef = useRef<number>(performance.now());
 
   const thoughtMap = useRef<Map<string, Thought>>(new Map());
   const dragRef = useRef<{
@@ -70,7 +71,7 @@ export const usePhysics = (
     return new DOMMatrix(window.getComputedStyle(body).transform).a || 1;
   }, []);
 
-  const applyHomeReturn = useCallback(() => {
+  const applyHomeReturn = useCallback((timeScale: number) => {
     let allSettled = true;
     physicsState.current.forEach((p, id) => {
       const t = thoughtMap.current.get(id); if (!t) return;
@@ -82,14 +83,15 @@ export const usePhysics = (
       const dist = Math.sqrt(dx * dx + dy * dy);
       const targetScale = (1 + (PRIORITY_WEIGHT[t.priority] || 0) * 0.05) * (t.size || 1);
       if (dist > 1) {
-        p.x += dx * 0.12;
-        p.y += dy * 0.12;
+        const lerpFactor = 1 - Math.pow(1 - 0.12, timeScale);
+        p.x += dx * lerpFactor;
+        p.y += dy * lerpFactor;
         allSettled = false;
       } else {
         p.x = targetX;
         p.y = targetY;
       }
-      p.scale += (targetScale - p.scale) * 0.12;
+      p.scale += (targetScale - p.scale) * (1 - Math.pow(1 - 0.12, timeScale));
       p.vx = 0;
       p.vy = 0;
     });
@@ -330,6 +332,14 @@ export const usePhysics = (
   }, [getGlobalScale, camera, updateThought, activeSpace, calendarViewDate]);
 
   const loop = useCallback(() => {
+    const now = performance.now();
+    const dt = now - lastTimeRef.current;
+    lastTimeRef.current = now;
+    
+    // Normalize to 60fps (16.66ms per frame)
+    // Clamp to avoid extreme jumps if tab was backgrounded (max 100ms)
+    const timeScale = Math.min(6, dt / 16.666);
+
     const globalScale = getGlobalScale();
     const ids = Array.from(physicsState.current.keys());
     const state = physicsState.current;
@@ -457,6 +467,7 @@ export const usePhysics = (
       isMobile,
       isReadOnly: useStore.getState().isReadOnly,
       isDemo: useStore.getState().isDemo,
+      timeScale,
       transform: vT_visual,
       calendarCellMap,
       thoughtMap: thoughtMap.current,
@@ -486,14 +497,19 @@ export const usePhysics = (
         } else {
           if (strategist.applyForces && shouldCalculatePhysics) {
             const { vx, vy } = strategist.applyForces(id, p, state, t, allThoughts, context, elementHeights);
-            p.vx += vx; p.vy += vy;
+            p.vx += vx * timeScale; p.vy += vy * timeScale;
           }
-          p.vx *= DAMPING; p.vy *= DAMPING;
+          p.vx *= Math.pow(DAMPING, timeScale); 
+          p.vy *= Math.pow(DAMPING, timeScale);
+          
           const speed = Math.sqrt(p.vx * p.vx + p.vy * p.vy);
           if (speed > MAX_VELOCITY) { p.vx = (p.vx / speed) * MAX_VELOCITY; p.vy = (p.vy / speed) * MAX_VELOCITY; }
-          p.x += p.vx; p.y += p.vy;
+          
+          p.x += p.vx * timeScale; 
+          p.y += p.vy * timeScale;
+          
           const targetScale = (1 + (PRIORITY_WEIGHT[t.priority] || 0) * 0.05) * (t.size || 1);
-          p.scale += (targetScale - p.scale) * 0.1;
+          p.scale += (targetScale - p.scale) * (1 - Math.pow(1 - 0.1, timeScale));
         }
       } else if (mode === 'spatial' && isReturningHome.current) {
         // Handled by applyHomeReturn()
@@ -503,9 +519,10 @@ export const usePhysics = (
           p.x = result.targetX; p.y = result.targetY; p.scale = result.targetScale;
         } else {
           const speed = mode === 'calendar' ? 0.2 : 0.15;
-          p.x += (result.targetX - p.x) * speed;
-          p.y += (result.targetY - p.y) * speed;
-          p.scale += (result.targetScale - p.scale) * 0.1;
+          const lerpFactor = 1 - Math.pow(1 - speed, timeScale);
+          p.x += (result.targetX - p.x) * lerpFactor;
+          p.y += (result.targetY - p.y) * lerpFactor;
+          p.scale += (result.targetScale - p.scale) * (1 - Math.pow(1 - 0.1, timeScale));
         }
         p.vx = 0; p.vy = 0;
         if (result.columnHeight && result.columnHeight > maxColHeight) maxColHeight = result.columnHeight;
@@ -513,7 +530,7 @@ export const usePhysics = (
       }
     });
 
-    if (mode === 'spatial' && isReturningHome.current) applyHomeReturn();
+    if (mode === 'spatial' && isReturningHome.current) applyHomeReturn(timeScale);
 
     kMaxHeight.current = maxColHeight;
     sbHeight.current = sidebarHeight;
