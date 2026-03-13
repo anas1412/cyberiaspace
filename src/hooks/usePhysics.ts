@@ -36,6 +36,7 @@ export const usePhysics = (
   const performanceMode = useStore((state) => state.performanceMode);
 
   const physicsState = useRef<Map<string, PhysicsPoint>>(new Map());
+  const lastAppliedStyles = useRef<Map<string, { x: number; y: number; scale: number; rotation: number }>>(new Map());
   const frameCount = useRef(0);
   const elements = useRef<Map<string, HTMLDivElement>>(new Map());
   const worldRef = useRef<HTMLDivElement | null>(null);
@@ -192,7 +193,13 @@ export const usePhysics = (
           physics.delete(id);
           els.delete(id);
           thoughtsCache.delete(id);
+          lastAppliedStyles.current.delete(id);
         }
+      }
+      
+      // Clear all last applied styles on mode/space switch to ensure a fresh render
+      if (modeChanged) {
+        lastAppliedStyles.current.clear();
       }
     }
   }, [thoughts, activeSpace?.mode]);
@@ -640,16 +647,33 @@ export const usePhysics = (
     state.forEach((p, id) => {
       const el = elements.current.get(id); const t = thoughtMap.current.get(id); if (!el || !t) return;
       const h = el.offsetHeight || 120;
-      el.style.transform = `translate3d(${p.x}px, ${p.y}px, 0) scale(${p.scale})`;
       const isSelected = t.id === selectedThoughtId;
       const isDraggingThis = dragRef.current?.initialPositions.has(id) && dragRef.current.moved;
+      
       const res = strategist.calculateLayout(t, allThoughts, context, elementHeights);
+      const targetRotation = (res.rotation && !isSelected) ? res.rotation : 0;
+
+      // --- PRECISION FILTER ---
+      const last = lastAppliedStyles.current.get(id);
+      const dx = last ? Math.abs(last.x - p.x) : 100;
+      const dy = last ? Math.abs(last.y - p.y) : 100;
+      const ds = last ? Math.abs(last.scale - p.scale) : 100;
+      const dr = last ? Math.abs(last.rotation - targetRotation) : 100;
+      
+      // Only apply transform if move > 0.05px or scale > 0.001 or rotation > 0.1 deg
+      // OR if selected/dragging/snapping (override for perfect responsiveness)
+      if (dx > 0.05 || dy > 0.05 || ds > 0.001 || dr > 0.1 || isSelected || isDraggingThis || snapNextFrame.current) {
+        let transformStr = `translate3d(${p.x}px, ${p.y}px, 0) scale(${p.scale})`;
+        if (targetRotation !== 0) transformStr += ` rotate(${targetRotation}deg)`;
+        el.style.transform = transformStr;
+        lastAppliedStyles.current.set(id, { x: p.x, y: p.y, scale: p.scale, rotation: targetRotation });
+      }
+
       el.style.opacity = (res.opacity ?? 1).toString();
       el.style.visibility = res.visibility ?? 'visible';
       el.style.pointerEvents = res.pointerEvents ?? 'auto';
       el.style.clipPath = res.clipPath ?? 'none';
       el.style.zIndex = isSelected ? '10001' : (isDraggingThis ? '1000' : (res.zIndex || (20 + (t.layer || 0)).toString()));
-      if (res.rotation && !isSelected) el.style.transform += ` rotate(${res.rotation}deg)`;
       if (mode === 'calendar' && !t.date && !isDraggingThis && !isSelected) {
         const contentEl = document.getElementById('cal-sidebar-content');
         const cRectRaw = contentEl?.getBoundingClientRect();

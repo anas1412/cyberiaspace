@@ -30,7 +30,7 @@ interface ThoughtContainerProps {
   elRef: React.RefObject<HTMLDivElement | null>;
 }
 
-export const ThoughtContainer: React.FC<ThoughtContainerProps> = ({
+export const ThoughtContainer = React.memo<ThoughtContainerProps>(({
   children,
   thoughtId,
   isDragging,
@@ -101,4 +101,4 @@ export const ThoughtContainer: React.FC<ThoughtContainerProps> = ({
       </div>
     </div>
   );
-};
+});
