@@ -1,9 +1,8 @@
-import React, { Suspense, useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { MousePointer2, Layout, Database, ArrowRight, Menu, X, Zap, Check, Compass, Rocket, Send, Loader2, CheckCircle, Shield, ChevronDown } from 'lucide-react';
 import { PLAN_CONFIG } from '../constants';
 
-import InteractiveDemo from './demo/InteractiveDemo';
 import SpatialThinkingVisual from './demo/SpatialThinkingVisual';
 import DynamicViewsVisual from './demo/DynamicViewsVisual';
 import CloudSyncVisual from './demo/CloudSyncVisual';
