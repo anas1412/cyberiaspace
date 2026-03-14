@@ -763,14 +763,39 @@ async function updateUserPlan(
     status: string = 'active'
 ) {
     const now = new Date();
-    const expiry = new Date();
-    if (billingCycle === 'yearly') {
-        expiry.setFullYear(now.getFullYear() + 1);
-    } else {
-        expiry.setMonth(now.getMonth() + 1);
+    let baseDate = now;
+
+    // FOR MANUAL PAYMENTS (FLOUCI): Check if we should stack the time
+    if (provider === 'flouci') {
+        try {
+            const { data: currentUser } = await supabase
+                .from('users')
+                .select('plan, expiry_date')
+                .eq('id', userId)
+                .maybeSingle();
+
+            if (currentUser?.plan === 'pro' && currentUser.expiry_date) {
+                const currentExpiry = new Date(currentUser.expiry_date);
+                // Only stack if the existing expiry is in the future
+                if (currentExpiry > now) {
+                    baseDate = currentExpiry;
+                    console.log(`[updateUserPlan] Flouci: Stacking on existing expiry: ${baseDate.toISOString()}`);
+                }
+            }
+        } catch (err) {
+            console.error('[updateUserPlan] Error fetching current user for stacking:', err);
+            // Fallback to 'now' as baseDate if query fails
+        }
     }
 
-    console.log(`[updateUserPlan] Upgrading user ${userId} (${billingCycle}) via ${provider}. Expiry: ${expiry.toISOString()}`);
+    const expiry = new Date(baseDate);
+    if (billingCycle === 'yearly') {
+        expiry.setFullYear(baseDate.getFullYear() + 1);
+    } else {
+        expiry.setMonth(baseDate.getMonth() + 1);
+    }
+
+    console.log(`[updateUserPlan] Upgrading user ${userId} (${billingCycle}) via ${provider}. Base Date: ${baseDate.toISOString()}, New Expiry: ${expiry.toISOString()}`);
     console.log(`[updateUserPlan] Target userId: ${userId}`);
 
     const updatePayload: any = {
@@ -818,5 +843,4 @@ async function updateUserPlan(
 
     return { success: true, expiry };
 }
-
 
