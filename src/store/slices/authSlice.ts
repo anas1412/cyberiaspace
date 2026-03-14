@@ -6,6 +6,7 @@ import { supabaseSync } from '../../services/supabaseSync';
 import { type AuthState } from '../types';
 
 let refreshProfilePromise: Promise<void> | null = null;
+let refreshInterval: ReturnType<typeof setInterval> | null = null;
 
 const getInitialUser = (): User | null => {
   try {
@@ -36,6 +37,7 @@ const getInitialUser = (): User | null => {
 export const createAuthSlice: StateCreator<AuthState, [], [], any> = (set, get, _api) => ({
   user: getInitialUser(),
   accessToken: localStorage.getItem('cyberia-token'),
+  accessTokenExpiresAt: localStorage.getItem('cyberia-token-expiry') ? Number(localStorage.getItem('cyberia-token-expiry')) : null,
   refreshSecret: localStorage.getItem('cyberia-refresh-secret'),
   grantedScopes: JSON.parse(localStorage.getItem('cyberia-scopes') || '[]'),
   status: localStorage.getItem('cyberia-user') ? 'authenticated' : 'unauthenticated' as 'idle' | 'loading' | 'authenticated' | 'unauthenticated',
@@ -50,7 +52,14 @@ export const createAuthSlice: StateCreator<AuthState, [], [], any> = (set, get, 
       }
     });
     window.addEventListener('offline', () => set({ isOnline: false, syncStatus: 'offline' }));
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'visible' && get().status === 'authenticated') {
+        console.log('[Auth] App visible, checking for profile refresh...');
+        get().refreshProfile();
+      }
+    });
     get().checkExpiry();
+    get().setupRefreshInterval();
 
     const currentUser = get().user;
     if (get().status === 'authenticated' && currentUser?.id) {
@@ -87,8 +96,10 @@ export const createAuthSlice: StateCreator<AuthState, [], [], any> = (set, get, 
     }
   },
 
-  setAuthenticatedUser: async (user: User, token: string, refreshSecret?: string, scopes?: string[]) => {
+  setAuthenticatedUser: async (user: User, token: string, refreshSecret?: string, scopes?: string[], expiresIn?: number) => {
     const today = new Date().toISOString().split('T')[0];
+    const expiryTime = expiresIn ? Date.now() + (expiresIn * 1000) : Date.now() + (3600 * 1000);
+    
     const userWithDefaults: User = { 
       ...user, 
       plan: user.plan || 'free',
@@ -106,6 +117,7 @@ export const createAuthSlice: StateCreator<AuthState, [], [], any> = (set, get, 
     
     localStorage.setItem('cyberia-user', JSON.stringify(userWithDefaults));
     localStorage.setItem('cyberia-token', token);
+    localStorage.setItem('cyberia-token-expiry', expiryTime.toString());
     
     if (refreshSecret) {
       localStorage.setItem('cyberia-refresh-secret', refreshSecret);
@@ -121,11 +133,14 @@ export const createAuthSlice: StateCreator<AuthState, [], [], any> = (set, get, 
     set({
       user: userWithDefaults,
       accessToken: token,
+      accessTokenExpiresAt: expiryTime,
       refreshSecret: refreshSecret || get().refreshSecret,
       grantedScopes: scopes || get().grantedScopes,
       status: 'authenticated',
       syncStatus: 'syncing'
     });
+
+    get().setupRefreshInterval();
 
     // Start instant realtime listener
     syncOrchestrator.setupRealtimeListener(userWithDefaults.id);
@@ -158,7 +173,7 @@ export const createAuthSlice: StateCreator<AuthState, [], [], any> = (set, get, 
 
       const scopes = ['openid', 'email', 'profile'];
 
-      await get().setAuthenticatedUser(data.user, data.access_token, data.refresh_secret, scopes);
+      await get().setAuthenticatedUser(data.user, data.access_token, data.refresh_secret, scopes, data.expires_in);
     } catch (err: any) {
       console.error('Auth code handling failed:', err);
       const { useModalStore } = await import('../useModalStore');
@@ -191,8 +206,13 @@ export const createAuthSlice: StateCreator<AuthState, [], [], any> = (set, get, 
     set({ status: 'loading' });
     await new Promise(resolve => setTimeout(resolve, 500));
     syncOrchestrator.cleanupRealtimeListener();
+    if (refreshInterval) {
+      clearInterval(refreshInterval);
+      refreshInterval = null;
+    }
     localStorage.removeItem('cyberia-user');
     localStorage.removeItem('cyberia-token');
+    localStorage.removeItem('cyberia-token-expiry');
     localStorage.removeItem('cyberia-last-sync');
     localStorage.removeItem('cyberia-scopes');
     localStorage.removeItem('cyberia-refresh-secret');
@@ -257,8 +277,15 @@ export const createAuthSlice: StateCreator<AuthState, [], [], any> = (set, get, 
           if (refreshRes.ok) {
             const refreshData = await refreshRes.json();
             const currentToken = refreshData.access_token;
-            set({ accessToken: currentToken });
+            const expiresIn = refreshData.expires_in || 3600;
+            const expiryTime = Date.now() + (expiresIn * 1000);
+            
+            set({ 
+              accessToken: currentToken,
+              accessTokenExpiresAt: expiryTime
+            });
             localStorage.setItem('cyberia-token', currentToken);
+            localStorage.setItem('cyberia-token-expiry', expiryTime.toString());
           } else if (refreshRes.status === 401) {
             console.warn('[Auth] Session expired (401), signing out');
             clearTimeout(timeoutId);
@@ -305,6 +332,36 @@ export const createAuthSlice: StateCreator<AuthState, [], [], any> = (set, get, 
     })();
 
     return refreshProfilePromise;
+  },
+
+  getOrRefreshToken: async () => {
+    const { accessToken, accessTokenExpiresAt, status, isOnline } = get();
+    if (status !== 'authenticated' || !isOnline) return accessToken;
+
+    const BUFFER_MS = 5 * 60 * 1000; // 5 minutes
+    const now = Date.now();
+    
+    if (!accessToken || !accessTokenExpiresAt || (accessTokenExpiresAt - now) < BUFFER_MS) {
+      console.log('[Auth] Token missing or near expiry, refreshing...');
+      await get().refreshProfile();
+      return get().accessToken;
+    }
+
+    return accessToken;
+  },
+
+  setupRefreshInterval: () => {
+    if (refreshInterval) clearInterval(refreshInterval);
+    
+    // Heartbeat: Refresh profile and token every 30 minutes
+    // Google tokens usually last 60 minutes.
+    refreshInterval = setInterval(() => {
+      const { status, isOnline } = get();
+      if (status === 'authenticated' && isOnline) {
+        console.log('[Auth] Heartbeat: Refreshing token and profile...');
+        get().refreshProfile();
+      }
+    }, 30 * 60 * 1000);
   },
 
   updateSettings: async (settings: Partial<User['settings']>) => {

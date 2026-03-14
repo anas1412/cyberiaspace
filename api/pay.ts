@@ -3,7 +3,9 @@ import { buffer } from 'node:stream/consumers';
 import { createClient } from '@supabase/supabase-js';
 import { Polar } from "@polar-sh/sdk";
 import { validateEvent, WebhookVerificationError } from "@polar-sh/sdk/webhooks";
+import { OAuth2Client } from 'google-auth-library';
 
+const CLIENT_ID = process.env.VITE_GOOGLE_CLIENT_ID || process.env.GOOGLE_CLIENT_ID;
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.VITE_SUPABASE_URL || process.env.VITE_PUBLIC_SUPABASE_URL;
 // Use service_role key for backend operations to bypass RLS.
 // If you haven't already, set SUPABASE_SERVICE_ROLE_KEY in your environment.
@@ -29,27 +31,40 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     let rawBodyStr = '';
     if (req.method === 'POST') {
-        try {
-            const rawBody = await buffer(req);
-            rawBodyStr = rawBody.toString();
-        } catch (err) {
-            console.error('[Pay Handler] Failed to read request buffer:', err);
-            return res.status(500).json({ error: 'Failed to read request body' });
-        }
-        
-        if (action !== 'polar_webhook') {
-            const contentType = req.headers['content-type'] || '';
-            if (contentType.includes('application/json') && rawBodyStr.trim()) {
-                try {
-                    req.body = JSON.parse(rawBodyStr);
-                } catch (err) {
-                    console.error('[Pay Handler] Failed to parse JSON body:', err, 'Body snippet:', rawBodyStr.substring(0, 100));
-                    return res.status(400).json({ error: 'Invalid JSON body' });
+        const contentType = req.headers['content-type'] || '';
+        console.log('[Pay Handler] Content-Type:', contentType);
+
+        // If body is already parsed (sometimes happens in local dev or specific runtimes)
+        if (req.body && typeof req.body === 'object' && Object.keys(req.body).length > 0) {
+            console.log('[Pay Handler] Body already present in request object');
+            if (action === 'polar_webhook') {
+                // Warning: Re-stringifying might break signature verification if ordering/spacing differs.
+                // However, we should try to capture it if the stream is already gone.
+                rawBodyStr = JSON.stringify(req.body);
+            }
+        } else {
+            try {
+                const rawBody = await buffer(req);
+                rawBodyStr = rawBody.toString();
+                console.log('[Pay Handler] Read raw body. Length:', rawBodyStr.length);
+                
+                if (contentType.includes('application/json') && rawBodyStr.trim()) {
+                    try {
+                        req.body = JSON.parse(rawBodyStr);
+                        console.log('[Pay Handler] Parsed body keys:', Object.keys(req.body));
+                    } catch (err) {
+                        console.error('[Pay Handler] JSON parse error:', err);
+                        return res.status(400).json({ error: 'Invalid JSON body' });
+                    }
                 }
-            } else {
-                req.body = {};
+            } catch (err) {
+                console.error('[Pay Handler] Failed to read request buffer:', err);
+                // Don't fail immediately, try to proceed if body might be in req.body anyway
             }
         }
+
+        // Final safety check for JSON actions
+        if (!req.body) req.body = {};
     }
 
 
@@ -79,6 +94,40 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
 }
 
+
+async function getUserIdFromToken(authHeader: string | undefined) {
+    if (!authHeader || !authHeader.startsWith('Bearer ')) return null;
+    const token = authHeader.split(' ')[1];
+    
+    try {
+        // Try verifying as ID Token first (more secure if frontend starts sending it)
+        if (CLIENT_ID) {
+            try {
+                const client = new OAuth2Client(CLIENT_ID);
+                const ticket = await client.verifyIdToken({
+                    idToken: token,
+                    audience: CLIENT_ID,
+                });
+                const payload = ticket.getPayload();
+                if (payload?.sub) return payload.sub;
+            } catch (e) {
+                // Not a valid ID token, fallback to access token check
+            }
+        }
+
+        // Fallback to Access Token verification via tokeninfo
+        const res = await fetch(`https://www.googleapis.com/oauth2/v3/tokeninfo?access_token=${token}`);
+        if (!res.ok) {
+            console.error('[Token Verification] Google tokeninfo returned error:', res.status, await res.text());
+            return null;
+        }
+        const data = await res.json() as any;
+        return data.sub || data.user_id;
+    } catch (e) {
+        console.error('[Token Verification] Critical error:', e);
+        return null;
+    }
+}
 
 async function handlePricing(req: VercelRequest, res: VercelResponse) {
     const forceCountry = req.query.country as string;
@@ -110,35 +159,40 @@ async function handlePricing(req: VercelRequest, res: VercelResponse) {
 
 async function handleInit(req: VercelRequest, res: VercelResponse) {
     console.log('[Flouci Init] Request received');
-    const authHeader = req.headers.authorization;
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
-        return res.status(401).json({ error: 'Unauthorized: Missing or invalid Authorization header' });
+    const userId = await getUserIdFromToken(req.headers.authorization);
+    if (!userId) {
+        return res.status(401).json({ error: 'Invalid or expired Google token' });
     }
 
-    const token = authHeader.split(' ')[1];
     const body = req.body || {};
-    const { amount, currency = 'TND', billingCycle = 'monthly' } = body;
+    const { amount, currency = 'TND', billingCycle = 'monthly', termsAccepted, termsVersion, privacyVersion } = body;
+    console.log('[Flouci Init] Consent check:', { termsAccepted, termsVersion, privacyVersion });
+
+    if (!termsAccepted || !termsVersion || !privacyVersion) {
+        console.error('[Flouci Init] Missing consent fields:', { termsAccepted, termsVersion, privacyVersion });
+        return res.status(400).json({ 
+            error: 'You must accept the Terms of Service and Privacy Policy (Flouci)',
+            debug: { 
+                termsAccepted: !!termsAccepted, 
+                termsVersion: !!termsVersion, 
+                privacyVersion: !!privacyVersion,
+                receivedBody: body 
+            }
+        });
+    }
 
     if (!amount) {
         return res.status(400).json({ error: 'Amount is required' });
     }
 
+    const consentIp = (req.headers['x-forwarded-for'] as string)?.split(',')[0]?.trim()
+        || req.headers['x-real-ip'] as string
+        || 'unknown';
+    const consentUserAgent = req.headers['user-agent'] || 'unknown';
+    const termsAcceptedAt = new Date().toISOString();
+
     try {
-        console.log('[Flouci Init] Verifying Google token...');
-        const tokenInfoRes = await fetch(`https://www.googleapis.com/oauth2/v3/tokeninfo?access_token=${token}`);
-        if (!tokenInfoRes.ok) {
-            const errText = await tokenInfoRes.text();
-            console.error('[Flouci Init] Google token verification failed:', errText);
-            return res.status(401).json({ error: 'Invalid Google token' });
-        }
-        const info = await tokenInfoRes.json() as any;
-        const userId = info.sub || info.user_id;
-
-        if (!userId) {
-            return res.status(401).json({ error: 'User identity not found in token' });
-        }
-
-        console.log('[Flouci Init] User ID:', userId, 'Amount:', amount, 'Currency:', currency);
+        console.log('[Flouci Init] Token verified for User:', userId, 'Amount:', amount, 'Currency:', currency);
 
         const publicKey = process.env.FLOUCI_PUBLIC_KEY;
         const privateKey = process.env.FLOUCI_PRIVATE_KEY;
@@ -186,6 +240,11 @@ async function handleInit(req: VercelRequest, res: VercelResponse) {
             amount: amountInMillimes,
             currency: currency,
             status: 'pending',
+            terms_version: termsVersion,
+            privacy_version: privacyVersion,
+            terms_accepted_at: termsAcceptedAt,
+            consent_ip: consentIp,
+            consent_user_agent: consentUserAgent,
             metadata: {
                 billingCycle,
                 orderId,
@@ -351,7 +410,27 @@ async function handlePolarInit(req: VercelRequest, res: VercelResponse) {
 
     const token = authHeader.split(' ')[1];
     const body = req.body || {};
-    const { billingCycle = 'monthly' } = body;
+    const { billingCycle = 'monthly', termsAccepted, termsVersion, privacyVersion } = body;
+    console.log('[Polar Init] Consent check:', { termsAccepted, termsVersion, privacyVersion });
+
+    if (!termsAccepted || !termsVersion || !privacyVersion) {
+        console.error('[Polar Init] Missing consent fields:', { termsAccepted, termsVersion, privacyVersion });
+        return res.status(400).json({ 
+            error: 'You must accept the Terms of Service and Privacy Policy (Polar)',
+            debug: { 
+                termsAccepted: !!termsAccepted, 
+                termsVersion: !!termsVersion, 
+                privacyVersion: !!privacyVersion,
+                receivedBody: body 
+            }
+        });
+    }
+
+    const consentIp = (req.headers['x-forwarded-for'] as string)?.split(',')[0]?.trim()
+        || req.headers['x-real-ip'] as string
+        || 'unknown';
+    const consentUserAgent = req.headers['user-agent'] || 'unknown';
+    const termsAcceptedAt = new Date().toISOString();
 
     try {
         console.log('[Polar Init] Verifying Google token...');
@@ -392,7 +471,14 @@ async function handlePolarInit(req: VercelRequest, res: VercelResponse) {
         const checkout = await polar.checkouts.create({
             products: [productId],
             successUrl: successUrl,
-            metadata: { userId }
+            metadata: {
+                userId,
+                termsVersion,
+                privacyVersion,
+                termsAcceptedAt,
+                consentIp,
+                consentUserAgent
+            }
         });
 
         console.log('[Polar Init] Checkout created:', checkout.url);
@@ -565,12 +651,20 @@ async function handlePolarWebhook(req: VercelRequest, res: VercelResponse, rawBo
 
             if (!existingPayment) {
                 console.log(`[Polar Webhook] [${eventType}] Inserting new payment record for ${paymentRef}`);
+
+                const consentMeta = data.metadata || {};
+
                 await supabase.from('payments').insert({
                     payment_ref: paymentRef,
                     user_id: userId,
                     amount: data.amount || 0,
                     currency: data.currency || 'USD',
                     status: 'completed',
+                    terms_version: consentMeta.termsVersion || null,
+                    privacy_version: consentMeta.privacyVersion || null,
+                    terms_accepted_at: consentMeta.termsAcceptedAt || null,
+                    consent_ip: consentMeta.consentIp || null,
+                    consent_user_agent: consentMeta.consentUserAgent || null,
                     metadata: {
                         productId,
                         billingCycle,

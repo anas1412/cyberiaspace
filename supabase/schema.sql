@@ -116,6 +116,11 @@ CREATE TABLE IF NOT EXISTS payments (
     currency TEXT DEFAULT 'USD',
     status TEXT DEFAULT 'pending',
     metadata JSONB DEFAULT '{}',
+    terms_version TEXT,
+    privacy_version TEXT,
+    terms_accepted_at TIMESTAMP WITH TIME ZONE,
+    consent_ip TEXT,
+    consent_user_agent TEXT,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );

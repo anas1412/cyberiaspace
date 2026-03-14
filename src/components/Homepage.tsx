@@ -578,7 +578,10 @@ const Homepage: React.FC = () => {
                 <PricingFeature text={`${PLAN_CONFIG.free.MAX_SPACES} Agentic Spaces`} />
                 <PricingFeature text={`${PLAN_CONFIG.free.MAX_THOUGHTS_PER_SPACE} Thoughts per Agentic Space`} />
                 <PricingFeature text={`${PLAN_CONFIG.free.AI_DAILY_LIMIT} Daily Agentic AI Interactions`} />
+                <PricingFeature text="Limited Access to Basic AI Models" />
                 <PricingFeature text={`${PLAN_CONFIG.free.MAX_STORAGE_MB}MB Cloud Storage`} />
+                <PricingFeature text="Limited Upload Size" />
+                <PricingFeature text="Limited Support" />
               </div>
               <a href="https://app.cyberia.tn" className="w-full py-5 bg-white/5 hover:bg-white/10 border border-white/10 text-white rounded-2xl text-[10px] font-black uppercase tracking-[0.3em] transition-all text-center">
                 Get Started Free
@@ -640,11 +643,17 @@ const Homepage: React.FC = () => {
                 <PricingFeature text={`${PLAN_CONFIG.pro.MAX_SPACES} Agentic Spaces`} pro />
                 <PricingFeature text={`${PLAN_CONFIG.pro.MAX_THOUGHTS_PER_SPACE} Thoughts Per Agentic Space`} pro />
                 <PricingFeature text={`${PLAN_CONFIG.pro.AI_DAILY_LIMIT} Daily Agentic AI Interactions`} pro />
+                <PricingFeature text="Access to Multiple Advanced Premium Models" pro />
                 <PricingFeature 
                   text={`${(PLAN_CONFIG.pro.MAX_STORAGE_MB / 1024).toFixed(0)}GB Secure Cloud Storage`} pro />
-                <PricingFeature text="Access to Advanced Premium Models" pro />
+                <PricingFeature text="Unlimited Upload Size" pro />
                 <PricingFeature text="Analyze Images & PDFs" pro />
+                <PricingFeature text="Custom AI Agent Personality" pro />
+                <PricingFeature text="Custom Background" pro/>
+                <PricingFeature text="Share Your Spaces" pro />
                 <PricingFeature text="Shared Team Spaces (Coming Soon)" pro />
+                <PricingFeature text="Early Access to New Features" pro />
+                <PricingFeature text="24/7 Priority Support" pro />
               </div>
 
               <a href="https://app.cyberia.tn/pricing" className="w-full py-5 bg-[var(--accent)] hover:bg-[var(--accent-secondary)] text-white rounded-2xl text-[10px] font-black uppercase tracking-[0.3em] transition-all text-center shadow-xl shadow-[var(--accent)]/20 active:scale-95">

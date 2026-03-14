@@ -25,10 +25,12 @@ const PricingModal: React.FC<PricingModalProps> = ({ isOpen, onClose }) => {
   const [activeTab, setActiveTab] = useState<'features' | 'upgrade'>('features');
   const [paymentStatus, setPaymentStatus] = useState<'idle' | 'verifying' | 'success' | 'failed'>('idle');
   const [paymentMessage, setPaymentMessage] = useState<string>('');
+  const [acceptedTerms, setAcceptedTerms] = useState(false);
   const { openModal } = useModalStore();
 
   useEffect(() => {
     if (isOpen) {
+      setAcceptedTerms(false);
       const userTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
       const userLanguage = navigator.language;
       const isTunisiaLikely = userTimezone === 'Africa/Tunis' || userLanguage.includes('ar-TN') || userLanguage.includes('fr-TN');
@@ -168,39 +170,62 @@ const PricingModal: React.FC<PricingModalProps> = ({ isOpen, onClose }) => {
 
     try {
       const authStore = useAuthStore.getState();
+
       if (authStore.status !== 'authenticated') {
         openModal({
           title: 'Sign In Required',
           description: 'Please sign in to your Google account to upgrade to Cyberia Pro.',
           type: 'alert',
           confirmText: 'Sign In',
-          onConfirm: () => (window as any)._cyberia_login?.[0]?.()
+          onConfirm: () => window.location.href = 'https://cyberia.tn/login'
         });
         setIsLoading(false);
         return;
       }
+
+      // 1. Smart token retrieval (only refreshes if near expiry)
+      const currentToken = await authStore.getOrRefreshToken();
+      
+      if (!currentToken) {
+        throw new Error('Failed to obtain a valid authentication token. Please sign in again.');
+      }
+
+      const payload = {
+        amount: location?.currency === 'DT' ? currentPrice.tnd : currentPrice.usd,
+        currency: location?.currency === 'DT' ? 'TND' : 'USD',
+        billingCycle,
+        termsAccepted: acceptedTerms,
+        termsVersion: 'v1',
+        privacyVersion: 'v1'
+      };
+      console.log('[PricingModal] Sending payload:', payload);
 
       const action = location?.isLocalPricing ? 'init' : 'polar_init';
       const response = await fetch(`/api/pay?action=${action}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${authStore.accessToken}`
+          'Authorization': `Bearer ${currentToken}`
         },
-        body: JSON.stringify({
-          amount: location?.currency === 'DT' ? currentPrice.tnd : currentPrice.usd,
-          currency: location?.currency === 'DT' ? 'TND' : 'USD',
-          billingCycle
-        })
+        body: JSON.stringify(payload)
       });
 
       if (!response.ok) {
         const data = await response.json();
-        throw new Error(data.error || 'Failed to initiate payment');
+        console.error('[PricingModal] Error response:', data);
+        const errMsg = data.error || 'Failed to initiate payment';
+        const debugInfo = data.debug ? `\n\nDebug: ${JSON.stringify(data.debug)}` : '';
+        throw new Error(errMsg + debugInfo);
       }
 
-      const { payUrl } = await response.json();
-      window.location.href = payUrl;
+      const result = await response.json();
+      console.log('[PricingModal] Success response:', result);
+      
+      if (!result.payUrl) {
+        throw new Error('Payment URL missing from server response. Please try again.');
+      }
+
+      window.location.href = result.payUrl;
 
     } catch (err: any) {
       console.error('Upgrade Error:', err);
@@ -463,12 +488,59 @@ const PricingModal: React.FC<PricingModalProps> = ({ isOpen, onClose }) => {
             )}
           </AnimatePresence>
 
+          {/* Terms Consent Checkbox */}
+          <label className="flex items-start gap-3 mb-6 cursor-pointer group select-none">
+            <div className="relative mt-0.5">
+              <input
+                type="checkbox"
+                checked={acceptedTerms}
+                onChange={(e) => setAcceptedTerms(e.target.checked)}
+                className="sr-only peer"
+                autoComplete="off"
+              />
+              <div className={cn(
+                "w-5 h-5 rounded-md border-2 transition-all flex items-center justify-center",
+                acceptedTerms
+                  ? "bg-blue-600 border-blue-500"
+                  : "bg-white/5 border-white/20 group-hover:border-white/40"
+              )}>
+                {acceptedTerms && <Check className="w-3 h-3 text-white" />}
+              </div>
+            </div>
+            <span className="text-xs text-slate-400 leading-relaxed">
+              I agree to the{' '}
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  window.open('/terms', '_blank');
+                }}
+                className="text-blue-400 hover:text-blue-300 underline underline-offset-2 transition-colors"
+              >
+                Terms of Service
+              </button>
+              {' '}and{' '}
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  window.open('/privacy', '_blank');
+                }}
+                className="text-blue-400 hover:text-blue-300 underline underline-offset-2 transition-colors"
+              >
+                Privacy Policy
+              </button>
+            </span>
+          </label>
+
           <button
             onClick={handleUpgrade}
-            disabled={isLoading}
+            disabled={isLoading || !acceptedTerms}
             className={cn(
-              "w-full h-14 rounded-2xl text-sm font-bold transition-all flex items-center justify-center gap-3 mb-8",
-              isLoading
+              "w-full h-14 rounded-2xl text-sm font-bold transition-all flex items-center justify-center gap-3 mb-4",
+              isLoading || !acceptedTerms
                 ? "bg-slate-800 text-slate-400 cursor-not-allowed border border-white/5"
                 : "bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white shadow-lg shadow-blue-500/25 active:scale-95"
             )}
@@ -481,7 +553,21 @@ const PricingModal: React.FC<PricingModalProps> = ({ isOpen, onClose }) => {
             {isLoading ? 'Processing...' : 'Upgrade Now'}
           </button>
 
-          <div className="text-center space-y-6">
+          {!user && (
+            <div className="text-center mb-6">
+              <p className="text-[11px] text-slate-500 mb-3">
+                Please sign in to your account before upgrading.
+              </p>
+              <button
+                onClick={() => window.location.href = 'https://cyberia.tn/login'}
+                className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-white/5 hover:bg-white/10 text-white text-xs font-semibold border border-white/10 transition-all active:scale-95"
+              >
+                Sign In with Google
+              </button>
+            </div>
+          )}
+
+          <div className="text-center space-y-6 mt-4">
             <div className="p-4 rounded-2xl bg-black/20 border border-white/5 flex items-center gap-3 text-left">
               <div className="w-8 h-8 rounded-full bg-blue-500/10 flex items-center justify-center shrink-0">
                 <Shield className="w-4 h-4 text-blue-400" />

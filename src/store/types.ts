@@ -131,6 +131,7 @@ export interface CyberiaState {
 export interface AuthState {
   user: User | null;
   accessToken: string | null;
+  accessTokenExpiresAt: number | null;
   refreshSecret: string | null;
   grantedScopes: string[];
   status: 'idle' | 'loading' | 'authenticated' | 'unauthenticated';
@@ -142,7 +143,7 @@ export interface AuthState {
   activeDownloads: string[];
   isOnline: boolean;
 
-  setAuthenticatedUser: (user: User, token: string, refreshSecret?: string, scopes?: string[]) => Promise<void>;
+  setAuthenticatedUser: (user: User, token: string, refreshSecret?: string, scopes?: string[], expiresIn?: number) => Promise<void>;
   handleAuthCode: (code: string) => Promise<void>;
   requestServiceAccess: (scope: string, token: string) => void;
   signOut: () => Promise<void>;
@@ -167,6 +168,8 @@ export interface AuthState {
   upgradePlan: (plan: SubscriptionPlan, period?: AccessPeriod) => void;
   checkExpiry: () => void;
   refreshProfile: () => Promise<void>;
+  getOrRefreshToken: () => Promise<string | null>;
   updateSettings: (settings: Partial<User['settings']>) => Promise<void>;
   cancelSubscription: () => void;
+  setupRefreshInterval: () => void;
 }
