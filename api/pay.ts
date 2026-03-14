@@ -237,7 +237,7 @@ async function handleInit(req: VercelRequest, res: VercelResponse) {
         await supabase.from('payments').insert({
             payment_ref: payment_id,
             user_id: userId,
-            amount: amountInMillimes,
+            amount: amount, // Store major unit (8 or 19) for human readability
             currency: currency,
             status: 'pending',
             terms_version: termsVersion,
@@ -252,6 +252,7 @@ async function handleInit(req: VercelRequest, res: VercelResponse) {
                 currency
             }
         });
+
 
         return res.status(200).json({ payUrl: link, paymentId: payment_id });
 
@@ -657,7 +658,7 @@ async function handlePolarWebhook(req: VercelRequest, res: VercelResponse, rawBo
                 await supabase.from('payments').insert({
                     payment_ref: paymentRef,
                     user_id: userId,
-                    amount: data.amount || 0,
+                    amount: Math.round((data.amount || 0) / 100), // Convert Polar cents to major unit (e.g. 800 -> 8)
                     currency: data.currency || 'USD',
                     status: 'completed',
                     terms_version: consentMeta.termsVersion || null,
