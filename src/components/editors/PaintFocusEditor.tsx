@@ -4,6 +4,7 @@ import { useThoughtPayload } from '../thought/hooks/useThoughtPayload';
 import { Trash2, Palette, MousePointer2, Eraser } from 'lucide-react';
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
+import { motion } from 'framer-motion';
 import { FocusEditorShell } from './FocusEditorShell';
 
 function cn(...inputs: ClassValue[]) {
@@ -41,12 +42,12 @@ const EditorContent: React.FC<{
     {isEditMode ? (
       <>
         {/* Tools */}
-        <div className="w-full md:w-20 bg-white/5 rounded-xl md:rounded-[2.5rem] border border-white/10 p-2 md:p-4 flex flex-row md:flex-col gap-2 md:gap-4 items-center overflow-x-auto md:overflow-y-auto no-scrollbar custom-scroll h-14 md:h-auto flex-shrink-0">
+        <div className="w-full md:w-20 bg-[var(--bg-main)]/20 rounded-xl md:rounded-[2.5rem] border border-[var(--glass-border)] p-2 md:p-4 flex flex-row md:flex-col gap-2 md:gap-4 items-center overflow-x-auto md:overflow-y-auto no-scrollbar custom-scroll h-14 md:h-auto flex-shrink-0">
           <button
             onClick={() => setTool('brush')}
             className={cn(
               "w-10 h-10 md:w-12 md:h-12 rounded-lg md:rounded-2xl flex items-center justify-center transition-all flex-shrink-0",
-              tool === 'brush' ? "bg-[var(--accent)] text-white" : "text-white/40 hover:bg-white/5"
+              tool === 'brush' ? "bg-[var(--accent)] text-[var(--accent-contrast)] shadow-lg shadow-[var(--accent-glow)]/20" : "text-[var(--text-muted)] hover:bg-white/5 hover:text-[var(--text-primary)]"
             )}
           >
             <MousePointer2 className="w-4 h-4 md:w-5 md:h-5" />
@@ -55,25 +56,25 @@ const EditorContent: React.FC<{
             onClick={() => setTool('eraser')}
             className={cn(
               "w-10 h-10 md:w-12 md:h-12 rounded-lg md:rounded-2xl flex items-center justify-center transition-all flex-shrink-0",
-              tool === 'eraser' ? "bg-[var(--accent)] text-white" : "text-white/40 hover:bg-white/5"
+              tool === 'eraser' ? "bg-[var(--accent)] text-[var(--accent-contrast)] shadow-lg shadow-[var(--accent-glow)]/20" : "text-[var(--text-muted)] hover:bg-white/5 hover:text-[var(--text-primary)]"
             )}
           >
             <Eraser className="w-4 h-4 md:w-5 md:h-5" />
           </button>
-          <div className="hidden md:block w-8 h-px bg-white/10 my-2" />
-          <button onClick={() => setIsNeon(!isNeon)} className={cn("text-[7px] md:text-[8px] font-black uppercase tracking-widest px-2 py-1 rounded-lg border flex-shrink-0", isNeon ? "bg-[var(--accent)]/20 border-[var(--accent)] text-[var(--accent-secondary)]" : "bg-white/5 border-white/10 text-white/40")}>Neon</button>
-          <div className="hidden md:block w-8 h-px bg-white/10 my-2" />
+          <div className="hidden md:block w-8 h-px bg-[var(--glass-border)] my-2" />
+          <button onClick={() => setIsNeon(!isNeon)} className={cn("text-[7px] md:text-[8px] font-black uppercase tracking-widest px-2 py-1 rounded-lg border flex-shrink-0 transition-all", isNeon ? "bg-[var(--accent)]/20 border-[var(--accent)] text-[var(--accent-secondary)]" : "bg-white/5 border-[var(--glass-border)] text-[var(--text-muted)] hover:text-[var(--text-primary)]")}>Neon</button>
+          <div className="hidden md:block w-8 h-px bg-[var(--glass-border)] my-2" />
           {BRUSH_SIZES.map(size => (
-            <button key={size} onClick={() => setBrushSize(size)} className={cn("w-8 h-8 md:w-10 md:h-10 flex items-center justify-center rounded-lg md:rounded-xl transition-all flex-shrink-0", brushSize === size ? "bg-white/10 text-white" : "text-white/20")}>
+            <button key={size} onClick={() => setBrushSize(size)} className={cn("w-8 h-8 md:w-10 md:h-10 flex items-center justify-center rounded-lg md:rounded-xl transition-all flex-shrink-0", brushSize === size ? "bg-white/10 text-[var(--text-primary)] border border-white/20" : "text-[var(--text-muted)] hover:text-[var(--text-primary)]")}>
               <div className="rounded-full bg-current" style={{ width: Math.max(2, size / 5), height: Math.max(2, size / 5) }} />
             </button>
           ))}
           <div className="hidden md:flex flex-1" />
-          <button onClick={clearCanvas} className="p-2 md:p-3 hover:bg-red-500/20 text-red-400 rounded-lg md:rounded-xl transition-all flex-shrink-0 ml-auto md:ml-0"><Trash2 className="w-4 h-4 md:w-5 md:h-5" /></button>
+          <button onClick={clearCanvas} className="p-2 md:p-3 hover:bg-red-500/20 text-red-400 rounded-lg md:rounded-xl transition-all flex-shrink-0 ml-auto md:ml-0 border border-transparent hover:border-red-500/20"><Trash2 className="w-4 h-4 md:w-5 md:h-5" /></button>
         </div>
 
         {/* Canvas Area */}
-        <div ref={containerRef} className="flex-1 bg-black rounded-2xl md:rounded-[2.5rem] border border-white/10 overflow-hidden relative shadow-inner min-h-[200px] md:min-h-[300px]">
+        <div ref={containerRef} className="flex-1 bg-black rounded-2xl md:rounded-[2.5rem] border border-[var(--glass-border)] overflow-hidden relative shadow-inner min-h-[200px] md:min-h-[300px]">
           <canvas
             ref={canvasRef}
             className="w-full h-full cursor-crosshair touch-none"
@@ -88,20 +89,20 @@ const EditorContent: React.FC<{
         </div>
 
         {/* Colors */}
-        <div className="w-full md:w-20 bg-white/5 rounded-xl md:rounded-[2.5rem] border border-white/10 p-2 md:p-4 flex flex-row md:flex-col gap-2 md:gap-4 items-center overflow-x-auto md:overflow-y-auto no-scrollbar custom-scroll h-14 md:h-auto flex-shrink-0">
+        <div className="w-full md:w-20 bg-[var(--bg-main)]/20 rounded-xl md:rounded-[2.5rem] border border-[var(--glass-border)] p-2 md:p-4 flex flex-row md:flex-col gap-2 md:gap-4 items-center overflow-x-auto md:overflow-y-auto no-scrollbar custom-scroll h-14 md:h-auto flex-shrink-0">
           {COLORS.map(c => (
-            <button key={c} onClick={() => { setColor(c); setTool('brush'); }} className={cn("w-8 h-8 md:w-10 md:h-10 rounded-full border transition-all transform hover:scale-110 flex-shrink-0", color === c && tool === 'brush' ? "border-white" : "border-transparent")} style={{ backgroundColor: c }} />
+            <button key={c} onClick={() => { setColor(c); setTool('brush'); }} className={cn("w-8 h-8 md:w-10 md:h-10 rounded-full border transition-all transform hover:scale-110 flex-shrink-0", color === c && tool === 'brush' ? "border-[var(--text-primary)] ring-2 ring-[var(--accent)]/50" : "border-[var(--glass-border)]")} style={{ backgroundColor: c }} />
           ))}
         </div>
       </>
     ) : (
-      <div className="flex-1 bg-black/20 rounded-2xl md:rounded-[2.5rem] border border-white/5 flex items-center justify-center overflow-hidden">
+      <div className="flex-1 bg-black/20 rounded-2xl md:rounded-[2.5rem] border border-[var(--glass-border)] flex items-center justify-center overflow-hidden">
         {drawing ? (
           <img src={drawing} className="max-w-full max-h-full object-contain shadow-2xl" alt="Sketch" />
         ) : (
-          <div className="text-center text-slate-600">
-            <Palette className="w-12 h-12 md:w-16 md:h-16 mx-auto mb-4 opacity-10" />
-            <p className="text-xs md:text-sm font-medium text-slate-700 italic">No drawing yet. Click Edit to start.</p>
+          <div className="text-center">
+            <Palette className="w-12 h-12 md:w-16 md:h-16 mx-auto mb-4 text-[var(--text-muted)] opacity-20" />
+            <p className="text-xs md:text-sm font-medium text-[var(--text-muted)] italic">No drawing yet. Click Edit to start.</p>
           </div>
         )}
       </div>
@@ -236,27 +237,38 @@ const PaintFocusEditor: React.FC = () => {
       description={thought.description}
       isReadOnly={isReadOnly}
       headerActions={
-        <div className="flex bg-white/5 p-1 rounded-xl md:rounded-2xl border border-white/5">
-          <button
-            onClick={() => setIsEditMode(false)}
-            className={cn(
-              "px-4 md:px-6 py-2 md:py-2.5 rounded-lg md:rounded-xl text-[9px] md:text-[10px] font-black uppercase tracking-widest transition-all",
-              !isEditMode ? "bg-slate-700 text-white" : "text-slate-500 hover:text-white"
-            )}
-          >
-            View
-          </button>
-          <button
-            onClick={() => setIsEditMode(true)}
-            disabled={isReadOnly}
-            className={cn(
-              "px-4 md:px-6 py-2 md:py-2.5 rounded-lg md:rounded-xl text-[9px] md:text-[10px] font-black uppercase tracking-widest transition-all",
-              isEditMode ? "bg-[var(--accent)] text-white shadow-lg shadow-[var(--accent-glow)]" : "text-slate-500 hover:text-white",
-              isReadOnly && "opacity-30 cursor-not-allowed"
-            )}
-          >
-            Edit
-          </button>
+        <div className="flex bg-[var(--bg-main)]/40 p-1 rounded-xl md:rounded-2xl border border-[var(--glass-border)] relative">
+          {[
+            { id: false, label: 'View' },
+            { id: true, label: 'Edit' }
+          ].map((mode) => (
+            <button
+              key={mode.label}
+              onClick={() => setIsEditMode(mode.id)}
+              disabled={mode.id === true && isReadOnly}
+                className={cn(
+                  "relative px-4 md:px-6 py-2 md:py-2.5 rounded-lg md:rounded-xl text-[9px] md:text-[10px] font-black uppercase tracking-widest transition-all duration-300 z-10",
+                  isEditMode === mode.id 
+                    ? (mode.id === true ? "text-[var(--accent-contrast)]" : "text-[var(--text-primary)]")
+                    : "text-[var(--text-muted)] hover:text-[var(--text-primary)]",
+                  mode.id === true && isReadOnly && "opacity-30 cursor-not-allowed"
+                )}
+            >
+              {isEditMode === mode.id && (
+                <motion.div
+                  layoutId="activeTab"
+                  className={cn(
+                    "absolute inset-0 rounded-lg md:rounded-xl shadow-lg z-[-1]",
+                    mode.id === true 
+                      ? "bg-[var(--accent)] shadow-[var(--accent-glow)]" 
+                      : "bg-white/10 border border-white/10"
+                  )}
+                  transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
+                />
+              )}
+              {mode.label}
+            </button>
+          ))}
         </div>
       }
     >

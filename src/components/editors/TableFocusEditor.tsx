@@ -4,6 +4,7 @@ import { useThoughtPayload } from '../thought/hooks/useThoughtPayload';
 import { Plus, Trash2, Download } from 'lucide-react';
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
+import { motion } from 'framer-motion';
 import { FocusEditorShell } from './FocusEditorShell';
 
 function cn(...inputs: ClassValue[]) {
@@ -19,14 +20,14 @@ const EditorContent: React.FC<{
   onDeleteRow: (idx: number) => void;
   onDeleteColumn: (idx: number) => void;
 }> = ({ isEditMode, table, onUpdateCell, onAddRow, onAddColumn, onDeleteRow, onDeleteColumn }) => (
-  <div className="flex-1 overflow-auto custom-scroll p-3 md:p-12 relative bg-black/10">
-    <div className="table-wrapper mx-auto w-max min-w-full shadow-2xl mb-12 border border-white/10 rounded-xl md:rounded-3xl bg-black/20 overflow-hidden">
+  <div className="flex-1 overflow-auto custom-scroll p-3 md:p-12 relative bg-[var(--bg-main)]/10">
+    <div className="table-wrapper mx-auto w-max min-w-full shadow-2xl mb-12 border border-[var(--glass-border)] rounded-xl md:rounded-3xl bg-[var(--bg-main)]/20 overflow-hidden">
       <table className="w-full border-collapse">
         <thead>
           <tr>
-            {isEditMode && <th className="p-1 md:p-2 border border-white/5 w-8 md:w-10 bg-black/40"></th>}
+            {isEditMode && <th className="p-1 md:p-2 border border-[var(--glass-border)] w-8 md:w-10 bg-black/40"></th>}
             {table[0]?.map((cell: string, i: number) => (
-              <th key={i} className="p-0 border border-white/5 bg-black/40 min-w-[100px] md:min-w-[150px]">
+              <th key={i} className="p-0 border border-[var(--glass-border)] bg-black/40 min-w-[100px] md:min-w-[150px]">
                 {isEditMode ? (
                   <div className="flex items-center group/h h-full">
                     <input
@@ -47,7 +48,7 @@ const EditorContent: React.FC<{
               </th>
             ))}
             {isEditMode && (
-              <th className="p-1 md:p-2 border border-white/5 w-10 md:w-16 bg-black/40">
+              <th className="p-1 md:p-2 border border-[var(--glass-border)] w-10 md:w-16 bg-black/40">
                 <button onClick={onAddColumn} className="w-full h-full flex items-center justify-center hover:bg-white/5 rounded-md md:rounded-lg py-1 md:py-2 transition-colors">
                   <Plus className="w-4 h-4 md:w-5 md:h-5 text-[var(--accent-secondary)]" />
                 </button>
@@ -61,41 +62,41 @@ const EditorContent: React.FC<{
             return (
               <tr key={actualRow} className="hover:bg-white/[0.02] transition-colors">
                 {isEditMode && (
-                  <td className="p-1 md:p-2 border border-white/5 bg-black/20 text-[8px] md:text-[10px] text-slate-500 font-mono text-center relative group w-8 md:w-10">
+                  <td className="p-1 md:p-2 border border-[var(--glass-border)] bg-black/20 text-[8px] md:text-[10px] text-[var(--text-muted)] font-mono text-center relative group w-8 md:w-10">
                     {actualRow + 1}
-                    <button onClick={() => onDeleteRow(actualRow)} className="absolute inset-0 flex items-center justify-center bg-red-500 text-white opacity-0 group-hover:opacity-100 transition-opacity">
+                    <button onClick={() => onDeleteRow(actualRow)} className="absolute inset-0 flex items-center justify-center bg-red-500 text-[var(--accent-contrast)] opacity-0 group-hover:opacity-100 transition-opacity">
                       <Trash2 className="w-3.5 h-3.5 md:w-4 h-4" />
                     </button>
                   </td>
                 )}
                 {row.map((cell, cIdx) => (
-                  <td key={cIdx} className="border border-white/5 p-0">
+                  <td key={cIdx} className="border border-[var(--glass-border)] p-0">
                     {isEditMode ? (
                       <input
                         value={cell}
                         onChange={(e) => onUpdateCell(actualRow, cIdx, e.target.value)}
-                        className="w-full h-full bg-transparent p-2 md:p-4 outline-none text-[11px] md:text-sm text-white focus:bg-[var(--accent)]/10 transition-colors"
+                        className="w-full h-full bg-transparent p-2 md:p-4 outline-none text-[11px] md:text-sm text-[var(--text-primary)] focus:bg-[var(--accent)]/10 transition-colors"
                         placeholder="..."
                       />
                     ) : (
-                      <div className="p-2 md:p-4 text-[11px] md:text-sm text-white/70 min-h-[36px] md:min-h-[52px] flex items-center">
+                      <div className="p-2 md:p-4 text-[11px] md:text-sm text-[var(--text-dimmed)] min-h-[36px] md:min-h-[52px] flex items-center">
                         {cell}
                       </div>
                     )}
                   </td>
                 ))}
-                {isEditMode && <td className="border border-white/5 bg-black/10"></td>}
+                {isEditMode && <td className="border border-[var(--glass-border)] bg-black/10"></td>}
               </tr>
             );
           })}
           {isEditMode && (
             <tr>
-              <td className="p-1 md:p-2 border border-white/5 text-center bg-black/20">
+              <td className="p-1 md:p-2 border border-[var(--glass-border)] text-center bg-black/20">
                 <button onClick={onAddRow} className="w-full h-full flex items-center justify-center hover:bg-white/5 rounded-md md:rounded-lg py-1 md:py-2 transition-colors">
                   <Plus className="w-4 h-4 md:w-5 md:h-5 text-[var(--accent-secondary)]" />
                 </button>
               </td>
-              <td colSpan={(table[0]?.length || 0) + (isEditMode ? 1 : 0)} className="border border-white/5 bg-black/10"></td>
+              <td colSpan={(table[0]?.length || 0) + (isEditMode ? 1 : 0)} className="border border-[var(--glass-border)] bg-black/10"></td>
             </tr>
           )}
         </tbody>
@@ -186,31 +187,42 @@ const TableFocusEditor: React.FC = () => {
       isReadOnly={isReadOnly}
       stack={stack}
       headerActions={
-        <div className="flex bg-white/5 p-1 rounded-xl md:rounded-2xl border border-white/5">
-          <button
-            onClick={() => setIsEditMode(false)}
-            className={cn(
-              "px-4 md:px-6 py-2 md:py-2.5 rounded-lg md:rounded-xl text-[9px] md:text-[10px] font-black uppercase tracking-widest transition-all",
-              !isEditMode ? "bg-slate-700 text-white" : "text-slate-500 hover:text-white"
-            )}
-          >
-            View
-          </button>
-          <button
-            onClick={() => setIsEditMode(true)}
-            disabled={isReadOnly}
-            className={cn(
-              "px-4 md:px-6 py-2 md:py-2.5 rounded-lg md:rounded-xl text-[9px] md:text-[10px] font-black uppercase tracking-widest transition-all",
-              isEditMode ? "bg-[var(--accent)] text-white shadow-lg shadow-[var(--accent-glow)]" : "text-slate-500 hover:text-white",
-              isReadOnly && "opacity-30 cursor-not-allowed"
-            )}
-          >
-            Edit
-          </button>
+        <div className="flex bg-[var(--bg-main)]/40 p-1 rounded-xl md:rounded-2xl border border-[var(--glass-border)] relative">
+          {[
+            { id: false, label: 'View' },
+            { id: true, label: 'Edit' }
+          ].map((mode) => (
+            <button
+              key={mode.label}
+              onClick={() => setIsEditMode(mode.id)}
+              disabled={mode.id === true && isReadOnly}
+                className={cn(
+                  "relative px-4 md:px-6 py-2 md:py-2.5 rounded-lg md:rounded-xl text-[9px] md:text-[10px] font-black uppercase tracking-widest transition-all duration-300 z-10",
+                  isEditMode === mode.id 
+                    ? (mode.id === true ? "text-[var(--accent-contrast)]" : "text-[var(--text-primary)]")
+                    : "text-[var(--text-muted)] hover:text-[var(--text-primary)]",
+                  mode.id === true && isReadOnly && "opacity-30 cursor-not-allowed"
+                )}
+            >
+              {isEditMode === mode.id && (
+                <motion.div
+                  layoutId="activeTab"
+                  className={cn(
+                    "absolute inset-0 rounded-lg md:rounded-xl shadow-lg z-[-1]",
+                    mode.id === true 
+                      ? "bg-[var(--accent)] shadow-[var(--accent-glow)]" 
+                      : "bg-white/10 border border-white/10"
+                  )}
+                  transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
+                />
+              )}
+              {mode.label}
+            </button>
+          ))}
         </div>
       }
       footerActions={
-        <button onClick={exportCSV} className="text-[8px] md:text-[10px] uppercase font-black tracking-widest text-slate-400 hover:text-white transition-colors flex items-center gap-2">
+        <button onClick={exportCSV} className="text-[8px] md:text-[10px] uppercase font-black tracking-widest text-[var(--text-dimmed)] hover:text-[var(--text-primary)] transition-colors flex items-center gap-2">
           <Download className="w-3.5 h-3.5" /> CSV
         </button>
       }

@@ -41,7 +41,7 @@ const EditorContent: React.FC<{
           <Reorder.Item
             key={task.id}
             value={task}
-            className="group flex items-center gap-3 md:gap-4 bg-white/[0.03] hover:bg-white/[0.05] border border-white/5 p-3 md:p-4 rounded-xl md:rounded-2xl transition-colors"
+            className="group flex items-center gap-3 md:gap-4 bg-white/[0.03] hover:bg-white/[0.05] border border-[var(--glass-border)] p-3 md:p-4 rounded-xl md:rounded-2xl transition-colors"
             dragElastic={0.15}
             layout
             whileDrag={{ scale: 1.02, boxShadow: "0 20px 40px rgba(0,0,0,0.3)" }}
@@ -49,7 +49,7 @@ const EditorContent: React.FC<{
             onDragStart={onDragStart}
             onDragEnd={onDragEnd}
           >
-            <div className="cursor-grab active:cursor-grabbing text-slate-600 p-1">
+            <div className="cursor-grab active:cursor-grabbing text-[var(--text-muted)] p-1">
               <GripVertical className="w-4 h-4 md:w-5 md:h-5" />
             </div>
             <input
@@ -64,13 +64,13 @@ const EditorContent: React.FC<{
               onChange={(e) => onUpdate(task.id, { text: e.target.value })}
               className={cn(
                 "flex-1 bg-transparent text-base md:text-lg outline-none border-none p-0 transition-all min-w-0",
-                task.done ? "text-slate-500 line-through" : "text-slate-200"
+                task.done ? "text-[var(--text-muted)] line-through" : "text-[var(--text-primary)]"
               )}
               placeholder="What needs to be done?"
             />
             <button
               onClick={() => onDelete(task.id)}
-              className="p-2 text-slate-500 hover:text-red-400 transition-all flex-shrink-0"
+              className="p-2 text-[var(--text-muted)] hover:text-red-400 transition-all flex-shrink-0"
             >
               <Trash2 className="w-4 h-4 md:w-5 md:h-5" />
             </button>
@@ -79,7 +79,7 @@ const EditorContent: React.FC<{
         <button
           onClick={onAdd}
           disabled={isReadOnly}
-          className="w-full flex items-center justify-center gap-2 p-4 rounded-xl md:rounded-2xl border-2 border-dashed border-white/5 text-slate-500 hover:border-[var(--accent)]/50 hover:text-[var(--accent-secondary)] transition-all mt-4"
+          className="w-full flex items-center justify-center gap-2 p-4 rounded-xl md:rounded-2xl border-2 border-dashed border-[var(--glass-border)] text-[var(--text-muted)] hover:border-[var(--accent)]/50 hover:text-[var(--accent-secondary)] transition-all mt-4"
         >
           <Plus className="w-5 h-5" />
           <span className="text-[10px] md:text-xs font-black uppercase tracking-widest">Add New Task</span>
@@ -102,22 +102,22 @@ const EditorContent: React.FC<{
                 !isReadOnly && "cursor-pointer",
                 task.done
                   ? "bg-[var(--accent)]/5 border-[var(--accent)]/20"
-                  : "bg-white/[0.02] border-white/5 hover:bg-white/[0.04] hover:border-white/10"
+                  : "bg-white/[0.02] border-[var(--glass-border)] hover:bg-white/[0.04] hover:border-[var(--accent)]/20"
               )}
             >
               <div className={cn(
                 "w-6 h-6 md:w-8 md:h-8 rounded-lg md:rounded-xl border-2 flex items-center justify-center transition-all flex-shrink-0",
                 task.done
                   ? "bg-[var(--status-todo)] border-[var(--status-todo)] text-white"
-                  : "border-white/20 text-transparent"
+                  : "border-[var(--glass-border)] text-transparent"
               )}>
                 <Plus className={cn("w-4 h-4 md:w-5 md:h-5 transition-transform", task.done ? "rotate-45" : "rotate-0")} />
               </div>
               <span className={cn(
                 "text-base md:text-xl transition-all break-words min-w-0 flex-1",
-                task.done ? "text-slate-500 line-through" : "text-slate-200 font-medium"
+                task.done ? "text-[var(--text-muted)] line-through" : "text-[var(--text-primary)] font-medium"
               )}>
-                {task.text || <span className="text-slate-700 italic text-sm">Empty task...</span>}
+                {task.text || <span className="text-[var(--text-muted)] opacity-50 italic text-sm">Empty task...</span>}
               </span>
             </div>
           ))
@@ -217,37 +217,48 @@ const TasksFocusEditor: React.FC = () => {
       isReadOnly={isReadOnly}
       stack={stack}
       headerActions={
-        <div className="flex bg-white/5 p-1 rounded-xl md:rounded-2xl border border-white/5">
-          <button
-            onClick={() => setIsEditMode(false)}
-            className={cn(
-              "px-4 md:px-6 py-2 md:py-2.5 rounded-lg md:rounded-xl text-[9px] md:text-[10px] font-black uppercase tracking-widest transition-all",
-              !isEditMode ? "bg-slate-700 text-white" : "text-slate-500 hover:text-white"
-            )}
-          >
-            View
-          </button>
-          <button
-            onClick={() => setIsEditMode(true)}
-            disabled={isReadOnly}
-            className={cn(
-              "px-4 md:px-6 py-2 md:py-2.5 rounded-lg md:rounded-xl text-[9px] md:text-[10px] font-black uppercase tracking-widest transition-all",
-              isEditMode ? "bg-[var(--accent)] text-white shadow-lg shadow-[var(--accent-glow)]" : "text-slate-500 hover:text-white",
-              isReadOnly && "opacity-30 cursor-not-allowed"
-            )}
-          >
-            Manage
-          </button>
+        <div className="flex bg-[var(--bg-main)]/40 p-1 rounded-xl md:rounded-2xl border border-[var(--glass-border)] relative">
+          {[
+            { id: false, label: 'View' },
+            { id: true, label: 'Manage' }
+          ].map((mode) => (
+            <button
+              key={mode.label}
+              onClick={() => setIsEditMode(mode.id)}
+              disabled={mode.id === true && isReadOnly}
+                className={cn(
+                  "relative px-4 md:px-6 py-2 md:py-2.5 rounded-lg md:rounded-xl text-[9px] md:text-[10px] font-black uppercase tracking-widest transition-all duration-300 z-10",
+                  isEditMode === mode.id 
+                    ? (mode.id === true ? "text-[var(--accent-contrast)]" : "text-[var(--text-primary)]")
+                    : "text-[var(--text-muted)] hover:text-[var(--text-primary)]",
+                  mode.id === true && isReadOnly && "opacity-30 cursor-not-allowed"
+                )}
+            >
+              {isEditMode === mode.id && (
+                <motion.div
+                  layoutId="activeTab"
+                  className={cn(
+                    "absolute inset-0 rounded-lg md:rounded-xl shadow-lg z-[-1]",
+                    mode.id === true 
+                      ? "bg-[var(--accent)] shadow-[var(--accent-glow)]" 
+                      : "bg-white/10 border border-white/10"
+                  )}
+                  transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
+                />
+              )}
+              {mode.label}
+            </button>
+          ))}
         </div>
       }
       footerStatus={
         <div className="flex items-center gap-4">
-          <p className="text-[8px] md:text-[10px] uppercase font-black tracking-widest text-slate-600">
+          <p className="text-[8px] md:text-[10px] uppercase font-black tracking-widest text-[var(--text-muted)]">
             {localTasks.filter(t => t.done).length} / {localTasks.length} Completed
           </p>
           <div className="w-20 md:w-32 h-1 bg-white/5 rounded-full overflow-hidden">
             <motion.div 
-              className="h-full bg-[var(--status-todo)]"
+              className="h-full bg-[var(--status-done)]"
               initial={{ width: 0 }}
               animate={{ width: `${(localTasks.filter(t => t.done).length / (localTasks.length || 1)) * 100}%` }}
             />

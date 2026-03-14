@@ -272,26 +272,26 @@ body.low-perf .animate-breathe {
 }
 
 .markdown-body strong {
-  color: white;
+  color: var(--text-primary);
 }
 
 .focus-markdown-body {
   font-size: 16px;
   line-height: 1.8;
-  color: rgba(255, 255, 255, 0.8);
+  color: var(--text-dimmed);
 }
 
 .focus-markdown-body h1 {
   font-size: 32px;
   font-weight: 800;
-  color: white;
+  color: var(--text-primary);
   margin-bottom: 24px;
 }
 
 .focus-markdown-body h2 {
   font-size: 24px;
   font-weight: 700;
-  color: white;
+  color: var(--text-primary);
   margin-top: 32px;
   margin-bottom: 16px;
 }
@@ -307,7 +307,7 @@ body.low-perf .animate-breathe {
 }
 
 .focus-markdown-body strong {
-  color: white;
+  color: var(--text-primary);
 }
 
 /* Chat Table Optimization */

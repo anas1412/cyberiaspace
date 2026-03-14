@@ -66,10 +66,10 @@ export const FocusEditorShell: React.FC<FocusEditorShellProps> = ({
                     onChange={(e) => onTitleChange(e.target.value)}
                     placeholder="Untitled Thought"
                     readOnly={isReadOnly}
-                    className="bg-transparent border-none outline-none text-white font-bold text-lg md:text-xl placeholder:text-white/20"
+                    className="bg-transparent border-none outline-none text-[var(--text-primary)] font-bold text-lg md:text-xl placeholder:text-[var(--text-muted)]/20"
                   />
                   {description && description !== 'No description available.' && (
-                    <p className="text-[10px] md:text-[11px] text-slate-500 italic leading-relaxed mt-1 line-clamp-2 md:line-clamp-none">
+                    <p className="text-[10px] md:text-[11px] text-[var(--text-muted)] italic leading-relaxed mt-1 line-clamp-2 md:line-clamp-none">
                       {description}
                     </p>
                   )}
@@ -81,7 +81,7 @@ export const FocusEditorShell: React.FC<FocusEditorShellProps> = ({
                 {headerActions}
                 <button
                   onClick={onClose}
-                  className="p-2 rounded-lg text-slate-400 hover:bg-white/5 transition-all"
+                  className="p-2 rounded-lg text-[var(--text-muted)] hover:bg-white/5 transition-all"
                 >
                   <X className="w-5 h-5 md:w-6 md:h-6" />
                 </button>

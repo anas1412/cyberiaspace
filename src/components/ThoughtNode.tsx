@@ -235,8 +235,7 @@ const ThoughtNode: React.FC<ThoughtNodeProps> = React.memo(({ thought, registerE
     >
       {showPing && <div className="absolute inset-0 rounded-2xl border-2 border-[var(--accent)] animate-sonar pointer-events-none z-0" />}
       
-      {/* DELETING OVERLAY */}
-      {isDeleting && (
+          {isDeleting && (
         <div className="absolute inset-0 z-[50] rounded-2xl bg-black/60 backdrop-blur-sm border border-red-500/30 flex flex-col items-center justify-center gap-3 animate-in fade-in duration-300">
           <div className="relative">
             <Loader2 className="w-8 h-8 text-red-500 animate-spin" />

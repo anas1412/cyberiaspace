@@ -36,10 +36,10 @@ export const TextRenderer: React.FC<TextRendererProps> = ({
     return (
       <div 
         data-trigger="text" 
-        className="mt-1 flex flex-col items-center gap-2 py-4 bg-black/20 rounded-xl border border-white/5 group/text relative cursor-pointer transition-colors hover:bg-white/[0.05]"
+        className="mt-1 flex flex-col items-center gap-2 py-4 bg-[var(--bg-main)]/20 rounded-xl border border-[var(--glass-border)] group/text relative cursor-pointer transition-colors hover:bg-white/[0.05]"
       >
-        <Type className="w-6 h-6 text-white/20" />
-        <span className="text-[10px] text-white/20 font-bold uppercase tracking-widest">
+        <Type className="w-6 h-6 text-[var(--text-muted)]" />
+        <span className="text-[10px] text-[var(--text-muted)] font-bold uppercase tracking-widest">
           {hasRemoteContent ? 'Sync Pending' : 'Write Note'}
         </span>
         {hasRemoteContent && (

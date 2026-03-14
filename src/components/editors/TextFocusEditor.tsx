@@ -5,6 +5,7 @@ import { Download } from 'lucide-react';
 import { marked } from 'marked';
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
+import { motion } from 'framer-motion';
 import { FocusEditorShell } from './FocusEditorShell';
 
 function cn(...inputs: ClassValue[]) {
@@ -24,7 +25,7 @@ const EditorContent: React.FC<{
           value={content}
           onChange={(e) => onContentChange(e.target.value)}
           readOnly={isReadOnly}
-          className="w-full h-full bg-transparent text-lg md:text-xl text-slate-200 leading-relaxed outline-none border-none resize-none placeholder:text-slate-700 font-['Plus_Jakarta_Sans',_sans-serif]"
+          className="w-full h-full bg-transparent text-lg md:text-xl text-[var(--text-primary)] leading-relaxed outline-none border-none resize-none placeholder:text-[var(--text-muted)]/30 font-['Plus_Jakarta_Sans',_sans-serif]"
           placeholder="Dive deep into your thoughts..."
           autoFocus
         />
@@ -108,34 +109,45 @@ const TextFocusEditor: React.FC = () => {
       isReadOnly={isReadOnly}
       stack={stack}
       headerActions={
-        <div className="flex bg-white/5 p-1 rounded-xl md:rounded-2xl border border-white/5">
-          <button
-            onClick={() => setIsEditMode(false)}
-            className={cn(
-              "px-4 md:px-6 py-2 md:py-2.5 rounded-lg md:rounded-xl text-[9px] md:text-[10px] font-black uppercase tracking-widest transition-all",
-              !isEditMode ? "bg-slate-700 text-white" : "text-slate-500 hover:text-white"
-            )}
-          >
-            View
-          </button>
-          <button
-            onClick={() => setIsEditMode(true)}
-            disabled={isReadOnly}
-            className={cn(
-              "px-4 md:px-6 py-2 md:py-2.5 rounded-lg md:rounded-xl text-[9px] md:text-[10px] font-black uppercase tracking-widest transition-all",
-              isEditMode ? "bg-[var(--accent)] text-white shadow-lg shadow-[var(--accent-glow)]" : "text-slate-500 hover:text-white",
-              isReadOnly && "opacity-30 cursor-not-allowed"
-            )}
-          >
-            Edit
-          </button>
+        <div className="flex bg-[var(--bg-main)]/40 p-1 rounded-xl md:rounded-2xl border border-[var(--glass-border)] relative">
+          {[
+            { id: false, label: 'View' },
+            { id: true, label: 'Edit' }
+          ].map((mode) => (
+            <button
+              key={mode.label}
+              onClick={() => setIsEditMode(mode.id)}
+              disabled={mode.id === true && isReadOnly}
+                className={cn(
+                  "relative px-4 md:px-6 py-2 md:py-2.5 rounded-lg md:rounded-xl text-[9px] md:text-[10px] font-black uppercase tracking-widest transition-all duration-300 z-10",
+                  isEditMode === mode.id 
+                    ? (mode.id === true ? "text-[var(--accent-contrast)]" : "text-[var(--text-primary)]")
+                    : "text-[var(--text-muted)] hover:text-[var(--text-primary)]",
+                  mode.id === true && isReadOnly && "opacity-30 cursor-not-allowed"
+                )}
+            >
+              {isEditMode === mode.id && (
+                <motion.div
+                  layoutId="activeTab"
+                  className={cn(
+                    "absolute inset-0 rounded-lg md:rounded-xl shadow-lg z-[-1]",
+                    mode.id === true 
+                      ? "bg-[var(--accent)] shadow-[var(--accent-glow)]" 
+                      : "bg-white/10 border border-white/10"
+                  )}
+                  transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
+                />
+              )}
+              {mode.label}
+            </button>
+          ))}
         </div>
       }
       footerStatus={
-        <p className="text-[8px] md:text-[10px] uppercase font-black tracking-widest text-slate-600">Markdown Rendering Supported</p>
+        <p className="text-[8px] md:text-[10px] uppercase font-black tracking-widest text-[var(--text-muted)]">Markdown Rendering Supported</p>
       }
       footerActions={
-        <button onClick={exportTXT} className="text-[8px] md:text-[10px] uppercase font-black tracking-widest text-slate-400 hover:text-white transition-colors flex items-center gap-2">
+        <button onClick={exportTXT} className="text-[8px] md:text-[10px] uppercase font-black tracking-widest text-[var(--text-dimmed)] hover:text-[var(--text-primary)] transition-colors flex items-center gap-2">
           <Download className="w-3.5 h-3.5" /> TXT
         </button>
       }

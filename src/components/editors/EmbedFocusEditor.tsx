@@ -383,17 +383,17 @@ const EmbedFocusEditor: React.FC = () => {
       footerStatus={
         <div className="flex items-center gap-4">
           <div className="flex flex-col">
-            <span className="text-[7px] font-black text-slate-500 uppercase tracking-widest mb-0.5">Platform</span>
+            <span className="text-[7px] font-black text-[var(--text-muted)] uppercase tracking-widest mb-0.5">Platform</span>
             <div className="flex items-center gap-1.5">
               <Icon className={cn("w-3 h-3", config.color)} />
-              <span className="text-[9px] font-black text-slate-300 uppercase tracking-widest">{config.label}</span>
+              <span className="text-[9px] font-black text-[var(--text-dimmed)] uppercase tracking-widest">{config.label}</span>
             </div>
           </div>
           {thought.author && (
             <>
               <div className="w-px h-6 bg-white/5" />
               <div className="flex flex-col">
-                <span className="text-[7px] font-black text-slate-500 uppercase tracking-widest mb-0.5">Author</span>
+                <span className="text-[7px] font-black text-[var(--text-muted)] uppercase tracking-widest mb-0.5">Author</span>
                 <span className={cn("text-[9px] font-black uppercase tracking-widest whitespace-nowrap", config.color)}>
                   {thought.author}
                 </span>
@@ -408,7 +408,7 @@ const EmbedFocusEditor: React.FC = () => {
             href={content} 
             target="_blank" 
             rel="noopener noreferrer" 
-            className="p-2.5 bg-white/5 hover:bg-white/10 rounded-xl text-slate-400 hover:text-white transition-all border border-white/5 group active:scale-95"
+            className="p-2.5 bg-white/5 hover:bg-white/10 rounded-xl text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-all border border-[var(--glass-border)] group active:scale-95"
             title="Open in New Tab"
           >
             <ExternalLink className="w-3.5 h-3.5 group-hover:scale-110 transition-transform" />

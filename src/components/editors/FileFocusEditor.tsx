@@ -62,28 +62,28 @@ const ColorPicker: React.FC<{ value: string; onChange: (val: string) => void; di
             onClick={(e) => e.stopPropagation()}
             className="absolute bottom-full mb-3 left-0 z-[100] glass border border-white/10 rounded-2xl p-3 shadow-2xl min-w-[180px]"
           >
-            <div className="grid grid-cols-4 gap-2 mb-3">
-              {STACK_COLORS.map(color => (
-                <button
-                  key={color}
-                  onClick={() => { onChange(color); setIsOpen(false); }}
-                  className={cn(
-                    "w-8 h-8 rounded-lg border-2 transition-all hover:scale-110",
-                    value === color ? "border-white" : "border-transparent"
-                  )}
-                  style={{ backgroundColor: color }}
-                />
-              ))}
-            </div>
-            <div className="relative pt-2 border-t border-white/5">
-              <input 
-                type="color" 
-                value={value.startsWith('#') ? value : '#6366f1'} 
-                onChange={(e) => onChange(e.target.value)}
-                className="w-full h-8 bg-transparent cursor-pointer rounded-lg overflow-hidden"
+          <div className="grid grid-cols-4 gap-2 mb-3">
+            {STACK_COLORS.map(color => (
+              <button
+                key={color}
+                onClick={() => { onChange(color); setIsOpen(false); }}
+                className={cn(
+                  "w-8 h-8 rounded-lg border-2 transition-all hover:scale-110",
+                  value === color ? "border-[var(--text-primary)]" : "border-transparent"
+                )}
+                style={{ backgroundColor: color }}
               />
-              <p className="text-[7px] font-black uppercase tracking-widest text-slate-500 mt-1 text-center">Custom Hex</p>
-            </div>
+            ))}
+          </div>
+          <div className="relative pt-2 border-t border-[var(--glass-border)]">
+            <input 
+              type="color" 
+              value={value.startsWith('#') ? value : '#6366f1'} 
+              onChange={(e) => onChange(e.target.value)}
+              className="w-full h-8 bg-transparent cursor-pointer rounded-lg overflow-hidden"
+            />
+            <p className="text-[7px] font-black uppercase tracking-widest text-[var(--text-muted)] mt-1 text-center">Custom Hex</p>
+          </div>
           </motion.div>
         )}
       </AnimatePresence>
@@ -291,8 +291,8 @@ const EditorContent: React.FC<{
               </div>
             </div>
             <div className="max-w-xs">
-              <h3 className="text-xl font-black uppercase tracking-[0.2em] text-white mb-3">Sync Pending</h3>
-              <p className="text-xs font-medium text-slate-500 leading-relaxed mb-8 uppercase tracking-widest text-center">
+              <h3 className="text-xl font-black uppercase tracking-[0.2em] text-[var(--text-primary)] mb-3">Sync Pending</h3>
+              <p className="text-xs font-medium text-[var(--text-muted)] leading-relaxed mb-8 uppercase tracking-widest text-center">
                 This content exists only on your other device. Please sync that device to the cloud to access it here.
               </p>
             </div>
@@ -347,29 +347,29 @@ const EditorContent: React.FC<{
               </div>
             ) : (
               <div className="flex flex-col items-center justify-center p-8 text-center">
-                <div className="w-24 h-24 bg-white/5 rounded-3xl border border-white/10 flex items-center justify-center mb-6">
-                  <FileIcon className="w-10 h-10 text-slate-600" />
+                <div className="w-24 h-24 bg-white/5 rounded-3xl border border-[var(--glass-border)] flex items-center justify-center mb-6">
+                  <FileIcon className="w-10 h-10 text-[var(--text-muted)]" />
                 </div>
-                <p className="text-slate-500 text-[10px] font-black uppercase tracking-[0.3em] opacity-50">Preview unavailable for this format</p>
+                <p className="text-[var(--text-muted)] text-[10px] font-black uppercase tracking-[0.3em] opacity-50">Preview unavailable for this format</p>
               </div>
             )}
           </div>
         ) : (
           <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/10 p-8 text-center">
-            <div className="w-24 h-24 bg-white/5 rounded-[2.5rem] border border-white/10 flex items-center justify-center mb-8 shadow-2xl relative group transition-all hover:scale-110 hover:border-[var(--accent)]/30">
-              <Upload className="w-10 h-10 text-slate-500 group-hover:text-[var(--accent)] transition-colors" />
+            <div className="w-24 h-24 bg-white/5 rounded-[2.5rem] border border-[var(--glass-border)] flex items-center justify-center mb-8 shadow-2xl relative group transition-all hover:scale-110 hover:border-[var(--accent)]/30">
+              <Upload className="w-10 h-10 text-[var(--text-muted)] group-hover:text-[var(--accent)] transition-colors" />
               {isUploading && (
                 <div className="absolute inset-0 bg-black/60 rounded-[2.5rem] flex items-center justify-center backdrop-blur-sm">
                   <Loader2 className="w-8 h-8 text-[var(--accent)] animate-spin" />
                 </div>
               )}
             </div>
-            <h3 className="text-xl font-black uppercase tracking-[0.3em] text-white mb-3">Empty Slot</h3>
-            <p className="text-[10px] font-bold text-slate-500 leading-relaxed mb-8 uppercase tracking-[0.2em] opacity-60">
+            <h3 className="text-xl font-black uppercase tracking-[0.3em] text-[var(--text-primary)] mb-3">Empty Slot</h3>
+            <p className="text-[10px] font-bold text-[var(--text-muted)] leading-relaxed mb-8 uppercase tracking-[0.2em] opacity-60">
               Drop a file or select one to begin
             </p>
             <label className={cn(
-              "inline-flex items-center gap-3 px-10 py-5 bg-[var(--accent)] hover:brightness-110 text-white rounded-2xl text-[10px] font-black uppercase tracking-[0.3em] transition-all cursor-pointer shadow-xl shadow-[var(--accent)]/10 active:scale-95",
+              "inline-flex items-center gap-3 px-10 py-5 bg-[var(--accent)] hover:brightness-110 text-[var(--accent-contrast)] rounded-2xl text-[10px] font-black uppercase tracking-[0.3em] transition-all cursor-pointer shadow-xl shadow-[var(--accent)]/10 active:scale-95",
               isUploading && "opacity-50 pointer-events-none"
             )}>
               <Upload className="w-4 h-4" />
@@ -401,10 +401,10 @@ const EditorContent: React.FC<{
                   </div>
                   <div className="flex items-center gap-2 group/stackname">
                     {isRenamingStack ? (
-                      <div className="flex items-center gap-1 bg-white/5 rounded-lg px-2 py-1 border border-white/10">
+                      <div className="flex items-center gap-1 bg-white/5 rounded-lg px-2 py-1 border border-[var(--glass-border)]">
                         <input
                           autoFocus
-                          className="bg-transparent text-[9px] font-black uppercase tracking-[0.3em] text-white border-none outline-none w-24"
+                          className="bg-transparent text-[9px] font-black uppercase tracking-[0.3em] text-[var(--text-primary)] border-none outline-none w-24"
                           value={tempStackName}
                           onChange={(e) => setTempStackName(e.target.value)}
                           onKeyDown={(e) => {
@@ -426,7 +426,7 @@ const EditorContent: React.FC<{
                     ) : (
                       <>
                         <span 
-                          className="text-[9px] font-black uppercase tracking-[0.3em] text-slate-400 group-hover/stackheader:text-slate-200 transition-colors pt-[1px]"
+                          className="text-[9px] font-black uppercase tracking-[0.3em] text-[var(--text-muted)] group-hover/stackheader:text-[var(--text-primary)] transition-colors pt-[1px]"
                           onDoubleClick={() => { if (!isReadOnly && !isDemo) setIsRenamingStack(true); }}
                         >
                           {stack?.name || 'Collection'}
@@ -436,7 +436,7 @@ const EditorContent: React.FC<{
                             onClick={(e) => { e.stopPropagation(); setIsRenamingStack(true); }}
                             className="p-1 opacity-0 group-hover/stackname:opacity-100 hover:bg-white/10 rounded transition-all"
                           >
-                            <Edit2 className="w-2 h-2 text-slate-500 hover:text-white" />
+                            <Edit2 className="w-2 h-2 text-[var(--text-muted)] hover:text-[var(--text-primary)]" />
                           </button>
                         )}
                       </>
@@ -444,11 +444,11 @@ const EditorContent: React.FC<{
                   </div>
                 </div>
                 <div className="flex items-center gap-2">
-                  <span className="text-[8px] font-bold text-slate-500 uppercase tracking-[0.2em] group-hover/stackheader:text-slate-300 transition-colors">
+                  <span className="text-[8px] font-bold text-[var(--text-muted)] uppercase tracking-[0.2em] group-hover/stackheader:text-[var(--text-dimmed)] transition-colors">
                     {stackItems.findIndex(i => i.id === thought.id) + 1} / {stackItems.length}
                   </span>
                   <div 
-                    className="p-1 hover:bg-white/5 rounded-md text-slate-500 group-hover/stackheader:text-white transition-all"
+                    className="p-1 hover:bg-white/5 rounded-md text-[var(--text-muted)] group-hover/stackheader:text-[var(--text-primary)] transition-all"
                     title={showPreviews ? "Hide Previews" : "Show Previews"}
                   >
                     {showPreviews ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
@@ -770,20 +770,20 @@ const FileFocusEditor: React.FC = () => {
       footerStatus={
         <div className="flex items-center gap-4">
           <div className="flex flex-col">
-            <span className="text-[7px] font-black text-slate-500 uppercase tracking-widest mb-0.5">Origin</span>
-            <span className="text-[9px] font-black text-slate-300 uppercase tracking-widest">{sourceLabel}</span>
+            <span className="text-[7px] font-black text-[var(--text-muted)] uppercase tracking-widest mb-0.5">Origin</span>
+            <span className="text-[9px] font-black text-[var(--text-dimmed)] uppercase tracking-widest">{sourceLabel}</span>
           </div>
           <div className="w-px h-6 bg-white/5" />
           <div className="flex flex-col">
-            <span className="text-[7px] font-black text-slate-500 uppercase tracking-widest mb-0.5">Format</span>
-            <span className="text-[9px] font-black text-slate-300 uppercase tracking-widest truncate max-w-[100px]">
+            <span className="text-[7px] font-black text-[var(--text-muted)] uppercase tracking-widest mb-0.5">Format</span>
+            <span className="text-[9px] font-black text-[var(--text-dimmed)] uppercase tracking-widest truncate max-w-[100px]">
               {isFetching ? '...' : (fileInfo?.type?.split('/')[1]?.toUpperCase() || 'GENERIC')}
             </span>
           </div>
           <div className="w-px h-6 bg-white/5" />
           <div className="flex flex-col">
-            <span className="text-[7px] font-black text-slate-500 uppercase tracking-widest mb-0.5">Payload</span>
-            <span className="text-[9px] font-black text-slate-300 uppercase tracking-widest">
+            <span className="text-[7px] font-black text-[var(--text-muted)] uppercase tracking-widest mb-0.5">Payload</span>
+            <span className="text-[9px] font-black text-[var(--text-dimmed)] uppercase tracking-widest">
               {isFetching ? '...' : (fileInfo?.size ? `${(fileInfo.size / (1024 * 1024)).toFixed(2)}MB` : '0.00MB')}
             </span>
           </div>
@@ -794,7 +794,7 @@ const FileFocusEditor: React.FC = () => {
           {(localPreviewUrl || thought.storageUrl) && (
             <button 
               onClick={handleDownload} 
-              className="p-2.5 bg-white/5 hover:bg-white/10 rounded-xl text-slate-400 hover:text-white transition-all border border-white/5 group active:scale-95" 
+              className="p-2.5 bg-white/5 hover:bg-white/10 rounded-xl text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-all border border-[var(--glass-border)] group active:scale-95" 
               title="Download Locally"
             >
               <Download className="w-3.5 h-3.5 group-hover:scale-110 transition-transform" />
@@ -804,7 +804,7 @@ const FileFocusEditor: React.FC = () => {
             href={thought.storageUrl || localPreviewUrl || undefined} 
             target="_blank" 
             rel="noreferrer" 
-            className="p-2.5 bg-white/5 hover:bg-white/10 rounded-xl text-slate-400 hover:text-white transition-all border border-white/5 group active:scale-95" 
+            className="p-2.5 bg-white/5 hover:bg-white/10 rounded-xl text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-all border border-[var(--glass-border)] group active:scale-95" 
             title="Open in New Tab"
           >
             <ExternalLink className="w-3.5 h-3.5 group-hover:scale-110 transition-transform" />

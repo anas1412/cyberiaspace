@@ -34,7 +34,7 @@ export const ThoughtHeader: React.FC<ThoughtHeaderProps> = ({ thought, isCalenda
         )}
         <p className={cn(
           "text-[13px] font-bold leading-tight break-all",
-          thought.text ? "text-[var(--text-primary)]" : "text-slate-600 italic",
+          thought.text ? "text-[var(--text-primary)]" : "text-[var(--text-muted)] italic",
           isCalendar && !isExpanded && "truncate max-w-[180px]"
         )}>
           {thought.text || thought.placeholder || "Untitled"}

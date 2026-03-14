@@ -29,9 +29,9 @@ export const TableRenderer: React.FC<TableRendererProps> = ({
 
   if (isTableEmpty) {
     return (
-      <div data-trigger="table" className="mt-1 flex flex-col items-center gap-2 py-4 bg-black/20 rounded-xl border border-white/5 group/table relative cursor-pointer transition-colors hover:bg-white/[0.05]">
-        <Table className="w-6 h-6 text-white/20" />
-        <span className="text-[10px] text-white/20 font-bold uppercase tracking-widest">
+      <div data-trigger="table" className="mt-1 flex flex-col items-center gap-2 py-4 bg-[var(--bg-main)]/20 rounded-xl border border-[var(--glass-border)] group/table relative cursor-pointer transition-colors hover:bg-white/[0.05]">
+        <Table className="w-6 h-6 text-[var(--text-muted)]" />
+        <span className="text-[10px] text-[var(--text-muted)] font-bold uppercase tracking-widest">
           {hasRemoteContent ? 'Sync Pending' : 'Build Table'}
         </span>
         {hasRemoteContent && (
@@ -44,7 +44,7 @@ export const TableRenderer: React.FC<TableRendererProps> = ({
           <div className="absolute inset-0 bg-[var(--accent)]/10 opacity-0 group-hover/table:opacity-100 transition-opacity rounded-xl flex items-center justify-center pointer-events-none">
             <button
               onClick={(e) => { e.stopPropagation(); setActiveFocus(thought.id, 'table'); }}
-              className="pointer-events-auto prevent-drag bg-[var(--accent)] text-white p-2 rounded-lg shadow-xl transform scale-90 group-hover/table:scale-100 transition-all hover:scale-110 active:scale-95"
+              className="pointer-events-auto prevent-drag bg-[var(--accent)] text-[var(--accent-contrast)] p-2 rounded-lg shadow-xl transform scale-90 group-hover/table:scale-100 transition-all hover:scale-110 active:scale-95"
             >
               <Maximize2 className="w-4 h-4" />
             </button>
@@ -68,16 +68,16 @@ export const TableRenderer: React.FC<TableRendererProps> = ({
             {visibleRows.map((row, r) => (
               <tr key={r} className={cn(r % 2 === 0 ? "bg-white/[0.01]" : "")}>
                 {row.slice(0, maxCols).map((cell, c) => (
-                  <td key={c} className="p-2 border-b border-white/[0.03] text-white/60 whitespace-nowrap">
+                  <td key={c} className="p-2 border-b border-[var(--glass-border)] text-[var(--text-dimmed)] whitespace-nowrap">
                     {cell}
                   </td>
                 ))}
-                {hasMoreCols && <td className="p-2 border-b border-white/[0.03] text-[8px] opacity-30">...</td>}
+                {hasMoreCols && <td className="p-2 border-b border-[var(--glass-border)] text-[8px] opacity-30">...</td>}
               </tr>
             ))}
             {hasMoreRows && (
               <tr>
-                <td colSpan={Math.min(maxCols, table[0]?.length || 0) + (hasMoreCols ? 1 : 0)} className="text-center text-[8px] opacity-30 py-1">
+                <td colSpan={Math.min(maxCols, table[0]?.length || 0) + (hasMoreCols ? 1 : 0)} className="text-center text-[8px] text-[var(--text-muted)] py-1">
                   ... and {table.length - maxRows} more rows
                 </td>
               </tr>
@@ -89,7 +89,7 @@ export const TableRenderer: React.FC<TableRendererProps> = ({
         <div className="absolute inset-0 bg-[var(--accent)]/10 opacity-0 group-hover/table:opacity-100 transition-opacity rounded-xl flex items-center justify-center pointer-events-none">
           <button
             onClick={(e) => { e.stopPropagation(); setActiveFocus(thought.id, 'table'); }}
-            className="pointer-events-auto prevent-drag bg-[var(--accent)] text-white p-2 rounded-lg shadow-xl transform scale-90 group-hover/table:scale-100 transition-all hover:scale-110 active:scale-95"
+            className="pointer-events-auto prevent-drag bg-[var(--accent)] text-[var(--accent-contrast)] p-2 rounded-lg shadow-xl transform scale-90 group-hover/table:scale-100 transition-all hover:scale-110 active:scale-95"
           >
             <Maximize2 className="w-4 h-4" />
           </button>
