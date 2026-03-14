@@ -1,6 +1,6 @@
 import { db } from '../../db';
 import { supabaseSync, supabase, toCamelCase } from '../supabaseSync';
-import { supabaseStorage } from '../supabaseStorage';
+import { supabaseStorage, isStorageUrl } from '../supabaseStorage';
 import type { SyncConflictData } from './syncTypes';
 import { type RealtimeChannel } from '@supabase/supabase-js';
 
@@ -236,6 +236,11 @@ export const syncOrchestrator = {
           if (s.syncStatus === 'synced' && !cloudSpaceMap.has(s.id)) {
             const timeSinceUpdate = now - (s.updatedAt || 0);
             if (timeSinceUpdate > DELETION_GRACE_PERIOD_MS) {
+              // Clean up background file from storage before deleting the space record
+              if (s.customBg && isStorageUrl(s.customBg)) {
+                supabaseStorage.deleteSpaceBackground(userId, s.id)
+                  .catch((e: any) => console.warn('[Sync] Absence rule bg cleanup failed:', s.id, e));
+              }
               await db.spaces.delete(s.id);
             }
           }
@@ -412,6 +417,20 @@ export const syncOrchestrator = {
       }
 
       for (const space of localSpaces.filter(s => s.deletedAt)) {
+        // Clean up background file from storage before DB deletion
+        if (space.customBg && isStorageUrl(space.customBg)) {
+          try {
+            await supabaseStorage.deleteSpaceBackground(userId, space.id);
+          } catch (e: any) {
+            // On non-404 errors, skip this space to prevent permanent orphans
+            // The tombstone is preserved and deletion will retry on next sync
+            const is404 = e.message?.includes('404') || e.message?.includes('not found') || e.status === 404;
+            if (!is404) {
+              console.warn('[Sync] Background cleanup failed, deferring space deletion:', space.id);
+              continue;
+            }
+          }
+        }
         try {
           await supabaseSync.deleteSpace(space.id, userId);
           await db.spaces.delete(space.id);

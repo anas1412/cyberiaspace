@@ -35,7 +35,7 @@ interface SystemTrayProps {
 
   setPerformanceMode: (val: boolean) => void;
   customBg: string | null;
-  setCustomBg: (bg: string | null) => Promise<void>;
+  setCustomBg: (bg: File | string | null) => Promise<void>;
   activeSpace: any;
   handleTogglePhysics: () => void;
 }
@@ -64,17 +64,13 @@ export const SystemTray: React.FC<SystemTrayProps> = ({
       return;
     }
 
-    const reader = new FileReader();
-    reader.onload = (ev) => {
-      setCustomBg(ev.target?.result as string);
-    };
-    reader.readAsDataURL(file);
+    setCustomBg(file);
     e.target.value = '';
   };
 
   return (
     <div className="fixed bottom-4 md:bottom-8 right-4 md:right-8 z-[9999] flex flex-col items-end gap-4 pointer-events-none system-tray-container mobile-bottom-bar-adjust">
-      <div className={cn("glass p-4 md:p-5 rounded-2xl border border-white/10 shadow-2xl flex flex-col gap-1 transition-all pointer-events-auto w-72 md:w-80 animate-in fade-in slide-in-from-bottom-2 duration-300", isSystemMenuOpen ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4 pointer-events-none")}>
+      <div className={cn("glass p-4 md:p-5 rounded-2xl border border-[var(--glass-border)] shadow-2xl flex flex-col gap-1 transition-all pointer-events-auto w-72 md:w-80 animate-in fade-in slide-in-from-bottom-2 duration-300", isSystemMenuOpen ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4 pointer-events-none")}>
 
         {user?.plan !== 'pro' && (
           <button 

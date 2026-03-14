@@ -35,7 +35,7 @@ export const KanbanFilterBar: React.FC = () => {
   }, []);
 
   return (
-    <div className="flex items-center gap-4 px-6 h-14 border-b border-white/5 bg-black/40 backdrop-blur-md w-full">
+    <div className="flex items-center gap-4 px-6 h-14 border-b border-[var(--glass-border)] bg-black/20 backdrop-blur-md w-full">
       {/* Search Input */}
       <div className="relative group w-64">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-500 group-focus-within:text-[var(--accent-secondary)] transition-colors" />

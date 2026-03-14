@@ -4,6 +4,7 @@ import { type User, type SubscriptionPlan, type AccessPeriod } from '../../const
 import { db } from '../../db';
 import { supabaseSync } from '../../services/supabaseSync';
 import { type AuthState } from '../types';
+import { isStorageUrl } from '../../services/supabaseStorage';
 
 let refreshProfilePromise: Promise<void> | null = null;
 let refreshInterval: ReturnType<typeof setInterval> | null = null;
@@ -400,11 +401,19 @@ export const createAuthSlice: StateCreator<AuthState, [], [], any> = (set, get, 
       await syncOrchestrator.deleteCloudContent();
 
       await db.transaction('rw', [db.spaces, db.stacks, db.thoughts], async () => {
-        await db.spaces.toCollection().modify({ syncStatus: 'local', updatedAt: Date.now() });
-        await db.stacks.toCollection().modify({ syncStatus: 'local', updatedAt: Date.now() });
+        // Clear stale storage-backed customBg references on spaces
+        const now = Date.now();
+        await db.spaces.toCollection().modify((s: any) => {
+          s.syncStatus = 'local';
+          s.updatedAt = now;
+          if (s.customBg && isStorageUrl(s.customBg)) {
+            s.customBg = null;
+          }
+        });
+        await db.stacks.toCollection().modify({ syncStatus: 'local', updatedAt: now });
         await db.thoughts.toCollection().modify({ 
           syncStatus: 'local', 
-          updatedAt: Date.now(),
+          updatedAt: now,
           storageUrl: undefined, 
           storagePath: undefined
         });

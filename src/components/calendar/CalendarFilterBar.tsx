@@ -35,7 +35,7 @@ export const CalendarFilterBar: React.FC = () => {
   }, []);
 
   return (
-    <div className="flex flex-col gap-4 p-4 border-b border-white/5 bg-black/20">
+    <div className="flex flex-col gap-4 p-4 border-b border-[var(--glass-border)] bg-black/10">
       {/* Search Input */}
       <div className="relative group">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-500 group-focus-within:text-[var(--accent-secondary)] transition-colors" />

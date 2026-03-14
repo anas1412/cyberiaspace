@@ -25,7 +25,7 @@ export const StatusBar: React.FC<StatusBarProps> = ({
   historyIndex, historyLength, zoomIn, zoomOut, resetTransform
 }) => (
   <div className="fixed bottom-4 md:bottom-8 left-4 md:left-8 z-[9999] flex items-center gap-2 pointer-events-none mobile-bottom-bar-adjust">
-    <div className="glass px-3 md:px-4 h-[40px] md:h-[48px] rounded-2xl flex items-center gap-2 md:gap-4 border border-white/5 pointer-events-auto">
+    <div className="glass px-3 md:px-4 h-[40px] md:h-[48px] rounded-2xl flex items-center gap-2 md:gap-4 border border-[var(--glass-border)] pointer-events-auto">
 
       <div className="group relative flex items-center justify-center gap-2 md:gap-3 cursor-default">
         <div className="absolute bottom-full mb-4 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-all duration-300 translate-y-2 group-hover:translate-y-0 pointer-events-none whitespace-nowrap z-[10001]"><div className="glass px-3 py-1.5 rounded-xl border border-white/10 flex items-center gap-2 shadow-2xl bg-[var(--bg-main)]/90 backdrop-blur-xl"><span className="text-[10px] font-black uppercase tracking-widest text-white/80">Capacity</span><div className="w-[1px] h-2 bg-white/10 mx-0.5" /><span className="text-[10px] font-black text-[var(--accent-secondary)]">{limits.MAX_THOUGHTS_PER_SPACE} Max</span></div></div>

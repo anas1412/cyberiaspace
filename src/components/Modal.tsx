@@ -48,7 +48,7 @@ const Modal: React.FC = () => {
   return (
     <div id="modal-overlay" className="fixed inset-0 bg-black/90 backdrop-blur-[10px] z-[11000] flex items-center justify-center animate-in fade-in duration-200 p-4">
       <div className={cn(
-        "modal-box glass w-full p-6 md:p-10 rounded-2xl border border-white/10",
+        "modal-box glass w-full p-6 md:p-10 rounded-2xl border border-[var(--glass-border)]",
         type !== 'custom' && "text-center",
         type === 'terms' ? "max-w-[500px]" : "max-w-[420px]"
       )}>

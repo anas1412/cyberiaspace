@@ -46,7 +46,7 @@ const FAQ_ITEMS = [
   },
   {
     question: "Is my data private and secure?",
-    answer: "Yes. Cyberia Workspace follows a Local-First philosophy. By default, all your work is stored locally in your browser's IndexedDB. When you authenticate, data is synced securely via Supabase using end-to-end encryption protocols."
+    answer: "Yes. Cyberia Workspace follows a Local-First philosophy. By default, all your work is stored locally in your browser's IndexedDB. When you authenticate, data is synced securely via HTTPS/TLS encryption in transit and stored securely in the cloud."
   },
   {
     question: "How does the 'Oracle' AI handle my data?",

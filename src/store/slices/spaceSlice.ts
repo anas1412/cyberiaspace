@@ -44,6 +44,47 @@ export const createSpaceSlice: StateCreator<CyberiaState, [], [], any> = (set, g
           document.body.setAttribute('data-theme', space.theme); 
         }
         set({ customBg: space.customBg || null });
+
+        // Opportunistic migration: convert Base64 backgrounds to storage URLs
+        if (space.customBg && space.customBg.startsWith('data:')) {
+          const authStore = useAuthStore.getState();
+          if (authStore.status === 'authenticated' && authStore.user) {
+            const spaceId = space.id;
+            const userId = authStore.user.id;
+            const capturedBase64 = space.customBg; // Capture for compare-and-swap
+            (async () => {
+              try {
+                console.log('[BG] Migrating Base64 background for space:', spaceId);
+                const response = await fetch(capturedBase64);
+                const blob = await response.blob();
+                const { supabaseStorage } = await import('../../services/supabaseStorage');
+                const { url } = await supabaseStorage.uploadSpaceBackground(userId, spaceId, blob, blob.type);
+
+                // Compare-and-swap: only write if background hasn't changed during upload
+                const currentSpace = await db.spaces.get(spaceId);
+                if (!currentSpace || currentSpace.customBg !== capturedBase64) {
+                  console.log('[BG] Migration aborted: background changed during migration');
+                  // Clean up the just-uploaded file since we won't use it
+                  supabaseStorage.deleteSpaceBackground(userId, spaceId).catch(() => {});
+                  return;
+                }
+
+                await db.spaces.update(spaceId, { customBg: url, updatedAt: Date.now(), syncStatus: 'local' as const });
+                // Always update spaces array so re-entry doesn't re-migrate
+                const migSpaces = get().spaces.map((ms: any) => ms.id === spaceId ? { ...ms, customBg: url } : ms);
+                set({ spaces: migSpaces });
+                // Only update active UI customBg if still viewing this space
+                if (get().activeSpaceId === spaceId) {
+                  set({ customBg: url });
+                }
+                await syncOrchestrator.triggerSync();
+                console.log('[BG] Migration complete for space:', spaceId);
+              } catch (e) {
+                console.warn('[BG] Base64 migration failed, keeping current value:', e);
+              }
+            })();
+          }
+        }
       }
 
       // Load data for the new space

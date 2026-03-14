@@ -13,7 +13,7 @@ interface ViewSwitcherProps {
 }
 
 export const ViewSwitcher: React.FC<ViewSwitcherProps> = ({ activeSpace, setViewMode }) => (
-  <div className="flex items-center h-[48px] p-1.5 glass rounded-2xl shadow-[0_0_80px_rgba(0,0,0,0.5)] transition-all pointer-events-auto border border-white/10">
+  <div className="flex items-center h-[48px] p-1.5 glass rounded-2xl shadow-[0_0_80px_rgba(0,0,0,0.5)] transition-all pointer-events-auto border border-[var(--glass-border)]">
     {[
       { id: 'spatial', icon: Orbit, color: 'bg-[var(--accent)]' },
       { id: 'kanban', icon: Columns3, color: 'bg-purple-500' },

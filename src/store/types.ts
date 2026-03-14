@@ -65,7 +65,7 @@ export interface CyberiaState {
   clearWorkspace: () => Promise<void>;
 
   setTheme: (theme: 'cyberia' | 'sea' | 'forest' | 'rain') => void;
-  setCustomBg: (bg: string | null) => Promise<void>;
+  setCustomBg: (bg: File | string | null) => Promise<void>;
   setDeferredPrompt: (prompt: any) => void;
 
   toggleOracleMode: () => void;

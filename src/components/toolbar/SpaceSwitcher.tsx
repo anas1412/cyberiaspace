@@ -107,7 +107,7 @@ export const SpaceSwitcher: React.FC<SpaceSwitcherProps> = ({
             className="absolute top-full mt-4 right-0 min-w-[300px] glass rounded-2xl border border-white/10 shadow-[0_0_80px_rgba(0,0,0,0.5)] overflow-hidden pointer-events-auto z-50 flex flex-col"
           >
             {/* Header Area */}
-            <div className="p-4 md:p-5 border-b border-white/5 flex items-center justify-between bg-black/20 backdrop-blur-md sticky top-0 z-20">
+            <div className="p-4 md:p-5 border-b border-[var(--glass-border)] flex items-center justify-between bg-[var(--bg-main)]/40 backdrop-blur-md sticky top-0 z-20">
               <div className="flex items-center gap-2.5 text-slate-400">
                 <Layers className="w-3.5 h-3.5" />
                 <span className="text-[10px] font-black uppercase tracking-[0.2em] text-white/90">Switch Space</span>

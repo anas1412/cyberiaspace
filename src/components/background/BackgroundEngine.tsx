@@ -37,7 +37,7 @@ const BackgroundEngine: React.FC = () => {
   }, [performanceMode, customBg]);
 
   return (
-    <div className="fixed inset-0 z-0 pointer-events-none overflow-hidden bg-[#05060a] select-none">
+    <div className="fixed inset-0 z-0 pointer-events-none overflow-hidden select-none" style={{ backgroundColor: 'var(--bg-page)' }}>
       {/* 1. Base Background Image Layer */}
       {customBg && (
         <div 

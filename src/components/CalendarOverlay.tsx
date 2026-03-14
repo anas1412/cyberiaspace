@@ -68,7 +68,7 @@ const CalendarOverlay: React.FC = () => {
       <div 
         key={d} 
         className={cn(
-          "cal-cell border-r border-b border-white/[0.05] relative transition-colors min-h-[100px]",
+          "cal-cell border-r border-b border-[var(--glass-border)] relative transition-colors min-h-[100px]",
           isToday && "bg-[var(--accent)]/[0.05]"
         )}
         data-date={dateStr}
@@ -97,11 +97,11 @@ const CalendarOverlay: React.FC = () => {
 
       {/* Sidebar */}
       <div 
-        className="cal-sidebar w-full md:w-[260px] min-h-[200px] md:min-h-0 glass rounded-2xl flex flex-col overflow-hidden pointer-events-auto z-[30] relative border border-white/10 shadow-2xl"
+        className="cal-sidebar w-full md:w-[260px] min-h-[200px] md:min-h-0 glass rounded-2xl flex flex-col overflow-hidden pointer-events-auto z-[30] relative border border-[var(--glass-border)] shadow-2xl"
         onMouseEnter={() => handleMouseEnter('')}
         onMouseLeave={handleMouseLeave}
       >
-        <div className="cal-sidebar-header p-4 md:p-5 border-b border-white/[0.05] text-[9px] md:text-[10px] font-900 tracking-[0.2em] uppercase text-[var(--accent-secondary)] bg-[var(--bg-main)] z-[40] sticky top-0 shadow-lg">
+        <div className="cal-sidebar-header p-4 md:p-5 border-b border-[var(--glass-border)] text-[9px] md:text-[10px] font-900 tracking-[0.2em] uppercase text-[var(--accent-secondary)] bg-[var(--bg-main)] z-[40] sticky top-0 shadow-lg">
           Unscheduled
         </div>
         <CalendarFilterBar />
@@ -111,8 +111,8 @@ const CalendarOverlay: React.FC = () => {
       </div>
       
       {/* Main Grid */}
-      <div className="cal-main flex-1 flex flex-col min-h-[400px] md:min-h-0 glass rounded-2xl overflow-hidden pointer-events-auto z-[5] relative border border-white/10 shadow-xl" onMouseEnter={handleMouseLeave}>
-        <div className="cal-header h-[50px] md:h-[60px] flex items-center justify-between px-4 md:px-[30px] border-b border-white/[0.05] bg-black/20">
+      <div className="cal-main flex-1 flex flex-col min-h-[400px] md:min-h-0 glass rounded-2xl overflow-hidden pointer-events-auto z-[5] relative border border-[var(--glass-border)] shadow-xl" onMouseEnter={handleMouseLeave}>
+        <div className="cal-header h-[50px] md:h-[60px] flex items-center justify-between px-4 md:px-[30px] border-b border-[var(--glass-border)] bg-[var(--bg-main)]/20">
           <button onClick={() => changeMonth(-1)} className="p-2 hover:bg-white/5 rounded-xl text-slate-400 transition-colors">
             <ChevronLeft className="w-4 h-4" />
           </button>
@@ -127,7 +127,7 @@ const CalendarOverlay: React.FC = () => {
           onClick={handleBackgroundClick}
         >
           {['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map(day => (
-            <div key={day} className="cal-day-label flex items-center justify-center text-[9px] font-800 text-white/40 uppercase border-b border-white/[0.05]">
+            <div key={day} className="cal-day-label flex items-center justify-center text-[9px] font-800 text-white/40 uppercase border-b border-[var(--glass-border)]">
               {day}
             </div>
           ))}

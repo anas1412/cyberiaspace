@@ -52,15 +52,16 @@ const LoadingOverlay: React.FC<LoadingOverlayProps> = ({ force }) => {
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0, transition: { duration: 0.5, ease: "easeInOut" } }}
-          className="fixed inset-0 z-[20000] bg-[#05060a] flex flex-col items-center justify-center overflow-hidden"
+          className="fixed inset-0 z-[20000] flex flex-col items-center justify-center overflow-hidden"
+          style={{ backgroundColor: 'var(--bg-page)' }}
         >
           <div className="flex flex-col items-center gap-6">
-            <h1 className="text-2xl font-bold tracking-tighter text-[#e2e8f0] uppercase">
-              CYBERIA<span className="text-[#6366f1]"> WORKSPACE</span>
+            <h1 className="text-2xl font-bold tracking-tighter text-[var(--text-primary)] uppercase">
+              CYBERIA<span className="text-[var(--accent)]"> WORKSPACE</span>
             </h1>
             
             {/* Simple Spinner */}
-            <div className="w-5 h-5 border-2 border-white/5 border-t-[#6366f1] rounded-full animate-spin" />
+            <div className="w-5 h-5 border-2 border-white/5 border-t-[var(--accent)] rounded-full animate-spin" />
 
             {showReset && (
               <motion.button

@@ -5,6 +5,12 @@ export const storageClient = supabase
 const BUCKET_NAME = 'user-files'
 const MAX_FILE_SIZE = 50 * 1024 * 1024 // 50 MB
 
+const getBackgroundPath = (userId: string, spaceId: string): string =>
+  `${userId}/backgrounds/bg_${spaceId}`;
+
+export const isStorageUrl = (value: string): boolean =>
+  value.startsWith('https://') || value.startsWith('http://');
+
 export const supabaseStorage = {
   async uploadFile(
     userId: string, 
@@ -329,5 +335,51 @@ export const supabaseStorage = {
       console.error('[Storage] Orphan structural cleanup failed:', err);
       return 0;
     }
+  },
+
+  async uploadSpaceBackground(
+    userId: string,
+    spaceId: string,
+    file: File | Blob,
+    mimeType: string
+  ): Promise<{ url: string; path: string }> {
+    const path = getBackgroundPath(userId, spaceId);
+
+    const { error } = await storageClient
+      .storage
+      .from(BUCKET_NAME)
+      .upload(path, file, {
+        cacheControl: '3600',
+        upsert: true,
+        contentType: mimeType || 'image/jpeg',
+      });
+
+    if (error) {
+      console.error('[Storage] Background upload error:', error);
+      throw new Error(`Background upload failed: ${error.message}`);
+    }
+
+    const { data } = storageClient
+      .storage
+      .from(BUCKET_NAME)
+      .getPublicUrl(path);
+
+    console.log('[Storage] Background upload success:', path);
+    return { url: data.publicUrl, path };
+  },
+
+  async deleteSpaceBackground(userId: string, spaceId: string): Promise<void> {
+    const path = getBackgroundPath(userId, spaceId);
+
+    const { error } = await storageClient
+      .storage
+      .from(BUCKET_NAME)
+      .remove([path]);
+
+    if (error && !error.message?.includes('not found')) {
+      console.warn('[Storage] Background delete warning:', error.message);
+    }
+
+    console.log('[Storage] Background deleted (or did not exist):', path);
   },
 }

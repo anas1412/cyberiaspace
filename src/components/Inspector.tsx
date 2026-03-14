@@ -290,7 +290,7 @@ const Inspector: React.FC = () => {
           className="ui-layer focus-box fixed top-4 md:top-24 bottom-4 md:bottom-24 left-4 md:left-8 w-[calc(100%-32px)] md:w-[400px] glass rounded-2xl shadow-[0_0_80px_rgba(0,0,0,0.5)] flex flex-col overflow-hidden z-[9999] border border-white/10"
         >
           {/* HEADER AREA */}
-          <div className="p-4 md:p-5 border-b border-white/5 bg-black/20 backdrop-blur-md sticky top-0 z-20">
+          <div className="p-4 md:p-5 border-b border-[var(--glass-border)] bg-[var(--bg-main)]/20 backdrop-blur-md sticky top-0 z-20">
             <div className="flex justify-between items-center relative">
               <div className="w-8" /> {/* Spacer to help center */}
               <div className="flex-1 flex justify-center">
@@ -305,7 +305,7 @@ const Inspector: React.FC = () => {
           </div>
 
           {/* TAB NAVIGATION */}
-          <div className="flex bg-black/10 backdrop-blur-sm sticky top-[61px] md:top-[69px] z-20 border-b border-white/5">
+          <div className="flex bg-[var(--bg-main)]/10 backdrop-blur-sm sticky top-[61px] md:top-[69px] z-20 border-b border-[var(--glass-border)]">
             {(['content', 'status', 'layout'] as const).map((tab) => (
               <button
                 key={tab}
@@ -667,7 +667,7 @@ const Inspector: React.FC = () => {
 
           {/* STICKY FOOTER */}
           {!isReadOnly && (
-            <div className="bg-black/40 border-t border-white/5 p-4 md:p-6 mt-auto flex items-center gap-3">
+            <div className="bg-[var(--bg-main)]/40 border-t border-[var(--glass-border)] p-4 md:p-6 mt-auto flex items-center gap-3">
               <button
                 onClick={handleDeleteThought}
                 className="flex-1 bg-red-500/10 hover:bg-red-500/20 text-red-400 py-4 rounded-xl text-[10px] font-bold uppercase tracking-widest transition-colors border border-red-500/20 flex items-center justify-center gap-2"

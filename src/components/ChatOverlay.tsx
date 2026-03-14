@@ -517,7 +517,7 @@ if (['get_thought_details', 'read_file_content', 'read_files_content'].includes(
         >
 
           {/* Header */}
-          <div className="p-4 md:p-5 border-b border-white/5 flex items-center justify-between bg-black/20 backdrop-blur-md sticky top-0 z-20">
+          <div className="p-4 md:p-5 border-b border-[var(--glass-border)] flex items-center justify-between bg-[var(--bg-main)]/20 backdrop-blur-md sticky top-0 z-20">
             <div className="ml-3 flex items-center gap-3">
               <div>
                 <div className="flex items-center gap-2">
@@ -647,7 +647,7 @@ if (['get_thought_details', 'read_file_content', 'read_files_content'].includes(
           </div>
 
           {/* Footer Area */}
-          <div className="p-4 md:p-6 bg-black/40 border-t border-white/5 space-y-3">
+          <div className="p-4 md:p-6 bg-[var(--bg-main)]/40 border-t border-[var(--glass-border)] space-y-3">
             <form onSubmit={handleSubmit} className="relative flex items-center gap-2 bg-white/[0.03] border border-white/10 rounded-xl p-1.5 focus-within:border-blue-500/50 focus-within:bg-white/[0.05] transition-all">
 
               <textarea

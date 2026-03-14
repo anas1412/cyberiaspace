@@ -6,6 +6,7 @@ import { syncOrchestrator } from '../../services/sync/syncOrchestrator';
 import { useAuthStore } from '../useAuthStore';
 import { type CyberiaState } from '../types';
 import { migrateThoughtsToModular } from '../../utils/migrations';
+import { isStorageUrl } from '../../services/supabaseStorage';
 import { ulid } from 'ulid';
 
 let isCreatingInitialWorkspace = false;
@@ -359,18 +360,52 @@ export const createDataSlice: StateCreator<CyberiaState, [], [], any> = (set, ge
     if (get().isReadOnly) return;
     const processData = async (data: any) => {
       if (!data || typeof data !== 'object' || !('spaces' in data) || !('thoughts' in data)) throw new Error('Invalid backup');
-      await db.transaction('rw', db.spaces, db.thoughts, db.stacks, db.blobs, async () => {
-        await db.spaces.clear();
-        await db.thoughts.clear();
-        await db.stacks.clear();
-        await db.blobs.clear();
-        await db.spaces.bulkAdd(data.spaces);
-        await db.thoughts.bulkAdd(data.thoughts);
-        if (data.stacks) await db.stacks.bulkAdd(data.stacks);
-        if (data.blobs) await db.blobs.bulkAdd(data.blobs);
-      });
-      if (data.activeSpaceId) localStorage.setItem('cyberia-active-space-id', data.activeSpaceId);
-      if (data.settings?.theme) localStorage.setItem('cyberia-theme', data.settings.theme);
+
+      // Block sync during destructive import to prevent race conditions
+      await syncOrchestrator.setSyncBlocked(true);
+
+      try {
+        // Before wiping, collect background storage paths to clean up
+        const authStore = useAuthStore.getState();
+        let bgPathsToClean: string[] = [];
+        if (authStore.status === 'authenticated' && authStore.user) {
+          const existingSpaces = await db.spaces.filter(s => !s.deletedAt).toArray();
+          bgPathsToClean = existingSpaces
+            .filter(s => s.customBg && isStorageUrl(s.customBg))
+            .map(s => `${authStore.user!.id}/backgrounds/bg_${s.id}`);
+        }
+
+        await db.transaction('rw', db.spaces, db.thoughts, db.stacks, db.blobs, async () => {
+          await db.spaces.clear();
+          await db.thoughts.clear();
+          await db.stacks.clear();
+          await db.blobs.clear();
+          await db.spaces.bulkAdd(data.spaces);
+          await db.thoughts.bulkAdd(data.thoughts);
+          if (data.stacks) await db.stacks.bulkAdd(data.stacks);
+          if (data.blobs) await db.blobs.bulkAdd(data.blobs);
+        });
+
+        // Clean up orphaned background files (await to complete before reload)
+        if (bgPathsToClean.length > 0) {
+          const { supabaseStorage } = await import('../../services/supabaseStorage');
+          await Promise.allSettled(
+            bgPathsToClean.map(path =>
+              supabaseStorage.deleteFile(path).catch((e: any) =>
+                console.warn('[Import] Background cleanup failed:', path, e)
+              )
+            )
+          );
+        }
+
+        // Reset sync baseline so imported data syncs cleanly as first-sync
+        localStorage.removeItem('cyberia-last-sync');
+
+        if (data.activeSpaceId) localStorage.setItem('cyberia-active-space-id', data.activeSpaceId);
+        if (data.settings?.theme) localStorage.setItem('cyberia-theme', data.settings.theme);
+      } finally {
+        await syncOrchestrator.setSyncBlocked(false);
+      }
       window.location.reload();
     };
     if (input instanceof File) {
