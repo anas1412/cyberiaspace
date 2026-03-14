@@ -295,17 +295,29 @@ const PricingModal: React.FC<PricingModalProps> = ({ isOpen, onClose }) => {
               <Zap className="w-7 h-7" />
             </div>
             <div>
-              <h2 className="text-2xl font-bold text-white tracking-tight">Unlock Pro</h2>
-              <p className="text-sm font-medium text-blue-400">Unlimited flow & maximum space</p>
+              <h2 className="text-2xl font-bold text-white tracking-tight">Do more with Pro</h2>
+              <p className="text-sm font-medium text-blue-400">More space, better AI, and helpful tools.</p>
             </div>
           </div>
 
           <div className="space-y-6 flex-1">
             {[
-              { title: 'Premium Oracle AI', desc: 'Gain exclusive access to the Oracle, powered by advanced reasoning models for deep research and spatial problem solving.' },
-              { title: 'File Intelligence', desc: 'Upload and analyze images & documents directly in your workspace. Ask Oracle to summarize PDFs, extract data from images, and more.' },
-              { title: 'Expanded Workspaces', desc: `Create up to ${PLAN_CONFIG.pro.MAX_SPACES} different spaces to organize your workflow. (Free limits to ${PLAN_CONFIG.free.MAX_SPACES})` },
-              { title: 'Expanded File Storage', desc: `Get ${Math.round(PLAN_CONFIG.pro.MAX_STORAGE_MB / 1024)}GB of secure cloud storage for your files and attachments (Free tier is limited to ${PLAN_CONFIG.free.MAX_STORAGE_MB}MB).` },
+              { 
+                title: 'Premium AI & Increased Quota', 
+                desc: `Unlock advanced premium models and scale up to ${PLAN_CONFIG.pro.AI_DAILY_LIMIT} daily agentic interactions (Free tier limits to ${PLAN_CONFIG.free.AI_DAILY_LIMIT}).` 
+              },
+              { 
+                title: 'Expanded Agentic Workspaces', 
+                desc: `Create up to ${PLAN_CONFIG.pro.MAX_SPACES} spaces with ${PLAN_CONFIG.pro.MAX_THOUGHTS_PER_SPACE} thoughts each (Free tier limits to ${PLAN_CONFIG.free.MAX_SPACES} spaces).` 
+              },
+              { 
+                title: 'File Intelligence & 1GB Storage', 
+                desc: `Upload and analyze images & PDFs. Includes ${Math.round(PLAN_CONFIG.pro.MAX_STORAGE_MB / 1024)}GB of secure cloud storage with unlimited upload sizes.` 
+              },
+              { 
+                title: 'Pro Customization & Support', 
+                desc: 'Personalize your workspace with a custom AI personality and backgrounds, plus get 24/7 priority customer support.' 
+              }
             ].map((feature, i) => (
               <motion.div 
                 key={i} 
