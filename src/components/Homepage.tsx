@@ -556,7 +556,7 @@ const Homepage: React.FC = () => {
             <p className="text-slate-400 font-medium">Start for free, upgrade when you're ready.</p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-5xl mx-auto">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-8xl mx-auto">
             <motion.div 
               initial={{ opacity: 0, x: -20 }}
               whileInView={{ opacity: 1, x: 0 }}
@@ -568,12 +568,11 @@ const Homepage: React.FC = () => {
                 <div className="text-4xl font-black text-white group-hover:scale-105 transition-transform origin-left duration-500">$0 <span className="text-sm text-slate-500 font-bold uppercase tracking-widest">/ Forever</span></div>
               </div>
               <div className="space-y-4 mb-10 flex-1">
-                <PricingFeature text={`${PLAN_CONFIG.free.MAX_SPACES} Agentic Spaces`} />
-                <PricingFeature text={`${PLAN_CONFIG.free.MAX_THOUGHTS_PER_SPACE} Thoughts per Agentic Space`} />
-                <PricingFeature text={`${PLAN_CONFIG.free.AI_DAILY_LIMIT} Daily Agentic AI Interactions`} />
-                <PricingFeature text="Limited Access to Basic AI Models" />
-                <PricingFeature text={`${PLAN_CONFIG.free.MAX_STORAGE_MB}MB Cloud Storage`} />
-                <PricingFeature text="Limited Upload Size" />
+                <PricingFeature text={`${PLAN_CONFIG.free.MAX_SPACES} Spaces with ${PLAN_CONFIG.free.MAX_THOUGHTS_PER_SPACE} Thoughts per Space`} />
+                <PricingFeature text={`${PLAN_CONFIG.free.AI_DAILY_LIMIT} AI Interactions with basic AI models`} />
+                <PricingFeature text={`${PLAN_CONFIG.free.MAX_STORAGE_MB}MB Cloud Storage with limited size`} />
+                <PricingFeature text={`Default theme`} />
+                <PricingFeature text="Share Your Spaces" />
                 <PricingFeature text="Limited Support" />
               </div>
               <a href="https://app.cyberia.tn" className="w-full py-5 bg-white/5 hover:bg-white/10 border border-white/10 text-white rounded-2xl text-[10px] font-black uppercase tracking-[0.3em] transition-all text-center">
@@ -633,17 +632,13 @@ const Homepage: React.FC = () => {
               </div>
 
               <div className="space-y-4 mb-10 flex-1">
-                <PricingFeature text={`${PLAN_CONFIG.pro.MAX_SPACES} Agentic Spaces`} pro />
-                <PricingFeature text={`${PLAN_CONFIG.pro.MAX_THOUGHTS_PER_SPACE} Thoughts Per Agentic Space`} pro />
-                <PricingFeature text={`${PLAN_CONFIG.pro.AI_DAILY_LIMIT} Daily Agentic AI Interactions`} pro />
-                <PricingFeature text="Access to Multiple Advanced Premium Models" pro />
+                <PricingFeature text={`${PLAN_CONFIG.pro.MAX_SPACES} Spaces with ${PLAN_CONFIG.pro.MAX_THOUGHTS_PER_SPACE} Thoughts per Space`} pro />
+                <PricingFeature text={`${PLAN_CONFIG.pro.AI_DAILY_LIMIT} AI Interactions with Custom Premium AI Models`} pro />
                 <PricingFeature 
-                  text={`${(PLAN_CONFIG.pro.MAX_STORAGE_MB / 1024).toFixed(0)}GB Secure Cloud Storage`} pro />
-                <PricingFeature text="Unlimited Upload Size" pro />
+                  text={`${(PLAN_CONFIG.pro.MAX_STORAGE_MB / 1024).toFixed(0)}GB Cloud Storage with Unlimited Upload Size`} pro />
                 <PricingFeature text="Analyze Images & PDFs" pro />
                 <PricingFeature text="Custom AI Agent Personality" pro />
-                <PricingFeature text="Custom Background" pro/>
-                <PricingFeature text="Share Your Spaces" pro />
+                <PricingFeature text="Custom Background & More themes" pro/>
                 <PricingFeature text="Shared Team Spaces (Coming Soon)" pro />
                 <PricingFeature text="Early Access to New Features" pro />
                 <PricingFeature text="24/7 Priority Support" pro />
