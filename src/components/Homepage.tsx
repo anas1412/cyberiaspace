@@ -255,7 +255,7 @@ const Homepage: React.FC = () => {
   const savingsTnd = proPrice.monthly.tnd * 12 - proPrice.yearly.tnd;
 
   return (
-    <div className="min-h-screen text-[#e2e8f0] overflow-y-auto selection:bg-[var(--accent)]/30 relative">
+    <div className="min-h-screen text-[#e2e8f0] selection:bg-[var(--accent)]/30 relative">
       <BackgroundEngine />
 
       <nav className={`fixed top-0 left-0 right-0 z-[100] transition-all duration-500 ${
