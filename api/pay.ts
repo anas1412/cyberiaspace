@@ -196,7 +196,7 @@ async function handleInit(req: VercelRequest, res: VercelResponse) {
 
         const publicKey = process.env.FLOUCI_PUBLIC_KEY;
         const privateKey = process.env.FLOUCI_PRIVATE_KEY;
-        const appUrl = process.env.APP_URL || `https://${req.headers.host}`;
+        const appUrl = process.env.APP_URL || 'https://app.cyberia.tn';
 
         if (!publicKey || !privateKey) {
             console.error('[Flouci Init] Configuration missing (PUBLIC/PRIVATE KEY)');
@@ -215,8 +215,8 @@ async function handleInit(req: VercelRequest, res: VercelResponse) {
             },
             body: JSON.stringify({
                 amount: amountInMillimes,
-                success_link: `${appUrl}/pricing?success`,
-                fail_link: `${appUrl}/pricing?fail`,
+                success_link: `${appUrl}/pricing?success=true`,
+                fail_link: `${appUrl}/pricing?fail=true`,
                 webhook: `${appUrl}/api/pay?action=webhook`,
                 developer_tracking_id: orderId,
                 session_timeout_secs: 1200,
@@ -467,7 +467,7 @@ async function handlePolarInit(req: VercelRequest, res: VercelResponse) {
 
         console.log('[Polar Init] Creating checkout for product:', productId);
         
-        const successUrl = process.env.POLAR_SUCCESS_URL || `https://${req.headers.host}/pricing?success=true`;
+        const successUrl = process.env.POLAR_SUCCESS_URL || 'https://app.cyberia.tn/pricing?success=true';
 
         const checkout = await polar.checkouts.create({
             products: [productId],
