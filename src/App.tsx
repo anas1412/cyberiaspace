@@ -451,8 +451,9 @@ function App() {
   return (
     <div className="w-full h-full relative overflow-hidden">
       <BackgroundEngine />
+      <LoadingOverlay />
       
-      <Suspense fallback={null}>
+      <Suspense fallback={<LoadingOverlay force />}>
         <Viewport />
         <EmptyState />
         <KanbanOverlay />
@@ -470,7 +471,6 @@ function App() {
         <TasksFocusEditor />
         <EmbedFocusEditor />
         <FileFocusEditor />
-        <LoadingOverlay />
         <UpdateToast />
         <ExternalScripts />
       </Suspense>

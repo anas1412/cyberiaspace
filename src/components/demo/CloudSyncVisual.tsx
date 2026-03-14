@@ -6,11 +6,8 @@ import DemoThought from './DemoThought';
 const CloudSyncVisual: React.FC = () => {
   const [phase, setPhase] = useState<'upload' | 'pulse' | 'distribute' | 'success' | 'idle'>('idle');
 
-  if (typeof window !== 'undefined' && window.innerWidth < 1024) {
-    return null;
-  }
-
   useEffect(() => {
+    if (typeof window !== 'undefined' && window.innerWidth < 1024) return;
     let mounted = true;
     const sequence = async () => {
       while (mounted) {
@@ -37,6 +34,10 @@ const CloudSyncVisual: React.FC = () => {
     sequence();
     return () => { mounted = false; };
   }, []);
+
+  if (typeof window !== 'undefined' && window.innerWidth < 1024) {
+    return null;
+  }
 
   const devices = [
     { id: 'desktop', label: 'Desktop', x: -240, y: 0, type: 'monitor' },

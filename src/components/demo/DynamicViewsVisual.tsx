@@ -6,11 +6,8 @@ import DemoThought from './DemoThought';
 const DynamicViewsVisual: React.FC = () => {
   const [view, setView] = useState<'spatial' | 'kanban' | 'calendar'>('spatial');
 
-  if (typeof window !== 'undefined' && window.innerWidth < 1024) {
-    return null;
-  }
-
   useEffect(() => {
+    if (typeof window !== 'undefined' && window.innerWidth < 1024) return;
     const timer = setInterval(() => {
       setView(prev => {
         if (prev === 'spatial') return 'kanban';
@@ -20,6 +17,10 @@ const DynamicViewsVisual: React.FC = () => {
     }, 4000);
     return () => clearInterval(timer);
   }, []);
+
+  if (typeof window !== 'undefined' && window.innerWidth < 1024) {
+    return null;
+  }
   
   const thoughts = [
     { id: 1, title: 'ESSAY_01', color: 'var(--accent)', type: 'doc' as const },

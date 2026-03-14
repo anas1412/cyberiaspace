@@ -19,7 +19,7 @@ vi.mock('../../store/useModalStore', () => ({
 
 // Mock Auth Store
 const mockAuthStore = {
-  user: { id: 'test-user' },
+  user: { id: 'test-user', plan: 'free' },
   profile: { tier: 'free' },
   status: 'authenticated',
   autoSync: true,
@@ -29,6 +29,7 @@ const mockAuthStore = {
 vi.mock('../../store/useAuthStore', () => ({
   useAuthStore: {
     getState: vi.fn(() => mockAuthStore),
+    setState: vi.fn((update) => Object.assign(mockAuthStore, update)),
   },
 }));
 
@@ -69,7 +70,8 @@ describe('thoughtSlice', () => {
     const { addThought } = useStore.getState();
     const thoughtId = await addThought({ text: 'Hello Vitest', type: 'text' });
     
-    expect(thoughtId).toBeGreaterThan(0);
+    expect(thoughtId).toBeTruthy();
+    expect(typeof thoughtId).toBe('string');
     
     // Check IndexedDB
     const dbThought = await db.thoughts.get(thoughtId);
@@ -100,7 +102,7 @@ describe('thoughtSlice', () => {
     await addThought({ text: 'Thought 2', spaceId: 'test-space' });
     const result = await addThought({ text: 'Thought 3', spaceId: 'test-space' });
     
-    expect(result).toBe(-1);
+    expect(result).toBe('');
     
     // Check if modal was opened
     expect(mockOpenModal).toHaveBeenCalledWith(
@@ -140,7 +142,8 @@ describe('thoughtSlice', () => {
     
     // Check IndexedDB
     const dbThought = await db.thoughts.get(id);
-    expect(dbThought).toBeUndefined();
+    expect(dbThought).toBeDefined();
+    expect(dbThought?.deletedAt).toBeTruthy();
     
     // Check cleanup was called
     expect(spyCleanup).toHaveBeenCalled();

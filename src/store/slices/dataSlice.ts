@@ -105,6 +105,7 @@ export const createDataSlice: StateCreator<CyberiaState, [], [], any> = (set, ge
       }
       
       const { spaces } = get();
+      const wasLocalDbEmpty = spaces.length === 0;
       if (spaces.length === 0) {
         // No data in DB, create initial empty workspace
         await get().createInitialWorkspace();
@@ -118,7 +119,7 @@ export const createDataSlice: StateCreator<CyberiaState, [], [], any> = (set, ge
       // NEW: If authenticated but never synced, wait for the cloud handshake
       // This ensures the "Space Resolver" loading screen works as intended.
       const authState = dynamicAuthStore.getState();
-      if (authState.status === 'authenticated' && !localStorage.getItem('cyberia-last-sync')) {
+      if (authState.status === 'authenticated' && (!localStorage.getItem('cyberia-last-sync') || wasLocalDbEmpty)) {
         console.log('[Store] Fresh login detected, awaiting cloud handshake...');
         await authState.handlePostAuthSync();
       }

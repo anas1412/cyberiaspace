@@ -74,6 +74,16 @@ export const createAuthSlice: StateCreator<AuthState, [], [], any> = (set, get, 
       } catch (err) {
         console.warn('[Auth] Initialization failed:', err);
       }
+
+      // Phase 2: Trigger initial delta sync to catch any remote changes
+      // made on other devices while this client was offline/closed.
+      if (get().autoSync && get().isOnline) {
+        const hasSyncedBefore = !!localStorage.getItem('cyberia-last-sync');
+        if (hasSyncedBefore) {
+          // Fire non-blocking to prevent locking UI
+          setTimeout(() => syncOrchestrator.triggerSync(true), 500);
+        }
+      }
     }
   },
 

@@ -6,6 +6,15 @@ import { supabaseStorage } from '../../services/supabaseStorage';
 
 // Mock Supabase services
 vi.mock('../../services/supabaseSync', () => ({
+  supabase: {
+    from: vi.fn(() => ({
+      select: vi.fn(() => ({
+        eq: vi.fn(() => ({
+          single: vi.fn(() => Promise.resolve({ data: null, error: null })),
+        })),
+      })),
+    })),
+  },
   supabaseSync: {
     getSpaces: vi.fn(),
     getStacks: vi.fn(),
@@ -16,6 +25,13 @@ vi.mock('../../services/supabaseSync', () => ({
     deleteSpace: vi.fn(),
     deleteStack: vi.fn(),
     deleteThought: vi.fn(),
+  },
+  toCamelCase: (obj: any) => {
+    const newObj: any = {};
+    for (const key in obj) {
+      newObj[key.replace(/(_\w)/g, (m) => m[1].toUpperCase())] = obj[key];
+    }
+    return newObj;
   },
 }));
 
@@ -34,11 +50,14 @@ const mockAuthStore = {
   status: 'authenticated',
   isOnline: true,
   autoSync: true,
+  lastSync: null as Date | null,
+  downloadSingleBlob: vi.fn(),
 };
 
 vi.mock('../../store/useAuthStore', () => ({
   useAuthStore: {
     getState: vi.fn(() => mockAuthStore),
+    setState: vi.fn((update) => Object.assign(mockAuthStore, update)),
   },
 }));
 
@@ -63,6 +82,7 @@ describe('syncOrchestrator', () => {
     await db.spaces.clear();
     await db.stacks.clear();
     await db.blobs.clear();
+    localStorage.clear();
     
     vi.clearAllMocks();
     mockSyncStore.status = 'idle';
@@ -87,9 +107,10 @@ describe('syncOrchestrator', () => {
   });
 
   it('performs delta sync correctly', async () => {
+    const now = Date.now();
     // 1. Add local data
-    await db.spaces.add({ id: 's1', name: 'Space 1', order: 0, physics: true, mode: 'spatial', syncStatus: 'local' });
-    await db.thoughts.add({ id: 't1', text: 'Thought 1', spaceId: 's1', stackId: null, x: 0, y: 0, vx: 0, vy: 0, type: 'text', author: '', order: 0, date: '', priority: 'none', description: '', status: 'none', size: 1, data: { type: 'text', content: '' }, syncStatus: 'local' });
+    await db.spaces.add({ id: 's1', name: 'Space 1', order: 0, physics: true, mode: 'spatial', syncStatus: 'local', updatedAt: now });
+    await db.thoughts.add({ id: 't1', text: 'Thought 1', spaceId: 's1', stackId: null, x: 0, y: 0, vx: 0, vy: 0, type: 'text', author: '', order: 0, date: '', priority: 'none', description: '', status: 'none', size: 1, data: { type: 'text', content: '' }, syncStatus: 'local', updatedAt: now });
     
     // 2. Mock cloud data (empty cloud)
     vi.mocked(supabaseSync.getSpaces).mockResolvedValue({ spaces: [] });
@@ -99,6 +120,10 @@ describe('syncOrchestrator', () => {
     // 3. Run sync
     const result = await syncOrchestrator.deltaSync();
     
+    if (!result.success) {
+      console.error('Sync failed:', result.error);
+    }
+    
     expect(result.success).toBe(true);
     expect(supabaseSync.createSpaces).toHaveBeenCalled();
     expect(supabaseSync.createThoughts).toHaveBeenCalled();
@@ -107,23 +132,38 @@ describe('syncOrchestrator', () => {
 
   it('identifies and handles orphaned cloud data', async () => {
     // 1. Local is empty
+    localStorage.setItem('cyberia-last-sync', new Date().toISOString());
     
     // 2. Cloud has one space
-    vi.mocked(supabaseSync.getSpaces).mockResolvedValue({ spaces: [{ id: 'orphan-s', user_id: 'test-user' }] as any });
+    vi.mocked(supabaseSync.getSpaces).mockResolvedValue({ spaces: [{ id: 'orphan-s', updated_at: new Date().toISOString() }] as any });
     vi.mocked(supabaseSync.getStacks).mockResolvedValue({ stacks: [] });
     vi.mocked(supabaseSync.getThoughts).mockResolvedValue({ thoughts: [] });
     
+    // Mock supabase.from().select().eq().single() for the space fetch
+    const mockSingle = vi.fn().mockResolvedValue({ data: { id: 'orphan-s', name: 'Orphan Space', user_id: 'test-user' }, error: null });
+    const { supabase } = await import('../../services/supabaseSync');
+    vi.mocked(supabase.from).mockReturnValue({
+      select: vi.fn().mockReturnValue({
+        eq: vi.fn().mockReturnValue({
+          single: mockSingle
+        })
+      })
+    } as any);
+
     // 3. Run sync
-    await syncOrchestrator.deltaSync();
+    const result = await syncOrchestrator.deltaSync();
+    expect(result.success).toBe(true);
     
-    // In delta sync, orphaned cloud data is NOT deleted unless marked deleted locally
-    // expect(supabaseSync.deleteSpace).toHaveBeenCalledWith('orphan-s', 'test-user');
+    // Should have added the space locally
+    const localSpace = await db.spaces.get('orphan-s');
+    expect(localSpace).toBeDefined();
   });
 
   it('uploads local blobs for media thoughts', async () => {
+    const now = Date.now();
     // 1. Local thought with blob
-    await db.thoughts.add({ id: 't2', type: 'file', spaceId: 's1', text: 'Image', stackId: null, x: 0, y: 0, vx: 0, vy: 0, author: '', order: 0, date: '', priority: 'none', description: '', status: 'none', size: 1, data: { type: 'file', url: '', name: 'test.png', size: 5 }, syncStatus: 'local' });
-    await db.blobs.add({ id: 'b1', thoughtId: 't2', blob: new Blob(['hello'], { type: 'image/png' }), name: 'test.png', type: 'image/png', updatedAt: Date.now() });
+    await db.thoughts.add({ id: 't2', type: 'file', spaceId: 's1', text: 'Image', stackId: null, x: 0, y: 0, vx: 0, vy: 0, author: '', order: 0, date: '', priority: 'none', description: '', status: 'none', size: 1, data: { type: 'file', url: '', name: 'test.png', size: 5 }, syncStatus: 'local', updatedAt: now });
+    await db.blobs.add({ id: 'b1', thoughtId: 't2', blob: new Blob(['hello'], { type: 'image/png' }), name: 'test.png', type: 'image/png', updatedAt: now });
     
     vi.mocked(supabaseSync.getSpaces).mockResolvedValue({ spaces: [] });
     vi.mocked(supabaseSync.getStacks).mockResolvedValue({ stacks: [] });
@@ -131,7 +171,8 @@ describe('syncOrchestrator', () => {
     vi.mocked(supabaseStorage.uploadFile).mockResolvedValue({ url: 'http://cloud.com/test.png', path: 'test-user/test.png', size: 5 });
     
     // 2. Run sync
-    await syncOrchestrator.deltaSync();
+    const result = await syncOrchestrator.deltaSync();
+    expect(result.success).toBe(true);
     
     expect(supabaseStorage.uploadFile).toHaveBeenCalled();
     const updatedThought = await db.thoughts.get('t2');

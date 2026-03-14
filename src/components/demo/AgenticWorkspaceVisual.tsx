@@ -7,18 +7,15 @@ const AgenticWorkspaceVisual: React.FC = () => {
   const [stage, setStage] = useState<'prompt' | 'beam' | 'spawn' | 'linked' | 'settled'>('prompt');
   const fullPrompt = "Research on topic X, find me 3 related videos from youtube and link them.";
 
-  if (typeof window !== 'undefined' && window.innerWidth < 1024) {
-    return null;
-  }
-
   const freeNodes = [
     { id: 'f1', title: 'RESEARCH_REF', x: [340, -340], y: [-220, 220], duration: 45, delay: 0 },
     { id: 'f2', title: 'API_DOCS', x: [-390, 390], y: [170, -170], duration: 55, delay: 10 },
     { id: 'f3', title: 'MARKET_DATA', x: [230, -230], y: [280, -280], duration: 65, delay: 5 },
     { id: 'f4', title: 'STRATEGY_V1', x: [-290, 290], y: [-340, 340], duration: 50, delay: 15 },
   ];
-  
+
   useEffect(() => {
+    if (typeof window !== 'undefined' && window.innerWidth < 1024) return;
     let mounted = true;
     const runSequence = async () => {
       while (mounted) {
@@ -47,6 +44,10 @@ const AgenticWorkspaceVisual: React.FC = () => {
     runSequence();
     return () => { mounted = false; };
   }, []);
+
+  if (typeof window !== 'undefined' && window.innerWidth < 1024) {
+    return null;
+  }
 
   const cards = [
     { id: '1', title: 'YOUTUBE_01', tx: -160, ty: 40 },

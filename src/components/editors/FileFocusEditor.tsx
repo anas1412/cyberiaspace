@@ -476,6 +476,78 @@ const EditorContent: React.FC<{
   );
 };
 
+const CloudPill: React.FC<{
+  isSyncing: boolean;
+  isSyncBlocked: boolean;
+  isSynced: boolean;
+  isReadOnly: boolean;
+  localPreviewUrl: string | null;
+  storageUrl?: string | null;
+  onRemove: () => void;
+  onSync: () => void;
+}> = ({ isSyncing, isSyncBlocked, isSynced, isReadOnly, localPreviewUrl, storageUrl, onRemove, onSync }) => {
+  const [isHovered, setIsHovered] = useState(false);
+  
+  if (isSyncing || isSyncBlocked) {
+    return (
+      <div className="flex items-center gap-2 px-3 py-1.5 bg-blue-500/5 border border-blue-500/10 rounded-xl opacity-50 cursor-wait">
+        <Loader2 className="w-3 h-3 text-blue-400 animate-spin" />
+        <span className="text-[7px] font-black uppercase tracking-[0.2em] text-blue-400">
+          {isSyncing ? 'Synchronizing' : 'Sync Blocked'}
+        </span>
+      </div>
+    );
+  }
+
+  if (isSynced) {
+    return (
+      <button 
+        onMouseEnter={() => setIsHovered(true)}
+        onMouseLeave={() => setIsHovered(false)}
+        onClick={onRemove}
+        disabled={isReadOnly}
+        className={cn(
+          "flex items-center gap-2 px-3 py-1.5 rounded-xl transition-all duration-300 border select-none group/pill",
+          isHovered 
+            ? "bg-red-500/10 border-red-500/20 text-red-400 shadow-[0_0_15px_rgba(239,68,68,0.1)]" 
+            : "bg-emerald-500/5 border-emerald-500/10 text-emerald-400"
+        )}
+      >
+        <div className={cn(
+          "w-1.5 h-1.5 rounded-full shadow-sm transition-colors duration-300",
+          isHovered ? "bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.8)]" : "bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.8)] animate-pulse"
+        )} />
+        <span className="text-[7px] font-black uppercase tracking-[0.2em] whitespace-nowrap">
+          {isHovered ? 'Remove from Cloud' : 'Cloud Synced'}
+        </span>
+      </button>
+    );
+  }
+
+  return (
+    <button 
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
+      onClick={onSync}
+      disabled={isReadOnly || (!localPreviewUrl && !storageUrl)}
+      className={cn(
+        "flex items-center gap-2 px-3 py-1.5 rounded-xl transition-all duration-300 border select-none group/pill",
+        isHovered 
+          ? "bg-blue-500/10 border-blue-500/20 text-blue-400 shadow-[0_0_15px_rgba(59,130,246,0.1)]" 
+          : "bg-slate-500/5 border-white/5 text-slate-500"
+      )}
+    >
+      <div className={cn(
+        "w-1.5 h-1.5 rounded-full shadow-sm transition-colors duration-300",
+        isHovered ? "bg-blue-500 shadow-[0_0_8px_rgba(59,130,246,0.8)]" : "bg-slate-600"
+      )} />
+      <span className="text-[7px] font-black uppercase tracking-[0.2em] whitespace-nowrap">
+        {isHovered ? 'Propagate to Cloud' : 'Local Only'}
+      </span>
+    </button>
+  );
+};
+
 const FileFocusEditor: React.FC = () => {
   const activeFocusId = useStore((state) => state.activeFocusId);
   const focusType = useStore((state) => state.focusType);
@@ -673,69 +745,6 @@ const FileFocusEditor: React.FC = () => {
     ? 'Checking...' 
     : (localPreviewUrl ? 'Local' : (thought.storageUrl ? 'Cloud' : 'None'));
 
-  const CloudPill = () => {
-    const [isHovered, setIsHovered] = useState(false);
-    
-    if (isSyncing || isSyncBlocked) {
-      return (
-        <div className="flex items-center gap-2 px-3 py-1.5 bg-blue-500/5 border border-blue-500/10 rounded-xl opacity-50 cursor-wait">
-          <Loader2 className="w-3 h-3 text-blue-400 animate-spin" />
-          <span className="text-[7px] font-black uppercase tracking-[0.2em] text-blue-400">
-            {isSyncing ? 'Synchronizing' : 'Sync Blocked'}
-          </span>
-        </div>
-      );
-    }
-
-    if (isSynced) {
-      return (
-        <button 
-          onMouseEnter={() => setIsHovered(true)}
-          onMouseLeave={() => setIsHovered(false)}
-          onClick={handleRemoveFromCloud}
-          disabled={isReadOnly}
-          className={cn(
-            "flex items-center gap-2 px-3 py-1.5 rounded-xl transition-all duration-300 border select-none group/pill",
-            isHovered 
-              ? "bg-red-500/10 border-red-500/20 text-red-400 shadow-[0_0_15px_rgba(239,68,68,0.1)]" 
-              : "bg-emerald-500/5 border-emerald-500/10 text-emerald-400"
-          )}
-        >
-          <div className={cn(
-            "w-1.5 h-1.5 rounded-full shadow-sm transition-colors duration-300",
-            isHovered ? "bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.8)]" : "bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.8)] animate-pulse"
-          )} />
-          <span className="text-[7px] font-black uppercase tracking-[0.2em] whitespace-nowrap">
-            {isHovered ? 'Remove from Cloud' : 'Cloud Synced'}
-          </span>
-        </button>
-      );
-    }
-
-    return (
-      <button 
-        onMouseEnter={() => setIsHovered(true)}
-        onMouseLeave={() => setIsHovered(false)}
-        onClick={handleSyncToCloud}
-        disabled={isReadOnly || (!localPreviewUrl && !thought?.storageUrl)}
-        className={cn(
-          "flex items-center gap-2 px-3 py-1.5 rounded-xl transition-all duration-300 border select-none group/pill",
-          isHovered 
-            ? "bg-blue-500/10 border-blue-500/20 text-blue-400 shadow-[0_0_15px_rgba(59,130,246,0.1)]" 
-            : "bg-slate-500/5 border-white/5 text-slate-500"
-        )}
-      >
-        <div className={cn(
-          "w-1.5 h-1.5 rounded-full shadow-sm transition-colors duration-300",
-          isHovered ? "bg-blue-500 shadow-[0_0_8px_rgba(59,130,246,0.8)]" : "bg-slate-600"
-        )} />
-        <span className="text-[7px] font-black uppercase tracking-[0.2em] whitespace-nowrap">
-          {isHovered ? 'Propagate to Cloud' : 'Local Only'}
-        </span>
-      </button>
-    );
-  };
-
   return (
     <FocusEditorShell
       isVisible={isVisible}
@@ -746,7 +755,16 @@ const FileFocusEditor: React.FC = () => {
       isReadOnly={isReadOnly}
       headerActions={
         <div className="flex items-center gap-3">
-          <CloudPill />
+          <CloudPill 
+            isSyncing={isSyncing}
+            isSyncBlocked={isSyncBlocked}
+            isSynced={isSynced}
+            isReadOnly={isReadOnly}
+            localPreviewUrl={localPreviewUrl}
+            storageUrl={thought.storageUrl}
+            onRemove={handleRemoveFromCloud}
+            onSync={handleSyncToCloud}
+          />
         </div>
       }
       footerStatus={
