@@ -86,17 +86,29 @@ const PricingModal: React.FC<PricingModalProps> = ({ isOpen, onClose }) => {
         setPaymentMessage('Verifying your upgrade and unlocking Pro features...');
         
         let attempts = 0;
-        const maxAttempts = 10; // ~20 seconds total
+        const maxAttempts = 15; // ~30 seconds total
+        const initialPlan = useAuthStore.getState().user?.plan;
+        const initialExpiry = useAuthStore.getState().user?.expiryDate;
 
         pollInterval = setInterval(async () => {
           attempts++;
           const authStore = useAuthStore.getState();
           await authStore.refreshProfile();
           
-          if (useAuthStore.getState().user?.plan === 'pro') {
+          const updatedUser = useAuthStore.getState().user;
+          const isNowPro = initialPlan === 'free' && updatedUser?.plan === 'pro';
+          
+          // Extension check:
+          // 1. Plan must be pro
+          // 2. Either there was no expiry before and now there is, 
+          //    OR the new expiry is further in the future than the old one
+          const hasNewExpiry = updatedUser?.expiryDate && (!initialExpiry || new Date(updatedUser.expiryDate) > new Date(initialExpiry));
+          const isExtended = initialPlan === 'pro' && hasNewExpiry;
+
+          if (isNowPro || isExtended) {
             clearInterval(pollInterval);
             setPaymentStatus('success');
-            setPaymentMessage('Upgrade successful! Welcome to Cyberia Pro.');
+            setPaymentMessage(isExtended ? 'Access extended successfully! Enjoy your extra time.' : 'Upgrade successful! Welcome to Cyberia Pro.');
             
             // Confetti effect
             import('canvas-confetti').then(confetti => {

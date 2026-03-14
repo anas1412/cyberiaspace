@@ -20,15 +20,18 @@ const formatStorage = (mb: number) => {
 };
 
 const AccountMenu: React.FC = () => {
-  const authStore = useAuthStore();
+  const user = useAuthStore((state) => state.user);
+  const status = useAuthStore((state) => state.status);
+  const signOut = useAuthStore((state) => state.signOut);
+  const syncData = useAuthStore((state) => state.syncData);
+  const deleteCloudData = useAuthStore((state) => state.deleteCloudData);
+  const storageUsageMB = useAuthStore((state) => state.storageUsageMB);
+  const calculateUsage = useAuthStore((state) => state.calculateUsage);
+  const isOnline = useAuthStore((state) => state.isOnline);
+  const accessToken = useAuthStore((state) => state.accessToken);
+
   const lastSyncTime = useSyncStore((state) => state.lastSyncTime);
   const syncStatus = useSyncStore((state) => state.status);
-  
-  const { 
-    user, status, signOut, 
-    syncData, deleteCloudData, 
-    storageUsageMB, calculateUsage, isOnline
-  } = authStore;
   
   const totalThoughtCount = useStore((state) => state.totalThoughtCount);
   const { openModal, openPricing } = useModalStore();
@@ -90,7 +93,6 @@ const AccountMenu: React.FC = () => {
   
   const handleManageSubscription = async () => {
     try {
-      const accessToken = authStore.accessToken;
       if (!accessToken) return;
       
       const res = await fetch('/api/pay?action=polar_portal', {
@@ -120,7 +122,7 @@ const AccountMenu: React.FC = () => {
     }
   };
 
-  const [now] = useState(() => new Date());
+  const now = new Date();
 
   if (status === 'unauthenticated' || !user) {
     return (
