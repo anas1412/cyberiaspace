@@ -128,11 +128,12 @@ function App() {
     const hostname = window.location.hostname;
     const isMainDomain = hostname === 'cyberia.tn' || hostname === 'www.cyberia.tn';
 
+    if (path === '/pricing') {
+      useModalStore.getState().openPricing();
+    }
+
     if ((path === '/' || path.startsWith('/s/') || path === '/pricing') && !isMainDomain) {
       init();
-      if (path === '/pricing') {
-        useModalStore.getState().openPricing();
-      }
     }
 
     const handleBeforeInstallPrompt = (e: Event) => {
@@ -407,16 +408,14 @@ function App() {
     );
   }
 
-  if (path === '/pricing') {
-    // If we're on /pricing, we stay on the app root but open the pricing modal
-  }
-
   // Landing page routes - only on main domain
   if (isMainDomain) {
-    if (path === '/' || path === '/home') {
+    if (path === '/' || path === '/home' || path === '/pricing') {
       return (
         <Suspense fallback={<LoadingOverlay force />}>
           <Homepage />
+          <PricingModal isOpen={isPricingOpen} onClose={closePricing} />
+          <Modal />
         </Suspense>
       );
     }
