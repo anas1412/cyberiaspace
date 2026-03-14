@@ -62,9 +62,16 @@ const PricingModal: React.FC<PricingModalProps> = ({ isOpen, onClose }) => {
             if (data.success && data.status === 'SUCCESS') {
               setPaymentStatus('success');
               setPaymentMessage(data.message || 'Payment successful! You are now a Pro member.');
-              setTimeout(() => {
-                window.history.replaceState({}, '', '/pricing');
-              }, 3000);
+              // Confetti effect
+              import('canvas-confetti').then(confetti => {
+                confetti.default({
+                  particleCount: 150,
+                  spread: 70,
+                  origin: { y: 0.6 },
+                  zIndex: 20000
+                });
+              });
+              window.history.replaceState({}, '', '/pricing');
             } else {
               setPaymentStatus('failed');
               setPaymentMessage(data.message || 'Payment failed. Please try again.');
@@ -101,18 +108,13 @@ const PricingModal: React.FC<PricingModalProps> = ({ isOpen, onClose }) => {
               });
             });
 
-            setTimeout(() => {
-              window.history.replaceState({}, '', '/pricing');
-              onClose();
-            }, 4000);
+            // Clean up the URL parameters without closing the modal
+            window.history.replaceState({}, '', '/pricing');
           } else if (attempts >= maxAttempts) {
             clearInterval(pollInterval);
             setPaymentStatus('idle');
             setPaymentMessage('We are still processing your upgrade. It will appear shortly!');
-            setTimeout(() => {
-              window.history.replaceState({}, '', '/pricing');
-              onClose();
-            }, 4000);
+            window.history.replaceState({}, '', '/pricing');
           }
         }, 2000);
       } else if (fail !== null) {
@@ -436,7 +438,6 @@ const PricingModal: React.FC<PricingModalProps> = ({ isOpen, onClose }) => {
                 </div>
                 <h3 className="text-xl font-bold text-white mb-2">You're Pro!</h3>
                 <p className="text-sm text-green-400 font-medium leading-relaxed">{paymentMessage}</p>
-                <p className="text-xs text-slate-400 mt-4 animate-pulse">Closing in a few seconds...</p>
               </motion.div>
             )}
 

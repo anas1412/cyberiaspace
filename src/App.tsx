@@ -129,6 +129,12 @@ function App() {
     const isMainDomain = hostname === 'cyberia.tn' || hostname === 'www.cyberia.tn';
 
     if (path === '/pricing') {
+      const params = new URLSearchParams(window.location.search);
+      // "Sling-shot" redirect: If on main domain with payment result, bounce to authenticated App domain
+      if (isMainDomain && (params.has('success') || params.has('payment_id') || params.has('checkout_id'))) {
+        window.location.href = `https://app.cyberia.tn${window.location.pathname}${window.location.search}`;
+        return;
+      }
       useModalStore.getState().openPricing();
     }
 
