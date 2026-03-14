@@ -50,22 +50,31 @@ const ColorPicker: React.FC<{ value: string; onChange: (val: string) => void; di
             initial={{ opacity: 0, y: 10, scale: 0.95 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 10, scale: 0.95 }}
-            className="absolute bottom-full mb-3 left-0 z-[100] glass border border-white/10 rounded-2xl p-3 shadow-2xl min-w-[180px]"
+            className="absolute bottom-full mb-3 left-0 z-[100] glass border border-[var(--glass-border)] rounded-2xl p-3 shadow-2xl min-w-[180px]"
           >
-            <div className="grid grid-cols-4 gap-2 mb-3">
-              {STACK_COLORS.map(color => (
-                <button
-                  key={color}
-                  onClick={() => { onChange(color); setIsOpen(false); }}
-                  className={cn(
-                    "w-8 h-8 rounded-lg border-2 transition-all hover:scale-110",
-                    value === color ? "border-white" : "border-transparent"
-                  )}
-                  style={{ backgroundColor: color }}
-                />
-              ))}
-            </div>
-            <div className="relative pt-2 border-t border-white/5">
+                          <div className="grid grid-cols-4 gap-2 mb-3">
+                            {STACK_COLORS.map(color => (
+                              <button
+                                key={color}
+                                onClick={() => { onChange(color); setIsOpen(false); }}
+                                className={cn(
+                                  "w-8 h-8 rounded-lg border-2 transition-all hover:scale-110",
+                                  value === color ? "border-[var(--text-primary)]" : "border-transparent"
+                                )}
+                                style={{ backgroundColor: color }}
+                              />
+                            ))}
+                          </div>
+                          <div className="relative pt-2 border-t border-[var(--glass-border)]">
+                            <input 
+                              type="color" 
+                              value={value.startsWith('#') ? value : '#6366f1'} 
+                              onChange={(e) => onChange(e.target.value)}
+                              className="w-full h-8 bg-transparent cursor-pointer rounded-lg overflow-hidden"
+                            />
+                            <p className="text-[7px] font-black uppercase tracking-widest text-[var(--text-muted)] mt-1 text-center">Custom Hex</p>
+                          </div>
+            <div className="relative pt-2 border-t border-[var(--glass-border)]">
               <input 
                 type="color" 
                 value={value.startsWith('#') ? value : '#6366f1'} 
@@ -126,7 +135,7 @@ const DatePicker: React.FC<{ value: string; onChange: (val: string) => void; dis
       <button
         onClick={() => !disabled && setIsOpen(!isOpen)}
         className={cn(
-          "w-full bg-[var(--bg-page)]/20 border border-white/10 rounded-xl p-3 text-xs outline-none focus:border-[var(--accent)] text-[var(--text-primary)] font-mono uppercase flex items-center justify-between group transition-all",
+          "w-full bg-[var(--bg-page)]/20 border border-[var(--glass-border)] rounded-xl p-3 text-xs outline-none focus:border-[var(--accent)] text-[var(--text-primary)] font-mono uppercase flex items-center justify-between group transition-all",
           disabled && "opacity-50 cursor-default"
         )}
       >
@@ -140,16 +149,16 @@ const DatePicker: React.FC<{ value: string; onChange: (val: string) => void; dis
             initial={{ opacity: 0, y: -10, scale: 0.95 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: -10, scale: 0.95 }}
-            className="absolute top-full mt-2 left-0 right-0 z-[100] glass border border-white/10 rounded-2xl p-4 shadow-2xl overflow-hidden"
+            className="absolute top-full mt-2 left-0 right-0 z-[100] glass border border-[var(--glass-border)] rounded-2xl p-4 shadow-2xl overflow-hidden"
           >
             <div className="flex justify-between items-center mb-4">
-              <button onClick={handlePrevMonth} className="p-1 hover:bg-white/10 rounded-lg text-slate-400 hover:text-white transition-colors">
+              <button onClick={handlePrevMonth} className="p-1 hover:bg-[var(--glass-border)] rounded-lg text-slate-400 hover:text-white transition-colors">
                 <ChevronLeft className="w-4 h-4" />
               </button>
               <h4 className="text-[10px] font-black uppercase tracking-widest text-white">
                 {monthNames[viewDate.getMonth()]} {viewDate.getFullYear()}
               </h4>
-              <button onClick={handleNextMonth} className="p-1 hover:bg-white/10 rounded-lg text-slate-400 hover:text-white transition-colors">
+              <button onClick={handleNextMonth} className="p-1 hover:bg-[var(--glass-border)] rounded-lg text-slate-400 hover:text-white transition-colors">
                 <ChevronRight className="w-4 h-4" />
               </button>
             </div>
@@ -175,8 +184,8 @@ const DatePicker: React.FC<{ value: string; onChange: (val: string) => void; dis
                       isSelected(day)
                         ? "bg-[var(--accent)] border-[var(--accent)] text-white shadow-[0_0_10px_var(--accent-glow)]"
                         : isToday(day)
-                          ? "bg-white/10 border-white/20 text-white"
-                          : "bg-transparent border-transparent text-slate-400 hover:bg-white/5 hover:text-white"
+                          ? "bg-[var(--glass-border)] border-white/20 text-white"
+                          : "bg-transparent border-transparent text-slate-400 hover:bg-[var(--glass-border)] hover:text-white"
                     )}
                   >
                     {day}
@@ -185,10 +194,10 @@ const DatePicker: React.FC<{ value: string; onChange: (val: string) => void; dis
               })}
             </div>
 
-            <div className="mt-4 pt-3 border-t border-white/5 flex justify-between gap-2">
+            <div className="mt-4 pt-3 border-t border-[var(--glass-border)] flex justify-between gap-2">
               <button
                 onClick={() => { onChange(""); setIsOpen(false); }}
-                className="flex-1 py-1.5 rounded-lg bg-white/5 hover:bg-white/10 text-[8px] font-black uppercase tracking-widest text-slate-500 hover:text-white transition-all"
+                className="flex-1 py-1.5 rounded-lg bg-[var(--glass-border)] hover:bg-[var(--glass-border)] text-[8px] font-black uppercase tracking-widest text-slate-500 hover:text-white transition-all"
               >
                 Clear
               </button>
@@ -287,18 +296,18 @@ const Inspector: React.FC = () => {
           animate={{ x: 0, opacity: 1 }}
           exit={{ x: '-100%', opacity: 0 }}
           transition={{ type: 'spring', damping: 28, stiffness: 200 }}
-          className="ui-layer focus-box fixed top-4 md:top-24 bottom-4 md:bottom-24 left-4 md:left-8 w-[calc(100%-32px)] md:w-[400px] glass rounded-2xl shadow-[0_0_80px_rgba(0,0,0,0.5)] flex flex-col overflow-hidden z-[9999] border border-white/10"
+          className="ui-layer focus-box fixed top-4 md:top-24 bottom-4 md:bottom-24 left-4 md:left-8 w-[calc(100%-32px)] md:w-[400px] glass rounded-2xl shadow-[0_0_80px_rgba(0,0,0,0.5)] flex flex-col overflow-hidden z-[9999] border border-[var(--glass-border)]"
         >
           {/* HEADER AREA */}
           <div className="p-4 md:p-5 border-b border-[var(--glass-border)] bg-[var(--bg-main)]/20 backdrop-blur-md sticky top-0 z-20">
             <div className="flex justify-between items-center relative">
               <div className="w-8" /> {/* Spacer to help center */}
               <div className="flex-1 flex justify-center">
-                <h3 className="text-xs font-black uppercase tracking-[0.2em] text-white leading-none">
+                <h3 className="text-xs font-black uppercase tracking-[0.2em] text-[var(--text-primary)] leading-none">
                   {isReadOnly ? 'Published' : 'Editor'}
                 </h3>
               </div>
-              <button onClick={() => setInspectorOpen(false)} className="p-2 rounded-lg text-slate-400 transition-all">
+              <button onClick={() => setInspectorOpen(false)} className="p-2 rounded-lg text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-all">
                 <X className="w-4 h-4" />
               </button>
             </div>
@@ -312,7 +321,7 @@ const Inspector: React.FC = () => {
                 onClick={() => setActiveTab(tab)}
                 className={cn(
                   "flex-1 py-4 text-[10px] font-black uppercase tracking-[0.2em] relative transition-all duration-300",
-                  activeTab === tab ? "text-white" : "text-slate-500 hover:text-slate-300"
+                  activeTab === tab ? "text-[var(--text-primary)]" : "text-[var(--text-muted)] hover:text-[var(--text-primary)]"
                 )}
               >
                 {tab}
@@ -357,8 +366,8 @@ const Inspector: React.FC = () => {
                               className={cn(
                                 "p-3 rounded-xl flex flex-col items-center justify-center transition-all border gap-1.5",
                                 showSave 
-                                  ? "bg-[var(--accent)] border-[var(--accent)] text-white shadow-[0_0_20px_var(--accent-glow)] scale-100 opacity-100"
-                                  : "bg-white/5 border-white/5 text-slate-600 scale-95 opacity-50 cursor-default"
+                                  ? "bg-[var(--accent)] border-[var(--accent)] text-[var(--accent-contrast)] shadow-[0_0_20px_var(--accent-glow)] scale-100 opacity-100 font-black"
+                                  : "bg-[var(--bg-main)]/20 border-[var(--glass-border)] text-[var(--text-muted)] scale-95 opacity-30 cursor-default"
                               )}
                             >
                               <Save className="w-3.5 h-3.5" />
@@ -376,8 +385,8 @@ const Inspector: React.FC = () => {
                             className={cn(
                               "p-3 rounded-xl flex flex-col items-center justify-center transition-all border gap-1.5",
                               isActive
-                                ? "bg-[var(--accent)]/10 border-[var(--accent)] text-white shadow-[0_0_15px_rgba(99,102,241,0.2)]"
-                                : "bg-white/[0.03] border-transparent text-slate-500 hover:bg-white/[0.06] hover:text-slate-300",
+                                ? "bg-[var(--accent)]/10 border-[var(--accent)] text-[var(--text-primary)] shadow-[0_0_15px_var(--accent-glow)]"
+                                : "bg-white/[0.03] border-transparent text-[var(--text-muted)] hover:bg-white/[0.06] hover:text-[var(--text-primary)]",
                               isReadOnly && thought.type !== type && "opacity-30 grayscale cursor-default"
                             )}
                             disabled={isReadOnly}
@@ -392,7 +401,7 @@ const Inspector: React.FC = () => {
 
                     <div className="space-y-5">
                       <div className="space-y-2">
-                        <label className="text-[9px] uppercase font-bold tracking-widest text-slate-500 ml-1">Name</label>
+                        <label className="text-[9px] uppercase font-black tracking-widest text-[var(--text-muted)] ml-1">Name</label>
                         <input
                           type="text"
                           readOnly={isReadOnly}
@@ -403,7 +412,7 @@ const Inspector: React.FC = () => {
                           }}
                           maxLength={100}
                           className={cn(
-                            "w-full bg-[var(--bg-page)]/20 border border-white/10 rounded-xl p-3 text-sm outline-none focus:border-[var(--accent)] text-[var(--text-primary)] placeholder:text-slate-500",
+                            "w-full bg-[var(--bg-page)]/20 border border-[var(--glass-border)] rounded-xl p-3 text-sm outline-none focus:border-[var(--accent)] text-[var(--text-primary)] placeholder:text-slate-500",
                             isReadOnly && "pointer-events-none opacity-80"
                           )}
                           placeholder={"Name"}
@@ -411,7 +420,7 @@ const Inspector: React.FC = () => {
                       </div>
 
                       <div className="space-y-2">
-                        <label className="text-[9px] uppercase font-bold tracking-widest text-slate-500 ml-1">Note</label>
+                        <label className="text-[9px] uppercase font-black tracking-widest text-[var(--text-muted)] ml-1">Note</label>
                         <textarea
                           readOnly={isReadOnly}
                           value={localDesc}
@@ -422,7 +431,7 @@ const Inspector: React.FC = () => {
                           rows={4}
                           maxLength={150}
                           className={cn(
-                            "w-full bg-[var(--bg-page)]/20 border border-white/10 rounded-xl p-3 text-xs outline-none focus:border-[var(--accent)] text-[var(--text-primary)] placeholder:text-slate-500",
+                            "w-full bg-[var(--bg-page)]/20 border border-[var(--glass-border)] rounded-xl p-3 text-xs outline-none focus:border-[var(--accent)] text-[var(--text-primary)] placeholder:text-slate-500",
                             isReadOnly && "pointer-events-none opacity-80"
                           )}
                           placeholder="Note"
@@ -432,7 +441,7 @@ const Inspector: React.FC = () => {
 
                     {/* Modular Panel Extension */}
                     {InspectorPanel && (
-                      <div className="pt-6 border-t border-white/5">
+                      <div className="pt-6 border-t border-[var(--glass-border)]">
                         <InspectorPanel thought={thought} isReadOnly={isReadOnly} />
                       </div>
                     )}
@@ -442,7 +451,7 @@ const Inspector: React.FC = () => {
                 {activeTab === 'status' && (
                   <div className="space-y-8">
                     <div className="space-y-3">
-                      <label className="text-[9px] uppercase font-bold tracking-widest text-slate-500 ml-1">Date</label>
+                      <label className="text-[9px] uppercase font-black tracking-widest text-[var(--text-muted)] ml-1">Date</label>
                       <DatePicker
                         value={localDate}
                         disabled={isReadOnly}
@@ -454,23 +463,23 @@ const Inspector: React.FC = () => {
                     </div>
 
                     <div className="space-y-3">
-                      <label className="text-[9px] uppercase font-bold tracking-widest text-slate-500 ml-1">Progress</label>
-                      <div className="grid grid-cols-4 gap-1">
+                      <label className="text-[9px] uppercase font-black tracking-widest text-[var(--text-muted)] ml-1">Progress</label>
+                      <div className="grid grid-cols-4 gap-1.5">
                         {(['none', 'todo', 'doing', 'done'] as const).map((s) => (
                           <button
                             key={s}
                             disabled={isReadOnly}
                             onClick={() => !isReadOnly && updateThought(thought.id, { status: s })}
                             className={cn(
-                              "border rounded-xl py-2.5 text-[8px] font-bold uppercase transition-colors",
+                              "border rounded-xl py-2.5 text-[9px] font-black uppercase tracking-[0.2em] transition-all",
                               thought.status === s
                                 ? {
-                                  'none': 'bg-white/10 border-white/30 text-white',
-                                  'todo': 'bg-[var(--status-todo)]/30 border-[var(--status-todo)] text-white',
-                                  'doing': 'bg-[var(--status-doing)]/30 border-[var(--status-doing)] text-white',
-                                  'done': 'bg-[var(--status-done)]/30 border-[var(--status-done)] text-white',
+                                  'none': 'bg-[var(--glass-border)] border-white/30 text-[var(--text-primary)] shadow-lg',
+                                  'todo': 'bg-[var(--status-todo)]/10 border-[var(--status-todo)] text-[var(--status-todo)] shadow-[0_0_15px_rgba(99,102,241,0.1)]',
+                                  'doing': 'bg-[var(--status-doing)]/10 border-[var(--status-doing)] text-[var(--status-doing)] shadow-[0_0_15px_rgba(234,179,8,0.1)]',
+                                  'done': 'bg-[var(--status-done)]/10 border-[var(--status-done)] text-[var(--status-done)] shadow-[0_0_15px_rgba(34,197,94,0.1)]',
                                 }[s]
-                                : "bg-white/5 border-white/10 text-slate-400 hover:bg-white/10",
+                                : "bg-white/[0.03] border-[var(--glass-border)] text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--glass-border)] hover:border-white/20",
                               isReadOnly && thought.status !== s && "opacity-30 grayscale cursor-default"
                             )}
                           >
@@ -481,24 +490,24 @@ const Inspector: React.FC = () => {
                     </div>
 
                     <div className="space-y-3">
-                      <label className="text-[9px] uppercase font-bold tracking-widest text-slate-500 ml-1">Priority</label>
-                      <div className="grid grid-cols-5 gap-1">
+                      <label className="text-[9px] uppercase font-black tracking-widest text-[var(--text-muted)] ml-1">Priority</label>
+                      <div className="grid grid-cols-5 gap-1.5">
                         {(['none', 'low', 'medium', 'high', 'urgent'] as const).map((p) => (
                           <button
                             key={p}
                             disabled={isReadOnly}
                             onClick={() => handlePriorityChange(p)}
                             className={cn(
-                              "border rounded-xl py-2.5 text-[8px] font-bold uppercase transition-colors",
+                              "border rounded-xl py-2.5 text-[9px] font-black uppercase tracking-[0.2em] transition-all",
                               thought.priority === p
                                 ? {
-                                  'none': 'bg-white/10 border-white/30 text-white',
-                                  'low': 'bg-[var(--prio-low)]/30 border-[var(--prio-low)] text-white',
-                                  'medium': 'bg-[var(--prio-medium)]/30 border-[var(--prio-medium)] text-white',
-                                  'high': 'bg-[var(--prio-high)]/30 border-[var(--prio-high)] text-white',
-                                  'urgent': 'bg-[var(--prio-urgent)]/30 border-[var(--prio-urgent)] text-white',
+                                  'none': 'bg-[var(--glass-border)] border-white/30 text-[var(--text-primary)] shadow-lg',
+                                  'low': 'bg-[var(--prio-low)]/10 border-[var(--prio-low)] text-[var(--prio-low)] shadow-[0_0_15px_rgba(148,163,184,0.1)]',
+                                  'medium': 'bg-[var(--prio-medium)]/10 border-[var(--prio-medium)] text-[var(--prio-medium)] shadow-[0_0_15px_rgba(168,85,247,0.1)]',
+                                  'high': 'bg-[var(--prio-high)]/10 border-[var(--prio-high)] text-[var(--prio-high)] shadow-[0_0_15px_rgba(245,158,11,0.1)]',
+                                  'urgent': 'bg-[var(--prio-urgent)]/10 border-[var(--prio-urgent)] text-[var(--prio-urgent)] shadow-[0_0_15px_rgba(239,68,68,0.1)]',
                                 }[p]
-                                : "bg-white/5 border-white/10 text-slate-400 hover:bg-white/10",
+                                : "bg-white/[0.03] border-[var(--glass-border)] text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--glass-border)] hover:border-white/20",
                               isReadOnly && thought.priority !== p && "opacity-30 grayscale cursor-default"
                             )}
                           >
@@ -508,13 +517,13 @@ const Inspector: React.FC = () => {
                       </div>
                     </div>
 
-                    <div className="space-y-3 pt-6 border-t border-white/5">
+                    <div className="space-y-3 pt-6 border-t border-[var(--glass-border)]">
                       <div className="flex items-center mb-2 px-1">
-                        <span className="text-[9px] uppercase font-black tracking-widest text-white">Group</span>
+                        <span className="text-[9px] uppercase font-black tracking-widest text-[var(--text-primary)]">Group</span>
                       </div>
 
                       {stack ? (
-                        <div className="p-4 bg-[var(--bg-page)]/20 border border-white/10 rounded-2xl space-y-4">
+                        <div className="p-4 bg-[var(--bg-page)]/20 border border-[var(--glass-border)] rounded-2xl space-y-4">
                           <div className="flex items-center gap-3">
                             <ColorPicker 
                               value={stack.color} 
@@ -539,9 +548,9 @@ const Inspector: React.FC = () => {
                           {!isReadOnly && (
                             <button
                               onClick={() => unlinkSelectedThoughts()}
-                              className="w-full py-2 bg-white/5 hover:bg-red-500/10 text-slate-400 hover:text-red-400 border border-white/5 rounded-xl text-[8px] font-black uppercase tracking-widest transition-all"
+                              className="w-full py-2.5 bg-red-500/5 hover:bg-red-500/10 text-red-400/80 hover:text-red-400 border border-red-500/10 hover:border-red-500/20 rounded-xl text-[9px] font-black uppercase tracking-[0.2em] transition-all"
                             >
-                              Remove from Group
+                              Remove
                             </button>
                           )}
                         </div>
@@ -563,7 +572,7 @@ const Inspector: React.FC = () => {
                                   e.currentTarget.value = '';
                                 }
                               }}
-                              className="w-full bg-[var(--bg-page)]/20 border border-white/10 rounded-xl p-3 text-xs outline-none focus:border-[var(--accent)] text-[var(--text-primary)] placeholder:text-slate-500 transition-all"
+                              className="w-full bg-[var(--bg-page)]/20 border border-[var(--glass-border)] rounded-xl p-3 text-xs outline-none focus:border-[var(--accent)] text-[var(--text-primary)] placeholder:text-slate-500 transition-all"
                             />
                           </div>
 
@@ -575,7 +584,7 @@ const Inspector: React.FC = () => {
                                   <div key={s.id} className="relative group/s">
                                     <button
                                       onClick={() => updateThought(thought.id, { stackId: s.id })}
-                                      className="w-full flex items-center gap-3 p-2.5 rounded-xl bg-white/[0.02] hover:bg-white/[0.05] border border-transparent hover:border-white/5 transition-all"
+                                      className="w-full flex items-center gap-3 p-2.5 rounded-xl bg-white/[0.02] hover:bg-white/[0.05] border border-transparent hover:border-[var(--glass-border)] transition-all"
                                     >
                                       <div className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: s.color, boxShadow: `0 0 8px ${s.color}44` }} />
                                       <span className="text-[9px] font-bold uppercase tracking-widest text-slate-400 group-hover/s:text-white transition-colors">{s.name}</span>
@@ -624,13 +633,13 @@ const Inspector: React.FC = () => {
                         disabled={isReadOnly}
                         onChange={(e) => updateThought(thought.id, { size: parseFloat(e.target.value) })}
                         className={cn(
-                          "w-full h-1.5 bg-white/5 rounded-lg appearance-none cursor-pointer accent-[var(--accent)]",
+                          "w-full h-1.5 bg-[var(--glass-border)] rounded-lg appearance-none cursor-pointer accent-[var(--accent)]",
                           isReadOnly && "opacity-30 pointer-events-none"
                         )}
                       />
                     </div>
 
-                    <div className="space-y-3 pt-6 border-t border-white/5">
+                    <div className="space-y-3 pt-6 border-t border-[var(--glass-border)]">
                       <div className="flex items-center mb-2 px-1">
                         <span className="text-[9px] uppercase font-black tracking-widest text-white">Layers</span>
                       </div>
@@ -639,7 +648,7 @@ const Inspector: React.FC = () => {
                           disabled={isReadOnly}
                           onClick={() => !isReadOnly && bringToFront(thought.id)}
                           className={cn(
-                            "flex items-center justify-center gap-2 py-3 bg-white/5 border border-white/10 rounded-xl text-[8px] font-black uppercase tracking-widest text-slate-300 hover:bg-white/10 hover:text-white transition-all",
+                            "flex items-center justify-center gap-2 py-3 bg-[var(--glass-border)] border border-[var(--glass-border)] rounded-xl text-[8px] font-black uppercase tracking-widest text-slate-300 hover:bg-[var(--glass-border)] hover:text-white transition-all",
                             isReadOnly && "opacity-30 cursor-default"
                           )}
                         >
@@ -650,7 +659,7 @@ const Inspector: React.FC = () => {
                           disabled={isReadOnly}
                           onClick={() => !isReadOnly && sendToBack(thought.id)}
                           className={cn(
-                            "flex items-center justify-center gap-2 py-3 bg-white/5 border border-white/10 rounded-xl text-[8px] font-black uppercase tracking-widest text-slate-300 hover:bg-white/10 hover:text-white transition-all",
+                            "flex items-center justify-center gap-2 py-3 bg-[var(--glass-border)] border border-[var(--glass-border)] rounded-xl text-[8px] font-black uppercase tracking-widest text-slate-300 hover:bg-[var(--glass-border)] hover:text-white transition-all",
                             isReadOnly && "opacity-30 cursor-default"
                           )}
                         >
@@ -670,10 +679,10 @@ const Inspector: React.FC = () => {
             <div className="bg-[var(--bg-main)]/40 border-t border-[var(--glass-border)] p-4 md:p-6 mt-auto flex items-center gap-3">
               <button
                 onClick={handleDeleteThought}
-                className="flex-1 bg-red-500/10 hover:bg-red-500/20 text-red-400 py-4 rounded-xl text-[10px] font-bold uppercase tracking-widest transition-colors border border-red-500/20 flex items-center justify-center gap-2"
+                className="flex-1 bg-red-500/5 hover:bg-red-500/10 text-red-400 py-3.5 rounded-xl text-[9px] font-black uppercase tracking-[0.2em] transition-all border border-red-500/20 hover:border-red-500/40 flex items-center justify-center gap-2.5 group"
               >
-                <Trash2 className="w-4 h-4" />
-                Delete
+                <Trash2 className="w-3.5 h-3.5 group-hover:scale-110 transition-transform" />
+                <span>DELETE</span>
               </button>
               {thought.type !== 'label' && (
                 <button
@@ -684,10 +693,10 @@ const Inspector: React.FC = () => {
                     const focusType = (triggers[thought.type] || 'text') as any;
                     setActiveFocus(thought.id, focusType);
                   }}
-                  className="flex-1 bg-[var(--accent)]/10 hover:bg-[var(--accent)]/20 border border-[var(--accent)]/30 text-[var(--accent-secondary)] py-4 rounded-xl text-[10px] font-black uppercase tracking-[0.2em] transition-all flex items-center justify-center gap-2"
+                  className="flex-1 bg-[var(--accent)]/5 hover:bg-[var(--accent)]/10 border border-[var(--accent)]/20 hover:border-[var(--accent)]/50 text-[var(--accent-secondary)] py-3.5 rounded-xl text-[9px] font-black uppercase tracking-[0.2em] transition-all flex items-center justify-center gap-2.5 shadow-lg shadow-[var(--accent-glow)]/5 group"
                 >
-                  <Maximize2 className="w-4 h-4" />
-                  Open
+                  <Maximize2 className="w-3.5 h-3.5 group-hover:scale-110 transition-transform" />
+                  <span>OPEN</span>
                 </button>
               )}
             </div>

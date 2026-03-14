@@ -24,7 +24,7 @@ const KanbanOverlay: React.FC = () => {
     )}>
 
       {/* Top Section: Filters + Mask */}
-      <div className="flex-shrink-0 h-[160px] md:h-[180px] bg-[var(--bg-main)] z-[60] flex flex-col justify-end pointer-events-auto">
+      <div className="flex-shrink-0 h-[120px] md:h-[152px] bg-[var(--bg-main)] z-[60] flex flex-col justify-end pointer-events-auto">
         <KanbanFilterBar />
       </div>
       

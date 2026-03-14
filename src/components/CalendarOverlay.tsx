@@ -88,7 +88,7 @@ const CalendarOverlay: React.FC = () => {
   return (
     <div 
       className={cn(
-        "calendar-overlay inset-0 flex flex-col md:flex-row pointer-events-auto p-4 md:p-10 pb-[100px] md:pb-[120px] pt-[100px] md:pt-[100px] gap-4 md:gap-5 opacity-100 transition-opacity duration-400 z-[10] overflow-y-auto md:overflow-hidden",
+        "calendar-overlay inset-0 flex flex-col md:flex-row pointer-events-auto p-4 md:p-10 pb-[100px] md:pb-[120px] pt-[64px] md:pt-[96px] gap-4 md:gap-5 opacity-100 transition-opacity duration-400 z-[10] overflow-y-auto md:overflow-hidden",
         isDemo ? "absolute" : "fixed"
       )}
       onClick={handleBackgroundClick}

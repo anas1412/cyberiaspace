@@ -22,7 +22,11 @@ export const kanbanStrategy: LayoutStrategist = {
     const indexInCol = list.findIndex(t => t.id === thought.id);
     
     // Calculate cumulative Y precisely like the reference, but only for visible items
-    let currentY = 320;
+    // Header height (152/120) + Column header height (60/50) + Gap B (24)
+    const headerEnd = isMobile ? 170 : 212;
+    const startY = headerEnd + 24;
+    let currentY = startY;
+
     if (!isFilteredOut) {
       for (let i = 0; i < indexInCol; i++) {
         const h = elementHeights.get(list[i].id) || 120;
@@ -31,11 +35,11 @@ export const kanbanStrategy: LayoutStrategist = {
     }
     
     const height = elementHeights.get(thought.id) || 120;
-    const targetY = isFilteredOut ? 320 : currentY;
+    const targetY = isFilteredOut ? startY : currentY;
     const targetX = (colWidth * colIdx) + (colWidth - 280) / 2;
 
     // Fading Logic from reference
-    const headerBottom = isMobile ? 210 : 240;
+    const headerBottom = headerEnd;
     const nodeScreenY = targetY; // Since world transform is {x:0, y:vT.y, scale:1}
     const cardBottom = nodeScreenY + height;
     
