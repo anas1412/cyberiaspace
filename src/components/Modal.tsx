@@ -153,7 +153,7 @@ const Modal: React.FC = () => {
           <div className="flex flex-col md:flex-row gap-3 md:gap-4">
             <button
               onClick={() => handleConfirm()}
-              className="order-1 md:order-2 flex-1 py-3.5 md:py-4 text-[10px] md:text-xs font-bold uppercase tracking-widest bg-[var(--accent)] rounded-xl text-white hover:opacity-90 transition-colors shadow-lg shadow-[var(--accent-glow)]"
+              className="order-1 md:order-2 flex-1 py-3.5 md:py-4 text-[10px] md:text-xs font-bold uppercase tracking-widest bg-[var(--accent)] rounded-xl text-[var(--accent-contrast)] hover:opacity-90 transition-colors shadow-lg shadow-[var(--accent-glow)]"
             >
               {confirmText || 'Confirm'}
             </button>

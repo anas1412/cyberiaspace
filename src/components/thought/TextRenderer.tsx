@@ -51,7 +51,7 @@ export const TextRenderer: React.FC<TextRendererProps> = ({
           <div className="absolute inset-0 bg-[var(--accent)]/10 opacity-0 group-hover/text:opacity-100 transition-opacity rounded-xl flex items-center justify-center pointer-events-none">
             <button
               onClick={(e) => { e.stopPropagation(); setActiveFocus(thought.id, 'text'); }}
-              className="pointer-events-auto prevent-drag bg-[var(--accent)] text-white p-2 rounded-lg shadow-xl transform scale-90 group-hover/text:scale-100 transition-all hover:scale-110 active:scale-95"
+              className="pointer-events-auto prevent-drag bg-[var(--accent)] text-[var(--accent-contrast)] p-2 rounded-lg shadow-xl transform scale-90 group-hover/text:scale-100 transition-all hover:scale-110 active:scale-95"
             >
               <Maximize2 className="w-4 h-4" />
             </button>
@@ -75,7 +75,7 @@ export const TextRenderer: React.FC<TextRendererProps> = ({
         <div className="absolute inset-0 bg-[var(--accent)]/10 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center pointer-events-none">
           <button
             onClick={(e) => { e.stopPropagation(); setActiveFocus(thought.id, 'text'); }}
-            className="pointer-events-auto bg-[var(--accent)] text-white p-2 rounded-lg shadow-xl transform scale-90 group-hover:scale-100 transition-all hover:scale-110 active:scale-95"
+            className="pointer-events-auto bg-[var(--accent)] text-[var(--accent-contrast)] p-2 rounded-lg shadow-xl transform scale-90 group-hover:scale-100 transition-all hover:scale-110 active:scale-95"
           >
             <Maximize2 className="w-4 h-4" />
           </button>

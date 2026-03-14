@@ -228,7 +228,7 @@ export const SystemTray: React.FC<SystemTrayProps> = ({
                 }} 
                 className={cn(
                   "w-9 h-9 md:w-10 md:h-10 flex items-center justify-center rounded-xl transition-all", 
-                  (!limits.AI_ENABLED || !user) ? "opacity-40 grayscale hover:opacity-100 transition-opacity" : isChatOpen ? "bg-[var(--accent)] text-white shadow-[0_0_20px_var(--accent-glow)]" : "text-[var(--accent)] hover:bg-[var(--accent)]/10"
+                  (!limits.AI_ENABLED || !user) ? "opacity-40 grayscale hover:opacity-100 transition-opacity" : isChatOpen ? "bg-[var(--accent)] text-[var(--accent-contrast)] shadow-[0_0_20px_var(--accent-glow)]" : "text-[var(--accent)] hover:bg-[var(--accent)]/10"
                 )}
               >
                 {(!limits.AI_ENABLED || !user) ? <EyeOff className="w-4 h-4" /> : isChatOpen ? <Eye className="w-4 h-4" /> : <EyeClosed className="w-4 h-4" />}

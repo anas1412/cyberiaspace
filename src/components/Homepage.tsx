@@ -2,6 +2,8 @@ import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { MousePointer2, Layout, Database, ArrowRight, Menu, X, Zap, Check, Compass, Rocket, Send, Loader2, CheckCircle, Shield, ChevronDown } from 'lucide-react';
 import { PLAN_CONFIG } from '../constants';
+import { useAuthStore } from '../store/useAuthStore';
+import { resolvePricingLocation } from '../utils/pricing';
 
 import SpatialThinkingVisual from './demo/SpatialThinkingVisual';
 import DynamicViewsVisual from './demo/DynamicViewsVisual';
@@ -182,6 +184,7 @@ const FeatureVisual: React.FC<{ activeFeature: number }> = React.memo(({ activeF
 
 
 const Homepage: React.FC = () => {
+  const { user } = useAuthStore();
   const [activeFeature, setActiveFeature] = useState(0);
   const [activeFAQIndex, setActiveFAQIndex] = useState<number | null>(null);
   const [isScrolled, setIsScrolled] = useState(false);
@@ -224,25 +227,15 @@ const Homepage: React.FC = () => {
   }, []);
 
   useEffect(() => {
-    const userTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
-    const userLanguage = navigator.language;
-    const isTunisiaLikely = userTimezone === 'Africa/Tunis' || userLanguage.includes('ar-TN') || userLanguage.includes('fr-TN');
-
     fetch('/api/pay?action=pricing')
       .then(res => res.json())
       .then(data => {
-        if (data.country === 'US' && isTunisiaLikely) {
-          setLocation({ country: 'TN', currency: 'DT', isLocalPricing: true });
-        } else {
-          setLocation(data);
-        }
+        setLocation(resolvePricingLocation(data, user));
       })
-      .catch(() => setLocation({
-        country: isTunisiaLikely ? 'TN' : 'US',
-        currency: isTunisiaLikely ? 'DT' : 'USD',
-        isLocalPricing: isTunisiaLikely
-      }));
-  }, []);
+      .catch(() => {
+        setLocation(resolvePricingLocation(null, user));
+      });
+  }, [user]);
 
   const scrollToSection = (id: string) => {
     const element = document.getElementById(id);

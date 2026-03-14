@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useModalStore } from '../store/useModalStore';
 import { useAuthStore } from '../store/useAuthStore';
 import { PLAN_CONFIG, type AccessPeriod } from '../constants';
+import { resolvePricingLocation } from '../utils/pricing';
 import { Zap, Check, Star, X, Shield, Layout, CreditCard, Rocket, Loader2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { clsx, type ClassValue } from 'clsx';
@@ -31,56 +32,17 @@ const PricingModal: React.FC<PricingModalProps> = ({ isOpen, onClose }) => {
   useEffect(() => {
     if (isOpen) {
       setAcceptedTerms(false);
-      const userTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
-      const userLanguage = navigator.language;
-      const isTunisiaLikely = userTimezone === 'Africa/Tunis' || userLanguage.includes('ar-TN') || userLanguage.includes('fr-TN');
-      const forceGlobal = import.meta.env.VITE_ENABLE_LOCAL_PRICING === 'false';
 
       fetch('/api/pay?action=pricing')
         .then(res => res.json())
         .then(data => {
-          // Force currency if user is already Pro and has a payment provider
-          if (user?.plan === 'pro' && user?.paymentProvider) {
-            if (user.paymentProvider === 'polar') {
-              setLocation({ ...data, currency: 'USD', isLocalPricing: false });
-              return;
-            } else if (user.paymentProvider === 'flouci') {
-              setLocation({ ...data, currency: 'DT', isLocalPricing: true });
-              return;
-            }
-          }
-
-          if (forceGlobal) {
-            setLocation({ ...data, currency: 'USD', isLocalPricing: false });
-          } else if (data.country === 'US' && isTunisiaLikely) {
-            setLocation({ country: 'TN', currency: 'DT', isLocalPricing: true });
-          } else {
-            setLocation(data);
-          }
+          setLocation(resolvePricingLocation(data, user));
         })
         .catch(() => {
-          if (user?.plan === 'pro' && user?.paymentProvider) {
-            if (user.paymentProvider === 'polar') {
-              setLocation({ country: 'US', currency: 'USD', isLocalPricing: false });
-              return;
-            } else if (user.paymentProvider === 'flouci') {
-              setLocation({ country: 'TN', currency: 'DT', isLocalPricing: true });
-              return;
-            }
-          }
-
-          if (forceGlobal) {
-            setLocation({ country: 'US', currency: 'USD', isLocalPricing: false });
-          } else {
-            setLocation({
-              country: isTunisiaLikely ? 'TN' : 'US',
-              currency: isTunisiaLikely ? 'DT' : 'USD',
-              isLocalPricing: isTunisiaLikely
-            });
-          }
+          setLocation(resolvePricingLocation(null, user));
         });
     }
-  }, [isOpen, user?.plan, user?.paymentProvider]);
+  }, [isOpen, user]);
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
