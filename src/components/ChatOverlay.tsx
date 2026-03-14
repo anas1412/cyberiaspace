@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { useStore } from '../store/useStore';
 import { useAuthStore } from '../store/useAuthStore';
+import { useModalStore } from '../store/useModalStore';
 import { serializeWorkspace } from '../utils/contextBuilder';
 import { X, Send, Shield, Loader2, History, Square } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -70,6 +71,7 @@ const ChatOverlay: React.FC = () => {
   const store = useStore();
   const { user } = useAuthStore();
   const plan = user?.plan || 'free';
+  const { openPricing } = useModalStore();
   const limits = PLAN_CONFIG[plan as keyof typeof PLAN_CONFIG];
   
   const [messages, setMessages] = useState<Message[]>([]);
@@ -526,6 +528,14 @@ if (['get_thought_details', 'read_file_content', 'read_files_content'].includes(
                   <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest leading-none">
                     {activeModel}
                   </span>
+                  {plan === 'free' && (
+                    <button 
+                      onClick={openPricing}
+                      className="ml-1 px-1.5 py-0.5 rounded-md bg-blue-500/10 hover:bg-blue-500/20 border border-blue-500/20 text-[7px] font-black text-blue-400 uppercase tracking-widest transition-all active:scale-95"
+                    >
+                      Go Pro
+                    </button>
+                  )}
                 </div>
               </div>
             </div>
@@ -580,12 +590,15 @@ if (['get_thought_details', 'read_file_content', 'read_files_content'].includes(
                   Ready to map your thoughts. Ask me to research, organize, or create.
                 </p>
                 {plan === 'free' && (
-                  <div className="mt-6 p-4 rounded-xl bg-blue-500/5 border border-blue-500/10 mx-4">
-                    <p className="text-[12px] uppercase font-black tracking-[0.2em] text-blue-400 mb-1.5">Limited Capabilities</p>
+                  <button 
+                    onClick={openPricing}
+                    className="mt-6 p-4 rounded-xl bg-blue-500/5 border border-blue-500/10 mx-4 group/upgr transition-all hover:bg-blue-500/10 hover:border-blue-500/20 active:scale-[0.98]"
+                  >
+                    <p className="text-[12px] uppercase font-black tracking-[0.2em] text-blue-400 mb-1.5 group-hover/upgr:text-blue-300">Limited Capabilities</p>
                     <p className="text-[10px] font-bold text-slate-500 leading-relaxed uppercase tracking-widest">
                       Upgrade to Pro for <strong className="text-blue-300">more</strong> usage and <strong className="text-blue-300">premium advanced</strong> reasoning models.
                     </p>
-                  </div>
+                  </button>
                 )}
               </div>
             )}

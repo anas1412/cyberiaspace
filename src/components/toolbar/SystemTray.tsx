@@ -1,6 +1,6 @@
 import React from 'react';
 import { useStore } from '../../store/useStore';
-import { MonitorSmartphone, Download, Upload, Camera, EyeOff, Eye, EyeClosed, Keyboard, CircleHelp, MoreVertical, RefreshCw, Zap, Gauge, Trash2 } from 'lucide-react';
+import { MonitorSmartphone, Download, Upload, Camera, EyeOff, Eye, EyeClosed, Keyboard, CircleHelp, MoreVertical, RefreshCw, Zap, Gauge, Trash2, Star } from 'lucide-react';
 
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
@@ -76,6 +76,21 @@ export const SystemTray: React.FC<SystemTrayProps> = ({
     <div className="fixed bottom-4 md:bottom-8 right-4 md:right-8 z-[9999] flex flex-col items-end gap-4 pointer-events-none system-tray-container mobile-bottom-bar-adjust">
       <div className={cn("glass p-4 md:p-5 rounded-2xl border border-white/10 shadow-2xl flex flex-col gap-1 transition-all pointer-events-auto w-72 md:w-80 animate-in fade-in slide-in-from-bottom-2 duration-300", isSystemMenuOpen ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4 pointer-events-none")}>
 
+        {user?.plan !== 'pro' && (
+          <button 
+            onClick={() => { openPricing(); setIsSystemMenuOpen(false); }}
+            className="w-full mb-3 flex items-center justify-between p-3 rounded-xl bg-blue-600/10 border border-blue-500/20 hover:bg-blue-600/20 transition-all group/upgmenu"
+          >
+            <div className="flex items-center gap-2.5">
+              <Zap className="w-4 h-4 text-blue-400 animate-pulse" />
+              <div className="text-left">
+                <p className="text-[9px] font-black uppercase tracking-widest text-white">Unlock Pro Features</p>
+                <p className="text-[7px] font-bold text-blue-400/70 uppercase tracking-widest">Get Oracle Action & More</p>
+              </div>
+            </div>
+            <Star className="w-3.5 h-3.5 text-blue-400 fill-blue-400 group-hover/upgmenu:scale-110 transition-transform" />
+          </button>
+        )}
         
         {!isReadOnly && (
           <>
@@ -169,6 +184,26 @@ export const SystemTray: React.FC<SystemTrayProps> = ({
       </div>
 
       <div className="flex items-center gap-3 pointer-events-auto">
+        {/* Upgrade Cluster - visible only to Free users */}
+        {user?.plan !== 'pro' && (
+          <div className="flex items-center gap-1.5 glass p-1 rounded-2xl border border-blue-500/20 h-[48px] bg-blue-500/5 shadow-[0_0_20px_rgba(59,130,246,0.1)]">
+            <div className="relative group">
+              <div className="absolute bottom-full mb-4 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-all duration-300 translate-y-2 group-hover:translate-y-0 pointer-events-none whitespace-nowrap z-[10001]">
+                <div className="glass px-3 py-1.5 rounded-xl border border-blue-500/20 flex items-center gap-2 shadow-2xl bg-[var(--bg-main)]/90 backdrop-blur-xl">
+                  <span className="text-[10px] font-black uppercase tracking-widest text-blue-400">Unlock Pro Features</span>
+                </div>
+              </div>
+              <button 
+                onClick={openPricing}
+                className="flex items-center gap-2.5 px-3 h-9 md:h-10 rounded-xl bg-blue-600/10 hover:bg-blue-600/20 text-blue-400 transition-all border border-blue-500/20 group/upgrade shadow-inner"
+              >
+                <Zap className="w-3.5 h-3.5 fill-blue-500/20 group-hover:scale-110 transition-transform animate-pulse" />
+                <span className="hidden md:block text-[9px] font-black uppercase tracking-[0.2em]">Upgrade</span>
+              </button>
+            </div>
+          </div>
+        )}
+
         {/* Engine Cluster: Intelligence, Physics, Performance */}
         <div className="flex items-center gap-1.5 glass p-1 rounded-2xl border border-white/5 h-[48px]">
           {/* Ask Oracle disabled */}
