@@ -569,7 +569,7 @@ const Homepage: React.FC = () => {
               </div>
               <div className="space-y-4 mb-10 flex-1">
                 <PricingFeature text={`${PLAN_CONFIG.free.MAX_SPACES} Spaces with ${PLAN_CONFIG.free.MAX_THOUGHTS_PER_SPACE} Thoughts per Space`} />
-                <PricingFeature text={`${PLAN_CONFIG.free.AI_DAILY_LIMIT} AI Interactions with basic AI models`} />
+                <PricingFeature text={`${PLAN_CONFIG.free.AI_DAILY_LIMIT} AI usage with basic AI models`} />
                 <PricingFeature text={`${PLAN_CONFIG.free.MAX_STORAGE_MB}MB Cloud Storage with limited size`} />
                 <PricingFeature text={`Default theme`} />
                 <PricingFeature text="Share Your Spaces" />
@@ -633,9 +633,9 @@ const Homepage: React.FC = () => {
 
               <div className="space-y-4 mb-10 flex-1">
                 <PricingFeature text={`${PLAN_CONFIG.pro.MAX_SPACES} Spaces with ${PLAN_CONFIG.pro.MAX_THOUGHTS_PER_SPACE} Thoughts per Space`} pro />
-                <PricingFeature text={`ChatGPT, Claude & Gemini: ${PLAN_CONFIG.pro.AI_DAILY_LIMIT} daily interactions`} pro />
+                <PricingFeature text={`ChatGPT, Claude & Gemini: ${PLAN_CONFIG.pro.AI_DAILY_LIMIT} daily usage`} pro />
                 <PricingFeature 
-                  text={`${(PLAN_CONFIG.pro.MAX_STORAGE_MB / 1024).toFixed(0)}GB Cloud Storage with Unlimited Upload Size`} pro />
+                  text={`${(PLAN_CONFIG.pro.MAX_STORAGE_MB)}MB Cloud Storage with Unlimited Upload Size`} pro />
                 <PricingFeature text="Analyze your Files, Images & PDFs natively" pro />
                 <PricingFeature text="Custom AI Agent Personality" pro />
                 <PricingFeature text="Custom Background & More themes" pro/>

@@ -1,5 +1,6 @@
 import { supabase } from './supabase'
 import { sanitizeStatus, sanitizePriority } from '../utils/thought'
+import { sanitizeDate } from '../utils/date'
 
 export { supabase }
 
@@ -92,6 +93,7 @@ export function toCamelCase(obj: any): any {
   // Sanitize status and priority
   if (result.status !== undefined) result.status = sanitizeStatus(result.status);
   if (result.priority !== undefined) result.priority = sanitizePriority(result.priority);
+  if (result.date !== undefined) result.date = sanitizeDate(result.date);
 
   // SPECIAL HANDLING: Spaces Transform JSONB
   if (obj.transform && typeof obj.transform === 'object' && !Array.isArray(obj.transform)) {

@@ -37,7 +37,7 @@ export const FocusEditorShell: React.FC<FocusEditorShellProps> = ({
   children
 }) => {
   return (
-    <AnimatePresence>
+    <AnimatePresence mode="wait">
       {isVisible && (
         <motion.div
           initial={{ opacity: 0 }}

@@ -53,7 +53,7 @@ export const PLAN_CONFIG: Record<SubscriptionPlan, PlanLimits> = {
     MAX_SPACES: 12,
     MAX_THOUGHTS_PER_SPACE: 60,
     MAX_CLOUD_THOUGHTS: 480,
-    MAX_STORAGE_MB: 1024,
+    MAX_STORAGE_MB: 500,
     AI_ENABLED: true,
     AI_DAILY_LIMIT: 60,
     THEMES_ENABLED: ['cyberia', 'sea', 'forest', 'rain'],

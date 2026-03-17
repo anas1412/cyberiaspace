@@ -272,7 +272,7 @@ const PricingModal: React.FC<PricingModalProps> = ({ isOpen, onClose }) => {
             </div>
             <div>
               <h2 className="text-2xl font-bold text-white tracking-tight">Do more with Pro</h2>
-              <p className="text-sm font-medium text-blue-400">More space, better AI, and helpful tools.</p>
+              <p className="text-sm font-medium text-blue-400">Get 4x more AI usage and 10x the storage so you never have to think about limits.</p>
             </div>
           </div>
 
