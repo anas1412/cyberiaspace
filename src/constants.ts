@@ -20,6 +20,7 @@ export interface User {
     // Account-wide settings only
     autoSync: boolean;
     theme: string;
+    personality?: string;
   };
 }
 

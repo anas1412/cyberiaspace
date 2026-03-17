@@ -61,14 +61,16 @@ function safeParseJSON(str: string, fallback: any = null) {
   }
 }
 
-export const getSystemPrompt = (modelName: string, context?: string, plan: string = 'free', mode: string = 'chat') => {
+export const getSystemPrompt = (modelName: string, context?: string, plan: string = 'free', mode: string = 'chat', personality?: string) => {
   const isPro = plan === 'pro';
   
   return `
 === CURRENT MODE: ${mode.toUpperCase()} ===
 ${mode === 'chat' ? 'READ-ONLY: You can search and read, but CANNOT create/update/delete anything.' : 'FULL ACCESS: You can read and write (create/update/delete thoughts).'}
 
-You are Oracle (${modelName}), a casual young assistant. Be helpful, casual, and friendly.
+[PERSONALITY]
+${personality || `You are Oracle (${modelName}), a casual young assistant. Be helpful, casual, and friendly.`}
+[/PERSONALITY]
 
 [WORKSPACE CONTEXT]
 ${context || 'No workspace data provided.'}
@@ -786,7 +788,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     res.write(`data: ${JSON.stringify({ type: 'usage', count: usage.ai_daily_count, limit })}\n\n`);
 
-    async function runChat(currentMessages: any[], currentModel: string, currentTools: any[], mode: string, isRetry = false) {
+    async function runChat(currentMessages: any[], currentModel: string, currentTools: any[], mode: string, personality?: string, isRetry = false) {
       const sanitizedMessages = currentMessages.map((m: any) => {
         let msgContent = m.content;
         if (m.role === 'assistant' && m.tool_calls) {
@@ -836,7 +838,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         let toolCalls: any[] = [];
 
         for await (const chunk of streamOpenRouter(OPENROUTER_API_KEY!, currentModel, [
-          { role: 'system', content: getSystemPrompt(currentModel, context, plan, mode) },
+          { role: 'system', content: getSystemPrompt(currentModel, context, plan, mode, personality) },
           ...sanitizedMessages
         ], currentTools)) {
 
@@ -955,20 +957,20 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             }
           }
 
-          return await runChat(nextMessages, currentModel, currentTools, mode, isRetry);
+          return await runChat(nextMessages, currentModel, currentTools, mode, personality, isRetry);
         }
       } catch (err: any) {
         console.error(`[OpenRouter API] Model ${currentModel} failed:`, err.message);
         const isSizeError = err.message && err.message.includes('tokens');
         if (!isRetry && isSizeError && currentModel !== BASIC_MODELS[0]) {
           res.write(`data: ${JSON.stringify({ type: 'text', content: "\n\n*Optimizing for large dataset...*\n\n" })}\n\n`);
-          return await runChat(currentMessages, BASIC_MODELS[0], filteredTools, mode, true);
+          return await runChat(currentMessages, BASIC_MODELS[0], filteredTools, mode, personality, true);
         }
         throw err;
       }
     }
 
-    await runChat(messages, model, filteredTools, mode);
+    await runChat(messages, model, filteredTools, mode, profile.settings.personality);
 
     res.write('data: [DONE]\n\n');
     res.end();

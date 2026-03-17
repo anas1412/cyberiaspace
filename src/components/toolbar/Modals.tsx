@@ -90,7 +90,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
   deferredPrompt, handleInstall
 }) => {
   const [activeTab, setActiveTab] = useState<'general' | 'custom' | 'storage'>('general');
-  const { user, storageUsageMB, calculateUsage } = useAuthStore();
+  const { user, storageUsageMB, calculateUsage, updateSettings } = useAuthStore();
   const totalThoughtCount = useStore((state) => state.totalThoughtCount);
   const clearWorkspace = useStore((state) => state.clearWorkspace);
   const clearLocalData = useStore((state) => state.clearLocalData);
@@ -305,6 +305,19 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                       );
                     })}
                   </div>
+                </section>
+
+                {/* AI Personality */}
+                <section>
+                  <p className="text-[10px] font-black uppercase tracking-widest text-slate-500 mb-4 flex items-center gap-2">
+                    <MessageSquare className="w-3.5 h-3.5" /> AI Personality
+                  </p>
+                  <textarea 
+                    value={user?.settings?.personality || ''}
+                    onChange={(e) => updateSettings({ personality: e.target.value })}
+                    placeholder="Describe how Oracle should behave..."
+                    className="w-full h-24 bg-white/[0.03] border border-white/5 rounded-xl p-4 text-xs text-white outline-none focus:border-[var(--accent)]/50 transition-all resize-none"
+                  />
                 </section>
 
                 {/* Custom Background */}
