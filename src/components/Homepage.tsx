@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { MousePointer2, Layout, Database, ArrowRight, Menu, X, Zap, Check, Compass, Rocket, Send, Loader2, CheckCircle, Shield, ChevronDown } from 'lucide-react';
+import { MousePointer2, Layout, Database, ArrowRight, Menu, X, Cpu, Check, Compass, Rocket, Send, Loader2, CheckCircle, Shield, ChevronDown } from 'lucide-react';
 import { PLAN_CONFIG } from '../constants';
 import { useAuthStore } from '../store/useAuthStore';
 import { resolvePricingLocation } from '../utils/pricing';
@@ -13,6 +13,12 @@ import AgenticWorkspaceVisual from './demo/AgenticWorkspaceVisual';
 import BackgroundEngine from './background/BackgroundEngine';
 
 const FEATURES = [
+  {
+    id: 'agentic',
+    icon: Cpu,
+    title: 'Agentic Workspace',
+    description: 'Interact with ChatGPT, Claude, and Gemini in one place. Our workspace-aware agents natively analyze your files, PDFs, and notes to find answers, connect dots, and automate tasks right where you work.'
+  },
   {
     id: 'spatial',
     icon: MousePointer2,
@@ -30,12 +36,6 @@ const FEATURES = [
     icon: Database,
     title: 'Real-time Sync',
     description: 'Everything updates instantly across your devices so your workspace is always perfectly in sync.'
-  },
-  {
-    id: 'agentic',
-    icon: Zap,
-    title: 'Agentic Workspace',
-    description: 'Intelligent agents help research, gather information, and automate tasks across your workspace.'
   }
 ];
 
@@ -169,10 +169,10 @@ const FeatureVisual: React.FC<{ activeFeature: number }> = React.memo(({ activeF
             transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
             className="w-full h-full"
           >
-            {activeFeature === 0 && <SpatialThinkingVisual />}
-            {activeFeature === 1 && <DynamicViewsVisual />}
-            {activeFeature === 2 && <CloudSyncVisual />}
-            {activeFeature === 3 && <AgenticWorkspaceVisual />}
+            {activeFeature === 0 && <AgenticWorkspaceVisual />}
+            {activeFeature === 1 && <SpatialThinkingVisual />}
+            {activeFeature === 2 && <DynamicViewsVisual />}
+            {activeFeature === 3 && <CloudSyncVisual />}
           </motion.div>
         </AnimatePresence>
       </ResponsiveStage>
@@ -633,10 +633,10 @@ const Homepage: React.FC = () => {
 
               <div className="space-y-4 mb-10 flex-1">
                 <PricingFeature text={`${PLAN_CONFIG.pro.MAX_SPACES} Spaces with ${PLAN_CONFIG.pro.MAX_THOUGHTS_PER_SPACE} Thoughts per Space`} pro />
-                <PricingFeature text={`${PLAN_CONFIG.pro.AI_DAILY_LIMIT} AI Interactions with Custom Premium AI Models`} pro />
+                <PricingFeature text={`ChatGPT, Claude & Gemini: ${PLAN_CONFIG.pro.AI_DAILY_LIMIT} daily interactions`} pro />
                 <PricingFeature 
                   text={`${(PLAN_CONFIG.pro.MAX_STORAGE_MB / 1024).toFixed(0)}GB Cloud Storage with Unlimited Upload Size`} pro />
-                <PricingFeature text="Analyze Images & PDFs" pro />
+                <PricingFeature text="Analyze your Files, Images & PDFs natively" pro />
                 <PricingFeature text="Custom AI Agent Personality" pro />
                 <PricingFeature text="Custom Background & More themes" pro/>
                 <PricingFeature text="Shared Team Spaces (Coming Soon)" pro />

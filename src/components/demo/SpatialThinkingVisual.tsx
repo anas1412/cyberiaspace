@@ -217,7 +217,7 @@ const SpatialThinkingVisual: React.FC = () => {
 
   return (
     <div className="relative w-full h-full flex items-center justify-center overflow-hidden bg-transparent pointer-events-none">
-      <div className="absolute top-8 right-8 z-[110] pointer-events-auto" ref={spaceMenuRef}>
+      <div className="absolute top-8 left-8 z-[110] pointer-events-auto" ref={spaceMenuRef}>
         <div className="relative">
           <button 
             onClick={() => setIsSpaceMenuOpen(!isSpaceMenuOpen)}
@@ -234,7 +234,7 @@ const SpatialThinkingVisual: React.FC = () => {
                 initial={{ opacity: 0, y: -8, scale: 0.95 }}
                 animate={{ opacity: 1, y: 0, scale: 1 }}
                 exit={{ opacity: 0, y: -8, scale: 0.95 }}
-                className="absolute top-full mt-2 right-0 w-40 glass rounded-2xl border border-white/10 shadow-2xl overflow-hidden z-50 py-1"
+                className="absolute top-full mt-2 left-0 w-40 glass rounded-2xl border border-white/10 shadow-2xl overflow-hidden z-50 py-1"
               >
                 {SPACES_DATA.map((space, idx) => (
                   <button 

@@ -279,8 +279,8 @@ const PricingModal: React.FC<PricingModalProps> = ({ isOpen, onClose }) => {
           <div className="space-y-6 flex-1">
             {[
               { 
-                title: 'Premium AI & Increased Quota', 
-                desc: `Unlock advanced premium models and scale up to ${PLAN_CONFIG.pro.AI_DAILY_LIMIT} daily agentic interactions (Free tier limits to ${PLAN_CONFIG.free.AI_DAILY_LIMIT}).` 
+                title: 'All-in-One AI Powerhouse', 
+                desc: `Gain Pro-tier access to ChatGPT, Claude, and Google Gemini—all in one place. Our agents are workspace-aware, analyzing your uploaded files and PDFs to provide context-aware answers right where you work. Includes ${PLAN_CONFIG.pro.AI_DAILY_LIMIT} daily interactions.` 
               },
               { 
                 title: 'Expanded Agentic Workspaces', 

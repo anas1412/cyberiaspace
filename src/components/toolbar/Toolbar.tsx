@@ -4,7 +4,7 @@ import { useModalStore } from '../../store/useModalStore';
 import { useAuthStore } from '../../store/useAuthStore';
 import { PLAN_CONFIG, type SubscriptionPlan } from '../../constants';
 import { toCanvas } from 'html-to-image';
-import { BotMessageSquare, Sparkles } from 'lucide-react';
+import { BotMessageSquare } from 'lucide-react';
 
 // Modular Components
 import { SpaceSwitcher } from './SpaceSwitcher';
