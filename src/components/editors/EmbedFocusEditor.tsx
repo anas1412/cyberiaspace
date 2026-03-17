@@ -225,7 +225,7 @@ const EditorContent: React.FC<{
                 </div>
               </div>
               {showPreviews && (
-                <div className="flex gap-4 overflow-x-auto custom-scroll pb-1 w-full snap-x mt-4" ref={scrollerRef}>
+                <div className="flex gap-4 overflow-x-auto custom-scroll pb-2 w-full snap-x mt-4 px-1" ref={scrollerRef}>
                   {stackItems.map((item) => (
                     <StackItemThumbnail 
                       key={item.id} 

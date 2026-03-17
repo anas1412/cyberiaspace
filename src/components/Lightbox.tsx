@@ -168,7 +168,7 @@ const Lightbox: React.FC = () => {
                 <span className="text-[9px] font-black uppercase tracking-[0.2em] text-slate-500">Stack Gallery: {stack?.name || 'Clustered'}</span>
                 <span className="text-[8px] font-bold text-slate-600 uppercase tracking-widest">{currentIndex + 1} / {stackItems.length} Images</span>
               </div>
-              <div className="flex gap-3 overflow-x-auto custom-scroll pb-2 w-full snap-x" ref={scrollerRef}>
+              <div className="flex gap-3 overflow-x-auto custom-scroll pb-2 w-full snap-x px-1" ref={scrollerRef}>
                 {stackItems.map((item, idx) => {
                   const itemImage = item.data?.type === 'file' ? item.data.url : (item as any).image;
                   return (

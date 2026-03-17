@@ -257,9 +257,8 @@ const Inspector: React.FC = () => {
     }
   }, [selectedThoughtId, stack?.id]);
 
-  if (!isInspectorOpen || !thought) return null;
-
   const handleDeleteThought = () => {
+    if (!thought) return;
     openModal({
       title: 'Delete Thought?',
       description: 'This action cannot be undone.',
@@ -273,18 +272,18 @@ const Inspector: React.FC = () => {
   };
 
   const handleTypeChange = (type: any) => {
-    if (isReadOnly) return;
+    if (isReadOnly || !thought) return;
     const config = getThoughtConfig(type);
     const payload = config?.createPayload();
     updateThought(thought.id, { type, data: payload });
   };
 
   const handlePriorityChange = (priority: 'none' | 'low' | 'medium' | 'high' | 'urgent') => {
-    if (isReadOnly) return;
+    if (isReadOnly || !thought) return;
     updateThought(thought.id, { priority });
   };
 
-  const config = getThoughtConfig(thought.type);
+  const config = thought ? getThoughtConfig(thought.type) : null;
   const InspectorPanel = config?.inspectorPanel;
 
   return (
@@ -292,11 +291,11 @@ const Inspector: React.FC = () => {
       {isInspectorOpen && thought && (
         <motion.div
           id="inspector"
-          initial={{ x: '-100%', opacity: 0 }}
+          initial={{ x: '100%', opacity: 0 }}
           animate={{ x: 0, opacity: 1 }}
-          exit={{ x: '-100%', opacity: 0 }}
+          exit={{ x: '100%', opacity: 0 }}
           transition={{ type: 'spring', damping: 28, stiffness: 200 }}
-          className="ui-layer focus-box fixed top-4 md:top-24 bottom-4 md:bottom-24 left-4 md:left-8 w-[calc(100%-32px)] md:w-[400px] glass rounded-2xl shadow-[0_0_80px_rgba(0,0,0,0.5)] flex flex-col overflow-hidden z-[9999] border border-[var(--glass-border)]"
+          className="ui-layer focus-box fixed top-4 md:top-24 bottom-4 md:bottom-24 right-4 md:right-8 w-[calc(100%-32px)] md:w-[400px] glass rounded-2xl shadow-[0_0_80px_rgba(0,0,0,0.5)] flex flex-col overflow-hidden z-[9999] border border-[var(--glass-border)]"
         >
           {/* HEADER AREA */}
           <div className="p-4 md:p-5 border-b border-[var(--glass-border)] bg-[var(--bg-main)]/20 backdrop-blur-md sticky top-0 z-20">

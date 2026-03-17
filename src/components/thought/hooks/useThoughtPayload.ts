@@ -57,6 +57,17 @@ export function useThoughtPayload(thought: Thought | null | undefined): UseThoug
     const metaSource = data.meta || thought.meta || {};
     const fileInfo = metaSource.file || (metaSource.type ? metaSource : null);
 
+    // Robust Detection logic
+    const fileName = (thought.text || '').toLowerCase();
+    const extension = fileName.split('.').pop() || '';
+    const mimeType = (fileInfo?.type || '').toLowerCase();
+
+    // Prioritize MIME type if available, then fallback to extension, then fallback to presence of image URL
+    const isAudio = fileInfo?.isAudio ?? (mimeType.startsWith('audio/') || ['mp3', 'wav', 'ogg', 'm4a', 'aac', 'flac'].includes(extension));
+    const isVideo = fileInfo?.isVideo ?? ((mimeType.startsWith('video/') || ['mp4', 'webm', 'mov', 'm4v'].includes(extension)) && !isAudio);
+    const isImage = fileInfo?.isImage ?? ((mimeType.startsWith('image/') || ['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg'].includes(extension) || !!thought.image) && !isAudio && !isVideo);
+    const isPdf = fileInfo?.isPdf ?? (mimeType.includes('pdf') || extension === 'pdf');
+
     return {
       content: modContent || legacyContent,
       tasks: (modTasks && modTasks.length > 0) ? modTasks : legacyTasks,
@@ -64,15 +75,22 @@ export function useThoughtPayload(thought: Thought | null | undefined): UseThoug
       image: modImage || legacyImage,
       drawing: modDrawing || legacyDrawing,
       meta: metaSource,
-      fileInfo: fileInfo ? {
-        name: fileInfo.name || thought.text || 'Untitled',
-        size: fileInfo.size || 0,
-        type: fileInfo.type || '',
-        isImage: fileInfo.isImage,
-        isPdf: fileInfo.isPdf,
-        isVideo: fileInfo.isVideo,
-        isAudio: fileInfo.isAudio
-      } : null
+      fileInfo: {
+        name: (fileInfo?.name) || thought.text || 'Untitled',
+        size: (fileInfo?.size) || 0,
+        type: (fileInfo?.type) || '',
+        isImage: !!isImage,
+        isPdf: !!isPdf,
+        isVideo: !!isVideo,
+        isAudio: !!isAudio,
+        // Expose raw flags for cache-check logic
+        raw: {
+          isImage: fileInfo?.isImage,
+          isPdf: fileInfo?.isPdf,
+          isVideo: fileInfo?.isVideo,
+          isAudio: fileInfo?.isAudio
+        }
+      }
     };
   }, [thought]);
 }

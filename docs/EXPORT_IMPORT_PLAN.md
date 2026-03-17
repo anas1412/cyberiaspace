@@ -109,7 +109,7 @@ During import, an internal translation map is maintained:
     -   Implement `exportSpaces(spaceIds: string[])`.
     -   Implement `importCyberiaZip(file: File)`.
 3.  **UI Updates**:
-    -   Update `AccountMenu.tsx` with a new "Backup/Transfer" submenu.
+    -   Update `SystemTray.tsx` with a new "Backup/Transfer" submenu.
     -   Create `SpaceSelectionModal.tsx`.
     -   Create `ImportReviewModal.tsx`.
 

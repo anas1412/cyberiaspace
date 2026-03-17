@@ -271,7 +271,7 @@ export const GracePeriodBanner = ({ gracePeriodEnds }) => {
 - `src/services/supabaseStorage.ts`
 - `src/components/Space.tsx`
 - `src/components/Sidebar.tsx`
-- `src/components/AccountMenu.tsx`
+- `src/components/toolbar/SystemTray.tsx`
 - `src/App.tsx` (or workspace layout)
 - **New:** `src/components/UpgradeRequiredBanner.tsx`
 - **New:** `src/components/GracePeriodBanner.tsx`

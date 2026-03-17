@@ -5,8 +5,8 @@ import { useSyncStore } from '../../store/useSyncStore';
 import { useModalStore } from '../../store/useModalStore';
 import { PLAN_CONFIG } from '../../constants';
 import { 
-  MonitorSmartphone, Download, Upload, Camera, EyeOff, Eye, EyeClosed, 
-  Keyboard, CircleHelp, RefreshCw, Zap, Gauge, Trash2, 
+  MonitorSmartphone, Download, Upload, Camera, 
+  Keyboard, CircleHelp, RefreshCw, Zap, Trash2, 
   LogOut, Cloud, CloudOff, Database, WifiOff, CreditCard, 
   Calendar, LogIn, User, ShieldCheck, FileText
 } from 'lucide-react';
@@ -26,8 +26,6 @@ const formatStorage = (mb: number) => {
 
 interface SystemTrayProps {
   isReadOnly: boolean;
-  isChatOpen: boolean;
-  setChatOpen: (val: boolean) => void;
   isShortcutsOpen: boolean;
   setIsShortcutsOpen: (val: boolean) => void;
   isHelpOpen: boolean;
@@ -42,24 +40,18 @@ interface SystemTrayProps {
   handleScreenshot: () => void;
   handleImport: (e: any) => void;
   isCapturing: boolean;
-  performanceMode: boolean;
-  setPerformanceMode: (val: boolean) => void;
   customBg: string | null;
   setCustomBg: (bg: File | string | null) => Promise<void>;
-  activeSpace: any;
-  handleTogglePhysics: () => void;
 }
 
 export const SystemTray: React.FC<SystemTrayProps> = ({ 
-  isReadOnly, isChatOpen, setChatOpen, 
+  isReadOnly, 
   isShortcutsOpen, setIsShortcutsOpen, isHelpOpen, setIsHelpOpen, 
   isSystemMenuOpen, setIsSystemMenuOpen, theme, setTheme, 
   deferredPrompt, handleInstall, handleExport, handleScreenshot, handleImport, isCapturing,
-  performanceMode, setPerformanceMode,
-  customBg, setCustomBg,
-  activeSpace, handleTogglePhysics
+  customBg, setCustomBg
 }) => {
-  // Logic from AccountMenu and Store requirements
+  // System Tray Logic
   const user = useAuthStore((state) => state.user);
   const limits = (user?.plan && user.plan in PLAN_CONFIG) ? PLAN_CONFIG[user.plan as keyof typeof PLAN_CONFIG] : PLAN_CONFIG.free;
   const status = useAuthStore((state) => state.status);
@@ -312,18 +304,18 @@ export const SystemTray: React.FC<SystemTrayProps> = ({
                       </div>
                       <span className={cn(
                         "text-[8px] font-black tracking-widest",
-                        storageUsageMB > PLAN_CONFIG[user?.plan || 'free'].MAX_STORAGE_MB ? "text-red-400 animate-pulse" : "text-slate-500"
+                        storageUsageMB > limits.MAX_STORAGE_MB ? "text-red-400 animate-pulse" : "text-slate-500"
                       )}>
-                        {formatStorage(storageUsageMB)} / {formatStorage(PLAN_CONFIG[user?.plan || 'free'].MAX_STORAGE_MB)}
+                        {formatStorage(storageUsageMB)} / {formatStorage(limits.MAX_STORAGE_MB)}
                       </span>
                     </div>
                     <div className="h-1 w-full bg-white/5 rounded-full overflow-hidden border border-white/5">
                       <div 
                         className={cn(
                           "h-full transition-all duration-500 rounded-full",
-                          storageUsageMB > PLAN_CONFIG[user?.plan || 'free'].MAX_STORAGE_MB * 0.9 ? "bg-red-500" : storageUsageMB > PLAN_CONFIG[user?.plan || 'free'].MAX_STORAGE_MB * 0.7 ? "bg-amber-500" : "bg-blue-500"
+                          storageUsageMB > limits.MAX_STORAGE_MB * 0.9 ? "bg-red-500" : storageUsageMB > limits.MAX_STORAGE_MB * 0.7 ? "bg-amber-500" : "bg-blue-500"
                         )}
-                        style={{ width: `${Math.min((storageUsageMB / PLAN_CONFIG[user?.plan || 'free'].MAX_STORAGE_MB) * 100, 100)}%` }}
+                        style={{ width: `${Math.min((storageUsageMB / limits.MAX_STORAGE_MB) * 100, 100)}%` }}
                       />
                     </div>
                   </div>
@@ -510,81 +502,6 @@ export const SystemTray: React.FC<SystemTrayProps> = ({
             </div>
           </div>
         )}
-
-        {/* Engine Cluster: Intelligence, Physics, Performance */}
-        <div className="flex items-center gap-1.5 glass p-1 rounded-2xl border border-white/5 h-[48px]">
-          {/* Ask Oracle disabled */}
-          {!isReadOnly && (
-            <div className="relative group">
-              <div className="absolute bottom-full mb-4 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-all duration-300 translate-y-2 group-hover:translate-y-0 pointer-events-none whitespace-nowrap z-[10001]">
-                <div className="glass px-3 py-1.5 rounded-xl border border-white/10 flex items-center gap-2 shadow-2xl bg-[var(--bg-main)]/90 backdrop-blur-xl">
-                  <span className="text-[10px] font-black uppercase tracking-widest text-white/80">
-                    {status !== 'authenticated' ? 'Sign in to ask Oracle' : 'Ask Oracle'}
-                  </span>
-                </div>
-              </div>
-              <button 
-                onClick={() => { 
-                  if (status !== 'authenticated') {
-                    handleNavigateToLogin();
-                    return;
-                  }
-                  if (!limits.AI_ENABLED) { openPricing(); return; } 
-                  setChatOpen(!isChatOpen); 
-                }} 
-                className={cn(
-                  "w-9 h-9 md:w-10 md:h-10 flex items-center justify-center rounded-xl transition-all", 
-                  (!limits.AI_ENABLED || status !== 'authenticated') ? "opacity-40 grayscale hover:opacity-100 transition-opacity" : isChatOpen ? "bg-[var(--accent)] text-[var(--accent-contrast)] shadow-[0_0_20px_var(--accent-glow)]" : "text-[var(--accent)] hover:bg-[var(--accent)]/10"
-                )}
-              >
-                {(!limits.AI_ENABLED || status !== 'authenticated') ? <EyeOff className="w-4 h-4" /> : isChatOpen ? <Eye className="w-4 h-4" /> : <EyeClosed className="w-4 h-4" />}
-              </button>
-            </div>
-          )}
-
-          <div className="relative group">
-            <div className="absolute bottom-full mb-4 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-all duration-300 translate-y-2 group-hover:translate-y-0 pointer-events-none whitespace-nowrap z-[10001]">
-              <div className="glass px-3 py-1.5 rounded-xl border border-white/10 flex items-center gap-2 shadow-2xl bg-[var(--bg-main)]/90 backdrop-blur-xl">
-                <span className="text-[10px] font-black uppercase tracking-widest text-white/80">Physics</span>
-                <div className="w-[1px] h-2 bg-white/10 mx-0.5" />
-                <span className={cn("text-[8px] font-black uppercase tracking-widest", performanceMode ? "text-amber-400" : activeSpace?.physics ? "text-green-400" : "text-slate-400")}>
-                  {performanceMode ? "Auto-Disabled" : activeSpace?.physics ? "Enabled" : "Disabled"}
-                </span>
-              </div>
-            </div>
-            <button 
-              onClick={handleTogglePhysics} 
-              disabled={performanceMode}
-              className={cn(
-                "w-9 h-9 md:w-10 md:h-10 flex items-center justify-center rounded-xl transition-all", 
-                performanceMode ? "text-slate-500 opacity-30 cursor-not-allowed" : activeSpace?.physics ? "bg-amber-500/10 text-amber-400 shadow-[0_0_15px_rgba(251,191,36,0.1)]" : "text-slate-500 hover:bg-white/5"
-              )}
-            >
-              <Zap className={cn("w-4 h-4", activeSpace?.physics && !performanceMode && "fill-current")} />
-            </button>
-          </div>
-
-          <div className="relative group">
-            <div className="absolute bottom-full mb-4 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-all duration-300 translate-y-2 group-hover:translate-y-0 pointer-events-none whitespace-nowrap z-[10001]">
-              <div className="glass px-3 py-1.5 rounded-xl border border-white/10 flex items-center gap-2 shadow-2xl bg-[var(--bg-main)]/90 backdrop-blur-xl">
-                <span className="text-[10px] font-black uppercase tracking-widest text-white/80">Performance</span>
-                <div className="w-[1px] h-2 bg-white/10 mx-0.5" />
-                <span className={cn("text-[8px] font-black uppercase tracking-widest", performanceMode ? "text-blue-400" : "text-slate-400")}>
-                  {performanceMode ? "Efficiency" : "High Quality"}
-                </span>
-              </div>
-            </div>
-            <button 
-              onClick={() => setPerformanceMode(!performanceMode)}
-              className={cn(
-                "w-9 h-9 md:w-10 md:h-10 flex items-center justify-center rounded-xl transition-all", 
-                performanceMode ? "bg-blue-500 text-white shadow-[0_0_20px_rgba(99,102,241,0.3)]" : "text-slate-500 hover:bg-white/5"
-              )}
-            >
-              <Gauge className="w-4 h-4" />
-            </button>
-          </div>
-        </div>
 
         {/* Interface Cluster: Shortcuts, Help, Menu */}
         <div className="flex items-center gap-1.5 glass p-1 rounded-2xl border border-white/5 h-[48px]">

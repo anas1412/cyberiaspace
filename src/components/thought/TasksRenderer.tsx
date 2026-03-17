@@ -13,7 +13,6 @@ interface TasksRendererProps {
   thought: Thought;
   isReadOnly: boolean;
   setActiveFocus: (id: string, type: 'text' | 'tasks' | 'paint' | 'table' | 'embed' | 'file' | 'image') => void;
-
 }
 
 export const TasksRenderer: React.FC<TasksRendererProps> = ({ 
@@ -42,7 +41,6 @@ export const TasksRenderer: React.FC<TasksRendererProps> = ({
           </p>
         )}
         {!isReadOnly && (
-
           <div className="absolute inset-0 bg-[var(--accent)]/10 opacity-0 group-hover/tasks:opacity-100 transition-opacity rounded-xl flex items-center justify-center pointer-events-none">
             <button
               onClick={(e) => { e.stopPropagation(); setActiveFocus(thought.id, 'tasks'); }}
@@ -79,7 +77,7 @@ export const TasksRenderer: React.FC<TasksRendererProps> = ({
           </div>
         )}
       </div>
-      <div className="h-1.5 w-full bg-white/5 rounded-full overflow-hidden mt-3">
+      <div className="h-1.5 w-full bg-[var(--bg-main)]/40 rounded-full overflow-hidden mt-3">
         <div
           className="h-full bg-[var(--accent)] transition-all duration-500 shadow-[0_0_10px_var(--accent-glow)]"
           style={{ width: `${progress}%` }}

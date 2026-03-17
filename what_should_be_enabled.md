@@ -4,7 +4,7 @@ This document lists all the temporary changes made to disable **Cloud Synchroniz
 
 ## 1. Cloud Synchronization Re-enablement
 
-### `src/components/AccountMenu.tsx`
+### `src/components/toolbar/SystemTray.tsx`
 *   **Search for:** `{/* Cloud Sync disabled */}` and `{false && (`
 *   **Action:** Remove the `false && (` wrapper and its closing `)` around the following sections:
     *   Cloud Sync status div (approx lines 292-326)

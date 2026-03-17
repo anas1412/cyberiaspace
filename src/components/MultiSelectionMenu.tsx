@@ -190,170 +190,172 @@ const MultiSelectionMenu: React.FC = () => {
     return selected.every(t => t.priority === first) ? first : null;
   }, [selectedThoughtIds, thoughts]);
 
-  if (!selectedThoughtIds || selectedThoughtIds.length < 2 || isReadOnly) return null;
+  const showMenu = selectedThoughtIds && selectedThoughtIds.length >= 2 && !isReadOnly;
 
   return (
     <AnimatePresence>
-      <motion.div
-        initial={isMobile ? { y: '100%' } : { x: '-100%', opacity: 0 }}
-        animate={isMobile ? (isInspectorOpen || isChatOpen ? { y: '100%', opacity: 0 } : { y: 0, opacity: 1 }) : { x: 0, opacity: 1 }}
-        exit={isMobile ? { y: '100%' } : { x: '-100%', opacity: 0 }}
-        transition={{ type: 'spring', damping: 28, stiffness: 200 }}
-        className="ui-layer focus-box fixed top-4 md:top-24 bottom-4 md:bottom-24 left-4 md:left-8 w-[calc(100%-32px)] md:w-[400px] glass rounded-2xl shadow-[0_0_80px_rgba(0,0,0,0.5)] pointer-events-auto z-[9999] border border-[var(--glass-border)] flex flex-col overflow-hidden"
-      >
-        {/* MATCHING HEADER STYLE */}
-        <div className="p-4 md:p-5 border-b border-[var(--glass-border)] bg-[var(--bg-main)]/20 backdrop-blur-md sticky top-0 z-20">
-          <div className="flex justify-between items-center relative">
-            <div className="w-8" /> {/* Spacer to help center */}
-            <div className="flex-1 flex flex-col items-center">
-              <h3 className="text-xs font-black uppercase tracking-[0.2em] text-[var(--text-primary)] leading-none">Selection</h3>
-              <span className="text-[8px] font-bold text-slate-500 uppercase tracking-widest leading-none mt-1">{selectedThoughtIds.length} Items Selected</span>
+      {showMenu && (
+        <motion.div
+          initial={isMobile ? { y: '100%' } : { x: '100%', opacity: 0 }}
+          animate={isMobile ? (isInspectorOpen || isChatOpen ? { y: '100%', opacity: 0 } : { y: 0, opacity: 1 }) : { x: 0, opacity: 1 }}
+          exit={isMobile ? { y: '100%' } : { x: '100%', opacity: 0 }}
+          transition={{ type: 'spring', damping: 28, stiffness: 200 }}
+          className="ui-layer focus-box fixed top-4 md:top-24 bottom-4 md:bottom-24 right-4 md:right-8 w-[calc(100%-32px)] md:w-[400px] glass rounded-2xl shadow-[0_0_80px_rgba(0,0,0,0.5)] pointer-events-auto z-[9999] border border-[var(--glass-border)] flex flex-col overflow-hidden"
+        >
+          {/* MATCHING HEADER STYLE */}
+          <div className="p-4 md:p-5 border-b border-[var(--glass-border)] bg-[var(--bg-main)]/20 backdrop-blur-md sticky top-0 z-20">
+            <div className="flex justify-between items-center relative">
+              <div className="w-8" /> {/* Spacer to help center */}
+              <div className="flex-1 flex flex-col items-center">
+                <h3 className="text-xs font-black uppercase tracking-[0.2em] text-[var(--text-primary)] leading-none">Selection</h3>
+                <span className="text-[8px] font-bold text-slate-500 uppercase tracking-widest leading-none mt-1">{selectedThoughtIds.length} Items Selected</span>
+              </div>
+              <button onClick={clearSelection} className="p-2 hover:bg-[var(--glass-border)] rounded-lg text-slate-400 transition-all">
+                <X className="w-4 h-4" />
+              </button>
             </div>
-            <button onClick={clearSelection} className="p-2 hover:bg-[var(--glass-border)] rounded-lg text-slate-400 transition-all">
-              <X className="w-4 h-4" />
-            </button>
           </div>
-        </div>
 
-        <div className="flex-1 overflow-y-auto custom-scroll p-4 md:p-6 space-y-6">
-          {/* 1. Status Batch */}
-          <div className="space-y-3">
-            <label className="text-[9px] uppercase font-black tracking-widest text-[var(--text-muted)] ml-1">Progress</label>
-            <div className="grid grid-cols-4 gap-1.5">
-              {(['none', 'todo', 'doing', 'done'] as const).map(s => (
-                <button
-                  key={s}
-                  onClick={() => updateThoughts(selectedThoughtIds, { status: s })}
-                  className={cn(
-                    "py-2.5 rounded-xl border text-[9px] font-black uppercase tracking-[0.2em] transition-all",
-                    sharedStatus === s
-                      ? {
-                        'none': 'bg-[var(--glass-border)] border-white/30 text-[var(--text-primary)] shadow-lg',
-                        'todo': 'bg-[var(--status-todo)]/10 border-[var(--status-todo)] text-[var(--status-todo)] shadow-[0_0_15px_rgba(99,102,241,0.1)]',
-                        'doing': 'bg-[var(--status-doing)]/10 border-[var(--status-doing)] text-[var(--status-doing)] shadow-[0_0_15px_rgba(234,179,8,0.1)]',
-                        'done': 'bg-[var(--status-done)]/10 border-[var(--status-done)] text-[var(--status-done)] shadow-[0_0_15px_rgba(34,197,94,0.1)]',
-                      }[s]
-                      : "bg-white/[0.03] border-[var(--glass-border)] text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--glass-border)] hover:border-white/20"
+          <div className="flex-1 overflow-y-auto custom-scroll p-4 md:p-6 space-y-6">
+            {/* 1. Status Batch */}
+            <div className="space-y-3">
+              <label className="text-[9px] uppercase font-black tracking-widest text-[var(--text-muted)] ml-1">Progress</label>
+              <div className="grid grid-cols-4 gap-1.5">
+                {(['none', 'todo', 'doing', 'done'] as const).map(s => (
+                  <button
+                    key={s}
+                    onClick={() => updateThoughts(selectedThoughtIds, { status: s })}
+                    className={cn(
+                      "py-2.5 rounded-xl border text-[9px] font-black uppercase tracking-[0.2em] transition-all",
+                      sharedStatus === s
+                        ? {
+                          'none': 'bg-[var(--glass-border)] border-white/30 text-[var(--text-primary)] shadow-lg',
+                          'todo': 'bg-[var(--status-todo)]/10 border-[var(--status-todo)] text-[var(--status-todo)] shadow-[0_0_15px_rgba(99,102,241,0.1)]',
+                          'doing': 'bg-[var(--status-doing)]/10 border-[var(--status-doing)] text-[var(--status-doing)] shadow-[0_0_15px_rgba(234,179,8,0.1)]',
+                          'done': 'bg-[var(--status-done)]/10 border-[var(--status-done)] text-[var(--status-done)] shadow-[0_0_15px_rgba(34,197,94,0.1)]',
+                        }[s]
+                        : "bg-white/[0.03] border-[var(--glass-border)] text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--glass-border)] hover:border-white/20"
+                    )}
+                  >
+                    {s}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* 2. Priority Batch */}
+            <div className="space-y-3">
+              <label className="text-[9px] uppercase font-black tracking-widest text-[var(--text-muted)] ml-1">Priority</label>
+              <div className="grid grid-cols-5 gap-1.5">
+                {(['none', 'low', 'medium', 'high', 'urgent'] as const).map(p => (
+                  <button
+                    key={p}
+                    onClick={() => updateThoughts(selectedThoughtIds, { priority: p })}
+                    className={cn(
+                      "py-2.5 rounded-xl border text-[9px] font-black uppercase tracking-[0.2em] transition-all",
+                      sharedPriority === p
+                        ? {
+                          'none': 'bg-[var(--glass-border)] border-white/30 text-[var(--text-primary)] shadow-lg',
+                          'low': 'bg-[var(--prio-low)]/10 border-[var(--prio-low)] text-[var(--prio-low)] shadow-[0_0_15px_rgba(148,163,184,0.1)]',
+                          'medium': 'bg-[var(--prio-medium)]/10 border-[var(--prio-medium)] text-[var(--prio-medium)] shadow-[0_0_15px_rgba(168,85,247,0.1)]',
+                          'high': 'bg-[var(--prio-high)]/10 border-[var(--prio-high)] text-[var(--prio-high)] shadow-[0_0_15px_rgba(245,158,11,0.1)]',
+                          'urgent': 'bg-[var(--prio-urgent)]/10 border-[var(--prio-urgent)] text-[var(--prio-urgent)] shadow-[0_0_15px_rgba(239,68,68,0.1)]',
+                        }[p]
+                        : "bg-white/[0.03] border-[var(--glass-border)] text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--glass-border)] hover:border-white/20"
+                    )}
+                  >
+                    {p === 'medium' ? 'Med' : p[0].toUpperCase() + p.slice(1, 3)}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* 3. Date Batch */}
+            <div className="space-y-3">
+              <label className="text-[9px] uppercase font-black tracking-widest text-[var(--text-muted)] ml-1">Date</label>
+              <BatchDatePicker onSelect={(date) => updateThoughts(selectedThoughtIds, { date })} />
+            </div>
+
+            {/* 4. Stack Management */}
+            <div className="space-y-3 pt-4 border-t border-[var(--glass-border)]">
+              <label className="text-[9px] uppercase font-black tracking-widest text-[var(--text-muted)] ml-1">Group</label>
+              <div className="p-4 bg-[var(--bg-page)]/20 border border-[var(--glass-border)] rounded-2xl space-y-4">
+                <div className="flex items-center gap-3">
+                  {sharedStack ? (
+                    <ColorPicker 
+                      value={sharedStack.color} 
+                      onChange={(color) => useStore.getState().updateStack(sharedStack.id, { color })} 
+                    />
+                  ) : (
+                    <div className="w-8 h-8 rounded-full border border-[var(--glass-border)] bg-[var(--glass-border)] flex items-center justify-center">
+                      <Palette className="w-3.5 h-3.5 text-slate-600" />
+                    </div>
                   )}
-                >
-                  {s}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* 2. Priority Batch */}
-          <div className="space-y-3">
-            <label className="text-[9px] uppercase font-black tracking-widest text-[var(--text-muted)] ml-1">Priority</label>
-            <div className="grid grid-cols-5 gap-1.5">
-              {(['none', 'low', 'medium', 'high', 'urgent'] as const).map(p => (
-                <button
-                  key={p}
-                  onClick={() => updateThoughts(selectedThoughtIds, { priority: p })}
-                  className={cn(
-                    "py-2.5 rounded-xl border text-[9px] font-black uppercase tracking-[0.2em] transition-all",
-                    sharedPriority === p
-                      ? {
-                        'none': 'bg-[var(--glass-border)] border-white/30 text-[var(--text-primary)] shadow-lg',
-                        'low': 'bg-[var(--prio-low)]/10 border-[var(--prio-low)] text-[var(--prio-low)] shadow-[0_0_15px_rgba(148,163,184,0.1)]',
-                        'medium': 'bg-[var(--prio-medium)]/10 border-[var(--prio-medium)] text-[var(--prio-medium)] shadow-[0_0_15px_rgba(168,85,247,0.1)]',
-                        'high': 'bg-[var(--prio-high)]/10 border-[var(--prio-high)] text-[var(--prio-high)] shadow-[0_0_15px_rgba(245,158,11,0.1)]',
-                        'urgent': 'bg-[var(--prio-urgent)]/10 border-[var(--prio-urgent)] text-[var(--prio-urgent)] shadow-[0_0_15px_rgba(239,68,68,0.1)]',
-                      }[p]
-                      : "bg-white/[0.03] border-[var(--glass-border)] text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--glass-border)] hover:border-white/20"
-                  )}
-                >
-                  {p === 'medium' ? 'Med' : p[0].toUpperCase() + p.slice(1, 3)}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* 3. Date Batch */}
-          <div className="space-y-3">
-            <label className="text-[9px] uppercase font-black tracking-widest text-[var(--text-muted)] ml-1">Date</label>
-            <BatchDatePicker onSelect={(date) => updateThoughts(selectedThoughtIds, { date })} />
-          </div>
-
-          {/* 4. Stack Management */}
-          <div className="space-y-3 pt-4 border-t border-[var(--glass-border)]">
-            <label className="text-[9px] uppercase font-black tracking-widest text-[var(--text-muted)] ml-1">Group</label>
-            <div className="p-4 bg-[var(--bg-page)]/20 border border-[var(--glass-border)] rounded-2xl space-y-4">
-              <div className="flex items-center gap-3">
-                {sharedStack ? (
-                  <ColorPicker 
-                    value={sharedStack.color} 
-                    onChange={(color) => useStore.getState().updateStack(sharedStack.id, { color })} 
+                  <input
+                    type="text"
+                    value={localStackName}
+                    onChange={(e) => setLocalStackName(e.target.value)}
+                    placeholder="Name your group..."
+                    className="bg-transparent text-[10px] font-black uppercase tracking-widest text-[var(--text-primary)] outline-none flex-1"
                   />
-                ) : (
-                  <div className="w-8 h-8 rounded-full border border-[var(--glass-border)] bg-[var(--glass-border)] flex items-center justify-center">
-                    <Palette className="w-3.5 h-3.5 text-slate-600" />
+                </div>
+                <button
+                  onClick={async () => {
+                    if (sharedStack && localStackName.trim() !== sharedStack.name) {
+                      await linkSelectedThoughts(localStackName.trim());
+                    } else if (!sharedStack) {
+                      await linkSelectedThoughts(localStackName.trim());
+                    }
+                  }}
+                  disabled={!!sharedStack && localStackName.trim() === sharedStack.name}
+                  className="w-full py-3 bg-[var(--accent)]/5 hover:bg-[var(--accent)]/10 border border-[var(--accent)]/20 hover:border-[var(--accent)]/50 text-[var(--accent-secondary)] rounded-xl text-[9px] font-black uppercase tracking-[0.2em] transition-all disabled:opacity-30 disabled:cursor-not-allowed shadow-lg shadow-[var(--accent-glow)]/5"
+                >
+                  <span>{sharedStack ? 'RENAME' : 'LINK'}</span>
+                </button>
+
+                {stacks.length > 0 && !sharedStack && (
+                  <div className="space-y-1.5 pt-2">
+                    <label className="text-[7px] uppercase font-black tracking-[0.2em] text-slate-600 ml-1">Add to Existing</label>
+                    <div className="flex flex-col gap-1.5 max-h-[160px] overflow-y-auto custom-scroll pr-1">
+                      {stacks.map(s => (
+                        <button
+                          key={s.id}
+                          onClick={() => updateThoughts(selectedThoughtIds, { stackId: s.id })}
+                          className="w-full flex items-center gap-3 p-2.5 rounded-xl bg-white/[0.02] hover:bg-white/[0.05] border border-transparent hover:border-[var(--glass-border)] transition-all text-left group/btn"
+                        >
+                          <div className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: s.color, boxShadow: `0 0 8px ${s.color}44` }} />
+                          <span className="text-[9px] font-black uppercase tracking-[0.2em] text-[var(--text-muted)] group-hover/btn:text-[var(--text-primary)] transition-colors">{s.name}</span>
+                        </button>
+                      ))}
+                    </div>
                   </div>
                 )}
-                <input
-                  type="text"
-                  value={localStackName}
-                  onChange={(e) => setLocalStackName(e.target.value)}
-                  placeholder="Name your group..."
-                  className="bg-transparent text-[10px] font-black uppercase tracking-widest text-[var(--text-primary)] outline-none flex-1"
-                />
+
+                {sharedStack && (
+                  <button 
+                    onClick={unlinkSelectedThoughts} 
+                    className="w-full py-2.5 bg-red-500/5 hover:bg-red-500/10 text-red-400 border border-red-500/20 hover:border-red-500/40 rounded-xl text-[9px] font-black uppercase tracking-[0.2em] transition-all"
+                  >
+                    <span>DISSOLVE</span>
+                  </button>
+                )}
               </div>
-              <button
-                onClick={async () => {
-                  if (sharedStack && localStackName.trim() !== sharedStack.name) {
-                    await linkSelectedThoughts(localStackName.trim());
-                  } else if (!sharedStack) {
-                    await linkSelectedThoughts(localStackName.trim());
-                  }
-                }}
-                disabled={!!sharedStack && localStackName.trim() === sharedStack.name}
-                className="w-full py-3 bg-[var(--accent)]/5 hover:bg-[var(--accent)]/10 border border-[var(--accent)]/20 hover:border-[var(--accent)]/50 text-[var(--accent-secondary)] rounded-xl text-[9px] font-black uppercase tracking-[0.2em] transition-all disabled:opacity-30 disabled:cursor-not-allowed shadow-lg shadow-[var(--accent-glow)]/5"
-              >
-                <span>{sharedStack ? 'RENAME' : 'LINK'}</span>
-              </button>
-
-              {stacks.length > 0 && !sharedStack && (
-                <div className="space-y-1.5 pt-2">
-                  <label className="text-[7px] uppercase font-black tracking-[0.2em] text-slate-600 ml-1">Add to Existing</label>
-                  <div className="flex flex-col gap-1.5 max-h-[160px] overflow-y-auto custom-scroll pr-1">
-                    {stacks.map(s => (
-                      <button
-                        key={s.id}
-                        onClick={() => updateThoughts(selectedThoughtIds, { stackId: s.id })}
-                        className="w-full flex items-center gap-3 p-2.5 rounded-xl bg-white/[0.02] hover:bg-white/[0.05] border border-transparent hover:border-[var(--glass-border)] transition-all text-left group/btn"
-                      >
-                        <div className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: s.color, boxShadow: `0 0 8px ${s.color}44` }} />
-                        <span className="text-[9px] font-black uppercase tracking-[0.2em] text-[var(--text-muted)] group-hover/btn:text-[var(--text-primary)] transition-colors">{s.name}</span>
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {sharedStack && (
-                <button 
-                  onClick={unlinkSelectedThoughts} 
-                  className="w-full py-2.5 bg-red-500/5 hover:bg-red-500/10 text-red-400 border border-red-500/20 hover:border-red-500/40 rounded-xl text-[9px] font-black uppercase tracking-[0.2em] transition-all"
-                >
-                  <span>DISSOLVE</span>
-                </button>
-              )}
             </div>
+
           </div>
 
-        </div>
-
-        {/* FOOTER ACTIONS */}
-        <div className="p-4 md:p-6 bg-[var(--bg-main)]/40 border-t border-[var(--glass-border)] mt-auto">
-          <button
-            onClick={() => openModal({ title: `Delete ${selectedThoughtIds.length} Nodes?`, description: 'This action is permanent and clears them from all views.', type: 'delete_thought', confirmText: 'DELETE', onConfirm: () => deleteSelectedThoughts() })}
-            className="w-full py-4 bg-red-500/5 hover:bg-red-500/10 text-red-400 border border-red-500/20 hover:border-red-500/40 rounded-xl text-[9px] font-black uppercase tracking-[0.2em] transition-all flex items-center justify-center gap-2.5 group"
-          >
-            <Trash2 className="w-3.5 h-3.5 group-hover:scale-110 transition-transform" />
-            <span>DELETE</span>
-          </button>
-        </div>
-      </motion.div>
+          {/* FOOTER ACTIONS */}
+          <div className="p-4 md:p-6 bg-[var(--bg-main)]/40 border-t border-[var(--glass-border)] mt-auto">
+            <button
+              onClick={() => openModal({ title: `Delete ${selectedThoughtIds.length} Nodes?`, description: 'This action is permanent and clears them from all views.', type: 'delete_thought', confirmText: 'DELETE', onConfirm: () => deleteSelectedThoughts() })}
+              className="w-full py-4 bg-red-500/5 hover:bg-red-500/10 text-red-400 border border-red-500/20 hover:border-red-500/40 rounded-xl text-[9px] font-black uppercase tracking-[0.2em] transition-all flex items-center justify-center gap-2.5 group"
+            >
+              <Trash2 className="w-3.5 h-3.5 group-hover:scale-110 transition-transform" />
+              <span>DELETE</span>
+            </button>
+          </div>
+        </motion.div>
+      )}
     </AnimatePresence>
   );
 };

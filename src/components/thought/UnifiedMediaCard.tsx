@@ -26,7 +26,7 @@ export const UnifiedMediaCard: React.FC<UnifiedMediaCardProps> = ({
     <div 
       data-trigger={dataTrigger} 
       className={cn(
-        "mt-2 relative group cursor-pointer overflow-hidden rounded-xl border border-white/10 bg-black/50 aspect-video flex items-center justify-center",
+        "mt-2 relative group cursor-pointer overflow-hidden rounded-xl border border-[var(--glass-border)] bg-[var(--bg-main)]/40 aspect-video flex items-center justify-center",
         className
       )}
     >
@@ -34,7 +34,7 @@ export const UnifiedMediaCard: React.FC<UnifiedMediaCardProps> = ({
 
       {overlayIcon && (
         <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-          <div className="w-10 h-10 rounded-xl bg-black/40 backdrop-blur-sm border border-white/20 flex items-center justify-center group-hover:scale-110 transition-all duration-300">
+          <div className="w-10 h-10 rounded-xl bg-black/40 backdrop-blur-sm border border-[var(--glass-border)] flex items-center justify-center group-hover:scale-110 transition-all duration-300">
             {overlayIcon}
           </div>
         </div>
@@ -49,7 +49,7 @@ export const UnifiedMediaCard: React.FC<UnifiedMediaCardProps> = ({
       </div>
       
       {/* Type Badge */}
-      <div className="absolute bottom-2 right-2 px-2 py-0.5 rounded-md bg-black/60 backdrop-blur-md border border-white/10 text-[7px] font-black text-white/60 uppercase tracking-widest">
+      <div className="absolute bottom-2 right-2 px-2 py-0.5 rounded-md bg-black/60 backdrop-blur-md border border-[var(--glass-border)] text-[7px] font-black text-[var(--text-dimmed)] uppercase tracking-widest">
         {typeLabel}
       </div>
     </div>

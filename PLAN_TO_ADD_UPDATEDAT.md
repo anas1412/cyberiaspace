@@ -33,7 +33,7 @@
 - **Goal:** Safely bring sync back online.
 - **Steps:**
   1. **Egress Monitoring:** Use the Supabase dashboard to verify that egress per sync cycle is in the KB range, not MB/GB.
-  2. **UI Restore:** Re-enable the Sync buttons and Auto-Sync toggle in `AccountMenu.tsx`.
+  2. **UI Restore:** Re-enable the Sync buttons and Auto-Sync toggle in `SystemTray.tsx`.
 
 > **Note:** UI buttons should remain disabled until manual verification of egress reduction is confirmed in the Supabase dashboard.
 

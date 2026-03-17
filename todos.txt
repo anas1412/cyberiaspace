@@ -73,7 +73,7 @@ TODO:
 
 - implement Batch processing
 
-- change in account menu the thoughts in cloud to available space in the cloud if possible
+- change in system tray the thoughts in cloud to available space in the cloud if possible
 
 ------------------------------
 

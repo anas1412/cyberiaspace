@@ -37,23 +37,16 @@ export const FileRenderer: React.FC<FileRendererProps> = ({ thought }) => {
   const extension = fileName.split('.').pop() || '';
   const mimeType = (fileInfo?.type || '').toLowerCase();
   
-  // Robust Audio Detection
-  const isAudio = mimeType.startsWith('audio/') || 
-                  ['mp3', 'wav', 'ogg', 'm4a', 'aac', 'flac'].includes(extension);
-
-  // Robust Video Detection (Exclude Audio)
-  const isVideo = (mimeType.startsWith('video/') || 
-                  ['mp4', 'webm', 'mov', 'm4v'].includes(extension)) && !isAudio;
-
-  // Robust Image Detection (Strictly image types, exclude Audio/Video)
-  const isImage = (mimeType.startsWith('image/') || 
-                  ['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg'].includes(extension)) && 
-                  !isAudio && !isVideo;
+  // Robust detection using centralized flags from useThoughtPayload
+  const isAudio = fileInfo?.isAudio ?? false;
+  const isVideo = fileInfo?.isVideo ?? false;
+  const isImage = fileInfo?.isImage ?? false;
+  const isPdf = fileInfo?.isPdf ?? false;
 
   const getFileIcon = () => {
     if (isAudio) return <FileAudio className="w-8 h-8 text-blue-400" />;
     if (isVideo) return <FileVideo className="w-8 h-8 text-purple-400" />;
-    if (mimeType.includes('pdf') || extension === 'pdf') return <FileText className="w-8 h-8 text-red-400" />;
+    if (isPdf) return <FileText className="w-8 h-8 text-red-400" />;
     if (mimeType.includes('javascript') || mimeType.includes('typescript') || mimeType.includes('json') || mimeType.includes('code') || 
         ['js', 'ts', 'tsx', 'json', 'css', 'html'].includes(extension)) {
       return <FileCode className="w-8 h-8 text-amber-400" />;
@@ -100,7 +93,7 @@ export const FileRenderer: React.FC<FileRendererProps> = ({ thought }) => {
         {isVideo && !isAudio && (
           <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
             <div className="w-10 h-10 rounded-full bg-black/40 backdrop-blur-sm border border-[var(--glass-border)] flex items-center justify-center group-hover:scale-110 group-hover:bg-[var(--accent)]/40 transition-all duration-300">
-              <FileVideo className="w-5 h-5 text-[var(--text-primary)] shadow-2xl" />
+              <FileVideo className="w-5 h-5 text-white shadow-2xl" />
             </div>
           </div>
         )}
@@ -108,13 +101,13 @@ export const FileRenderer: React.FC<FileRendererProps> = ({ thought }) => {
         {/* Hover View Action for Images */}
         {activeSource && !isVideo && (
           <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center pointer-events-none">
-            <Maximize2 className="w-6 h-6 text-[var(--accent-contrast)]" />
+            <Maximize2 className="w-6 h-6 text-white" />
           </div>
         )}
 
         {/* Type Badge */}
-        <div className="absolute bottom-2 right-2 px-2 py-0.5 rounded-md bg-black/60 backdrop-blur-md border border-[var(--glass-border)] text-[7px] font-black text-[var(--text-dimmed)] uppercase tracking-widest">
-          {mimeType.split('/')[1]?.toUpperCase() || extension.toUpperCase() || 'DATA'}
+        <div className="absolute bottom-2 right-2 px-2 py-0.5 rounded-md bg-black/60 backdrop-blur-md border border-[var(--glass-border)] text-[7px] font-black text-white/60 uppercase tracking-widest">
+          {mimeType.split('/')[1]?.toUpperCase() || extension.toUpperCase() || (isImage ? 'IMAGE' : (isVideo ? 'VIDEO' : 'DATA'))}
         </div>
       </div>
     );

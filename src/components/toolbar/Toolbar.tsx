@@ -4,6 +4,7 @@ import { useModalStore } from '../../store/useModalStore';
 import { useAuthStore } from '../../store/useAuthStore';
 import { PLAN_CONFIG, type SubscriptionPlan } from '../../constants';
 import { toCanvas } from 'html-to-image';
+import { Sparkles } from 'lucide-react';
 
 // Modular Components
 // import { ToolbarLogo } from './ToolbarLogo';
@@ -12,6 +13,7 @@ import { ViewSwitcher } from './ViewSwitcher';
 import { ActionFAB } from './ActionFAB';
 import { SystemTray } from './SystemTray';
 import { StatusBar } from './StatusBar';
+import { Clock, DatePill } from './Clock';
 import { ShortcutsModal, HelpModal } from './Modals';
 
 const Toolbar: React.FC = () => {
@@ -194,6 +196,23 @@ const Toolbar: React.FC = () => {
     } finally { setIsCapturing(false); }
   };
 
+  const handleNavigateToLogin = () => {
+    window.history.pushState({}, '', '/login');
+    window.dispatchEvent(new PopStateEvent('popstate'));
+  };
+
+  const handleOracleToggle = () => {
+    if (!user) {
+      handleNavigateToLogin();
+      return;
+    }
+    if (!limits.AI_ENABLED) {
+      openPricing();
+      return;
+    }
+    setChatOpen(!isChatOpen);
+  };
+
   const handleInstall = async () => {
     if (!deferredPrompt) return;
     deferredPrompt.prompt();
@@ -264,9 +283,9 @@ const Toolbar: React.FC = () => {
 
   return (
     <>
-      <div className="fixed top-2 md:top-6 left-4 md:left-8 right-4 md:right-10 z-[9999] flex items-center justify-between gap-2 pointer-events-none">
+      <div className="fixed top-2 md:top-6 left-4 md:left-8 right-4 md:right-8 z-[9999] flex items-center justify-between gap-2 pointer-events-none">
         {/* Left Side: Space Switcher */}
-        <div className="flex-1 flex justify-start pointer-events-auto">
+        <div className="flex-1 flex justify-start items-center gap-3 pointer-events-auto">
           <SpaceSwitcher 
             spaces={spaces}
             activeSpaceId={activeSpaceId}
@@ -284,6 +303,18 @@ const Toolbar: React.FC = () => {
             handleDeleteSpace={handleDeleteSpace}
             openModal={openModal}
           />
+
+          <button 
+            onClick={handleOracleToggle}
+            className={`h-[48px] px-5 glass rounded-2xl border flex items-center gap-3 transition-all group pointer-events-auto ${
+              isChatOpen 
+                ? 'bg-white/10 text-white border-white/20 shadow-[0_0_20px_rgba(255,255,255,0.05)]' 
+                : 'border-white/5 text-slate-400 hover:text-white'
+            }`}
+          >
+            <Sparkles className="w-4 h-4" />
+            <span className="text-[10px] font-black uppercase tracking-[0.25em]">Ask Oracle</span>
+          </button>
         </div>
 
         {/* Center: View Modes (The primary "Lens" of the workspace) */}
@@ -291,14 +322,15 @@ const Toolbar: React.FC = () => {
           <ViewSwitcher activeSpace={activeSpace} setViewMode={setViewMode} />
         </div>
 
-        {/* Right Side: Spacer for flex balance */}
-        <div className="flex-1 flex justify-end items-center pointer-events-none" />
+        {/* Right Side: Workspace Clock & Date */}
+        <div className="flex-1 flex justify-end items-center gap-3 pointer-events-auto">
+          <DatePill />
+          <Clock />
+        </div>
       </div>
       <ActionFAB isReadOnly={isReadOnly} handleAddThought={handleAddThought} />
       <SystemTray 
         isReadOnly={isReadOnly} 
-        isChatOpen={isChatOpen} 
-        setChatOpen={setChatOpen} 
         isShortcutsOpen={isShortcutsOpen} 
         setIsShortcutsOpen={setIsShortcutsOpen} 
         isHelpOpen={isHelpOpen} 
@@ -307,8 +339,6 @@ const Toolbar: React.FC = () => {
         setIsSystemMenuOpen={setIsSystemMenuOpen} 
         theme={theme} 
         setTheme={setTheme} 
-        performanceMode={performanceMode}
-        setPerformanceMode={setPerformanceMode}
         customBg={customBg}
         setCustomBg={setCustomBg}
         deferredPrompt={deferredPrompt} 
@@ -317,11 +347,23 @@ const Toolbar: React.FC = () => {
         handleScreenshot={handleScreenshot} 
         handleImport={handleImport} 
         isCapturing={isCapturing} 
-        activeSpace={activeSpace}
-        handleTogglePhysics={handleTogglePhysics}
       />
 
-      <StatusBar thoughtsCount={thoughts.length} limits={limits} activeSpace={activeSpace} undo={undo} redo={redo} historyIndex={historyIndex} historyLength={history.length} zoomIn={zoomIn} zoomOut={zoomOut} resetTransform={resetTransform} />
+      <StatusBar 
+        thoughtsCount={thoughts.length} 
+        limits={limits} 
+        activeSpace={activeSpace} 
+        undo={undo} 
+        redo={redo} 
+        historyIndex={historyIndex} 
+        historyLength={history.length} 
+        zoomIn={zoomIn} 
+        zoomOut={zoomOut} 
+        resetTransform={resetTransform}
+        performanceMode={performanceMode}
+        setPerformanceMode={setPerformanceMode}
+        handleTogglePhysics={handleTogglePhysics}
+      />
       <ShortcutsModal isOpen={isShortcutsOpen} onClose={() => setIsShortcutsOpen(false)} />
       <HelpModal isOpen={isHelpOpen} onClose={() => setIsHelpOpen(false)} activeTab={activeHelpTab} setActiveTab={setActiveHelpTab} quickMessage={quickMessage} setQuickMessage={setQuickMessage} quickType={quickType} setQuickType={setQuickType} isQuickSubmitting={isQuickSubmitting} quickSubmitStatus={quickSubmitStatus} handleQuickSubmit={handleQuickSubmit} contactName={contactName} setContactName={setContactName} contactEmail={contactEmail} setContactEmail={setContactEmail} contactMessage={contactMessage} setContactMessage={setContactMessage} isContactSubmitting={isContactSubmitting} contactSubmitStatus={contactSubmitStatus} handleContactSubmit={handleContactSubmit} />
     </>

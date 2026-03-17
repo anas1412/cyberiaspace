@@ -64,7 +64,7 @@ export const TextRenderer: React.FC<TextRendererProps> = ({
   return (
     <div className={cn("overflow-hidden relative", hasContent && "max-h-[140px]")}>
       <div
-        className="markdown-body px-2 text-[11px] leading-relaxed text-slate-300/90 select-none pointer-events-none break-words"
+        className="markdown-body px-2 text-[11px] leading-relaxed text-[var(--text-dimmed)] select-none pointer-events-none break-words"
         dangerouslySetInnerHTML={{ __html: parsedContent as string }}
         onDragStart={(e) => e.preventDefault()}
       />
@@ -72,7 +72,7 @@ export const TextRenderer: React.FC<TextRendererProps> = ({
         <div className="absolute bottom-0 left-0 right-0 h-16 bg-gradient-to-t from-[var(--bg-main)] via-[var(--bg-main)]/80 to-transparent pointer-events-none" />
       )}
       {!isReadOnly && (
-        <div className="absolute inset-0 bg-[var(--accent)]/10 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center pointer-events-none">
+        <div className="absolute inset-0 bg-[var(--accent)]/10 opacity-0 group-hover/opacity-100 transition-opacity flex items-center justify-center pointer-events-none">
           <button
             onClick={(e) => { e.stopPropagation(); setActiveFocus(thought.id, 'text'); }}
             className="pointer-events-auto bg-[var(--accent)] text-[var(--accent-contrast)] p-2 rounded-lg shadow-xl transform scale-90 group-hover:scale-100 transition-all hover:scale-110 active:scale-95"

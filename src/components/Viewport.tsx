@@ -211,6 +211,11 @@ const Viewport: React.FC<{ isInteracting?: boolean }> = ({ isInteracting }) => {
           
           if (isChanged) {
             setSelectedThoughtIds(selectedIds);
+            if (selectedIds.length === 1) {
+              setInspectorOpen(true);
+            } else {
+              setInspectorOpen(false);
+            }
           }
         }
       }
@@ -219,6 +224,12 @@ const Viewport: React.FC<{ isInteracting?: boolean }> = ({ isInteracting }) => {
     };
 
     const handleMouseUp = () => {
+      if (isSelectingRef.current) {
+        const currentIds = useStore.getState().selectedThoughtIds;
+        if (currentIds.length === 1) {
+          setInspectorOpen(true);
+        }
+      }
       isPanningRef.current = false;
       isSelectingRef.current = false;
       setIsGrabbing(false);

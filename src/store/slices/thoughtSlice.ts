@@ -375,7 +375,12 @@ export const createThoughtSlice: StateCreator<CyberiaState, [], [], any> = (set,
     } as Partial<CyberiaState>);
   },
   
-  setSelectedThoughtIds: (ids: string[]) => set({ selectedThoughtIds: ids } as Partial<CyberiaState>),
+  setSelectedThoughtIds: (ids: string[]) => {
+    set({ 
+      selectedThoughtIds: ids,
+      selectedThoughtId: ids.length === 1 ? ids[0] : null
+    } as Partial<CyberiaState>);
+  },
   
   toggleThoughtSelection: (id: string) => {
     const { selectedThoughtIds } = get();

@@ -509,11 +509,11 @@ if (['get_thought_details', 'read_file_content', 'read_files_content'].includes(
       {isChatOpen && (
         <motion.div
           id="chat-overlay"
-          initial={{ x: '100%', opacity: 0 }}
+          initial={{ x: '-100%', opacity: 0 }}
           animate={{ x: 0, opacity: 1 }}
-          exit={{ x: '100%', opacity: 0 }}
+          exit={{ x: '-100%', opacity: 0 }}
           transition={{ type: 'spring', damping: 28, stiffness: 200 }}
-          className="fixed top-4 md:top-24 bottom-4 md:bottom-24 right-4 w-[calc(100%-32px)] md:w-[520px] glass rounded-2xl shadow-[0_0_80px_rgba(0,0,0,0.5)] flex flex-col overflow-hidden z-[9999] border border-white/10"
+          className="fixed top-4 md:top-24 bottom-4 md:bottom-24 left-4 md:left-8 w-[calc(100%-32px)] md:w-[500px] glass rounded-2xl shadow-[0_0_80px_rgba(0,0,0,0.5)] flex flex-col overflow-hidden z-[9999] border border-white/10"
         >
 
           {/* Header */}
@@ -548,7 +548,7 @@ if (['get_thought_details', 'read_file_content', 'read_files_content'].includes(
                     <span className="text-[10px] font-bold uppercase tracking-widest text-blue-400/80">
                       {dailyUsage} / {limits.AI_DAILY_LIMIT} REQUESTS DAILY LIMIT
                     </span>
-                    <div className="w-48 h-0.5 bg-white/10 rounded-full overflow-hidden">
+                    <div className="w-32 h-0.5 bg-white/10 rounded-full overflow-hidden">
                       <motion.div 
                         initial={{ width: 0 }}
                         animate={{ width: `${Math.min(100, (dailyUsage / (limits.AI_DAILY_LIMIT || 1)) * 100)}%` }}

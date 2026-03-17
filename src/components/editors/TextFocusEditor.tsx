@@ -21,19 +21,21 @@ const EditorContent: React.FC<{
   <div className="flex-1 flex overflow-hidden">
     {isEditMode ? (
       <div className="flex-1 p-6 md:p-10 overflow-y-auto custom-scroll bg-white/[0.02]">
-        <textarea
-          value={content}
-          onChange={(e) => onContentChange(e.target.value)}
-          readOnly={isReadOnly}
-          className="w-full h-full bg-transparent text-lg md:text-xl text-[var(--text-primary)] leading-relaxed outline-none border-none resize-none placeholder:text-[var(--text-muted)]/30 font-['Plus_Jakarta_Sans',_sans-serif]"
-          placeholder="Dive deep into your thoughts..."
-          autoFocus
-        />
+        <div className="max-w-4xl mx-auto h-full">
+          <textarea
+            value={content}
+            onChange={(e) => onContentChange(e.target.value)}
+            readOnly={isReadOnly}
+            className="w-full h-full bg-transparent text-lg md:text-xl text-[var(--text-primary)] leading-relaxed outline-none border-none resize-none placeholder:text-[var(--text-muted)]/30 font-['Plus_Jakarta_Sans',_sans-serif]"
+            placeholder="Dive deep into your thoughts..."
+            autoFocus
+          />
+        </div>
       </div>
     ) : (
       <div className="flex-1 p-8 md:p-20 overflow-y-auto custom-scroll bg-black/20">
         <div
-          className="focus-markdown-body max-w-3xl mx-auto text-sm md:text-base break-words"
+          className="focus-markdown-body max-w-4xl mx-auto text-sm md:text-base break-words"
           dangerouslySetInnerHTML={{ __html: marked.parse(content || "_No content yet. Click Edit to start writing..._") as string }}
         />
       </div>

@@ -55,7 +55,7 @@ export const EmbedRenderer: React.FC<EmbedRendererProps> = ({ thought }) => {
   const previewImage = image || (provider === 'youtube' && id ? `https://img.youtube.com/vi/${id}/mqdefault.jpg` : null);
 
   return (
-    <div data-trigger="embed" className="mt-2 relative group cursor-pointer overflow-hidden rounded-xl border border-white/10 bg-black/50 aspect-video flex items-center justify-center">
+    <div data-trigger="embed" className="mt-2 relative group cursor-pointer overflow-hidden rounded-xl border border-[var(--glass-border)] bg-[var(--bg-main)]/40 aspect-video flex items-center justify-center">
       {previewImage ? (
         <div className="relative w-full h-full">
           <img
@@ -82,7 +82,7 @@ export const EmbedRenderer: React.FC<EmbedRendererProps> = ({ thought }) => {
       ) : (
         <div className="flex flex-col items-center gap-2 p-6 text-center">
           {isLoading ? (
-            <Loader2 className="w-8 h-8 text-white/20 animate-spin" />
+            <Loader2 className="w-8 h-8 text-[var(--text-muted)] animate-spin" />
           ) : (
             <div
               className="w-12 h-12 rounded-xl flex items-center justify-center border"
@@ -99,11 +99,11 @@ export const EmbedRenderer: React.FC<EmbedRendererProps> = ({ thought }) => {
 
       {(thought.author || isLoading) && (
         <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent p-3 pt-10 pointer-events-none transition-opacity group-hover:opacity-100 opacity-80">
-          <p className="text-[10px] text-white font-black uppercase tracking-widest truncate">
+          <p className="text-[10px] text-[var(--text-primary)] font-black uppercase tracking-widest truncate">
             {isLoading ? 'Fetching metadata...' : thought.author}
           </p>
           {thought.text && thought.text.includes(' by ') && (
-            <p className="text-[8px] text-white/60 font-medium italic mt-0.5 truncate">
+            <p className="text-[8px] text-[var(--text-dimmed)] font-medium italic mt-0.5 truncate">
               {thought.text}
             </p>
           )}
@@ -111,8 +111,8 @@ export const EmbedRenderer: React.FC<EmbedRendererProps> = ({ thought }) => {
       )}
       
       {!previewImage && !isLoading && (
-        <div className="absolute top-2 right-2 p-1.5 rounded-lg bg-white/5 border border-white/10 opacity-0 group-hover:opacity-100 transition-opacity">
-          <ExternalLink className="w-3 h-3 text-slate-400" />
+        <div className="absolute top-2 right-2 p-1.5 rounded-lg bg-[var(--bg-main)]/20 border border-[var(--glass-border)] opacity-0 group-hover:opacity-100 transition-opacity">
+          <ExternalLink className="w-3 h-3 text-[var(--text-muted)]" />
         </div>
       )}
     </div>

@@ -19,7 +19,7 @@ To eliminate recurring popups and 1-hour session expiries:
 ## 3. Incremental Consent
 Users are never forced to grant Drive permissions during the initial sign-in.
 - **Phase 1:** Sign In (Email/Name only).
-- **Phase 2:** Connect Drive (Optional button in Account Menu).
+- **Phase 2:** Connect Drive (Optional button in System Tray).
 - **Phase 3:** Revoke (Permanent deletion of cloud keys).
 
 ## 4. Drive State Persistence

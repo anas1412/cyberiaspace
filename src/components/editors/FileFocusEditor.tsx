@@ -235,22 +235,19 @@ const EditorContent: React.FC<{
     : (localPreviewUrl || (isLocalOnly ? null : thought.storageUrl) || image);
 
   // Use cached values if available, otherwise analyze
-  const isPdf = cached.isPdf ?? (mimeType.includes('pdf') || extension === 'pdf');
-  const isVideo = cached.isVideo ?? (mimeType.startsWith('video/') || ['mp4', 'webm', 'mov', 'm4v'].includes(extension));
-  const isAudio = cached.isAudio ?? (mimeType.startsWith('audio/') || ['mp3', 'wav', 'ogg'].includes(extension));
-  
-  // Strict Image Detection (Exclude Audio, Video, and PDF)
-  const isImage = cached.isImage ?? ((mimeType.startsWith('image/') || 
-                  ['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg'].includes(extension)) && 
-                  !isAudio && !isVideo && !isPdf);
+  const isPdf = fileInfo?.isPdf ?? false;
+  const isVideo = fileInfo?.isVideo ?? false;
+  const isAudio = fileInfo?.isAudio ?? false;
+  const isImage = fileInfo?.isImage ?? false;
 
   // SAVE ANALYSIS RESULT (Triggered in parent to avoid render-loop)
   useEffect(() => {
     if (thought && !isReadOnly && !isDemo) {
-      const needsUpdate = cached.isPdf === undefined || 
-                          cached.isImage === undefined || 
-                          cached.isVideo === undefined || 
-                          cached.isAudio === undefined;
+      // Check the RAW flags from the database (via useThoughtPayload.fileInfo.raw)
+      const needsUpdate = fileInfo?.raw?.isPdf === undefined || 
+                          fileInfo?.raw?.isImage === undefined || 
+                          fileInfo?.raw?.isVideo === undefined || 
+                          fileInfo?.raw?.isAudio === undefined;
 
       
       if (needsUpdate && (mimeType || extension)) {
@@ -272,7 +269,7 @@ const EditorContent: React.FC<{
         updateStore();
       }
     }
-  }, [thought?.id, isPdf, isImage, isVideo, isAudio, cached.isPdf, isReadOnly, isDemo]);
+  }, [thought?.id, isPdf, isImage, isVideo, isAudio, fileInfo?.raw, isReadOnly, isDemo]);
 
   return (
     <div className="flex-1 flex flex-col min-h-0 relative">
@@ -456,7 +453,7 @@ const EditorContent: React.FC<{
                 </div>
               </div>
               {showPreviews && (
-                <div className="flex gap-4 overflow-x-auto custom-scroll pb-1 w-full snap-x mt-4" ref={scrollerRef}>
+                <div className="flex gap-4 overflow-x-auto custom-scroll pb-2 w-full snap-x mt-4 px-1" ref={scrollerRef}>
                   {stackItems.map((item) => (
                     <StackItemThumbnail 
                       key={item.id} 
