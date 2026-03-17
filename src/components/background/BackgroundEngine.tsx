@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React from "react";
 import { useStore } from "../../store/useStore";
 import Starfield from "./layers/Starfield";
 import Atmosphere from "./layers/Atmosphere";
@@ -8,33 +8,6 @@ const BackgroundEngine: React.FC = () => {
   const theme = useStore((state) => state.theme);
   const performanceMode = useStore((state) => state.performanceMode);
   const customBg = useStore((state) => state.customBg);
-  
-  const [staticBg, setStaticBg] = useState<string | null>(null);
-
-  // Handle GIF static frame for performance
-  useEffect(() => {
-    if (performanceMode && customBg && (customBg.includes('image/gif') || customBg.toLowerCase().endsWith('.gif'))) {
-      const img = new Image();
-      img.crossOrigin = "anonymous";
-      img.src = customBg;
-      img.onload = () => {
-        const canvas = document.createElement('canvas');
-        canvas.width = img.width;
-        canvas.height = img.height;
-        const ctx = canvas.getContext('2d');
-        if (ctx) {
-          ctx.drawImage(img, 0, 0);
-          try {
-            setStaticBg(canvas.toDataURL('image/webp', 0.8));
-          } catch (e) {
-            setStaticBg(null);
-          }
-        }
-      };
-    } else {
-      setStaticBg(null);
-    }
-  }, [performanceMode, customBg]);
 
   return (
     <div className="fixed inset-0 z-0 pointer-events-none overflow-hidden select-none" style={{ backgroundColor: 'var(--bg-page)' }}>
@@ -43,7 +16,7 @@ const BackgroundEngine: React.FC = () => {
         <div 
           className="absolute inset-0 z-0 bg-cover bg-center bg-no-repeat transition-opacity duration-1000 animate-in fade-in"
           style={{ 
-            backgroundImage: `url(${staticBg || customBg})`,
+            backgroundImage: `url(${customBg})`,
             opacity: performanceMode ? 1.0 : 0.8 
           }}
         />
