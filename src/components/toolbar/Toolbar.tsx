@@ -4,17 +4,16 @@ import { useModalStore } from '../../store/useModalStore';
 import { useAuthStore } from '../../store/useAuthStore';
 import { PLAN_CONFIG, type SubscriptionPlan } from '../../constants';
 import { toCanvas } from 'html-to-image';
-import { Sparkles } from 'lucide-react';
+import { BotMessageSquare, Sparkles } from 'lucide-react';
 
 // Modular Components
-// import { ToolbarLogo } from './ToolbarLogo';
 import { SpaceSwitcher } from './SpaceSwitcher';
 import { ViewSwitcher } from './ViewSwitcher';
 import { ActionFAB } from './ActionFAB';
 import { SystemTray } from './SystemTray';
 import { StatusBar } from './StatusBar';
-import { Clock, DatePill } from './Clock';
-import { ShortcutsModal, HelpModal } from './Modals';
+import { ShortcutsModal, HelpModal, SettingsModal } from './Modals';
+import { AccountMenu } from './AccountMenu';
 
 const Toolbar: React.FC = () => {
   const activeSpaceId = useStore((state) => state.activeSpaceId);
@@ -59,10 +58,22 @@ const Toolbar: React.FC = () => {
 
   const activeSpace = spaces.find((s) => s.id === activeSpaceId);
   const [isSpaceMenuOpen, setIsSpaceMenuOpen] = useState(false);
-  const [isSystemMenuOpen, setIsSystemMenuOpen] = useState(false);
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isShortcutsOpen, setIsShortcutsOpen] = useState(false);
   const [isHelpOpen, setIsHelpOpen] = useState(false);
   const [activeHelpTab, setActiveHelpTab] = useState<'about' | 'issue' | 'contact'>('about');
+
+  // Expose modal triggers to window for cross-modal navigation
+  useEffect(() => {
+    (window as any)._openShortcuts = () => setIsShortcutsOpen(true);
+    (window as any)._openHelp = () => setIsHelpOpen(true);
+    (window as any)._openSettings = () => setIsSettingsOpen(true);
+    return () => {
+      delete (window as any)._openShortcuts;
+      delete (window as any)._openHelp;
+      delete (window as any)._openSettings;
+    };
+  }, []);
 
   // Quick Feedback State
   const [quickMessage, setQuickMessage] = useState('');
@@ -131,14 +142,13 @@ const Toolbar: React.FC = () => {
   useEffect(() => {
     const handleGlobalClick = (e: MouseEvent) => {
       const target = e.target as HTMLElement;
-      if (isSystemMenuOpen && !target.closest('.system-tray-container')) setIsSystemMenuOpen(false);
       if (isSpaceMenuOpen && !target.closest('.space-switcher-container')) setIsSpaceMenuOpen(false);
     };
     window.addEventListener('mousedown', handleGlobalClick);
     return () => window.removeEventListener('mousedown', handleGlobalClick);
-  }, [isSystemMenuOpen, isSpaceMenuOpen]);
+  }, [isSpaceMenuOpen]);
 
-  const handleExport = () => { exportData(); setIsSystemMenuOpen(false); };
+  const handleExport = () => { exportData(); };
   const handleImport = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
@@ -149,7 +159,6 @@ const Toolbar: React.FC = () => {
       });
     }
     e.target.value = '';
-    setIsSystemMenuOpen(false);
   };
 
   const handleScreenshot = async () => {
@@ -218,7 +227,6 @@ const Toolbar: React.FC = () => {
     deferredPrompt.prompt();
     const { outcome } = await deferredPrompt.userChoice;
     if (outcome === 'accepted') setDeferredPrompt(null);
-    setIsSystemMenuOpen(false);
   };
 
   const handleAddThought = async () => {
@@ -284,7 +292,7 @@ const Toolbar: React.FC = () => {
   return (
     <>
       <div className="fixed top-2 md:top-6 left-4 md:left-8 right-4 md:right-8 z-[9999] flex items-center justify-between gap-2 pointer-events-none">
-        {/* Left Side: Space Switcher */}
+        {/* Left Side: Space Switcher & Oracle */}
         <div className="flex-1 flex justify-start items-center gap-3 pointer-events-auto">
           <SpaceSwitcher 
             spaces={spaces}
@@ -312,41 +320,31 @@ const Toolbar: React.FC = () => {
                 : 'border-white/5 text-slate-400 hover:text-white'
             }`}
           >
-            <Sparkles className="w-4 h-4" />
-            <span className="text-[10px] font-black uppercase tracking-[0.25em]">Ask Oracle</span>
+            <BotMessageSquare className="w-4 h-4" />
+            <span className="text-[10px] font-black uppercase tracking-[0.25em]">Oracle AI</span>
           </button>
         </div>
 
-        {/* Center: View Modes (The primary "Lens" of the workspace) */}
+        {/* Center: View Modes */}
         <div className="lg:absolute lg:left-1/2 lg:-translate-x-1/2 flex flex-col items-center pointer-events-none z-[9999]">
           <ViewSwitcher activeSpace={activeSpace} setViewMode={setViewMode} />
         </div>
 
-        {/* Right Side: Workspace Clock & Date */}
+        {/* Right Side: Account Menu */}
         <div className="flex-1 flex justify-end items-center gap-3 pointer-events-auto">
-          <DatePill />
-          <Clock />
+          <AccountMenu />
         </div>
       </div>
+      
       <ActionFAB isReadOnly={isReadOnly} handleAddThought={handleAddThought} />
+      
       <SystemTray 
-        isReadOnly={isReadOnly} 
         isShortcutsOpen={isShortcutsOpen} 
         setIsShortcutsOpen={setIsShortcutsOpen} 
         isHelpOpen={isHelpOpen} 
         setIsHelpOpen={setIsHelpOpen} 
-        isSystemMenuOpen={isSystemMenuOpen} 
-        setIsSystemMenuOpen={setIsSystemMenuOpen} 
-        theme={theme} 
-        setTheme={setTheme} 
-        customBg={customBg}
-        setCustomBg={setCustomBg}
-        deferredPrompt={deferredPrompt} 
-        handleInstall={handleInstall} 
-        handleExport={handleExport} 
-        handleScreenshot={handleScreenshot} 
-        handleImport={handleImport} 
-        isCapturing={isCapturing} 
+        isSettingsOpen={isSettingsOpen}
+        setIsSettingsOpen={setIsSettingsOpen}
       />
 
       <StatusBar 
@@ -364,8 +362,46 @@ const Toolbar: React.FC = () => {
         setPerformanceMode={setPerformanceMode}
         handleTogglePhysics={handleTogglePhysics}
       />
+
       <ShortcutsModal isOpen={isShortcutsOpen} onClose={() => setIsShortcutsOpen(false)} />
-      <HelpModal isOpen={isHelpOpen} onClose={() => setIsHelpOpen(false)} activeTab={activeHelpTab} setActiveTab={setActiveHelpTab} quickMessage={quickMessage} setQuickMessage={setQuickMessage} quickType={quickType} setQuickType={setQuickType} isQuickSubmitting={isQuickSubmitting} quickSubmitStatus={quickSubmitStatus} handleQuickSubmit={handleQuickSubmit} contactName={contactName} setContactName={setContactName} contactEmail={contactEmail} setContactEmail={setContactEmail} contactMessage={contactMessage} setContactMessage={setContactMessage} isContactSubmitting={isContactSubmitting} contactSubmitStatus={contactSubmitStatus} handleContactSubmit={handleContactSubmit} />
+      
+      <HelpModal 
+        isOpen={isHelpOpen} 
+        onClose={() => setIsHelpOpen(false)} 
+        activeTab={activeHelpTab} 
+        setActiveTab={setActiveHelpTab} 
+        quickMessage={quickMessage} 
+        setQuickMessage={setQuickMessage} 
+        quickType={quickType} 
+        setQuickType={setQuickType} 
+        isQuickSubmitting={isQuickSubmitting} 
+        quickSubmitStatus={quickSubmitStatus} 
+        handleQuickSubmit={handleQuickSubmit} 
+        contactName={contactName} 
+        setContactName={setContactName} 
+        contactEmail={contactEmail} 
+        setContactEmail={setContactEmail} 
+        contactMessage={contactMessage} 
+        setContactMessage={setContactMessage} 
+        isContactSubmitting={isContactSubmitting} 
+        contactSubmitStatus={contactSubmitStatus} 
+        handleContactSubmit={handleContactSubmit} 
+      />
+
+      <SettingsModal
+        isOpen={isSettingsOpen}
+        onClose={() => setIsSettingsOpen(false)}
+        theme={theme}
+        setTheme={setTheme}
+        customBg={customBg}
+        setCustomBg={setCustomBg}
+        handleExport={handleExport}
+        handleImport={handleImport}
+        handleScreenshot={handleScreenshot}
+        isCapturing={isCapturing}
+        deferredPrompt={deferredPrompt}
+        handleInstall={handleInstall}
+      />
     </>
   );
 };

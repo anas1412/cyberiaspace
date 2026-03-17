@@ -1,5 +1,5 @@
 import React from 'react';
-import { Undo2, Redo2, ZoomIn, ZoomOut, Zap, Gauge, ScanEye } from 'lucide-react';
+import { Undo2, Redo2, ZoomIn, ZoomOut, Gauge, ScanEye, Magnet } from 'lucide-react';
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 
@@ -64,7 +64,14 @@ export const StatusBar: React.FC<StatusBarProps> = ({
               performanceMode ? "text-slate-500 opacity-30 cursor-not-allowed" : activeSpace?.physics ? "text-amber-400" : "text-slate-400 hover:text-white hover:bg-white/10"
             )}
           >
-            <Zap className={cn("w-3.5 h-3.5 md:w-4 md:h-4", activeSpace?.physics && !performanceMode && "fill-current")} />
+            <Magnet 
+              className={cn(
+                "w-3.5 h-3.5 md:w-4 md:h-4 transition-colors", 
+                activeSpace?.physics && !performanceMode 
+                  ? "text-[var(--accent)]"    // <--- THIS IS THE FIX
+                  : "text-slate-500"          // Matches the inactive color in your FAB
+              )} 
+            />
           </button>
         </div>
 
