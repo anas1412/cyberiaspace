@@ -6,12 +6,11 @@ import { PLAN_CONFIG, type SubscriptionPlan } from '../../constants';
 import { toCanvas } from 'html-to-image';
 
 // Modular Components
-import { ToolbarLogo } from './ToolbarLogo';
+// import { ToolbarLogo } from './ToolbarLogo';
 import { SpaceSwitcher } from './SpaceSwitcher';
 import { ViewSwitcher } from './ViewSwitcher';
 import { ActionFAB } from './ActionFAB';
 import { SystemTray } from './SystemTray';
-import AccountMenu from '../AccountMenu';
 import { StatusBar } from './StatusBar';
 import { ShortcutsModal, HelpModal } from './Modals';
 
@@ -265,19 +264,9 @@ const Toolbar: React.FC = () => {
 
   return (
     <>
-      <div className="fixed top-2 md:top-6 left-4 md:left-12 right-4 md:right-10 z-[9999] flex items-center justify-between gap-2 pointer-events-none">
-        {/* Left Side: Logo */}
-        <div className="flex-1 flex justify-start">
-          <ToolbarLogo />
-        </div>
-
-        {/* Center: View Modes (The primary "Lens" of the workspace) */}
-        <div className="lg:absolute lg:left-1/2 lg:-translate-x-1/2 flex flex-col items-center pointer-events-none z-[9999]">
-          <ViewSwitcher activeSpace={activeSpace} setViewMode={setViewMode} />
-        </div>
-
-        {/* Right Side: Context Navigation (Spaces & Profile) */}
-        <div className="flex-1 flex justify-end items-center gap-2 pointer-events-auto">
+      <div className="fixed top-2 md:top-6 left-4 md:left-8 right-4 md:right-10 z-[9999] flex items-center justify-between gap-2 pointer-events-none">
+        {/* Left Side: Space Switcher */}
+        <div className="flex-1 flex justify-start pointer-events-auto">
           <SpaceSwitcher 
             spaces={spaces}
             activeSpaceId={activeSpaceId}
@@ -295,17 +284,21 @@ const Toolbar: React.FC = () => {
             handleDeleteSpace={handleDeleteSpace}
             openModal={openModal}
           />
-          <AccountMenu />
         </div>
+
+        {/* Center: View Modes (The primary "Lens" of the workspace) */}
+        <div className="lg:absolute lg:left-1/2 lg:-translate-x-1/2 flex flex-col items-center pointer-events-none z-[9999]">
+          <ViewSwitcher activeSpace={activeSpace} setViewMode={setViewMode} />
+        </div>
+
+        {/* Right Side: Spacer for flex balance */}
+        <div className="flex-1 flex justify-end items-center pointer-events-none" />
       </div>
       <ActionFAB isReadOnly={isReadOnly} handleAddThought={handleAddThought} />
       <SystemTray 
         isReadOnly={isReadOnly} 
-        user={user} 
-        limits={limits} 
         isChatOpen={isChatOpen} 
         setChatOpen={setChatOpen} 
-        openPricing={openPricing} 
         isShortcutsOpen={isShortcutsOpen} 
         setIsShortcutsOpen={setIsShortcutsOpen} 
         isHelpOpen={isHelpOpen} 
@@ -324,7 +317,6 @@ const Toolbar: React.FC = () => {
         handleScreenshot={handleScreenshot} 
         handleImport={handleImport} 
         isCapturing={isCapturing} 
-        openModal={openModal} 
         activeSpace={activeSpace}
         handleTogglePhysics={handleTogglePhysics}
       />

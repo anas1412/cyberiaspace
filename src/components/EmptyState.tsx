@@ -1,6 +1,5 @@
 import React from 'react';
 import { useStore } from '../store/useStore';
-import { useAuthStore } from '../store/useAuthStore';
 import { motion } from 'framer-motion';
 
 const ChalkArrow = ({ d, className }: { d: string, className?: string }) => (
@@ -46,7 +45,6 @@ const EmptyState: React.FC = () => {
   const spaces = useStore((state) => state.spaces);
   const activeSpace = spaces.find((s) => s.id === activeSpaceId);
   const isReadOnly = useStore((state) => state.isReadOnly);
-  const { user } = useAuthStore();
 
   const [randomPhrase, setRandomPhrase] = React.useState("");
 
@@ -115,25 +113,19 @@ const EmptyState: React.FC = () => {
         <p className="font-['CyberiaBlueprint',_cursive,_sans-serif] text-white/60 text-[12px] mt-2 tracking-widest uppercase drop-shadow-[0_2px_4px_rgba(0,0,0,0.5)]">Switch Space</p>
       </div>
 
-      {/* 4. Account (Top Right) - Points to AccountMenu */}
-      <div className="hidden md:flex absolute top-[95px] right-[35px] rotate-[3deg] text-center flex flex-col items-center">
-        <ChalkArrow d="M 30 70 L 30 10 M 15 30 L 30 10 L 45 30" />
-        <p className="font-['CyberiaBlueprint',_cursive,_sans-serif] text-white/60 text-[12px] mt-2 tracking-widest uppercase drop-shadow-[0_2px_4px_rgba(0,0,0,0.5)]">{user ? 'Account' : 'Login / Sync'}</p>
-      </div>
-
-      {/* 5. AI Assistant (Bottom Right) - Points to Chat/Oracle button */}
+      {/* 4. AI Assistant (Bottom Right) - Points to Chat/Oracle button */}
       <div className="hidden md:flex absolute bottom-[130px] right-[245px] rotate-[5deg] text-center flex flex-col items-center">
         <p className="font-['CyberiaBlueprint',_cursive,_sans-serif] text-white/60 text-[12px] mb-2 tracking-widest uppercase drop-shadow-[0_2px_4px_rgba(0,0,0,0.5)]">AI Assistant</p>
         <ChalkArrow d="M 30 10 L 30 70 M 15 50 L 30 70 L 45 50" />
       </div>
 
-      {/* 6. Settings (Bottom Right) - Points to System Menu button */}
+      {/* 5. System & Account (Bottom Right) - Points to System Menu button */}
       <div className="hidden md:flex absolute bottom-[130px] right-[70px] -rotate-[3deg] text-center flex flex-col items-center">
-        <p className="font-['CyberiaBlueprint',_cursive,_sans-serif] text-white/60 text-[12px] mb-2 tracking-widest uppercase drop-shadow-[0_2px_4px_rgba(0,0,0,0.5)]">Settings</p>
+        <p className="font-['CyberiaBlueprint',_cursive,_sans-serif] text-white/60 text-[12px] mb-2 tracking-widest uppercase drop-shadow-[0_2px_4px_rgba(0,0,0,0.5)]">System / Account</p>
         <ChalkArrow d="M 30 10 L 30 70 M 15 50 L 30 70 L 45 50" />
       </div>
 
-      {/* 7. Controls (Bottom Left) - Points to Status/Zoom controls */}
+      {/* 6. Controls (Bottom Left) - Points to Status/Zoom controls */}
       <div className="hidden md:flex absolute bottom-[130px] left-[320px] rotate-[3deg] text-center flex flex-col items-center">
         <p className="font-['CyberiaBlueprint',_cursive,_sans-serif] text-white/60 text-[12px] mb-2 tracking-widest uppercase drop-shadow-[0_2px_4px_rgba(0,0,0,0.5)]">Controls</p>
         <ChalkArrow d="M 30 10 L 30 70 M 15 50 L 30 70 L 45 50" />
