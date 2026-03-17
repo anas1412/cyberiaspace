@@ -356,12 +356,19 @@ const PricingModal: React.FC<PricingModalProps> = ({ isOpen, onClose }) => {
           activeTab === 'upgrade' ? 'flex' : 'hidden md:flex'
         )}>
           <div className="flex flex-col items-center text-center mb-8">
-            <div className="flex p-1 bg-black/40 border border-white/5 rounded-xl mb-8 w-full">
+            <div className="relative flex p-1 bg-black/40 border border-white/5 rounded-xl mb-8 w-full">
+              <motion.div 
+                layoutId="billingCycleToggle"
+                className="absolute top-1 bottom-1 w-[calc(50%-4px)] rounded-lg bg-white/15 shadow-sm"
+                initial={false}
+                transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
+                animate={{ x: billingCycle === 'monthly' ? '0%' : '100%' }}
+              />
               <button
                 onClick={() => setBillingCycle('monthly')}
                 className={cn(
-                  "flex-1 py-2.5 rounded-lg text-xs font-bold uppercase tracking-wide transition-all",
-                  billingCycle === 'monthly' ? "bg-white/15 text-white shadow-sm" : "text-slate-400 hover:text-slate-200"
+                  "relative z-10 flex-1 py-2.5 rounded-lg text-xs font-bold uppercase tracking-wide transition-colors",
+                  billingCycle === 'monthly' ? "text-white" : "text-slate-400 hover:text-slate-200"
                 )}
               >
                 Monthly
@@ -369,8 +376,8 @@ const PricingModal: React.FC<PricingModalProps> = ({ isOpen, onClose }) => {
               <button
                 onClick={() => setBillingCycle('yearly')}
                 className={cn(
-                  "flex-1 py-2.5 rounded-lg text-xs font-bold uppercase tracking-wide transition-all flex items-center justify-center gap-2",
-                  billingCycle === 'yearly' ? "bg-white/15 text-white shadow-sm" : "text-slate-400 hover:text-slate-200"
+                  "relative z-10 flex-1 py-2.5 rounded-lg text-xs font-bold uppercase tracking-wide transition-colors flex items-center justify-center gap-2",
+                  billingCycle === 'yearly' ? "text-white" : "text-slate-400 hover:text-slate-200"
                 )}
               >
                 Yearly
@@ -407,7 +414,7 @@ const PricingModal: React.FC<PricingModalProps> = ({ isOpen, onClose }) => {
             <p className="text-xs text-slate-500 leading-relaxed px-4">
               {location?.isLocalPricing 
                 ? (billingCycle === 'yearly' ? `One-time payment of ${currentPrice.tnd} DT per year.` : 'Manual renewal via Flouci. No auto-charges.')
-                : (billingCycle === 'yearly' ? `Recurring payment of $${proPrice.yearly.usd} per year via Polar.sh.` : `Recurring monthly subscription via Polar.sh. Cancel anytime.`)
+                : (billingCycle === 'yearly' ? `Recurring payment of $${proPrice.yearly.usd} per year via Polar.sh. Cancel anytime.` : `Recurring monthly subscription via Polar.sh. Cancel anytime.`)
               }
             </p>
           </div>

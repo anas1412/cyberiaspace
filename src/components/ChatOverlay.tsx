@@ -3,7 +3,7 @@ import { useStore } from '../store/useStore';
 import { useAuthStore } from '../store/useAuthStore';
 import { useModalStore } from '../store/useModalStore';
 import { serializeWorkspace } from '../utils/contextBuilder';
-import { X, Send, Shield, Loader2, History, Square } from 'lucide-react';
+import { X, Send, MessageSquare, Loader2, History, Square } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
@@ -583,7 +583,7 @@ if (['get_thought_details', 'read_file_content', 'read_files_content'].includes(
             {messages.length === 0 && (
               <div className="h-full flex flex-col items-center justify-center text-center opacity-40 py-12">
                 <div className="w-16 h-16 bg-white/5 rounded-2xl flex items-center justify-center mb-4 border border-white/5">
-                  <Shield className="w-6 h-6 text-slate-400" />
+                  <MessageSquare className="w-6 h-6 text-slate-400" />
                 </div>
                 <h4 className="text-[12px] font-black uppercase tracking-[0.3em] text-white mb-1.5">Welcome to Agentic Workspace</h4>
                 <p className="text-[10px] font-bold text-slate-500 max-w-[360px] leading-relaxed uppercase tracking-widest">
