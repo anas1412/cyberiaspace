@@ -229,26 +229,11 @@ const EditorContent: React.FC<{
       {stackItems.length > 0 && showPreviews && (
         <div className="absolute bottom-10 left-1/2 -translate-x-1/2 z-50 w-auto max-w-[90%] pointer-events-auto">
           <motion.div
-            initial={{ opacity: 0, y: 20, scale: 0.98, filter: 'blur(10px)' }}
-            animate={{ 
-              opacity: 1, 
-              y: 0, 
-              scale: 1, 
-              filter: 'blur(0px)',
-              transition: {
-                type: 'spring',
-                stiffness: 260,
-                damping: 20
-              }
-            }}
-            exit={{ 
-              opacity: 0, 
-              y: 10, 
-              scale: 0.98, 
-              filter: 'blur(10px)',
-              transition: { duration: 0.2 }
-            }}
-            className="glass-dark backdrop-blur-[40px] border border-white/10 rounded-[2.5rem] shadow-[0_20px_50px_rgba(0,0,0,0.5)] p-4 px-6"
+            initial={{ scale: 0.95, opacity: 0, y: 20 }}
+            animate={{ scale: 1, opacity: 1, y: 0 }}
+            exit={{ scale: 0.95, opacity: 0, y: 20 }}
+            transition={{ type: 'spring', damping: 25, stiffness: 200 }}
+            className="glass-dark backdrop-blur-[40px] border border-white/10 rounded-2xl shadow-[0_20px_50px_rgba(0,0,0,0.5)] p-4 px-6"
           >
             <div 
               className="flex items-center justify-between mb-4 px-2 select-none"
@@ -297,25 +282,10 @@ const EditorContent: React.FC<{
 
       {!showPreviews && stackItems.length > 0 && (
         <motion.div
-          initial={{ opacity: 0, y: 10, scale: 0.98, filter: 'blur(5px)' }}
-          animate={{ 
-            opacity: 1, 
-            y: 0, 
-            scale: 1, 
-            filter: 'blur(0px)',
-            transition: {
-              type: 'spring',
-              stiffness: 260,
-              damping: 20
-            }
-          }}
-          exit={{ 
-            opacity: 0, 
-            y: 5, 
-            scale: 0.98, 
-            filter: 'blur(5px)',
-            transition: { duration: 0.2 }
-          }}
+          initial={{ scale: 0.95, opacity: 0, y: 15 }}
+          animate={{ scale: 1, opacity: 1, y: 0 }}
+          exit={{ scale: 0.95, opacity: 0, y: 15 }}
+          transition={{ type: 'spring', damping: 25, stiffness: 200 }}
           className="absolute bottom-6 left-1/2 -translate-x-1/2 z-50"
         >
           <button 
