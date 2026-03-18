@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useStore } from '../../store/useStore';
 import { useThoughtPayload } from '../thought/hooks/useThoughtPayload';
-import { Youtube, ExternalLink, Music, MessageCircle, Share2, Link as LinkIcon, ChevronDown, ChevronUp, Palette } from 'lucide-react';
+import { Youtube, ExternalLink, Music, MessageCircle, Share2, Link as LinkIcon, ChevronDown, ChevronUp, Palette, ChevronLeft, ChevronRight } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { getEmbedInfo } from '../../utils/embeds';
 import { clsx, type ClassValue } from 'clsx';
@@ -116,14 +116,14 @@ const StackItemThumbnail: React.FC<{
       onClick={() => onClick(item.type)}
       data-active={isActive}
       className={cn(
-        "flex-shrink-0 w-28 md:w-36 aspect-video rounded-xl overflow-hidden border transition-all duration-300 group/item snap-start relative bg-white/[0.03]",
+        "flex-shrink-0 w-28 md:w-36 aspect-video rounded-xl overflow-hidden border transition-all duration-500 group/item snap-start relative bg-white/[0.03]",
         isActive 
-          ? "scale-105 z-10" 
-          : "border-white/5 hover:border-white/20 hover:scale-[1.02]"
+          ? "z-10" 
+          : "border-white/5 hover:border-white/20 opacity-40 grayscale hover:opacity-100 hover:grayscale-0"
       )}
       style={isActive ? { 
         borderColor: accentColor,
-        boxShadow: `0 0 20px ${accentColor}33`,
+        boxShadow: `0 0 30px ${accentColor}66`,
       } : {}}
     >
       <div className="absolute inset-0 flex items-center justify-center">
@@ -133,7 +133,7 @@ const StackItemThumbnail: React.FC<{
             alt={item.text} 
             className={cn(
               "w-full h-full object-cover transition-all duration-500",
-              isActive ? "opacity-100" : "opacity-40 group-hover/item:opacity-80"
+              isActive ? "opacity-100" : "opacity-60 group-hover/item:opacity-100"
             )} 
           />
         ) : (
@@ -152,7 +152,7 @@ const StackItemThumbnail: React.FC<{
       )}
 
       <div className={cn(
-        "absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent transition-opacity flex items-end p-2 text-left",
+        "absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent transition-opacity flex items-end p-2 text-left",
         isActive ? "opacity-100" : "opacity-0 group-hover/item:opacity-100"
       )}>
         <p className="text-[7px] md:text-[8px] font-black uppercase tracking-widest text-white truncate w-full">
@@ -178,29 +178,82 @@ const EditorContent: React.FC<{
   scrollerRef: React.RefObject<HTMLDivElement | null>;
   isReadOnly: boolean;
 }> = ({ thought, renderPlayer, stackItems, stack, setActiveFocus, scrollerRef, isReadOnly }) => {
-  const [showPreviews, setShowPreviews] = useState(true);
+  const [showPreviews, setShowPreviews] = useState(false);
+
+  const currentIndex = stackItems.findIndex(i => i.id === thought.id);
+  
+  const handlePrevious = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (stackItems.length <= 1) return;
+    const prevIndex = (currentIndex - 1 + stackItems.length) % stackItems.length;
+    const prevItem = stackItems[prevIndex];
+    setActiveFocus(prevItem.id, prevItem.type);
+  };
+
+  const handleNext = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (stackItems.length <= 1) return;
+    const nextIndex = (currentIndex + 1) % stackItems.length;
+    const nextItem = stackItems[nextIndex];
+    setActiveFocus(nextItem.id, nextItem.type);
+  };
   
   return (
   <div className="flex-1 flex flex-col min-h-0 relative">
-    <div className="flex-1 relative min-h-0 z-0">
+    <div className="flex-1 relative min-h-0 z-0 bg-black/60 shadow-inner group/content">
       {renderPlayer()}
+
+      {/* Navigation Buttons */}
+      {stackItems.length > 1 && (
+        <>
+          <div className="absolute inset-y-0 left-0 flex items-center px-4 md:px-8 pointer-events-none">
+            <button
+              onClick={handlePrevious}
+              className="w-12 h-12 rounded-full glass flex items-center justify-center text-slate-400 hover:text-white hover:scale-110 transition-all pointer-events-auto opacity-0 group-hover/content:opacity-100 shadow-2xl translate-x-[-20px] group-hover/content:translate-x-0"
+            >
+              <ChevronLeft className="w-6 h-6" />
+            </button>
+          </div>
+          <div className="absolute inset-y-0 right-0 flex items-center px-4 md:px-8 pointer-events-none">
+            <button
+              onClick={handleNext}
+              className="w-12 h-12 rounded-full glass flex items-center justify-center text-slate-400 hover:text-white hover:scale-110 transition-all pointer-events-auto opacity-0 group-hover/content:opacity-100 shadow-2xl translate-x-[20px] group-hover/content:translate-x-0"
+            >
+              <ChevronRight className="w-6 h-6" />
+            </button>
+          </div>
+        </>
+      )}
     </div>
-    <AnimatePresence>
-      {stackItems.length > 0 && (
-        <div className={cn("relative z-10 mx-6", showPreviews ? "mb-6" : "mb-3")}>
+    <AnimatePresence mode="wait">
+      {stackItems.length > 0 && showPreviews && (
+        <div className="absolute bottom-10 left-1/2 -translate-x-1/2 z-50 w-auto max-w-[90%] pointer-events-auto">
           <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className={cn(
-              "bg-white/[0.03] backdrop-blur-2xl border border-white/10 rounded-2xl shadow-2xl transition-all duration-300",
-              showPreviews ? "p-4 md:p-5" : "p-2 px-4"
-            )}
+            initial={{ opacity: 0, y: 20, scale: 0.98, filter: 'blur(10px)' }}
+            animate={{ 
+              opacity: 1, 
+              y: 0, 
+              scale: 1, 
+              filter: 'blur(0px)',
+              transition: {
+                type: 'spring',
+                stiffness: 260,
+                damping: 20
+              }
+            }}
+            exit={{ 
+              opacity: 0, 
+              y: 10, 
+              scale: 0.98, 
+              filter: 'blur(10px)',
+              transition: { duration: 0.2 }
+            }}
+            className="glass-dark backdrop-blur-[40px] border border-white/10 rounded-[2.5rem] shadow-[0_20px_50px_rgba(0,0,0,0.5)] p-4 px-6"
           >
             <div 
-              className="flex items-center justify-between px-1 cursor-pointer select-none group/stackheader"
-              onClick={() => setShowPreviews(!showPreviews)}
+              className="flex items-center justify-between mb-4 px-2 select-none"
             >
-                <div className="flex items-center gap-3">
+                <div className="flex items-center gap-4">
                   <div className="flex items-center">
                     <ColorPicker 
                       value={stack?.color || '#6366f1'} 
@@ -208,37 +261,71 @@ const EditorContent: React.FC<{
                       onChange={(color) => useStore.getState().updateStack(stack.id, { color })} 
                     />
                   </div>
-                  <span className="text-[9px] font-black uppercase tracking-[0.3em] text-slate-400 group-hover/stackheader:text-slate-200 transition-colors pt-[1px]">
+                  <span className="text-[10px] font-black uppercase tracking-[0.4em] text-slate-200 pt-[1px]">
                     {stack?.name || 'Collection'}
                   </span>
                 </div>
-                <div className="flex items-center gap-2">
-                  <span className="text-[8px] font-bold text-slate-500 uppercase tracking-[0.2em] group-hover/stackheader:text-slate-300 transition-colors">
+                <div className="flex items-center gap-3">
+                  <span className="text-[9px] font-black text-slate-500 uppercase tracking-[0.2em]">
                     {stackItems.findIndex(i => i.id === thought.id) + 1} / {stackItems.length}
                   </span>
-                  <div 
-                    className="p-1 hover:bg-white/5 rounded-md text-slate-500 group-hover/stackheader:text-white transition-all"
-                    title={showPreviews ? "Hide Previews" : "Show Previews"}
+                  <button 
+                    onClick={() => setShowPreviews(false)}
+                    className="p-1.5 hover:bg-white/5 rounded-full text-slate-500 hover:text-white transition-all"
                   >
-                    {showPreviews ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
-                  </div>
+                    <ChevronDown className="w-4 h-4" />
+                  </button>
                 </div>
               </div>
-              {showPreviews && (
-                <div className="flex gap-4 overflow-x-auto custom-scroll pb-2 w-full snap-x mt-4 px-1" ref={scrollerRef}>
-                  {stackItems.map((item) => (
-                    <StackItemThumbnail 
-                      key={item.id} 
-                      item={item} 
-                      isActive={item.id === thought.id}
-                      color={stack?.color}
-                      onClick={(type) => setActiveFocus(item.id, type)} 
-                    />
-                  ))}
-                </div>
-              )}
+              <div 
+                className="flex gap-6 overflow-x-auto no-scrollbar pb-2 w-full snap-x snap-center px-2 scroll-smooth" 
+                ref={scrollerRef}
+              >
+                {stackItems.map((item) => (
+                  <StackItemThumbnail 
+                    key={item.id} 
+                    item={item} 
+                    isActive={item.id === thought.id}
+                    color={stack?.color}
+                    onClick={(type) => setActiveFocus(item.id, type)} 
+                  />
+                ))}
+              </div>
           </motion.div>
         </div>
+      )}
+
+      {!showPreviews && stackItems.length > 0 && (
+        <motion.div
+          initial={{ opacity: 0, y: 10, scale: 0.98, filter: 'blur(5px)' }}
+          animate={{ 
+            opacity: 1, 
+            y: 0, 
+            scale: 1, 
+            filter: 'blur(0px)',
+            transition: {
+              type: 'spring',
+              stiffness: 260,
+              damping: 20
+            }
+          }}
+          exit={{ 
+            opacity: 0, 
+            y: 5, 
+            scale: 0.98, 
+            filter: 'blur(5px)',
+            transition: { duration: 0.2 }
+          }}
+          className="absolute bottom-6 left-1/2 -translate-x-1/2 z-50"
+        >
+          <button 
+            onClick={() => setShowPreviews(true)}
+            className="glass p-2 px-6 rounded-full flex items-center gap-2 text-[9px] font-black uppercase tracking-widest text-slate-400 hover:text-white transition-all hover:scale-105"
+          >
+            <ChevronUp className="w-3 h-3" />
+            Show Collection
+          </button>
+        </motion.div>
       )}
     </AnimatePresence>
   </div>
@@ -270,7 +357,16 @@ const EmbedFocusEditor: React.FC = () => {
     if (!thought?.stackId) return [];
     const sid = thought.stackId;
     return thoughts
-      .filter(t => t.stackId === sid && (t.type === 'embed' || t.type === 'file'))
+      .filter(t => {
+        if (t.stackId !== sid) return false;
+        if (t.type === 'file') return true;
+        if (t.type === 'embed') {
+          const url = (t.data as any)?.url || (t as any).content || '';
+          const info = getEmbedInfo(url);
+          return info.provider === 'youtube';
+        }
+        return false;
+      })
       .sort((a, b) => (Number(a.createdAt) || 0) - (Number(b.createdAt) || 0));
   }, [thoughts, thought?.stackId]);
 
@@ -318,24 +414,43 @@ const EmbedFocusEditor: React.FC = () => {
     if (thought?.meta?.video_url && (isVideoPlatform || !hasHtml)) {
       const proxyUrl = `/api/utils?action=proxy-video&url=${encodeURIComponent(thought.meta.video_url)}`;
       return (
-        <div className="w-full h-full flex items-center justify-center bg-black/20">
-          <video src={proxyUrl} controls autoPlay className="max-w-full max-h-full shadow-2xl rounded-2xl border border-white/5" />
+        <div className="w-full h-full flex items-center justify-center bg-black">
+          <video src={proxyUrl} controls autoPlay className="max-w-[90%] max-h-[85%] shadow-[0_0_100px_rgba(0,0,0,0.5)] rounded-2xl border border-white/5" />
         </div>
       );
     }
 
     if (provider === 'youtube' && id) {
       return (
-        <div className="absolute inset-0 p-4 md:p-12">
-           <iframe src={`https://www.youtube.com/embed/${id}?autoplay=1&theme=dark`} title="YouTube" frameBorder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowFullScreen className="w-full h-full rounded-2xl shadow-2xl border border-white/5" />
+        <div className="w-full h-full flex items-center justify-center p-4 md:p-12 bg-black">
+          <div className="w-full max-w-5xl max-h-full aspect-video shadow-[0_0_100px_rgba(0,0,0,0.8)] rounded-3xl overflow-hidden border border-white/10 bg-black">
+             <iframe 
+               src={`https://www.youtube.com/embed/${id}?autoplay=1&theme=dark`} 
+               title="YouTube" 
+               frameBorder="0" 
+               allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" 
+               allowFullScreen 
+               className="w-full h-full" 
+             />
+          </div>
         </div>
       );
     }
 
     if (provider === 'spotify' && id) {
       return (
-        <div className="absolute inset-0 p-4 md:p-12">
-          <iframe src={`https://open.spotify.com/embed/${id}?utm_source=generator&theme=0`} width="100%" height="100%" frameBorder="0" allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture" loading="lazy" className="w-full h-full rounded-2xl shadow-2xl border border-white/5" />
+        <div className="w-full h-full flex items-center justify-center p-4 md:p-12 bg-[#050505]">
+          <div className="w-full max-w-[800px] h-[352px] shadow-[0_0_80px_rgba(29,185,84,0.1)] rounded-[2rem] overflow-hidden border border-white/10 bg-[#121212]">
+            <iframe 
+              src={`https://open.spotify.com/embed/${id}?utm_source=generator&theme=0`} 
+              width="100%" 
+              height="100%" 
+              frameBorder="0" 
+              allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture" 
+              loading="lazy" 
+              className="w-full h-full" 
+            />
+          </div>
         </div>
       );
     }
@@ -346,20 +461,20 @@ const EmbedFocusEditor: React.FC = () => {
       const isInstagram = content.includes('instagram.com');
       const html = (thought?.meta?.html || "").replace(/<script\b[^>]*>([\s\S]*?)<\/script>/gim, "");
       return (
-        <div className="w-full h-full overflow-auto flex flex-col items-center justify-start p-4 md:p-12 custom-scroll bg-black/5">
-          {!isHydrated && <div className="flex flex-col items-center gap-4 text-slate-500 my-10 animate-pulse"><div className="w-8 h-8 rounded-full border-2 border-current border-t-transparent animate-spin" /><span className="text-[10px] font-black uppercase tracking-widest">Hydrating...</span></div>}
+        <div className="w-full h-full overflow-auto flex flex-col items-center justify-start p-4 md:p-12 md:pb-32 custom-scroll bg-black">
+          {!isHydrated && <div className="flex flex-col items-center gap-4 text-slate-500 my-20 animate-pulse"><div className="w-8 h-8 rounded-full border-2 border-current border-t-transparent animate-spin" /><span className="text-[10px] font-black uppercase tracking-widest">Hydrating...</span></div>}
           <div id={`embed-${thought.id}`} className={cn("w-full max-w-[550px] rounded-2xl overflow-hidden shadow-2xl transition-all duration-700", isReddit ? "bg-[#1a1a1b] p-1" : (isTikTok || isInstagram) ? "bg-black/80 backdrop-blur-xl" : "bg-white/90 backdrop-blur-xl", isHydrated ? "opacity-100 scale-100" : "opacity-60 scale-[0.98]")} style={isReddit ? { colorScheme: 'dark' } : {}} dangerouslySetInnerHTML={{ __html: html }} />
         </div>
       );
     }
 
     return (
-      <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/5 overflow-hidden">
+      <div className="absolute inset-0 flex flex-col items-center justify-center bg-black overflow-hidden">
         {image ? (
           <div className="w-full h-full flex items-center justify-center p-4 md:p-12">
             <div className="relative w-full h-full flex items-center justify-center">
               <div className="absolute inset-0 blur-3xl opacity-20 bg-[var(--accent)]/10 scale-75 -z-10" />
-              <img src={image} alt="Content" className="max-w-full max-h-full object-contain rounded-2xl shadow-2xl border border-white/5" />
+              <img src={image} alt="Content" className="max-w-[90%] max-h-[85%] object-contain rounded-2xl shadow-2xl border border-white/10" />
             </div>
           </div>
         ) : (

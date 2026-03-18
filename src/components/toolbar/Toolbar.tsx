@@ -310,6 +310,7 @@ const Toolbar: React.FC = () => {
             handleRenameSpace={handleRenameSpace}
             handleDeleteSpace={handleDeleteSpace}
             openModal={openModal}
+            user={user}
           />
 
           <button 

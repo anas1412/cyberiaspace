@@ -15,6 +15,7 @@ import { twMerge } from 'tailwind-merge';
 
 import { db, type ChatMessage } from '../db';
 import { ulid } from 'ulid';
+import { AccessGuard } from './common/AccessGuard';
 
 function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -700,18 +701,24 @@ if (['get_thought_details', 'read_file_content', 'read_files_content'].includes(
                   <span className="text-[9px] font-black uppercase tracking-[0.15em]">Chat</span>
                 </button>
                 <div className="w-[1px] h-4 bg-white/10 mx-1"></div>
-                <button
-                  onClick={() => store.setOracleChatMode('action')}
-                  className={cn(
-                    "px-3 h-6 rounded-xl transition-all duration-300 flex items-center gap-2",
-                    store.oracleChatMode === 'action' 
-                      ? "bg-amber-500/20 text-amber-400 shadow-[0_0_10px_rgba(245,158,11,0.2)]" 
-                      : "text-slate-500 hover:text-slate-300 hover:bg-white/[0.03]"
-                  )}
+                <AccessGuard 
+                  user={user} 
+                  mode="disable" 
+                  feature="pro"
                 >
-                  <div className={cn("w-1 h-1 rounded-full transition-all", store.oracleChatMode === 'action' ? "bg-amber-400 shadow-[0_0_6px_rgba(245,158,11,0.6)]" : "bg-white/10")} />
-                  <span className="text-[9px] font-black uppercase tracking-[0.15em]">Action</span>
-                </button>
+                  <button
+                    onClick={() => store.setOracleChatMode('action')}
+                    className={cn(
+                      "px-3 h-6 rounded-xl transition-all duration-300 flex items-center gap-2",
+                      store.oracleChatMode === 'action' 
+                        ? "bg-amber-500/20 text-amber-400 shadow-[0_0_10px_rgba(245,158,11,0.2)]" 
+                        : "text-slate-500 hover:text-slate-300 hover:bg-white/[0.03]"
+                    )}
+                  >
+                    <div className={cn("w-1 h-1 rounded-full transition-all", store.oracleChatMode === 'action' ? "bg-amber-400 shadow-[0_0_6px_rgba(245,158,11,0.6)]" : "bg-white/10")} />
+                    <span className="text-[9px] font-black uppercase tracking-[0.15em]">Action</span>
+                  </button>
+                </AccessGuard>
               </div>
               <span className="text-[9px] font-medium text-slate-400 uppercase tracking-wider leading-tight max-w-[160px] text-right">
                 Oracle AI is in development errors may occur

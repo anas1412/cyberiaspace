@@ -167,6 +167,7 @@ export interface AuthState {
   repairEmptyFileThoughts: () => Promise<number>;
   upgradePlan: (plan: SubscriptionPlan, period?: AccessPeriod) => void;
   checkExpiry: () => void;
+  handlePlanRegression: () => Promise<void>;
   refreshProfile: () => Promise<void>;
   getOrRefreshToken: () => Promise<string | null>;
   updateSettings: (settings: Partial<User['settings']>) => Promise<void>;

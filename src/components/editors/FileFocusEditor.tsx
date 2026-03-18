@@ -7,7 +7,8 @@ import { useModalStore } from '../../store/useModalStore';
 import { 
   File as FileIcon, Upload, Download, Loader2, FileAudio, 
   Database, CloudOff, ExternalLink, 
-  ChevronDown, ChevronUp, Palette, Edit2, Check
+  ChevronDown, ChevronUp, Palette, Edit2, Check,
+  ChevronLeft, ChevronRight
 } from 'lucide-react';
 import { FocusEditorShell } from './FocusEditorShell';
 import { MAX_FILE_SIZE_MB, STACK_COLORS } from '../../constants';
@@ -16,6 +17,7 @@ import { AnimatePresence, motion } from 'framer-motion';
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 import { db } from '../../db';
+import { getEmbedInfo } from '../../utils/embeds';
 
 function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -113,14 +115,14 @@ const StackItemThumbnail: React.FC<{
       onClick={() => onClick(item.type)}
       data-active={isActive}
       className={cn(
-        "flex-shrink-0 w-24 md:w-32 aspect-video rounded-xl overflow-hidden border transition-all duration-300 group/item snap-start relative bg-white/[0.03]",
+        "flex-shrink-0 w-24 md:w-32 aspect-video rounded-xl overflow-hidden border transition-all duration-500 group/item snap-start relative bg-white/[0.03]",
         isActive 
-          ? "scale-105 z-10" 
-          : "border-white/5 hover:border-white/20 hover:scale-[1.02]"
+          ? "z-10" 
+          : "border-white/5 hover:border-white/20 opacity-40 grayscale hover:opacity-100 hover:grayscale-0"
       )}
       style={isActive ? { 
         borderColor: accentColor,
-        boxShadow: `0 0 20px ${accentColor}33`,
+        boxShadow: `0 0 30px ${accentColor}66`,
       } : {}}
     >
       {/* 1. Thumbnail Image or Icon Fallback */}
@@ -203,10 +205,28 @@ const EditorContent: React.FC<{
   stackItems, setActiveFocus,   scrollerRef, stack,
   isReadOnly, isDemo
 }) => {
-  const [showPreviews, setShowPreviews] = useState(true);
+  const [showPreviews, setShowPreviews] = useState(false);
   const [isRenamingStack, setIsRenamingStack] = useState(false);
   const [tempStackName, setTempStackName] = useState(stack?.name || '');
   const isStranded = !thought.storageUrl && !localPreviewUrl && !image && !!thought.storagePath;
+
+  const currentIndex = stackItems.findIndex(i => i.id === thought.id);
+  
+  const handlePrevious = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (stackItems.length <= 1) return;
+    const prevIndex = (currentIndex - 1 + stackItems.length) % stackItems.length;
+    const prevItem = stackItems[prevIndex];
+    setActiveFocus(prevItem.id, prevItem.type);
+  };
+
+  const handleNext = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (stackItems.length <= 1) return;
+    const nextIndex = (currentIndex + 1) % stackItems.length;
+    const nextItem = stackItems[nextIndex];
+    setActiveFocus(nextItem.id, nextItem.type);
+  };
 
   useEffect(() => {
     setTempStackName(stack?.name || '');
@@ -273,7 +293,7 @@ const EditorContent: React.FC<{
 
   return (
     <div className="flex-1 flex flex-col min-h-0 relative">
-      <div className="flex-1 relative min-h-0 z-0">
+      <div className="flex-1 relative min-h-0 z-0 bg-black/60 shadow-inner group/content">
         {isFetching && !activeSource ? (
           <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/20 gap-4 backdrop-blur-sm">
             <Loader2 className="w-10 h-10 text-[var(--accent)] animate-spin" />
@@ -295,7 +315,7 @@ const EditorContent: React.FC<{
             </div>
           </div>
         ) : activeSource ? (
-          <div className="absolute inset-0 flex items-center justify-center p-4 md:p-12">
+          <div className="absolute inset-0 flex items-center justify-center p-4 md:p-12 bg-black">
             {isPdf ? (
               <iframe 
                 src={activeSource}
@@ -308,7 +328,7 @@ const EditorContent: React.FC<{
                 <img 
                   src={activeSource}
                   alt={thought.text}
-                  className="max-w-full max-h-full object-contain rounded-xl shadow-[0_20px_60px_-15px_rgba(0,0,0,0.5)] transition-opacity duration-700"
+                  className="max-w-[90%] max-h-[85%] object-contain rounded-xl shadow-[0_20px_60px_-15px_rgba(0,0,0,0.5)] transition-opacity duration-700"
                   style={{ opacity: isFetching ? 0.5 : 1 }}
                 />
               </div>
@@ -320,7 +340,7 @@ const EditorContent: React.FC<{
                   controls
                   playsInline
                   loop
-                  className="w-full h-full object-contain"
+                  className="max-w-[90%] max-h-[85%] object-contain"
                 />
               </div>
             ) : isAudio ? (
@@ -375,20 +395,57 @@ const EditorContent: React.FC<{
             </label>
           </div>
         )}
+
+        {/* Navigation Buttons */}
+        {stackItems.length > 1 && (
+          <>
+            <div className="absolute inset-y-0 left-0 flex items-center px-4 md:px-8 pointer-events-none z-10">
+              <button
+                onClick={handlePrevious}
+                className="w-12 h-12 rounded-full glass flex items-center justify-center text-slate-400 hover:text-white hover:scale-110 transition-all pointer-events-auto opacity-0 group-hover/content:opacity-100 shadow-2xl translate-x-[-20px] group-hover/content:translate-x-0"
+              >
+                <ChevronLeft className="w-6 h-6" />
+              </button>
+            </div>
+            <div className="absolute inset-y-0 right-0 flex items-center px-4 md:px-8 pointer-events-none z-10">
+              <button
+                onClick={handleNext}
+                className="w-12 h-12 rounded-full glass flex items-center justify-center text-slate-400 hover:text-white hover:scale-110 transition-all pointer-events-auto opacity-0 group-hover/content:opacity-100 shadow-2xl translate-x-[20px] group-hover/content:translate-x-0"
+              >
+                <ChevronRight className="w-6 h-6" />
+              </button>
+            </div>
+          </>
+        )}
       </div>
 
-      <AnimatePresence>
-        {stackItems.length > 0 && (
-          <div className={cn("relative z-10 mx-6", showPreviews ? "mb-6" : "mb-3")}>
-            <div className={cn(
-              "bg-white/[0.03] backdrop-blur-2xl border border-white/10 rounded-2xl shadow-2xl transition-all duration-300",
-              showPreviews ? "p-4 md:p-5" : "p-2 px-4"
-            )}>
-              <div 
-                className="flex items-center justify-between px-1 cursor-pointer select-none group/stackheader"
-                onClick={() => setShowPreviews(!showPreviews)}
-              >
-                <div className="flex items-center gap-3">
+      <AnimatePresence mode="wait">
+        {stackItems.length > 0 && showPreviews && (
+          <div className="absolute bottom-10 left-1/2 -translate-x-1/2 z-50 w-auto max-w-[90%] pointer-events-auto">
+            <motion.div
+              initial={{ opacity: 0, y: 20, scale: 0.98, filter: 'blur(10px)' }}
+              animate={{ 
+                opacity: 1, 
+                y: 0, 
+                scale: 1, 
+                filter: 'blur(0px)',
+                transition: {
+                  type: 'spring',
+                  stiffness: 260,
+                  damping: 20
+                }
+              }}
+              exit={{ 
+                opacity: 0, 
+                y: 10, 
+                scale: 0.98, 
+                filter: 'blur(10px)',
+                transition: { duration: 0.2 }
+              }}
+              className="glass backdrop-blur-[40px] border border-white/10 rounded-[2.5rem] shadow-[0_20px_50px_rgba(0,0,0,0.5)] p-4 px-6"
+            >
+              <div className="flex items-center justify-between mb-4 px-2 select-none">
+                <div className="flex items-center gap-4">
                   <div className="flex items-center">
                     <ColorPicker 
                       value={stack?.color || '#6366f1'} 
@@ -401,7 +458,7 @@ const EditorContent: React.FC<{
                       <div className="flex items-center gap-1 bg-white/5 rounded-lg px-2 py-1 border border-[var(--glass-border)]">
                         <input
                           autoFocus
-                          className="bg-transparent text-[9px] font-black uppercase tracking-[0.3em] text-[var(--text-primary)] border-none outline-none w-24"
+                          className="bg-transparent text-[10px] font-black uppercase tracking-[0.4em] text-slate-200 border-none outline-none w-24 pt-[1px]"
                           value={tempStackName}
                           onChange={(e) => setTempStackName(e.target.value)}
                           onKeyDown={(e) => {
@@ -423,7 +480,7 @@ const EditorContent: React.FC<{
                     ) : (
                       <>
                         <span 
-                          className="text-[9px] font-black uppercase tracking-[0.3em] text-[var(--text-muted)] group-hover/stackheader:text-[var(--text-primary)] transition-colors pt-[1px]"
+                          className="text-[10px] font-black uppercase tracking-[0.4em] text-slate-200 transition-colors pt-[1px]"
                           onDoubleClick={() => { if (!isReadOnly && !isDemo) setIsRenamingStack(true); }}
                         >
                           {stack?.name || 'Collection'}
@@ -433,41 +490,76 @@ const EditorContent: React.FC<{
                             onClick={(e) => { e.stopPropagation(); setIsRenamingStack(true); }}
                             className="p-1 opacity-0 group-hover/stackname:opacity-100 hover:bg-white/10 rounded transition-all"
                           >
-                            <Edit2 className="w-2 h-2 text-[var(--text-muted)] hover:text-[var(--text-primary)]" />
+                            <Edit2 className="w-2 h-2 text-slate-400 hover:text-white" />
                           </button>
                         )}
                       </>
                     )}
                   </div>
                 </div>
-                <div className="flex items-center gap-2">
-                  <span className="text-[8px] font-bold text-[var(--text-muted)] uppercase tracking-[0.2em] group-hover/stackheader:text-[var(--text-dimmed)] transition-colors">
+                <div className="flex items-center gap-3">
+                  <span className="text-[9px] font-black text-slate-500 uppercase tracking-[0.2em]">
                     {stackItems.findIndex(i => i.id === thought.id) + 1} / {stackItems.length}
                   </span>
-                  <div 
-                    className="p-1 hover:bg-white/5 rounded-md text-[var(--text-muted)] group-hover/stackheader:text-[var(--text-primary)] transition-all"
-                    title={showPreviews ? "Hide Previews" : "Show Previews"}
+                  <button 
+                    onClick={() => setShowPreviews(false)}
+                    className="p-1.5 hover:bg-white/5 rounded-full text-slate-500 hover:text-white transition-all"
                   >
-                    {showPreviews ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
-                  </div>
+                    <ChevronDown className="w-4 h-4" />
+                  </button>
                 </div>
               </div>
-              {showPreviews && (
-                <div className="flex gap-4 overflow-x-auto custom-scroll pb-2 w-full snap-x mt-4 px-1" ref={scrollerRef}>
-                  {stackItems.map((item) => (
-                    <StackItemThumbnail 
-                      key={item.id} 
-                      item={item} 
-                      isActive={item.id === thought.id}
-                      color={stack?.color}
-                      onClick={(type) => setActiveFocus(item.id, type)} 
-                    />
-                  ))}
-                </div>
-              )}
-            </div>
+              <div 
+                className="flex gap-6 overflow-x-auto no-scrollbar pb-2 w-full snap-x snap-center px-2 scroll-smooth" 
+                ref={scrollerRef}
+              >
+                {stackItems.map((item) => (
+                  <StackItemThumbnail 
+                    key={item.id} 
+                    item={item} 
+                    isActive={item.id === thought.id}
+                    color={stack?.color}
+                    onClick={(type) => setActiveFocus(item.id, type)} 
+                  />
+                ))}
+              </div>
+            </motion.div>
           </div>
         )}
+        <AnimatePresence mode="wait">
+          {!showPreviews && stackItems.length > 0 && (
+            <motion.div
+              initial={{ opacity: 0, y: 10, scale: 0.98, filter: 'blur(5px)' }}
+              animate={{ 
+                opacity: 1, 
+                y: 0, 
+                scale: 1, 
+                filter: 'blur(0px)',
+                transition: {
+                  type: 'spring',
+                  stiffness: 260,
+                  damping: 20
+                }
+              }}
+              exit={{ 
+                opacity: 0, 
+                y: 5, 
+                scale: 0.98, 
+                filter: 'blur(5px)',
+                transition: { duration: 0.2 }
+              }}
+              className="absolute bottom-6 left-1/2 -translate-x-1/2 z-50"
+            >
+              <button 
+                onClick={() => setShowPreviews(true)}
+                className="glass p-2 px-6 rounded-full flex items-center gap-2 text-[9px] font-black uppercase tracking-widest text-slate-400 hover:text-white transition-all hover:scale-105"
+              >
+                <ChevronUp className="w-3 h-3" />
+                Show Collection
+              </button>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </AnimatePresence>
     </div>
   );
@@ -591,7 +683,16 @@ const FileFocusEditor: React.FC = () => {
     if (!thought?.stackId) return [];
     const sid = thought.stackId;
     return thoughts
-      .filter(t => t.stackId === sid && (t.type === 'file' || t.type === 'embed'))
+      .filter(t => {
+        if (t.stackId !== sid) return false;
+        if (t.type === 'file') return true;
+        if (t.type === 'embed') {
+          const url = (t.data as any)?.url || (t as any).content || '';
+          const info = getEmbedInfo(url);
+          return info.provider === 'youtube';
+        }
+        return false;
+      })
       .sort((a, b) => (Number(a.createdAt) || 0) - (Number(b.createdAt) || 0));
   }, [thoughts, thought?.stackId]);
 

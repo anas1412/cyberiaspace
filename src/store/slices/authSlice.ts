@@ -1,13 +1,27 @@
 import { syncOrchestrator } from '../../services/sync/syncOrchestrator';
 import { type StateCreator } from 'zustand';
-import { type User, type SubscriptionPlan, type AccessPeriod } from '../../constants';
+import { type User, type SubscriptionPlan, type AccessPeriod, PLAN_CONFIG } from '../../constants';
 import { db } from '../../db';
 import { supabaseSync } from '../../services/supabaseSync';
 import { type AuthState } from '../types';
-import { isStorageUrl } from '../../services/supabaseStorage';
+import { supabaseStorage, isStorageUrl } from '../../services/supabaseStorage';
 
 let refreshProfilePromise: Promise<void> | null = null;
 let refreshInterval: ReturnType<typeof setInterval> | null = null;
+
+const getHasRegressedToFree = (): boolean => {
+  try {
+    return localStorage.getItem('cyberia-regressed-to-free') === 'true';
+  } catch { return false; }
+};
+
+const setHasRegressedToFree = (value: boolean) => {
+  if (value) {
+    localStorage.setItem('cyberia-regressed-to-free', 'true');
+  } else {
+    localStorage.removeItem('cyberia-regressed-to-free');
+  }
+};
 
 const getInitialUser = (): User | null => {
   try {
@@ -242,15 +256,36 @@ export const createAuthSlice: StateCreator<AuthState, [], [], any> = (set, get, 
     const updatedUser: User = { ...user, plan, expiryDate };
     set({ user: updatedUser });
     localStorage.setItem('cyberia-user', JSON.stringify(updatedUser));
+    
+    if (plan === 'pro') {
+      setHasRegressedToFree(false);
+    }
   },
 
   checkExpiry: () => {
     const { user } = get();
-    if (!user || user.plan === 'free' || !user.expiryDate) return;
-    if (new Date(user.expiryDate) < new Date()) {
+    if (!user) return;
+    
+    const now = new Date();
+    const isPro = user.plan === 'pro' && user.expiryDate && new Date(user.expiryDate) > now;
+    
+    if (user.plan === 'pro' && !isPro) {
       console.warn('[Auth] Plan expired. Reverting to free plan for user:', user.id);
-      set({ user: { ...user, plan: 'free' } });
-      localStorage.setItem('cyberia-user', JSON.stringify({ ...user, plan: 'free' }));
+      setHasRegressedToFree(true);
+      const updatedUser: User = { 
+        ...user, 
+        plan: 'free',
+        settings: {
+          ...user.settings,
+          personality: '',
+          theme: PLAN_CONFIG.free.THEMES_ENABLED.includes(user.settings.theme) ? user.settings.theme : 'cyberia'
+        }
+      };
+      set({ user: updatedUser });
+      localStorage.setItem('cyberia-user', JSON.stringify(updatedUser));
+      get().handlePlanRegression();
+    } else if (isPro && getHasRegressedToFree()) {
+      setHasRegressedToFree(false);
     }
   },
 
@@ -307,6 +342,9 @@ export const createAuthSlice: StateCreator<AuthState, [], [], any> = (set, get, 
           const supabaseProfile = await supabaseSync.getProfile(user.id);
           if (supabaseProfile?.user) {
             const supabaseUser = supabaseProfile.user;
+            const now = new Date();
+            const isPro = supabaseUser.plan === 'pro' && supabaseUser.expiryDate && new Date(supabaseUser.expiryDate) > now;
+            
             const updatedUser = { 
               ...user, 
               ...supabaseUser,
@@ -317,6 +355,25 @@ export const createAuthSlice: StateCreator<AuthState, [], [], any> = (set, get, 
               }
             };
             
+            if (!isPro) {
+              updatedUser.plan = 'free';
+              updatedUser.settings.personality = '';
+              if (!PLAN_CONFIG.free.THEMES_ENABLED.includes(updatedUser.settings.theme || '')) {
+                updatedUser.settings.theme = 'cyberia';
+              }
+              
+              if (user.plan === 'pro') {
+                console.log('[Auth] Plan regression detected: pro -> free');
+                get().handlePlanRegression();
+              }
+              setHasRegressedToFree(true);
+            } else {
+              if (getHasRegressedToFree()) {
+                console.log('[Auth] Plan renewed! Lifting regression restrictions.');
+              }
+              setHasRegressedToFree(false);
+            }
+
             set({ user: updatedUser });
             localStorage.setItem('cyberia-user', JSON.stringify(updatedUser));
           }
@@ -377,6 +434,34 @@ export const createAuthSlice: StateCreator<AuthState, [], [], any> = (set, get, 
       await supabaseSync.updateSettings(user.id, updatedUser.settings);
     } catch (e) {
       console.warn('Settings sync failed', e);
+    }
+  },
+
+  handlePlanRegression: async () => {
+    console.log('[Auth] Handling plan regression...');
+    const { user, accessToken } = get();
+    if (!user || !accessToken) return;
+
+    get().updateSettings({ personality: '' });
+    get().updateSettings({ theme: 'cyberia' });
+
+    if (!user.id) return;
+    const spaces = await db.spaces.toArray();
+    const now = Date.now();
+    for (const space of spaces) {
+      if (space.customBg && isStorageUrl(space.customBg)) {
+        try {
+          await supabaseStorage.deleteSpaceBackground(user.id, space.id);
+        } catch (e) {
+          console.warn('[Auth] Failed to delete background file from storage:', e);
+        }
+        await db.spaces.update(space.id, { customBg: null, updatedAt: now, syncStatus: 'local' });
+        try {
+          await supabaseSync.updateSpace(space.id, { customBg: null, updatedAt: now, syncStatus: 'local' }, user.id);
+        } catch (e) {
+          console.warn('[Auth] Failed to sync space after customBg removal:', e);
+        }
+      }
     }
   },
 

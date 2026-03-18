@@ -12,6 +12,7 @@ import { APP_VERSION, PLAN_CONFIG } from '../../constants';
 import { useStore } from '../../store/useStore';
 import { useAuthStore } from '../../store/useAuthStore';
 import { useModalStore } from '../../store/useModalStore';
+import { AccessGuard } from '../common/AccessGuard';
 
 function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -276,35 +277,44 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                 className="space-y-8"
               >
                 {/* Themes */}
+                {/* App Themes */}
                 <section>
                   <p className="text-[10px] font-black uppercase tracking-widest text-slate-500 mb-4 flex items-center gap-2">
                     <Palette className="w-3.5 h-3.5" /> App Themes
                   </p>
-                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                    {(['cyberia', 'sea', 'forest', 'rain'] as const).map((id) => {
-                      const labels = { cyberia: 'Cyberia', sea: 'Deep Sea', forest: 'Forest', rain: 'Rain' };
-                      const colors = { cyberia: '#6366f1', sea: '#00b4d8', forest: '#2dce89', rain: '#d6d3d1' };
-                      const active = theme === id;
-                      return (
-                        <button 
-                          key={id} 
-                          onClick={() => setTheme(id)} 
-                          className={cn(
-                            "flex flex-col items-center gap-3 p-4 rounded-2xl border transition-all group", 
-                            active ? "bg-white/10 border-white/20 shadow-xl" : "bg-white/[0.02] border-white/5 hover:border-white/10"
-                          )}
-                        >
-                          <div 
-                            className="w-8 h-8 rounded-full border-4 border-black/20 shadow-lg group-hover:scale-110 transition-transform" 
-                            style={{ backgroundColor: colors[id] }} 
-                          />
-                          <span className={cn("text-[9px] font-black uppercase tracking-widest", active ? "text-white" : "text-slate-500 group-hover:text-slate-300")}>
-                            {labels[id]}
-                          </span>
-                        </button>
-                      );
-                    })}
-                  </div>
+                  <AccessGuard 
+                    user={user} 
+                    mode="disable" 
+                    feature="pro"
+                    modalTitle="Upgrade to Pro"
+                    modalMessage="Unlock custom themes with Pro."
+                  >
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                      {(['cyberia', 'sea', 'forest', 'rain'] as const).map((id) => {
+                        const labels = { cyberia: 'Cyberia', sea: 'Deep Sea', forest: 'Forest', rain: 'Rain' };
+                        const colors = { cyberia: '#6366f1', sea: '#00b4d8', forest: '#2dce89', rain: '#d6d3d1' };
+                        const active = theme === id;
+                        return (
+                          <button 
+                            key={id} 
+                            onClick={() => setTheme(id)} 
+                            className={cn(
+                              "flex flex-col items-center gap-3 p-4 rounded-2xl border transition-all group", 
+                              active ? "bg-white/10 border-white/20 shadow-xl" : "bg-white/[0.02] border-white/5 hover:border-white/10"
+                            )}
+                          >
+                            <div 
+                              className="w-8 h-8 rounded-full border-4 border-black/20 shadow-lg group-hover:scale-110 transition-transform" 
+                              style={{ backgroundColor: colors[id] }} 
+                            />
+                            <span className={cn("text-[9px] font-black uppercase tracking-widest", active ? "text-white" : "text-slate-500 group-hover:text-slate-300")}>
+                              {labels[id]}
+                            </span>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </AccessGuard>
                 </section>
 
                 {/* AI Personality */}
@@ -312,12 +322,20 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                   <p className="text-[10px] font-black uppercase tracking-widest text-slate-500 mb-4 flex items-center gap-2">
                     <MessageSquare className="w-3.5 h-3.5" /> AI Personality
                   </p>
-                  <textarea 
-                    value={user?.settings?.personality || ''}
-                    onChange={(e) => updateSettings({ personality: e.target.value })}
-                    placeholder="Describe how Oracle should behave..."
-                    className="w-full h-24 bg-white/[0.03] border border-white/5 rounded-xl p-4 text-xs text-white outline-none focus:border-[var(--accent)]/50 transition-all resize-none"
-                  />
+                  <AccessGuard 
+                    user={user} 
+                    mode="disable" 
+                    feature="pro"
+                    modalTitle="Upgrade to Pro"
+                    modalMessage="Customize your AI personality with Pro."
+                  >
+                    <textarea 
+                      value={user?.settings?.personality || ''}
+                      onChange={(e) => updateSettings({ personality: e.target.value })}
+                      placeholder="Describe how Oracle should behave..."
+                      className="w-full h-24 bg-white/[0.03] border border-white/5 rounded-xl p-4 text-xs text-white outline-none focus:border-[var(--accent)]/50 transition-all resize-none"
+                    />
+                  </AccessGuard>
                 </section>
 
                 {/* Custom Background */}
@@ -336,18 +354,26 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                     )}
                   </div>
                   
-                  <label className="relative flex flex-col items-center justify-center gap-4 p-8 rounded-3xl bg-white/[0.02] border-2 border-dashed border-white/5 hover:border-white/20 hover:bg-white/[0.04] transition-all cursor-pointer group">
-                    <div className="w-12 h-12 rounded-2xl bg-white/5 flex items-center justify-center group-hover:scale-110 group-hover:bg-white/10 transition-all">
-                      <Upload className="w-6 h-6 text-slate-500 group-hover:text-white" />
-                    </div>
-                    <div className="text-center">
-                      <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-300 group-hover:text-white transition-colors">
-                        {customBg ? 'Update Background' : 'Upload Custom Background'}
-                      </p>
-                      <p className="text-[8px] font-bold text-slate-600 uppercase tracking-widest mt-1.5">Supports JPG, PNG, GIF • Max 2MB</p>
-                    </div>
-                    <input type="file" className="hidden" accept="image/*,.gif" onChange={handleBgUpload} />
-                  </label>
+                  <AccessGuard 
+                    user={user} 
+                    mode="disable" 
+                    feature="pro"
+                    modalTitle="Pro Feature"
+                    modalMessage="Custom backgrounds require Pro."
+                  >
+                    <label className="relative flex flex-col items-center justify-center gap-4 p-8 rounded-3xl bg-white/[0.02] border-2 border-dashed border-white/5 hover:border-white/20 hover:bg-white/[0.04] transition-all cursor-pointer group">
+                      <div className="w-12 h-12 rounded-2xl bg-white/5 flex items-center justify-center group-hover:scale-110 group-hover:bg-white/10 transition-all">
+                        <Upload className="w-6 h-6 text-slate-500 group-hover:text-white" />
+                      </div>
+                      <div className="text-center">
+                        <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-300 group-hover:text-white transition-colors">
+                          {customBg ? 'Update Background' : 'Upload Custom Background'}
+                        </p>
+                        <p className="text-[8px] font-bold text-slate-600 uppercase tracking-widest mt-1.5">Supports JPG, PNG, GIF • Max 2MB</p>
+                      </div>
+                      <input type="file" className="hidden" accept="image/*,.gif" onChange={handleBgUpload} />
+                    </label>
+                  </AccessGuard>
                 </section>
               </motion.div>
             )}

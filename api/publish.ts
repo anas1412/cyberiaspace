@@ -16,6 +16,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(200).end();
   }
 
+  const authHeader = req.headers.authorization;
+  if (!authHeader?.startsWith('Bearer ')) {
+    return res.status(401).json({ error: 'Authentication required' });
+  }
+
   const { action, ...data } = req.method === 'GET' ? req.query : req.body;
   const publishedId = req.query.id || req.query.publishedId || data?.publishedId;
 

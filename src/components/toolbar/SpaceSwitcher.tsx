@@ -4,10 +4,12 @@ import {
   Trash2, Plus, ChevronDown, Check, Layers
 } from 'lucide-react';
 import ShareDialog from '../ShareDialog';
+import { AccessGuard } from '../common/AccessGuard';
 import { getStatusColor, formatLastUpdated } from './helpers';
 import { motion, AnimatePresence } from 'framer-motion';
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
+import type { User } from '../../constants';
 
 function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -29,12 +31,13 @@ interface SpaceSwitcherProps {
   handleRenameSpace: () => void;
   handleDeleteSpace: () => void;
   openModal: (cfg: any) => void;
+  user: User | null;
 }
 
 export const SpaceSwitcher: React.FC<SpaceSwitcherProps> = ({ 
   spaces, activeSpaceId, setActiveSpace, isReadOnly, isSpaceLoading, 
   creatorName, lastUpdated, activeSpace, isSpaceMenuOpen, setIsSpaceMenuOpen, 
-  limits, handleCreateSpace, handleRenameSpace, handleDeleteSpace, openModal 
+  limits, handleCreateSpace, handleRenameSpace, handleDeleteSpace, openModal, user 
 }) => {
   const isActive = (id: string) => id === activeSpaceId;
 
@@ -177,17 +180,19 @@ export const SpaceSwitcher: React.FC<SpaceSwitcherProps> = ({
 
               {/* Inline Create Space Button */}
               {spaces.length < limits.MAX_SPACES && (
-                <button 
-                  onClick={() => { handleCreateSpace(); setIsSpaceMenuOpen(false); }} 
-                  className="w-full px-3 py-2 rounded-xl text-[10px] uppercase font-black tracking-[0.2em] flex items-center gap-3 text-slate-500 hover:text-white hover:bg-white/5 transition-all group border border-dashed border-white/5 mt-1"
-                >
-                  <div className="w-6 h-6 rounded-lg bg-white/5 flex items-center justify-center group-hover:bg-[var(--accent)] group-hover:text-white transition-all shadow-inner">
-                    <Plus className="w-3 h-3" />
-                  </div>
-                  <div className="flex flex-col items-start">
-                    <span className="leading-tight">Create Space</span>
-                  </div>
-                </button>
+                <AccessGuard user={user} mode="disable" feature="pro">
+                  <button 
+                    onClick={() => { handleCreateSpace(); setIsSpaceMenuOpen(false); }} 
+                    className="w-full px-3 py-2 rounded-xl text-[10px] uppercase font-black tracking-[0.2em] flex items-center gap-3 text-slate-500 hover:text-white hover:bg-white/5 transition-all group border border-dashed border-white/5 mt-1"
+                  >
+                    <div className="w-6 h-6 rounded-lg bg-white/5 flex items-center justify-center group-hover:bg-[var(--accent)] group-hover:text-white transition-all shadow-inner">
+                      <Plus className="w-3 h-3" />
+                    </div>
+                    <div className="flex flex-col items-start">
+                      <span className="leading-tight">Create Space</span>
+                    </div>
+                  </button>
+                </AccessGuard>
               )}
             </div>
           </motion.div>

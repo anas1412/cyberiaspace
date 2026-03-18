@@ -81,8 +81,11 @@ export const enforceAuthAccess = (profile: User | null) => {
 ## 4. User Regression Policy (Pro -> Free)
 
 - **Automatic Enforcement**: The `AccessGuard` and `enforceProAccess` check the current user's plan in real-time.
-- **Data Persistence**: Custom data (e.g., custom personality strings) is NOT deleted when a user regresses. 
-- **Effect**: Upon regression, the UI instantly disables restricted inputs, and the API blocks requests from these inputs, effectively "locking" the user out of their previous customizations until they re-subscribe.
+- **Hard Reset**: When a user regresses from Pro to Free, Pro-tier customizations are cleared to ensure a clean state for Free-tier usage:
+  - **AI Personality**: Clear from local storage and cloud.
+  - **Custom Backgrounds**: Delete from cloud storage and reset to default.
+  - **Theme**: Reset to default theme.
+- **Effect**: Upon regression, the user's Pro customizations are immediately removed, and the UI reflects a fresh Free-tier state.
 
 ## 5. Inventory of Pro Features & Regression Behavior
 
@@ -137,7 +140,7 @@ This section inventories the current implementation of Pro features and defines 
   - `mode="modal"` for the "Upload Background" button.
 - **Regression Behavior**: 
   - **Currently**: Fully accessible.
-  - **Proposal**: Soft Lock. Existing settings persist but become read-only until upgrade.
+  - **Proposal**: Hard Reset. Clear personality, delete custom backgrounds from all spaces, reset theme to default.
 
 ### 5.5 Team / Shared Spaces
 - **Feature Name**: Teams.
@@ -205,3 +208,5 @@ This section documents practical implementation details and potential issues to 
 | `api/chat.ts` | Already protected | No changes needed |
 | `api/publish.ts` | **MISSING AUTH CHECK** | Add `enforceAuthAccess` |
 | `api/sync.ts` | Client-side handled | No changes needed |
+
+**Regression Handling**: Implement a `handleProRegression()` function in the auth slice (`useAuthStore.ts`) that clears AI Personality, deletes custom backgrounds from cloud storage, and resets the theme to default when a user regresses from Pro to Free.
