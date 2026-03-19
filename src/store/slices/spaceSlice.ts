@@ -689,17 +689,23 @@ export const createSpaceSlice: StateCreator<CyberiaState, [], [], any> = (set, g
           syncStatus: 'local' 
         });
         
-        await db.thoughts.where('spaceId').equals(id).and(t => t.userId === currentUserId).modify({ 
-          deletedAt: timestamp, 
-          updatedAt: timestamp, 
-          syncStatus: 'local' 
-        });
+        // Also delete thoughts with userId: 'guest' or undefined (unmigrated)
+        await db.thoughts.where('spaceId').equals(id)
+          .and(t => !t.userId || t.userId === 'guest' || t.userId === currentUserId)
+          .modify({ 
+            deletedAt: timestamp, 
+            updatedAt: timestamp, 
+            syncStatus: 'local' 
+          });
         
-        await db.stacks.where('spaceId').equals(id).and(s => s.userId === currentUserId).modify({ 
-          deletedAt: timestamp, 
-          updatedAt: timestamp, 
-          syncStatus: 'local' 
-        });
+        // Also delete stacks with userId: 'guest' or undefined (unmigrated)
+        await db.stacks.where('spaceId').equals(id)
+          .and(s => !s.userId || s.userId === 'guest' || s.userId === currentUserId)
+          .modify({ 
+            deletedAt: timestamp, 
+            updatedAt: timestamp, 
+            syncStatus: 'local' 
+          });
       });
 
       await get().refreshSpaces();

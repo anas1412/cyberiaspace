@@ -118,7 +118,12 @@ export const createSyncSlice: StateCreator<AuthState, [], [], SyncSlice> = (set,
         const cloudData = await syncOrchestrator.fetchCloudData();
         if (cloudData) {
           console.log('[SYNC-HANDSHAKE] Fetched cloud data, spaces:', (cloudData.spaces || []).length);
-          const localSpaces = await db.spaces.filter(s => s.syncStatus === 'local' && s.userId === currentUserId && !s.deletedAt).toArray();
+          // Include both 'local' syncStatus and undefined (unmigrated guest data)
+          const localSpaces = await db.spaces.filter(s => 
+            (s.syncStatus === 'local' || s.syncStatus === undefined) && 
+            s.userId === currentUserId && 
+            !s.deletedAt
+          ).toArray();
           const cloudSpaces = (cloudData.spaces || []) as any[];
           
           const totalUniqueSpaces = new Set([
@@ -126,12 +131,19 @@ export const createSyncSlice: StateCreator<AuthState, [], [], SyncSlice> = (set,
             ...cloudSpaces.map(s => s.id)
           ]).size;
           
+          // Check for unmigrated local spaces (syncStatus === undefined)
+          // These are guest spaces that haven't been synced to cloud yet
+          const unmigratedSpaces = localSpaces.filter(s => s.syncStatus === undefined);
+          const hasUnmigratedData = unmigratedSpaces.length > 0;
+          
           const { user } = get();
           const plan = user?.plan || 'free';
           const limit = PLAN_CONFIG[plan].MAX_SPACES;
           
-          if (totalUniqueSpaces > limit) {
-            console.log('[SYNC-HANDSHAKE] QUOTA CONFLICT: Opening resolver, blocking sync');
+          // Trigger resolver if quota conflict OR unmigrated local spaces exist
+          if (totalUniqueSpaces > limit || hasUnmigratedData) {
+            const reason = totalUniqueSpaces > limit ? 'QUOTA CONFLICT' : 'UNMIGRATED LOCAL DATA';
+            console.log(`[SYNC-HANDSHAKE] ${reason}: Opening resolver, blocking sync. unmigratedSpaces: ${unmigratedSpaces.length}, totalUniqueSpaces: ${totalUniqueSpaces}, limit: ${limit}`);
             
             // CRITICAL: Set flag BEFORE opening modal to block delta sync
             authStore.setQuotaResolverPending(true);
@@ -139,7 +151,7 @@ export const createSyncSlice: StateCreator<AuthState, [], [], SyncSlice> = (set,
             // Open modal immediately - DO NOT call importFullState
             const { useModalStore } = await import('../useModalStore');
             useModalStore.getState().openModal({
-              title: 'Space Limit Reached',
+              title: hasUnmigratedData ? 'Import Local Data' : 'Space Limit Reached',
               type: 'quota_resolver'
             });
             

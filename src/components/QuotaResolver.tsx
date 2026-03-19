@@ -39,7 +39,7 @@ const QuotaResolver: React.FC = () => {
     );
     
     const cloudOnly = cloudDataSpaces.filter(s => 
-      allLocalSpaces.some((us: any) => us.id === s.id && us.syncStatus === 'synced')
+      allLocalSpaces.some((us: any) => us.id === s.id)
     );
     
     console.log('[QuotaResolver] Loaded. localOnly:', localOnly.length, 'cloudOnly:', cloudOnly.length);
@@ -172,7 +172,7 @@ const QuotaResolver: React.FC = () => {
           </div>
 
           <div className="flex justify-center">
-            <Merge className="w-5 h-5 text-blue-500/40" />
+            <Merge className="w-5 h-5 text-blue-500/40 rotate-180" />
           </div>
 
           <div>

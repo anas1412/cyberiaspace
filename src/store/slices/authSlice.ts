@@ -99,23 +99,25 @@ export const createAuthSlice: StateCreator<AuthState, [], [], any> = (set, get, 
         console.warn('[Auth] Initialization failed:', err);
       }
 
-      // Phase 2: Check for quota conflict
+      // Phase 2: Check for quota conflict or unmigrated local data
       const { useAuthStore } = await import('../useAuthStore');
       const authStore = useAuthStore.getState();
       
       console.log('[AUTH] Phase 2: Checking for quota conflict. autoSync:', get().autoSync, 'isOnline:', get().isOnline);
       
-      // Get ALL local spaces for this user (any syncStatus, except deleted)
+      // Get ALL local spaces for this user (including guest spaces, any syncStatus, except deleted)
       const localSpacesAll = await db.spaces
-        .filter((s: any) => s.userId === currentUser.id && !s.deletedAt)
+        .filter((s: any) => !s.deletedAt && (s.userId === currentUser.id || !s.userId || s.userId === 'guest'))
         .toArray();
-      console.log('[AUTH] Total local spaces:', localSpacesAll.length);
+      console.log('[AUTH] Total local spaces (including guest):', localSpacesAll.length);
       
-      // Check for unmigrated guest data
-      const unmigratedCount = await db.spaces
-        .filter((s: any) => !s.userId || s.userId === 'guest')
-        .count();
+      // Check for unmigrated guest data (spaces with userId: 'guest' or no userId)
+      const unmigratedCount = localSpacesAll.filter((s: any) => !s.userId || s.userId === 'guest').length;
       console.log('[AUTH] Unmigrated guest spaces:', unmigratedCount);
+      
+      // Also check for spaces with undefined syncStatus (recently migrated but not yet synced)
+      const undefinedSyncStatusCount = localSpacesAll.filter((s: any) => s.syncStatus === undefined).length;
+      console.log('[AUTH] Spaces with undefined syncStatus:', undefinedSyncStatusCount);
       
       const cloudData = await syncOrchestrator.fetchCloudData();
       console.log('[AUTH] fetchCloudData result:', cloudData ? `spaces: ${cloudData.spaces?.length || 0}` : 'null');
@@ -134,20 +136,20 @@ export const createAuthSlice: StateCreator<AuthState, [], [], any> = (set, get, 
         
         console.log('[AUTH] totalUniqueSpaces:', totalUniqueSpaces, 'limit:', limit);
         
-        // Show resolver if:
-        // 1. Total unique spaces exceed the limit, OR
-        // 2. There are unmigrated guest spaces (will cause issues)
-        if (totalUniqueSpaces > limit || unmigratedCount > 0) {
-          console.log('[AUTH] QUOTA CONFLICT DETECTED: Opening resolver');
+        // Show resolver if quota conflict OR unmigrated local spaces exist
+        const hasUnmigratedData = unmigratedCount > 0 || undefinedSyncStatusCount > 0;
+        if (totalUniqueSpaces > limit || hasUnmigratedData) {
+          const reason = totalUniqueSpaces > limit ? 'QUOTA CONFLICT' : 'UNMIGRATED LOCAL DATA';
+          console.log(`[AUTH] ${reason} DETECTED: Opening resolver`);
           authStore.setQuotaResolverPending(true);
           
           const { useModalStore } = await import('../useModalStore');
           useModalStore.getState().openModal({
-            title: 'Space Limit Reached',
+            title: hasUnmigratedData ? 'Import Local Data' : 'Space Limit Reached',
             type: 'quota_resolver'
           });
         } else {
-          console.log('[AUTH] No quota conflict detected');
+          console.log('[AUTH] No conflict detected');
           // No conflict - trigger normal delta sync
           if (get().autoSync && get().isOnline) {
             setTimeout(() => syncOrchestrator.triggerSync(true), 500);
