@@ -50,19 +50,23 @@ export const createThoughtSlice: StateCreator<CyberiaState, [], [], any> = (set,
     const config = getThoughtConfig(thoughtType);
     const payload = config?.createPayload();
     
-    const isBlobType = partialThought.type === 'file';
-    
     // Get autoSync status from AuthStore
     const { useAuthStore } = await import('../useAuthStore');
     const autoSync = useAuthStore.getState().autoSync;
 
     const authStatus = useAuthStore.getState().status;
+    const userId = useAuthStore.getState().user?.id ?? 'guest';
+    
+    // CRITICAL: Guest data should NEVER have syncStatus: 'local'
+    // Only authenticated users can have local data that needs syncing
+    const isGuest = userId === 'guest';
+    const shouldMarkLocal = !isGuest && autoSync && authStatus === 'authenticated';
 
     const thoughtId = ulid();
     const thought = {
       id: thoughtId,
       spaceId: activeSpaceId,
-      userId: useAuthStore.getState().user?.id ?? 'guest',
+      userId: userId,
       stackId: null,
       // Place new thoughts at the center of the viewport in world coordinates
       x: (window.innerWidth / 2 - transform.x) / transform.scale + (Math.random() - 0.5) * 60,
@@ -78,7 +82,7 @@ export const createThoughtSlice: StateCreator<CyberiaState, [], [], any> = (set,
       order: Date.now(),
       layer: 0,
       author: '',
-      syncStatus: (isBlobType && autoSync && authStatus === 'authenticated') ? 'local' : 'local',
+      syncStatus: shouldMarkLocal ? 'local' : undefined,
       updatedAt: Date.now(),
       ...partialThought,
       date: partialThought.date ? sanitizeDate(partialThought.date) : '',

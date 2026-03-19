@@ -466,7 +466,7 @@ export const createSpaceSlice: StateCreator<CyberiaState, [], [], any> = (set, g
 
   mergeGuestSpace: async (sourceSpaceId: string, targetSpaceId: string) => {
     try {
-      // Security: Verify both spaces belong to current user
+      // Security: Verify both spaces belong to current user OR are guest spaces
       const authStore = useAuthStore.getState();
       const currentUserId = authStore.user?.id ?? 'guest';
       
@@ -478,39 +478,73 @@ export const createSpaceSlice: StateCreator<CyberiaState, [], [], any> = (set, g
         return false;
       }
       
-      if (sourceSpace.userId !== currentUserId || targetSpace.userId !== currentUserId) {
-        console.error('[Space] Merge failed: Unauthorized - spaces do not belong to current user');
-        return false;
-      }
-
-      const sourceThoughts = await db.thoughts.where('spaceId').equals(sourceSpaceId).and(t => t.userId === currentUserId && !t.deletedAt).toArray();
-      const targetThoughtsCount = await db.thoughts.where('spaceId').equals(targetSpaceId).and(t => t.userId === currentUserId && !t.deletedAt).count();
+      // Allow merge if:
+      // - Both spaces belong to current user, OR
+      // - Source space is unmigrated guest space
+      const sourceIsGuest = !sourceSpace.userId || sourceSpace.userId === 'guest';
+      const targetIsGuest = !targetSpace.userId || targetSpace.userId === 'guest';
       
-      const limits = get().getLimits();
-      if (sourceThoughts.length + targetThoughtsCount > limits.MAX_THOUGHTS_PER_SPACE) {
-        useModalStore.getState().openModal({
-          title: 'Thought Limit Reached',
-          description: `Merging would result in ${sourceThoughts.length + targetThoughtsCount} thoughts, which exceeds the ${limits.MAX_THOUGHTS_PER_SPACE} limit for this space.`,
-          type: 'alert',
-          confirmText: 'Acknowledged'
-        });
+      if (sourceIsGuest && targetIsGuest) {
+        console.error('[Space] Merge failed: Cannot merge two guest spaces');
+        return false;
+      }
+      
+      if (!sourceIsGuest && sourceSpace.userId !== currentUserId) {
+        console.error('[Space] Merge failed: Source space does not belong to current user');
+        return false;
+      }
+      
+      if (!targetIsGuest && targetSpace.userId !== currentUserId) {
+        console.error('[Space] Merge failed: Target space does not belong to current user');
         return false;
       }
 
+      // When merging guest space, also include thoughts with userId: 'guest' or undefined
+      const sourceThoughtsQuery = sourceIsGuest
+        ? db.thoughts.where('spaceId').equals(sourceSpaceId).and(t => (!t.userId || t.userId === 'guest' || t.userId === currentUserId) && !t.deletedAt)
+        : db.thoughts.where('spaceId').equals(sourceSpaceId).and(t => t.userId === currentUserId && !t.deletedAt);
+      
       await db.transaction('rw', [db.thoughts, db.stacks, db.spaces], async () => {
         const timestamp = Date.now();
+        
+        // When merging guest space, update userId to current user as well
+        // When merging guest space, update userId to current user as well
         // Move thoughts
-        await db.thoughts.where('spaceId').equals(sourceSpaceId).and(t => t.userId === currentUserId).modify({ 
-          spaceId: targetSpaceId,
-          syncStatus: 'local',
-          updatedAt: timestamp
-        });
+        if (sourceIsGuest) {
+          await sourceThoughtsQuery.modify({ 
+            spaceId: targetSpaceId,
+            userId: currentUserId,
+            syncStatus: 'local' as const,
+            updatedAt: timestamp
+          });
+        } else {
+          await sourceThoughtsQuery.modify({ 
+            spaceId: targetSpaceId,
+            syncStatus: 'local' as const,
+            updatedAt: timestamp
+          });
+        }
+        
         // Move stacks
-        await db.stacks.where('spaceId').equals(sourceSpaceId).and(s => s.userId === currentUserId).modify({ 
-          spaceId: targetSpaceId,
-          syncStatus: 'local',
-          updatedAt: timestamp
-        });
+        if (sourceIsGuest) {
+          await db.stacks.where('spaceId').equals(sourceSpaceId)
+            .and(s => !s.userId || s.userId === 'guest' || s.userId === currentUserId)
+            .modify({ 
+              spaceId: targetSpaceId,
+              userId: currentUserId,
+              syncStatus: 'local' as const,
+              updatedAt: timestamp
+            });
+        } else {
+          await db.stacks.where('spaceId').equals(sourceSpaceId)
+            .and(s => s.userId === currentUserId)
+            .modify({ 
+              spaceId: targetSpaceId,
+              syncStatus: 'local' as const,
+              updatedAt: timestamp
+            });
+        }
+        
         // SOFT DELETE source space to ensure cloud removal
         await db.spaces.update(sourceSpaceId, {
           deletedAt: timestamp,
@@ -538,7 +572,7 @@ export const createSpaceSlice: StateCreator<CyberiaState, [], [], any> = (set, g
       const authStore = useAuthStore.getState();
       if (authStore.status !== 'authenticated') return false;
 
-      // Security: Verify both spaces belong to current user
+      // Security: Verify both spaces belong to current user OR are guest spaces
       const currentUserId = authStore.user?.id ?? 'guest';
       const sourceSpace = await db.spaces.get(sourceSpaceId);
       const targetSpace = await db.spaces.get(targetSpaceIdToReplace);
@@ -548,13 +582,30 @@ export const createSpaceSlice: StateCreator<CyberiaState, [], [], any> = (set, g
         return false;
       }
       
-      if (sourceSpace.userId !== currentUserId || targetSpace.userId !== currentUserId) {
-        console.error('[Space] Replace failed: Unauthorized - spaces do not belong to current user');
+      const sourceIsGuest = !sourceSpace.userId || sourceSpace.userId === 'guest';
+      const targetIsGuest = !targetSpace.userId || targetSpace.userId === 'guest';
+      
+      if (sourceIsGuest && targetIsGuest) {
+        console.error('[Space] Replace failed: Cannot replace two guest spaces');
+        return false;
+      }
+      
+      if (!sourceIsGuest && sourceSpace.userId !== currentUserId) {
+        console.error('[Space] Replace failed: Source space does not belong to current user');
+        return false;
+      }
+      
+      if (!targetIsGuest && targetSpace.userId !== currentUserId) {
+        console.error('[Space] Replace failed: Target space does not belong to current user');
         return false;
       }
 
-      // Check Global Cloud Thought Limit
-      const sourceThoughtsCount = await db.thoughts.where('spaceId').equals(sourceSpaceId).and(t => t.userId === currentUserId && !t.deletedAt).count();
+      // When replacing with guest space, also include thoughts with userId: 'guest' or undefined
+      const sourceThoughtsQuery = sourceIsGuest
+        ? db.thoughts.where('spaceId').equals(sourceSpaceId).and(t => (!t.userId || t.userId === 'guest' || t.userId === currentUserId) && !t.deletedAt)
+        : db.thoughts.where('spaceId').equals(sourceSpaceId).and(t => t.userId === currentUserId && !t.deletedAt);
+      
+      const sourceThoughtsCount = await sourceThoughtsQuery.count();
       const targetThoughtsCount = await db.thoughts.where('spaceId').equals(targetSpaceIdToReplace).and(t => t.userId === currentUserId && !t.deletedAt).count();
       const currentCloudThoughts = authStore.user?.usage?.sync_thoughts || 0;
       
@@ -572,11 +623,34 @@ export const createSpaceSlice: StateCreator<CyberiaState, [], [], any> = (set, g
 
       await get().deleteSpace(targetSpaceIdToReplace);
       
-      // Mark source space as synced (will be pushed on next sync)
-      await db.spaces.update(sourceSpaceId, { 
+      // Update source space - mark as synced and update userId if guest
+      const timestamp = Date.now();
+      const spaceUpdates: any = { 
         syncStatus: 'local',
-        updatedAt: Date.now()
-      });
+        updatedAt: timestamp
+      };
+      if (sourceIsGuest) {
+        spaceUpdates.userId = currentUserId;
+      }
+      await db.spaces.update(sourceSpaceId, spaceUpdates);
+      
+      // Update thoughts' userId if source is guest
+      if (sourceIsGuest) {
+        await sourceThoughtsQuery.modify({
+          userId: currentUserId,
+          syncStatus: 'local',
+          updatedAt: timestamp
+        });
+        
+        // Update stacks' userId if source is guest
+        await db.stacks.where('spaceId').equals(sourceSpaceId)
+          .and(s => !s.userId || s.userId === 'guest' || s.userId === currentUserId)
+          .modify({
+            userId: currentUserId,
+            syncStatus: 'local',
+            updatedAt: timestamp
+          });
+      }
 
       await syncOrchestrator.triggerSync(true);
       return true;
@@ -588,7 +662,7 @@ export const createSpaceSlice: StateCreator<CyberiaState, [], [], any> = (set, g
 
   discardGuestSpace: async (id: string) => {
     try {
-      // Security: Verify space belongs to current user
+      // Security: Verify space belongs to current user OR is a guest space
       const authStore = useAuthStore.getState();
       const currentUserId = authStore.user?.id ?? 'guest';
       
@@ -599,7 +673,9 @@ export const createSpaceSlice: StateCreator<CyberiaState, [], [], any> = (set, g
         return false;
       }
       
-      if (space.userId !== currentUserId) {
+      // Allow discard if space belongs to current user OR is a guest space
+      const spaceIsGuest = !space.userId || space.userId === 'guest';
+      if (!spaceIsGuest && space.userId !== currentUserId) {
         console.error('[Space] Discard failed: Unauthorized - space does not belong to current user');
         return false;
       }

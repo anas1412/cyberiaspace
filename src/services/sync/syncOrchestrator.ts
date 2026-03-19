@@ -590,7 +590,11 @@ export const syncOrchestrator = {
   async fetchCloudData(): Promise<SyncConflictData | null> {
     const { useAuthStore } = await import('../../store/useAuthStore');
     const authState = useAuthStore.getState();
-    if (authState.status !== 'authenticated' || !authState.isOnline) return null;
+    console.log('[Sync] fetchCloudData called. status:', authState.status, 'isOnline:', authState.isOnline, 'user:', authState.user?.id);
+    if (authState.status !== 'authenticated' || !authState.isOnline) {
+      console.log('[Sync] fetchCloudData: returning null - not authenticated or offline');
+      return null;
+    }
     const userId = authState.user!.id;
     try {
       const [spaces, thoughts, stacks] = await Promise.all([
@@ -598,6 +602,7 @@ export const syncOrchestrator = {
         supabaseSync.getThoughts(userId),
         supabaseSync.getStacks(userId),
       ]);
+      console.log('[Sync] fetchCloudData: success, spaces:', spaces.spaces?.length, 'thoughts:', thoughts.thoughts?.length);
       return { spaces: spaces.spaces || [], thoughts: thoughts.thoughts || [], stacks: stacks.stacks || [] };
     } catch (err) {
       console.error('[Sync] Failed to fetch cloud data:', err);

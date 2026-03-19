@@ -64,6 +64,10 @@ export const createStackSlice: StateCreator<CyberiaState, [], [], any> = (set, g
     
     const newStackId = ulid();
     const currentUserId = useAuthStore.getState().user?.id ?? 'guest';
+    
+    // CRITICAL: Guest data should NEVER have syncStatus: 'local'
+    const isGuest = currentUserId === 'guest';
+    
     await db.stacks.add({ 
       id: newStackId, 
       userId: currentUserId,
@@ -71,12 +75,12 @@ export const createStackSlice: StateCreator<CyberiaState, [], [], any> = (set, g
       color: `hsla(${Math.floor(Math.random() * 360)}, 70%, 50%, 1)`, 
       spaceId: activeSpaceId,
       updatedAt: now,
-      syncStatus: 'local'
+      syncStatus: isGuest ? undefined : 'local'
     });
     await db.thoughts.update(thoughtId, { 
       stackId: newStackId,
       updatedAt: now,
-      syncStatus: 'local'
+      syncStatus: isGuest ? undefined : 'local'
     });
     await get().refreshThoughts();
     await get().refreshStacks();

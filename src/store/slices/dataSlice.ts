@@ -111,7 +111,6 @@ export const createDataSlice: StateCreator<CyberiaState, [], [], any> = (set, ge
       }
       
       const { spaces } = get();
-      const wasLocalDbEmpty = spaces.length === 0;
       if (spaces.length === 0) {
         // No data in DB, create initial empty workspace
         await get().createInitialWorkspace();
@@ -122,13 +121,9 @@ export const createDataSlice: StateCreator<CyberiaState, [], [], any> = (set, ge
         else await get().setActiveSpace(spaces[0].id);
       }
 
-      // NEW: If authenticated but never synced, wait for the cloud handshake
-      // This ensures the "Space Resolver" loading screen works as intended.
-      const authState = dynamicAuthStore.getState();
-      if (authState.status === 'authenticated' && (!localStorage.getItem('cyberia-last-sync') || wasLocalDbEmpty)) {
-        console.log('[Store] Fresh login detected, awaiting cloud handshake...');
-        await authState.handlePostAuthSync();
-      }
+      // NOTE: Cloud handshake (handlePostAuthSync) is now handled exclusively
+      // by setAuthenticatedUser in authSlice.ts to prevent race conditions.
+      // See setAuthenticatedUser for the full sequence: migrate → ensureWorkspace → handshake.
     } finally {
       set({ isInitializing: false, isSpaceLoading: false });
     }
@@ -151,6 +146,10 @@ export const createDataSlice: StateCreator<CyberiaState, [], [], any> = (set, ge
       const workspaceId = ulid();
       const now = Date.now();
       
+      // CRITICAL: Guest data should NEVER have syncStatus: 'local'
+      // This prevents guest workspaces from being accidentally synced
+      const isGuest = currentUserId === 'guest';
+      
       const initialSpace: Space = {
         id: workspaceId,
         userId: currentUserId,
@@ -159,7 +158,7 @@ export const createDataSlice: StateCreator<CyberiaState, [], [], any> = (set, ge
         physics: true,
         order: 0,
         updatedAt: now,
-        syncStatus: 'local'
+        syncStatus: isGuest ? undefined : 'local'
       };
 
       await db.spaces.add(initialSpace);
@@ -525,78 +524,42 @@ export const createDataSlice: StateCreator<CyberiaState, [], [], any> = (set, ge
   },
 
   migrateLegacyData: async (userId: string) => {
-    // Migrate all existing data without userId OR with userId='guest' to the current user
     const now = Date.now();
-    
     try {
-      // Migrate spaces without userId
-      const spacesWithoutUserId = await db.spaces.filter((s: any) => !s.userId).toArray();
-      if (spacesWithoutUserId.length > 0) {
-        console.log(`[Migration] Migrating ${spacesWithoutUserId.length} spaces (no userId) to user ${userId}`);
-        for (const space of spacesWithoutUserId) {
-          await db.spaces.update(space.id, { userId, updatedAt: now, syncStatus: 'local' });
-        }
-      }
-      
-      // Migrate guest spaces to authenticated user (preserve their work)
-      // Only clear customBg if it was stored under guest's path AND user is different
-      const guestSpaces = await db.spaces.filter((s: any) => s.userId === 'guest').toArray();
-      if (guestSpaces.length > 0) {
-        console.log(`[Migration] Migrating ${guestSpaces.length} guest spaces to user ${userId}`);
-        for (const space of guestSpaces) {
-          const updates: any = { userId, updatedAt: now, syncStatus: 'local' };
-          // Only clear customBg if migrating to a DIFFERENT user (not same user re-authenticating)
-          // The URL contains the path: userId/backgrounds/bg_spaceId
-          if (space.customBg && space.customBg.includes('/backgrounds/')) {
-            const bgUserId = space.customBg.split('/backgrounds/')[0].split('/').pop();
-            if (bgUserId && bgUserId !== userId) {
-              console.log(`[Migration] Clearing customBg for space ${space.id} - was stored under different user (${bgUserId})`);
-              updates.customBg = null;
+      await db.transaction('rw', [db.spaces, db.thoughts, db.stacks, db.blobs], async () => {
+        const spaceCount = await db.spaces
+          .filter((s: any) => !s.userId || s.userId === 'guest')
+          .modify((s: any) => {
+            s.userId = userId;
+            s.updatedAt = now;
+            s.syncStatus = 'local';
+            // Security: Clear custom backgrounds if they were stored under a different user's path
+            if (s.customBg && s.customBg.includes('/backgrounds/')) {
+              const pathParts = s.customBg.split('/backgrounds/')[0].split('/');
+              const bgUserId = pathParts[pathParts.length - 1];
+              if (bgUserId && bgUserId !== userId) {
+                s.customBg = null;
+              }
             }
-          }
-          await db.spaces.update(space.id, updates);
-        }
-      }
-      
-      // Migrate thoughts without userId
-      const thoughtsWithoutUserId = await db.thoughts.filter((t: any) => !t.userId).toArray();
-      if (thoughtsWithoutUserId.length > 0) {
-        console.log(`[Migration] Migrating ${thoughtsWithoutUserId.length} thoughts (no userId) to user ${userId}`);
-        for (const thought of thoughtsWithoutUserId) {
-          await db.thoughts.update(thought.id, { userId, updatedAt: now, syncStatus: 'local' });
-        }
-      }
-      
-      // Migrate guest thoughts to authenticated user
-      const guestThoughts = await db.thoughts.filter((t: any) => t.userId === 'guest').toArray();
-      if (guestThoughts.length > 0) {
-        console.log(`[Migration] Migrating ${guestThoughts.length} guest thoughts to user ${userId}`);
-        for (const thought of guestThoughts) {
-          await db.thoughts.update(thought.id, { userId, updatedAt: now, syncStatus: 'local' });
-        }
-      }
-      
-      // Migrate stacks without userId
-      const stacksWithoutUserId = await db.stacks.filter((s: any) => !s.userId).toArray();
-      if (stacksWithoutUserId.length > 0) {
-        console.log(`[Migration] Migrating ${stacksWithoutUserId.length} stacks (no userId) to user ${userId}`);
-        for (const stack of stacksWithoutUserId) {
-          await db.stacks.update(stack.id, { userId, updatedAt: now, syncStatus: 'local' });
-        }
-      }
-      
-      // Migrate guest stacks to authenticated user
-      const guestStacks = await db.stacks.filter((s: any) => s.userId === 'guest').toArray();
-      if (guestStacks.length > 0) {
-        console.log(`[Migration] Migrating ${guestStacks.length} guest stacks to user ${userId}`);
-        for (const stack of guestStacks) {
-          await db.stacks.update(stack.id, { userId, updatedAt: now, syncStatus: 'local' });
-        }
-      }
-      
-      console.log('[Migration] Legacy data migration complete');
+          });
+
+        const thoughtCount = await db.thoughts
+          .filter((t: any) => !t.userId || t.userId === 'guest')
+          .modify({ userId, updatedAt: now, syncStatus: 'local' });
+
+        const stackCount = await db.stacks
+          .filter((s: any) => !s.userId || s.userId === 'guest')
+          .modify({ userId, updatedAt: now, syncStatus: 'local' });
+
+        const blobCount = await db.blobs
+          .filter((b: any) => !b.userId || b.userId === 'guest')
+          .modify({ userId, updatedAt: now });
+
+        console.log(`[Migration] Atomic re-ownership complete: ${spaceCount} spaces, ${thoughtCount} thoughts, ${stackCount} stacks, ${blobCount} blobs.`);
+      });
     } catch (err) {
       console.error('[Migration] Failed to migrate legacy data:', err);
+      throw err;
     }
   },
 

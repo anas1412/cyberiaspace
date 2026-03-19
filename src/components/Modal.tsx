@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useModalStore } from '../store/useModalStore';
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
-import { Cloud, HardDrive } from 'lucide-react';
+import { Cloud, HardDrive, X } from 'lucide-react';
 import QuotaResolver from './QuotaResolver';
 
 function cn(...inputs: ClassValue[]) {
@@ -44,14 +44,23 @@ const Modal: React.FC = () => {
   const showInput = ['rename', 'new_space'].includes(type);
   const showCancel = !['limit_space', 'limit_thought', 'alert', 'terms', 'conflict_resolver', 'quota_resolver'].includes(type);
   const showStandardButtons = !['terms', 'conflict_resolver', 'quota_resolver', 'custom'].includes(type);
+  const showXButton = type === 'quota_resolver';
 
   return (
     <div id="modal-overlay" className="fixed inset-0 bg-black/90 backdrop-blur-[10px] z-[11000] flex items-center justify-center animate-in fade-in duration-200 p-4">
       <div className={cn(
-        "modal-box glass w-full p-6 md:p-10 rounded-2xl border border-[var(--glass-border)]",
+        "modal-box glass w-full p-6 md:p-10 rounded-2xl border border-[var(--glass-border)] relative",
         type !== 'custom' && "text-center",
         type === 'terms' ? "max-w-[500px]" : "max-w-[420px]"
       )}>
+        {showXButton && (
+          <button
+            onClick={closeModal}
+            className="absolute top-4 right-4 w-8 h-8 flex items-center justify-center rounded-full bg-white/5 hover:bg-white/10 text-slate-400 hover:text-white transition-colors"
+          >
+            <X className="w-4 h-4" />
+          </button>
+        )}
         {type !== 'custom' && <h2 className="text-lg md:text-xl font-bold mb-2 text-white">{title}</h2>}
 
         {type === 'terms' ? (
