@@ -34,7 +34,12 @@ export const useModalStore = create<ModalState>((set) => ({
     ...params,
     isOpen: true
   }),
-  closeModal: () => set({ isOpen: false }),
+  closeModal: () => set({ 
+    isOpen: false,
+    // Clear callbacks to prevent stale callback execution after close
+    onCancel: undefined,
+    onConfirm: undefined
+  }),
   openPricing: () => set({ isPricingOpen: true }),
   closePricing: () => set({ isPricingOpen: false }),
 }));

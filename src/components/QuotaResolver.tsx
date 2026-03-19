@@ -22,16 +22,18 @@ const QuotaResolver: React.FC = () => {
 
   useEffect(() => {
     const load = async () => {
+      const currentUserId = user?.id ?? 'guest';
       const allSpaces = await db.spaces.toArray();
-      const guests = allSpaces.filter(s => s.syncStatus === 'local' && !s.deletedAt);
-      const synced = allSpaces.filter(s => s.syncStatus === 'synced' && !s.deletedAt);
+      const userSpaces = allSpaces.filter(s => s.userId === currentUserId && !s.deletedAt);
+      const guests = userSpaces.filter(s => s.syncStatus === 'local');
+      const synced = userSpaces.filter(s => s.syncStatus === 'synced');
       setGuestSpaces(guests);
       setCloudSpaces(synced);
       if (guests.length > 0) setSelectedGuestId(guests[0].id);
       if (synced.length > 0) setSelectedCloudId(synced[0].id);
     };
     load();
-  }, []);
+  }, [user]);
 
   const handleMerge = async () => {
     if (!selectedGuestId || !selectedCloudId) return;
@@ -72,13 +74,15 @@ const QuotaResolver: React.FC = () => {
 
   const handleDiscard = async () => {
     if (!selectedGuestId) return;
+    const currentUserId = user?.id ?? 'guest';
     setIsProcessing(true);
     const success = await discardGuestSpace(selectedGuestId);
     setIsProcessing(false);
     if (success) {
-      // Re-load to see if more conflicts remain
+      // Re-load to see if more conflicts remain - now with proper userId filtering
       const allSpaces = await db.spaces.toArray();
-      const guests = allSpaces.filter(s => s.syncStatus === 'local' && !s.deletedAt);
+      const userSpaces = allSpaces.filter(s => s.userId === currentUserId && !s.deletedAt);
+      const guests = userSpaces.filter(s => s.syncStatus === 'local');
       setGuestSpaces(guests);
       if (guests.length > 0) {
         setSelectedGuestId(guests[0].id);

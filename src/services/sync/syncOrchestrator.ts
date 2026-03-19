@@ -213,7 +213,7 @@ export const syncOrchestrator = {
       // parent deletions (Stacks/Spaces) before trying to push children (Thoughts).
       console.log('[Sync] Step 1: Reconciling with cloud...');
       const [cloudSpaces, cloudStacks, cloudThoughts] = await Promise.all([
-        supabaseSync.getSpaces(userId, 'id, updated_at'),
+        supabaseSync.getSpaces(userId, 'id, updated_at, custom_bg'),
         supabaseSync.getStacks(userId, 'id, updated_at'),
         supabaseSync.getThoughts(userId, 'id, updated_at, space_id, type, storage_url'),
       ]);
@@ -222,9 +222,9 @@ export const syncOrchestrator = {
       const cloudStackMap = new Map<string, any>(cloudStacks.stacks.map((s: any) => [s.id, s]));
       const cloudThoughtMap = new Map<string, any>(cloudThoughts.thoughts.map((t: any) => [t.id, t]));
 
-      const localAllSpacesBefore = await db.spaces.toArray();
-      const localAllStacksBefore = await db.stacks.toArray();
-      const localAllThoughtsBefore = await db.thoughts.toArray();
+      const localAllSpacesBefore = await db.spaces.filter((s: any) => s.userId === userId).toArray();
+      const localAllStacksBefore = await db.stacks.filter((s: any) => s.userId === userId).toArray();
+      const localAllThoughtsBefore = await db.thoughts.filter((t: any) => t.userId === userId).toArray();
 
       // Deletion (Absence Rule)
       // Only run this if we have established a local baseline (lastSync exists)
@@ -368,9 +368,9 @@ export const syncOrchestrator = {
       console.log('[Sync] Step 2: Pushing local changes...');
       
       const [localSpaces, localStacks, localThoughts] = await Promise.all([
-        db.spaces.filter(s => s.syncStatus === 'local').toArray(),
-        db.stacks.filter(s => s.syncStatus === 'local').toArray(),
-        db.thoughts.filter(t => t.syncStatus === 'local').toArray(),
+        db.spaces.filter((s: any) => s.syncStatus === 'local' && s.userId === userId).toArray(),
+        db.stacks.filter((s: any) => s.syncStatus === 'local' && s.userId === userId).toArray(),
+        db.thoughts.filter((t: any) => t.syncStatus === 'local' && t.userId === userId).toArray(),
       ]);
 
       if (isFirstSync) {
@@ -444,6 +444,46 @@ export const syncOrchestrator = {
       const spacesToPush = localSpaces.filter(s => !s.deletedAt && !s.isOnboarding);
       const stacksToPush = localStacks.filter(s => !s.deletedAt && !s.isOnboarding);
       const thoughtsToPush = localThoughts.filter(t => !t.deletedAt && !onboardingSpaceIds.has(t.spaceId));
+
+      // ==========================================
+      // Step 2.2.1: Upload any pending blob URLs for customBgs
+      // This ensures cloud storage has the actual image, not a blob: URL
+      // ==========================================
+      const spacesWithPendingBlobs = spacesToPush.filter(s => s.customBg && s.customBg.startsWith('blob:'));
+      if (spacesWithPendingBlobs.length > 0) {
+        console.log(`[Sync] Found ${spacesWithPendingBlobs.length} spaces with pending blob backgrounds to upload`);
+        for (const space of spacesWithPendingBlobs) {
+          try {
+            const response = await fetch(space.customBg!);
+            if (!response.ok) {
+              console.warn(`[Sync] Failed to fetch blob URL for space ${space.id}, skipping bg upload`);
+              continue;
+            }
+            const blob = await response.blob();
+            const mimeType = blob.type || 'image/jpeg';
+            const { url: storageUrl } = await supabaseStorage.uploadSpaceBackground(
+              userId,
+              space.id,
+              blob,
+              mimeType
+            );
+            // Update IndexedDB with the storage URL so it syncs properly
+            await db.spaces.update(space.id, {
+              customBg: storageUrl,
+              syncStatus: 'local',
+              updatedAt: Date.now(),
+            });
+            console.log(`[Sync] Background uploaded for space ${space.id}: ${storageUrl}`);
+          } catch (e) {
+            console.warn(`[Sync] Failed to upload background for space ${space.id}:`, e);
+            // Don't fail the whole sync — push the space without the bg, it will retry next sync
+          }
+        }
+        // Re-fetch spaces with updated customBg URLs
+        const updatedSpaceIds = new Set(spacesWithPendingBlobs.map(s => s.id));
+        spacesToPush.length = 0; // Clear the array
+        spacesToPush.push(...localSpaces.filter(s => !s.deletedAt && !s.isOnboarding && updatedSpaceIds.has(s.id)));
+      }
 
       // Capture timestamps to prevent race conditions (Sync Overwrite)
       const spaceTimestamps = new Map(spacesToPush.map(s => [s.id, s.updatedAt]));

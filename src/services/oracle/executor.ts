@@ -137,19 +137,23 @@ export const executeOracleTool = async (toolCall: any, store: any) => {
         // Ensure type isn't 'image' (legacy safety)
         if (thoughtArgs.type === ('image' as any)) thoughtArgs.type = 'file';
 
-        const x = typeof thoughtArgs.x !== 'undefined' ? Number(thoughtArgs.x) : window.innerWidth / 2;
-        const y = typeof thoughtArgs.y !== 'undefined' ? Number(thoughtArgs.y) : window.innerHeight / 2;
-
         if (thoughtArgs.status) thoughtArgs.status = sanitizeStatus(thoughtArgs.status);
         if (thoughtArgs.priority) thoughtArgs.priority = sanitizePriority(thoughtArgs.priority);
 
-        const id = await store.addThought({ ...thoughtArgs, x, y });
-        if (id === '') {
+        // Use bulk addThoughts for consistency (handles jitter, limits, single sync)
+        const ids = await store.addThoughts([{ ...thoughtArgs }]);
+        if (ids.length === 0) {
           return { success: false, error: 'Thought creation limit reached or invalid data' };
-        } else {
-          if (stackName) await store.createStack(stackName, id);
-          return { success: true, id };
         }
+        
+        const id = ids[0];
+        
+        // Link to stack if name provided (linkSelectedThoughts now finds existing stacks by name)
+        if (stackName) {
+          await store.linkSelectedThoughts(stackName, [id]);
+        }
+        
+        return { success: true, id };
       }
 
       case 'create_thoughts': {
@@ -158,8 +162,10 @@ export const executeOracleTool = async (toolCall: any, store: any) => {
           return { success: false, error: 'Invalid items array' };
         }
         
-        let createdCount = 0;
-        for (const item of items) {
+        const partialThoughts: any[] = [];
+        const stackGroups: Record<string, number[]> = {};
+
+        items.forEach((item, index) => {
           const processedItem = processDrawing({ ...item });
           const { stackName, ...thoughtArgs } = processedItem;
           
@@ -171,13 +177,26 @@ export const executeOracleTool = async (toolCall: any, store: any) => {
           if (thoughtArgs.status) thoughtArgs.status = sanitizeStatus(thoughtArgs.status);
           if (thoughtArgs.priority) thoughtArgs.priority = sanitizePriority(thoughtArgs.priority);
 
-          const id = await store.addThought({ ...thoughtArgs, x, y });
-          if (id !== '') {
-            createdCount++;
-            if (stackName) await store.createStack(stackName, id);
+          partialThoughts.push({ ...thoughtArgs, x, y });
+          
+          if (stackName) {
+            if (!stackGroups[stackName]) stackGroups[stackName] = [];
+            stackGroups[stackName].push(index);
+          }
+        });
+
+        const ids = await store.addThoughts(partialThoughts);
+        
+        if (ids.length > 0) {
+          for (const stackName in stackGroups) {
+            const groupIds = stackGroups[stackName].map(idx => ids[idx]).filter(Boolean);
+            if (groupIds.length > 0) {
+              await store.linkSelectedThoughts(stackName, groupIds);
+            }
           }
         }
-        return { success: true, count: createdCount };
+
+        return { success: true, count: ids.length };
       }
 
       case 'create_stack': {

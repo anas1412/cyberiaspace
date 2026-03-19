@@ -20,10 +20,7 @@ export const createDataSlice: StateCreator<CyberiaState, [], [], any> = (set, ge
 
   init: async () => {
     try {
-      if (get().isDemo) {
-        set({ isInitializing: false, isSpaceLoading: false });
-        return;
-      }
+      // Removed demo mode gating to avoid interference with real per-user data isolation
       if (get().performanceMode) document.body.classList.add('low-perf');
 
       // Ensure DB is open and ready
@@ -99,6 +96,14 @@ export const createDataSlice: StateCreator<CyberiaState, [], [], any> = (set, ge
         await get().refreshSpaces();
         await get().refreshTotalThoughtCount();
         await get().cleanupTrash();
+        
+        // Heal any orphaned space backgrounds (cloud file deleted but DB still has URL)
+        // and download missing thought blobs (cloud file exists but no local copy)
+        const { useAuthStore: auth } = await import('../useAuthStore');
+        if (auth.getState().status === 'authenticated') {
+          auth.getState().healSpaceBackgrounds();
+          auth.getState().downloadMissingBlobs();
+        }
       } catch (err) {
         console.error('Failed to load data, resetting to initial workspace:', err);
         await get().createInitialWorkspace();
@@ -135,7 +140,8 @@ export const createDataSlice: StateCreator<CyberiaState, [], [], any> = (set, ge
     
     try {
       // IDEMPOTENCY CHECK: Ensure we don't create multiple initial workspaces
-      const existingCount = await db.spaces.filter(s => !s.deletedAt).count();
+      const currentUserId = (useAuthStore.getState().user?.id) ?? 'guest';
+      const existingCount = await db.spaces.filter(s => s.userId === currentUserId && !s.deletedAt).count();
       if (existingCount > 0) {
         console.log('[Store] Initial workspace already exists, skipping creation.');
         await get().refreshSpaces();
@@ -147,6 +153,7 @@ export const createDataSlice: StateCreator<CyberiaState, [], [], any> = (set, ge
       
       const initialSpace: Space = {
         id: workspaceId,
+        userId: currentUserId,
         name: 'Workspace',
         mode: 'spatial',
         physics: true,
@@ -166,59 +173,13 @@ export const createDataSlice: StateCreator<CyberiaState, [], [], any> = (set, ge
     }
   },
 
-  loadDemoData: async () => {
-    // This is purely for demo/temporary use (e.g., Homepage)
-    const demoSpaceId = ulid();
-    const s1 = ulid();
-    const s2 = ulid();
-    const s3 = ulid();
-    const now = Date.now();
-    
-    const demoSpaces: Space[] = [{
-      id: demoSpaceId,
-      name: 'Demo Workspace',
-      mode: 'spatial',
-      physics: true,
-      order: 0,
-      isOnboarding: true,
-      updatedAt: now,
-      syncStatus: 'local'
-    }];
-
-    const demoStacks: Stack[] = [
-      { id: s1, name: 'Spatial Flux', color: '#6366f1', spaceId: demoSpaceId, isOnboarding: true, updatedAt: now, syncStatus: 'local' },
-      { id: s2, name: 'Dynamic Views', color: '#8b5cf6', spaceId: demoSpaceId, isOnboarding: true, updatedAt: now, syncStatus: 'local' },
-      { id: s3, name: 'Oracle AI', color: '#3b82f6', spaceId: demoSpaceId, isOnboarding: true, updatedAt: now, syncStatus: 'local' },
-    ];
-
-    const demoThoughts: Thought[] = [
-      { id: ulid(), text: 'Physical Thinking', type: 'text', x: 300, y: 200, vx: 0, vy: 0, stackId: s1, status: 'none', spaceId: demoSpaceId, layer: 1, priority: 'urgent', description: '', author: 'Cyberia', size: 1.2, order: 0, date: '2026-03-01', data: { type: 'text', content: 'Thoughts have mass and velocity. Drag them to interact with the engine.' }, updatedAt: now, syncStatus: 'local' },
-      { id: ulid(), text: 'Physical Links', type: 'text', x: 300, y: 400, vx: 0, vy: 0, stackId: s1, status: 'doing', spaceId: demoSpaceId, layer: 2, priority: 'high', description: '', author: 'Cyberia', size: 1.0, order: 1, date: '2026-03-01', data: { type: 'text', content: 'Nodes in a stack physically orbit each other.' }, updatedAt: now, syncStatus: 'local' },
-      { id: ulid(), text: 'Spatial Logic', type: 'label', x: 300, y: 100, vx: 0, vy: 0, stackId: s1, status: 'todo', spaceId: demoSpaceId, layer: 500, priority: 'none', description: '', author: 'Cyberia', size: 1.0, order: 2, date: '', data: { type: 'label' }, updatedAt: now, syncStatus: 'local' },
-      { id: ulid(), text: 'Infinite Canvas.jpg', type: 'file', description: 'Visual mapping across infinite space.', x: 600, y: 300, vx: 0, vy: 0, stackId: s2, status: 'none', spaceId: demoSpaceId, layer: 3, priority: 'high', author: 'Cyberia', size: 1.3, order: 0, date: '2026-03-05', data: { type: 'file', url: '/onboarding.jpg', name: 'onboarding.jpg', size: 0, meta: { file: { name: 'onboarding.jpg', type: 'image/jpeg', size: 0 } } }, updatedAt: now, syncStatus: 'local' },
-      { id: ulid(), text: 'Dynamic Stacks', type: 'tasks', x: 600, y: 500, vx: 0, vy: 0, stackId: s2, status: 'none', spaceId: demoSpaceId, layer: 4, priority: 'medium', description: '', author: 'Cyberia', size: 1.0, order: 1, date: '2026-03-05', data: { type: 'tasks', tasks: [{ text: 'Move a node', done: true }, { text: 'Toggle View', done: false }] }, updatedAt: now, syncStatus: 'local' },
-      { id: ulid(), text: 'Morphing Views', type: 'label', x: 600, y: 200, vx: 0, vy: 0, stackId: s2, status: 'todo', spaceId: demoSpaceId, layer: 501, priority: 'none', description: '', author: 'Cyberia', size: 1.0, order: 2, date: '', data: { type: 'label' }, updatedAt: now, syncStatus: 'local' },
-      { id: ulid(), text: 'Artificial Reasoning', type: 'text', x: 900, y: 200, vx: 0, vy: 0, stackId: s3, status: 'none', spaceId: demoSpaceId, layer: 5, priority: 'urgent', description: '', author: 'Cyberia', size: 1.4, order: 0, date: '2026-03-10', data: { type: 'text', content: 'Ask Oracle to analyze your workspace, suggest connections, or automate repetitive tasks.' }, updatedAt: now, syncStatus: 'local' },
-      { id: ulid(), text: 'Action Intelligence', type: 'tasks', x: 900, y: 400, vx: 0, vy: 0, stackId: s3, status: 'todo', spaceId: demoSpaceId, layer: 6, priority: 'high', description: '', author: 'Cyberia', size: 1.1, order: 1, date: '2026-03-10', data: { type: 'tasks', tasks: [{ text: 'Toggle Oracle Mode', done: true }, { text: 'Enable Action Mode', done: false }] }, updatedAt: now, syncStatus: 'local' },
-      { id: ulid(), text: 'Cognitive Layer', type: 'label', x: 900, y: 100, vx: 0, vy: 0, stackId: s3, status: 'none', spaceId: demoSpaceId, layer: 502, priority: 'none', description: '', author: 'Cyberia', size: 1.0, order: 2, date: '', data: { type: 'label' }, updatedAt: now, syncStatus: 'local' },
-    ];
-
-    set({ 
-      spaces: demoSpaces, 
-      stacks: demoStacks, 
-      thoughts: demoThoughts, 
-      activeSpaceId: demoSpaceId,
-      isSpaceLoading: false,
-      transform: { x: 0, y: 0, scale: 0.8 } 
-    });
-  },
-
   clearWorkspace: async () => {
     if (get().isReadOnly) return;
     try {
       const { useAuthStore: dynamicAuthStore } = await import('../useAuthStore');
       const authStore = dynamicAuthStore.getState();
       const isAuthenticated = authStore.status === 'authenticated';
+      const currentUserId = authStore.user?.id ?? 'guest';
       
       console.log('[Store] Initiating GLOBAL workspace clear...');
       
@@ -227,6 +188,8 @@ export const createDataSlice: StateCreator<CyberiaState, [], [], any> = (set, ge
 
       const workspaceId = ulid();
       const now = Date.now();
+      
+      const newSpace = { id: workspaceId, userId: currentUserId, name: 'Workspace', mode: 'spatial' as const, physics: true, order: 0, updatedAt: now, syncStatus: 'local' as const };
       
       // 1. Deep Local Wipe (ALL tables)
       await db.transaction('rw', [db.spaces, db.thoughts, db.stacks, db.blobs], async () => {
@@ -237,8 +200,8 @@ export const createDataSlice: StateCreator<CyberiaState, [], [], any> = (set, ge
           db.blobs.clear()
         ]);
         
-        // Create one fresh entry
-        await db.spaces.add({ id: workspaceId, name: 'Workspace', mode: 'spatial', physics: true, order: 0, updatedAt: now, syncStatus: 'local' });
+        // Create one fresh entry with correct userId
+        await db.spaces.add(newSpace);
         localStorage.setItem('cyberia-active-space-id', workspaceId);
       });
 
@@ -250,9 +213,9 @@ export const createDataSlice: StateCreator<CyberiaState, [], [], any> = (set, ge
 
       // 3. Update Store State
       set({ 
-        spaces: [{ id: workspaceId, name: 'Workspace', mode: 'spatial', physics: true, order: 0, updatedAt: now, syncStatus: 'local' }], 
+        spaces: [newSpace], 
         stacks: [], 
-        thoughts: [], 
+        thoughts: [],
         activeSpaceId: workspaceId,
         transform: { x: 0, y: 0, scale: 1 }
       });
@@ -342,10 +305,13 @@ export const createDataSlice: StateCreator<CyberiaState, [], [], any> = (set, ge
   },
 
   exportData: async () => {
-    const allSpaces = await db.spaces.toArray();
-    const allThoughts = await db.thoughts.toArray();
-    const allStacks = await db.stacks.toArray();
-    const allBlobs = await db.blobs.toArray();
+    const currentUserId = (useAuthStore.getState().user?.id) ?? 'guest';
+    const allSpaces = await db.spaces.filter((s: any) => s.userId === currentUserId).toArray();
+    const allThoughts = await db.thoughts.filter((t: any) => t.userId === currentUserId).toArray();
+    const allStacks = await db.stacks.filter((s: any) => s.userId === currentUserId).toArray();
+    // Blobs are scoped to thoughts the current user owns
+    const thoughtIds = new Set(allThoughts.map(t => t.id));
+    const allBlobs = await db.blobs.filter((b: any) => thoughtIds.has(b.thoughtId)).toArray();
     const data = { spaces: allSpaces, thoughts: allThoughts, stacks: allStacks, blobs: allBlobs, activeSpaceId: get().activeSpaceId, version: 16, timestamp: Date.now() };
     const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
@@ -365,25 +331,80 @@ export const createDataSlice: StateCreator<CyberiaState, [], [], any> = (set, ge
       await syncOrchestrator.setSyncBlocked(true);
 
       try {
-        // Before wiping, collect background storage paths to clean up
+        // Rewrite all data to current user to prevent cross-user data leakage
+        const currentUserId = (useAuthStore.getState().user?.id) ?? 'guest';
+
+        // Remap spaces, thoughts, stacks to current user
+        const remappedSpaces = (data.spaces || []).map((s: any) => ({
+          ...s,
+          userId: currentUserId,
+          // Generate new ULID for imported spaces to avoid ID collisions with existing data
+          id: ulid(),
+          updatedAt: Date.now(),
+          syncStatus: 'local',
+        }));
+        
+        // Build ID mapping: old space ID -> new space ID
+        const spaceIdMap = new Map<string, string>();
+        const oldSpaceIds = (data.spaces || []).map((s: any) => s.id);
+        const newSpaceIds = remappedSpaces.map((s: any) => s.id);
+        oldSpaceIds.forEach((oldId: string, i: number) => spaceIdMap.set(oldId, newSpaceIds[i]));
+
+        // Remap thoughts to current user and reassign to new space IDs
+        const remappedThoughts = (data.thoughts || []).map((t: any) => ({
+          ...t,
+          userId: currentUserId,
+          id: ulid(),  // New ID to avoid collisions
+          spaceId: spaceIdMap.get(t.spaceId) || t.spaceId,  // Map to new space ID
+          updatedAt: Date.now(),
+          syncStatus: 'local',
+        }));
+
+        // Build ID mapping: old thought ID -> new thought ID (for blob remapping)
+        const thoughtIdMap = new Map<string, string>();
+        const oldThoughtIds = (data.thoughts || []).map((t: any) => t.id);
+        const newThoughtIds = remappedThoughts.map((t: any) => t.id);
+        oldThoughtIds.forEach((oldId: string, i: number) => thoughtIdMap.set(oldId, newThoughtIds[i]));
+
+        // Remap stacks to current user and reassign space/thought IDs
+        const remappedStacks = (data.stacks || []).map((s: any) => ({
+          ...s,
+          userId: currentUserId,
+          id: ulid(),
+          spaceId: spaceIdMap.get(s.spaceId) || s.spaceId,
+          updatedAt: Date.now(),
+          syncStatus: 'local',
+        }));
+
+        // Remap blobs to current user and reassign thought IDs
+        const remappedBlobs = (data.blobs || []).map((b: any) => ({
+          ...b,
+          id: thoughtIdMap.get(b.thoughtId) || b.thoughtId,  // Map to new thought ID
+          thoughtId: thoughtIdMap.get(b.thoughtId) || b.thoughtId,
+          updatedAt: Date.now(),
+        }));
+
+        // Before wiping, collect background storage paths to clean up (scoped to current user)
         const authStore = useAuthStore.getState();
         let bgPathsToClean: string[] = [];
         if (authStore.status === 'authenticated' && authStore.user) {
-          const existingSpaces = await db.spaces.filter(s => !s.deletedAt).toArray();
+          const existingSpaces = await db.spaces.filter((s: any) => !s.deletedAt && s.userId === currentUserId).toArray();
           bgPathsToClean = existingSpaces
-            .filter(s => s.customBg && isStorageUrl(s.customBg))
-            .map(s => `${authStore.user!.id}/backgrounds/bg_${s.id}`);
+            .filter((s: any) => s.customBg && isStorageUrl(s.customBg))
+            .map((s: any) => `${authStore.user!.id}/backgrounds/bg_${s.id}`);
         }
 
         await db.transaction('rw', db.spaces, db.thoughts, db.stacks, db.blobs, async () => {
+          // Clear only current user's data (all tables since we want a clean import)
           await db.spaces.clear();
           await db.thoughts.clear();
           await db.stacks.clear();
           await db.blobs.clear();
-          await db.spaces.bulkAdd(data.spaces);
-          await db.thoughts.bulkAdd(data.thoughts);
-          if (data.stacks) await db.stacks.bulkAdd(data.stacks);
-          if (data.blobs) await db.blobs.bulkAdd(data.blobs);
+          // Import remapped data with correct userId
+          await db.spaces.bulkAdd(remappedSpaces);
+          await db.thoughts.bulkAdd(remappedThoughts);
+          if (remappedStacks.length > 0) await db.stacks.bulkAdd(remappedStacks);
+          if (remappedBlobs.length > 0) await db.blobs.bulkAdd(remappedBlobs);
         });
 
         // Clean up orphaned background files (await to complete before reload)
@@ -429,10 +450,13 @@ export const createDataSlice: StateCreator<CyberiaState, [], [], any> = (set, ge
   },
 
   isLocalWorkspaceEmpty: async () => {
-    const thoughtsCount = await db.thoughts.filter(t => !t.deletedAt).count();
-    const spaces = await db.spaces.filter(s => !s.deletedAt).toArray();
+    const currentUserId = (useAuthStore.getState().user?.id) ?? 'guest';
     
-    // If there are any thoughts, it's not empty
+    // Check for any thoughts (including soft-deleted) to determine if there's real work
+    const thoughtsCount = await db.thoughts.filter((t: any) => !t.deletedAt && t.userId === currentUserId).count();
+    const spaces = await db.spaces.filter((s: any) => !s.deletedAt && s.userId === currentUserId).toArray();
+    
+    // If there are any active thoughts, it's not empty
     if (thoughtsCount > 0) return false;
 
     // If there is more than 1 space, it's not empty
@@ -445,6 +469,16 @@ export const createDataSlice: StateCreator<CyberiaState, [], [], any> = (set, ge
       if (!defaultNames.includes(s.name)) return false;
     }
 
+    // CRITICAL: Check for pending deletions (tombstones) - if user deleted things offline, it's NOT empty
+    // We want to preserve those deletions and trigger merge mode
+    const deletedThoughtsCount = await db.thoughts.filter((t: any) => Boolean(t.deletedAt) && t.userId === currentUserId).count();
+    const deletedSpacesCount = await db.spaces.filter((s: any) => Boolean(s.deletedAt) && s.userId === currentUserId).count();
+    
+    if (deletedThoughtsCount > 0 || deletedSpacesCount > 0) {
+      console.log(`[Store] Found pending deletions: ${deletedThoughtsCount} thoughts, ${deletedSpacesCount} spaces - workspace is NOT empty`);
+      return false;
+    }
+
     return true; 
   },
 
@@ -453,82 +487,17 @@ export const createDataSlice: StateCreator<CyberiaState, [], [], any> = (set, ge
     return PLAN_CONFIG[plan] || PLAN_CONFIG.free;
   },
 
-  setDemoMode: (enabled: boolean) => {
-    const state = get();
-    if (enabled) {
-      // Temporary IDs for demo
-      const demoSpaceId = ulid();
-      const s1 = ulid();
-      const s2 = ulid();
-      const s3 = ulid();
-      const now = Date.now();
-
-      const demoSpaces: Space[] = [{
-        id: demoSpaceId,
-        name: 'Demo Workspace',
-        mode: 'spatial',
-        physics: true,
-        order: 0,
-        isOnboarding: true,
-        updatedAt: now,
-        syncStatus: 'synced'
-      }];
-
-      const demoStacks: Stack[] = [
-        { id: s1, name: 'Spatial Flux', color: '#6366f1', spaceId: demoSpaceId, isOnboarding: true, updatedAt: now, syncStatus: 'synced' },
-        { id: s2, name: 'Dynamic Views', color: '#8b5cf6', spaceId: demoSpaceId, isOnboarding: true, updatedAt: now, syncStatus: 'synced' },
-        { id: s3, name: 'Oracle AI', color: '#3b82f6', spaceId: demoSpaceId, isOnboarding: true, updatedAt: now, syncStatus: 'synced' },
-      ];
-
-      const demoThoughts: Thought[] = [
-        { id: ulid(), text: 'Physical Thinking', type: 'text', x: 300, y: 200, vx: 0, vy: 0, stackId: s1, status: 'none', spaceId: demoSpaceId, layer: 1, priority: 'urgent', description: '', author: 'Cyberia', size: 1.2, order: 0, date: '2026-03-01', data: { type: 'text', content: 'Thoughts have mass and velocity. Drag them to interact with the engine.' }, updatedAt: now, syncStatus: 'synced' },
-        { id: ulid(), text: 'Physical Links', type: 'text', x: 300, y: 400, vx: 0, vy: 0, stackId: s1, status: 'doing', spaceId: demoSpaceId, layer: 2, priority: 'high', description: '', author: 'Cyberia', size: 1.0, order: 1, date: '2026-03-01', data: { type: 'text', content: 'Nodes in a stack physically orbit each other.' }, updatedAt: now, syncStatus: 'synced' },
-        { id: ulid(), text: 'Spatial Logic', type: 'label', x: 300, y: 100, vx: 0, vy: 0, stackId: s1, status: 'todo', spaceId: demoSpaceId, layer: 500, priority: 'none', description: '', author: 'Cyberia', size: 1.0, order: 2, date: '', data: { type: 'label' }, updatedAt: now, syncStatus: 'synced' },
-        { id: ulid(), text: 'Infinite Canvas.jpg', type: 'file', description: 'Visual mapping across infinite space.', x: 600, y: 300, vx: 0, vy: 0, stackId: s2, status: 'none', spaceId: demoSpaceId, layer: 3, priority: 'high', author: 'Cyberia', size: 1.3, order: 0, date: '2026-03-05', data: { type: 'file', url: '/onboarding.jpg', name: 'onboarding.jpg', size: 0, meta: { file: { name: 'onboarding.jpg', type: 'image/jpeg', size: 0 } } }, updatedAt: now, syncStatus: 'synced' },
-        { id: ulid(), text: 'Dynamic Stacks', type: 'tasks', x: 600, y: 500, vx: 0, vy: 0, stackId: s2, status: 'none', spaceId: demoSpaceId, layer: 4, priority: 'medium', description: '', author: 'Cyberia', size: 1.0, order: 1, date: '2026-03-05', data: { type: 'tasks', tasks: [{ text: 'Move a node', done: true }, { text: 'Toggle View', done: false }] }, updatedAt: now, syncStatus: 'synced' },
-        { id: ulid(), text: 'Morphing Views', type: 'label', x: 600, y: 200, vx: 0, vy: 0, stackId: s2, status: 'todo', spaceId: demoSpaceId, layer: 501, priority: 'none', description: '', author: 'Cyberia', size: 1.0, order: 2, date: '', data: { type: 'label' }, updatedAt: now, syncStatus: 'synced' },
-        { id: ulid(), text: 'Autonomous Agents', type: 'text', x: 900, y: 200, vx: 0, vy: 0, stackId: s3, status: 'none', spaceId: demoSpaceId, layer: 5, priority: 'urgent', description: '', author: 'Cyberia', size: 1.4, order: 0, date: '2026-03-10', data: { type: 'text', content: 'Deploy AI to research the web and automate connections.' }, updatedAt: now, syncStatus: 'synced' },
-        { id: ulid(), text: 'Data Structures', type: 'table', x: 900, y: 400, vx: 0, vy: 0, stackId: s3, status: 'todo', spaceId: demoSpaceId, layer: 6, priority: 'high', description: '', author: 'Cyberia', size: 1.1, order: 1, date: '2026-03-10', data: { type: 'table', rows: [['Type', 'Function'], ['Text', 'Knowledge'], ['AI', 'Oracle']] }, updatedAt: now, syncStatus: 'synced' },
-        { id: ulid(), text: 'Cognitive Layer', type: 'label', x: 900, y: 100, vx: 0, vy: 0, stackId: s3, status: 'none', spaceId: demoSpaceId, layer: 502, priority: 'none', description: '', author: 'Cyberia', size: 1.0, order: 2, date: '', data: { type: 'label' }, updatedAt: now, syncStatus: 'synced' },
-      ];
-
-      set({ 
-        _savedUserState: {
-          spaces: state.spaces,
-          thoughts: state.thoughts,
-          stacks: state.stacks,
-          activeSpaceId: state.activeSpaceId
-        },
-        spaces: demoSpaces,
-        stacks: demoStacks,
-        thoughts: demoThoughts,
-        activeSpaceId: demoSpaceId,
-        isDemo: true, 
-        isReadOnly: true, 
-        isSpaceLoading: false,
-        transform: { x: 0, y: 0, scale: 0.8 }
-      });
-    } else {
-      const saved = state._savedUserState;
-      if (saved) {
-        set({ 
-          spaces: saved.spaces,
-          thoughts: saved.thoughts,
-          stacks: saved.stacks,
-          activeSpaceId: saved.activeSpaceId,
-          isDemo: false, 
-          isReadOnly: false,
-          _savedUserState: null
-        });
-      } else {
-        set({ isDemo: false, isReadOnly: false });
-      }
-    }
-  },
   cleanupTrash: async () => {
     const thirtyDaysAgo = Date.now() - 30 * 24 * 60 * 60 * 1000;
+    
+    // Only permanently delete items that have ALREADY been synced to cloud
+    // This prevents accidentally deleting items that were deleted offline but haven't synced yet
     const thoughtsToPurge = await db.thoughts
-      .filter(t => t.deletedAt !== undefined && t.deletedAt !== null && t.deletedAt < thirtyDaysAgo)
+      .filter((t: any) => 
+        Boolean(t.deletedAt) && 
+        t.deletedAt < thirtyDaysAgo &&
+        t.syncStatus === 'synced'  // Only delete if already synced
+      )
       .toArray();
     
     if (thoughtsToPurge.length > 0) {
@@ -543,6 +512,7 @@ export const createDataSlice: StateCreator<CyberiaState, [], [], any> = (set, ge
       const allThoughtIds = new Set((await db.thoughts.toCollection().primaryKeys()));
       const allBlobs = await db.blobs.toArray();
       const orphanedBlobs = allBlobs.filter(b => !allThoughtIds.has(b.thoughtId));
+      // Only purge orphaned blobs that are old AND synced
       const blobsToPurge = orphanedBlobs.filter(b => b.updatedAt < thirtyDaysAgo);
       
       if (blobsToPurge.length > 0) {
@@ -551,6 +521,95 @@ export const createDataSlice: StateCreator<CyberiaState, [], [], any> = (set, ge
       }
     } catch (err) {
       console.error('[Storage] Orphaned blob cleanup failed:', err);
+    }
+  },
+
+  migrateLegacyData: async (userId: string) => {
+    // Migrate all existing data without userId OR with userId='guest' to the current user
+    const now = Date.now();
+    
+    try {
+      // Migrate spaces without userId
+      const spacesWithoutUserId = await db.spaces.filter((s: any) => !s.userId).toArray();
+      if (spacesWithoutUserId.length > 0) {
+        console.log(`[Migration] Migrating ${spacesWithoutUserId.length} spaces (no userId) to user ${userId}`);
+        for (const space of spacesWithoutUserId) {
+          await db.spaces.update(space.id, { userId, updatedAt: now, syncStatus: 'local' });
+        }
+      }
+      
+      // Migrate guest spaces to authenticated user (preserve their work)
+      // Only clear customBg if it was stored under guest's path AND user is different
+      const guestSpaces = await db.spaces.filter((s: any) => s.userId === 'guest').toArray();
+      if (guestSpaces.length > 0) {
+        console.log(`[Migration] Migrating ${guestSpaces.length} guest spaces to user ${userId}`);
+        for (const space of guestSpaces) {
+          const updates: any = { userId, updatedAt: now, syncStatus: 'local' };
+          // Only clear customBg if migrating to a DIFFERENT user (not same user re-authenticating)
+          // The URL contains the path: userId/backgrounds/bg_spaceId
+          if (space.customBg && space.customBg.includes('/backgrounds/')) {
+            const bgUserId = space.customBg.split('/backgrounds/')[0].split('/').pop();
+            if (bgUserId && bgUserId !== userId) {
+              console.log(`[Migration] Clearing customBg for space ${space.id} - was stored under different user (${bgUserId})`);
+              updates.customBg = null;
+            }
+          }
+          await db.spaces.update(space.id, updates);
+        }
+      }
+      
+      // Migrate thoughts without userId
+      const thoughtsWithoutUserId = await db.thoughts.filter((t: any) => !t.userId).toArray();
+      if (thoughtsWithoutUserId.length > 0) {
+        console.log(`[Migration] Migrating ${thoughtsWithoutUserId.length} thoughts (no userId) to user ${userId}`);
+        for (const thought of thoughtsWithoutUserId) {
+          await db.thoughts.update(thought.id, { userId, updatedAt: now, syncStatus: 'local' });
+        }
+      }
+      
+      // Migrate guest thoughts to authenticated user
+      const guestThoughts = await db.thoughts.filter((t: any) => t.userId === 'guest').toArray();
+      if (guestThoughts.length > 0) {
+        console.log(`[Migration] Migrating ${guestThoughts.length} guest thoughts to user ${userId}`);
+        for (const thought of guestThoughts) {
+          await db.thoughts.update(thought.id, { userId, updatedAt: now, syncStatus: 'local' });
+        }
+      }
+      
+      // Migrate stacks without userId
+      const stacksWithoutUserId = await db.stacks.filter((s: any) => !s.userId).toArray();
+      if (stacksWithoutUserId.length > 0) {
+        console.log(`[Migration] Migrating ${stacksWithoutUserId.length} stacks (no userId) to user ${userId}`);
+        for (const stack of stacksWithoutUserId) {
+          await db.stacks.update(stack.id, { userId, updatedAt: now, syncStatus: 'local' });
+        }
+      }
+      
+      // Migrate guest stacks to authenticated user
+      const guestStacks = await db.stacks.filter((s: any) => s.userId === 'guest').toArray();
+      if (guestStacks.length > 0) {
+        console.log(`[Migration] Migrating ${guestStacks.length} guest stacks to user ${userId}`);
+        for (const stack of guestStacks) {
+          await db.stacks.update(stack.id, { userId, updatedAt: now, syncStatus: 'local' });
+        }
+      }
+      
+      console.log('[Migration] Legacy data migration complete');
+    } catch (err) {
+      console.error('[Migration] Failed to migrate legacy data:', err);
+    }
+  },
+
+  ensureWorkspaceForCurrentUser: async () => {
+    const currentUserId = (useAuthStore.getState().user?.id) ?? 'guest';
+    const spaces = await db.spaces.filter((s: any) => s.userId === currentUserId && !s.deletedAt).toArray();
+    if (spaces.length === 0) {
+      const workspaceId = ulid();
+      const now = Date.now();
+      await db.spaces.add({ id: workspaceId, userId: currentUserId, name: 'Workspace', mode: 'spatial', physics: true, order: 0, updatedAt: now, syncStatus: 'local' });
+      localStorage.setItem('cyberia-active-space-id', workspaceId);
+      await get().refreshSpaces();
+      await get().setActiveSpace(workspaceId);
     }
   },
 });

@@ -115,8 +115,8 @@ export const createAuthSlice: StateCreator<AuthState, [], [], any> = (set, get, 
     const today = new Date().toISOString().split('T')[0];
     const expiryTime = expiresIn ? Date.now() + (expiresIn * 1000) : Date.now() + (3600 * 1000);
     
-    const userWithDefaults: User = { 
-      ...user, 
+    const userWithDefaults: User = {
+      ...user,
       plan: user.plan || 'free',
       subscriptionStatus: user.subscriptionStatus || 'none',
       usage: {
@@ -125,12 +125,23 @@ export const createAuthSlice: StateCreator<AuthState, [], [], any> = (set, get, 
         last_ai_reset: user.usage?.last_ai_reset ?? today,
       },
       settings: {
-        theme: user.settings?.theme ?? 'cyberia',
+        space: user.settings?.space ?? 'cyberia',
         autoSync: user.settings?.autoSync ?? true,
       }
     };
+    // If switching accounts in the same session, clear in-memory caches for old user data
+    try {
+      const prevUserId = get().user?.id;
+      if (prevUserId && prevUserId !== userWithDefaults.id) {
+        const { useStore } = await import('../useStore');
+        useStore.setState({ thoughts: [], spaces: [], stacks: [] });
+      }
+    } catch {
+      // ignore cleanup if store isn't ready yet
+    }
     
     localStorage.setItem('cyberia-user', JSON.stringify(userWithDefaults));
+    // Theme is now per-space only, handled by space settings
     localStorage.setItem('cyberia-token', token);
     localStorage.setItem('cyberia-token-expiry', expiryTime.toString());
     
@@ -163,6 +174,18 @@ export const createAuthSlice: StateCreator<AuthState, [], [], any> = (set, get, 
     try {
       await get().refreshProfile();
       await get().handlePostAuthSync();
+      
+      // Migration: Add userId to all existing local data if not present
+      const { useStore } = await import('../useStore');
+      const store = useStore.getState();
+      if (typeof store.migrateLegacyData === 'function') {
+        await store.migrateLegacyData(userWithDefaults.id);
+      }
+      
+      // Ensure user has at least one workspace
+      if (typeof store.ensureWorkspaceForCurrentUser === 'function') {
+        await store.ensureWorkspaceForCurrentUser();
+      }
     } catch (e) {
       console.error('Initial login sync failed', e);
       set({ syncStatus: 'error' });
@@ -278,7 +301,6 @@ export const createAuthSlice: StateCreator<AuthState, [], [], any> = (set, get, 
         settings: {
           ...user.settings,
           personality: '',
-          theme: PLAN_CONFIG.free.THEMES_ENABLED.includes(user.settings.theme) ? user.settings.theme : 'cyberia'
         }
       };
       set({ user: updatedUser });
@@ -358,9 +380,6 @@ export const createAuthSlice: StateCreator<AuthState, [], [], any> = (set, get, 
             if (!isPro) {
               updatedUser.plan = 'free';
               updatedUser.settings.personality = '';
-              if (!PLAN_CONFIG.free.THEMES_ENABLED.includes(updatedUser.settings.theme || '')) {
-                updatedUser.settings.theme = 'cyberia';
-              }
               
               if (user.plan === 'pro') {
                 console.log('[Auth] Plan regression detected: pro -> free');
@@ -442,24 +461,38 @@ export const createAuthSlice: StateCreator<AuthState, [], [], any> = (set, get, 
     const { user, accessToken } = get();
     if (!user || !accessToken) return;
 
-    get().updateSettings({ personality: '' });
-    get().updateSettings({ theme: 'cyberia' });
-
-    if (!user.id) return;
-    const spaces = await db.spaces.toArray();
+    // Reset all spaces to cyberia theme for free users
+    const freeThemes = PLAN_CONFIG.free.THEMES_ENABLED;
+    // CRITICAL: Only process spaces belonging to the current regressed user
+    const spaces = await db.spaces.where('userId').equals(user.id).toArray();
     const now = Date.now();
     for (const space of spaces) {
+      let needsUpdate = false;
+      const updates: any = { updatedAt: now, syncStatus: 'local' };
+      
+      // Reset theme to cyberia if not allowed for free users
+      if (space.theme && !freeThemes.includes(space.theme)) {
+        updates.theme = 'cyberia';
+        needsUpdate = true;
+      }
+      
+      // Clear custom backgrounds
       if (space.customBg && isStorageUrl(space.customBg)) {
         try {
           await supabaseStorage.deleteSpaceBackground(user.id, space.id);
         } catch (e) {
           console.warn('[Auth] Failed to delete background file from storage:', e);
         }
-        await db.spaces.update(space.id, { customBg: null, updatedAt: now, syncStatus: 'local' });
+        updates.customBg = null;
+        needsUpdate = true;
+      }
+      
+      if (needsUpdate) {
+        await db.spaces.update(space.id, updates);
         try {
-          await supabaseSync.updateSpace(space.id, { customBg: null, updatedAt: now, syncStatus: 'local' }, user.id);
+          await supabaseSync.updateSpace(space.id, updates, user.id);
         } catch (e) {
-          console.warn('[Auth] Failed to sync space after customBg removal:', e);
+          console.warn('[Auth] Failed to sync space after regression cleanup:', e);
         }
       }
     }
@@ -486,17 +519,17 @@ export const createAuthSlice: StateCreator<AuthState, [], [], any> = (set, get, 
       await syncOrchestrator.deleteCloudContent();
 
       await db.transaction('rw', [db.spaces, db.stacks, db.thoughts], async () => {
-        // Clear stale storage-backed customBg references on spaces
+        // Clear stale storage-backed customBg references on spaces belonging to CURRENT user
         const now = Date.now();
-        await db.spaces.toCollection().modify((s: any) => {
+        await db.spaces.where('userId').equals(user.id).modify((s: any) => {
           s.syncStatus = 'local';
           s.updatedAt = now;
           if (s.customBg && isStorageUrl(s.customBg)) {
             s.customBg = null;
           }
         });
-        await db.stacks.toCollection().modify({ syncStatus: 'local', updatedAt: now });
-        await db.thoughts.toCollection().modify({ 
+        await db.stacks.where('userId').equals(user.id).modify({ syncStatus: 'local', updatedAt: now });
+        await db.thoughts.where('userId').equals(user.id).modify({ 
           syncStatus: 'local', 
           updatedAt: now,
           storageUrl: undefined, 

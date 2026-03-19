@@ -160,14 +160,21 @@ const ChatOverlay: React.FC = () => {
   useEffect(() => {
     if (isChatOpen && user) {
       const authStore = useAuthStore.getState();
-      fetch('/api/chat', {
-        headers: { 'Authorization': `Bearer ${authStore.accessToken}` }
-      })
-      .then(res => res.json())
-      .then(data => {
-        if (typeof data.count === 'number') setDailyUsage(data.count);
-      })
-      .catch(err => console.error("[Oracle] Failed to fetch initial usage:", err));
+      const fetchUsage = async () => {
+        try {
+          const token = await authStore.getOrRefreshToken();
+          if (!token) return;
+          
+          const res = await fetch('/api/chat', {
+            headers: { 'Authorization': `Bearer ${token}` }
+          });
+          const data = await res.json();
+          if (typeof data.count === 'number') setDailyUsage(data.count);
+        } catch (err) {
+          console.error("[Oracle] Failed to fetch initial usage:", err);
+        }
+      };
+      fetchUsage();
     }
   }, [isChatOpen, user]);
 
@@ -245,11 +252,17 @@ const ChatOverlay: React.FC = () => {
 
     try {
       const authStore = useAuthStore.getState();
+      const token = await authStore.getOrRefreshToken();
+      
+      if (!token) {
+        throw new Error('Unauthorized: Session expired');
+      }
+
       const response = await fetch('/api/chat', {
         method: 'POST',
         headers: { 
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${authStore.accessToken}`
+          'Authorization': `Bearer ${token}`
         },
         signal: controller.signal,
         body: JSON.stringify({
@@ -410,11 +423,17 @@ if (['get_thought_details', 'read_file_content', 'read_files_content'].includes(
                     });
 
                     const authStore = useAuthStore.getState();
+                    const followUpToken = await authStore.getOrRefreshToken();
+                    
+                    if (!followUpToken) {
+                      throw new Error('Unauthorized: Session expired');
+                    }
+
                     const followUpResponse = await fetch('/api/chat', {
                       method: 'POST',
                       headers: { 
                         'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${authStore.accessToken}`
+                        'Authorization': `Bearer ${followUpToken}`
                       },
                       signal: controller.signal,
                       body: JSON.stringify({

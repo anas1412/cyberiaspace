@@ -38,9 +38,7 @@ export interface CyberiaState {
   deletingThoughtIds: string[];
   isDemo: boolean;
   _savedUserState: { spaces: Space[]; thoughts: Thought[]; stacks: Stack[]; activeSpaceId: string | null } | null;
-  setDemoMode: (enabled: boolean) => void;
   createInitialWorkspace: () => Promise<void>;
-  loadDemoData: () => Promise<void>;
 
   getLimits: () => typeof PLAN_CONFIG['free'];
 
@@ -81,6 +79,7 @@ export interface CyberiaState {
   saveSpaceTransform: (id: string, transform: { x: number; y: number; scale: number }) => Promise<void>;
 
   addThought: (thought: Partial<Thought>) => Promise<string>;
+  addThoughts: (thoughts: Partial<Thought>[]) => Promise<string[]>;
   patchThought: (id: string, updates: Partial<Thought>) => void;
   updateThought: (id: string, updates: Partial<Thought>, options?: { skipSync?: boolean }) => Promise<void>;
   updateThoughts: (ids: string[], updates: Partial<Thought>, options?: { skipSync?: boolean }) => Promise<void>;
@@ -123,6 +122,8 @@ export interface CyberiaState {
   importData: (file: File) => Promise<void>;
   cleanupTrash: () => Promise<void>;
   isLocalWorkspaceEmpty: () => Promise<boolean>;
+  migrateLegacyData: (userId: string) => Promise<void>;
+  ensureWorkspaceForCurrentUser: () => Promise<void>;
   mergeGuestSpace: (sourceSpaceId: string, targetSpaceId: string) => Promise<boolean>;
   replaceCloudSpace: (sourceSpaceId: string, targetSpaceIdToReplace: string) => Promise<boolean>;
   discardGuestSpace: (id: string) => Promise<boolean>;
@@ -155,6 +156,7 @@ export interface AuthState {
   uploadThoughtBlob: (thoughtId: string, force?: boolean) => Promise<void>;
   downloadSingleBlob: (thoughtId: string) => Promise<void>;
   downloadMissingBlobs: () => Promise<void>;
+  healSpaceBackgrounds: () => Promise<void>;
   removeCloudAsset: (thoughtId: string) => Promise<void>;
   importCloudData: () => Promise<unknown | null>;
   setAutoSync: (enabled: boolean) => void;

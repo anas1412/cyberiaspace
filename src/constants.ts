@@ -19,7 +19,7 @@ export interface User {
   settings: {
     // Account-wide settings only
     autoSync: boolean;
-    theme: string;
+    space: string;
     personality?: string;
   };
 }
@@ -47,7 +47,7 @@ export const PLAN_CONFIG: Record<SubscriptionPlan, PlanLimits> = {
     MAX_STORAGE_MB: 50,
     AI_ENABLED: true,
     AI_DAILY_LIMIT: 15,
-    THEMES_ENABLED: ['cyberia', 'sea', 'forest', 'rain'],
+    THEMES_ENABLED: ['cyberia'],
   },
   pro: {
     MAX_SPACES: 12,

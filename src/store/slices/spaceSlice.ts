@@ -4,6 +4,7 @@ import { useAuthStore } from '../useAuthStore';
 import { useModalStore } from '../useModalStore';
 import { syncOrchestrator } from '../../services/sync/syncOrchestrator';
 import { type CyberiaState } from '../types';
+import { PLAN_CONFIG } from '../../constants';
 import { ulid } from 'ulid';
 
 export const createSpaceSlice: StateCreator<CyberiaState, [], [], any> = (set, get, _api) => ({
@@ -40,8 +41,20 @@ export const createSpaceSlice: StateCreator<CyberiaState, [], [], any> = (set, g
         set({ transform } as Partial<CyberiaState>);
         
         if (space.theme) { 
-          set({ theme: space.theme });
-          document.body.setAttribute('data-theme', space.theme); 
+          // Enforce theme per user plan
+          const { useAuthStore: authImport } = await import('../useAuthStore');
+          const authStore = authImport.getState();
+          const userPlan = authStore.user?.plan || 'free';
+          const allowedThemes = PLAN_CONFIG[userPlan]?.THEMES_ENABLED || PLAN_CONFIG.free.THEMES_ENABLED;
+          const enforcedTheme = allowedThemes.includes(space.theme) ? space.theme : 'cyberia';
+          
+          set({ theme: enforcedTheme });
+          document.body.setAttribute('data-theme', enforcedTheme);
+          
+          // If theme was invalid, update the space
+          if (enforcedTheme !== space.theme) {
+            await get().updateSpace(id, { theme: enforcedTheme }, { skipSync: false });
+          }
         }
         set({ customBg: space.customBg || null });
 
@@ -103,23 +116,28 @@ export const createSpaceSlice: StateCreator<CyberiaState, [], [], any> = (set, g
   },
 
   refreshSpaces: async () => {
-    // Robust fetching: Get all non-deleted spaces and sort by order
-    const allSpaces = await db.spaces.toArray();
-    const activeSpaces = allSpaces
-      .filter(s => !s.deletedAt)
-      .sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
+    // Robust fetching: Query only current user's non-deleted spaces with Dexie filter
+    const currentUserId = useAuthStore.getState().user?.id ?? 'guest';
+    const activeSpaces = await db.spaces
+      .filter((s: any) => !s.deletedAt && s.userId === currentUserId)
+      .toArray();
+    activeSpaces.sort((a: any, b: any) => (a.order ?? 0) - (b.order ?? 0));
     
     set({ spaces: activeSpaces });
   },
 
   addSpace: async (name: string) => {
-    if (get().isReadOnly || get().isDemo) return;
-    const { spaces } = get();
+    if (get().isReadOnly) return;
+    
+    // Get user's spaces from DB filtered by current user (not in-memory)
+    const currentUserId = useAuthStore.getState().user?.id ?? 'guest';
+    const userSpaces = await db.spaces.filter((s: any) => s.userId === currentUserId && !s.deletedAt).toArray();
+    
     const limits = get().getLimits();
-    if (spaces.length >= limits.MAX_SPACES) {
+    if (userSpaces.length >= limits.MAX_SPACES) {
       useModalStore.getState().openModal({ 
         title: 'Space Limit Reached', 
-        description: `You’ve reached the free limit of ${limits.MAX_SPACES} spaces. Upgrade to Cyberia Pro to create more workspaces and unlock premium features.`, 
+        description: `You've reached the free limit of ${limits.MAX_SPACES} spaces. Upgrade to Cyberia Pro to create more workspaces and unlock premium features.`, 
         type: 'limit_space', 
         confirmText: 'Upgrade to Pro', 
         onConfirm: () => useModalStore.getState().openPricing() 
@@ -129,10 +147,11 @@ export const createSpaceSlice: StateCreator<CyberiaState, [], [], any> = (set, g
     const id = ulid();
     await db.spaces.add({ 
       id, 
+      userId: currentUserId,
       name, 
       mode: 'spatial', 
       physics: true, 
-      order: spaces.length,
+      order: userSpaces.length,
       updatedAt: Date.now(),
       syncStatus: 'local'
     });
@@ -153,7 +172,7 @@ export const createSpaceSlice: StateCreator<CyberiaState, [], [], any> = (set, g
       newSpaces[index] = { ...newSpaces[index], ...updates };
       set({ spaces: newSpaces });
     }
-    if (get().isReadOnly || get().isDemo) return;
+    if (get().isReadOnly) return;
     
     const finalUpdates = {
       ...updates,
@@ -171,7 +190,7 @@ export const createSpaceSlice: StateCreator<CyberiaState, [], [], any> = (set, g
   },
 
   deleteSpace: async (id: string) => {
-    if (get().isReadOnly || get().isDemo) return;
+    if (get().isReadOnly) return;
     const { spaces, activeSpaceId } = get();
     
     // Prevent deleting the last space
@@ -369,21 +388,54 @@ export const createSpaceSlice: StateCreator<CyberiaState, [], [], any> = (set, g
   },
 
   importFullState: async (data: any, merge: boolean = false) => {
-    if (get().isReadOnly) return;
     try {
-      console.log(`[Store] ${merge ? 'Merging' : 'Importing'} full state from cloud...`);
+      const authStore = useAuthStore.getState();
+      const currentUserId = authStore.user?.id ?? 'guest';
+
+      console.log(`[Store] ${merge ? 'Merging' : 'Importing'} full state from cloud for user: ${currentUserId}`);
+      
+      // CRITICAL: Preserve local tombstones (deleted items that haven't synced yet)
+      // This ensures offline deletions persist through login/logout cycles
+      const localDeletedSpaces = await db.spaces.filter((s: any) => Boolean(s.deletedAt) && s.userId === currentUserId).toArray();
+      const localDeletedThoughts = await db.thoughts.filter((t: any) => Boolean(t.deletedAt) && t.userId === currentUserId).toArray();
+      const localDeletedStacks = await db.stacks.filter((s: any) => Boolean(s.deletedAt) && s.userId === currentUserId).toArray();
+      
+      console.log(`[Store] Preserving ${localDeletedSpaces.length} space, ${localDeletedThoughts.length} thought, ${localDeletedStacks.length} stack tombstones`);
+      
       await db.transaction('rw', [db.spaces, db.thoughts, db.stacks], async () => {
         if (data.spaces && data.spaces.length > 0) {
-          if (!merge) await db.spaces.clear();
-          await db.spaces.bulkPut(data.spaces);
+          if (!merge) {
+            // Only clear spaces belonging to the current user (non-deleted only)
+            await db.spaces.where('userId').equals(currentUserId).filter((s: any) => !Boolean(s.deletedAt)).delete();
+          }
+          // Ensure incoming spaces have the correct userId
+          const spacesToPut = data.spaces.map((s: any) => ({ ...s, userId: currentUserId }));
+          await db.spaces.bulkPut(spacesToPut);
         }
         if (data.thoughts && data.thoughts.length > 0) {
-          if (!merge) await db.thoughts.clear();
-          await db.thoughts.bulkPut(data.thoughts);
+          if (!merge) {
+            await db.thoughts.where('userId').equals(currentUserId).filter((t: any) => !Boolean(t.deletedAt)).delete();
+          }
+          const thoughtsToPut = data.thoughts.map((t: any) => ({ ...t, userId: currentUserId }));
+          await db.thoughts.bulkPut(thoughtsToPut);
         }
         if (data.stacks && data.stacks.length > 0) {
-          if (!merge) await db.stacks.clear();
-          await db.stacks.bulkPut(data.stacks);
+          if (!merge) {
+            await db.stacks.where('userId').equals(currentUserId).filter((s: any) => !Boolean(s.deletedAt)).delete();
+          }
+          const stacksToPut = data.stacks.map((s: any) => ({ ...s, userId: currentUserId }));
+          await db.stacks.bulkPut(stacksToPut);
+        }
+        
+        // Restore preserved tombstones (these will be synced to cloud)
+        if (localDeletedSpaces.length > 0) {
+          await db.spaces.bulkPut(localDeletedSpaces);
+        }
+        if (localDeletedThoughts.length > 0) {
+          await db.thoughts.bulkPut(localDeletedThoughts);
+        }
+        if (localDeletedStacks.length > 0) {
+          await db.stacks.bulkPut(localDeletedStacks);
         }
       });
 
@@ -409,6 +461,23 @@ export const createSpaceSlice: StateCreator<CyberiaState, [], [], any> = (set, g
 
   mergeGuestSpace: async (sourceSpaceId: string, targetSpaceId: string) => {
     try {
+      // Security: Verify both spaces belong to current user
+      const authStore = useAuthStore.getState();
+      const currentUserId = authStore.user?.id ?? 'guest';
+      
+      const sourceSpace = await db.spaces.get(sourceSpaceId);
+      const targetSpace = await db.spaces.get(targetSpaceId);
+      
+      if (!sourceSpace || !targetSpace) {
+        console.error('[Space] Merge failed: Space not found');
+        return false;
+      }
+      
+      if (sourceSpace.userId !== currentUserId || targetSpace.userId !== currentUserId) {
+        console.error('[Space] Merge failed: Unauthorized - spaces do not belong to current user');
+        return false;
+      }
+
       const sourceThoughts = await db.thoughts.where('spaceId').equals(sourceSpaceId).and(t => !t.deletedAt).toArray();
       const targetThoughtsCount = await db.thoughts.where('spaceId').equals(targetSpaceId).and(t => !t.deletedAt).count();
       
@@ -449,7 +518,6 @@ export const createSpaceSlice: StateCreator<CyberiaState, [], [], any> = (set, g
       await get().refreshThoughts(targetSpaceId);
       await get().refreshStacks(targetSpaceId);
       
-      const authStore = useAuthStore.getState();
       if (authStore.status === 'authenticated') {
         syncOrchestrator.triggerSync(true);
       }
@@ -464,6 +532,21 @@ export const createSpaceSlice: StateCreator<CyberiaState, [], [], any> = (set, g
     try {
       const authStore = useAuthStore.getState();
       if (authStore.status !== 'authenticated') return false;
+
+      // Security: Verify both spaces belong to current user
+      const currentUserId = authStore.user?.id ?? 'guest';
+      const sourceSpace = await db.spaces.get(sourceSpaceId);
+      const targetSpace = await db.spaces.get(targetSpaceIdToReplace);
+      
+      if (!sourceSpace || !targetSpace) {
+        console.error('[Space] Replace failed: Space not found');
+        return false;
+      }
+      
+      if (sourceSpace.userId !== currentUserId || targetSpace.userId !== currentUserId) {
+        console.error('[Space] Replace failed: Unauthorized - spaces do not belong to current user');
+        return false;
+      }
 
       // Check Global Cloud Thought Limit
       const sourceThoughtsCount = await db.thoughts.where('spaceId').equals(sourceSpaceId).and(t => !t.deletedAt).count();
@@ -500,6 +583,22 @@ export const createSpaceSlice: StateCreator<CyberiaState, [], [], any> = (set, g
 
   discardGuestSpace: async (id: string) => {
     try {
+      // Security: Verify space belongs to current user
+      const authStore = useAuthStore.getState();
+      const currentUserId = authStore.user?.id ?? 'guest';
+      
+      const space = await db.spaces.get(id);
+      
+      if (!space) {
+        console.error('[Space] Discard failed: Space not found');
+        return false;
+      }
+      
+      if (space.userId !== currentUserId) {
+        console.error('[Space] Discard failed: Unauthorized - space does not belong to current user');
+        return false;
+      }
+
       const timestamp = Date.now();
       await db.transaction('rw', [db.spaces, db.thoughts, db.stacks], async () => {
         // SOFT DELETE: Create synchronized tombstones
@@ -524,7 +623,6 @@ export const createSpaceSlice: StateCreator<CyberiaState, [], [], any> = (set, g
 
       await get().refreshSpaces();
       
-      const authStore = useAuthStore.getState();
       if (authStore.status === 'authenticated') {
         syncOrchestrator.triggerSync(true);
       }

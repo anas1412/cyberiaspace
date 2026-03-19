@@ -364,8 +364,11 @@ export const supabaseStorage = {
       .from(BUCKET_NAME)
       .getPublicUrl(path);
 
+    // Add cache-busting timestamp to force browser to refetch new image
+    const urlWithCacheBust = data.publicUrl + '?t=' + Date.now();
+    
     console.log('[Storage] Background upload success:', path);
-    return { url: data.publicUrl, path };
+    return { url: urlWithCacheBust, path };
   },
 
   async deleteSpaceBackground(userId: string, spaceId: string): Promise<void> {

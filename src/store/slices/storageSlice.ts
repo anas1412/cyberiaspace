@@ -1,6 +1,6 @@
 import { type StateCreator } from 'zustand';
 import { db } from '../../db';
-import { supabaseStorage } from '../../services/supabaseStorage';
+import { supabaseStorage, isStorageUrl } from '../../services/supabaseStorage';
 import { PLAN_CONFIG, type SubscriptionPlan } from '../../constants';
 import { syncOrchestrator } from '../../services/sync/syncOrchestrator';
 import { type AuthState } from '../types';
@@ -16,10 +16,15 @@ export const createStorageSlice: StateCreator<AuthState, [], [], any> = (set, ge
     
     // 1. Calculate Local Usage (Instant & Offline friendly)
     // This provides immediate feedback even before sync
+    // Scope blobs to current user's thoughts to prevent cross-user data leakage
     let storageMB = 0;
     try {
-      const allBlobs = await db.blobs.toArray();
-      const localBytes = allBlobs.reduce((sum, b) => sum + (b.blob?.size || 0), 0);
+      const currentUserId = user?.id ?? 'guest';
+      const userThoughtIds = new Set(
+        (await db.thoughts.filter((t: any) => t.userId === currentUserId).primaryKeys())
+      );
+      const userBlobs = await db.blobs.filter((b: any) => userThoughtIds.has(b.thoughtId)).toArray();
+      const localBytes = userBlobs.reduce((sum: number, b: any) => sum + (b.blob?.size || 0), 0);
       storageMB = localBytes / (1024 * 1024);
     } catch (e) {
       console.warn('[Storage] Could not calculate local usage:', e);
@@ -263,6 +268,69 @@ export const createStorageSlice: StateCreator<AuthState, [], [], any> = (set, ge
       }
     } catch (err) {
       console.error('[Storage] Background sync failed:', err);
+    }
+  },
+
+  healSpaceBackgrounds: async () => {
+    const { user, isOnline } = get();
+    if (!user || !isOnline) return;
+
+    try {
+      // Find all spaces where customBg looks like a cloud URL but the file may be gone
+      const spacesWithBg = await db.spaces
+        .filter((s: any) => !!s.customBg && isStorageUrl(s.customBg) && !s.deletedAt)
+        .toArray();
+
+      if (spacesWithBg.length === 0) return;
+
+      const { useStore } = await import('../useStore');
+      const healed: string[] = [];
+      const cleared: string[] = [];
+
+      for (const space of spacesWithBg) {
+        try {
+          // Check if the background file is actually accessible in cloud storage
+          const res = await fetch(space.customBg!, { method: 'HEAD' });
+          if (res.ok) continue; // File exists, all good
+
+          // File is gone from cloud storage — try to recover from local IndexedDB
+          // (setCustomBg stores the blob URL before uploading, so we can re-fetch it)
+          const localRes = await fetch(space.customBg!);
+          if (localRes.ok) {
+            const blob = await localRes.blob();
+            const mimeType = blob.type || 'image/jpeg';
+            const { url: newUrl } = await supabaseStorage.uploadSpaceBackground(
+              user.id,
+              space.id,
+              blob,
+              mimeType
+            );
+            await db.spaces.update(space.id, { customBg: newUrl });
+            healed.push(space.id);
+            console.log(`[Heal] Background re-uploaded for space ${space.id}`);
+          } else {
+            // No local copy either — clear the broken URL and mark for sync
+            await db.spaces.update(space.id, {
+              customBg: null,
+              syncStatus: 'local',
+              updatedAt: Date.now(),
+            });
+            cleared.push(space.id);
+            console.log(`[Heal] Background URL broken and cleared for space ${space.id}`);
+          }
+        } catch (e) {
+          // Network error — skip, will retry on next sync
+          console.warn(`[Heal] Background check failed for space ${space.id}:`, e);
+        }
+      }
+
+      if (healed.length > 0 || cleared.length > 0) {
+        await useStore.getState().refreshSpaces();
+        // Trigger sync to push any cleared backgrounds
+        syncOrchestrator.triggerSync();
+      }
+    } catch (err) {
+      console.error('[Storage] Space background healing failed:', err);
     }
   },
 

@@ -14,17 +14,6 @@ const revokeCurrentBg = (bg: string | null) => {
   }
 };
 
-const processSourceToBlob = async (source: File | string | null, abortSignal: AbortSignal): Promise<string | null> => {
-  if (source === null) return null;
-  if (source instanceof File) {
-    return URL.createObjectURL(source);
-  }
-  
-  const res = await fetch(source, { signal: abortSignal });
-  const blob = await res.blob();
-  return URL.createObjectURL(blob);
-};
-
 export const createUiSlice: StateCreator<CyberiaState, [], [], any> = (set, get, _api) => ({
   theme: (localStorage.getItem('cyberia-theme') as any) || 'cyberia',
   customBg: null,
@@ -73,12 +62,40 @@ export const createUiSlice: StateCreator<CyberiaState, [], [], any> = (set, get,
 
     // 3. Process new background
     try {
-      const blobUrl = await processSourceToBlob(bg, controller.signal);
-      
-      if (isStale()) {
-        if (blobUrl) URL.revokeObjectURL(blobUrl);
+      // If it's a File, upload to Supabase Storage FIRST, then store the storage URL
+      if (bg instanceof File) {
+        const { useAuthStore } = await import('../useAuthStore');
+        const authStore = useAuthStore.getState();
+        
+        if (authStore.status !== 'authenticated' || !authStore.user) {
+          console.warn('[BG] Cannot upload background: not authenticated');
+          return;
+        }
+
+        const userId = authStore.user.id;
+        const { supabaseStorage } = await import('../../services/supabaseStorage');
+        
+        // Upload to Supabase Storage and get the permanent URL
+        console.log('[BG] Uploading background to storage...');
+        const { url } = await supabaseStorage.uploadSpaceBackground(userId, activeSpaceId, bg, bg.type);
+        
+        if (isStale()) return;
+        
+        // Store the storage URL (not blob URL)
+        set({ customBg: url });
+        const updated = get().spaces.map((s: any) => s.id === activeSpaceId ? { ...s, customBg: url } : s);
+        set({ spaces: updated });
+        await db.spaces.update(activeSpaceId, { customBg: url, updatedAt: Date.now(), syncStatus: 'local' as const });
+        
+        if (!isStale()) await syncOrchestrator.triggerSync();
+        console.log('[BG] Background uploaded and saved:', url);
         return;
       }
+      
+      // If it's a string (URL or null), use it directly
+      const blobUrl = bg; // Could be null or an existing URL
+      
+      if (isStale()) return;
 
       set({ customBg: blobUrl });
       const updated = get().spaces.map((s: any) => s.id === activeSpaceId ? { ...s, customBg: blobUrl } : s);

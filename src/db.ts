@@ -38,6 +38,7 @@ export type ThoughtPayload =
 interface Space {
   id: string; // ULID
   name: string;
+  userId: string;
   mode: 'spatial' | 'kanban' | 'calendar';
   physics: boolean;
   order: number;
@@ -58,6 +59,7 @@ interface Space {
 interface Stack {
   id: string; // ULID
   name: string;
+  userId: string;
   color: string;
   spaceId: string;
   isOnboarding?: boolean;
@@ -70,6 +72,7 @@ interface Stack {
 interface Thought {
   id: string; // Changed from number to string (ULID)
   spaceId: string;
+  userId: string;
   stackId: string | null;
   x: number;
   y: number;
@@ -139,10 +142,10 @@ db.on('versionchange', () => {
 
 // Version 17: Added deletedAt index to spaces and stacks for robust filtering
 db.version(17).stores({
-  spaces: 'id, name, order, syncStatus, deletedAt, updatedAt',
-  thoughts: 'id, spaceId, stackId, text, type, status, date, priority, order, author, storageUrl, syncStatus, deletedAt, updatedAt',
-  stacks: 'id, spaceId, name, syncStatus, deletedAt, updatedAt',
-  blobs: 'id, thoughtId'
+  spaces: 'id, userId, name, order, syncStatus, deletedAt, updatedAt',
+  thoughts: 'id, userId, spaceId, stackId, text, type, status, date, priority, order, author, storageUrl, syncStatus, deletedAt, updatedAt',
+  stacks: 'id, userId, spaceId, name, syncStatus, deletedAt, updatedAt',
+  blobs: 'id, thoughtId, userId'
 });
 
 // Version 18: Added chatHistory for local persistent Oracle conversations

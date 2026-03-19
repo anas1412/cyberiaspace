@@ -121,6 +121,36 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
     e.target.value = '';
   };
 
+  const handleBgReset = async () => {
+    const activeSpaceId = useStore.getState().activeSpaceId;
+    if (!activeSpaceId) return;
+    
+    const { useAuthStore } = await import('../../store/useAuthStore');
+    const authStore = useAuthStore.getState();
+    const { supabaseStorage } = await import('../../services/supabaseStorage');
+    const { db } = await import('../../db');
+    
+    // Get current customBg from space to revoke blob URL if needed
+    const currentSpace = await db.spaces.get(activeSpaceId);
+    const currentBg = currentSpace?.customBg;
+    
+    // Revoke blob URL if it's a local blob
+    if (currentBg && currentBg.startsWith('blob:')) {
+      URL.revokeObjectURL(currentBg);
+    }
+    
+    // Delete from cloud storage if authenticated
+    if (authStore.status === 'authenticated' && authStore.user) {
+      try {
+        await supabaseStorage.deleteSpaceBackground(authStore.user.id, activeSpaceId);
+      } catch (e) {
+        console.warn('[BG] Failed to delete background from cloud:', e);
+      }
+    }
+    
+    setCustomBg(null);
+  };
+
   if (!isOpen) return null;
 
   return (
@@ -346,7 +376,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                     </p>
                     {customBg && (
                       <button 
-                        onClick={() => setCustomBg(null)}
+                        onClick={handleBgReset}
                         className="text-[9px] font-black uppercase tracking-widest text-red-400 hover:text-red-300 transition-colors flex items-center gap-1.5"
                       >
                         <Trash2 className="w-3 h-3" /> Reset

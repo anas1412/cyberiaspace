@@ -32,8 +32,19 @@ export const createSyncSlice: StateCreator<AuthState, [], [], SyncSlice> = (set,
 
   syncData: async () => {
     console.log('[Auth] syncData called');
+    
+    // 1. Run "Deep Healing" — check if cloud background files are missing/deleted
+    // This handles the case where the DB has a URL but the file is gone from Supabase
+    try {
+      await get().healSpaceBackgrounds();
+    } catch (e) {
+      console.warn('[Sync] Background healing failed during sync:', e);
+    }
+
+    // 2. Standard delta sync (includes upload of pending blob backgrounds)
     await syncOrchestrator.deltaSync();
-    // After a full push sync, refresh storage usage to reflect recent changes
+    
+    // 3. After a full push sync, refresh storage usage to reflect recent changes
     try {
       const { useStore } = await import('../useStore');
       const st: any = useStore.getState();
@@ -85,10 +96,13 @@ export const createSyncSlice: StateCreator<AuthState, [], [], SyncSlice> = (set,
     
     // Fast path: try cloud hydration first
     try {
+      const { useAuthStore } = await import('../useAuthStore');
+      const currentUserId = useAuthStore.getState().user?.id ?? 'guest';
+      
       const cloudData = await syncOrchestrator.fetchCloudData();
       if (cloudData) {
-        // 1. Check for Quota Conflict
-        const localSpaces = await db.spaces.filter(s => s.syncStatus === 'local').toArray();
+        // 1. Check for Quota Conflict - filter by current user only
+        const localSpaces = await db.spaces.filter(s => s.syncStatus === 'local' && s.userId === currentUserId).toArray();
         const cloudSpaces = (cloudData.spaces || []) as any[];
         
         const totalUniqueSpaces = new Set([
@@ -124,7 +138,7 @@ export const createSyncSlice: StateCreator<AuthState, [], [], SyncSlice> = (set,
         await store.importFullState(cloudData, shouldMerge);
         
         // 3. Auto-select first space if none active
-        const updatedSpaces = await db.spaces.toArray();
+        const updatedSpaces = await db.spaces.filter(s => s.userId === currentUserId).toArray();
         if (updatedSpaces.length > 0 && !store.activeSpaceId) {
           const firstSpace = updatedSpaces[0];
           await store.setActiveSpace(firstSpace.id);

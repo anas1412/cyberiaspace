@@ -1,6 +1,7 @@
 import { type StateCreator } from 'zustand';
 import { type CyberiaState } from '../types';
 import { db, type Thought } from '../../db';
+import { useAuthStore } from '../useAuthStore';
 import { syncOrchestrator } from '../../services/sync/syncOrchestrator';
 import { useModalStore } from '../useModalStore';
 import { sanitizeDate } from '../../utils/date';
@@ -61,6 +62,7 @@ export const createThoughtSlice: StateCreator<CyberiaState, [], [], any> = (set,
     const thought = {
       id: thoughtId,
       spaceId: activeSpaceId,
+      userId: useAuthStore.getState().user?.id ?? 'guest',
       stackId: null,
       // Place new thoughts at the center of the viewport in world coordinates
       x: (window.innerWidth / 2 - transform.x) / transform.scale,
@@ -99,6 +101,100 @@ export const createThoughtSlice: StateCreator<CyberiaState, [], [], any> = (set,
       }
     }
     return thoughtId;
+  },
+
+  addThoughts: async (partialThoughts: Partial<Thought>[]) => {
+    const { activeSpaceId, isReadOnly, getLimits, transform } = get();
+    if (isReadOnly || !activeSpaceId || !partialThoughts.length) return [];
+
+    const limits = getLimits();
+    
+    // Bulk check limits
+    const count = await db.thoughts.where('spaceId').equals(activeSpaceId).and(t => !t.deletedAt).count();
+    
+    if (count + partialThoughts.length > limits.MAX_THOUGHTS_PER_SPACE) {
+      const { useAuthStore } = await import('../useAuthStore');
+      const isPro = useAuthStore.getState().user?.plan === 'pro';
+      
+      useModalStore.getState().openModal({
+        title: isPro ? 'Space Limit Reached' : 'Thinking Limit Reached',
+        description: isPro 
+          ? `You’ve reached the pro limit of ${limits.MAX_THOUGHTS_PER_SPACE} thoughts for this space.` 
+          : `You’ve reached the free limit of ${limits.MAX_THOUGHTS_PER_SPACE} thoughts for this space. Upgrade to Cyberia Pro to unlock unlimited mapping and premium Oracle AI features.`,
+        type: 'limit_thought',
+        confirmText: isPro ? 'Acknowledged' : 'Upgrade to Pro',
+        onConfirm: isPro ? undefined : () => useModalStore.getState().openPricing()
+      });
+      return [];
+    }
+
+    const { useAuthStore } = await import('../useAuthStore');
+    const authStore = useAuthStore.getState();
+    const userId = authStore.user?.id ?? 'guest';
+    const authStatus = authStore.status;
+
+    const { getThoughtConfig } = await import('../../components/thought/registry');
+
+    const newThoughtIds: string[] = [];
+    const thoughtsToAdd: Thought[] = [];
+
+    for (let i = 0; i < partialThoughts.length; i++) {
+      const partial = partialThoughts[i];
+      const thoughtId = ulid();
+      newThoughtIds.push(thoughtId);
+
+      const thoughtType = partial.type || 'label';
+      const config = getThoughtConfig(thoughtType);
+      const payload = config?.createPayload();
+
+      // Apply jitter if multiple thoughts are added
+      const jitterX = partialThoughts.length > 1 ? (Math.random() - 0.5) * 20 : 0;
+      const jitterY = partialThoughts.length > 1 ? (Math.random() - 0.5) * 20 : 0;
+
+      const thought = {
+        id: thoughtId,
+        spaceId: activeSpaceId,
+        userId,
+        stackId: null,
+        x: (window.innerWidth / 2 - transform.x) / transform.scale + jitterX,
+        y: (window.innerHeight / 2 - transform.y) / transform.scale + jitterY,
+        vx: 0,
+        vy: 0,
+        text: '',
+        description: '',
+        type: 'label',
+        status: sanitizeStatus(partial.status || 'none'),
+        priority: sanitizePriority(partial.priority || 'none'),
+        size: 1,
+        order: Date.now() + i,
+        layer: 0,
+        author: '',
+        syncStatus: 'local',
+        updatedAt: Date.now(),
+        ...partial,
+        date: partial.date ? sanitizeDate(partial.date) : '',
+        data: partial.data || payload
+      } as Thought;
+
+      thought.status = sanitizeStatus(thought.status);
+      thought.priority = sanitizePriority(thought.priority);
+      
+      thoughtsToAdd.push(thought);
+    }
+
+    await db.transaction('rw', db.thoughts, async () => {
+      await db.thoughts.bulkAdd(thoughtsToAdd);
+    });
+
+    await get().refreshThoughts();
+    await get().refreshTotalThoughtCount();
+    get().pushHistory();
+
+    if (authStatus === 'authenticated') {
+      await syncOrchestrator.triggerSync();
+    }
+
+    return newThoughtIds;
   },
 
   updateThought: async (id: string, updates: Partial<Thought>, options?: { skipSync?: boolean }) => {
@@ -255,7 +351,7 @@ export const createThoughtSlice: StateCreator<CyberiaState, [], [], any> = (set,
   },
 
   deleteThought: async (id: string) => {
-    if (get().isReadOnly || get().isDemo) return;
+    if (get().isReadOnly) return;
     const thought = get().thoughts.find((t: Thought) => t.id === id);
     const affectedStackId = thought?.stackId;
     const { useAuthStore } = await import('../useAuthStore');
@@ -333,10 +429,9 @@ export const createThoughtSlice: StateCreator<CyberiaState, [], [], any> = (set,
     if (get().isReadOnly || get().isDemo) return;
     const targetId = spaceId || get().activeSpaceId;
     if (!targetId) return;
+    const currentUserId = useAuthStore.getState().user?.id ?? 'guest';
     const thoughts = await db.thoughts
-      .where('spaceId')
-      .equals(targetId)
-      .and(t => !t.deletedAt)
+      .filter((t: any) => t.spaceId === targetId && t.userId === currentUserId && !t.deletedAt)
       .toArray();
     
     // Only update if it's still the active space or if we are refreshing for initial load
@@ -346,7 +441,8 @@ export const createThoughtSlice: StateCreator<CyberiaState, [], [], any> = (set,
   },
 
   refreshTotalThoughtCount: async () => {
-    const count = await db.thoughts.filter(t => !t.deletedAt).count();
+    const currentUserId = useAuthStore.getState().user?.id ?? 'guest';
+    const count = await db.thoughts.filter(t => !t.deletedAt && t.userId === currentUserId).count();
     set({ totalThoughtCount: count } as Partial<CyberiaState>);
   },
 
@@ -408,7 +504,7 @@ export const createThoughtSlice: StateCreator<CyberiaState, [], [], any> = (set,
 
   linkSelectedThoughts: async (name?: string, targetIds?: string[]) => {
     const idsToLink = targetIds || get().selectedThoughtIds;
-    const { activeSpaceId, thoughts } = get();
+    const { activeSpaceId, thoughts, stacks } = get();
     if (idsToLink.length < 2 || !activeSpaceId) return;
 
     const selectedThoughts = thoughts.filter(t => idsToLink.includes(t.id));
@@ -420,6 +516,49 @@ export const createThoughtSlice: StateCreator<CyberiaState, [], [], any> = (set,
 
     let targetStackId: string;
 
+    // Step 1: If name is provided, look for an existing stack with that name in the current space
+    if (name) {
+      const trimmedName = name.trim().toLowerCase();
+      const existingByName = stacks.find(
+        (s: any) => s.name.toLowerCase() === trimmedName && s.spaceId === activeSpaceId && !s.deletedAt
+      );
+      if (existingByName) {
+        // Found existing stack - use it
+        targetStackId = existingByName.id;
+        // Assign all selected thoughts to the existing stack
+        await db.transaction('rw', [db.thoughts, db.stacks], async () => {
+          // If any selected thoughts were in other stacks, merge them into this one
+          if (existingStackIds.length > 1 || (existingStackIds.length === 1 && existingStackIds[0] !== targetStackId)) {
+            const otherStackIds = existingStackIds.filter(id => id !== targetStackId);
+            const now = Date.now();
+            if (otherStackIds.length > 0) {
+              await db.thoughts.where('stackId').anyOf(otherStackIds).modify({ 
+                stackId: targetStackId,
+                updatedAt: now,
+                syncStatus: 'local'
+              });
+              await db.stacks.where('id').anyOf(otherStackIds).modify({
+                deletedAt: now,
+                updatedAt: now,
+                syncStatus: 'local'
+              });
+            }
+          }
+          await db.thoughts.where('id').anyOf(idsToLink).modify({ 
+            stackId: targetStackId,
+            updatedAt: Date.now(),
+            syncStatus: 'local'
+          });
+        });
+        await get().refreshThoughts();
+        await get().refreshStacks();
+        get().pushHistory();
+        if (authStore.status === 'authenticated') await syncOrchestrator.triggerSync();
+        return;
+      }
+    }
+
+    // Step 2: No existing stack by name - use existing stack from thoughts OR create new
     if (existingStackIds.length > 0) {
       // Logic: Join existing stack. If multiple exist (merging), pick the first one.
       targetStackId = existingStackIds[0];
@@ -456,8 +595,9 @@ export const createThoughtSlice: StateCreator<CyberiaState, [], [], any> = (set,
       const finalName = trimmedName || 'New Collection';
       
       await db.transaction('rw', [db.thoughts, db.stacks], async () => {
-        await db.stacks.add({ 
+      await db.stacks.add({ 
           id: targetStackId, 
+          userId: useAuthStore.getState().user?.id ?? 'guest',
           name: finalName, 
           color: `hsla(${Math.floor(Math.random() * 360)}, 70%, 50%, 1)`, 
           spaceId: activeSpaceId,

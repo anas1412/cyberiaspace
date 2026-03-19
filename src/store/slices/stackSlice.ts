@@ -12,11 +12,8 @@ export const createStackSlice: StateCreator<CyberiaState, [], [], any> = (set, g
     const targetId = spaceId || get().activeSpaceId;
     if (!targetId) return;
     
-    const stacks = await db.stacks
-      .where('spaceId')
-      .equals(targetId)
-      .and(s => !s.deletedAt)
-      .toArray();
+    const currentUserId = useAuthStore.getState().user?.id ?? 'guest';
+    const stacks = await db.stacks.filter((s: any) => s.spaceId === targetId && s.userId === currentUserId && !s.deletedAt).toArray();
     
     // Only update if it's still the active space or if we are refreshing for initial load
     if (!spaceId || targetId === get().activeSpaceId) {
@@ -53,8 +50,10 @@ export const createStackSlice: StateCreator<CyberiaState, [], [], any> = (set, g
     }
     
     const newStackId = ulid();
+    const currentUserId = useAuthStore.getState().user?.id ?? 'guest';
     await db.stacks.add({ 
       id: newStackId, 
+      userId: currentUserId,
       name: finalName, 
       color: `hsla(${Math.floor(Math.random() * 360)}, 70%, 50%, 1)`, 
       spaceId: activeSpaceId,
