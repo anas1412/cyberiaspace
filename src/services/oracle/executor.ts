@@ -39,6 +39,12 @@ const readFileHelper = async (id: string, store: any) => {
   const t = store.thoughts.find((thought: any) => thought.id === id);
   if (!t) return { id, success: false, error: 'Not found' };
 
+  const { useAuthStore } = await import('../../store/useAuthStore');
+  const currentUserId = useAuthStore.getState().user?.id ?? 'guest';
+  if (t.userId !== currentUserId) {
+    return { id, success: false, error: 'Access denied: thought belongs to another user' };
+  }
+
   const data = t.data;
   const isImage = t.meta?.file?.type?.startsWith('image/') || 
                   t.text?.toLowerCase().match(/\.(jpg|jpeg|png|gif|webp|svg)$/);
@@ -55,7 +61,7 @@ const readFileHelper = async (id: string, store: any) => {
     // If we have a local blob, we might need to get it
     let finalUrl = url;
     if (!finalUrl) {
-      const blobEntry = await db.blobs.where('thoughtId').equals(id).first();
+      const blobEntry = await db.blobs.filter(b => b.thoughtId === id && b.userId === currentUserId).first();
       if (blobEntry) finalUrl = URL.createObjectURL(blobEntry.blob);
     }
     return { id, success: true, type: 'pdf', url: finalUrl, name: t.text };

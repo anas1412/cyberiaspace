@@ -761,7 +761,8 @@ const FileFocusEditor: React.FC = () => {
         blob: file,
         name: file.name,
         type: file.type,
-        updatedAt: Date.now()
+        updatedAt: Date.now(),
+        userId: useAuthStore.getState().user?.id ?? 'guest'
       });
 
       const url = URL.createObjectURL(file);

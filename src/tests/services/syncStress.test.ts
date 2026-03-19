@@ -134,6 +134,7 @@ describe('Sync Stress Test', () => {
     // 0. Setup Space
     await db.spaces.add({
       id: spaceId,
+      userId: userId,
       name: 'Stress Test Space',
       mode: 'spatial',
       physics: true,

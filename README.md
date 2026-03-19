@@ -30,8 +30,8 @@ Oracle is your spatial research assistant, integrated directly into the workspac
 - **Frontend**: [React 19](https://react.dev/) + [Vite](https://vitejs.dev/) + [TypeScript](https://www.typescriptlang.org/)
 - **State**: [Zustand](https://zustand-demo.pmnd.rs/) (High-performance reactive state)
 - **Persistence**: [Dexie.js](https://dexie.org/) (Local-first IndexedDB)
-- **Sync Infrastructure**: [Vercel KV](https://vercel.com/storage/kv) (Spatial Metadata) + [Google Drive](https://www.google.com/drive/) (Rich Content)
-- **AI API**: [Groq](https://groq.com/) (Ultra-fast LLM inference)
+- **Sync Infrastructure**: [Supabase](https://supabase.com/) (PostgreSQL + Storage Buckets) + [Vercel Serverless Functions](https://vercel.com/docs/concepts/functions) (Custom API layer)
+- **AI API**: [OpenRouter](https://openrouter.ai/) (Unified access to 300+ AI models)
 - **Theming**: [Tailwind CSS](https://tailwindcss.com/) (Advanced glassmorphism & cosmic aesthetics)
 - **Motion**: [Framer Motion](https://www.framer.com/motion/)
 
@@ -44,19 +44,22 @@ Create versatile thoughts with multiple formats:
 - **Tasks**: Interactive checklists with real-time status tracking.
 - **Tables**: Structured data grids with full editing capabilities.
 - **Paint**: SVG-based sketches and diagrams.
-- **Image**: Photos and GIFs with automated cloud offloading.
-- **File**: Secure management for PDFs, MP3s, and MP4s.
+- **File**: Images, PDFs, MP3s, and MP4s with automated cloud offloading.
 - **Embed**: Interactive players for YouTube, Spotify, and more.
 
 ### Distributed Sync Bridge
-- **Local-First**: Work offline with zero latency via IndexedDB.
-- **Hybrid Cloud**: Fast map sync via Vercel KV and user-owned content storage via Google Drive.
-- **Permanent Sessions**: authorization Code flow ensures you stay logged in indefinitely without recurring popups.
-- **Universal Previews**: Instant local previews for large files while background sync handles the cloud upload.
+- **Local-First**: Work offline with zero latency via IndexedDB. All changes are saved locally first.
+- **Delta Sync**: Incremental cloud sync via Supabase Realtime for instant cross-device updates.
+- **Permanent Sessions**: OAuth Code flow ensures you stay logged in indefinitely without recurring popups.
+- **Universal Previews**: Instant local previews for large files while background sync handles cloud upload.
+- **Soft Deletes**: Deleted items use tombstone pattern (30-day grace period) for safe cross-device deletion.
 
-## 🔒 Data Sovereignty
+##  Data Architecture
 
-Your mind belongs to you. Cyberia uses a **user-owned storage model**. While metadata is synced for convenience, your rich content and media reside in a visible `/Cyberia` folder in your own Google Drive.
+Your data lives in three layers:
+- **Local (IndexedDB)**: Instant access, full offline support, user-scoped.
+- **Cloud (Supabase Postgres)**: Metadata backup and cross-device sync.
+- **Media (Supabase Storage)**: Binary assets (images, files) with lazy on-demand loading.
 
 ---
 

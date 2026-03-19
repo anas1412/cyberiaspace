@@ -438,13 +438,15 @@ const Viewport: React.FC<{ isInteracting?: boolean }> = ({ isInteracting }) => {
           });
 
           if (id !== '') {
+            const userId = useAuthStore.getState().user?.id ?? 'guest';
             await db.blobs.put({
               id: id, // Deterministic ID
               thoughtId: id,
               blob: file,
               name: file.name,
               type: file.type,
-              updatedAt: Date.now()
+              updatedAt: Date.now(),
+              userId
             });
             setSelectedThoughtId(id);
             uploadThoughtBlob(id);
@@ -476,13 +478,15 @@ const Viewport: React.FC<{ isInteracting?: boolean }> = ({ isInteracting }) => {
           });
 
           if (id !== '') {
+            const userId = useAuthStore.getState().user?.id ?? 'guest';
             await db.blobs.put({
               id: `temp-${Date.now()}-${id}`,
               thoughtId: id,
               blob: file,
               name: file.name,
               type: file.type,
-              updatedAt: Date.now()
+              updatedAt: Date.now(),
+              userId
             });
             setSelectedThoughtId(id);
             setInspectorOpen(true);

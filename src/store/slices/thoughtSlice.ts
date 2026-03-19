@@ -65,8 +65,8 @@ export const createThoughtSlice: StateCreator<CyberiaState, [], [], any> = (set,
       userId: useAuthStore.getState().user?.id ?? 'guest',
       stackId: null,
       // Place new thoughts at the center of the viewport in world coordinates
-      x: (window.innerWidth / 2 - transform.x) / transform.scale,
-      y: (window.innerHeight / 2 - transform.y) / transform.scale,
+      x: (window.innerWidth / 2 - transform.x) / transform.scale + (Math.random() - 0.5) * 60,
+      y: (window.innerHeight / 2 - transform.y) / transform.scale + (Math.random() - 0.5) * 60,
       vx: 0,
       vy: 0,
       text: '',
@@ -429,6 +429,7 @@ export const createThoughtSlice: StateCreator<CyberiaState, [], [], any> = (set,
     if (get().isReadOnly || get().isDemo) return;
     const targetId = spaceId || get().activeSpaceId;
     if (!targetId) return;
+    const { useAuthStore } = await import('../useAuthStore');
     const currentUserId = useAuthStore.getState().user?.id ?? 'guest';
     const thoughts = await db.thoughts
       .filter((t: any) => t.spaceId === targetId && t.userId === currentUserId && !t.deletedAt)
@@ -647,6 +648,40 @@ export const createThoughtSlice: StateCreator<CyberiaState, [], [], any> = (set,
     const authStore = useAuthStore.getState();
     if (authStore.status === 'authenticated') {
       await syncOrchestrator.triggerSync();
+    }},
+  // Scatter thoughts with small jitter to prevent overlap on load
+  scatterThoughts: async (spaceId?: string) => {
+    const targetId = spaceId || get().activeSpaceId;
+    if (!targetId || get().isReadOnly) return;
+    
+    const { useAuthStore } = await import('../useAuthStore');
+    const currentUserId = useAuthStore.getState().user?.id ?? 'guest';
+    const thoughts = await db.thoughts
+      .filter((t: any) => t.spaceId === targetId && t.userId === currentUserId && !t.deletedAt)
+      .toArray();
+    
+    if (thoughts.length < 2) return;
+    
+    const updates = thoughts.map(t => ({
+      id: t.id,
+      updates: {
+        x: t.x + (Math.random() - 0.5) * 40,
+        y: t.y + (Math.random() - 0.5) * 40,
+        updatedAt: Date.now(),
+        syncStatus: 'local' as const
+      }
+    }));
+    
+    await db.transaction('rw', db.thoughts, async () => {
+      for (const { id, updates: u } of updates) {
+        await db.thoughts.update(id, u);
+      }
+    });
+    
+    await get().refreshThoughts(targetId);
+    
+    if (useAuthStore.getState().status === 'authenticated') {
+      await syncOrchestrator.triggerSync();
     }
-  }
+  },
 });

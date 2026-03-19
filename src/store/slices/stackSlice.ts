@@ -1,9 +1,11 @@
 import { type StateCreator } from 'zustand';
 import { db, type Stack } from '../../db';
 import { useAuthStore } from '../useAuthStore';
+import { useModalStore } from '../useModalStore';
 import { syncOrchestrator } from '../../services/sync/syncOrchestrator';
 import { type CyberiaState } from '../types';
 import { ulid } from 'ulid';
+import { MAX_THOUGHTS_PER_STACK } from '../../constants';
 
 export const createStackSlice: StateCreator<CyberiaState, [], [], any> = (set, get, _api) => ({
   stacks: [],
@@ -36,6 +38,17 @@ export const createStackSlice: StateCreator<CyberiaState, [], [], any> = (set, g
     const now = Date.now();
     
     if (existingStack) {
+      const currentUserId = useAuthStore.getState().user?.id ?? 'guest';
+      const count = await db.thoughts.filter((t: any) => t.stackId === existingStack.id && !t.deletedAt && t.userId === currentUserId).count();
+      if (count >= MAX_THOUGHTS_PER_STACK) {
+        useModalStore.getState().openModal({
+          title: 'Stack Limit Reached',
+          description: `A stack can only hold ${MAX_THOUGHTS_PER_STACK} thoughts.`,
+          type: 'alert',
+          confirmText: 'OK',
+        });
+        return;
+      }
       await db.thoughts.update(thoughtId, { 
         stackId: existingStack.id,
         updatedAt: now,
@@ -101,8 +114,9 @@ export const createStackSlice: StateCreator<CyberiaState, [], [], any> = (set, g
   deleteStack: async (id: string) => {
     if (get().isReadOnly || get().isDemo) return;
     const now = Date.now();
+    const currentUserId = useAuthStore.getState().user?.id ?? 'guest';
     await db.transaction('rw', db.thoughts, db.stacks, async () => {
-      await db.thoughts.where('stackId').equals(id).modify({ 
+      await db.thoughts.where('stackId').equals(id).and(t => t.userId === currentUserId).modify({ 
         stackId: null,
         updatedAt: now,
         syncStatus: 'local'
@@ -127,12 +141,13 @@ export const createStackSlice: StateCreator<CyberiaState, [], [], any> = (set, g
     const { activeSpaceId } = get();
     if (!activeSpaceId) return;
     const authStore = useAuthStore.getState();
+    const currentUserId = authStore.user?.id ?? 'guest';
     let wasModified = false;
     const now = Date.now();
     
     await db.transaction('rw', db.thoughts, db.stacks, async () => {
-      const allThoughts = await db.thoughts.where('spaceId').equals(activeSpaceId).toArray();
-      const allStacks = await db.stacks.where('spaceId').equals(activeSpaceId).toArray();
+      const allThoughts = await db.thoughts.filter(t => t.spaceId === activeSpaceId && t.userId === currentUserId && !t.deletedAt).toArray();
+      const allStacks = await db.stacks.filter(s => s.spaceId === activeSpaceId && s.userId === currentUserId && !s.deletedAt).toArray();
       for (const stack of allStacks) {
         if (stack.deletedAt) continue;
         const stackThoughts = allThoughts.filter(t => t.stackId === stack.id && !t.deletedAt);

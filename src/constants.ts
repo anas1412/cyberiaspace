@@ -80,6 +80,7 @@ export const STACK_COLORS = [
 ];
 
 export const MAX_FILE_SIZE_MB = 10;
+export const MAX_THOUGHTS_PER_STACK = 20;
 
 export const ORACLE_CONFIG = {
   HISTORY_WINDOW_SIZE: 12

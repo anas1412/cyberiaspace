@@ -62,9 +62,6 @@ export const createAuthSlice: StateCreator<AuthState, [], [], any> = (set, get, 
     window.addEventListener('online', async () => { 
       set({ isOnline: true });
       await get().processOfflineChanges();
-      if (get().autoSync) {
-        await get().syncData();
-      }
     });
     window.addEventListener('offline', () => set({ isOnline: false, syncStatus: 'offline' }));
     document.addEventListener('visibilitychange', () => {
@@ -84,11 +81,14 @@ export const createAuthSlice: StateCreator<AuthState, [], [], any> = (set, get, 
       // Phase 1: Auto-Migration for missing updatedAt
       try {
         const now = Date.now();
-        await db.transaction('rw', [db.thoughts, db.spaces, db.stacks], async () => {
-          await db.thoughts.filter(t => t.updatedAt === undefined || t.updatedAt === null).modify({ updatedAt: now, syncStatus: 'local' });
-          await db.spaces.filter(s => s.updatedAt === undefined || s.updatedAt === null).modify({ updatedAt: now, syncStatus: 'local' });
-          await db.stacks.filter(s => s.updatedAt === undefined || s.updatedAt === null).modify({ updatedAt: now, syncStatus: 'local' });
-        });
+        const currentUserId = currentUser?.id;
+        if (currentUserId) {
+          await db.transaction('rw', [db.thoughts, db.spaces, db.stacks], async () => {
+            await db.thoughts.filter(t => (t.updatedAt === undefined || t.updatedAt === null) && t.userId === currentUserId).modify({ updatedAt: now, syncStatus: 'local' });
+            await db.spaces.filter(s => (s.updatedAt === undefined || s.updatedAt === null) && s.userId === currentUserId).modify({ updatedAt: now, syncStatus: 'local' });
+            await db.stacks.filter(s => (s.updatedAt === undefined || s.updatedAt === null) && s.userId === currentUserId).modify({ updatedAt: now, syncStatus: 'local' });
+          });
+        }
       } catch (e) {
         console.warn('[Auth] Auto-migration failed:', e);
       }
@@ -254,6 +254,8 @@ export const createAuthSlice: StateCreator<AuthState, [], [], any> = (set, get, 
     localStorage.removeItem('cyberia-last-sync');
     localStorage.removeItem('cyberia-scopes');
     localStorage.removeItem('cyberia-refresh-secret');
+    localStorage.removeItem('cyberia-active-space-id');
+    localStorage.removeItem('cyberia-theme');
     set({ 
       user: null, 
       accessToken: null, 
@@ -263,6 +265,23 @@ export const createAuthSlice: StateCreator<AuthState, [], [], any> = (set, get, 
       syncStatus: 'offline', 
       lastSync: null 
     });
+    
+    // Clear in-memory store data to prevent stale data from leaking to next user
+    useStore.setState({ 
+      thoughts: [], 
+      spaces: [], 
+      stacks: [], 
+      activeSpaceId: null,
+      transform: { x: 0, y: 0, scale: 1 },
+      selectedThoughtIds: [],
+      creatorName: null,
+      customBg: null,
+      theme: 'cyberia'
+    });
+    document.body.setAttribute('data-theme', 'cyberia');
+    
+    // Create fresh guest workspace so the app isn't blank after logout
+    await useStore.getState().createInitialWorkspace();
     
     useStore.setState({ isInitializing: false });
   },

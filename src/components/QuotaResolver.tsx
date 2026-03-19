@@ -23,8 +23,7 @@ const QuotaResolver: React.FC = () => {
   useEffect(() => {
     const load = async () => {
       const currentUserId = user?.id ?? 'guest';
-      const allSpaces = await db.spaces.toArray();
-      const userSpaces = allSpaces.filter(s => s.userId === currentUserId && !s.deletedAt);
+      const userSpaces = await db.spaces.filter(s => s.userId === currentUserId && !s.deletedAt).toArray();
       const guests = userSpaces.filter(s => s.syncStatus === 'local');
       const synced = userSpaces.filter(s => s.syncStatus === 'synced');
       setGuestSpaces(guests);
@@ -80,8 +79,7 @@ const QuotaResolver: React.FC = () => {
     setIsProcessing(false);
     if (success) {
       // Re-load to see if more conflicts remain - now with proper userId filtering
-      const allSpaces = await db.spaces.toArray();
-      const userSpaces = allSpaces.filter(s => s.userId === currentUserId && !s.deletedAt);
+      const userSpaces = await db.spaces.filter(s => s.userId === currentUserId && !s.deletedAt).toArray();
       const guests = userSpaces.filter(s => s.syncStatus === 'local');
       setGuestSpaces(guests);
       if (guests.length > 0) {

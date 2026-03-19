@@ -250,7 +250,7 @@ export const syncOrchestrator = {
             const timeSinceUpdate = now - (s.updatedAt || 0);
             if (timeSinceUpdate > DELETION_GRACE_PERIOD_MS) {
               // Dexie Cleanup: Since Dexie has no CASCADE, we manually clear stackId from orphans
-              await db.thoughts.where('stackId').equals(s.id).modify({ stackId: null });
+              await db.thoughts.where('stackId').equals(s.id).and(t => t.userId === userId).modify({ stackId: null });
               await db.stacks.delete(s.id);
             }
           }
@@ -267,7 +267,6 @@ export const syncOrchestrator = {
       }
 
       // Updates (Cloud is newer)
-      let cloudChanges = false;
       const currentActiveSpaceId = store.activeSpaceId;
 
       const allKnownSpaceIds = new Set([
@@ -282,7 +281,6 @@ export const syncOrchestrator = {
           if (data) {
             const incomingSpace = toCamelCase(data);
             await db.spaces.put({ ...incomingSpace, syncStatus: 'synced' } as any);
-            cloudChanges = true;
 
             // REAL-TIME UI SYNC: If this is the active space, update current theme/bg (Silent)
             if (id === store.activeSpaceId) {
@@ -308,11 +306,9 @@ export const syncOrchestrator = {
           const { data } = await supabase.from('stacks').select('*').eq('id', id).single();
           if (data) {
             await db.stacks.put({ ...toCamelCase(data), syncStatus: 'synced' } as any);
-            cloudChanges = true;
           }
         } else if (localStack && localStack.syncStatus === 'local' && cloudTime === localTime) {
           await db.stacks.update(id, { syncStatus: 'synced' });
-          cloudChanges = true;
         }
       }
 
@@ -339,7 +335,6 @@ export const syncOrchestrator = {
               }
 
               await db.thoughts.put({ ...incoming, syncStatus: 'synced' } as any);
-              cloudChanges = true;
               
               if (data.type === 'file' && data.storage_url) {
                 if (data.space_id === currentActiveSpaceId || localT) {
@@ -349,17 +344,8 @@ export const syncOrchestrator = {
             }
           } else if (localT && localT.syncStatus === 'local' && cloudTime === localTime) {
             await db.thoughts.update(id, { syncStatus: 'synced' });
-            cloudChanges = true;
           }
         }
-      }
-
-      if (cloudChanges) {
-        await Promise.all([
-          store.refreshSpaces(),
-          store.refreshThoughts(),
-          store.refreshStacks()
-        ]);
       }
 
       // ==========================================
@@ -554,7 +540,7 @@ export const syncOrchestrator = {
         const ids = thoughtsToPush.map(t => t.id);
         
         // Atomic update: Only mark as synced if not modified during push
-        await db.thoughts.where('id').anyOf(ids).modify((t: any) => {
+        await db.thoughts.where('id').anyOf(ids).and(t => t.userId === userId).modify((t: any) => {
           if (t.updatedAt === thoughtTimestamps.get(t.id)) {
             t.syncStatus = 'synced';
           }
@@ -619,8 +605,8 @@ export const syncOrchestrator = {
     }
   },
 
-  async isLocalEmpty(): Promise<boolean> {
-    const thoughtsCount = await db.thoughts.filter(t => !t.deletedAt).count();
+  async isLocalEmpty(userId: string): Promise<boolean> {
+    const thoughtsCount = await db.thoughts.filter(t => !t.deletedAt && t.userId === userId).count();
     return thoughtsCount === 0;
   },
 

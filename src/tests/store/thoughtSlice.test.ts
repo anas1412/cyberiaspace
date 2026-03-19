@@ -58,7 +58,7 @@ describe('thoughtSlice', () => {
     });
     
     // Add test space
-    await db.spaces.add({ id: 'test-space', name: 'Test Space', mode: 'spatial', physics: true, order: 0 });
+    await db.spaces.add({ id: 'test-space', userId: 'test-user', name: 'Test Space', mode: 'spatial', physics: true, order: 0 });
     
     vi.clearAllMocks();
     

@@ -25,6 +25,7 @@ Welcome to the Cyberia codebase! This project is a modern, high-performance spat
 
 ###  Data Flow & Synchronization
 1.  **Local First:** All user data (Spaces, Thoughts, Stacks) is stored in **IndexedDB** using **Dexie**. This ensures offline functionality and low latency.
+1.5 ** IndexedDB is User-Scoped (CRITICAL):** IndexedDB stores data for ALL users in a single database. Unlike cloud storage, IndexedDB does NOT automatically filter by user. You MUST always filter by `userId` when querying `db.thoughts`, `db.stacks`, or `db.spaces` directly. Always get the current user's ID from `useAuthStore.getState().user?.id ?? 'guest'` and include it in your queries. The Zustand store automatically filters by userId when using `refreshThoughts()` or `refreshStacks()`, but direct DB queries must include `userId` explicitly.
 2.  **Local-First Priority:** The UI must always prioritize local Blobs over cloud URLs. Assets should be rendered from local storage whenever available to ensure instant feedback and offline reliability.
 3.  **The Sync Shield:** Large data operations (like imports) are protected by `isSyncBlocked` in the auth store. This prevents race conditions and sync conflicts by pausing background synchronization during heavy write operations.
 4.  **Synchronized Tombstones:** Deletion follows a soft-delete pattern using the `deletedAt` timestamp. Local records are only permanently purged from IndexedDB after a Supabase "Ack" (Acknowledgment) confirms the cloud deletion. Direct `db.delete()` is FORBIDDEN for synced entities; always use `deletedAt` + `updatedAt` + `syncStatus: 'local'`.
@@ -40,6 +41,11 @@ Welcome to the Cyberia codebase! This project is a modern, high-performance spat
         *   **Storage (Buckets):** Storage for binary assets like images and files.
 7.  **Sync State Machine:** Synchronization follows a 4-state machine (`local`, `syncing`, `synced`, `error`). It uses **Supabase Realtime** for instant cross-device updates and immediate delta synchronization upon local mutations.
 8.  **Boundary Translation:** The application strictly enforces `camelCase` in the frontend (JS/TS/Dexie) and `snake_case` in the backend (Postgres). All data crossing this boundary MUST be translated using `toCamelCase` (incoming) or `toSnakeCase` (outgoing) utilities from `src/services/supabaseSync.ts`. This prevents property mismatches and ensures standard naming conventions in both environments.
+9.  **Online/Offline Sync:** When the browser fires the `online` event, `processOfflineChanges()` is triggered which calls `deltaSync()` to push queued local changes to the cloud. When `offline`, all changes are saved locally and queued for the next sync. Supabase Realtime listeners are set up via `syncOrchestrator.setupRealtimeListener(userId)` to instantly receive cross-device changes.
+10. **Sync Debounce Behavior:** Local user changes are debounced (2.5s) before triggering `deltaSync()` to prevent "save storms" during active editing. Remote changes from Supabase Realtime are debounced (500ms) to handle bursts efficiently. A `syncRequestedDuringActiveSync` flag queues a follow-up sync if changes arrive while a sync is already running.
+11. **Echo Filter:** The realtime listener compares incoming cloud `updated_at` with local `updatedAt`. If local data is newer or equal, the change is ignored to prevent infinite self-broadcast loops.
+12. **Atomic Sync Marking:** When pushing changes to cloud, timestamps are captured before upload. Records are only marked `syncStatus: 'synced'` in the finally block if their `updatedAt` hasn't changed during the push, preventing overwriting newer local edits with older cloud data.
+13. **Absence Rule (Grace Period):** When cloud data is missing locally, a 30-second grace period is applied before permanent deletion. This prevents accidental data loss from cloud replication lag.
 
 ###  Spatial Thinking Engine
 - Thoughts are not just static entries; they are physical entities with `x, y` (position) and `vx, vy` (velocity) properties.
@@ -165,6 +171,12 @@ This section serves as a definitive reference for patterns that are deprecated. 
 - **Security:** NEVER commit Supabase keys or secrets. Use `import.meta.env.VITE_...` for environment variables.
 - **Unused Code:** Be aware that `supabase/functions/` and some scripts in `scripts/` may be legacy or for testing only. Always refer to `api/` for the active backend logic.
 - **Delta Sync:** Always ensure `updatedAt` is updated to `Date.now()` on every mutation (create/update/delete) to support incremental Delta Sync logic.
+- **User Isolation in IndexedDB:** When querying the database directly (not through Zustand), ALWAYS include `userId` in your filter. Example: `db.thoughts.filter(t => t.userId === currentUserId && !t.deletedAt)`. This prevents data leakage between users.
+- **SignOut User Isolation:** When signing out, the `signOut()` function in `authSlice.ts` must clean up ALL user-scoped state to prevent data leakage to the next user:
+    1. Clear localStorage keys: `cyberia-user`, `cyberia-token`, `cyberia-token-expiry`, `cyberia-last-sync`, `cyberia-scopes`, `cyberia-refresh-secret`, `cyberia-active-space-id`, `cyberia-theme`.
+    2. Clear in-memory Zustand store: `thoughts`, `spaces`, `stacks`, `activeSpaceId`, `transform`, `selectedThoughtIds`, `creatorName`, `customBg`, `theme`.
+    3. Reset `document.body` theme attribute to `cyberia`.
+    4. Call `createInitialWorkspace()` to provision a fresh guest workspace so the app isn't blank after logout.
 
 ### Communication & Language
 - Use simple, user-friendly language in all UI text, alerts, and documentation.

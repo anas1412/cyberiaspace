@@ -265,13 +265,15 @@ function App() {
           
           if (id !== '') {
             const { db } = await import('./db');
+            const userId = useAuthStore.getState().user?.id ?? 'guest';
             await db.blobs.put({
               id: id, // Deterministic ID
               thoughtId: id,
               blob: bestFile,
               name: fileName,
               type: actualType,
-              updatedAt: Date.now()
+              updatedAt: Date.now(),
+              userId
             });
             
             setSelectedThoughtId(id);

@@ -50,6 +50,7 @@ export interface CyberiaState {
   refreshTotalThoughtCount: () => Promise<void>;
   refreshSpaces: () => Promise<void>;
   refreshThoughts: (spaceId?: string) => Promise<void>;
+  scatterThoughts: (spaceId?: string) => Promise<void>;
   refreshStacks: (spaceId?: string) => Promise<void>;
   pushHistory: () => void;
   undo: () => void;
@@ -150,9 +151,7 @@ export interface AuthState {
   signOut: () => Promise<void>;
   syncData: () => Promise<void>;
   syncToServices: () => Promise<void>;
-  processPendingDeletions: () => Promise<void>;
   processOfflineChanges: () => Promise<void>;
-  processPendingBlobs: () => Promise<void>;
   uploadThoughtBlob: (thoughtId: string, force?: boolean) => Promise<void>;
   downloadSingleBlob: (thoughtId: string) => Promise<void>;
   downloadMissingBlobs: () => Promise<void>;

@@ -105,6 +105,10 @@ export const createSpaceSlice: StateCreator<CyberiaState, [], [], any> = (set, g
         get().refreshThoughts(id),
         get().refreshStacks(id)
       ]);
+      
+      // Scatter thoughts to prevent overlap on load
+      await get().scatterThoughts(id);
+      
     } catch (err) {
       console.error('Failed to set active space:', err);
     } finally {
@@ -213,6 +217,7 @@ export const createSpaceSlice: StateCreator<CyberiaState, [], [], any> = (set, g
     }
     
     const authStore = useAuthStore.getState();
+    const currentUserId = authStore.user?.id ?? 'guest';
     
     // SOFT DELETE: Mark everything as deleted
     const now = Date.now();
@@ -224,13 +229,13 @@ export const createSpaceSlice: StateCreator<CyberiaState, [], [], any> = (set, g
           syncStatus: 'local' 
         });
         
-        await db.thoughts.where('spaceId').equals(id).modify({ 
+        await db.thoughts.where('spaceId').equals(id).and(t => t.userId === currentUserId).modify({ 
           deletedAt: now, 
           updatedAt: now, 
           syncStatus: 'local' 
         });
         
-        await db.stacks.where('spaceId').equals(id).modify({ 
+        await db.stacks.where('spaceId').equals(id).and(s => s.userId === currentUserId).modify({ 
           deletedAt: now, 
           updatedAt: now, 
           syncStatus: 'local' 
@@ -478,8 +483,8 @@ export const createSpaceSlice: StateCreator<CyberiaState, [], [], any> = (set, g
         return false;
       }
 
-      const sourceThoughts = await db.thoughts.where('spaceId').equals(sourceSpaceId).and(t => !t.deletedAt).toArray();
-      const targetThoughtsCount = await db.thoughts.where('spaceId').equals(targetSpaceId).and(t => !t.deletedAt).count();
+      const sourceThoughts = await db.thoughts.where('spaceId').equals(sourceSpaceId).and(t => t.userId === currentUserId && !t.deletedAt).toArray();
+      const targetThoughtsCount = await db.thoughts.where('spaceId').equals(targetSpaceId).and(t => t.userId === currentUserId && !t.deletedAt).count();
       
       const limits = get().getLimits();
       if (sourceThoughts.length + targetThoughtsCount > limits.MAX_THOUGHTS_PER_SPACE) {
@@ -495,13 +500,13 @@ export const createSpaceSlice: StateCreator<CyberiaState, [], [], any> = (set, g
       await db.transaction('rw', [db.thoughts, db.stacks, db.spaces], async () => {
         const timestamp = Date.now();
         // Move thoughts
-        await db.thoughts.where('spaceId').equals(sourceSpaceId).modify({ 
+        await db.thoughts.where('spaceId').equals(sourceSpaceId).and(t => t.userId === currentUserId).modify({ 
           spaceId: targetSpaceId,
           syncStatus: 'local',
           updatedAt: timestamp
         });
         // Move stacks
-        await db.stacks.where('spaceId').equals(sourceSpaceId).modify({ 
+        await db.stacks.where('spaceId').equals(sourceSpaceId).and(s => s.userId === currentUserId).modify({ 
           spaceId: targetSpaceId,
           syncStatus: 'local',
           updatedAt: timestamp
@@ -549,8 +554,8 @@ export const createSpaceSlice: StateCreator<CyberiaState, [], [], any> = (set, g
       }
 
       // Check Global Cloud Thought Limit
-      const sourceThoughtsCount = await db.thoughts.where('spaceId').equals(sourceSpaceId).and(t => !t.deletedAt).count();
-      const targetThoughtsCount = await db.thoughts.where('spaceId').equals(targetSpaceIdToReplace).and(t => !t.deletedAt).count();
+      const sourceThoughtsCount = await db.thoughts.where('spaceId').equals(sourceSpaceId).and(t => t.userId === currentUserId && !t.deletedAt).count();
+      const targetThoughtsCount = await db.thoughts.where('spaceId').equals(targetSpaceIdToReplace).and(t => t.userId === currentUserId && !t.deletedAt).count();
       const currentCloudThoughts = authStore.user?.usage?.sync_thoughts || 0;
       
       const limits = get().getLimits();
@@ -608,13 +613,13 @@ export const createSpaceSlice: StateCreator<CyberiaState, [], [], any> = (set, g
           syncStatus: 'local' 
         });
         
-        await db.thoughts.where('spaceId').equals(id).modify({ 
+        await db.thoughts.where('spaceId').equals(id).and(t => t.userId === currentUserId).modify({ 
           deletedAt: timestamp, 
           updatedAt: timestamp, 
           syncStatus: 'local' 
         });
         
-        await db.stacks.where('spaceId').equals(id).modify({ 
+        await db.stacks.where('spaceId').equals(id).and(s => s.userId === currentUserId).modify({ 
           deletedAt: timestamp, 
           updatedAt: timestamp, 
           syncStatus: 'local' 

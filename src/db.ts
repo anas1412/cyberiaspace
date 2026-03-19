@@ -107,10 +107,11 @@ interface Thought {
 
 interface LocalBlob {
   id: string;
-  thoughtId: string; // Changed from number to string
+  thoughtId: string;
   blob: Blob;
   name: string;
   type: string;
+  userId: string; // Required for user isolation
   updatedAt: number;
 }
 

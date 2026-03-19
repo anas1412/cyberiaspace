@@ -166,8 +166,10 @@ export const createSyncSlice: StateCreator<AuthState, [], [], SyncSlice> = (set,
     localStorage.setItem('cyberia-last-sync', new Date().toISOString());
     set({ lastSync: new Date(), syncStatus: 'synced' });
     
-    // Final auto-selection check
-    const finalSpaces = await db.spaces.toArray();
+    // Final auto-selection check - FIXED: filter by userId to prevent cross-user data leak
+    const { useAuthStore } = await import('../useAuthStore');
+    const currentUserId = useAuthStore.getState().user?.id ?? 'guest';
+    const finalSpaces = await db.spaces.filter(s => s.userId === currentUserId && !s.deletedAt).toArray();
     if (finalSpaces.length > 0 && !store.activeSpaceId) {
       const { useStore: dynamicStore } = await import('../useStore');
       await dynamicStore.getState().setActiveSpace(finalSpaces[0].id);

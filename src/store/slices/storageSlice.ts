@@ -74,12 +74,18 @@ export const createStorageSlice: StateCreator<AuthState, [], [], any> = (set, ge
     try {
       const { useStore } = await import('../useStore');
       const store = useStore.getState();
+      const currentUserId = user.id;
 
-      const blobEntry = await db.blobs.where('thoughtId').equals(thoughtId).first();
-      const thought = await db.thoughts.get(thoughtId);
+      const blobEntry = await db.blobs.filter(b => b.thoughtId === thoughtId && b.userId === currentUserId).first();
+      const thought = await db.thoughts.filter(t => t.id === thoughtId && t.userId === currentUserId).first();
 
-      if (!blobEntry || !thought) {
-        console.warn('[Storage] No blob entry or thought found for id:', thoughtId);
+      if (!thought || thought.userId !== currentUserId) {
+        console.warn('[Storage] Thought not found or belongs to another user:', thoughtId);
+        return;
+      }
+
+      if (!blobEntry) {
+        console.warn('[Storage] No blob entry found for id:', thoughtId);
         return;
       }
 
@@ -176,7 +182,12 @@ export const createStorageSlice: StateCreator<AuthState, [], [], any> = (set, ge
 
     try {
       const thought = await db.thoughts.get(thoughtId);
-      if (!thought || !thought.storageUrl) return;
+      const currentUserId = user.id ?? 'guest';
+      if (!thought || thought.userId !== currentUserId) {
+        console.warn('[Storage] Thought not found or belongs to another user:', thoughtId);
+        return;
+      }
+      if (!thought.storageUrl) return;
 
       console.log(`[Storage] Downloading blob for thought: ${thoughtId}`);
       const response = await fetch(thought.storageUrl);
@@ -186,11 +197,12 @@ export const createStorageSlice: StateCreator<AuthState, [], [], any> = (set, ge
       const fileType = blob.type || 'application/octet-stream';
 
       await db.blobs.put({
-        id: thoughtId, // Deterministic ID
+        id: thoughtId,
         thoughtId,
         blob,
         name: fileName,
         type: fileType,
+        userId: currentUserId,
         updatedAt: Date.now()
       });
 
@@ -227,8 +239,9 @@ export const createStorageSlice: StateCreator<AuthState, [], [], any> = (set, ge
 
     try {
       const { useStore } = await import('../useStore');
+      const currentUserId = user?.id ?? 'guest';
       const cloudThoughts = await db.thoughts
-        .filter(t => !!t.storageUrl && !t.deletedAt)
+        .filter(t => !!t.storageUrl && !t.deletedAt && t.userId === currentUserId)
         .toArray();
       
       const missing = [];
@@ -250,11 +263,12 @@ export const createStorageSlice: StateCreator<AuthState, [], [], any> = (set, ge
             const blob = await res.blob();
             
             await db.blobs.put({
-              id: t.id, // Deterministic ID
+              id: t.id,
               thoughtId: t.id,
               blob,
               name: t.text || 'asset',
               type: blob.type || 'application/octet-stream',
+              userId: currentUserId,
               updatedAt: Date.now()
             });
 
@@ -276,9 +290,10 @@ export const createStorageSlice: StateCreator<AuthState, [], [], any> = (set, ge
     if (!user || !isOnline) return;
 
     try {
+      const currentUserId = user!.id;
       // Find all spaces where customBg looks like a cloud URL but the file may be gone
       const spacesWithBg = await db.spaces
-        .filter((s: any) => !!s.customBg && isStorageUrl(s.customBg) && !s.deletedAt)
+        .filter((s: any) => !!s.customBg && isStorageUrl(s.customBg) && !s.deletedAt && s.userId === currentUserId)
         .toArray();
 
       if (spacesWithBg.length === 0) return;
@@ -368,13 +383,5 @@ export const createStorageSlice: StateCreator<AuthState, [], [], any> = (set, ge
     } catch (err) {
       console.error('[Storage] Failed to remove cloud asset:', err);
     }
-  },
-
-  processPendingDeletions: async () => {
-    console.warn('[Storage] processPendingDeletions is deprecated');
-  },
-
-  processPendingBlobs: async () => {
-    console.warn('[Storage] processPendingBlobs is deprecated');
   },
 });

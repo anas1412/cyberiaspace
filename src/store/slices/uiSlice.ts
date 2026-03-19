@@ -85,6 +85,14 @@ export const createUiSlice: StateCreator<CyberiaState, [], [], any> = (set, get,
         set({ customBg: url });
         const updated = get().spaces.map((s: any) => s.id === activeSpaceId ? { ...s, customBg: url } : s);
         set({ spaces: updated });
+        // Verify space belongs to current user
+        const currentUserId = authStore.user.id;
+        const space = await db.spaces.filter(s => s.id === activeSpaceId && s.userId === currentUserId).first();
+        if (!space) {
+          console.warn('[BG] Space not found or access denied:', activeSpaceId);
+          return;
+        }
+
         await db.spaces.update(activeSpaceId, { customBg: url, updatedAt: Date.now(), syncStatus: 'local' as const });
         
         if (!isStale()) await syncOrchestrator.triggerSync();
@@ -96,6 +104,15 @@ export const createUiSlice: StateCreator<CyberiaState, [], [], any> = (set, get,
       const blobUrl = bg; // Could be null or an existing URL
       
       if (isStale()) return;
+
+      // Verify space belongs to current user
+      const { useAuthStore: verifyAuthStore } = await import('../useAuthStore');
+      const verifyUserId = verifyAuthStore.getState().user?.id ?? 'guest';
+      const verifySpace = await db.spaces.filter(s => s.id === activeSpaceId && s.userId === verifyUserId).first();
+      if (!verifySpace) {
+        console.warn('[BG] Space not found or access denied:', activeSpaceId);
+        return;
+      }
 
       set({ customBg: blobUrl });
       const updated = get().spaces.map((s: any) => s.id === activeSpaceId ? { ...s, customBg: blobUrl } : s);
