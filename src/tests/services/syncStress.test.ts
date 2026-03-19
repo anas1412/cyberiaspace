@@ -148,6 +148,7 @@ describe('Sync Stress Test', () => {
     for (let i = 0; i < 100; i++) {
       thoughts.push({
         id: ulid(),
+        userId,
         spaceId,
         stackId: null,
         text: `Thought ${i}`,
