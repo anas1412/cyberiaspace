@@ -340,6 +340,9 @@ export const createAuthSlice: StateCreator<AuthState, [], [], any> = (set, get, 
     await useStore.getState().createInitialWorkspace();
     
     useStore.setState({ isInitializing: false });
+    
+    // Refresh page to re-initialize everything (view switcher, etc.)
+    window.location.reload();
   },
 
   upgradePlan: (plan: SubscriptionPlan, period?: AccessPeriod) => {
