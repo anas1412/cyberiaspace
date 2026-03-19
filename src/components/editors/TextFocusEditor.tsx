@@ -99,6 +99,17 @@ const TextFocusEditor: React.FC = () => {
     URL.revokeObjectURL(url);
   };
 
+  const exportMD = () => {
+    if (!thought) return;
+    const blob = new Blob([content], { type: 'text/markdown' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${thought.text || 'note'}.md`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
   if (!thought) return null;
 
   return (
@@ -149,9 +160,14 @@ const TextFocusEditor: React.FC = () => {
         <p className="text-[8px] md:text-[10px] uppercase font-black tracking-widest text-[var(--text-muted)]">Markdown Rendering Supported</p>
       }
       footerActions={
-        <button onClick={exportTXT} className="text-[8px] md:text-[10px] uppercase font-black tracking-widest text-[var(--text-dimmed)] hover:text-[var(--text-primary)] transition-colors flex items-center gap-2">
-          <Download className="w-3.5 h-3.5" /> TXT
-        </button>
+        <div className="flex items-center gap-4">
+          <button onClick={exportTXT} className="text-[8px] md:text-[10px] uppercase font-black tracking-widest text-[var(--text-dimmed)] hover:text-[var(--text-primary)] transition-colors flex items-center gap-2">
+            <Download className="w-3.5 h-3.5" /> TXT
+          </button>
+          <button onClick={exportMD} className="text-[8px] md:text-[10px] uppercase font-black tracking-widest text-[var(--text-dimmed)] hover:text-[var(--text-primary)] transition-colors flex items-center gap-2">
+            <Download className="w-3.5 h-3.5" /> MD
+          </button>
+        </div>
       }
     >
       <EditorContent 

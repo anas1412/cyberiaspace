@@ -396,7 +396,7 @@ const Viewport: React.FC<{ isInteracting?: boolean }> = ({ isInteracting }) => {
 
         const isImage = file.type.startsWith('image/') || /\.(jpg|jpeg|png|gif|webp|svg)$/i.test(file.name);
         const isVideo = file.type.startsWith('video/') || /\.(mp4|webm|mov|m4v)$/i.test(file.name);
-        const isText = file.name.endsWith('.txt') || file.type === 'text/plain';
+        const isText = file.name.endsWith('.txt') || file.name.endsWith('.md') || file.type === 'text/plain' || file.type === 'text/markdown';
         const isCSV = file.name.endsWith('.csv') || file.type === 'text/csv';
         const isLarge = file.size > 2 * 1024 * 1024;
 
@@ -496,7 +496,7 @@ const Viewport: React.FC<{ isInteracting?: boolean }> = ({ isInteracting }) => {
         }
 
         const reader = new FileReader();
-        if (file.name.endsWith('.txt') || file.type === 'text/plain') {
+        if (file.name.endsWith('.txt') || file.name.endsWith('.md') || file.type === 'text/plain' || file.type === 'text/markdown') {
           reader.onload = async (ev) => {
             const content = ev.target?.result as string;
             await addThought({
@@ -504,7 +504,7 @@ const Viewport: React.FC<{ isInteracting?: boolean }> = ({ isInteracting }) => {
               data: { type: 'text', content },
               x: dropX + (Math.random() * 20 - 10),
               y: dropY + (Math.random() * 20 - 10),
-              text: file.name.replace('.txt', '')
+              text: file.name.replace(/\.(txt|md)$/, '')
             });
           };
           reader.readAsText(file);
