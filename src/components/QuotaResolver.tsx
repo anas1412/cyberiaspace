@@ -19,42 +19,48 @@ const QuotaResolver: React.FC = () => {
   const [selectedCloudId, setSelectedCloudId] = useState<string | null>(null);
   const [step, setStep] = useState<'options' | 'merge' | 'replace'>('options');
   const [isProcessing, setIsProcessing] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   const [hasResolvedOne, setHasResolvedOne] = useState(false);
   const [isResolved, setIsResolved] = useState(false);
 
   const loadSpaces = useCallback(async () => {
+    setIsLoading(true);
     const currentUserId = user?.id ?? 'guest';
     
-    const { syncOrchestrator } = await import('../services/sync/syncOrchestrator');
-    const cloudData = await syncOrchestrator.fetchCloudData();
-    const cloudDataSpaces = (cloudData?.spaces || []) as any[];
-    const cloudSpaceIds = new Set(cloudDataSpaces.map(s => s.id));
-    
-    const allLocalSpaces = await db.spaces
-      .filter(s => (s.userId === currentUserId || !s.userId || s.userId === 'guest') && !s.deletedAt)
-      .toArray();
-    
-    const localOnly = allLocalSpaces.filter(s => 
-      !cloudSpaceIds.has(s.id) || s.syncStatus === 'local' || s.syncStatus === undefined
-    );
-    
-    const cloudOnly = cloudDataSpaces.filter(s => 
-      allLocalSpaces.some((us: any) => us.id === s.id)
-    );
-    
-    console.log('[QuotaResolver] Loaded. localOnly:', localOnly.length, 'cloudOnly:', cloudOnly.length);
-    setGuestSpaces(localOnly);
-    setCloudSpaces(cloudOnly);
-    if (localOnly.length > 0) {
-      setSelectedGuestId(localOnly[0].id);
-    }
-    if (cloudOnly.length > 0) {
-      setSelectedCloudId(cloudOnly[0].id);
-    }
-    
-    // Check if all resolved
-    if (localOnly.length === 0 && hasResolvedOne) {
-      setIsResolved(true);
+    try {
+      const { syncOrchestrator } = await import('../services/sync/syncOrchestrator');
+      const cloudData = await syncOrchestrator.fetchCloudData();
+      const cloudDataSpaces = (cloudData?.spaces || []) as any[];
+      const cloudSpaceIds = new Set(cloudDataSpaces.map(s => s.id));
+      
+      const allLocalSpaces = await db.spaces
+        .filter(s => (s.userId === currentUserId || !s.userId || s.userId === 'guest') && !s.deletedAt)
+        .toArray();
+      
+      const localOnly = allLocalSpaces.filter(s => 
+        !cloudSpaceIds.has(s.id) || s.syncStatus === 'local' || s.syncStatus === undefined
+      );
+      
+      const cloudOnly = cloudDataSpaces.filter(s => 
+        allLocalSpaces.some((us: any) => us.id === s.id)
+      );
+      
+      console.log('[QuotaResolver] Loaded. localOnly:', localOnly.length, 'cloudOnly:', cloudOnly.length);
+      setGuestSpaces(localOnly);
+      setCloudSpaces(cloudOnly);
+      if (localOnly.length > 0) {
+        setSelectedGuestId(localOnly[0].id);
+      }
+      if (cloudOnly.length > 0) {
+        setSelectedCloudId(cloudOnly[0].id);
+      }
+      
+      // Check if all resolved
+      if (localOnly.length === 0 && hasResolvedOne) {
+        setIsResolved(true);
+      }
+    } finally {
+      setIsLoading(false);
     }
   }, [user, hasResolvedOne]);
 
@@ -101,6 +107,15 @@ const QuotaResolver: React.FC = () => {
         <h3 className="text-white font-bold mb-2">All Resolved</h3>
         <p className="text-slate-400 text-xs">You can close this modal.</p>
         <button onClick={handleClose} className="mt-6 px-6 py-2 bg-white/5 hover:bg-white/10 text-white rounded-xl text-[10px] font-black uppercase">Close</button>
+      </div>
+    );
+  }
+
+  // Show loading spinner while fetching cloud data
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center py-12">
+        <div className="w-6 h-6 border-2 border-blue-500/30 border-t-blue-500 rounded-full animate-spin" />
       </div>
     );
   }

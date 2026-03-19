@@ -113,17 +113,41 @@ export const createSyncSlice: StateCreator<AuthState, [], [], SyncSlice> = (set,
       const authStore = useAuthStore.getState();
       const currentUserId = authStore.user?.id ?? 'guest';
       
-      // Fast path: try cloud hydration first
+      // FAST PATH: Check for unmigrated local data FIRST (before cloud fetch)
+      // This allows the modal to open instantly without waiting for cloud API
+      console.log('[SYNC-HANDSHAKE] Checking for local unmigrated data...');
+      const localSpaces = await db.spaces.filter(s => 
+        (s.syncStatus === 'local' || s.syncStatus === undefined) && 
+        s.userId === currentUserId && 
+        !s.deletedAt
+      ).toArray();
+      
+      const unmigratedSpaces = localSpaces.filter(s => s.syncStatus === undefined);
+      const hasUnmigratedData = unmigratedSpaces.length > 0;
+      
+      if (hasUnmigratedData) {
+        console.log(`[SYNC-HANDSHAKE] UNMIGRATED LOCAL DATA: Opening resolver immediately. unmigratedSpaces: ${unmigratedSpaces.length}`);
+        
+        // CRITICAL: Set flag BEFORE opening modal to block delta sync
+        authStore.setQuotaResolverPending(true);
+        
+        // Open modal immediately - DO NOT wait for cloud fetch
+        const { useModalStore } = await import('../useModalStore');
+        useModalStore.getState().openModal({
+          title: 'Import Local Data',
+          type: 'quota_resolver'
+        });
+        
+        // Return early - modal will fetch cloud data itself
+        handshakeInProgress = false;
+        return;
+      }
+      
+      // STANDARD PATH: Fetch cloud data for quota check
       try {
         const cloudData = await syncOrchestrator.fetchCloudData();
         if (cloudData) {
           console.log('[SYNC-HANDSHAKE] Fetched cloud data, spaces:', (cloudData.spaces || []).length);
-          // Include both 'local' syncStatus and undefined (unmigrated guest data)
-          const localSpaces = await db.spaces.filter(s => 
-            (s.syncStatus === 'local' || s.syncStatus === undefined) && 
-            s.userId === currentUserId && 
-            !s.deletedAt
-          ).toArray();
           const cloudSpaces = (cloudData.spaces || []) as any[];
           
           const totalUniqueSpaces = new Set([
@@ -131,32 +155,21 @@ export const createSyncSlice: StateCreator<AuthState, [], [], SyncSlice> = (set,
             ...cloudSpaces.map(s => s.id)
           ]).size;
           
-          // Check for unmigrated local spaces (syncStatus === undefined)
-          // These are guest spaces that haven't been synced to cloud yet
-          const unmigratedSpaces = localSpaces.filter(s => s.syncStatus === undefined);
-          const hasUnmigratedData = unmigratedSpaces.length > 0;
-          
           const { user } = get();
           const plan = user?.plan || 'free';
           const limit = PLAN_CONFIG[plan].MAX_SPACES;
           
-          // Trigger resolver if quota conflict OR unmigrated local spaces exist
-          if (totalUniqueSpaces > limit || hasUnmigratedData) {
-            const reason = totalUniqueSpaces > limit ? 'QUOTA CONFLICT' : 'UNMIGRATED LOCAL DATA';
-            console.log(`[SYNC-HANDSHAKE] ${reason}: Opening resolver, blocking sync. unmigratedSpaces: ${unmigratedSpaces.length}, totalUniqueSpaces: ${totalUniqueSpaces}, limit: ${limit}`);
+          // Trigger resolver only if quota exceeded
+          if (totalUniqueSpaces > limit) {
+            console.log(`[SYNC-HANDSHAKE] QUOTA CONFLICT: Opening resolver. totalUniqueSpaces: ${totalUniqueSpaces}, limit: ${limit}`);
             
-            // CRITICAL: Set flag BEFORE opening modal to block delta sync
             authStore.setQuotaResolverPending(true);
-            
-            // Open modal immediately - DO NOT call importFullState
             const { useModalStore } = await import('../useModalStore');
             useModalStore.getState().openModal({
-              title: hasUnmigratedData ? 'Import Local Data' : 'Space Limit Reached',
+              title: 'Space Limit Reached',
               type: 'quota_resolver'
             });
             
-            // Return early - DO NOT run importFullState or set lastSync
-            // This prevents the race condition where delta sync runs and marks guest spaces as synced
             handshakeInProgress = false;
             return;
           } else {
