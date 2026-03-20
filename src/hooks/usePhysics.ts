@@ -1,7 +1,7 @@
 import { useEffect, useRef, useCallback } from 'react';
 import { useStore } from '../store/useStore';
 import { type Thought } from '../db';
-import { getStrategist, type LayoutContext, type PhysicsPoint } from './physics';
+import { getStrategist, type LayoutContext, type LayoutResult, type PhysicsPoint } from './physics';
 import { type Camera } from './useCamera';
 
 const DAMPING = 0.8;
@@ -492,6 +492,7 @@ export const usePhysics = (
     const shouldCalculatePhysics = !performanceMode && (activeSpace?.physics ?? true);
 
     // 1. Calculate Targets & Apply Forces
+    const layoutCache = new Map<string, LayoutResult>();
     ids.forEach((id) => {
       const p = state.get(id)!;
       const t = thoughtMap.current.get(id);
@@ -524,6 +525,7 @@ export const usePhysics = (
         // Handled by applyHomeReturn()
       } else if (!isDragging) {
         const result = strategist.calculateLayout(t, allThoughts, context, elementHeights);
+        layoutCache.set(id, result);
         if (snapNextFrame.current) {
           p.x = result.targetX; p.y = result.targetY; p.scale = result.targetScale;
         } else {
@@ -664,7 +666,7 @@ export const usePhysics = (
       const isSelected = t.id === selectedThoughtId;
       const isDraggingThis = dragRef.current?.initialPositions.has(id) && dragRef.current.moved;
       
-      const res = strategist.calculateLayout(t, allThoughts, context, elementHeights);
+      const res = layoutCache.get(id) || strategist.calculateLayout(t, allThoughts, context, elementHeights);
       const targetRotation = (res.rotation && !isSelected) ? res.rotation : 0;
 
       // --- PRECISION FILTER ---
