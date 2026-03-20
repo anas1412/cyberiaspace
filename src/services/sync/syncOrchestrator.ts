@@ -597,11 +597,9 @@ export const syncOrchestrator = {
     }
     const userId = authState.user!.id;
     try {
-      const [spaces, thoughts, stacks] = await Promise.all([
-        supabaseSync.getSpaces(userId),
-        supabaseSync.getThoughts(userId),
-        supabaseSync.getStacks(userId),
-      ]);
+      const spaces = await supabaseSync.getSpaces(userId);
+      const thoughts = await supabaseSync.getThoughts(userId);
+      const stacks = await supabaseSync.getStacks(userId);
       console.log('[Sync] fetchCloudData: success, spaces:', spaces.spaces?.length, 'thoughts:', thoughts.thoughts?.length);
       return { spaces: spaces.spaces || [], thoughts: thoughts.thoughts || [], stacks: stacks.stacks || [] };
     } catch (err) {

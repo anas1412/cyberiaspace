@@ -105,9 +105,10 @@ export const createSyncSlice: StateCreator<AuthState, [], [], SyncSlice> = (set,
       const authStore = useAuthStore.getState();
       const currentUserId = authStore.user?.id ?? 'guest';
       
-      // Fetch cloud data and import
+      // Fetch cloud data (for reference, don't import yet - let migration happen first)
+      let cloudData: any = null;
       try {
-        const cloudData = await syncOrchestrator.fetchCloudData();
+        cloudData = await syncOrchestrator.fetchCloudData();
         if (cloudData) {
           console.log('[SYNC-HANDSHAKE] Fetched cloud data, spaces:', (cloudData.spaces || []).length);
         }

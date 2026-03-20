@@ -1,3 +1,5 @@
+// text/plain
+
 import { syncOrchestrator } from '../../services/sync/syncOrchestrator';
 import { type StateCreator } from 'zustand';
 import { type User, type SubscriptionPlan, type AccessPeriod, PLAN_CONFIG } from '../../constants';
@@ -49,6 +51,163 @@ const getInitialUser = (): User | null => {
   }
 };
 
+/**
+ * Core Local-to-Account Data Flow Engine
+ * Eliminates race conditions by strictly following Phase 1 -> Phase 2 -> Phase 3
+ */
+async function runAuthenticationFlow(user: User, get: any, set: any, isFreshLogin: boolean) {
+  const { useStore } = await import('../useStore');
+  const { useModalStore } = await import('../useModalStore');
+  const store = useStore.getState();
+
+  useStore.setState({ isInitializing: true });
+
+  try {
+    // PHASE 1: Import Cloud Data (Always First)
+    // We only fetch and destructively import on a fresh login. Returning users already have this synced in IDB.
+    if (isFreshLogin) {
+      console.log('[AUTH] Phase 1: Importing Cloud Data...');
+      try {
+        const cloudData = await syncOrchestrator.fetchCloudData();
+        if (cloudData && cloudData.spaces.length > 0) {
+          await store.importFullState(cloudData, false); // false = don't trigger reverse sync
+        }
+      } catch (err) {
+        console.warn('[AUTH] Phase 1 Cloud fetch failed (might be offline):', err);
+      }
+    }
+
+    // Rely on IDB for accurate cloud counts post-import
+    const userSpaces = await db.spaces.where('userId').equals(user.id).filter(s => !s.deletedAt).toArray();
+    const cloudCount = userSpaces.length;
+
+    // PHASE 2: Assess Local Data
+    console.log('[AUTH] Phase 2: Assessing Local Data...');
+    const localGuestSpaces = await db.spaces.where('userId').equals('guest').filter(s => !s.deletedAt).toArray();
+    let localCount = 0;
+    for (const space of localGuestSpaces) {
+      const thoughtCount = await db.thoughts.where('spaceId').equals(space.id).filter(t => !t.deletedAt).count();
+      if (thoughtCount > 0) localCount++;
+    }
+
+    console.log(`[AUTH] Matrix Assessment: Local=${localCount}, Cloud=${cloudCount}`);
+
+    // Helper: Runs after matrix resolves to prep the workspace & establish sync loops
+    const finalizeSetup = async () => {
+      // Final Catch: If absolutely 0 spaces exist after matrix completes, create the default workspace
+      const finalUserSpaces = await db.spaces.where('userId').equals(user.id).filter(s => !s.deletedAt).count();
+      if (finalUserSpaces === 0 && typeof store.ensureWorkspaceForCurrentUser === 'function') {
+        await store.ensureWorkspaceForCurrentUser();
+      }
+
+      await store.refreshSpaces();
+      await store.refreshThoughts();
+
+      // Ensure active space belongs to the user, not a ghost/deleted space
+      const currentStore = useStore.getState();
+      const spaces = currentStore.spaces;
+      const currentActive = currentStore.activeSpaceId;
+      const validActive = currentActive && spaces.some(s => s.id === currentActive && !s.deletedAt);
+      
+      if (!validActive && spaces.length > 0) {
+        const targetSpace = spaces.find(s => s.userId === user.id) || spaces[0];
+        await store.setActiveSpace(targetSpace.id);
+      }
+
+      // Start the background synchronization engines (will catch any newly migrated local spaces)
+      if (typeof get().handlePostAuthSync === 'function') {
+        await get().handlePostAuthSync();
+      }
+    };
+
+    // PHASE 3: Decision Matrix
+    const isDismissed = localStorage.getItem('cyberia-migration-dismissed') === user.id;
+
+    if (isDismissed) {
+      console.log('[AUTH] Phase 3: Migration previously dismissed. Skipping.');
+      await finalizeSetup();
+      return;
+    }
+
+    if (localCount > 0 && cloudCount === 0) {
+      // Case 1: Auto-Migrate (Seamless)
+      console.log('[AUTH] Phase 3: Auto-Migrating local work...');
+      if (typeof store.migrateGuestSpaces === 'function') {
+        await store.migrateGuestSpaces(user.id);
+      }
+      await finalizeSetup();
+
+    } else if (localCount === 0 && cloudCount > 0) {
+      // Case 2: Cloud Skip
+      console.log('[AUTH] Phase 3: Cloud only. Proceeding...');
+      await finalizeSetup();
+
+    } else if (localCount > 0 && cloudCount > 0) {
+      // Case 3: Conflict (Modal)
+      console.log('[AUTH] Phase 3: Conflict detected. Checking quota...');
+      const limits = store.getLimits();
+      const totalSpaces = localCount + cloudCount;
+      const isWithinLimit = totalSpaces <= limits.MAX_SPACES;
+
+      await new Promise<void>((resolve) => {
+        if (isWithinLimit) {
+          useModalStore.getState().openModal({
+            title: 'Move Local Work?',
+            description: `You have ${localCount} local space(s) and ${cloudCount} account space(s). Would you like to move your local work into your account?`,
+            type: 'alert',
+            confirmText: 'Move to Account',
+            cancelText: 'Keep Separate',
+            onConfirm: async () => {
+              useStore.setState({ isInitializing: true });
+              if (typeof store.migrateGuestSpaces === 'function') {
+                await store.migrateGuestSpaces(user.id);
+              }
+              await finalizeSetup();
+              resolve();
+            },
+            onCancel: async () => {
+              localStorage.setItem('cyberia-migration-dismissed', user.id);
+              await finalizeSetup();
+              resolve();
+            }
+          });
+        } else {
+          useModalStore.getState().openModal({
+            title: 'Space Limit Reached',
+            description: `Moving local work would exceed your plan limit of ${limits.MAX_SPACES} spaces. Upgrade to Pro or keep them local for now.`,
+            type: 'alert',
+            confirmText: 'Upgrade to Pro',
+            cancelText: 'Keep Separate',
+            onConfirm: async () => {
+              useModalStore.getState().openPricing();
+              await finalizeSetup();
+              resolve();
+            },
+            onCancel: async () => {
+              localStorage.setItem('cyberia-migration-dismissed', user.id);
+              await finalizeSetup();
+              resolve();
+            }
+          });
+        }
+      });
+    } else {
+      // Case 0: Fresh Start
+      console.log('[AUTH] Phase 3: Fresh start (No local or cloud spaces).');
+      await finalizeSetup();
+    }
+
+  } catch (err) {
+    console.error('[AUTH] Authentication flow failed:', err);
+    // Fallback: Ensure UI un-suspends and sync tries to recover
+    if (typeof get().handlePostAuthSync === 'function') {
+      await get().handlePostAuthSync();
+    }
+  } finally {
+    useStore.setState({ isInitializing: false });
+  }
+}
+
 export const createAuthSlice: StateCreator<AuthState, [], [], any> = (set, get, _api) => ({
   user: getInitialUser(),
   accessToken: localStorage.getItem('cyberia-token'),
@@ -57,11 +216,12 @@ export const createAuthSlice: StateCreator<AuthState, [], [], any> = (set, get, 
   grantedScopes: JSON.parse(localStorage.getItem('cyberia-scopes') || '[]'),
   status: localStorage.getItem('cyberia-user') ? 'authenticated' : 'unauthenticated' as 'idle' | 'loading' | 'authenticated' | 'unauthenticated',
 
-
   initAuth: async () => {
     window.addEventListener('online', async () => { 
       set({ isOnline: true });
-      await get().processOfflineChanges();
+      if (typeof get().processOfflineChanges === 'function') {
+        await get().processOfflineChanges();
+      }
     });
     window.addEventListener('offline', () => set({ isOnline: false, syncStatus: 'offline' }));
     document.addEventListener('visibilitychange', () => {
@@ -70,125 +230,17 @@ export const createAuthSlice: StateCreator<AuthState, [], [], any> = (set, get, 
         get().refreshProfile();
       }
     });
+    
     get().checkExpiry();
     get().setupRefreshInterval();
 
     const currentUser = get().user;
     if (get().status === 'authenticated' && currentUser?.id) {
       syncOrchestrator.setupRealtimeListener(currentUser.id);
-
-      console.log('[AUTH] Phase 1: Importing cloud data...');
-      await get().handlePostAuthSync();
-
-      console.log('[AUTH] Phase 2: Assessing State for Migration...');
-      const { useStore } = await import('../useStore');
-      const { useModalStore } = await import('../useModalStore');
-      const store = useStore.getState();
-
-      // Prevention: Don't show the migration prompt if the user dismissed it in this session
-      const isDismissed = localStorage.getItem('cyberia-migration-dismissed') === currentUser.id;
-
-      try {
-        // 1. Get Cloud Count (Reliable Source from Supabase directly)
-        const cloudSpaces = await supabaseSync.getSpaces(currentUser.id, 'id');
-        const cloudCount = cloudSpaces.spaces?.length || 0;
-
-        // 2. Get Local Count (Spaces with Thoughts)
-        // We filter for spaces that actually have content to avoid migrating empty "New Tab" spaces
-        const localGuestSpaces = await db.spaces.where('userId').equals('guest').toArray();
-        let localCount = 0;
-        
-        for (const space of localGuestSpaces) {
-          const thoughtCount = await db.thoughts.where('spaceId').equals(space.id).filter(t => !t.deletedAt).count();
-          if (thoughtCount > 0) localCount++;
-        }
-
-        console.log(`[AUTH] Matrix Assessment: Local=${localCount}, Cloud=${cloudCount}`);
-
-        if (isDismissed) {
-          console.log('[AUTH] Migration prompt was previously dismissed, skipping assessment.');
-          return;
-        }
-
-        // 3. Execute Matrix
-        if (localCount > 0 && cloudCount === 0) {
-          // Case 1: Auto-migrate (Local content, no cloud content)
-          console.log('[AUTH] Case 1: Auto-migrating local work...');
-          if (typeof store.migrateGuestSpaces === 'function') {
-            await store.migrateGuestSpaces(currentUser.id);
-            await store.refreshSpaces();
-            await store.refreshThoughts();
-          }
-        } else if (localCount === 0 && cloudCount > 0) {
-          // Case 2: Cloud content only (No local content with thoughts)
-          console.log('[AUTH] Case 2: Cloud content only. No migration needed.');
-        } else if (localCount > 0 && cloudCount > 0) {
-          // Case 3: Conflict (Both exist) -> Quota Check & Modal
-          console.log('[AUTH] Case 3: Conflict detected. Checking quota...');
-          
-          const limits = store.getLimits();
-          const totalSpaces = localCount + cloudCount;
-          const isWithinLimit = totalSpaces <= limits.MAX_SPACES;
-
-          if (isWithinLimit) {
-            // Prompt: Migrate?
-            useModalStore.getState().openModal({
-              title: 'Move Local Work?',
-              description: `You have ${localCount} local space(s) and ${cloudCount} account space(s). Would you like to move your local work into your account?`,
-              type: 'alert',
-              confirmText: 'Move to Account',
-              cancelText: 'Keep Separate',
-              onConfirm: async () => {
-                useStore.setState({ isInitializing: true });
-                if (typeof store.migrateGuestSpaces === 'function') {
-                  await store.migrateGuestSpaces(currentUser.id);
-                }
-                window.location.reload();
-              },
-              onCancel: () => {
-                // Set dismissal flag to prevent loop
-                localStorage.setItem('cyberia-migration-dismissed', currentUser.id);
-                window.location.reload();
-              }
-            });
-          } else {
-            // Prompt: Limit Exceeded
-            useModalStore.getState().openModal({
-              title: 'Space Limit Reached',
-              description: `Moving local work would exceed your plan limit of ${limits.MAX_SPACES} spaces. Upgrade to Pro or keep them local for now.`,
-              type: 'alert',
-              confirmText: 'Upgrade to Pro',
-              cancelText: 'Keep Separate',
-              onConfirm: () => {
-                useModalStore.getState().openPricing();
-                useStore.setState({ isInitializing: false });
-              },
-              onCancel: () => {
-                localStorage.setItem('cyberia-migration-dismissed', currentUser.id);
-                window.location.reload();
-              }
-            });
-          }
-        } else {
-          console.log('[AUTH] Case 0: Fresh start.');
-        }
-
-      } catch (err) {
-        console.warn('[Auth] Initialization matrix failed:', err);
-      } finally {
-        // Ensure initialization flag is cleared so UI can render
-        useStore.setState({ isInitializing: false });
-      }
-
-      try {
-        await get().refreshProfile();
-      } catch (err) {
-        console.warn('[Auth] Initialization failed:', err);
-      }
-
-      if (get().autoSync && get().isOnline) {
-        setTimeout(() => syncOrchestrator.triggerSync(true), 500);
-      }
+      
+      console.log('[AUTH] initAuth: Running sync flow for returning authenticated user');
+      // Pass false for isFreshLogin -> prevents re-downloading/overwriting offline work
+      await runAuthenticationFlow(currentUser, get, set, false);
     }
   },
 
@@ -210,7 +262,8 @@ export const createAuthSlice: StateCreator<AuthState, [], [], any> = (set, get, 
         autoSync: user.settings?.autoSync ?? true,
       }
     };
-    // If switching accounts in the same session, clear in-memory caches for old user data
+
+    // If switching accounts in the same session, strictly clear in-memory caches
     try {
       const prevUserId = get().user?.id;
       if (prevUserId && prevUserId !== userWithDefaults.id) {
@@ -222,14 +275,12 @@ export const createAuthSlice: StateCreator<AuthState, [], [], any> = (set, get, 
     }
     
     localStorage.setItem('cyberia-user', JSON.stringify(userWithDefaults));
-    // Theme is now per-space only, handled by space settings
     localStorage.setItem('cyberia-token', token);
     localStorage.setItem('cyberia-token-expiry', expiryTime.toString());
     
     if (refreshSecret) {
       localStorage.setItem('cyberia-refresh-secret', refreshSecret);
     }
-
     if (scopes) {
       localStorage.setItem('cyberia-scopes', JSON.stringify(scopes));
     }
@@ -244,45 +295,22 @@ export const createAuthSlice: StateCreator<AuthState, [], [], any> = (set, get, 
       syncStatus: 'syncing'
     });
 
-    const { useStore } = await import('../useStore');
-    useStore.setState({ isInitializing: true });
-
     get().setupRefreshInterval();
-
-    // Start instant realtime listener
     syncOrchestrator.setupRealtimeListener(userWithDefaults.id);
 
+    console.log('[AUTH] setAuthenticatedUser started for user:', userWithDefaults.id);
+
     try {
-      console.log('[AUTH] setAuthenticatedUser started for user:', userWithDefaults.id);
-      const store = useStore.getState();
-
-      // Step 1: Ensure user has at least one workspace
-      console.log('[AUTH] Step 1: Running ensureWorkspaceForCurrentUser');
-      if (typeof store.ensureWorkspaceForCurrentUser === 'function') {
-        await store.ensureWorkspaceForCurrentUser();
-      }
-
-      // Step 2: Get latest profile (plan, etc.)
-      console.log('[AUTH] Step 2: Running refreshProfile');
+      // Step 1: Establish current profile limits & plan status
       await get().refreshProfile();
 
-      // Step 3: Import cloud data (the cloud handshake)
-      console.log('[AUTH] Step 3: Running handlePostAuthSync');
-      await get().handlePostAuthSync();
-      
-      console.log('[AUTH] Step 4: Migrating guest spaces...');
-      const migratedStore = useStore.getState();
-      if (typeof migratedStore.migrateGuestSpaces === 'function') {
-        const result = await migratedStore.migrateGuestSpaces(userWithDefaults.id);
-        console.log('[AUTH] Guest migration complete:', result);
-      }
-      
+      // Step 2: Execute robust initialization matrix (isFreshLogin = true)
+      await runAuthenticationFlow(userWithDefaults, get, set, true);
+
       console.log('[AUTH] Full login sequence complete');
     } catch (e) {
       console.error('Initial login sync failed', e);
       set({ syncStatus: 'error' });
-    } finally {
-      useStore.setState({ isInitializing: false });
     }
   },
 
@@ -302,7 +330,6 @@ export const createAuthSlice: StateCreator<AuthState, [], [], any> = (set, get, 
       }
 
       const scopes = ['openid', 'email', 'profile'];
-
       await get().setAuthenticatedUser(data.user, data.access_token, data.refresh_secret, scopes, data.expires_in);
     } catch (err: any) {
       console.error('Auth code handling failed:', err);
@@ -325,7 +352,9 @@ export const createAuthSlice: StateCreator<AuthState, [], [], any> = (set, get, 
       localStorage.setItem('cyberia-token', token);
       set({ grantedScopes: newScopes, accessToken: token });
       
-      get().syncData();
+      if (typeof get().syncData === 'function') {
+        get().syncData();
+      }
     }
   },
 
@@ -336,10 +365,12 @@ export const createAuthSlice: StateCreator<AuthState, [], [], any> = (set, get, 
     set({ status: 'loading' });
     await new Promise(resolve => setTimeout(resolve, 500));
     syncOrchestrator.cleanupRealtimeListener();
+    
     if (refreshInterval) {
       clearInterval(refreshInterval);
       refreshInterval = null;
     }
+    
     localStorage.removeItem('cyberia-user');
     localStorage.removeItem('cyberia-token');
     localStorage.removeItem('cyberia-token-expiry');
@@ -349,6 +380,7 @@ export const createAuthSlice: StateCreator<AuthState, [], [], any> = (set, get, 
     localStorage.removeItem('cyberia-active-space-id');
     localStorage.removeItem('cyberia-theme');
     localStorage.removeItem('cyberia-migration-dismissed');
+    
     set({ 
       user: null, 
       accessToken: null, 
@@ -359,7 +391,7 @@ export const createAuthSlice: StateCreator<AuthState, [], [], any> = (set, get, 
       lastSync: null 
     });
     
-    // Clear in-memory store data to prevent stale data from leaking to next user
+    // Wipe local volatile state to isolate user sessions entirely
     useStore.setState({ 
       thoughts: [], 
       spaces: [], 
@@ -373,13 +405,14 @@ export const createAuthSlice: StateCreator<AuthState, [], [], any> = (set, get, 
     });
     document.body.setAttribute('data-theme', 'cyberia');
     
-    // Create fresh guest workspace so the app isn't blank after logout
-    await useStore.getState().createInitialWorkspace();
+    // Construct local guest safe-haven state
+    if (typeof useStore.getState().createInitialWorkspace === 'function') {
+      await useStore.getState().createInitialWorkspace();
+    }
     
-    // Ensure a guest space exists (createInitialWorkspace may skip if old user spaces exist)
     const guestSpacesCount = await db.spaces.filter(s => s.userId === 'guest' && !s.deletedAt).count();
     if (guestSpacesCount === 0) {
-      console.log('[Auth] No guest space found after logout, creating one...');
+      console.log('[Auth] No guest space found after logout, generating safe-haven workspace...');
       const { ulid } = await import('ulid');
       const workspaceId = ulid();
       const now = Date.now();
@@ -398,9 +431,7 @@ export const createAuthSlice: StateCreator<AuthState, [], [], any> = (set, get, 
     }
     
     useStore.setState({ isInitializing: false });
-    
-    // Refresh page to re-initialize everything (view switcher, etc.)
-    window.location.reload();
+    window.location.reload(); // Expected hard reload upon logout to fully discard React DOM memory
   },
 
   upgradePlan: (plan: SubscriptionPlan, period?: AccessPeriod) => {
@@ -451,15 +482,14 @@ export const createAuthSlice: StateCreator<AuthState, [], [], any> = (set, get, 
     const { accessToken, user, refreshSecret } = get();
     if (!accessToken || !user) return;
 
-    // Deduplication: If a refresh is already in progress, join it
     if (refreshProfilePromise) return refreshProfilePromise;
 
     refreshProfilePromise = (async () => {
       try {
         const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 20000); // Increased to 20s
+        const timeoutId = setTimeout(() => controller.abort(), 20000);
 
-        // 1. Background Token Refresh
+        // 1. Background Token Exchange
         try {
           const refreshRes = await fetch('/api/google-auth?action=refresh', {
             method: 'POST',
@@ -481,21 +511,20 @@ export const createAuthSlice: StateCreator<AuthState, [], [], any> = (set, get, 
             localStorage.setItem('cyberia-token', currentToken);
             localStorage.setItem('cyberia-token-expiry', expiryTime.toString());
           } else if (refreshRes.status === 401) {
-            console.warn('[Auth] Session expired (401), signing out');
+            console.warn('[Auth] Session expired (401), executing safety sign-out');
             clearTimeout(timeoutId);
             get().signOut();
             return;
           }
         } catch (err: any) {
-          // Silent failure for background refresh unless it's a critical error
           if (err.name === 'AbortError') {
-            console.log('[Auth] Token refresh timed out (Silent)');
+            console.log('[Auth] Token refresh heartbeat timed out.');
           } else {
             console.warn('[Auth] Token refresh error:', err.message);
           }
         }
 
-        // 2. Profile Sync
+        // 2. Profile Differential Sync
         try {
           const supabaseProfile = await supabaseSync.getProfile(user.id);
           if (supabaseProfile?.user) {
@@ -518,13 +547,13 @@ export const createAuthSlice: StateCreator<AuthState, [], [], any> = (set, get, 
               updatedUser.settings.personality = '';
               
               if (user.plan === 'pro') {
-                console.log('[Auth] Plan regression detected: pro -> free');
+                console.log('[Auth] Plan regression (pro -> free) detected remotely.');
                 get().handlePlanRegression();
               }
               setHasRegressedToFree(true);
             } else {
               if (getHasRegressedToFree()) {
-                console.log('[Auth] Plan renewed! Lifting regression restrictions.');
+                console.log('[Auth] Plan renewed, lifting capability restrictions.');
               }
               setHasRegressedToFree(false);
             }
@@ -538,7 +567,7 @@ export const createAuthSlice: StateCreator<AuthState, [], [], any> = (set, get, 
           clearTimeout(timeoutId);
         }
       } catch (e) {
-        console.warn('[Auth] Refresh profile critical failure:', e);
+        console.warn('[Auth] Refresh profile hard failure:', e);
       } finally {
         refreshProfilePromise = null;
       }
@@ -551,11 +580,11 @@ export const createAuthSlice: StateCreator<AuthState, [], [], any> = (set, get, 
     const { accessToken, accessTokenExpiresAt, status, isOnline } = get();
     if (status !== 'authenticated' || !isOnline) return accessToken;
 
-    const BUFFER_MS = 5 * 60 * 1000; // 5 minutes
+    const BUFFER_MS = 5 * 60 * 1000;
     const now = Date.now();
     
     if (!accessToken || !accessTokenExpiresAt || (accessTokenExpiresAt - now) < BUFFER_MS) {
-      console.log('[Auth] Token missing or near expiry, refreshing...');
+      console.log('[Auth] OIDC token critically near expiry, enforcing manual refresh.');
       await get().refreshProfile();
       return get().accessToken;
     }
@@ -566,12 +595,11 @@ export const createAuthSlice: StateCreator<AuthState, [], [], any> = (set, get, 
   setupRefreshInterval: () => {
     if (refreshInterval) clearInterval(refreshInterval);
     
-    // Heartbeat: Refresh profile and token every 30 minutes
-    // Google tokens usually last 60 minutes.
+    // Heartbeat profile synchronizer
     refreshInterval = setInterval(() => {
       const { status, isOnline } = get();
       if (status === 'authenticated' && isOnline) {
-        console.log('[Auth] Heartbeat: Refreshing token and profile...');
+        console.log('[Auth] Core Loop: Processing token/profile maintenance.');
         get().refreshProfile();
       }
     }, 30 * 60 * 1000);
@@ -588,36 +616,35 @@ export const createAuthSlice: StateCreator<AuthState, [], [], any> = (set, get, 
     try {
       await supabaseSync.updateSettings(user.id, updatedUser.settings);
     } catch (e) {
-      console.warn('Settings sync failed', e);
+      console.warn('Settings synchronization rejected', e);
     }
   },
 
   handlePlanRegression: async () => {
-    console.log('[Auth] Handling plan regression...');
+    console.log('[Auth] Engaging Plan Regression routines...');
     const { user, accessToken } = get();
     if (!user || !accessToken) return;
 
-    // Reset all spaces to cyberia theme for free users
     const freeThemes = PLAN_CONFIG.free.THEMES_ENABLED;
-    // CRITICAL: Only process spaces belonging to the current regressed user
     const spaces = await db.spaces.where('userId').equals(user.id).toArray();
     const now = Date.now();
+    
     for (const space of spaces) {
       let needsUpdate = false;
       const updates: any = { updatedAt: now, syncStatus: 'local' };
       
-      // Reset theme to cyberia if not allowed for free users
+      // Enforce theme gating
       if (space.theme && !freeThemes.includes(space.theme)) {
         updates.theme = 'cyberia';
         needsUpdate = true;
       }
       
-      // Clear custom backgrounds
+      // Demolish cloud-hosted custom environments
       if (space.customBg && isStorageUrl(space.customBg)) {
         try {
           await supabaseStorage.deleteSpaceBackground(user.id, space.id);
         } catch (e) {
-          console.warn('[Auth] Failed to delete background file from storage:', e);
+          console.warn('[Auth] Remote storage clean failed on regression:', e);
         }
         updates.customBg = null;
         needsUpdate = true;
@@ -628,7 +655,7 @@ export const createAuthSlice: StateCreator<AuthState, [], [], any> = (set, get, 
         try {
           await supabaseSync.updateSpace(space.id, updates, user.id);
         } catch (e) {
-          console.warn('[Auth] Failed to sync space after regression cleanup:', e);
+          console.warn('[Auth] Space regression-sync failed:', e);
         }
       }
     }
@@ -642,20 +669,18 @@ export const createAuthSlice: StateCreator<AuthState, [], [], any> = (set, get, 
     localStorage.setItem('cyberia-user', JSON.stringify(updatedUser));
   },
 
-
   deleteCloudData: async () => {
     const { accessToken, isOnline, user } = get();
     if (!accessToken || !isOnline || !user) return;
 
     set({ syncStatus: 'syncing' });
-    console.log('[Auth] Starting cloud data wipe...');
+    console.log('[Auth] Initiating catastrophic cloud deletion wipe...');
 
     try {
       await syncOrchestrator.setSyncBlocked(true);
       await syncOrchestrator.deleteCloudContent();
 
       await db.transaction('rw', [db.spaces, db.stacks, db.thoughts], async () => {
-        // Clear stale storage-backed customBg references on spaces belonging to CURRENT user
         const now = Date.now();
         await db.spaces.where('userId').equals(user.id).modify((s: any) => {
           s.syncStatus = 'local';
@@ -673,11 +698,10 @@ export const createAuthSlice: StateCreator<AuthState, [], [], any> = (set, get, 
         });
       });
 
-      // After wipe, we keep autoSync on as it is now mandatory
       localStorage.removeItem('cyberia-last-sync');
       set({ syncStatus: 'offline', lastSync: null });
       
-      console.log('[Auth] Wipe complete.');
+      console.log('[Auth] Catastrophic wipe resolved gracefully.');
     } catch (error) {
       console.error('[Auth] Wipe failed:', error);
       set({ syncStatus: 'error' });
