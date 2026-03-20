@@ -3,7 +3,6 @@ import { useModalStore } from '../store/useModalStore';
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 import { Cloud, HardDrive, X } from 'lucide-react';
-import QuotaResolver from './QuotaResolver';
 
 function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -42,9 +41,9 @@ const Modal: React.FC = () => {
   if (!isOpen) return null;
 
   const showInput = ['rename', 'new_space'].includes(type);
-  const showCancel = !['limit_space', 'limit_thought', 'alert', 'terms', 'conflict_resolver', 'quota_resolver'].includes(type);
-  const showStandardButtons = !['terms', 'conflict_resolver', 'quota_resolver', 'custom'].includes(type);
-  const showXButton = type === 'quota_resolver';
+  const showCancel = !['limit_space', 'limit_thought', 'terms', 'conflict_resolver'].includes(type);
+  const showStandardButtons = !['terms', 'conflict_resolver', 'custom'].includes(type);
+  const showXButton = !['terms'].includes(type);
 
   return (
     <div id="modal-overlay" className="fixed inset-0 bg-black/90 backdrop-blur-[10px] z-[11000] flex items-center justify-center animate-in fade-in duration-200 p-4">
@@ -55,8 +54,8 @@ const Modal: React.FC = () => {
       )}>
         {showXButton && (
           <button
-            onClick={closeModal}
-            className="absolute top-4 right-4 w-8 h-8 flex items-center justify-center rounded-full bg-white/5 hover:bg-white/10 text-slate-400 hover:text-white transition-colors"
+            onClick={handleCancel}
+            className="absolute top-4 right-4 w-8 h-8 flex items-center justify-center rounded-full bg-white/10 hover:bg-white/20 text-slate-400 hover:text-white transition-colors z-50"
           >
             <X className="w-4 h-4" />
           </button>
@@ -130,8 +129,6 @@ const Modal: React.FC = () => {
               Cloud sync will update with your choice
             </p>
           </div>
-        ) : type === 'quota_resolver' ? (
-          <QuotaResolver />
         ) : type === 'custom' ? (
           <div className="my-4">
             {content}

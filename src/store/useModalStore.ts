@@ -6,6 +6,8 @@ interface ModalState {
   title: string;
   description?: string;
   type: 'rename' | 'delete_space' | 'delete_thought' | 'delete_stack' | 'limit_space' | 'limit_thought' | 'new_space' | 'alert' | 'import_confirm' | 'reset_confirm' | 'confirm_cancel' | 'terms' | 'custom' | 'conflict_resolver' | 'quota_resolver';
+  guestSpaces?: number;
+  cloudSpaces?: number;
   inputValue?: string;
   confirmText?: string;
   cancelText?: string;

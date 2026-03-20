@@ -134,11 +134,20 @@ export const createDataSlice: StateCreator<CyberiaState, [], [], any> = (set, ge
     isCreatingInitialWorkspace = true;
     
     try {
+      console.log('[Store] Checking if initial workspace needed...');
       // IDEMPOTENCY CHECK: Ensure we don't create multiple initial workspaces
       const currentUserId = (useAuthStore.getState().user?.id) ?? 'guest';
       const existingCount = await db.spaces.filter(s => s.userId === currentUserId && !s.deletedAt).count();
       if (existingCount > 0) {
-        console.log('[Store] Initial workspace already exists, skipping creation.');
+        console.log('[Store] Initial workspace already exists for current user, skipping creation.');
+        await get().refreshSpaces();
+        return;
+      }
+
+      // Also check if there are ANY spaces in the DB (even guest userId)
+      const anySpacesCount = await db.spaces.filter((s: any) => !s.deletedAt).count();
+      if (anySpacesCount > 0) {
+        console.log('[Store] Found existing spaces in DB, skipping initial workspace creation');
         await get().refreshSpaces();
         return;
       }
@@ -525,7 +534,13 @@ export const createDataSlice: StateCreator<CyberiaState, [], [], any> = (set, ge
 
   migrateLegacyData: async (userId: string) => {
     const now = Date.now();
+    console.log('[Migration] Starting migration for user:', userId);
     try {
+      const guestSpacesCount = await db.spaces.filter((s: any) => !s.userId || s.userId === 'guest').count();
+      const guestThoughtsCount = await db.thoughts.filter((t: any) => !t.userId || t.userId === 'guest').count();
+      const guestStacksCount = await db.stacks.filter((s: any) => !s.userId || s.userId === 'guest').count();
+      console.log('[Migration] Found items to migrate:', { spaces: guestSpacesCount, thoughts: guestThoughtsCount, stacks: guestStacksCount });
+      
       await db.transaction('rw', [db.spaces, db.thoughts, db.stacks, db.blobs], async () => {
         const spaceCount = await db.spaces
           .filter((s: any) => !s.userId || s.userId === 'guest')
@@ -533,7 +548,6 @@ export const createDataSlice: StateCreator<CyberiaState, [], [], any> = (set, ge
             s.userId = userId;
             s.updatedAt = now;
             s.syncStatus = 'local';
-            // Security: Clear custom backgrounds if they were stored under a different user's path
             if (s.customBg && s.customBg.includes('/backgrounds/')) {
               const pathParts = s.customBg.split('/backgrounds/')[0].split('/');
               const bgUserId = pathParts[pathParts.length - 1];
@@ -563,10 +577,97 @@ export const createDataSlice: StateCreator<CyberiaState, [], [], any> = (set, ge
     }
   },
 
+  migrateGuestSpaces: async (accountUserId: string) => {
+    const now = Date.now();
+    let migratedCount = 0;
+    let discardedCount = 0;
+    
+    console.log('[Migration] Starting smart migration for user:', accountUserId);
+
+    await db.transaction('rw', [db.spaces, db.thoughts, db.stacks, db.blobs], async () => {
+      const guestSpaces = await db.spaces.filter(s => s.userId === 'guest' && !s.deletedAt).toArray();
+      const validSpaceIds: string[] = [];
+      const discardedSpaceIds: string[] = [];
+
+      for (const space of guestSpaces) {
+        // Check for active thoughts in this space
+        const thoughtCount = await db.thoughts
+          .where('spaceId').equals(space.id)
+          .filter(t => !t.deletedAt)
+          .count();
+        
+        if (thoughtCount > 0) {
+          validSpaceIds.push(space.id);
+        } else {
+          discardedSpaceIds.push(space.id);
+        }
+      }
+
+      migratedCount = validSpaceIds.length;
+      discardedCount = discardedSpaceIds.length;
+
+      // 1. Migrate Valid Spaces
+      if (validSpaceIds.length > 0) {
+        await db.spaces.where('id').anyOf(validSpaceIds).modify({
+          userId: accountUserId,
+          updatedAt: now,
+          syncStatus: 'local'
+        });
+      }
+
+      // 2. Discard Empty Spaces (Soft Delete)
+      if (discardedSpaceIds.length > 0) {
+        await db.spaces.where('id').anyOf(discardedSpaceIds).modify({
+          deletedAt: now,
+          updatedAt: now,
+          syncStatus: 'local'
+        });
+      }
+
+      // 3. Migrate All Guest Items
+      // We migrate everything to the new user so they own the data.
+      await db.thoughts.where('userId').equals('guest').modify({ userId: accountUserId, updatedAt: now, syncStatus: 'local' });
+      await db.stacks.where('userId').equals('guest').modify({ userId: accountUserId, updatedAt: now, syncStatus: 'local' });
+      await db.blobs.where('userId').equals('guest').modify({ userId: accountUserId, updatedAt: now });
+    });
+    
+    console.log(`[Migration] Migrated ${migratedCount} spaces, discarded ${discardedCount} empty spaces`);
+    return { migrated: migratedCount, discarded: discardedCount };
+  },
+
+  discardGuestSpaces: async () => {
+    const now = Date.now();
+    console.log('[Migration] Discarding all guest data...');
+    
+    await db.transaction('rw', [db.spaces, db.thoughts, db.stacks], async () => {
+      await db.spaces.where('userId').equals('guest').modify({ 
+        deletedAt: now, 
+        updatedAt: now, 
+        syncStatus: 'local' 
+      });
+
+      await db.thoughts.where('userId').equals('guest').modify({ 
+        deletedAt: now, 
+        updatedAt: now, 
+        syncStatus: 'local' 
+      });
+
+      await db.stacks.where('userId').equals('guest').modify({ 
+        deletedAt: now, 
+        updatedAt: now, 
+        syncStatus: 'local' 
+      });
+    });
+    
+    console.log('[Migration] Guest data discarded.');
+  },
+
   ensureWorkspaceForCurrentUser: async () => {
     const currentUserId = (useAuthStore.getState().user?.id) ?? 'guest';
     const spaces = await db.spaces.filter((s: any) => s.userId === currentUserId && !s.deletedAt).toArray();
+    console.log('[Store] ensureWorkspace: found', spaces.length, 'existing spaces for user', currentUserId);
     if (spaces.length === 0) {
+      console.log('[ensureWorkspaceForCurrentUser] No spaces found, creating new workspace');
       const workspaceId = ulid();
       const now = Date.now();
       await db.spaces.add({ id: workspaceId, userId: currentUserId, name: 'Workspace', mode: 'spatial', physics: true, order: 0, updatedAt: now, syncStatus: 'local' });

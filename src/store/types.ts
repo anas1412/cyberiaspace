@@ -124,9 +124,10 @@ export interface CyberiaState {
   cleanupTrash: () => Promise<void>;
   isLocalWorkspaceEmpty: () => Promise<boolean>;
   migrateLegacyData: (userId: string) => Promise<void>;
+  migrateGuestSpaces: (accountUserId: string) => Promise<{ migrated: number; discarded: number }>;
+  discardGuestSpaces: () => Promise<void>;
   ensureWorkspaceForCurrentUser: () => Promise<void>;
   mergeGuestSpace: (sourceSpaceId: string, targetSpaceId: string) => Promise<boolean>;
-  replaceCloudSpace: (sourceSpaceId: string, targetSpaceIdToReplace: string) => Promise<boolean>;
   discardGuestSpace: (id: string) => Promise<boolean>;
 }
 
@@ -144,7 +145,6 @@ export interface AuthState {
   storageUsageMB: number;
   activeDownloads: string[];
   isOnline: boolean;
-  isQuotaResolverPending: boolean;
 
   setAuthenticatedUser: (user: User, token: string, refreshSecret?: string, scopes?: string[], expiresIn?: number) => Promise<void>;
   handleAuthCode: (code: string) => Promise<void>;
@@ -168,7 +168,6 @@ export interface AuthState {
   mediaSweep: () => Promise<void>;
   repairEmptyFileThoughts: () => Promise<number>;
   upgradePlan: (plan: SubscriptionPlan, period?: AccessPeriod) => void;
-  setQuotaResolverPending: (pending: boolean) => void;
   checkExpiry: () => void;
   handlePlanRegression: () => Promise<void>;
   refreshProfile: () => Promise<void>;

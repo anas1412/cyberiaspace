@@ -662,7 +662,6 @@ export const createSpaceSlice: StateCreator<CyberiaState, [], [], any> = (set, g
 
   discardGuestSpace: async (id: string) => {
     try {
-      // Security: Verify space belongs to current user OR is a guest space
       const authStore = useAuthStore.getState();
       const currentUserId = authStore.user?.id ?? 'guest';
       
@@ -673,7 +672,6 @@ export const createSpaceSlice: StateCreator<CyberiaState, [], [], any> = (set, g
         return false;
       }
       
-      // Allow discard if space belongs to current user OR is a guest space
       const spaceIsGuest = !space.userId || space.userId === 'guest';
       if (!spaceIsGuest && space.userId !== currentUserId) {
         console.error('[Space] Discard failed: Unauthorized - space does not belong to current user');
@@ -682,14 +680,12 @@ export const createSpaceSlice: StateCreator<CyberiaState, [], [], any> = (set, g
 
       const timestamp = Date.now();
       await db.transaction('rw', [db.spaces, db.thoughts, db.stacks], async () => {
-        // SOFT DELETE: Create synchronized tombstones
         await db.spaces.update(id, { 
           deletedAt: timestamp, 
           updatedAt: timestamp, 
           syncStatus: 'local' 
         });
         
-        // Also delete thoughts with userId: 'guest' or undefined (unmigrated)
         await db.thoughts.where('spaceId').equals(id)
           .and(t => !t.userId || t.userId === 'guest' || t.userId === currentUserId)
           .modify({ 
@@ -698,7 +694,6 @@ export const createSpaceSlice: StateCreator<CyberiaState, [], [], any> = (set, g
             syncStatus: 'local' 
           });
         
-        // Also delete stacks with userId: 'guest' or undefined (unmigrated)
         await db.stacks.where('spaceId').equals(id)
           .and(s => !s.userId || s.userId === 'guest' || s.userId === currentUserId)
           .modify({ 

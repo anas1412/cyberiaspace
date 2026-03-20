@@ -1,7 +1,6 @@
 import { type StateCreator } from 'zustand';
 import { db } from '../../db';
 import { syncOrchestrator } from '../../services/sync/syncOrchestrator';
-import { PLAN_CONFIG } from '../../constants';
 import { type AuthState } from '../types';
 
 export interface SyncSlice {
@@ -10,7 +9,6 @@ export interface SyncSlice {
   autoSync: boolean;
   isOnline: boolean;
   _syncPromise: Promise<void> | null;
-  isQuotaResolverPending: boolean;
 
   syncData: () => Promise<void>;
   syncToServices: () => Promise<void>;
@@ -20,7 +18,6 @@ export interface SyncSlice {
   repairEmptyFileThoughts: () => Promise<number>; // Deprecated but kept for type compatibility
   handlePostAuthSync: () => Promise<void>; // Deprecated but kept for type compatibility
   setAutoSync: (enabled: boolean) => Promise<void>;
-  setQuotaResolverPending: (pending: boolean) => void;
 }
 
 let handshakeInProgress = false;
@@ -33,12 +30,7 @@ export const createSyncSlice: StateCreator<AuthState, [], [], SyncSlice> = (set,
   autoSync: true,
   isOnline: typeof navigator !== 'undefined' ? navigator.onLine : true,
   _syncPromise: null,
-  isQuotaResolverPending: false,
   
-  setQuotaResolverPending: (pending: boolean) => {
-    set({ isQuotaResolverPending: pending });
-  },
-
   syncData: async () => {
     console.log('[Auth] syncData called');
     
@@ -113,106 +105,57 @@ export const createSyncSlice: StateCreator<AuthState, [], [], SyncSlice> = (set,
       const authStore = useAuthStore.getState();
       const currentUserId = authStore.user?.id ?? 'guest';
       
-      // FAST PATH: Check for unmigrated local data FIRST (before cloud fetch)
-      // This allows the modal to open instantly without waiting for cloud API
-      console.log('[SYNC-HANDSHAKE] Checking for local unmigrated data...');
-      const localSpaces = await db.spaces.filter(s => 
-        (s.syncStatus === 'local' || s.syncStatus === undefined) && 
-        s.userId === currentUserId && 
-        !s.deletedAt
-      ).toArray();
-      
-      const unmigratedSpaces = localSpaces.filter(s => s.syncStatus === undefined);
-      const hasUnmigratedData = unmigratedSpaces.length > 0;
-      
-      if (hasUnmigratedData) {
-        console.log(`[SYNC-HANDSHAKE] UNMIGRATED LOCAL DATA: Opening resolver immediately. unmigratedSpaces: ${unmigratedSpaces.length}`);
-        
-        // CRITICAL: Set flag BEFORE opening modal to block delta sync
-        authStore.setQuotaResolverPending(true);
-        
-        // Open modal immediately - DO NOT wait for cloud fetch
-        const { useModalStore } = await import('../useModalStore');
-        useModalStore.getState().openModal({
-          title: 'Import Local Data',
-          type: 'quota_resolver'
-        });
-        
-        // Return early - modal will fetch cloud data itself
-        handshakeInProgress = false;
-        return;
-      }
-      
-      // STANDARD PATH: Fetch cloud data for quota check
+      // Fetch cloud data and import
       try {
         const cloudData = await syncOrchestrator.fetchCloudData();
         if (cloudData) {
           console.log('[SYNC-HANDSHAKE] Fetched cloud data, spaces:', (cloudData.spaces || []).length);
-          const cloudSpaces = (cloudData.spaces || []) as any[];
-          
-          const totalUniqueSpaces = new Set([
-            ...localSpaces.map(s => s.id),
-            ...cloudSpaces.map(s => s.id)
-          ]).size;
-          
-          const { user } = get();
-          const plan = user?.plan || 'free';
-          const limit = PLAN_CONFIG[plan].MAX_SPACES;
-          
-          // Trigger resolver only if quota exceeded
-          if (totalUniqueSpaces > limit) {
-            console.log(`[SYNC-HANDSHAKE] QUOTA CONFLICT: Opening resolver. totalUniqueSpaces: ${totalUniqueSpaces}, limit: ${limit}`);
-            
-            authStore.setQuotaResolverPending(true);
-            const { useModalStore } = await import('../useModalStore');
-            useModalStore.getState().openModal({
-              title: 'Space Limit Reached',
-              type: 'quota_resolver'
-            });
-            
-            handshakeInProgress = false;
-            return;
-          } else {
-            const isEmpty = await store.isLocalWorkspaceEmpty();
-            const shouldMerge = isEmpty;
-            
-            console.log(`[Sync] Local empty: ${isEmpty}, No conflict. Mode: ${shouldMerge ? 'Merge' : 'Overwrite'}`);
-            await store.importFullState(cloudData, shouldMerge);
-          }
-          
-          const updatedSpaces = await db.spaces.filter(s => s.userId === currentUserId && !s.deletedAt).toArray();
-          if (updatedSpaces.length > 0 && !store.activeSpaceId) {
-            const firstSpace = updatedSpaces[0];
-            await store.setActiveSpace(firstSpace.id);
-          }
-
-          try {
-            const st: any = useStore.getState();
-            st?.calculateUsage?.(st.totalThoughtCount || 0);
-          } catch {}
-          
-          const now = new Date();
-          localStorage.setItem('cyberia-last-sync', now.toISOString());
-          set({ lastSync: now, syncStatus: 'synced' });
-
-          syncOrchestrator.triggerSync(true);
-          return;
         }
       } catch (e) {
-        console.warn('[Sync] Initial cloud hydration failed:', e);
-      }
-      
-      // Fallback to standard sync if hydration was empty or failed
-      await get().syncData();
-      const finalNow = new Date();
-      localStorage.setItem('cyberia-last-sync', finalNow.toISOString());
-      set({ lastSync: finalNow, syncStatus: 'synced' });
-      
-      const finalSpaces = await db.spaces.filter(s => s.userId === currentUserId && !s.deletedAt).toArray();
-      if (finalSpaces.length > 0 && !store.activeSpaceId) {
-        await store.setActiveSpace(finalSpaces[0].id);
+        console.warn('[Sync] Cloud fetch failed:', e);
       }
 
+      // Check if workspaces are empty before auto-syncing
+      const totalThoughtCount = await db.thoughts.filter((t: any) => t.userId === currentUserId && !t.deletedAt).count();
+      console.log('[SYNC] Workspace thought count:', totalThoughtCount);
+
+      // If workspace is empty, rely on cloud data only
+      if (totalThoughtCount === 0) {
+        console.log('[SYNC-HANDSHAKE] Workspace is empty, relying on cloud data.');
+        
+        // Setup active space
+        const updatedSpaces = await db.spaces.filter(s => s.userId === currentUserId && !s.deletedAt).toArray();
+        if (updatedSpaces.length > 0 && !store.activeSpaceId) {
+          await store.setActiveSpace(updatedSpaces[0].id);
+        }
+        
+        const now = new Date();
+        localStorage.setItem('cyberia-last-sync', now.toISOString());
+        set({ lastSync: now, syncStatus: 'synced' });
+        handshakeInProgress = false;
+        return;
+      }
+      
+      // Sync local changes to cloud
+      console.log('[SYNC-HANDSHAKE] Syncing local data to cloud...');
+      await syncOrchestrator.deltaSync(true);
+      
+      // Setup active space
+      const updatedSpaces = await db.spaces.filter(s => s.userId === currentUserId && !s.deletedAt).toArray();
+      if (updatedSpaces.length > 0 && !store.activeSpaceId) {
+        await store.setActiveSpace(updatedSpaces[0].id);
+      }
+      
+      // Calculate usage and mark synced
+      try {
+        const st: any = useStore.getState();
+        st?.calculateUsage?.(st.totalThoughtCount || 0);
+      } catch {}
+      
+      const now = new Date();
+      localStorage.setItem('cyberia-last-sync', now.toISOString());
+      set({ lastSync: now, syncStatus: 'synced' });
+      
       syncOrchestrator.triggerSync(true);
     } finally {
       handshakeInProgress = false;

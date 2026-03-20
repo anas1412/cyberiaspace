@@ -75,22 +75,109 @@ export const createAuthSlice: StateCreator<AuthState, [], [], any> = (set, get, 
 
     const currentUser = get().user;
     if (get().status === 'authenticated' && currentUser?.id) {
-      // Phase 0: Start Realtime Listener for instant sync
       syncOrchestrator.setupRealtimeListener(currentUser.id);
 
-      // Phase 1: Auto-Migration for missing updatedAt
+      console.log('[AUTH] Phase 1: Importing cloud data...');
+      await get().handlePostAuthSync();
+
+      console.log('[AUTH] Phase 2: Assessing State for Migration...');
+      const { useStore } = await import('../useStore');
+      const { useModalStore } = await import('../useModalStore');
+      const store = useStore.getState();
+
+      // Prevention: Don't show the migration prompt if the user dismissed it in this session
+      const isDismissed = localStorage.getItem('cyberia-migration-dismissed') === currentUser.id;
+
       try {
-        const now = Date.now();
-        const currentUserId = currentUser?.id;
-        if (currentUserId) {
-          await db.transaction('rw', [db.thoughts, db.spaces, db.stacks], async () => {
-            await db.thoughts.filter(t => (t.updatedAt === undefined || t.updatedAt === null) && t.userId === currentUserId).modify({ updatedAt: now, syncStatus: 'local' });
-            await db.spaces.filter(s => (s.updatedAt === undefined || s.updatedAt === null) && s.userId === currentUserId).modify({ updatedAt: now, syncStatus: 'local' });
-            await db.stacks.filter(s => (s.updatedAt === undefined || s.updatedAt === null) && s.userId === currentUserId).modify({ updatedAt: now, syncStatus: 'local' });
-          });
+        // 1. Get Cloud Count (Reliable Source from Supabase directly)
+        const cloudSpaces = await supabaseSync.getSpaces(currentUser.id, 'id');
+        const cloudCount = cloudSpaces.spaces?.length || 0;
+
+        // 2. Get Local Count (Spaces with Thoughts)
+        // We filter for spaces that actually have content to avoid migrating empty "New Tab" spaces
+        const localGuestSpaces = await db.spaces.where('userId').equals('guest').toArray();
+        let localCount = 0;
+        
+        for (const space of localGuestSpaces) {
+          const thoughtCount = await db.thoughts.where('spaceId').equals(space.id).filter(t => !t.deletedAt).count();
+          if (thoughtCount > 0) localCount++;
         }
-      } catch (e) {
-        console.warn('[Auth] Auto-migration failed:', e);
+
+        console.log(`[AUTH] Matrix Assessment: Local=${localCount}, Cloud=${cloudCount}`);
+
+        if (isDismissed) {
+          console.log('[AUTH] Migration prompt was previously dismissed, skipping assessment.');
+          return;
+        }
+
+        // 3. Execute Matrix
+        if (localCount > 0 && cloudCount === 0) {
+          // Case 1: Auto-migrate (Local content, no cloud content)
+          console.log('[AUTH] Case 1: Auto-migrating local work...');
+          if (typeof store.migrateGuestSpaces === 'function') {
+            await store.migrateGuestSpaces(currentUser.id);
+            await store.refreshSpaces();
+            await store.refreshThoughts();
+          }
+        } else if (localCount === 0 && cloudCount > 0) {
+          // Case 2: Cloud content only (No local content with thoughts)
+          console.log('[AUTH] Case 2: Cloud content only. No migration needed.');
+        } else if (localCount > 0 && cloudCount > 0) {
+          // Case 3: Conflict (Both exist) -> Quota Check & Modal
+          console.log('[AUTH] Case 3: Conflict detected. Checking quota...');
+          
+          const limits = store.getLimits();
+          const totalSpaces = localCount + cloudCount;
+          const isWithinLimit = totalSpaces <= limits.MAX_SPACES;
+
+          if (isWithinLimit) {
+            // Prompt: Migrate?
+            useModalStore.getState().openModal({
+              title: 'Move Local Work?',
+              description: `You have ${localCount} local space(s) and ${cloudCount} account space(s). Would you like to move your local work into your account?`,
+              type: 'alert',
+              confirmText: 'Move to Account',
+              cancelText: 'Keep Separate',
+              onConfirm: async () => {
+                useStore.setState({ isInitializing: true });
+                if (typeof store.migrateGuestSpaces === 'function') {
+                  await store.migrateGuestSpaces(currentUser.id);
+                }
+                window.location.reload();
+              },
+              onCancel: () => {
+                // Set dismissal flag to prevent loop
+                localStorage.setItem('cyberia-migration-dismissed', currentUser.id);
+                window.location.reload();
+              }
+            });
+          } else {
+            // Prompt: Limit Exceeded
+            useModalStore.getState().openModal({
+              title: 'Space Limit Reached',
+              description: `Moving local work would exceed your plan limit of ${limits.MAX_SPACES} spaces. Upgrade to Pro or keep them local for now.`,
+              type: 'alert',
+              confirmText: 'Upgrade to Pro',
+              cancelText: 'Keep Separate',
+              onConfirm: () => {
+                useModalStore.getState().openPricing();
+                useStore.setState({ isInitializing: false });
+              },
+              onCancel: () => {
+                localStorage.setItem('cyberia-migration-dismissed', currentUser.id);
+                window.location.reload();
+              }
+            });
+          }
+        } else {
+          console.log('[AUTH] Case 0: Fresh start.');
+        }
+
+      } catch (err) {
+        console.warn('[Auth] Initialization matrix failed:', err);
+      } finally {
+        // Ensure initialization flag is cleared so UI can render
+        useStore.setState({ isInitializing: false });
       }
 
       try {
@@ -99,68 +186,8 @@ export const createAuthSlice: StateCreator<AuthState, [], [], any> = (set, get, 
         console.warn('[Auth] Initialization failed:', err);
       }
 
-      // Phase 2: Check for quota conflict or unmigrated local data
-      const { useAuthStore } = await import('../useAuthStore');
-      const authStore = useAuthStore.getState();
-      
-      console.log('[AUTH] Phase 2: Checking for quota conflict. autoSync:', get().autoSync, 'isOnline:', get().isOnline);
-      
-      // Get ALL local spaces for this user (including guest spaces, any syncStatus, except deleted)
-      const localSpacesAll = await db.spaces
-        .filter((s: any) => !s.deletedAt && (s.userId === currentUser.id || !s.userId || s.userId === 'guest'))
-        .toArray();
-      console.log('[AUTH] Total local spaces (including guest):', localSpacesAll.length);
-      
-      // Check for unmigrated guest data (spaces with userId: 'guest' or no userId)
-      const unmigratedCount = localSpacesAll.filter((s: any) => !s.userId || s.userId === 'guest').length;
-      console.log('[AUTH] Unmigrated guest spaces:', unmigratedCount);
-      
-      // Also check for spaces with undefined syncStatus (recently migrated but not yet synced)
-      const undefinedSyncStatusCount = localSpacesAll.filter((s: any) => s.syncStatus === undefined).length;
-      console.log('[AUTH] Spaces with undefined syncStatus:', undefinedSyncStatusCount);
-      
-      const cloudData = await syncOrchestrator.fetchCloudData();
-      console.log('[AUTH] fetchCloudData result:', cloudData ? `spaces: ${cloudData.spaces?.length || 0}` : 'null');
-      
-      if (cloudData) {
-        const cloudSpaces = (cloudData.spaces || []) as any[];
-        
-        // Count unique spaces across local and cloud
-        const totalUniqueSpaces = new Set([
-          ...localSpacesAll.map(s => s.id),
-          ...cloudSpaces.map(s => s.id)
-        ]).size;
-        
-        const plan = authStore.user?.plan || 'free';
-        const limit = PLAN_CONFIG[plan].MAX_SPACES;
-        
-        console.log('[AUTH] totalUniqueSpaces:', totalUniqueSpaces, 'limit:', limit);
-        
-        // Show resolver if quota conflict OR unmigrated local spaces exist
-        const hasUnmigratedData = unmigratedCount > 0 || undefinedSyncStatusCount > 0;
-        if (totalUniqueSpaces > limit || hasUnmigratedData) {
-          const reason = totalUniqueSpaces > limit ? 'QUOTA CONFLICT' : 'UNMIGRATED LOCAL DATA';
-          console.log(`[AUTH] ${reason} DETECTED: Opening resolver`);
-          authStore.setQuotaResolverPending(true);
-          
-          const { useModalStore } = await import('../useModalStore');
-          useModalStore.getState().openModal({
-            title: hasUnmigratedData ? 'Import Local Data' : 'Space Limit Reached',
-            type: 'quota_resolver'
-          });
-        } else {
-          console.log('[AUTH] No conflict detected');
-          // No conflict - trigger normal delta sync
-          if (get().autoSync && get().isOnline) {
-            setTimeout(() => syncOrchestrator.triggerSync(true), 500);
-          }
-        }
-      } else {
-        console.log('[AUTH] No cloud data fetched - triggering delta sync');
-        // No cloud data - trigger normal delta sync
-        if (get().autoSync && get().isOnline) {
-          setTimeout(() => syncOrchestrator.triggerSync(true), 500);
-        }
+      if (get().autoSync && get().isOnline) {
+        setTimeout(() => syncOrchestrator.triggerSync(true), 500);
       }
     }
   },
@@ -226,23 +253,30 @@ export const createAuthSlice: StateCreator<AuthState, [], [], any> = (set, get, 
     syncOrchestrator.setupRealtimeListener(userWithDefaults.id);
 
     try {
+      console.log('[AUTH] setAuthenticatedUser started for user:', userWithDefaults.id);
       const store = useStore.getState();
 
-      // Step 3: Migration: Add userId to all existing local data if not present (CRITICAL: Do BEFORE handshake)
-      if (typeof store.migrateLegacyData === 'function') {
-        await store.migrateLegacyData(userWithDefaults.id);
-      }
-      
-      // Step 4: Ensure user has at least one workspace
+      // Step 1: Ensure user has at least one workspace
+      console.log('[AUTH] Step 1: Running ensureWorkspaceForCurrentUser');
       if (typeof store.ensureWorkspaceForCurrentUser === 'function') {
         await store.ensureWorkspaceForCurrentUser();
       }
 
-      // Get latest profile (plan, etc.)
+      // Step 2: Get latest profile (plan, etc.)
+      console.log('[AUTH] Step 2: Running refreshProfile');
       await get().refreshProfile();
 
-      // Step 5: ONLY THEN await handlePostAuthSync() (the cloud handshake)
+      // Step 3: Import cloud data (the cloud handshake)
+      console.log('[AUTH] Step 3: Running handlePostAuthSync');
       await get().handlePostAuthSync();
+      
+      console.log('[AUTH] Step 4: Migrating guest spaces...');
+      const migratedStore = useStore.getState();
+      if (typeof migratedStore.migrateGuestSpaces === 'function') {
+        const result = await migratedStore.migrateGuestSpaces(userWithDefaults.id);
+        console.log('[AUTH] Guest migration complete:', result);
+      }
+      
       console.log('[AUTH] Full login sequence complete');
     } catch (e) {
       console.error('Initial login sync failed', e);
@@ -314,6 +348,7 @@ export const createAuthSlice: StateCreator<AuthState, [], [], any> = (set, get, 
     localStorage.removeItem('cyberia-refresh-secret');
     localStorage.removeItem('cyberia-active-space-id');
     localStorage.removeItem('cyberia-theme');
+    localStorage.removeItem('cyberia-migration-dismissed');
     set({ 
       user: null, 
       accessToken: null, 
@@ -340,6 +375,27 @@ export const createAuthSlice: StateCreator<AuthState, [], [], any> = (set, get, 
     
     // Create fresh guest workspace so the app isn't blank after logout
     await useStore.getState().createInitialWorkspace();
+    
+    // Ensure a guest space exists (createInitialWorkspace may skip if old user spaces exist)
+    const guestSpacesCount = await db.spaces.filter(s => s.userId === 'guest' && !s.deletedAt).count();
+    if (guestSpacesCount === 0) {
+      console.log('[Auth] No guest space found after logout, creating one...');
+      const { ulid } = await import('ulid');
+      const workspaceId = ulid();
+      const now = Date.now();
+      const guestSpace = {
+        id: workspaceId,
+        userId: 'guest',
+        name: 'Workspace',
+        mode: 'spatial' as const,
+        physics: true,
+        order: 0,
+        updatedAt: now,
+      };
+      await db.spaces.add(guestSpace);
+      localStorage.setItem('cyberia-active-space-id', workspaceId);
+      await useStore.getState().refreshSpaces();
+    }
     
     useStore.setState({ isInitializing: false });
     
