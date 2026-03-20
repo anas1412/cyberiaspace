@@ -190,7 +190,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
           ))}
         </div>
 
-        <div className="flex-1 overflow-y-auto custom-scroll px-8 py-6">
+        <div className="flex-1 overflow-y-auto custom-scroll px-8 py-6" onWheel={(e) => e.stopPropagation()}>
           <AnimatePresence mode="wait">
             {activeTab === 'general' && (
               <motion.div 
@@ -319,7 +319,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                     modalTitle="Upgrade to Pro"
                     modalMessage="Unlock custom themes with Pro."
                   >
-                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
                       {(['cyberia', 'sea', 'forest', 'rain', 'sakura'] as const).map((id) => {
                         const labels = { cyberia: 'Cyberia', sea: 'Deep Sea', forest: 'Forest', rain: 'Rain', sakura: 'Sakura' };
                         const colors = { cyberia: '#6366f1', sea: '#00b4d8', forest: '#2dce89', rain: '#d6d3d1', sakura: '#f0a8b8' };
