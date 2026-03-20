@@ -55,7 +55,7 @@ const getInitialUser = (): User | null => {
  * Core Local-to-Account Data Flow Engine
  * Eliminates race conditions by strictly following Phase 1 -> Phase 2 -> Phase 3
  */
-async function runAuthenticationFlow(user: User, get: any, set: any, isFreshLogin: boolean) {
+async function runAuthenticationFlow(user: User, get: any, isFreshLogin: boolean) {
   const { useStore } = await import('../useStore');
   const { useModalStore } = await import('../useModalStore');
   const store = useStore.getState();
@@ -240,7 +240,7 @@ export const createAuthSlice: StateCreator<AuthState, [], [], any> = (set, get, 
       
       console.log('[AUTH] initAuth: Running sync flow for returning authenticated user');
       // Pass false for isFreshLogin -> prevents re-downloading/overwriting offline work
-      await runAuthenticationFlow(currentUser, get, set, false);
+      await runAuthenticationFlow(currentUser, get, false);
     }
   },
 
@@ -305,7 +305,7 @@ export const createAuthSlice: StateCreator<AuthState, [], [], any> = (set, get, 
       await get().refreshProfile();
 
       // Step 2: Execute robust initialization matrix (isFreshLogin = true)
-      await runAuthenticationFlow(userWithDefaults, get, set, true);
+      await runAuthenticationFlow(userWithDefaults, get, true);
 
       console.log('[AUTH] Full login sequence complete');
     } catch (e) {
