@@ -18,7 +18,7 @@ export interface CyberiaState {
   calendarStackFilter: string | null;
   kanbanSearchQuery: string;
   kanbanStackFilter: string | null;
-  theme: 'cyberia' | 'sea' | 'forest' | 'rain';
+  theme: 'cyberia' | 'sea' | 'forest' | 'rain' | 'sakura';
   customBg: string | null;
   isSpaceLoading: boolean;
   lastSpaceRequestId: number;
@@ -63,7 +63,7 @@ export interface CyberiaState {
   resetTransform: () => void;
   clearWorkspace: () => Promise<void>;
 
-  setTheme: (theme: 'cyberia' | 'sea' | 'forest' | 'rain') => void;
+  setTheme: (theme: 'cyberia' | 'sea' | 'forest' | 'rain' | 'sakura') => void;
   setCustomBg: (bg: File | string | null) => Promise<void>;
   setDeferredPrompt: (prompt: any) => void;
 

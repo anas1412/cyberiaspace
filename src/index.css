@@ -115,6 +115,30 @@
                radial-gradient(circle at 50% 100%, rgba(168, 162, 158, 0.05) 0%, transparent 70%);
 }
 
+[data-theme='sakura'] {
+  --bg-main: #0f0a0c;
+  --bg-page: #090506;
+  --accent: #f0a8b8;
+  --accent-secondary: #e08098;
+  --accent-glow: rgba(240, 168, 184, 0.3);
+  --glow-color: rgba(240, 168, 184, 0.07);
+  --nebula-1: rgba(240, 168, 184, 0.08);
+  --nebula-1-soft: rgba(240, 168, 184, 0.03);
+  --nebula-2: rgba(224, 128, 152, 0.06);
+  --nebula-2-soft: rgba(224, 128, 152, 0.02);
+  --node-bg: rgba(15, 10, 12, 0.97);
+  --glass-bg: rgba(12, 7, 10, 0.88);
+  --glass-border: rgba(240, 168, 184, 0.15);
+  --text-primary: #e0d0d4;
+  --text-dimmed: rgba(224, 208, 212, 0.72);
+  --text-muted: rgba(224, 208, 212, 0.38);
+  --accent-contrast: #1a080e;
+  --bg-ambient: radial-gradient(circle at 50% 0%, rgba(240, 168, 184, 0.05) 0%, transparent 60%),
+               radial-gradient(circle at 80% 20%, rgba(224, 128, 152, 0.04) 0%, transparent 50%);
+  --bg-nebula: radial-gradient(circle at 50% 50%, rgba(240, 168, 184, 0.06) 0%, transparent 70%),
+               radial-gradient(circle at 30% 70%, rgba(224, 128, 152, 0.04) 0%, transparent 50%);
+}
+
 
 body {
   background-color: transparent;

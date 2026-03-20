@@ -73,8 +73,8 @@ const ModalFooter: React.FC<{ onClose: () => void }> = ({ onClose }) => (
 interface SettingsModalProps {
   isOpen: boolean;
   onClose: () => void;
-  theme: 'cyberia' | 'sea' | 'forest' | 'rain' | null;
-  setTheme: (val: 'cyberia' | 'sea' | 'forest' | 'rain') => void;
+  theme: 'cyberia' | 'sea' | 'forest' | 'rain' | 'sakura' | null;
+  setTheme: (val: 'cyberia' | 'sea' | 'forest' | 'rain' | 'sakura') => void;
   customBg: string | null;
   setCustomBg: (bg: File | string | null) => Promise<void>;
   handleExport: () => void;
@@ -320,9 +320,9 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                     modalMessage="Unlock custom themes with Pro."
                   >
                     <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                      {(['cyberia', 'sea', 'forest', 'rain'] as const).map((id) => {
-                        const labels = { cyberia: 'Cyberia', sea: 'Deep Sea', forest: 'Forest', rain: 'Rain' };
-                        const colors = { cyberia: '#6366f1', sea: '#00b4d8', forest: '#2dce89', rain: '#d6d3d1' };
+                      {(['cyberia', 'sea', 'forest', 'rain', 'sakura'] as const).map((id) => {
+                        const labels = { cyberia: 'Cyberia', sea: 'Deep Sea', forest: 'Forest', rain: 'Rain', sakura: 'Sakura' };
+                        const colors = { cyberia: '#6366f1', sea: '#00b4d8', forest: '#2dce89', rain: '#d6d3d1', sakura: '#f0a8b8' };
                         const active = theme === id;
                         return (
                           <button 

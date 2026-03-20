@@ -56,7 +56,7 @@ export const PLAN_CONFIG: Record<SubscriptionPlan, PlanLimits> = {
     MAX_STORAGE_MB: 500,
     AI_ENABLED: true,
     AI_DAILY_LIMIT: 60,
-    THEMES_ENABLED: ['cyberia', 'sea', 'forest', 'rain'],
+    THEMES_ENABLED: ['cyberia', 'sea', 'forest', 'rain', 'sakura'],
     PRICE: {
       monthly: { usd: 8, tnd: 19 },
       yearly: { usd: 80, tnd: 190 },

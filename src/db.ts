@@ -50,7 +50,7 @@ interface Space {
   publishedId?: string | null;
   lastPublished?: string | null;
   updatedAt?: number | null; // Changed to number (Unix ms)
-  theme?: 'cyberia' | 'sea' | 'forest' | 'rain';
+  theme?: 'cyberia' | 'sea' | 'forest' | 'rain' | 'sakura';
   customBg?: string | null;
   syncStatus?: 'local' | 'synced' | 'syncing' | 'error';
   retryCount?: number;

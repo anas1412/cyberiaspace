@@ -31,7 +31,7 @@ export const createUiSlice: StateCreator<CyberiaState, [], [], any> = (set, get,
   linkingSourceId: null,
   layerActionTrigger: null,
 
-  setTheme: async (theme: 'cyberia' | 'sea' | 'forest' | 'rain') => {
+  setTheme: async (theme: 'cyberia' | 'sea' | 'forest' | 'rain' | 'sakura') => {
     if (get().isReadOnly) return;
     const { activeSpaceId } = get();
     set({ theme });

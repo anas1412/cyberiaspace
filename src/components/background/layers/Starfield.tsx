@@ -15,6 +15,9 @@ class Star {
   alpha: number = 0;
   targetAlpha: number = 0;
   twinkleSpeed: number = 0;
+  rotation: number = 0;
+  rotationSpeed: number = 0;
+  windPhase: number = 0;
   width: number;
   height: number;
 
@@ -27,19 +30,34 @@ class Star {
   reset() {
     this.x = Math.random() * this.width;
     this.y = Math.random() * this.height;
-    this.z = Math.random() * 3 + 1; 
+    this.z = Math.random() * 3 + 1;
     this.baseRadius = (Math.random() * 0.5 + 0.1) * (this.z * 0.4);
-    this.vx = (Math.random() - 0.5) * 0.05; 
+    this.vx = (Math.random() - 0.5) * 0.05;
     this.vy = (Math.random() - 0.5) * 0.05;
     this.alpha = Math.random();
-    this.targetAlpha = Math.random() > 0.4 ? Math.random() : 0; 
+    this.targetAlpha = Math.random() > 0.4 ? Math.random() : 0;
     this.twinkleSpeed = Math.random() * 0.005 + 0.002;
+    this.rotation = Math.random() * Math.PI * 2;
+    this.rotationSpeed = (Math.random() - 0.5) * 0.02;
+    this.windPhase = Math.random() * Math.PI * 2;
   }
 
   update(theme: string) {
     if (theme === "rain") {
-      this.y += 15 * (this.z * 0.4); // Faster rain for particles closer to "camera"
-      this.x += this.vx * 2; // Slight wind-blown effect
+      this.y += 15 * (this.z * 0.4);
+      this.x += this.vx * 2;
+    } else if (theme === "sakura") {
+      // Sakura petals fall gently with wind sway
+      this.y += 0.6 * (this.z * 0.4);
+      this.windPhase += 0.015 + this.z * 0.005;
+      this.x += Math.sin(this.windPhase) * 0.3 + this.vx * 0.3;
+      this.rotation += this.rotationSpeed;
+
+      if (this.y > this.height + 40) {
+        this.y = -40;
+        this.x = Math.random() * this.width;
+        this.windPhase = Math.random() * Math.PI * 2;
+      }
     } else {
       this.x += this.vx;
       this.y += this.vy;
@@ -47,14 +65,13 @@ class Star {
 
     if (this.x < -20) this.x = this.width + 20;
     if (this.x > this.width + 20) this.x = -20;
-    
-    // Rain resets to top, stars loop in both directions
+
     if (theme === "rain") {
       if (this.y > this.height + 20) {
         this.y = -20;
         this.x = Math.random() * this.width;
       }
-    } else {
+    } else if (theme !== "sakura") {
       if (this.y < -20) this.y = this.height + 20;
       if (this.y > this.height + 20) this.y = -20;
     }
@@ -63,13 +80,13 @@ class Star {
       this.alpha += this.twinkleSpeed;
       if (this.alpha >= this.targetAlpha) {
         this.alpha = this.targetAlpha;
-        this.targetAlpha = Math.random() > 0.3 ? Math.random() : 0; 
+        this.targetAlpha = Math.random() > 0.3 ? Math.random() : 0;
       }
     } else {
       this.alpha -= this.twinkleSpeed;
       if (this.alpha <= this.targetAlpha) {
         this.alpha = this.targetAlpha;
-        this.targetAlpha = Math.random() > 0.3 ? Math.random() : 0; 
+        this.targetAlpha = Math.random() > 0.3 ? Math.random() : 0;
       }
     }
   }
@@ -78,29 +95,104 @@ class Star {
     const offsetX = (mouseX - this.width / 2) * (this.z * 0.02);
     const offsetY = (mouseY - this.height / 2) * (this.z * 0.02);
 
-    ctx.beginPath();
-    
-    if (theme === "sea") {
-      ctx.arc(this.x + offsetX, this.y + offsetY, this.baseRadius * 1.5, 0, Math.PI * 2);
-      ctx.strokeStyle = `rgba(144, 224, 239, ${this.alpha * 0.4})`;
-      ctx.lineWidth = 1;
-      ctx.stroke();
-    } else if (theme === "forest") {
-      ctx.arc(this.x + offsetX, this.y + offsetY, this.baseRadius * 0.8, 0, Math.PI * 2);
-      ctx.fillStyle = `rgba(45, 206, 137, ${this.alpha})`;
-      ctx.fill();
-    } else if (theme === "rain") {
-      ctx.moveTo(this.x + offsetX, this.y + offsetY);
-      ctx.lineTo(this.x + offsetX + 1, this.y + offsetY + 15);
-      ctx.strokeStyle = `rgba(255, 255, 255, ${this.alpha * 0.8})`;
-      ctx.lineWidth = 1;
-      ctx.stroke();
+    if (theme === "sakura") {
+      this.drawSakuraPetal(ctx, this.x + offsetX, this.y + offsetY);
     } else {
-      // Standard sharp stars
-      ctx.arc(this.x + offsetX, this.y + offsetY, this.baseRadius, 0, Math.PI * 2);
-      ctx.fillStyle = `rgba(255, 255, 255, ${this.alpha})`;
-      ctx.fill();
+      ctx.beginPath();
+
+      if (theme === "sea") {
+        ctx.arc(this.x + offsetX, this.y + offsetY, this.baseRadius * 1.5, 0, Math.PI * 2);
+        ctx.strokeStyle = `rgba(144, 224, 239, ${this.alpha * 0.4})`;
+        ctx.lineWidth = 1;
+        ctx.stroke();
+      } else if (theme === "forest") {
+        ctx.arc(this.x + offsetX, this.y + offsetY, this.baseRadius * 0.8, 0, Math.PI * 2);
+        ctx.fillStyle = `rgba(45, 206, 137, ${this.alpha})`;
+        ctx.fill();
+      } else if (theme === "rain") {
+        ctx.moveTo(this.x + offsetX, this.y + offsetY);
+        ctx.lineTo(this.x + offsetX + 1, this.y + offsetY + 15);
+        ctx.strokeStyle = `rgba(255, 255, 255, ${this.alpha * 0.8})`;
+        ctx.lineWidth = 1;
+        ctx.stroke();
+      } else {
+        // Standard sharp stars
+        ctx.arc(this.x + offsetX, this.y + offsetY, this.baseRadius, 0, Math.PI * 2);
+        ctx.fillStyle = `rgba(255, 255, 255, ${this.alpha})`;
+        ctx.fill();
+      }
     }
+  }
+
+  /** Draw a single cherry blossom petal using bezier curves */
+  private drawSakuraPetal(ctx: CanvasRenderingContext2D, px: number, py: number) {
+    const size = this.baseRadius * 10;
+
+    ctx.save();
+    ctx.translate(px, py);
+    ctx.rotate(this.rotation);
+
+    // Sakura petal: teardrop with rounded base and notched tip
+    const petalLength = size * 1.8;
+    const petalWidth = size * 0.9;
+
+    ctx.beginPath();
+
+    // Start at the rounded base (bottom of petal)
+    ctx.moveTo(0, petalLength * 0.45);
+
+    // Left side of petal — curve outward from base
+    ctx.bezierCurveTo(
+      -petalWidth * 0.9, petalLength * 0.3,
+      -petalWidth, -petalLength * 0.1,
+      -petalWidth * 0.15, -petalLength * 0.3
+    );
+
+    // Left notch (top left)
+    ctx.bezierCurveTo(
+      -petalWidth * 0.5, -petalLength * 0.35,
+      -petalWidth * 0.1, -petalLength * 0.5,
+      0, -petalLength * 0.4
+    );
+
+    // Right notch (top right)
+    ctx.bezierCurveTo(
+      petalWidth * 0.1, -petalLength * 0.5,
+      petalWidth * 0.5, -petalLength * 0.35,
+      petalWidth * 0.15, -petalLength * 0.3
+    );
+
+    // Right side of petal — curve back to base
+    ctx.bezierCurveTo(
+      petalWidth, -petalLength * 0.1,
+      petalWidth * 0.9, petalLength * 0.3,
+      0, petalLength * 0.45
+    );
+
+    ctx.closePath();
+
+    // Soft pink fill
+    const pinkVariant = Math.floor(Math.random() * 3);
+    let fillColor;
+    if (pinkVariant === 0) {
+      fillColor = `rgba(240, 168, 184, ${this.alpha * 0.65})`;
+    } else if (pinkVariant === 1) {
+      fillColor = `rgba(255, 218, 224, ${this.alpha * 0.55})`;
+    } else {
+      fillColor = `rgba(228, 190, 200, ${this.alpha * 0.6})`;
+    }
+    ctx.fillStyle = fillColor;
+    ctx.fill();
+
+    // Subtle petal vein (centerline)
+    ctx.beginPath();
+    ctx.moveTo(0, petalLength * 0.35);
+    ctx.lineTo(0, -petalLength * 0.2);
+    ctx.strokeStyle = `rgba(200, 140, 155, ${this.alpha * 0.25})`;
+    ctx.lineWidth = 0.5;
+    ctx.stroke();
+
+    ctx.restore();
   }
 }
 
@@ -143,8 +235,9 @@ const Starfield: React.FC<StarfieldProps> = ({ theme, performanceMode }) => {
       mousePos.current.targetY = h / 2;
       mousePos.current.x = mousePos.current.targetX;
       mousePos.current.y = mousePos.current.targetY;
-      
-      const numStars = Math.floor((w * h) / 1000); 
+
+      // sakura density: 
+      const numStars = Math.floor((w * h) / 8000); 
       starsRef.current = Array.from({ length: numStars }, () => new Star(w, h));
     };
 
@@ -196,7 +289,8 @@ const Starfield: React.FC<StarfieldProps> = ({ theme, performanceMode }) => {
       ref={canvasRef} 
       className="fixed inset-0 z-0 pointer-events-none transition-opacity duration-1000 w-full h-full"
       style={{ 
-        opacity: theme === "rain" ? 0.3 : 0.6,
+        //OPACITY / VISIBILITY TUNING:
+        opacity: theme === "rain" ? 0.3 : theme === "sakura" ? 0.5 : 0.6,
         left: '-10%',
         top: '-10%',
         width: '120%',
