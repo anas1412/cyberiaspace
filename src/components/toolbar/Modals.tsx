@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { 
-  CheckCircle, MessageSquare, Server, Loader2, Send, MousePointer2,
+  CheckCircle, MessageSquare, Loader2, Send, MousePointer2,
   Palette, Database, HelpCircle, Laptop, Download, Upload, 
   Camera, RefreshCw, Trash2, X, Info, ExternalLink,
   FileText, Smartphone
@@ -35,16 +35,7 @@ const ModalHeader: React.FC<{ title: string; onClose: () => void }> = ({ title, 
 );
 
 const ModalFooter: React.FC<{ onClose: () => void }> = ({ onClose }) => (
-  <div className="mt-auto pt-8 pb-10 border-t border-white/5 flex flex-col items-center gap-6 shrink-0 px-8">
-    <div className="p-4 rounded-2xl bg-black/20 border border-white/5 flex items-center gap-3 text-left w-full justify-center">
-      <div className="w-8 h-8 rounded-full bg-blue-500/10 flex items-center justify-center shrink-0">
-        <Server className="w-4 h-4 text-blue-400" />
-      </div>
-      <p className="text-xs text-slate-400 font-medium">
-        Cyberia Stable Release <span className="text-white font-semibold block sm:inline">Version {APP_VERSION}</span>
-      </p>
-    </div>
-    
+  <div className="mt-auto pt-6 pb-8 border-t border-white/5 flex flex-col items-center gap-4 shrink-0 px-8">
     <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-2">
       {[
         { label: 'Privacy Policy', path: '/privacy' },
@@ -64,6 +55,7 @@ const ModalFooter: React.FC<{ onClose: () => void }> = ({ onClose }) => (
           {link.label}
         </button>
       ))}
+      <span className="text-[10px] text-slate-600 font-medium">v{APP_VERSION}</span>
     </div>
   </div>
 );
