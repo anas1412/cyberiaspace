@@ -1,0 +1,6 @@
+User-agent: *
+Allow: /
+Disallow: /api/
+
+# Sitemap for Cyberia
+Sitemap: https://cyberia.tn/sitemap.xml
