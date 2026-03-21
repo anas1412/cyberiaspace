@@ -257,15 +257,9 @@ const Homepage: React.FC = () => {
           : 'bg-transparent py-4'
       }`}>
         <div className="max-w-7xl mx-auto px-6 flex items-center justify-between">
-          <div className="flex items-center gap-3 group cursor-pointer" onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}>
-            <div className="relative">
-              <img src="/logo.png" alt="Cyberia Workspace" className="w-10 h-10 object-contain relative z-10 group-hover:scale-110 transition-transform duration-500" />
-              <div className="absolute inset-0 bg-[var(--accent)]/20 blur-xl rounded-full scale-0 group-hover:scale-150 transition-transform duration-700" />
-            </div>
-            <span className="text-2xl font-black tracking-tighter uppercase">
-              Cyberia <span style={{ color: 'var(--accent)' }}>Workspace</span>
-            </span>
-          </div>
+          <button className="text-2xl font-black tracking-tighter uppercase cursor-pointer" onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}>
+            Cyberia <span style={{ color: 'var(--accent)' }}>Workspace</span>
+          </button>
 
           {/* Desktop Nav - ViewSwitcher Style */}
           <div className="hidden md:flex items-center gap-3"> {/* Increased gap slightly to 3 */}
