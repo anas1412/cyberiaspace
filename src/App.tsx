@@ -457,7 +457,7 @@ function App() {
   }
 
   return (
-    <div className="w-full h-full relative overflow-hidden">
+    <main className="w-full h-full relative overflow-hidden">
       <BackgroundEngine />
       <LoadingOverlay />
       
@@ -484,7 +484,7 @@ function App() {
       </Suspense>
       <Analytics />
       <SpeedInsights />
-    </div>
+    </main>
   );
 }
 
