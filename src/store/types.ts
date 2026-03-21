@@ -145,6 +145,8 @@ export interface AuthState {
   storageUsageMB: number;
   activeDownloads: string[];
   isOnline: boolean;
+  _migrationInProgress: boolean;
+  setMigrationInProgress: (inProgress: boolean) => void;
 
   setAuthenticatedUser: (user: User, token: string, refreshSecret?: string, scopes?: string[], expiresIn?: number) => Promise<void>;
   handleAuthCode: (code: string) => Promise<void>;
@@ -162,7 +164,7 @@ export interface AuthState {
   setAutoSync: (enabled: boolean) => void;
   deleteCloudData: () => Promise<void>;
   calculateUsage: (thoughtCount: number) => void;
-  initAuth: () => void;
+  initAuth: () => Promise<void>;
   handlePostAuthSync: () => Promise<void>;
   _syncPromise: Promise<void> | null;
   mediaSweep: () => Promise<void>;

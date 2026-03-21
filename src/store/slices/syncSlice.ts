@@ -116,27 +116,6 @@ export const createSyncSlice: StateCreator<AuthState, [], [], SyncSlice> = (set,
         console.warn('[Sync] Cloud fetch failed:', e);
       }
 
-      // Check if workspaces are empty before auto-syncing
-      const totalThoughtCount = await db.thoughts.filter((t: any) => t.userId === currentUserId && !t.deletedAt).count();
-      console.log('[SYNC] Workspace thought count:', totalThoughtCount);
-
-      // If workspace is empty, rely on cloud data only
-      if (totalThoughtCount === 0) {
-        console.log('[SYNC-HANDSHAKE] Workspace is empty, relying on cloud data.');
-        
-        // Setup active space
-        const updatedSpaces = await db.spaces.filter(s => s.userId === currentUserId && !s.deletedAt).toArray();
-        if (updatedSpaces.length > 0 && !store.activeSpaceId) {
-          await store.setActiveSpace(updatedSpaces[0].id);
-        }
-        
-        const now = new Date();
-        localStorage.setItem('cyberia-last-sync', now.toISOString());
-        set({ lastSync: now, syncStatus: 'synced' });
-        handshakeInProgress = false;
-        return;
-      }
-      
       // Sync local changes to cloud
       console.log('[SYNC-HANDSHAKE] Syncing local data to cloud...');
       await syncOrchestrator.deltaSync(true);

@@ -1,5 +1,3 @@
-// text/plain
-
 import { syncOrchestrator } from '../../services/sync/syncOrchestrator';
 import { type StateCreator } from 'zustand';
 import { type User, type SubscriptionPlan, type AccessPeriod, PLAN_CONFIG } from '../../constants';
@@ -53,57 +51,65 @@ const getInitialUser = (): User | null => {
 
 /**
  * Core Local-to-Account Data Flow Engine
- * Eliminates race conditions by strictly following Phase 1 -> Phase 2 -> Phase 3
+ * Assessment-First logic to prevent data loss and deadlocks.
  */
 async function runAuthenticationFlow(user: User, get: any, isFreshLogin: boolean) {
   const { useStore } = await import('../useStore');
   const { useModalStore } = await import('../useModalStore');
   const store = useStore.getState();
 
-  useStore.setState({ isInitializing: true });
+  // 1. PREVENT RACE: Guard against multiple simultaneous runs
+  if (get()._migrationInProgress) return;
+  get().setMigrationInProgress(true);
+
+  // Keep loading states active while we set up the local environment
+  useStore.setState({ isInitializing: true, isSpaceLoading: true });
 
   try {
-    // PHASE 1: Import Cloud Data (Always First)
-    // We only fetch and destructively import on a fresh login. Returning users already have this synced in IDB.
-    if (isFreshLogin) {
-      console.log('[AUTH] Phase 1: Importing Cloud Data...');
-      try {
-        const cloudData = await syncOrchestrator.fetchCloudData();
-        if (cloudData && cloudData.spaces.length > 0) {
-          await store.importFullState(cloudData, false); // false = don't trigger reverse sync
-        }
-      } catch (err) {
-        console.warn('[AUTH] Phase 1 Cloud fetch failed (might be offline):', err);
-      }
+    // PHASE 1: Fetch Cloud Metadata
+    console.log('[AUTH] Phase 1: Fetching Cloud Metadata...');
+    let cloudData: any = null;
+    try {
+      cloudData = await syncOrchestrator.fetchCloudData();
+    } catch (err) {
+      console.warn('[AUTH] Phase 1 Cloud fetch failed (might be offline):', err);
     }
+    const cloudCount = (cloudData?.spaces || []).length;
 
-    // Rely on IDB for accurate cloud counts post-import
-    const userSpaces = await db.spaces.where('userId').equals(user.id).filter(s => !s.deletedAt).toArray();
-    const cloudCount = userSpaces.length;
-
-    // PHASE 2: Assess Local Data
-    console.log('[AUTH] Phase 2: Assessing Local Data...');
+    // PHASE 2: Assess Local Data (Strictly Guest Scope)
+    console.log('[AUTH] Phase 2: Assessing Local Guest Data...');
     const localGuestSpaces = await db.spaces.where('userId').equals('guest').filter(s => !s.deletedAt).toArray();
     let localCount = 0;
+    
     for (const space of localGuestSpaces) {
       const thoughtCount = await db.thoughts.where('spaceId').equals(space.id).filter(t => !t.deletedAt).count();
       if (thoughtCount > 0) localCount++;
     }
+    
+    const guestTombstones = await db.thoughts.where('userId').equals('guest').filter(t => !!t.deletedAt).count();
+    const hasMeaningfulGuestData = localCount > 0 || guestTombstones > 0;
 
-    console.log(`[AUTH] Matrix Assessment: Local=${localCount}, Cloud=${cloudCount}`);
+    console.log(`[AUTH] Matrix Assessment: MeaningfulGuestData=${hasMeaningfulGuestData}, LocalCount=${localCount}, CloudCount=${cloudCount}`);
 
-    // Helper: Runs after matrix resolves to prep the workspace & establish sync loops
+    // Helper: Safely imports cloud data if the user's local profile cache is entirely missing
+    const applyCloudDataIfNeeded = async () => {
+      const localAccountSpacesCount = await db.spaces.where('userId').equals(user.id).count();
+      const needsCloudImport = isFreshLogin || localAccountSpacesCount === 0;
+      
+      if (needsCloudImport && cloudData && cloudCount > 0) {
+        await store.importFullState(cloudData, false);
+      }
+    };
+
+    // Helper: Finalizes setup by downloading full sync data BEFORE resolving UI blocks
     const finalizeSetup = async () => {
-      // Final Catch: If absolutely 0 spaces exist after matrix completes, create the default workspace
-      const finalUserSpaces = await db.spaces.where('userId').equals(user.id).filter(s => !s.deletedAt).count();
-      if (finalUserSpaces === 0 && typeof store.ensureWorkspaceForCurrentUser === 'function') {
-        await store.ensureWorkspaceForCurrentUser();
+      if (typeof get().handlePostAuthSync === 'function') {
+        await get().handlePostAuthSync();
       }
 
       await store.refreshSpaces();
       await store.refreshThoughts();
 
-      // Ensure active space belongs to the user, not a ghost/deleted space
       const currentStore = useStore.getState();
       const spaces = currentStore.spaces;
       const currentActive = currentStore.activeSpaceId;
@@ -114,22 +120,29 @@ async function runAuthenticationFlow(user: User, get: any, isFreshLogin: boolean
         await store.setActiveSpace(targetSpace.id);
       }
 
-      // Start the background synchronization engines (will catch any newly migrated local spaces)
-      if (typeof get().handlePostAuthSync === 'function') {
-        await get().handlePostAuthSync();
+      const finalUserSpaces = await db.spaces.where('userId').equals(user.id).filter(s => !s.deletedAt).count();
+      if (finalUserSpaces === 0 && typeof store.ensureWorkspaceForCurrentUser === 'function') {
+        await store.ensureWorkspaceForCurrentUser();
       }
     };
 
     // PHASE 3: Decision Matrix
     const isDismissed = localStorage.getItem('cyberia-migration-dismissed') === user.id;
-
     if (isDismissed) {
       console.log('[AUTH] Phase 3: Migration previously dismissed. Skipping.');
+      await applyCloudDataIfNeeded();
       await finalizeSetup();
       return;
     }
 
-    if (localCount > 0 && cloudCount === 0) {
+    if (!hasMeaningfulGuestData) {
+      // Case 0: Safe Overwrite (Local is just default "Workspace")
+      console.log('[AUTH] Phase 3: Setting up local environment (no guest work found).');
+      await store.discardGuestSpaces();
+      await applyCloudDataIfNeeded();
+      await finalizeSetup();
+
+    } else if (hasMeaningfulGuestData && cloudCount === 0) {
       // Case 1: Auto-Migrate (Seamless)
       console.log('[AUTH] Phase 3: Auto-Migrating local work...');
       if (typeof store.migrateGuestSpaces === 'function') {
@@ -137,14 +150,13 @@ async function runAuthenticationFlow(user: User, get: any, isFreshLogin: boolean
       }
       await finalizeSetup();
 
-    } else if (localCount === 0 && cloudCount > 0) {
-      // Case 2: Cloud Skip
-      console.log('[AUTH] Phase 3: Cloud only. Proceeding...');
-      await finalizeSetup();
-
-    } else if (localCount > 0 && cloudCount > 0) {
+    } else if (hasMeaningfulGuestData && cloudCount > 0) {
       // Case 3: Conflict (Modal)
       console.log('[AUTH] Phase 3: Conflict detected. Checking quota...');
+      
+      // CRITICAL: Stop the loading spinner so the user can see the modal!
+      useStore.setState({ isInitializing: false, isSpaceLoading: false });
+
       const limits = store.getLimits();
       const totalSpaces = localCount + cloudCount;
       const isWithinLimit = totalSpaces <= limits.MAX_SPACES;
@@ -152,13 +164,13 @@ async function runAuthenticationFlow(user: User, get: any, isFreshLogin: boolean
       await new Promise<void>((resolve) => {
         if (isWithinLimit) {
           useModalStore.getState().openModal({
-            title: 'Move Local Work?',
-            description: `You have ${localCount} local space(s) and ${cloudCount} account space(s). Would you like to move your local work into your account?`,
+            title: 'Merge Data?',
+            description: `You have ${localCount} local space(s) and ${cloudCount} account space(s). Would you like to merge your local offline work into your account?`,
             type: 'alert',
-            confirmText: 'Move to Account',
+            confirmText: 'Merge Data',
             cancelText: 'Keep Separate',
             onConfirm: async () => {
-              useStore.setState({ isInitializing: true });
+              useStore.setState({ isInitializing: true, isSpaceLoading: true });
               if (typeof store.migrateGuestSpaces === 'function') {
                 await store.migrateGuestSpaces(user.id);
               }
@@ -166,7 +178,9 @@ async function runAuthenticationFlow(user: User, get: any, isFreshLogin: boolean
               resolve();
             },
             onCancel: async () => {
+              useStore.setState({ isInitializing: true, isSpaceLoading: true });
               localStorage.setItem('cyberia-migration-dismissed', user.id);
+              await applyCloudDataIfNeeded();
               await finalizeSetup();
               resolve();
             }
@@ -179,32 +193,32 @@ async function runAuthenticationFlow(user: User, get: any, isFreshLogin: boolean
             confirmText: 'Upgrade to Pro',
             cancelText: 'Keep Separate',
             onConfirm: async () => {
+              useStore.setState({ isInitializing: true, isSpaceLoading: true });
               useModalStore.getState().openPricing();
+              await applyCloudDataIfNeeded();
               await finalizeSetup();
               resolve();
             },
             onCancel: async () => {
+              useStore.setState({ isInitializing: true, isSpaceLoading: true });
               localStorage.setItem('cyberia-migration-dismissed', user.id);
+              await applyCloudDataIfNeeded();
               await finalizeSetup();
               resolve();
             }
           });
         }
       });
-    } else {
-      // Case 0: Fresh Start
-      console.log('[AUTH] Phase 3: Fresh start (No local or cloud spaces).');
-      await finalizeSetup();
     }
 
   } catch (err) {
     console.error('[AUTH] Authentication flow failed:', err);
-    // Fallback: Ensure UI un-suspends and sync tries to recover
     if (typeof get().handlePostAuthSync === 'function') {
       await get().handlePostAuthSync();
     }
   } finally {
-    useStore.setState({ isInitializing: false });
+    get().setMigrationInProgress(false);
+    useStore.setState({ isInitializing: false, isSpaceLoading: false });
   }
 }
 
@@ -215,6 +229,8 @@ export const createAuthSlice: StateCreator<AuthState, [], [], any> = (set, get, 
   refreshSecret: localStorage.getItem('cyberia-refresh-secret'),
   grantedScopes: JSON.parse(localStorage.getItem('cyberia-scopes') || '[]'),
   status: localStorage.getItem('cyberia-user') ? 'authenticated' : 'unauthenticated' as 'idle' | 'loading' | 'authenticated' | 'unauthenticated',
+  _migrationInProgress: false,
+  setMigrationInProgress: (inProgress: boolean) => set({ _migrationInProgress: inProgress }),
 
   initAuth: async () => {
     window.addEventListener('online', async () => { 
@@ -301,12 +317,8 @@ export const createAuthSlice: StateCreator<AuthState, [], [], any> = (set, get, 
     console.log('[AUTH] setAuthenticatedUser started for user:', userWithDefaults.id);
 
     try {
-      // Step 1: Establish current profile limits & plan status
       await get().refreshProfile();
-
-      // Step 2: Execute robust initialization matrix (isFreshLogin = true)
       await runAuthenticationFlow(userWithDefaults, get, true);
-
       console.log('[AUTH] Full login sequence complete');
     } catch (e) {
       console.error('Initial login sync failed', e);
@@ -317,6 +329,10 @@ export const createAuthSlice: StateCreator<AuthState, [], [], any> = (set, get, 
   handleAuthCode: async (code: string) => {
     set({ status: 'loading' });
     try {
+      // Ensure UI suspends while we process the login flow and build the user DB.
+      const { useStore } = await import('../useStore');
+      useStore.setState({ isInitializing: true, isSpaceLoading: true });
+
       const res = await fetch('/api/google-auth?action=exchange', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -331,9 +347,17 @@ export const createAuthSlice: StateCreator<AuthState, [], [], any> = (set, get, 
 
       const scopes = ['openid', 'email', 'profile'];
       await get().setAuthenticatedUser(data.user, data.access_token, data.refresh_secret, scopes, data.expires_in);
+
+      // Clean up the URL securely so a manual refresh doesn't replay the auth code
+      window.history.replaceState({}, document.title, window.location.pathname);
     } catch (err: any) {
       console.error('Auth code handling failed:', err);
       const { useModalStore } = await import('../useModalStore');
+      const { useStore } = await import('../useStore');
+
+      // Clear the loading lock on failure
+      useStore.setState({ isInitializing: false, isSpaceLoading: false });
+
       useModalStore.getState().openModal({
         title: 'Authentication Error',
         description: err.message || 'Failed to establish a permanent session. Please check your internet and try again.',
@@ -391,7 +415,6 @@ export const createAuthSlice: StateCreator<AuthState, [], [], any> = (set, get, 
       lastSync: null 
     });
     
-    // Wipe local volatile state to isolate user sessions entirely
     useStore.setState({ 
       thoughts: [], 
       spaces: [], 
@@ -405,7 +428,6 @@ export const createAuthSlice: StateCreator<AuthState, [], [], any> = (set, get, 
     });
     document.body.setAttribute('data-theme', 'cyberia');
     
-    // Construct local guest safe-haven state
     if (typeof useStore.getState().createInitialWorkspace === 'function') {
       await useStore.getState().createInitialWorkspace();
     }
@@ -431,7 +453,7 @@ export const createAuthSlice: StateCreator<AuthState, [], [], any> = (set, get, 
     }
     
     useStore.setState({ isInitializing: false });
-    window.location.reload(); // Expected hard reload upon logout to fully discard React DOM memory
+    window.location.reload(); 
   },
 
   upgradePlan: (plan: SubscriptionPlan, period?: AccessPeriod) => {
@@ -480,7 +502,7 @@ export const createAuthSlice: StateCreator<AuthState, [], [], any> = (set, get, 
 
   refreshProfile: async () => {
     const { accessToken, user, refreshSecret } = get();
-    if (!accessToken || !user) return;
+    if (!accessToken || !user || !refreshSecret) return;
 
     if (refreshProfilePromise) return refreshProfilePromise;
 
@@ -489,7 +511,6 @@ export const createAuthSlice: StateCreator<AuthState, [], [], any> = (set, get, 
         const controller = new AbortController();
         const timeoutId = setTimeout(() => controller.abort(), 20000);
 
-        // 1. Background Token Exchange
         try {
           const refreshRes = await fetch('/api/google-auth?action=refresh', {
             method: 'POST',
@@ -524,7 +545,6 @@ export const createAuthSlice: StateCreator<AuthState, [], [], any> = (set, get, 
           }
         }
 
-        // 2. Profile Differential Sync
         try {
           const supabaseProfile = await supabaseSync.getProfile(user.id);
           if (supabaseProfile?.user) {
@@ -595,7 +615,6 @@ export const createAuthSlice: StateCreator<AuthState, [], [], any> = (set, get, 
   setupRefreshInterval: () => {
     if (refreshInterval) clearInterval(refreshInterval);
     
-    // Heartbeat profile synchronizer
     refreshInterval = setInterval(() => {
       const { status, isOnline } = get();
       if (status === 'authenticated' && isOnline) {
@@ -633,13 +652,11 @@ export const createAuthSlice: StateCreator<AuthState, [], [], any> = (set, get, 
       let needsUpdate = false;
       const updates: any = { updatedAt: now, syncStatus: 'local' };
       
-      // Enforce theme gating
       if (space.theme && !freeThemes.includes(space.theme)) {
         updates.theme = 'cyberia';
         needsUpdate = true;
       }
       
-      // Demolish cloud-hosted custom environments
       if (space.customBg && isStorageUrl(space.customBg)) {
         try {
           await supabaseStorage.deleteSpaceBackground(user.id, space.id);
