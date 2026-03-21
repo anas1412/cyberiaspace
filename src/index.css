@@ -1,4 +1,6 @@
 @import "tailwindcss";
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap');
+@source "./src/**/*.{js,jsx,ts,tsx}";
 
 @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap');
 
@@ -154,10 +156,8 @@ body {
 
 .app-body {
   overflow: hidden;
-  width: 111.111vw;
-  height: 111.111dvh;
-  transform: scale(0.9);
-  transform-origin: 0 0;
+  width: 100vw;
+  height: 100dvh;
   touch-action: none;
   overscroll-behavior: none;
   position: fixed;
@@ -179,35 +179,15 @@ body {
 
 /* Global Scaling */
 @media (max-width: 1600px), (max-height: 900px) {
-  .app-body {
-    width: 117.647vw;
-    height: 117.647dvh;
-    transform: scale(0.85);
-  }
 }
 
 @media (max-width: 1366px), (max-height: 800px) {
-  .app-body {
-    width: 125vw;
-    height: 125dvh;
-    transform: scale(0.8);
-  }
 }
 
 @media (max-width: 768px) {
-  .app-body {
-    width: 142.857vw;
-    height: 142.857dvh;
-    transform: scale(0.7);
-  }
 }
 
 @media (max-width: 480px) {
-  .app-body {
-    width: 166.667vw;
-    height: 166.667dvh;
-    transform: scale(0.6);
-  }
 }
 
 /* Mobile Adjustments */

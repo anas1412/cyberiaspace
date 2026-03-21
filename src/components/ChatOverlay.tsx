@@ -3,12 +3,12 @@ import { useStore } from '../store/useStore';
 import { useAuthStore } from '../store/useAuthStore';
 import { useModalStore } from '../store/useModalStore';
 import { serializeWorkspace } from '../utils/contextBuilder';
-import { X, Send, MessageSquare, Loader2, History, Square } from 'lucide-react';
+import { X, Send, MessageSquare, Loader2, History, Square, ChevronDown, Check } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import rehypeRaw from 'rehype-raw';
-import { PLAN_CONFIG, ORACLE_CONFIG } from '../constants';
+import { PLAN_CONFIG, ORACLE_CONFIG, BASIC_MODELS, PREMIUM_MODELS } from '../constants';
 import { executeOracleTool } from '../services/oracle/executor';
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
@@ -81,10 +81,16 @@ const ChatOverlay: React.FC = () => {
   const [status, setStatus] = useState<string>('');
   const [activeTool, setActiveTool] = useState<{ name: string; args: any } | null>(null);
   const [dailyUsage, setDailyUsage] = useState(user?.usage?.ai_daily_count || 0);
+  const [selectedModel, setSelectedModel] = useState(plan === 'pro' ? PREMIUM_MODELS[0].id : BASIC_MODELS[0].id);
+  const [showModelDropdown, setShowModelDropdown] = useState(false);
 
   const scrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const abortControllerRef = useRef<AbortController | null>(null);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
+  const availableModels = plan === 'pro' ? PREMIUM_MODELS : BASIC_MODELS;
+  const currentModelInfo = availableModels.find((m) => m.id === selectedModel) || availableModels[0];
 
   // Load history from Dexie when spaceId changes
   useEffect(() => {
@@ -131,8 +137,26 @@ const ChatOverlay: React.FC = () => {
     }
   }, [input]);
 
-  // Strict plan-based model selection
-  const activeModel = plan === 'pro' ? 'premium models' : 'free models';
+  // Close dropdown on click outside
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
+        setShowModelDropdown(false);
+      }
+    };
+    if (showModelDropdown) {
+      document.addEventListener('mousedown', handleClickOutside);
+      return () => document.removeEventListener('mousedown', handleClickOutside);
+    }
+  }, [showModelDropdown]);
+
+  // Switch to default model when plan changes
+  useEffect(() => {
+    const defaultModel = plan === 'pro' ? PREMIUM_MODELS[0].id : BASIC_MODELS[0].id;
+    setSelectedModel(defaultModel);
+  }, [plan]);
+
+  const activeModel = selectedModel;
 
   const getFriendlyToolName = (name: string) => {
     switch (name) {
@@ -537,60 +561,99 @@ if (['get_thought_details', 'read_file_content', 'read_files_content'].includes(
         >
 
           {/* Header */}
-          <div className="p-4 md:p-5 border-b border-[var(--glass-border)] flex items-center justify-between bg-[var(--bg-main)]/20 backdrop-blur-md sticky top-0 z-20">
-            <div className="ml-3 flex items-center gap-3">
-              <div>
-                <div className="flex items-center gap-2">
-                  <h3 className="text-xs font-black uppercase tracking-[0.2em] text-white leading-none">Oracle AI</h3>
-                </div>
+          <div className="p-4 md:p-5 border-b border-[var(--glass-border)] bg-[var(--bg-main)]/20 backdrop-blur-md sticky top-0 z-20">
+            <div className="flex justify-between items-center relative">
+              <div className="w-8" />
+              <div className="flex-1 flex flex-col items-center">
+                <h3 className="text-xs font-black uppercase tracking-[0.2em] text-[var(--text-primary)] leading-none">Oracle AI</h3>
                 <div className="flex items-center gap-2 mt-1">
-                  <span className="w-1 h-1 rounded-full bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.6)]" />
-                  <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest leading-none">
-                    {activeModel}
-                  </span>
-                  {plan === 'free' && (
-                    <button 
-                      onClick={openPricing}
-                      className="ml-1 px-1.5 py-0.5 rounded-md bg-blue-500/10 hover:bg-blue-500/20 border border-blue-500/20 text-[7px] font-black text-blue-400 uppercase tracking-widest transition-all active:scale-95"
+                  <div className="relative" ref={dropdownRef}>
+                    <button
+                      onClick={() => setShowModelDropdown(!showModelDropdown)}
+                      className="flex items-center gap-1.5 px-2 py-1 rounded-lg bg-white/5 hover:bg-white/10 border border-white/10 transition-all group"
                     >
-                      Go Pro
+                      <span className="text-[10px] font-bold text-blue-400 uppercase tracking-widest leading-none">
+                        {currentModelInfo.name}
+                      </span>
+                      <ChevronDown className={cn("w-3 h-3 text-slate-500 transition-transform", showModelDropdown && "rotate-180")} />
                     </button>
-                  )}
-                </div>
-              </div>
-            </div>
-            
-            
-            <div className="flex items-center gap-3">
-              {user && (
-                <div className="flex items-center gap-2">
-                  <div className="flex flex-col items-end gap-0.5">
-                    <span className="text-[10px] font-bold uppercase tracking-widest text-blue-400/80">
-                      {dailyUsage} / {limits.AI_DAILY_LIMIT} REQUESTS DAILY LIMIT
-                    </span>
-                    <div className="w-32 h-0.5 bg-white/10 rounded-full overflow-hidden">
-                      <motion.div 
-                        initial={{ width: 0 }}
-                        animate={{ width: `${Math.min(100, (dailyUsage / (limits.AI_DAILY_LIMIT || 1)) * 100)}%` }}
-                        className="h-full bg-blue-500 shadow-[0_0_6px_rgba(59,130,246,0.4)]" 
-                      />
-                    </div>
+                    <AnimatePresence>
+                      {showModelDropdown && (
+                        <motion.div
+                          initial={{ opacity: 0, y: -8, scale: 0.95 }}
+                          animate={{ opacity: 1, y: 0, scale: 1 }}
+                          exit={{ opacity: 0, y: -8, scale: 0.95 }}
+                          transition={{ duration: 0.15 }}
+                          className="absolute top-full left-0 mt-2 w-48 glass rounded-xl border border-white/10 shadow-xl overflow-hidden z-50"
+                        >
+                          <div className="p-2 space-y-1">
+                            {availableModels.map((model) => (
+                              <button
+                                key={model.id}
+                                onClick={() => {
+                                  setSelectedModel(model.id);
+                                  setShowModelDropdown(false);
+                                }}
+                                className={cn(
+                                  "w-full flex items-center justify-between px-3 py-2 rounded-lg transition-all",
+                                  selectedModel === model.id 
+                                    ? "bg-blue-500/20 border border-blue-500/30" 
+                                    : "hover:bg-white/5 border border-transparent"
+                                )}
+                              >
+                                <div className="flex flex-col items-start gap-0.5">
+                                  <span className={cn("text-[10px] font-bold uppercase tracking-widest", selectedModel === model.id ? "text-blue-400" : "text-slate-300")}>
+                                    {model.name}
+                                  </span>
+                                  <span className="text-[7px] font-medium text-slate-500 uppercase tracking-wider">
+                                    {model.desc}
+                                  </span>
+                                </div>
+                                {selectedModel === model.id && (
+                                  <Check className="w-3 h-3 text-blue-400" />
+                                )}
+                              </button>
+                            ))}
+                          </div>
+                          {plan === 'free' && (
+                            <div className="p-2 border-t border-white/5">
+                              <button
+                                onClick={() => {
+                                  setShowModelDropdown(false);
+                                  openPricing();
+                                }}
+                                className="w-full flex items-center justify-center gap-2 px-3 py-2 rounded-lg bg-blue-500/10 hover:bg-blue-500/20 border border-blue-500/20 transition-all"
+                              >
+                                <span className="text-[9px] font-black text-blue-400 uppercase tracking-widest">
+                                  Upgrade to Pro
+                                </span>
+                                <span className="text-[8px] font-bold text-blue-500/60 uppercase tracking-wider">
+                                  +Models
+                                </span>
+                              </button>
+                            </div>
+                          )}
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
                   </div>
                 </div>
-              )}
-              <button 
-                onClick={handleClear}
-                className="p-2 rounded-lg text-slate-400 transition-all group"
-                title="Clear Stream"
-              >
-                <History className="w-3.5 h-3.5 group-hover:scale-110 transition-transform" />
-              </button>
-              <button 
-                onClick={() => setChatOpen(false)}
-                className="p-2 rounded-lg text-slate-400 transition-all"
-              >
-                <X className="w-4 h-4" />
-              </button>
+              </div>
+              <div className="flex items-center gap-2">
+                <button 
+                  onClick={handleClear}
+                  className="p-2 hover:bg-[var(--glass-border)] rounded-lg text-[var(--text-muted)] transition-all"
+                  title="Clear Stream"
+                >
+                  <History className="w-3.5 h-3.5" />
+                </button>
+                <button 
+                  onClick={() => setChatOpen(false)}
+                  className="p-2 hover:bg-[var(--glass-border)] rounded-lg text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-all"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
             </div>
           </div>
 

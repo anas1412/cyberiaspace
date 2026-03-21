@@ -100,8 +100,18 @@ const getDefaultModel = () => {
 export const DEFAULT_MODEL = getDefaultModel();
 
 
-export const BASIC_MODELS = ['openrouter/free'];
-export const PREMIUM_MODELS = ['openrouter/free'];
+export const BASIC_MODELS = [
+  { id: 'openrouter/free', name: 'GPT nano 5', desc: 'Fast & reliable' },
+  { id: 'openrouter/free', name: 'Gemini Flash Lite 3.1', desc: 'Lightweight' },
+];
+
+export const PREMIUM_MODELS = [
+  { id: 'openrouter/free', name: 'Claude Sonnet', desc: 'Best reasoning' },
+  { id: 'openrouter/free', name: 'GPT-4o', desc: 'Fast & smart' },
+  { id: 'openrouter/free', name: 'Gemini Flash 3', desc: 'Multi-modal' },
+];
+
+export type ModelOption = typeof BASIC_MODELS[number];
 
 export const AVAILABLE_MODELS = [
   ...BASIC_MODELS,

@@ -80,12 +80,16 @@ export default defineConfig(({ mode }) => {
     build: {
       rollupOptions: {
         output: {
-          manualChunks: {
-            'landing-page': ['./src/components/Homepage'],
-            'vendor-ui': ['framer-motion', 'lucide-react', 'clsx', 'tailwind-merge'],
-            'vendor-db': ['dexie'],
-            'vendor-utils': ['@vercel/analytics', '@vercel/speed-insights', 'canvas-confetti'],
-            'vendor-auth': ['@react-oauth/google']
+          manualChunks(id) {
+            if (id.includes('node_modules/tailwindcss')) {
+              return 'vendor-tailwind';
+            }
+            if (id.includes('node_modules/framer-motion')) return 'vendor-ui';
+            if (id.includes('node_modules/lucide-react')) return 'vendor-ui';
+            if (id.includes('node_modules/dexie')) return 'vendor-db';
+            if (id.includes('node_modules/@vercel') || id.includes('node_modules/canvas-confetti')) return 'vendor-utils';
+            if (id.includes('node_modules/@react-oauth')) return 'vendor-auth';
+            if (id.includes('./src/components/Homepage')) return 'landing-page';
           }
         }
       },
