@@ -30,21 +30,21 @@ const monthNames = ["January", "February", "March", "April", "May", "June", "Jul
 const weekDays = ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'];
 
 const reminderOptions = [
-  { label: 'At time', value: '0', icon: <Bell className="w-3 h-3" /> },
-  { label: '5 min before', value: '5', icon: <Bell className="w-3 h-3" /> },
-  { label: '15 min before', value: '15', icon: <Bell className="w-3 h-3" /> },
-  { label: '30 min before', value: '30', icon: <Bell className="w-3 h-3" /> },
-  { label: '1 hour before', value: '60', icon: <Bell className="w-3 h-3" /> },
-  { label: '1 day before', value: '1440', icon: <Bell className="w-3 h-3" /> },
-  { label: '1 week before', value: '10080', icon: <Bell className="w-3 h-3" /> },
+  { label: 'At time', value: '0' },
+  { label: '5 min before', value: '5' },
+  { label: '15 min before', value: '15' },
+  { label: '30 min before', value: '30' },
+  { label: '1 hour before', value: '60' },
+  { label: '1 day before', value: '1440' },
+  { label: '1 week before', value: '10080' },
 ];
 
 const repeatOptions = [
-  { label: 'Does not repeat', value: '', icon: <Repeat className="w-3 h-3" /> },
-  { label: 'Daily', value: 'FREQ=DAILY', icon: <Repeat className="w-3 h-3" /> },
-  { label: 'Weekly', value: 'FREQ=WEEKLY', icon: <Repeat className="w-3 h-3" /> },
-  { label: 'Monthly', value: 'FREQ=MONTHLY', icon: <Repeat className="w-3 h-3" /> },
-  { label: 'Yearly', value: 'FREQ=YEARLY', icon: <Repeat className="w-3 h-3" /> },
+  { label: 'Does not repeat', value: '' },
+  { label: 'Daily', value: 'FREQ=DAILY' },
+  { label: 'Weekly', value: 'FREQ=WEEKLY' },
+  { label: 'Monthly', value: 'FREQ=MONTHLY' },
+  { label: 'Yearly', value: 'FREQ=YEARLY' },
 ];
 
 export const DateTimePicker: React.FC<DateTimePickerProps> = ({

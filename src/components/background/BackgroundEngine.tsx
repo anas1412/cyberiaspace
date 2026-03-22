@@ -2,7 +2,6 @@ import React from "react";
 import { useStore } from "../../store/useStore";
 import Starfield from "./layers/Starfield";
 import Atmosphere from "./layers/Atmosphere";
-import NoiseOverlay from "./layers/NoiseOverlay";
 
 const BackgroundEngine: React.FC = () => {
   const theme = useStore((state) => state.theme);
@@ -33,9 +32,9 @@ const BackgroundEngine: React.FC = () => {
       </div>
 
       {/* 4. Texture & Noise */}
-      <div className="relative z-30 w-full h-full">
+      {/* <div className="relative z-30 w-full h-full">
         <NoiseOverlay />
-      </div>
+      </div> */}
 
       {/* 5. Depth Overlay for Custom Background */}
       {customBg && !performanceMode && (

@@ -290,7 +290,7 @@ const Starfield: React.FC<StarfieldProps> = ({ theme, performanceMode }) => {
       className="fixed inset-0 z-0 pointer-events-none transition-opacity duration-1000 w-full h-full"
       style={{ 
         //OPACITY / VISIBILITY TUNING:
-        opacity: theme === "rain" ? 0.3 : theme === "sakura" ? 0.5 : 0.6,
+        opacity: theme === "rain" ? 0.4 : theme === "sakura" ? 0.5 : 1,
         left: '-10%',
         top: '-10%',
         width: '120%',

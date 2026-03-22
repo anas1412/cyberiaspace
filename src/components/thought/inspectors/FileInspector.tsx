@@ -6,16 +6,37 @@ import { db } from '../../../db';
 import { type InspectorPanelProps } from '../registry';
 import { MAX_FILE_SIZE_MB } from '../../../constants';
 import { generateThumbnail, generateVideoThumbnail } from '../../../utils/image';
-import { Upload } from 'lucide-react';
+import { Upload, FileText } from 'lucide-react';
+
+function formatFileSize(bytes: number): string {
+  if (bytes === 0) return '0 B';
+  const k = 1024;
+  const sizes = ['B', 'KB', 'MB', 'GB'];
+  const i = Math.floor(Math.log(bytes) / Math.log(k));
+  return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
+}
 
 export const FileInspector: React.FC<InspectorPanelProps> = ({ thought, isReadOnly }) => {
   const updateThought = useStore(state => state.updateThought);
   const uploadThoughtBlob = useAuthStore((state) => state.uploadThoughtBlob);
   const openModal = useModalStore(state => state.openModal);
 
+  const fileData = thought.data as { type: string; name?: string; size?: number; meta?: { file?: { type?: string } } } | undefined;
+  const hasFile = fileData?.name;
+
   return (
     <div className="space-y-6">
-      {!isReadOnly && (
+      {hasFile ? (
+        <div className="flex items-center gap-3 p-4 bg-[var(--bg-page)]/20 border border-[var(--glass-border)] rounded-xl">
+          <FileText className="w-5 h-5 text-[var(--accent-secondary)] flex-shrink-0" />
+          <div className="flex-1 min-w-0">
+            <p className="text-xs font-medium text-[var(--text-primary)] truncate">{fileData.name}</p>
+            <p className="text-[9px] text-[var(--text-muted)]">
+              {formatFileSize(fileData.size || 0)} • {(fileData.meta?.file?.type || 'application/octet-stream').split('/')[1]}
+            </p>
+          </div>
+        </div>
+      ) : !isReadOnly && (
         <div className="border border-dashed border-white/10 rounded-xl p-6 text-center hover:bg-white/5 transition-colors cursor-pointer relative flex flex-col items-center justify-center gap-3">
           <input
             type="file"
