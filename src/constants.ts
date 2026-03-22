@@ -41,21 +41,21 @@ export interface PlanLimits {
 
 export const PLAN_CONFIG: Record<SubscriptionPlan, PlanLimits> = {
   free: {
-    MAX_SPACES: 3,
-    MAX_THOUGHTS_PER_SPACE: 20,
-    MAX_CLOUD_THOUGHTS: 60,
-    MAX_STORAGE_MB: 50,
+    MAX_SPACES: 4,
+    MAX_THOUGHTS_PER_SPACE: 30,
+    MAX_CLOUD_THOUGHTS: 120,
+    MAX_STORAGE_MB: 20,
     AI_ENABLED: true,
     AI_DAILY_LIMIT: 15,
     THEMES_ENABLED: ['cyberia'],
   },
   pro: {
-    MAX_SPACES: 12,
-    MAX_THOUGHTS_PER_SPACE: 60,
-    MAX_CLOUD_THOUGHTS: 480,
-    MAX_STORAGE_MB: 500,
+    MAX_SPACES: 20,
+    MAX_THOUGHTS_PER_SPACE: 100,
+    MAX_CLOUD_THOUGHTS: 2000,
+    MAX_STORAGE_MB: 100,
     AI_ENABLED: true,
-    AI_DAILY_LIMIT: 60,
+    AI_DAILY_LIMIT: 40,
     THEMES_ENABLED: ['cyberia', 'sea', 'forest', 'rain', 'sakura'],
     PRICE: {
       monthly: { usd: 8, tnd: 19 },

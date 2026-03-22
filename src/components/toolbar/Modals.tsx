@@ -713,14 +713,7 @@ export const ShortcutsModal: React.FC<{ isOpen: boolean; onClose: () => void }> 
             </div>
           ))}
           
-          <div className="pt-8 border-t border-white/5 flex items-center gap-4">
-            <div className="w-10 h-10 rounded-xl bg-[var(--accent)]/10 flex items-center justify-center text-[var(--accent-secondary)]">
-              <MousePointer2 className="w-5 h-5" />
-            </div>
-            <p className="text-[9px] uppercase font-bold tracking-widest text-slate-500 leading-relaxed">
-              Middle-click or Alt+Drag to move around the infinite workspace.
-            </p>
-          </div>
+
         </div>
 
         <ModalFooter onClose={onClose} />
