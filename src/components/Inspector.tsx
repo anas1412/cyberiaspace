@@ -244,6 +244,8 @@ const Inspector: React.FC = () => {
   const [pendingType, setPendingType] = React.useState<ThoughtType | null>(null);
   const [activeTab, setActiveTab] = React.useState<'content' | 'status' | 'layout'>('content');
 
+  const titleInputRef = React.useRef<HTMLInputElement>(null);
+
   // Sync local state when selected thought changes
   React.useEffect(() => {
     if (thought) {
@@ -256,6 +258,16 @@ const Inspector: React.FC = () => {
       setLocalStackName(stack.name || '');
     }
   }, [selectedThoughtId, stack?.id]);
+
+  // Auto-focus title input when new thought is created
+  React.useEffect(() => {
+    const focusId = useStore.getState().inspectorTitleFocusId;
+    if (focusId && focusId === selectedThoughtId && titleInputRef.current) {
+      titleInputRef.current.focus();
+      titleInputRef.current.select();
+      useStore.getState().setInspectorTitleFocusId(null);
+    }
+  }, [selectedThoughtId]);
 
   const handleDeleteThought = () => {
     if (!thought) return;
@@ -348,60 +360,60 @@ const Inspector: React.FC = () => {
               >
                 {activeTab === 'content' && (
                   <div className="space-y-6">
-                    <div className="grid grid-cols-4 gap-2">
-                      {(['label', 'text', 'tasks', 'table', 'paint', 'embed', 'file', 'save'] as const).map((item) => {
-                        if (item === 'save') {
-                          const showSave = pendingType !== null && pendingType !== thought.type;
-                          return (
-                            <button
-                              key="save"
-                              onClick={() => {
-                                if (pendingType) {
-                                  handleTypeChange(pendingType);
-                                  setPendingType(null);
-                                }
-                              }}
-                              disabled={!showSave}
-                              className={cn(
-                                "p-3 rounded-xl flex flex-col items-center justify-center transition-all border gap-1.5",
-                                showSave 
-                                  ? "bg-[var(--accent)] border-[var(--accent)] text-[var(--accent-contrast)] shadow-[0_0_20px_var(--accent-glow)] scale-100 opacity-100 font-black"
-                                  : "bg-[var(--bg-main)]/20 border-[var(--glass-border)] text-[var(--text-muted)] scale-95 opacity-30 cursor-default"
-                              )}
-                            >
-                              <Save className="w-3.5 h-3.5" />
-                              <span className="text-[8px] font-black uppercase tracking-widest">Save</span>
-                            </button>
-                          );
-                        }
-                        const type = item as ThoughtType;
-                        const tConfig = getThoughtConfig(type);
-                        const isActive = (pendingType || thought.type) === type;
-                        return (
-                          <button
-                            key={type}
-                            onClick={() => setPendingType(type)}
-                            className={cn(
-                              "p-3 rounded-xl flex flex-col items-center justify-center transition-all border gap-1.5",
-                              isActive
-                                ? "bg-[var(--accent)]/10 border-[var(--accent)] text-[var(--text-primary)] shadow-[0_0_15px_var(--accent-glow)]"
-                                : "bg-white/[0.03] border-transparent text-[var(--text-muted)] hover:bg-white/[0.06] hover:text-[var(--text-primary)]",
-                              isReadOnly && thought.type !== type && "opacity-30 grayscale cursor-default"
-                            )}
-                            disabled={isReadOnly}
-                            title={tConfig?.label || type}
-                          >
-                            {tConfig?.icon && <tConfig.icon className="w-3.5 h-3.5" />}
-                            <span className="text-[7px] font-black uppercase tracking-tighter">{type === 'tasks' ? 'Task' : type}</span>
-                          </button>
-                        );
-                      })}
-                    </div>
+                    {thought.type !== 'file' && (
+                      <div className="space-y-2">
+                        <div className="grid grid-cols-3 gap-2">
+                          {(['label', 'text', 'tasks', 'table', 'paint', 'embed'] as const)
+                            .map((type) => {
+                              const tConfig = getThoughtConfig(type);
+                              const isActive = (pendingType || thought.type) === type;
+                              return (
+                                <button
+                                  key={type}
+                                  onClick={() => setPendingType(type)}
+                                  className={cn(
+                                    "p-3 rounded-xl flex flex-col items-center justify-center transition-all border gap-1.5",
+                                    isActive
+                                      ? "bg-[var(--accent)]/10 border-[var(--accent)] text-[var(--text-primary)] shadow-[0_0_15px_var(--accent-glow)]"
+                                      : "bg-white/[0.03] border-transparent text-[var(--text-muted)] hover:bg-white/[0.06] hover:text-[var(--text-primary)]",
+                                    isReadOnly && thought.type !== type && "opacity-30 grayscale cursor-default"
+                                  )}
+                                  disabled={isReadOnly}
+                                  title={tConfig?.label || type}
+                                >
+                                  {tConfig?.icon && <tConfig.icon className="w-3.5 h-3.5" />}
+                                  <span className="text-[7px] font-black uppercase tracking-tighter">{type === 'tasks' ? 'Task' : type}</span>
+                                </button>
+                              );
+                            })}
+                        </div>
+                        
+                        <button
+                          onClick={() => {
+                            if (pendingType) {
+                              handleTypeChange(pendingType);
+                              setPendingType(null);
+                            }
+                          }}
+                          disabled={!(pendingType !== null && pendingType !== thought.type)}
+                          className={cn(
+                            "w-full p-3 rounded-xl flex items-center justify-center gap-2 transition-all border",
+                            (pendingType !== null && pendingType !== thought.type)
+                              ? "bg-[var(--accent)] border-[var(--accent)] text-[var(--accent-contrast)] shadow-[0_0_20px_var(--accent-glow)] scale-100 opacity-100 font-black"
+                              : "bg-[var(--bg-main)]/20 border-[var(--glass-border)] text-[var(--text-muted)] scale-95 opacity-30 cursor-default"
+                          )}
+                        >
+                          <Save className="w-3.5 h-3.5" />
+                          <span className="text-[8px] font-black uppercase tracking-widest">Save Change</span>
+                        </button>
+                      </div>
+                    )}
 
                     <div className="space-y-5">
                       <div className="space-y-2">
                         <label className="text-[9px] uppercase font-black tracking-widest text-[var(--text-muted)] ml-1">Name</label>
                         <input
+                          ref={titleInputRef}
                           type="text"
                           readOnly={isReadOnly}
                           value={localText}

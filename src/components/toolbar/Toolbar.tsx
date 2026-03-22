@@ -254,7 +254,7 @@ const Toolbar: React.FC = () => {
       date: hoverContext.date
     });
     
-    if (id !== '') { setSelectedThoughtId(id); setInspectorOpen(true); }
+    if (id !== '') { setSelectedThoughtId(id); setInspectorOpen(true); useStore.getState().setInspectorTitleFocusId(id); }
   };
 
   const setViewMode = (mode: 'spatial' | 'kanban' | 'calendar') => {

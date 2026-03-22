@@ -332,6 +332,7 @@ function App() {
         if (id !== '') {
           setSelectedThoughtId(id);
           setInspectorOpen(true);
+          useStore.getState().setInspectorTitleFocusId(id);
         }
       }
     };

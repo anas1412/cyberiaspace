@@ -32,6 +32,8 @@ export const createCanvasSlice: StateCreator<CyberiaState, [], [], any> = (set, 
   isLightboxOpen: false,
   lightboxImage: null,
   lightboxThoughtId: null,
+  inspectorTitleFocusId: null,
+  setInspectorTitleFocusId: (id: string | null) => set({ inspectorTitleFocusId: id }),
   openLightbox: (image: string, thoughtId: string) => set({ isLightboxOpen: true, lightboxImage: image, lightboxThoughtId: thoughtId }),
   closeLightbox: () => set({ isLightboxOpen: false, lightboxImage: null, lightboxThoughtId: null }),
 });

@@ -34,6 +34,8 @@ export interface CyberiaState {
   isLightboxOpen: boolean;
   lightboxImage: string | null;
   lightboxThoughtId: string | null;
+  inspectorTitleFocusId: string | null;
+  setInspectorTitleFocusId: (id: string | null) => void;
   transform: { x: number; y: number; scale: number };
   deletingThoughtIds: string[];
   isDemo: boolean;

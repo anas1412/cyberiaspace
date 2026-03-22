@@ -332,6 +332,7 @@ const Viewport: React.FC<{ isInteracting?: boolean }> = ({ isInteracting }) => {
           if (id !== '') {
             setSelectedThoughtId(id);
             setInspectorOpen(true);
+            useStore.getState().setInspectorTitleFocusId(id);
           }
         });
       }
@@ -499,13 +500,18 @@ const Viewport: React.FC<{ isInteracting?: boolean }> = ({ isInteracting }) => {
         if (file.name.endsWith('.txt') || file.name.endsWith('.md') || file.type === 'text/plain' || file.type === 'text/markdown') {
           reader.onload = async (ev) => {
             const content = ev.target?.result as string;
-            await addThought({
+            const id = await addThought({
               type: 'text',
               data: { type: 'text', content },
               x: dropX + (Math.random() * 20 - 10),
               y: dropY + (Math.random() * 20 - 10),
               text: file.name.replace(/\.(txt|md)$/, '')
             });
+            if (id !== '') {
+              setSelectedThoughtId(id);
+              setInspectorOpen(true);
+              useStore.getState().setInspectorTitleFocusId(id);
+            }
           };
           reader.readAsText(file);
         }
@@ -531,13 +537,18 @@ const Viewport: React.FC<{ isInteracting?: boolean }> = ({ isInteracting }) => {
             });
 
             if (rows.length > 0) {
-              await addThought({
+              const id = await addThought({
                 type: 'table',
                 data: { type: 'table', rows },
                 x: dropX + (Math.random() * 20 - 10),
                 y: dropY + (Math.random() * 20 - 10),
                 text: file.name.replace('.csv', '')
               });
+              if (id !== '') {
+                setSelectedThoughtId(id);
+                setInspectorOpen(true);
+                useStore.getState().setInspectorTitleFocusId(id);
+              }
             }
           };
           reader.readAsText(file);
