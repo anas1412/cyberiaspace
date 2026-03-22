@@ -17,6 +17,7 @@ export function toSnakeCase(obj: any): any {
       key === 'retryCount' || 
       key === 'isOnboarding' || 
       key === 'data' ||
+      key === 'date' ||
       key === 'x' || key === 'y' || key === 'vx' || key === 'vy'
     ) {
       continue

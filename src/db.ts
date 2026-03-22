@@ -146,7 +146,7 @@ db.on('versionchange', () => {
   window.location.reload();
 });
 
-// Version 17: Added deletedAt index to spaces and stacks for robust filtering
+// Version 17: Added deletedAt index to spaces and stacks for robust filtering. Note: date field was deprecated here and removed in v19, replaced by startTime/endTime.
 db.version(17).stores({
   spaces: 'id, userId, name, order, syncStatus, deletedAt, updatedAt',
   thoughts: 'id, userId, spaceId, stackId, text, type, status, date, priority, order, author, storageUrl, syncStatus, deletedAt, updatedAt',

@@ -34,7 +34,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     // Unified IDs: local ID is the cloud ID
     const spaceId = space.id;
     const userId = space.user_id || space.userId || '';
-    const snapshot = { space, thoughts, stacks, creatorName };
+    // Filter out deprecated 'date' field from thought snapshots
+    const cleanThoughts = (thoughts || []).map(({ date, ...rest }: any) => rest);
+    const snapshot = { space, thoughts: cleanThoughts, stacks, creatorName };
     const newPublishedId = existingPublishedId || randomUUID();
     const expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
 

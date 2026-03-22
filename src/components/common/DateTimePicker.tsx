@@ -266,20 +266,20 @@ export const DateTimePicker: React.FC<DateTimePickerProps> = ({
           >
             <div className="flex flex-col">
               <div className="flex justify-between items-center mb-4">
-                <button onClick={handlePrevMonth} className="p-1.5 hover:bg-[var(--glass-border)] rounded-lg text-slate-400 hover:text-white transition-colors">
+                <button onClick={handlePrevMonth} className="p-1.5 hover:bg-[var(--glass-border)] rounded-lg text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors">
                   <ChevronLeft className="w-4 h-4" />
                 </button>
-                <h4 className="text-[10px] font-black uppercase tracking-widest text-white">
+                <h4 className="text-[10px] font-black uppercase tracking-widest text-[var(--text-primary)]">
                   {monthNames[viewDate.getMonth()]} {viewDate.getFullYear()}
                 </h4>
-                <button onClick={handleNextMonth} className="p-1.5 hover:bg-[var(--glass-border)] rounded-lg text-slate-400 hover:text-white transition-colors">
+                <button onClick={handleNextMonth} className="p-1.5 hover:bg-[var(--glass-border)] rounded-lg text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors">
                   <ChevronRight className="w-4 h-4" />
                 </button>
               </div>
 
               <div className="grid grid-cols-7 gap-1 mb-1">
                 {weekDays.map(d => (
-                  <div key={d} className="text-center text-[8px] font-black uppercase text-slate-600 py-1">{d}</div>
+                  <div key={d} className="text-center text-[8px] font-black uppercase text-[var(--text-muted)] py-1">{d}</div>
                 ))}
               </div>
 
@@ -296,10 +296,10 @@ export const DateTimePicker: React.FC<DateTimePickerProps> = ({
                       className={cn(
                         "w-full aspect-square rounded-lg text-[9px] font-bold transition-all flex items-center justify-center border",
                         isSelected(day)
-                          ? "bg-[var(--accent)] border-[var(--accent)] text-white shadow-[0_0_10px_var(--accent-glow)]"
+                          ? "bg-[var(--accent)] border-[var(--accent)] text-[var(--accent-contrast)] shadow-[0_0_10px_var(--accent-glow)]"
                           : isToday(day)
-                            ? "bg-[var(--glass-border)] border-white/20 text-white"
-                            : "bg-transparent border-transparent text-slate-400 hover:bg-[var(--glass-border)] hover:text-white"
+                            ? "bg-[var(--glass-border)] border-white/20 text-[var(--text-primary)]"
+                            : "bg-transparent border-transparent text-[var(--text-muted)] hover:bg-[var(--glass-border)] hover:text-[var(--text-primary)]"
                       )}
                     >
                       {day}

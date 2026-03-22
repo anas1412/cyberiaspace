@@ -154,7 +154,22 @@ This section serves as a definitive reference for patterns that are deprecated. 
 
 ###  Styling
 - **Tailwind CSS:** Primary styling method. Use utility classes directly in `className`.
-- **Themes:** Supported themes include `cyberia`, `sea`, `forest`, and `rain`, toggled via `data-theme` on `document.body`.
+- **Themes:** Supported themes include `cyberia`, `sea`, `forest`, `rain`, and `sakura`, toggled via `data-theme` on `document.body`.
+
+###  Theme-Aware Text Colors (CRITICAL)
+When styling UI elements, NEVER use hardcoded colors like `text-white`, `text-slate-400`, `text-gray-600`, etc. These will be invisible on certain themes. Instead, ALWAYS use CSS variables defined in `src/index.css`:
+
+| Situation | Use Instead Of | Use This |
+|-----------|-----------------|----------|
+| Primary text content | `text-white`, `text-slate-300` | `text-[var(--text-primary)]` |
+| Secondary/muted text | `text-slate-400`, `text-slate-500`, `text-slate-600` | `text-[var(--text-muted)]` |
+| Text on accent/colored background | `text-white` when bg is `--accent` (pink/grey) | `text-[var(--accent-contrast)]` |
+| Text on glass background | `text-white` when bg is `--glass-border` | `text-[var(--text-primary)]` |
+| Input placeholders | `placeholder:text-slate-500` | `placeholder:text-[var(--text-muted)]` |
+
+**Why this matters:** The `rain` theme uses a grey accent (`#d6d3d1`) and `sakura` theme uses a pink accent (`#f0a8b8`). White text on these light colors is invisible. The CSS variables handle this automatically per theme.
+
+**Reference Implementation:** Always check `@src/components/Inspector.tsx` for the correct pattern - it already uses these CSS variables correctly.
 
 ---
 

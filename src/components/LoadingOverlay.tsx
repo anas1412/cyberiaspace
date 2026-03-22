@@ -71,7 +71,7 @@ const LoadingOverlay: React.FC<LoadingOverlayProps> = ({ force }) => {
                 className="mt-8 flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest text-slate-500 hover:text-white transition-colors group whitespace-nowrap"
               >
                 <RefreshCw className="w-3 h-3 group-hover:rotate-45 transition-transform" />
-                <span>Loading taking too long? <span className="text-[#6366f1] border-b border-[#6366f1]/30">Force Reset</span></span>
+                <span>Don't panic, your data is being processed</span>
               </motion.button>
             )}
           </div>
