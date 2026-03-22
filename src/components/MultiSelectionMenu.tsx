@@ -1,11 +1,12 @@
 import React from 'react';
 import { useStore } from '../store/useStore';
 import { useModalStore } from '../store/useModalStore';
-import { X, Trash2, Calendar, ChevronLeft, ChevronRight, Palette } from 'lucide-react';
+import { X, Trash2, Palette } from 'lucide-react';
 import { STACK_COLORS } from '../constants';
 import { motion, AnimatePresence } from 'framer-motion';
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
+import { DateTimePicker } from './common/DateTimePicker';
 
 function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -70,77 +71,6 @@ const ColorPicker: React.FC<{ value: string; onChange: (val: string) => void; di
               />
               <p className="text-[7px] font-black uppercase tracking-widest text-slate-500 mt-1 text-center">Custom Hex</p>
             </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-    </div>
-  );
-};
-
-const BatchDatePicker: React.FC<{ onSelect: (val: string) => void }> = ({ onSelect }) => {
-  const [isOpen, setIsOpen] = React.useState(false);
-  const [viewDate, setViewDate] = React.useState(new Date());
-  const containerRef = React.useRef<HTMLDivElement>(null);
-
-  React.useEffect(() => {
-    const handleClickOutside = (e: MouseEvent) => {
-      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
-        setIsOpen(false);
-      }
-    };
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
-
-  const daysInMonth = (year: number, month: number) => new Date(year, month + 1, 0).getDate();
-  const firstDayOfMonth = (year: number, month: number) => new Date(year, month, 1).getDay();
-  const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
-
-  return (
-    <div className="relative" ref={containerRef}>
-      <button
-        onClick={() => setIsOpen(!isOpen)}
-        className="w-full bg-[var(--bg-page)]/20 border border-[var(--glass-border)] rounded-xl p-3 text-[10px] font-black uppercase tracking-widest text-[var(--text-dimmed)] hover:text-[var(--text-primary)] flex items-center justify-between transition-all group"
-      >
-        <span>Set Batch Date</span>
-        <Calendar className="w-3.5 h-3.5 text-slate-500 group-hover:text-[var(--accent)] transition-colors" />
-      </button>
-
-      <AnimatePresence>
-        {isOpen && (
-          <motion.div
-            initial={{ opacity: 0, y: -10, scale: 0.95 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: -10, scale: 0.95 }}
-            className="absolute top-full mt-2 left-0 right-0 z-[100] glass border border-[var(--glass-border)] rounded-2xl p-4 shadow-2xl overflow-hidden"
-          >
-            <div className="flex justify-between items-center mb-4">
-              <button onClick={() => setViewDate(new Date(viewDate.getFullYear(), viewDate.getMonth() - 1))} className="p-1 hover:bg-[var(--glass-border)] rounded-lg text-slate-400">
-                <ChevronLeft className="w-4 h-4" />
-              </button>
-              <h4 className="text-[9px] font-black uppercase tracking-widest text-[var(--text-primary)]">{monthNames[viewDate.getMonth()]} {viewDate.getFullYear()}</h4>
-              <button onClick={() => setViewDate(new Date(viewDate.getFullYear(), viewDate.getMonth() + 1))} className="p-1 hover:bg-[var(--glass-border)] rounded-lg text-slate-400">
-                <ChevronRight className="w-4 h-4" />
-              </button>
-            </div>
-            <div className="grid grid-cols-7 gap-1">
-              {Array.from({ length: firstDayOfMonth(viewDate.getFullYear(), viewDate.getMonth()) }).map((_, i) => <div key={i} />)}
-              {Array.from({ length: daysInMonth(viewDate.getFullYear(), viewDate.getMonth()) }).map((_, i) => (
-                <button
-                  key={i}
-                  onClick={() => { onSelect(new Date(viewDate.getFullYear(), viewDate.getMonth(), i + 1).toLocaleDateString('en-CA')); setIsOpen(false); }}
-                  className="w-full aspect-square rounded-lg text-[9px] font-bold text-slate-400 hover:bg-[var(--accent)]/20 hover:text-[var(--text-primary)] transition-all"
-                >
-                  {i + 1}
-                </button>
-              ))}
-            </div>
-            <button 
-              onClick={() => { onSelect(""); setIsOpen(false); }} 
-              className="w-full mt-4 py-2 bg-[var(--bg-main)]/20 border border-[var(--glass-border)] rounded-lg text-[8px] font-black uppercase tracking-widest text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-all"
-            >
-              Unschedule All
-            </button>
           </motion.div>
         )}
       </AnimatePresence>
@@ -272,8 +202,13 @@ const MultiSelectionMenu: React.FC = () => {
 
             {/* 3. Date Batch */}
             <div className="space-y-3">
-              <label className="text-[9px] uppercase font-black tracking-widest text-[var(--text-muted)] ml-1">Date</label>
-              <BatchDatePicker onSelect={(date) => updateThoughts(selectedThoughtIds, { date })} />
+              <label className="text-[9px] uppercase font-black tracking-widest text-[var(--text-muted)] ml-1">Schedule</label>
+              <DateTimePicker
+                startTime={null}
+                endTime={null}
+                isAllDay={true}
+                onChange={(updates) => updateThoughts(selectedThoughtIds, updates)}
+              />
             </div>
 
             {/* 4. Stack Management */}

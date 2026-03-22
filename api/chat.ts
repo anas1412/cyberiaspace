@@ -184,7 +184,12 @@ const allTools: any[] = [
           stackName: { anyOf: [{ type: "string" }, { type: "null" }], description: "Name of a stack to add this to." },
           priority: { type: "string", enum: ["none", "low", "medium", "high", "urgent"] },
           status: { type: "string", enum: ["none", "todo", "doing", "done"] },
-          date: { type: "string", description: "The date in YYYY-MM-DD format." },
+          startTime: { type: "number", description: "Start time in milliseconds (epoch)." },
+          endTime: { type: "number", description: "End time in milliseconds (epoch)." },
+          isAllDay: { type: "boolean", description: "Whether the event lasts all day." },
+          location: { type: "string", description: "Location of the event." },
+          recurrenceRule: { type: "string", description: "Recurrence rule (RRULE) for repeating events." },
+          reminders: { type: "array", items: { type: "object", properties: { time: { type: "number" }, type: { type: "string" } } } },
           tasks: {
             type: "array",
             items: {
@@ -230,7 +235,12 @@ const allTools: any[] = [
                 stackName: { anyOf: [{ type: "string" }, { type: "null" }], description: "Name of a stack to add this to." },
                 priority: { type: "string", enum: ["none", "low", "medium", "high", "urgent"] },
                 status: { type: "string", enum: ["none", "todo", "doing", "done"] },
-                date: { type: "string", description: "The date in YYYY-MM-DD format." },
+                startTime: { type: "number", description: "Start time in milliseconds (epoch)." },
+                endTime: { type: "number", description: "End time in milliseconds (epoch)." },
+                isAllDay: { type: "boolean", description: "Whether the event lasts all day." },
+                location: { type: "string", description: "Location of the event." },
+                recurrenceRule: { type: "string", description: "Recurrence rule (RRULE) for repeating events." },
+                reminders: { type: "array", items: { type: "object", properties: { time: { type: "number" }, type: { type: "string" } } } },
                 tasks: {
                   type: "array",
                   items: {
@@ -272,7 +282,12 @@ const allTools: any[] = [
           content: { type: "string" },
           status: { type: "string", enum: ["none", "todo", "doing", "done"] },
           priority: { type: "string", enum: ["none", "low", "medium", "high", "urgent"] },
-          date: { type: "string", description: "The date in YYYY-MM-DD format." },
+          startTime: { type: "number", description: "Start time in milliseconds (epoch)." },
+          endTime: { type: "number", description: "End time in milliseconds (epoch)." },
+          isAllDay: { type: "boolean", description: "Whether the event lasts all day." },
+          location: { type: "string", description: "Location of the event." },
+          recurrenceRule: { type: "string", description: "Recurrence rule (RRULE) for repeating events." },
+          reminders: { type: "array", items: { type: "object", properties: { time: { type: "number" }, type: { type: "string" } } } },
           tasks: {
             type: "array",
             items: {
@@ -312,7 +327,12 @@ const allTools: any[] = [
           type: { type: "string", enum: ["label", "text", "tasks", "paint", "table", "image", "embed", "file"] },
           status: { type: "string", enum: ["none", "todo", "doing", "done"] },
           priority: { type: "string", enum: ["none", "low", "medium", "high", "urgent"] },
-          date: { type: "string", description: "The date in YYYY-MM-DD format." },
+          startTime: { type: "number", description: "Start time in milliseconds (epoch)." },
+          endTime: { type: "number", description: "End time in milliseconds (epoch)." },
+          isAllDay: { type: "boolean", description: "Whether the event lasts all day." },
+          location: { type: "string", description: "Location of the event." },
+          recurrenceRule: { type: "string", description: "Recurrence rule (RRULE) for repeating events." },
+          reminders: { type: "array", items: { type: "object", properties: { time: { type: "number" }, type: { type: "string" } } } },
           tasks: {
             type: "array",
             items: {

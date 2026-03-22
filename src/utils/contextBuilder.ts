@@ -1,4 +1,5 @@
 import type { Thought, Space, Stack } from '../db';
+import { sanitizeDate } from './date';
 
 const getRelativeTime = (timestamp: number | null | undefined) => {
   if (!timestamp) return undefined;
@@ -39,7 +40,9 @@ export const serializeWorkspace = (
       type: t.type,
       status: t.status !== 'none' ? t.status : undefined,
       priority: t.priority !== 'none' ? t.priority : undefined,
-      date: t.date || undefined,
+      startTime: sanitizeDate(t.startTime),
+      endTime: sanitizeDate(t.endTime),
+      isAllDay: t.isAllDay,
       updatedAt: getRelativeTime(t.updatedAt),
       stack: t.stackId ? stackMap.get(t.stackId) || "New Collection" : undefined,
       isSelected: isSelected || undefined,

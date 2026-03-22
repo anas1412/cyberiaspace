@@ -110,7 +110,7 @@ describe('syncOrchestrator', () => {
     const now = Date.now();
     // 1. Add local data
     await db.spaces.add({ id: 's1', userId: 'test-user', name: 'Space 1', order: 0, physics: true, mode: 'spatial', syncStatus: 'local', updatedAt: now });
-    await db.thoughts.add({ id: 't1', userId: 'test-user', text: 'Thought 1', spaceId: 's1', stackId: null, x: 0, y: 0, vx: 0, vy: 0, type: 'text', author: '', order: 0, date: '', priority: 'none', description: '', status: 'none', size: 1, data: { type: 'text', content: '' }, syncStatus: 'local', updatedAt: now });
+    await db.thoughts.add({ id: 't1', userId: 'test-user', text: 'Thought 1', spaceId: 's1', stackId: null, x: 0, y: 0, vx: 0, vy: 0, type: 'text', author: '', order: 0, startTime: null, endTime: null, isAllDay: false, priority: 'none', description: '', status: 'none', size: 1, data: { type: 'text', content: '' }, syncStatus: 'local', updatedAt: now });
     
     // 2. Mock cloud data (empty cloud)
     vi.mocked(supabaseSync.getSpaces).mockResolvedValue({ spaces: [] });
@@ -162,7 +162,7 @@ describe('syncOrchestrator', () => {
   it('uploads local blobs for media thoughts', async () => {
     const now = Date.now();
     // 1. Local thought with blob
-    await db.thoughts.add({ id: 't2', userId: 'test-user', type: 'file', spaceId: 's1', text: 'Image', stackId: null, x: 0, y: 0, vx: 0, vy: 0, author: '', order: 0, date: '', priority: 'none', description: '', status: 'none', size: 1, data: { type: 'file', url: '', name: 'test.png', size: 5 }, syncStatus: 'local', updatedAt: now });
+    await db.thoughts.add({ id: 't2', userId: 'test-user', type: 'file', spaceId: 's1', text: 'Image', stackId: null, x: 0, y: 0, vx: 0, vy: 0, author: '', order: 0, startTime: null, endTime: null, isAllDay: false, priority: 'none', description: '', status: 'none', size: 1, data: { type: 'file', url: '', name: 'test.png', size: 5 }, syncStatus: 'local', updatedAt: now });
     await db.blobs.add({ id: 'b1', thoughtId: 't2', blob: new Blob(['hello'], { type: 'image/png' }), name: 'test.png', type: 'image/png', updatedAt: now, userId: 'test-user' });
     
     vi.mocked(supabaseSync.getSpaces).mockResolvedValue({ spaces: [] });
@@ -186,7 +186,7 @@ describe('syncOrchestrator', () => {
     expect(await syncOrchestrator.isLocalEmpty(userId)).toBe(true);
     
     // Case 2: User content
-    await db.thoughts.add({ id: 't4', userId: userId, spaceId: 'my-space', text: 'My Thought', type: 'text', stackId: null, x: 0, y: 0, vx: 0, vy: 0, author: '', order: 0, date: '', priority: 'none', description: '', status: 'none', size: 1, data: { type: 'text', content: '' } });
+    await db.thoughts.add({ id: 't4', userId: userId, spaceId: 'my-space', text: 'My Thought', type: 'text', stackId: null, x: 0, y: 0, vx: 0, vy: 0, author: '', order: 0, startTime: null, endTime: null, isAllDay: false, priority: 'none', description: '', status: 'none', size: 1, data: { type: 'text', content: '' } });
     expect(await syncOrchestrator.isLocalEmpty(userId)).toBe(false);
   });
 });

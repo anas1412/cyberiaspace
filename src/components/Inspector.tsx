@@ -4,12 +4,13 @@ import { useStore } from '../store/useStore';
 import { useModalStore } from '../store/useModalStore';
 import type { ThoughtType } from '../db';
 import { 
-  X, ChevronLeft, ChevronRight, Calendar, ArrowUp, ArrowDown, Save, Maximize2, Trash2, Palette
+  X, ArrowUp, ArrowDown, Save, Maximize2, Trash2, Palette
 } from 'lucide-react';
 import { STACK_COLORS } from '../constants';
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 import { motion, AnimatePresence } from 'framer-motion';
+import { DateTimePicker } from './common/DateTimePicker';
 
 function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -52,28 +53,19 @@ const ColorPicker: React.FC<{ value: string; onChange: (val: string) => void; di
             exit={{ opacity: 0, y: 10, scale: 0.95 }}
             className="absolute bottom-full mb-3 left-0 z-[100] glass border border-[var(--glass-border)] rounded-2xl p-3 shadow-2xl min-w-[180px]"
           >
-                          <div className="grid grid-cols-4 gap-2 mb-3">
-                            {STACK_COLORS.map(color => (
-                              <button
-                                key={color}
-                                onClick={() => { onChange(color); setIsOpen(false); }}
-                                className={cn(
-                                  "w-8 h-8 rounded-lg border-2 transition-all hover:scale-110",
-                                  value === color ? "border-[var(--text-primary)]" : "border-transparent"
-                                )}
-                                style={{ backgroundColor: color }}
-                              />
-                            ))}
-                          </div>
-                          <div className="relative pt-2 border-t border-[var(--glass-border)]">
-                            <input 
-                              type="color" 
-                              value={value.startsWith('#') ? value : '#6366f1'} 
-                              onChange={(e) => onChange(e.target.value)}
-                              className="w-full h-8 bg-transparent cursor-pointer rounded-lg overflow-hidden"
-                            />
-                            <p className="text-[7px] font-black uppercase tracking-widest text-[var(--text-muted)] mt-1 text-center">Custom Hex</p>
-                          </div>
+            <div className="grid grid-cols-4 gap-2 mb-3">
+              {STACK_COLORS.map(color => (
+                <button
+                  key={color}
+                  onClick={() => { onChange(color); setIsOpen(false); }}
+                  className={cn(
+                    "w-8 h-8 rounded-lg border-2 transition-all hover:scale-110",
+                    value === color ? "border-white" : "border-transparent"
+                  )}
+                  style={{ backgroundColor: color }}
+                />
+              ))}
+            </div>
             <div className="relative pt-2 border-t border-[var(--glass-border)]">
               <input 
                 type="color" 
@@ -82,131 +74,6 @@ const ColorPicker: React.FC<{ value: string; onChange: (val: string) => void; di
                 className="w-full h-8 bg-transparent cursor-pointer rounded-lg overflow-hidden"
               />
               <p className="text-[7px] font-black uppercase tracking-widest text-slate-500 mt-1 text-center">Custom Hex</p>
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-    </div>
-  );
-};
-
-const DatePicker: React.FC<{ value: string; onChange: (val: string) => void; disabled?: boolean }> = ({ value, onChange, disabled }) => {
-  const [isOpen, setIsOpen] = React.useState(false);
-  const [viewDate, setViewDate] = React.useState(() => value ? new Date(value) : new Date());
-  const containerRef = React.useRef<HTMLDivElement>(null);
-
-  React.useEffect(() => {
-    const handleClickOutside = (e: MouseEvent) => {
-      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
-        setIsOpen(false);
-      }
-    };
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
-
-  const daysInMonth = (year: number, month: number) => new Date(year, month + 1, 0).getDate();
-  const firstDayOfMonth = (year: number, month: number) => new Date(year, month, 1).getDay();
-
-  const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
-
-  const handlePrevMonth = () => setViewDate(new Date(viewDate.getFullYear(), viewDate.getMonth() - 1));
-  const handleNextMonth = () => setViewDate(new Date(viewDate.getFullYear(), viewDate.getMonth() + 1));
-
-  const selectDate = (day: number) => {
-    const selected = new Date(viewDate.getFullYear(), viewDate.getMonth(), day);
-    onChange(selected.toLocaleDateString('en-CA'));
-    setIsOpen(false);
-  };
-
-  const isSelected = (day: number) => {
-    if (!value) return false;
-    const d = new Date(value);
-    return d.getDate() === day && d.getMonth() === viewDate.getMonth() && d.getFullYear() === viewDate.getFullYear();
-  };
-
-  const isToday = (day: number) => {
-    const today = new Date();
-    return today.getDate() === day && today.getMonth() === viewDate.getMonth() && today.getFullYear() === viewDate.getFullYear();
-  };
-
-  return (
-    <div className="relative" ref={containerRef}>
-      <button
-        onClick={() => !disabled && setIsOpen(!isOpen)}
-        className={cn(
-          "w-full bg-[var(--bg-page)]/20 border border-[var(--glass-border)] rounded-xl p-3 text-xs outline-none focus:border-[var(--accent)] text-[var(--text-primary)] font-mono uppercase flex items-center justify-between group transition-all",
-          disabled && "opacity-50 cursor-default"
-        )}
-      >
-        <span className="flex-1 text-center">{value || "Pick a Date"}</span>
-        <Calendar className="w-4 h-4 text-slate-500 group-hover:text-[var(--accent)] transition-colors" />
-      </button>
-
-      <AnimatePresence>
-        {isOpen && (
-          <motion.div
-            initial={{ opacity: 0, y: -10, scale: 0.95 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: -10, scale: 0.95 }}
-            className="absolute top-full mt-2 left-0 right-0 z-[100] glass border border-[var(--glass-border)] rounded-2xl p-4 shadow-2xl overflow-hidden"
-          >
-            <div className="flex justify-between items-center mb-4">
-              <button onClick={handlePrevMonth} className="p-1 hover:bg-[var(--glass-border)] rounded-lg text-slate-400 hover:text-white transition-colors">
-                <ChevronLeft className="w-4 h-4" />
-              </button>
-              <h4 className="text-[10px] font-black uppercase tracking-widest text-white">
-                {monthNames[viewDate.getMonth()]} {viewDate.getFullYear()}
-              </h4>
-              <button onClick={handleNextMonth} className="p-1 hover:bg-[var(--glass-border)] rounded-lg text-slate-400 hover:text-white transition-colors">
-                <ChevronRight className="w-4 h-4" />
-              </button>
-            </div>
-
-            <div className="grid grid-cols-7 gap-1 mb-1">
-              {['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'].map(d => (
-                <div key={d} className="text-center text-[8px] font-black uppercase text-slate-600 py-1">{d}</div>
-              ))}
-            </div>
-
-            <div className="grid grid-cols-7 gap-1">
-              {Array.from({ length: firstDayOfMonth(viewDate.getFullYear(), viewDate.getMonth()) }).map((_, i) => (
-                <div key={`empty-${i}`} />
-              ))}
-              {Array.from({ length: daysInMonth(viewDate.getFullYear(), viewDate.getMonth()) }).map((_, i) => {
-                const day = i + 1;
-                return (
-                  <button
-                    key={day}
-                    onClick={() => selectDate(day)}
-                    className={cn(
-                      "w-full aspect-square rounded-lg text-[9px] font-bold transition-all flex items-center justify-center border",
-                      isSelected(day)
-                        ? "bg-[var(--accent)] border-[var(--accent)] text-white shadow-[0_0_10px_var(--accent-glow)]"
-                        : isToday(day)
-                          ? "bg-[var(--glass-border)] border-white/20 text-white"
-                          : "bg-transparent border-transparent text-slate-400 hover:bg-[var(--glass-border)] hover:text-white"
-                    )}
-                  >
-                    {day}
-                  </button>
-                );
-              })}
-            </div>
-
-            <div className="mt-4 pt-3 border-t border-[var(--glass-border)] flex justify-between gap-2">
-              <button
-                onClick={() => { onChange(""); setIsOpen(false); }}
-                className="flex-1 py-1.5 rounded-lg bg-[var(--glass-border)] hover:bg-[var(--glass-border)] text-[8px] font-black uppercase tracking-widest text-slate-500 hover:text-white transition-all"
-              >
-                Clear
-              </button>
-              <button
-                onClick={() => { selectDate(new Date().getDate()); setViewDate(new Date()); }}
-                className="flex-1 py-1.5 rounded-lg bg-[var(--accent)]/20 hover:bg-[var(--accent)]/30 text-[8px] font-black uppercase tracking-widest text-[var(--accent-secondary)] transition-all"
-              >
-                Today
-              </button>
             </div>
           </motion.div>
         )}
@@ -236,22 +103,30 @@ const Inspector: React.FC = () => {
   const thought = thoughts.find((t) => t.id === selectedThoughtId);
   const stack = stacks.find((s) => s.id === thought?.stackId);
 
-  // Local state for zero-latency typing
   const [localText, setLocalText] = React.useState('');
   const [localDesc, setLocalDesc] = React.useState('');
-  const [localDate, setLocalDate] = React.useState('');
+  const [localStartTime, setLocalStartTime] = React.useState<number | null>(null);
+  const [localEndTime, setLocalEndTime] = React.useState<number | null>(null);
+  const [localIsAllDay, setLocalIsAllDay] = React.useState(false);
+  const [localReminders, setLocalReminders] = React.useState<any[]>([]);
+  const [localRecurrenceRule, setLocalRecurrenceRule] = React.useState<string | null>(null);
+  const [localLocation, setLocalLocation] = React.useState<string | null>(null);
   const [localStackName, setLocalStackName] = React.useState('');
   const [pendingType, setPendingType] = React.useState<ThoughtType | null>(null);
   const [activeTab, setActiveTab] = React.useState<'content' | 'status' | 'layout'>('content');
 
   const titleInputRef = React.useRef<HTMLInputElement>(null);
 
-  // Sync local state when selected thought changes
   React.useEffect(() => {
     if (thought) {
       setLocalText(thought.text || '');
       setLocalDesc(thought.description || '');
-      setLocalDate(thought.date || '');
+      setLocalStartTime(thought.startTime || null);
+      setLocalEndTime(thought.endTime || null);
+      setLocalIsAllDay(thought.isAllDay ?? true);
+      setLocalReminders(thought.reminders || []);
+      setLocalRecurrenceRule(thought.recurrenceRule || null);
+      setLocalLocation(thought.location || null);
       setPendingType(null);
     }
     if (stack) {
@@ -259,7 +134,6 @@ const Inspector: React.FC = () => {
     }
   }, [selectedThoughtId, stack?.id]);
 
-  // Auto-focus title input when new thought is created
   React.useEffect(() => {
     const focusId = useStore.getState().inspectorTitleFocusId;
     if (focusId && focusId === selectedThoughtId && titleInputRef.current) {
@@ -295,6 +169,42 @@ const Inspector: React.FC = () => {
     updateThought(thought.id, { priority });
   };
 
+  const handleDateTimeChange = (updates: { startTime?: number | null; endTime?: number | null; isAllDay?: boolean }) => {
+    if (!thought) return;
+    const newUpdates: Partial<typeof thought> = {};
+    if (updates.startTime !== undefined) {
+      setLocalStartTime(updates.startTime);
+      newUpdates.startTime = updates.startTime;
+    }
+    if (updates.endTime !== undefined) {
+      setLocalEndTime(updates.endTime);
+      newUpdates.endTime = updates.endTime;
+    }
+    if (updates.isAllDay !== undefined) {
+      setLocalIsAllDay(updates.isAllDay);
+      newUpdates.isAllDay = updates.isAllDay;
+    }
+    updateThought(thought.id, newUpdates);
+  };
+
+  const handleReminderChange = (reminders: any[]) => {
+    if (!thought) return;
+    setLocalReminders(reminders);
+    updateThought(thought.id, { reminders });
+  };
+
+  const handleRecurrenceChange = (recurrenceRule: string | null) => {
+    if (!thought) return;
+    setLocalRecurrenceRule(recurrenceRule);
+    updateThought(thought.id, { recurrenceRule });
+  };
+
+  const handleLocationChange = (location: string) => {
+    if (!thought) return;
+    setLocalLocation(location);
+    updateThought(thought.id, { location });
+  };
+
   const config = thought ? getThoughtConfig(thought.type) : null;
   const InspectorPanel = config?.inspectorPanel;
 
@@ -309,10 +219,9 @@ const Inspector: React.FC = () => {
           transition={{ type: 'spring', damping: 28, stiffness: 200 }}
           className="ui-layer focus-box fixed top-4 md:top-24 bottom-4 md:bottom-24 right-4 md:right-8 w-[calc(100%-32px)] md:w-[400px] glass rounded-2xl shadow-[0_0_80px_rgba(0,0,0,0.5)] flex flex-col overflow-hidden z-[9999] border border-[var(--glass-border)]"
         >
-          {/* HEADER AREA */}
           <div className="p-4 md:p-5 border-b border-[var(--glass-border)] bg-[var(--bg-main)]/20 backdrop-blur-md sticky top-0 z-20">
             <div className="flex justify-between items-center relative">
-              <div className="w-8" /> {/* Spacer to help center */}
+              <div className="w-8" />
               <div className="flex-1 flex justify-center">
                 <h3 className="text-xs font-black uppercase tracking-[0.2em] text-[var(--text-primary)] leading-none">
                   {isReadOnly ? 'Published' : 'Editor'}
@@ -324,7 +233,6 @@ const Inspector: React.FC = () => {
             </div>
           </div>
 
-          {/* TAB NAVIGATION */}
           <div className="flex bg-[var(--bg-main)]/10 backdrop-blur-sm sticky top-[61px] md:top-[69px] z-20 border-b border-[var(--glass-border)]">
             {(['content', 'status', 'layout'] as const).map((tab) => (
               <button
@@ -347,7 +255,6 @@ const Inspector: React.FC = () => {
             ))}
           </div>
 
-          {/* SCROLLABLE CONTENT AREA */}
           <div className="flex-1 overflow-y-auto custom-scroll scrollbar-none">
             <AnimatePresence mode="wait">
               <motion.div
@@ -450,7 +357,6 @@ const Inspector: React.FC = () => {
                       </div>
                     </div>
 
-                    {/* Modular Panel Extension */}
                     {InspectorPanel && (
                       <div className="pt-6 border-t border-[var(--glass-border)]">
                         <InspectorPanel thought={thought} isReadOnly={isReadOnly} />
@@ -462,14 +368,22 @@ const Inspector: React.FC = () => {
                 {activeTab === 'status' && (
                   <div className="space-y-8">
                     <div className="space-y-3">
-                      <label className="text-[9px] uppercase font-black tracking-widest text-[var(--text-muted)] ml-1">Date</label>
-                      <DatePicker
-                        value={localDate}
+                      <label className="text-[9px] uppercase font-black tracking-widest text-[var(--text-muted)] ml-1">Date & Time</label>
+                      <DateTimePicker
+                        startTime={localStartTime}
+                        endTime={localEndTime}
+                        isAllDay={localIsAllDay}
+                        onChange={handleDateTimeChange}
                         disabled={isReadOnly}
-                        onChange={(val) => {
-                          setLocalDate(val);
-                          updateThought(thought.id, { date: val });
-                        }}
+                        showReminder={true}
+                        showRepeat={true}
+                        showLocation={true}
+                        reminder={localReminders}
+                        recurrenceRule={localRecurrenceRule}
+                        location={localLocation}
+                        onReminderChange={handleReminderChange}
+                        onRecurrenceChange={handleRecurrenceChange}
+                        onLocationChange={handleLocationChange}
                       />
                     </div>
 
@@ -685,7 +599,6 @@ const Inspector: React.FC = () => {
             </AnimatePresence>
           </div>
 
-          {/* STICKY FOOTER */}
           {!isReadOnly && (
             <div className="bg-[var(--bg-main)]/40 border-t border-[var(--glass-border)] p-4 md:p-6 mt-auto flex items-center gap-3">
               <button

@@ -251,7 +251,9 @@ const Toolbar: React.FC = () => {
       x: hoverContext.x,
       y: hoverContext.y,
       status: hoverContext.status,
-      date: hoverContext.date
+      startTime: hoverContext.startTime,
+      endTime: hoverContext.startTime,
+      isAllDay: hoverContext.startTime ? true : false
     });
     
     if (id !== '') { setSelectedThoughtId(id); setInspectorOpen(true); useStore.getState().setInspectorTitleFocusId(id); }

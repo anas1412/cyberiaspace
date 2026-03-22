@@ -5,7 +5,7 @@ import { PLAN_CONFIG, type SubscriptionPlan } from '../../constants';
 import { syncOrchestrator } from '../../services/sync/syncOrchestrator';
 import { useAuthStore } from '../useAuthStore';
 import { type CyberiaState } from '../types';
-import { migrateThoughtsToModular } from '../../utils/migrations';
+import { migrateThoughtsToModular, migrateThoughtsToTimeFields } from '../../utils/migrations';
 import { isStorageUrl } from '../../services/supabaseStorage';
 import { ulid } from 'ulid';
 
@@ -32,6 +32,7 @@ export const createDataSlice: StateCreator<CyberiaState, [], [], any> = (set, ge
 
       // Run data migration for modular thought payloads
       await migrateThoughtsToModular();
+      await migrateThoughtsToTimeFields();
 
       const { useAuthStore: dynamicAuthStore } = await import('../useAuthStore');
       // Start auth initialization in background to avoid blocking initial render

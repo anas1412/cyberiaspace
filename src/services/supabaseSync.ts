@@ -1,6 +1,5 @@
 import { supabase } from './supabase'
 import { sanitizeStatus, sanitizePriority } from '../utils/thought'
-import { sanitizeDate } from '../utils/date'
 
 export { supabase }
 
@@ -26,18 +25,14 @@ export function toSnakeCase(obj: any): any {
     let value = obj[key]
     
     // GATEKEEPER: Ensure date fields are never raw numbers when sending to Supabase
-    const dateKeys = ['date', 'createdAt', 'updatedAt', 'created_at', 'updated_at', 'last_published', 'lastPublished', 'expiryDate', 'expiry_date'];
+    const dateKeys = ['createdAt', 'updatedAt', 'created_at', 'updated_at', 'last_published', 'lastPublished', 'expiryDate', 'expiry_date', 'startTime', 'endTime', 'start_time', 'end_time'];
     if (dateKeys.includes(key)) {
       if (typeof value === 'number') {
         value = new Date(value).toISOString();
       }
-      // Special: Force 'date' to YYYY-MM-DD for thought nodes consistency
-      if (key === 'date' && typeof value === 'string' && value.length > 10) {
-        value = value.substring(0, 10);
-      }
     }
 
-    if (key === 'date' && (value === '' || value === undefined)) {
+    if (key === 'startTime' && (value === '' || value === undefined)) {
       value = null
     }
 
@@ -93,7 +88,14 @@ export function toCamelCase(obj: any): any {
   // Sanitize status and priority
   if (result.status !== undefined) result.status = sanitizeStatus(result.status);
   if (result.priority !== undefined) result.priority = sanitizePriority(result.priority);
-  if (result.date !== undefined) result.date = sanitizeDate(result.date);
+  
+  // Handle timestamp conversion
+  const timestampKeys = ['updatedAt', 'deletedAt', 'startTime', 'endTime'];
+  timestampKeys.forEach(key => {
+    if (result[key] && typeof result[key] === 'string') {
+      result[key] = new Date(result[key]).getTime();
+    }
+  });
 
   // SPECIAL HANDLING: Spaces Transform JSONB
   if (obj.transform && typeof obj.transform === 'object' && !Array.isArray(obj.transform)) {

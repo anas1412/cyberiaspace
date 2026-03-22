@@ -3,25 +3,28 @@ import { formatRelativeDate } from '../../utils/date';
 
 describe('formatRelativeDate', () => {
   it('returns "Today" for current date', () => {
-    const today = new Date().toISOString().split('T')[0];
-    expect(formatRelativeDate(today)).toBe('Today');
+    const today = new Date();
+    today.setHours(12, 0, 0, 0);
+    expect(formatRelativeDate(today.getTime())).toBe('Today');
   });
 
   it('returns "Tomorrow" for next day', () => {
     const tomorrow = new Date();
     tomorrow.setDate(tomorrow.getDate() + 1);
-    const dateStr = tomorrow.toISOString().split('T')[0];
-    expect(formatRelativeDate(dateStr)).toBe('Tomorrow');
+    tomorrow.setHours(12, 0, 0, 0);
+    expect(formatRelativeDate(tomorrow.getTime())).toBe('Tomorrow');
   });
 
   it('returns "Yesterday" for previous day', () => {
     const yesterday = new Date();
     yesterday.setDate(yesterday.getDate() - 1);
-    const dateStr = yesterday.toISOString().split('T')[0];
-    expect(formatRelativeDate(dateStr)).toBe('Yesterday');
+    yesterday.setHours(12, 0, 0, 0);
+    expect(formatRelativeDate(yesterday.getTime())).toBe('Yesterday');
   });
 
   it('returns empty string for invalid input', () => {
-    expect(formatRelativeDate('')).toBe('');
+    expect(formatRelativeDate(0)).toBe('');
+    expect(formatRelativeDate(null)).toBe('');
+    expect(formatRelativeDate(undefined)).toBe('');
   });
 });

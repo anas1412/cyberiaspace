@@ -53,6 +53,41 @@ export async function migrateThoughtsToModular(): Promise<void> {
   localStorage.setItem(MIGRATION_KEY, 'true');
 }
 
+export async function migrateThoughtsToTimeFields(): Promise<void> {
+  const MIGRATION_TIME_KEY = 'cyberia_thought_time_migration_v1';
+  if (localStorage.getItem(MIGRATION_TIME_KEY)) return;
+
+  console.log('[Migration] Migrating thoughts to new time-based fields...');
+  const thoughts = await db.thoughts.toArray();
+  // Migrate thoughts that have a legacy 'date' property but no 'startTime'
+  const needsMigration = thoughts.filter((t: any) => (t.date || t.startTime === undefined) && !t.startTime);
+
+  if (needsMigration.length > 0) {
+    await db.transaction('rw', db.thoughts, async () => {
+      for (const t of needsMigration) {
+        if ((t as any).date) {
+          const timeValue = new Date((t as any).date).getTime();
+          if (!isNaN(timeValue)) {
+            await db.thoughts.update(t.id, {
+              startTime: timeValue,
+              endTime: timeValue,
+              isAllDay: true
+            } as any);
+          }
+        } else {
+          // Initialize fields for thoughts without any date
+          await db.thoughts.update(t.id, {
+            startTime: null,
+            endTime: null,
+            isAllDay: false
+          } as any);
+        }
+      }
+    });
+  }
+  localStorage.setItem(MIGRATION_TIME_KEY, 'true');
+}
+
 function constructDataFromLegacy(t: Thought): ThoughtPayload {
   const type = t.type as any;
   switch (type) {

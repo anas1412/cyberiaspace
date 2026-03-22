@@ -10,6 +10,7 @@ import { twMerge } from 'tailwind-merge';
 import { ThoughtHeader } from './thought/ThoughtHeader';
 import { ThoughtFooter } from './thought/ThoughtFooter';
 import { getThoughtConfig, type ThoughtRendererProps } from './thought/registry';
+import { sanitizeDate } from '../utils/date';
 
 import { Loader2, Trash2 } from 'lucide-react';
 
@@ -51,8 +52,8 @@ const ThoughtNode: React.FC<ThoughtNodeProps> = React.memo(({ thought, registerE
 
   const isSpatial = activeSpace?.mode === 'spatial';
   const isCalendar = activeSpace?.mode === 'calendar';
-  const isDateHovered = isCalendar && hoveredCalDate !== null && (thought.date || "") === hoveredCalDate;
-  const isExpanded = (isCalendar && !thought.date) || isDateHovered || (isCalendar && isSelected);
+  const isDateHovered = isCalendar && hoveredCalDate !== null && sanitizeDate(thought.startTime) === hoveredCalDate;
+  const isExpanded = (isCalendar && !thought.startTime) || isDateHovered || (isCalendar && isSelected);
 
   const { content } = useThoughtPayload(thought);
 
@@ -209,7 +210,7 @@ const ThoughtNode: React.FC<ThoughtNodeProps> = React.memo(({ thought, registerE
     <div
       ref={elRef}
       data-id={thought.id}
-      data-unscheduled={!thought.date ? "true" : "false"}
+      data-unscheduled={!thought.startTime ? "true" : "false"}
       className={cn(
         "thought-bulb absolute select-none touch-none will-change-transform pointer-events-auto origin-top-left",
         "w-[280px]",
@@ -223,7 +224,7 @@ const ThoughtNode: React.FC<ThoughtNodeProps> = React.memo(({ thought, registerE
       onMouseEnter={() => {
         if (isCalendar) {
           if ((window as any)._calLeaveTimer) clearTimeout((window as any)._calLeaveTimer);
-          setHoveredCalDate(thought.date || "");
+          setHoveredCalDate(sanitizeDate(thought.startTime));
         }
       }}
       onMouseLeave={() => {

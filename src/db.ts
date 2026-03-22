@@ -85,7 +85,12 @@ interface Thought {
   type: ThoughtType;
   deletedAt?: number | null;
   status: 'none' | 'todo' | 'doing' | 'done';
-  date: string;
+  startTime?: number | null;
+  endTime?: number | null;
+  isAllDay?: boolean;
+  reminders?: any[];
+  recurrenceRule?: string | null;
+  location?: string | null;
   priority: 'none' | 'low' | 'medium' | 'high' | 'urgent';
   size: number;
   order: number;
@@ -152,6 +157,11 @@ db.version(17).stores({
 // Version 18: Added chatHistory for local persistent Oracle conversations
 db.version(18).stores({
   chatHistory: 'id, spaceId, timestamp'
+});
+
+// Version 19: Added time-based fields to thoughts (startTime, endTime, etc.) and removed date
+db.version(19).stores({
+  thoughts: 'id, userId, spaceId, stackId, text, type, status, startTime, endTime, priority, order, author, storageUrl, syncStatus, deletedAt, updatedAt',
 });
 
 export type { Space, Thought, Stack, ChatMessage };

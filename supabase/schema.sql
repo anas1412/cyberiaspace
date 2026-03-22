@@ -83,7 +83,13 @@ CREATE TABLE IF NOT EXISTS thoughts (
     storage_path TEXT,
     deleted_at TIMESTAMP WITH TIME ZONE,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    start_time TIMESTAMP WITH TIME ZONE,
+    end_time TIMESTAMP WITH TIME ZONE,
+    is_all_day BOOLEAN DEFAULT true,
+    reminders JSONB DEFAULT '[]',
+    recurrence_rule TEXT,
+    location TEXT
 );
 
 -- Published spaces

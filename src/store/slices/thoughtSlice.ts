@@ -4,7 +4,6 @@ import { db, type Thought } from '../../db';
 import { useAuthStore } from '../useAuthStore';
 import { syncOrchestrator } from '../../services/sync/syncOrchestrator';
 import { useModalStore } from '../useModalStore';
-import { sanitizeDate } from '../../utils/date';
 import { sanitizeStatus, sanitizePriority } from '../../utils/thought';
 import { ulid } from 'ulid';
 
@@ -84,8 +83,13 @@ export const createThoughtSlice: StateCreator<CyberiaState, [], [], any> = (set,
       author: '',
       syncStatus: shouldMarkLocal ? 'local' : undefined,
       updatedAt: Date.now(),
+      startTime: partialThought.startTime ?? null,
+      endTime: partialThought.endTime ?? partialThought.startTime ?? null,
+      isAllDay: partialThought.isAllDay ?? (partialThought.startTime ? true : false),
+      reminders: partialThought.reminders ?? [],
+      recurrenceRule: partialThought.recurrenceRule ?? null,
+      location: partialThought.location ?? null,
       ...partialThought,
-      date: partialThought.date ? sanitizeDate(partialThought.date) : '',
       data: partialThought.data || payload
     } as Thought;
     
@@ -175,8 +179,13 @@ export const createThoughtSlice: StateCreator<CyberiaState, [], [], any> = (set,
         author: '',
         syncStatus: 'local',
         updatedAt: Date.now(),
+        startTime: partial.startTime ?? null,
+        endTime: partial.endTime ?? partial.startTime ?? null,
+        isAllDay: partial.isAllDay ?? (partial.startTime ? true : false),
+        reminders: partial.reminders ?? [],
+        recurrenceRule: partial.recurrenceRule ?? null,
+        location: partial.location ?? null,
         ...partial,
-        date: partial.date ? sanitizeDate(partial.date) : '',
         data: partial.data || payload
       } as Thought;
 
@@ -207,11 +216,6 @@ export const createThoughtSlice: StateCreator<CyberiaState, [], [], any> = (set,
     if (!thought) return;
     const isBlobType = thought.type === 'file' || updates.type === 'file';
     
-    // Sanitize date if present
-    if (updates.date) {
-      updates.date = sanitizeDate(updates.date);
-    }
-
     if (updates.status) updates.status = sanitizeStatus(updates.status);
     if (updates.priority) updates.priority = sanitizePriority(updates.priority);
 
@@ -266,10 +270,6 @@ export const createThoughtSlice: StateCreator<CyberiaState, [], [], any> = (set,
     const { thoughts, activeSpaceId } = get();
     if (activeSpaceId) get().updateSpace(activeSpaceId, { updatedAt: Date.now() }, options);
 
-    // Sanitize date if present
-    if (updates.date) {
-      updates.date = sanitizeDate(updates.date);
-    }
     if (updates.status) updates.status = sanitizeStatus(updates.status);
     if (updates.priority) updates.priority = sanitizePriority(updates.priority);
 
@@ -311,10 +311,6 @@ export const createThoughtSlice: StateCreator<CyberiaState, [], [], any> = (set,
     // 2. Dexie Transaction
     await db.transaction('rw', db.thoughts, async () => {
       for (const { id, updates: u } of updates) {
-        // Sanitize date if present
-        if (u.date) {
-          u.date = sanitizeDate(u.date);
-        }
         if (u.status) u.status = sanitizeStatus(u.status);
         if (u.priority) u.priority = sanitizePriority(u.priority);
         const finalUpdates = {

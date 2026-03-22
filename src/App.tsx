@@ -171,7 +171,13 @@ function App() {
         const elements = document.elementsFromPoint(mouseScreenPos.current.x, mouseScreenPos.current.y);
         const cell = elements.find(el => (el as HTMLElement).classList.contains('cal-cell'));
         if (cell) {
-          props.date = (cell as HTMLElement).dataset.date;
+          const dateStr = (cell as HTMLElement).dataset.date;
+          if (dateStr) {
+            const time = new Date(dateStr).getTime();
+            props.startTime = time;
+            props.endTime = time;
+            props.isAllDay = true;
+          }
         }
       }
       return props;

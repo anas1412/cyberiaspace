@@ -1,3 +1,4 @@
+import { sanitizeDate } from '../../utils/date';
 import type { LayoutStrategist } from './types';
 
 export const calendarStrategy: LayoutStrategist = {
@@ -20,16 +21,18 @@ export const calendarStrategy: LayoutStrategist = {
     const sidebarWidth = 260;
     const padding = isMobile ? 16 : 40;
 
-    if (thought.date) {
-      const cell = context.calendarCellMap?.get(thought.date);
+    const dateStr = sanitizeDate(thought.startTime);
+
+    if (dateStr) {
+      const cell = context.calendarCellMap?.get(dateStr);
       if (cell) {
         const cellX = cell.x;
         const cellY = cell.y;
         const cellWidth = cell.w;
         const cellHeight = cell.h;
 
-        const isHovered = hoveredCalDate === thought.date;
-        const dateThoughts = context.dateMap?.get(thought.date) || [];
+        const isHovered = hoveredCalDate === dateStr;
+        const dateThoughts = context.dateMap?.get(dateStr) || [];
         
         const count = dateThoughts.length;
         const index = dateThoughts.findIndex(t => t.id === thought.id);

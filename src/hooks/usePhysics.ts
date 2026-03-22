@@ -3,6 +3,7 @@ import { useStore } from '../store/useStore';
 import { type Thought } from '../db';
 import { getStrategist, type LayoutContext, type LayoutResult, type PhysicsPoint } from './physics';
 import { type Camera } from './useCamera';
+import { sanitizeDate } from '../utils/date';
 
 const DAMPING = 0.8;
 const MAX_VELOCITY = 10;
@@ -291,7 +292,7 @@ export const usePhysics = (
           });
         } else if (mode === 'calendar' && !isReadOnly) {
           const sidebarWidth = 260; const gap = 20; const padding = 40; const mainLeft = padding + sidebarWidth + gap;
-          if (lastMouseX < mainLeft) initialPositions.forEach((_, draggedId) => updateThought(draggedId, { date: '' }));
+          if (lastMouseX < mainLeft) initialPositions.forEach((_, draggedId) => updateThought(draggedId, { startTime: null, endTime: null, isAllDay: false }));
           else if (dragRef.current?.cellRectMap) {
             const cellRectMap = dragRef.current.cellRectMap;
             let foundDate: string | null = null;
@@ -300,7 +301,10 @@ export const usePhysics = (
                 foundDate = date; break;
               }
             }
-            if (foundDate) initialPositions.forEach((_, draggedId) => updateThought(draggedId, { date: foundDate! }));
+            if (foundDate) {
+              const time = new Date(foundDate).getTime();
+              initialPositions.forEach((_, draggedId) => updateThought(draggedId, { startTime: time, endTime: time, isAllDay: true }));
+            }
           }
         } else {
           initialPositions.forEach((_, draggedId) => {
@@ -415,7 +419,7 @@ export const usePhysics = (
       });
     } else if (mode === 'calendar') {
       allThoughts.forEach(t => {
-        const dateKey = t.date || "";
+        const dateKey = sanitizeDate(t.startTime);
         if (!dateMap.has(dateKey)) dateMap.set(dateKey, []);
         
         const matchesSearch = !calendarSearchQuery || 
@@ -690,7 +694,7 @@ export const usePhysics = (
       el.style.pointerEvents = res.pointerEvents ?? 'auto';
       el.style.clipPath = res.clipPath ?? 'none';
       el.style.zIndex = isSelected ? '10001' : (isDraggingThis ? '1000' : (res.zIndex || (20 + (t.layer || 0)).toString()));
-      if (mode === 'calendar' && !t.date && !isDraggingThis && !isSelected) {
+      if (mode === 'calendar' && !t.startTime && !isDraggingThis && !isSelected) {
         const contentEl = document.getElementById('cal-sidebar-content');
         const cRectRaw = contentEl?.getBoundingClientRect();
         if (cRectRaw) {

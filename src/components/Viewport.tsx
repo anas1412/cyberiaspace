@@ -125,7 +125,7 @@ const Viewport: React.FC<{ isInteracting?: boolean }> = ({ isInteracting }) => {
       };
 
       // Store context globally for the FAB and other UI elements
-      const context: { x: number; y: number; status?: string; date?: string } = {
+      const context: { x: number; y: number; status?: string; startTime?: number | null } = {
         x: mouseWorldPos.current.x,
         y: mouseWorldPos.current.y
       };
@@ -140,7 +140,8 @@ const Viewport: React.FC<{ isInteracting?: boolean }> = ({ isInteracting }) => {
         const elementsAtPoint = document.elementsFromPoint(e.clientX, e.clientY);
         const cell = elementsAtPoint.find(el => (el as HTMLElement).classList.contains('cal-cell'));
         if (cell) {
-          context.date = (cell as HTMLElement).dataset.date;
+          const dateStr = (cell as HTMLElement).dataset.date;
+          context.startTime = dateStr ? new Date(dateStr).getTime() : null;
         }
       }
       (window as Window & { _cyberia_hover_context?: typeof context })._cyberia_hover_context = context;
@@ -324,7 +325,13 @@ const Viewport: React.FC<{ isInteracting?: boolean }> = ({ isInteracting }) => {
           const elements = document.elementsFromPoint(lastMousePos.current.rawX, lastMousePos.current.rawY);
           const cell = elements.find(el => (el as HTMLElement).classList.contains('cal-cell'));
           if (cell) {
-            newThoughtProps.date = (cell as HTMLElement).dataset.date;
+            const dateStr = (cell as HTMLElement).dataset.date;
+            if (dateStr) {
+              const time = new Date(dateStr).getTime();
+              newThoughtProps.startTime = time;
+              newThoughtProps.endTime = time;
+              newThoughtProps.isAllDay = true;
+            }
           }
         }
 
