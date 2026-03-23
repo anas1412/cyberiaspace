@@ -18,6 +18,7 @@ CREATE TABLE IF NOT EXISTS users (
     polar_subscription_id TEXT,
     payment_provider TEXT,
     auto_sync BOOLEAN DEFAULT false,
+    is_admin BOOLEAN DEFAULT false,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );

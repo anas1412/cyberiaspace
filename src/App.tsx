@@ -1,4 +1,5 @@
 import { useEffect, useRef, Suspense, lazy, useState } from 'react';
+import { Loader2 } from 'lucide-react';
 import { isBrowser } from 'react-device-detect';
 import { Analytics } from '@vercel/analytics/react';
 import { SpeedInsights } from '@vercel/speed-insights/react';
@@ -40,6 +41,8 @@ const LoginPage = lazy(() => import('./components/auth/LoginPage'));
 const Homepage = lazy(() => import('./components/Homepage'));
 const MobilePage = lazy(() => import('./components/MobilePage'));
 const NotFound = lazy(() => import('./components/NotFound'));
+const DashboardLayout = lazy(() => import('./components/dashboard/DashboardLayout'));
+const DashboardLogin = lazy(() => import('./components/dashboard/DashboardLogin'));
 
 function App() {
   // ========== ALL HOOKS AT TOP ==========
@@ -62,11 +65,52 @@ function App() {
 
   const hostname = typeof window !== 'undefined' ? window.location.hostname : '';
   const isMainDomain = hostname === 'cyberia.tn' || hostname === 'www.cyberia.tn';
+  const isDashboard = hostname === 'dashboard.cyberia.tn';
   const isApp = hostname === 'app.cyberia.tn' || hostname === 'localhost' || hostname === '127.0.0.1';
+
+  // Hook: Dashboard admin check - use useAuthStore directly
+  const authStatus = useAuthStore((state) => state.status);
+  const authUser = useAuthStore((state) => state.user);
+
+  // Admin check state
+  const [dashboardReady, setDashboardReady] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(false);
+
+  useEffect(() => {
+    // Skip if not on dashboard path or not authenticated
+    if (!path.startsWith('/dashboard')) return;
+    if (authStatus !== 'authenticated' || !authUser?.id) return;
+
+    const checkAdmin = async () => {
+      try {
+        const encodedId = btoa(authUser.id);
+        const res = await fetch('/api/dashboard?route=verify', {
+          headers: { 'Authorization': `Bearer ${encodedId}` }
+        });
+        
+        if (res.ok) {
+          const data = await res.json();
+          const adminStatus = data.isAdmin === true || data.isAdmin === 'true';
+          setIsAdmin(adminStatus);
+          setDashboardReady(true);
+          console.log('[Dashboard] Admin check complete:', adminStatus);
+        } else {
+          setIsAdmin(false);
+          setDashboardReady(true);
+        }
+      } catch (err) {
+        console.error('[Dashboard] Admin check failed:', err);
+        setIsAdmin(false);
+        setDashboardReady(true);
+      }
+    };
+
+    checkAdmin();
+  }, [path, authStatus, authUser?.id]);
 
   // Hook: Remove PWA manifest on non-app domains
   useEffect(() => {
-    if (!isApp) {
+    if (!isApp || isDashboard) {
       const manifest = document.querySelector('link[rel="manifest"]');
       if (manifest) manifest.remove();
     }
@@ -423,6 +467,48 @@ function App() {
     );
   }
 
+  if (path === '/dashboard/login') {
+    return (
+      <Suspense fallback={<LoadingOverlay force />}>
+        <DashboardLogin />
+      </Suspense>
+    );
+  }
+
+  if (path.startsWith('/dashboard')) {
+    // Wait for admin check to complete
+    if (!dashboardReady) {
+      return (
+        <div className="fixed inset-0 z-[10002] bg-[var(--bg-page)] flex items-center justify-center">
+          <Loader2 className="w-8 h-8 animate-spin text-[var(--accent)]" />
+        </div>
+      );
+    }
+    
+    // Check authentication and admin status
+    if (authStatus !== 'authenticated' || !authUser) {
+      return (
+        <Suspense fallback={<LoadingOverlay force />}>
+          <DashboardLogin />
+        </Suspense>
+      );
+    }
+    
+    if (!isAdmin) {
+      return (
+        <Suspense fallback={<LoadingOverlay force />}>
+          <DashboardLogin />
+        </Suspense>
+      );
+    }
+    
+    return (
+      <Suspense fallback={<LoadingOverlay force />}>
+        <DashboardLayout />
+      </Suspense>
+    );
+  }
+
   // Landing page routes - only on main domain
   if (isMainDomain) {
     if (path === '/' || path === '/home' || path === '/pricing') {
@@ -442,8 +528,8 @@ function App() {
   }
 
   // App domain: check for valid routes, otherwise show NotFound
-  const validAppRoutes = ['/feedback', '/privacy', '/terms', '/legal', '/contact', '/login', '/pricing'];
-  const isValidAppRoute = path === '/' || path.startsWith('/s/') || validAppRoutes.includes(path) || (path === '/home' && canSeeLanding);
+  const validAppRoutes = ['/feedback', '/privacy', '/terms', '/legal', '/contact', '/login', '/pricing', '/dashboard', '/dashboard/login'];
+  const isValidAppRoute = path === '/' || path.startsWith('/s/') || validAppRoutes.includes(path) || path.startsWith('/dashboard') || (path === '/home' && canSeeLanding);
   
   if (!isValidAppRoute) {
     return (

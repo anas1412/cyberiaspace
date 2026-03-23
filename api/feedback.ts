@@ -22,6 +22,20 @@ const isAdminToken = (token: string): boolean => {
   }
 };
 
+// Helper to extract userId from JWT token
+const getUserIdFromToken = (authHeader?: string): string | null => {
+  if (!authHeader?.startsWith('Bearer ')) return null;
+  try {
+    const token = authHeader.replace('Bearer ', '');
+    const parts = token.split('.');
+    if (parts.length !== 3) return null;
+    const payload = JSON.parse(Buffer.from(parts[1], 'base64').toString('utf8'));
+    return payload.sub || null;
+  } catch {
+    return null;
+  }
+};
+
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method === 'OPTIONS') {
     res.setHeader('Access-Control-Allow-Origin', '*');
@@ -47,7 +61,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           type: 'issue', // Default to issue for contact
           content: message,
           metadata: { name, email, isContact: true },
-          status: 'todo'
+          status: 'none' // Admin sets status
         });
 
       if (error) {
@@ -70,7 +84,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         type,
         content: content || message,
         metadata: metadata || { email },
-        status: 'todo'
+        status: 'none' // Admin sets status
       })
       .select()
       .single();
@@ -85,7 +99,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   // LIST - Get feedback (user's own or admin list)
   if (req.method === 'GET') {
-    const { action, userId, status, limit = 50, offset = 0 } = req.query;
+    const { action, userId: queryUserId, status, limit = 50, offset = 0 } = req.query;
+    const authHeader = req.headers.authorization;
+    const tokenUserId = getUserIdFromToken(authHeader);
+    const userId = queryUserId as string || tokenUserId;
 
     // If admin and action is listAll or no specific userId, return all feedback
     if (isAdmin && (!userId || action === 'listAll')) {

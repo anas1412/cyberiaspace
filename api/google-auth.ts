@@ -67,13 +67,15 @@ async function handleExchange(req: VercelRequest, res: VercelResponse) {
 
         if (existingUser) {
             // Update ONLY the basic fields to prevent "Free reset" bug
+            // Preserve is_admin status
             const updatePayload: any = {
                 email: payload.email,
                 name: payload.name,
                 avatar: payload.picture,
                 settings: existingUser.settings || {},
                 updated_at: new Date().toISOString(),
-                refresh_secret: refreshSecret
+                refresh_secret: refreshSecret,
+                is_admin: existingUser.is_admin
             };
 
             if (tokens.refresh_token) {
@@ -99,7 +101,8 @@ async function handleExchange(req: VercelRequest, res: VercelResponse) {
                 usage: { ai_daily_count: 0, sync_thoughts: 0, last_ai_reset: new Date().toISOString().split('T')[0] },
                 updated_at: new Date().toISOString(),
                 refresh_token: tokens.refresh_token,
-                refresh_secret: refreshSecret
+                refresh_secret: refreshSecret,
+                is_admin: false
             }).select().single();
 
             if (insertError) throw insertError;
