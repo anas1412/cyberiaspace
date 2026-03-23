@@ -272,7 +272,7 @@ const PricingModal: React.FC<PricingModalProps> = ({ isOpen, onClose }) => {
             </div>
             <div>
               <h2 className="text-2xl font-bold text-white tracking-tight">Do more with Pro</h2>
-              <p className="text-sm font-medium text-blue-400">Get 4x more AI usage and 10x the storage so you never have to think about limits.</p>
+              <p className="text-sm font-medium text-blue-400">Get unlimited AI usage and more storage so you never have to think about limits.</p>
             </div>
           </div>
 
@@ -280,15 +280,15 @@ const PricingModal: React.FC<PricingModalProps> = ({ isOpen, onClose }) => {
             {[
               { 
                 title: 'All-in-One AI Powerhouse', 
-                desc: `Gain Pro-tier access to ChatGPT, Claude, and Google Gemini—all in one place. Our agents are workspace-aware, analyzing your uploaded files and PDFs to provide context-aware answers right where you work. Includes ${PLAN_CONFIG.pro.AI_DAILY_LIMIT} daily interactions.` 
+                desc: `Gain Pro-tier access to ChatGPT, Claude, Google Gemini and More—all in one place. Our agents are workspace-aware, can search, create, edit and remove right where you work.` 
               },
               { 
                 title: 'Expanded Agentic Workspaces', 
                 desc: `Create up to ${PLAN_CONFIG.pro.MAX_SPACES} spaces with ${PLAN_CONFIG.pro.MAX_THOUGHTS_PER_SPACE} thoughts each (Free tier limits to ${PLAN_CONFIG.free.MAX_SPACES} spaces).` 
               },
               { 
-                title: 'File Intelligence & 1GB Storage', 
-                desc: `Upload and analyze images & PDFs. Includes ${Math.round(PLAN_CONFIG.pro.MAX_STORAGE_MB / 1024)}GB of secure cloud storage with unlimited upload sizes.` 
+                title: 'File Intelligence & More Storage', 
+                desc: `Upload and analyze images & PDFs. Includes ${PLAN_CONFIG.pro.MAX_STORAGE_MB}MB of secure cloud storage with unlimited upload sizes.` 
               },
               { 
                 title: 'Pro Customization & Support', 

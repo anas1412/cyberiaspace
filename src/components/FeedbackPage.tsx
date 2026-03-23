@@ -88,8 +88,8 @@ const FeedbackPage: React.FC = () => {
   const fetchAllFeedback = async () => {
     setIsLoading(true);
     try {
-      // Fetch all feedback with user info
-      const res = await fetch('/api/dashboard?route=feedback&limit=100');
+      // Fetch all feedback (no auth required)
+      const res = await fetch('/api/feedback?action=listAll&limit=100');
       const data = await res.json();
       if (data.feedback) {
         setFeedbackList(data.feedback);

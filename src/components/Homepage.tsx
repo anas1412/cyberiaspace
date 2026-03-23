@@ -562,11 +562,10 @@ const Homepage: React.FC = () => {
                 <div className="text-4xl font-black text-white group-hover:scale-105 transition-transform origin-left duration-500">$0 <span className="text-sm text-slate-500 font-bold uppercase tracking-widest">/ Forever</span></div>
               </div>
               <div className="space-y-4 mb-10 flex-1">
-                <PricingFeature text={`${PLAN_CONFIG.free.MAX_SPACES} Spaces with ${PLAN_CONFIG.free.MAX_THOUGHTS_PER_SPACE} Thoughts per Space`} />
-                <PricingFeature text={`${PLAN_CONFIG.free.AI_DAILY_LIMIT} AI usage with basic AI models`} />
-                <PricingFeature text={`${PLAN_CONFIG.free.MAX_STORAGE_MB}MB Cloud Storage with limited size`} />
+                <PricingFeature text={`Limited Spaces with limited Thoughts per Space`} />
+                <PricingFeature text={`Rate limited AI usage with basic AI models`} />
+                <PricingFeature text={`Very Limited Storage with limited size`} />
                 <PricingFeature text={`Default theme`} />
-                <PricingFeature text="Share Your Spaces" />
                 <PricingFeature text="Limited Support" />
               </div>
               <a href="https://app.cyberia.tn" className="w-full py-5 bg-white/5 hover:bg-white/10 border border-white/10 text-white rounded-2xl text-[10px] font-black uppercase tracking-[0.3em] transition-all text-center">
@@ -627,13 +626,12 @@ const Homepage: React.FC = () => {
 
               <div className="space-y-4 mb-10 flex-1">
                 <PricingFeature text={`${PLAN_CONFIG.pro.MAX_SPACES} Spaces with ${PLAN_CONFIG.pro.MAX_THOUGHTS_PER_SPACE} Thoughts per Space`} pro />
-                <PricingFeature text={`ChatGPT, Claude & Gemini: ${PLAN_CONFIG.pro.AI_DAILY_LIMIT} daily usage`} pro />
-                <PricingFeature 
-                  text={`${(PLAN_CONFIG.pro.MAX_STORAGE_MB)}MB Cloud Storage with Unlimited Upload Size`} pro />
+                <PricingFeature text={`Unlimited AI usage: ChatGPT, Claude, Gemini & More`} pro />
+                <PricingFeature text="Unlock Agentic AI Capabilities" pro />
                 <PricingFeature text="Analyze your Files, Images & PDFs natively" pro />
-                <PricingFeature text="Custom AI Agent Personality" pro />
-                <PricingFeature text="Custom Background & More themes" pro/>
-                <PricingFeature text="Shared Team Spaces (Coming Soon)" pro />
+                <PricingFeature 
+                  text={`X10 Cloud Storage with Unlimited Upload Size`} pro />
+                <PricingFeature text="Custom AI Personality, Background & More themes" pro />
                 <PricingFeature text="Early Access to New Features" pro />
                 <PricingFeature text="24/7 Priority Support" pro />
               </div>

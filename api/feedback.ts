@@ -97,14 +97,36 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(200).json({ feedback });
   }
 
-  // LIST - Get feedback (user's own or admin list)
+  // LIST - Get feedback (user's own or all)
   if (req.method === 'GET') {
     const { action, userId: queryUserId, status, limit = 50, offset = 0 } = req.query;
     const authHeader = req.headers.authorization;
     const tokenUserId = getUserIdFromToken(authHeader);
     const userId = queryUserId as string || tokenUserId;
 
-    // If admin and action is listAll or no specific userId, return all feedback
+    // Return all feedback (no auth required) - for public feedback page
+    if (action === 'listAll') {
+      let query = supabase
+        .from('feedback')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .range(Number(offset), Number(offset) + Number(limit) - 1);
+
+      if (status && status !== 'all') {
+        query = query.eq('status', status);
+      }
+
+      const { data: feedback, error } = await query;
+
+      if (error) {
+        console.error('[Feedback ListAll] Error:', error.message);
+        return res.status(500).json({ error: error.message });
+      }
+
+      return res.status(200).json({ feedback: feedback || [], isAdmin: false });
+    }
+
+    // Admin only: return all feedback with admin flag
     if (isAdmin && (!userId || action === 'listAll')) {
       let query = supabase
         .from('feedback')
@@ -126,7 +148,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       return res.status(200).json({ feedback: feedback || [], isAdmin: true });
     }
 
-    // Regular user listing
+    // Regular user listing - their own feedback only
     if (!userId) {
       return res.status(400).json({ error: 'Missing userId' });
     }
