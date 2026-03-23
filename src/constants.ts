@@ -99,16 +99,28 @@ const getDefaultModel = () => {
 };
 export const DEFAULT_MODEL = getDefaultModel();
 
-
 export const BASIC_MODELS = [
-  { id: 'openrouter/free', name: 'GPT nano 5', desc: 'Fast & reliable' },
-  { id: 'openrouter/free', name: 'Gemini Flash Lite 3.1', desc: 'Lightweight' },
+  { id: 'openrouter/free', name: 'Random Free Model', desc: 'Versatile & balanced performance' },
+  { id: 'stepfun/step-3.5-flash:free', name: 'Step 3.5 Flash', desc: 'Ultra-low latency processing' },
+  { id: 'minimax/minimax-m2.5:free', name: 'MiniMax 2.5', desc: 'Optimized for high-speed chat' },
+  { id: 'nvidia/nemotron-3-super-120b-a12b:free', name: 'Nemotron 3 Super', desc: 'High-parameter reasoning power' },
+  { id: 'arcee-ai/trinity-large-preview:free', name: 'Trinity Large Preview', desc: 'Broad knowledge & complex tasks' },
 ];
 
 export const PREMIUM_MODELS = [
-  { id: 'openrouter/free', name: 'Claude Sonnet', desc: 'Best reasoning' },
-  { id: 'openrouter/free', name: 'GPT-4o', desc: 'Fast & smart' },
-  { id: 'openrouter/free', name: 'Gemini Flash 3', desc: 'Multi-modal' },
+  { id: 'openrouter/free', name: 'Random Free Model', desc: 'Versatile & balanced performance' },
+  { id: 'stepfun/step-3.5-flash:free', name: 'Step 3.5 Flash', desc: 'Ultra-low latency processing' },
+  { id: 'minimax/minimax-m2.5:free', name: 'MiniMax 2.5', desc: 'Optimized for high-speed chat' },
+  { id: 'nvidia/nemotron-3-super-120b-a12b:free', name: 'Nemotron 3 Super', desc: 'High-parameter reasoning power' },
+  { id: 'arcee-ai/trinity-large-preview:free', name: 'Trinity Large Preview', desc: 'Broad knowledge & complex tasks' },
+  //{ id: 'openrouter/auto', name: 'Smarter Models First', desc: 'Auto-routes to the best logic available' },
+  //{ id: 'anthropic/claude-opus-4.6', name: 'Claude Opus 4.6', desc: 'Peak reasoning & 1M context' },
+  //{ id: 'anthropic/claude-sonnet-4.6', name: 'Claude Sonnet 4.6', desc: 'Elite speed-to-intelligence ratio' },
+  //{ id: 'openai/gpt-5.4', name: 'ChatGPT 5.4', desc: 'Master of agentic & professional tasks' },
+  //{ id: 'openai/gpt-5-nano', name: 'ChatGPT 5 Nano', desc: 'Smart reasoning in a compact frame' },
+  //{ id: 'google/gemini-3.1-pro-preview', name: 'Gemini 3.1 Pro Preview', desc: 'Best for massive data & multimodal' },
+  //{ id: 'google/gemini-3-flash-preview', name: 'Gemini 3 Flash Preview', desc: 'High-speed intelligence for rapid chat' },
+  //{ id: 'google/gemini-3.1-flash-lite-preview', name: 'Gemini 3.1 Flash Lite Preview', desc: 'Instant responses for simple logic' },
 ];
 
 export type ModelOption = typeof BASIC_MODELS[number];

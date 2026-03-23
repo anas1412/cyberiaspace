@@ -24,6 +24,7 @@ interface DateTimePickerProps {
   onReminderChange?: (reminders: any[]) => void;
   onRecurrenceChange?: (rule: string | null) => void;
   onLocationChange?: (location: string) => void;
+  onDone?: () => void;
 }
 
 const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
@@ -62,20 +63,18 @@ export const DateTimePicker: React.FC<DateTimePickerProps> = ({
   onReminderChange,
   onRecurrenceChange,
   onLocationChange,
+  onDone,
 }) => {
   const [isOpen, setIsOpen] = React.useState(false);
   const [viewDate, setViewDate] = React.useState(() => startTime ? new Date(startTime) : new Date());
   
-  // Calculate if there is any advanced data
   const hasAdvancedData = Boolean(
     (location && location.trim().length > 0) || 
     (recurrenceRule && recurrenceRule.trim().length > 0) || 
     (reminder && reminder.length > 0)
   );
   
-  // Default showAdvanced to true if there is data
   const [showAdvanced, setShowAdvanced] = React.useState(hasAdvancedData);
-  
   const [localLocation, setLocalLocation] = React.useState(location || '');
   const [localReminder, setLocalReminder] = React.useState(reminder);
   const [localRepeat, setLocalRepeat] = React.useState(recurrenceRule || '');
@@ -99,7 +98,6 @@ export const DateTimePicker: React.FC<DateTimePickerProps> = ({
     setHasChanges(false);
     pendingRef.current = {};
     
-    // Also re-evaluate auto-expanding the advanced tab when opened
     if (isOpen) {
       const currentlyHasData = Boolean(
         (location && location.trim().length > 0) || 
@@ -122,7 +120,6 @@ export const DateTimePicker: React.FC<DateTimePickerProps> = ({
 
   const daysInMonth = (year: number, month: number) => new Date(year, month + 1, 0).getDate();
   const firstDayOfMonth = (year: number, month: number) => new Date(year, month, 1).getDay();
-
   const handlePrevMonth = () => setViewDate(new Date(viewDate.getFullYear(), viewDate.getMonth() - 1));
   const handleNextMonth = () => setViewDate(new Date(viewDate.getFullYear(), viewDate.getMonth() + 1));
 
@@ -165,9 +162,7 @@ export const DateTimePicker: React.FC<DateTimePickerProps> = ({
   };
 
   const handleLocationBlur = () => {
-    if (onLocationChange) {
-      onLocationChange(localLocation);
-    }
+    if (onLocationChange) onLocationChange(localLocation);
   };
 
   const handleReminderChange = (value: string) => {
@@ -201,16 +196,11 @@ export const DateTimePicker: React.FC<DateTimePickerProps> = ({
 
   const handleDone = () => {
     if (hasChanges) {
-      if (onLocationChange && localLocation !== (location || '')) {
-        onLocationChange(localLocation);
-      }
-      if (onReminderChange) {
-        onReminderChange(localReminder);
-      }
-      if (onRecurrenceChange && localRepeat !== (recurrenceRule || '')) {
-        onRecurrenceChange(localRepeat === '' ? null : localRepeat);
-      }
+      if (onLocationChange && localLocation !== (location || '')) onLocationChange(localLocation);
+      if (onReminderChange) onReminderChange(localReminder);
+      if (onRecurrenceChange && localRepeat !== (recurrenceRule || '')) onRecurrenceChange(localRepeat === '' ? null : localRepeat);
     }
+    if (onDone) onDone();
     setIsOpen(false);
   };
 
@@ -228,12 +218,8 @@ export const DateTimePicker: React.FC<DateTimePickerProps> = ({
   const formatDisplayValue = () => {
     if (!startTime) return "Set Date";
     const d = new Date(startTime);
-    if (isAllDay) {
-      return d.toLocaleDateString('en-CA', { weekday: 'short', month: 'short', day: 'numeric' }).toUpperCase();
-    }
-    return d.toLocaleDateString('en-CA', { weekday: 'short', month: 'short', day: 'numeric' }).toUpperCase() + 
-      ' · ' + 
-      d.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false });
+    if (isAllDay) return d.toLocaleDateString('en-CA', { weekday: 'short', month: 'short', day: 'numeric' }).toUpperCase();
+    return d.toLocaleDateString('en-CA', { weekday: 'short', month: 'short', day: 'numeric' }).toUpperCase() + ' · ' + d.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false });
   };
 
   const formatTime = (timestamp: number | null) => {
@@ -262,7 +248,7 @@ export const DateTimePicker: React.FC<DateTimePickerProps> = ({
             initial={{ opacity: 0, y: -10, scale: 0.95 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: -10, scale: 0.95 }}
-            className="absolute top-full mt-2 left-0 right-0 z-[100] glass border border-[var(--glass-border)] rounded-2xl p-4 shadow-2xl overflow-visible"
+            className="absolute top-full mt-2 left-0 right-0 z-[100] glass border border-[var(--glass-border)] rounded-2xl p-4 shadow-2xl overflow-y-auto max-h-[480px] custom-scroll"
           >
             <div className="flex flex-col">
               <div className="flex justify-between items-center mb-4">
@@ -381,11 +367,7 @@ export const DateTimePicker: React.FC<DateTimePickerProps> = ({
                 {showAdvanced && (
                   <motion.div
                     initial={{ height: 0, opacity: 0, overflow: 'hidden' }}
-                    animate={{ 
-                      height: 'auto', 
-                      opacity: 1, 
-                      transitionEnd: { overflow: 'visible' } 
-                    }}
+                    animate={{ height: 'auto', opacity: 1, transitionEnd: { overflow: 'visible' } }}
                     exit={{ height: 0, opacity: 0, overflow: 'hidden' }}
                     className="space-y-3"
                   >
@@ -405,44 +387,23 @@ export const DateTimePicker: React.FC<DateTimePickerProps> = ({
                         />
                       </div>
                     )}
-
                     {showRepeat && (
-                      <Dropdown
-                        value={localRepeat}
-                        options={repeatOptions}
-                        onChange={handleRepeatChange}
-                        label="Repeat"
-                        icon={<Repeat className="w-3 h-3" />}
-                      />
+                      <Dropdown value={localRepeat} options={repeatOptions} onChange={handleRepeatChange} label="Repeat" icon={<Repeat className="w-3 h-3" />} />
                     )}
-
                     {showReminder && (
-                      <Dropdown
-                        value={localReminder.length > 0 ? String(localReminder[0]?.time || '0') : '0'}
-                        options={reminderOptions}
-                        onChange={handleReminderChange}
-                        label="Reminder"
-                        icon={<Bell className="w-3 h-3" />}
-                      />
+                      <Dropdown value={localReminder.length > 0 ? String(localReminder[0]?.time || '0') : '0'} options={reminderOptions} onChange={handleReminderChange} label="Reminder" icon={<Bell className="w-3 h-3" />} />
                     )}
                   </motion.div>
                 )}
               </AnimatePresence>
 
-              {/* Moved Clear Date under Advanced */}
-              <button
-                onClick={handleClear}
-                className="w-full py-2 bg-red-500/5 hover:bg-red-500/10 border border-red-500/20 rounded-lg text-[8px] font-black uppercase tracking-widest text-red-400 hover:text-red-300 transition-all mt-3"
-              >
+              <button onClick={handleClear} className="w-full py-2 bg-red-500/5 hover:bg-red-500/10 border border-red-500/20 rounded-lg text-[8px] font-black uppercase tracking-widest text-red-400 hover:text-red-300 transition-all mt-3">
                 Clear Date
               </button>
             </div>
 
             <div className="mt-4 pt-3 border-t border-[var(--glass-border)] flex gap-2">
-              <button
-                onClick={handleToday}
-                className="flex-1 py-2 bg-[var(--accent)]/20 hover:bg-[var(--accent)]/30 text-[var(--accent-secondary)] rounded-lg text-[8px] font-black uppercase tracking-widest transition-all"
-              >
+              <button onClick={handleToday} className="flex-1 py-2 bg-[var(--accent)]/20 hover:bg-[var(--accent)]/30 text-[var(--accent-secondary)] rounded-lg text-[8px] font-black uppercase tracking-widest transition-all">
                 Today
               </button>
               <button
@@ -450,7 +411,7 @@ export const DateTimePicker: React.FC<DateTimePickerProps> = ({
                 className={cn(
                   "flex-1 py-2 rounded-lg text-[8px] font-black uppercase tracking-widest transition-all",
                   hasChanges
-                    ? "bg-[var(--accent)] text-white shadow-[0_0_15px_var(--accent-glow)]"
+                    ? "bg-[var(--accent)] text-[var(--bg-main)] shadow-[0_0_15px_var(--accent-glow)]"
                     : "bg-[var(--glass-border)]/50 text-slate-500"
                 )}
               >

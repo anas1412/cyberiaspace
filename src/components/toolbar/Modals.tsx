@@ -83,7 +83,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
   deferredPrompt, handleInstall
 }) => {
   const [activeTab, setActiveTab] = useState<'general' | 'custom' | 'storage'>('general');
-  const { user, storageUsageMB, calculateUsage, updateSettings } = useAuthStore();
+  const { user, storageUsageMB, calculateUsage, updateSettings, refreshProfile } = useAuthStore();
   const totalThoughtCount = useStore((state) => state.totalThoughtCount);
   const clearWorkspace = useStore((state) => state.clearWorkspace);
   const clearLocalData = useStore((state) => state.clearLocalData);
@@ -94,8 +94,11 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
     : PLAN_CONFIG.free;
 
   useEffect(() => {
-    if (isOpen) calculateUsage(totalThoughtCount);
-  }, [isOpen, totalThoughtCount, calculateUsage]);
+    if (isOpen) {
+      refreshProfile();
+      calculateUsage(totalThoughtCount);
+    }
+  }, [isOpen, totalThoughtCount, calculateUsage, refreshProfile]);
 
   const handleBgUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];

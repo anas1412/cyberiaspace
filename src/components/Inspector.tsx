@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { getThoughtConfig } from './thought/registry';
 import { useStore } from '../store/useStore';
@@ -41,7 +42,7 @@ const ColorPicker: React.FC<{ value: string; onChange: (val: string) => void; di
         style={{ backgroundColor: value, boxShadow: `0 0 15px ${value}44` }}
       >
         <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-          <Palette className="w-3 h-3 text-white" />
+          <Palette className="w-3.5 h-3.5 text-white" />
         </div>
       </button>
 
@@ -73,7 +74,7 @@ const ColorPicker: React.FC<{ value: string; onChange: (val: string) => void; di
                 onChange={(e) => onChange(e.target.value)}
                 className="w-full h-8 bg-transparent cursor-pointer rounded-lg overflow-hidden"
               />
-              <p className="text-[7px] font-black uppercase tracking-widest text-slate-500 mt-1 text-center">Custom Hex</p>
+              <p className="text-[9px] font-bold uppercase tracking-widest text-slate-500 mt-1 text-center">Custom Hex</p>
             </div>
           </motion.div>
         )}
@@ -217,42 +218,58 @@ const Inspector: React.FC = () => {
           animate={{ x: 0, opacity: 1 }}
           exit={{ x: '100%', opacity: 0 }}
           transition={{ type: 'spring', damping: 28, stiffness: 200 }}
-          className="ui-layer focus-box fixed top-4 md:top-24 bottom-4 md:bottom-24 right-4 md:right-8 w-[calc(100%-32px)] md:w-[400px] glass rounded-2xl shadow-[0_0_80px_rgba(0,0,0,0.5)] flex flex-col overflow-hidden z-[9999] border border-[var(--glass-border)]"
+          className="ui-layer focus-box fixed top-4 md:top-24 bottom-4 md:bottom-24 right-4 md:right-8 w-[calc(100%-32px)] md:w-[400px] glass rounded-2xl shadow-2xl flex flex-col overflow-hidden z-[9999] border border-[var(--glass-border)]"
         >
-          <div className="p-4 md:p-5 border-b border-[var(--glass-border)] bg-[var(--bg-main)]/20 backdrop-blur-md sticky top-0 z-20">
-            <div className="flex justify-between items-center relative">
-              <div className="w-8" />
-              <div className="flex-1 flex justify-center">
-                <h3 className="text-xs font-black uppercase tracking-[0.2em] text-[var(--text-primary)] leading-none">
-                  {isReadOnly ? 'Published' : 'Editor'}
-                </h3>
-              </div>
-              <button onClick={() => setInspectorOpen(false)} className="p-2 rounded-lg text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-all">
-                <X className="w-4 h-4" />
-              </button>
-            </div>
-          </div>
+          {/* Header & Tabs Container - Single Sticky Wrapper! */}
+          <div className="sticky top-0 z-30 bg-[var(--bg-main)]/60 backdrop-blur-xl border-b border-[var(--glass-border)] flex flex-col">
+            {/* Top Bar */}
+            <div className="px-4 py-3 md:px-5 flex justify-between items-center relative min-h-[44px]">
+              {/* Left Placeholder */}
+              <div className="flex-1" />
 
-          <div className="flex bg-[var(--bg-main)]/10 backdrop-blur-sm sticky top-[61px] md:top-[69px] z-20 border-b border-[var(--glass-border)]">
-            {(['content', 'status', 'layout'] as const).map((tab) => (
-              <button
-                key={tab}
-                onClick={() => setActiveTab(tab)}
-                className={cn(
-                  "flex-1 py-4 text-[10px] font-black uppercase tracking-[0.2em] relative transition-all duration-300",
-                  activeTab === tab ? "text-[var(--text-primary)]" : "text-[var(--text-muted)] hover:text-[var(--text-primary)]"
-                )}
-              >
-                {tab}
-                {activeTab === tab && (
-                  <motion.div
-                    layoutId="activeTab"
-                    className="absolute bottom-0 left-0 right-0 h-0.5 bg-[var(--accent)] shadow-[0_0_10px_var(--accent-glow)]"
-                    initial={false}
-                  />
-                )}
-              </button>
-            ))}
+              {/* Absolute Center - Perfectly aligned */}
+              <div className="absolute left-1/2 -translate-x-1/2 flex items-center justify-center pointer-events-none mt-0.5">
+                <div className="flex items-center gap-2">
+                  <div className={cn("w-1.5 h-1.5 rounded-full", isReadOnly ? "bg-slate-400" : "bg-[var(--accent)] shadow-[0_0_8px_var(--accent-glow)]")} />
+                  <h3 className="text-[11px] font-extrabold uppercase tracking-[0.2em] text-[var(--text-primary)] leading-none">
+                    {isReadOnly ? 'Published' : 'Editor'}
+                  </h3>
+                </div>
+              </div>
+
+              {/* Right Action */}
+              <div className="flex-1 flex justify-end">
+                <button 
+                  onClick={() => setInspectorOpen(false)} 
+                  className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-white/10 text-[var(--text-muted)] hover:text-white transition-all"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+            </div>
+
+            {/* Tabs Row */}
+            <div className="flex px-2">
+              {(['content', 'status', 'layout'] as const).map((tab) => (
+                <button
+                  key={tab}
+                  onClick={() => setActiveTab(tab)}
+                  className={cn(
+                    "flex-1 py-3.5 text-[10px] font-bold uppercase tracking-[0.2em] relative transition-all duration-300",
+                    activeTab === tab ? "text-[var(--text-primary)]" : "text-[var(--text-muted)] hover:text-[var(--text-primary)]"
+                  )}
+                >
+                  {tab}
+                  {activeTab === tab && (
+                    <motion.div
+                      layoutId="inspectorTab"
+                      className="absolute bottom-0 left-0 right-0 h-[2px] bg-[var(--accent)] shadow-[0_0_10px_var(--accent-glow)] rounded-t-full"
+                      initial={false}
+                    />
+                  )}
+                </button>
+              ))}
+            </div>
           </div>
 
           <div className="flex-1 overflow-y-auto custom-scroll scrollbar-none">
@@ -263,12 +280,12 @@ const Inspector: React.FC = () => {
                 animate={{ opacity: 1, x: 0 }}
                 exit={{ opacity: 0, x: -10 }}
                 transition={{ duration: 0.2 }}
-                className="p-4 md:p-6 space-y-8"
+                className="p-5 md:p-6 space-y-8"
               >
                 {activeTab === 'content' && (
                   <div className="space-y-6">
                     {thought.type !== 'file' && (
-                      <div className="space-y-2">
+                      <div className="space-y-3">
                         <div className="grid grid-cols-3 gap-2">
                           {(['label', 'text', 'tasks', 'table', 'paint', 'embed'] as const)
                             .map((type) => {
@@ -279,17 +296,17 @@ const Inspector: React.FC = () => {
                                   key={type}
                                   onClick={() => setPendingType(type)}
                                   className={cn(
-                                    "p-3 rounded-xl flex flex-col items-center justify-center transition-all border gap-1.5",
+                                    "py-3 px-2 rounded-xl flex flex-col items-center justify-center transition-all border gap-1.5",
                                     isActive
                                       ? "bg-[var(--accent)]/10 border-[var(--accent)] text-[var(--text-primary)] shadow-[0_0_15px_var(--accent-glow)]"
-                                      : "bg-white/[0.03] border-transparent text-[var(--text-muted)] hover:bg-white/[0.06] hover:text-[var(--text-primary)]",
+                                      : "bg-white/[0.02] border-white/[0.05] text-[var(--text-muted)] hover:bg-white/[0.06] hover:text-[var(--text-primary)] hover:border-white/10",
                                     isReadOnly && thought.type !== type && "opacity-30 grayscale cursor-default"
                                   )}
                                   disabled={isReadOnly}
                                   title={tConfig?.label || type}
                                 >
-                                  {tConfig?.icon && <tConfig.icon className="w-3.5 h-3.5" />}
-                                  <span className="text-[7px] font-black uppercase tracking-tighter">{type === 'tasks' ? 'Task' : type}</span>
+                                  {tConfig?.icon && <tConfig.icon className="w-4 h-4" />}
+                                  <span className="text-[9px] font-bold uppercase tracking-widest">{type === 'tasks' ? 'Task' : type}</span>
                                 </button>
                               );
                             })}
@@ -306,19 +323,19 @@ const Inspector: React.FC = () => {
                           className={cn(
                             "w-full p-3 rounded-xl flex items-center justify-center gap-2 transition-all border",
                             (pendingType !== null && pendingType !== thought.type)
-                              ? "bg-[var(--accent)] border-[var(--accent)] text-[var(--accent-contrast)] shadow-[0_0_20px_var(--accent-glow)] scale-100 opacity-100 font-black"
-                              : "bg-[var(--bg-main)]/20 border-[var(--glass-border)] text-[var(--text-muted)] scale-95 opacity-30 cursor-default"
+                              ? "bg-[var(--accent)] border-[var(--accent)] text-[var(--accent-contrast)] shadow-[0_0_20px_var(--accent-glow)] scale-100 opacity-100 font-extrabold"
+                              : "bg-[var(--bg-main)]/20 border-[var(--glass-border)] text-[var(--text-muted)] scale-[0.98] opacity-40 cursor-default"
                           )}
                         >
-                          <Save className="w-3.5 h-3.5" />
-                          <span className="text-[8px] font-black uppercase tracking-widest">Save Change</span>
+                          <Save className="w-4 h-4" />
+                          <span className="text-[9px] font-bold uppercase tracking-widest">Save Change</span>
                         </button>
                       </div>
                     )}
 
                     <div className="space-y-5">
-                      <div className="space-y-2">
-                        <label className="text-[9px] uppercase font-black tracking-widest text-[var(--text-muted)] ml-1">Name</label>
+                      <div className="space-y-2.5">
+                        <label className="text-[10px] uppercase font-bold tracking-widest text-slate-500 ml-1">Name</label>
                         <input
                           ref={titleInputRef}
                           type="text"
@@ -330,15 +347,15 @@ const Inspector: React.FC = () => {
                           }}
                           maxLength={100}
                           className={cn(
-                            "w-full bg-[var(--bg-page)]/20 border border-[var(--glass-border)] rounded-xl p-3 text-sm outline-none focus:border-[var(--accent)] text-[var(--text-primary)] placeholder:text-slate-500",
+                            "w-full bg-white/[0.03] border border-[var(--glass-border)] rounded-xl p-3 text-[13px] outline-none focus:border-[var(--accent)] focus:bg-white/[0.05] text-[var(--text-primary)] placeholder:text-slate-500 transition-colors shadow-inner",
                             isReadOnly && "pointer-events-none opacity-80"
                           )}
-                          placeholder={"Name"}
+                          placeholder="Thought Name"
                         />
                       </div>
 
-                      <div className="space-y-2">
-                        <label className="text-[9px] uppercase font-black tracking-widest text-[var(--text-muted)] ml-1">Note</label>
+                      <div className="space-y-2.5">
+                        <label className="text-[10px] uppercase font-bold tracking-widest text-slate-500 ml-1">Note</label>
                         <textarea
                           readOnly={isReadOnly}
                           value={localDesc}
@@ -349,10 +366,10 @@ const Inspector: React.FC = () => {
                           rows={4}
                           maxLength={150}
                           className={cn(
-                            "w-full bg-[var(--bg-page)]/20 border border-[var(--glass-border)] rounded-xl p-3 text-xs outline-none focus:border-[var(--accent)] text-[var(--text-primary)] placeholder:text-slate-500",
+                            "w-full bg-white/[0.03] border border-[var(--glass-border)] rounded-xl p-3 text-[12px] outline-none focus:border-[var(--accent)] focus:bg-white/[0.05] text-[var(--text-primary)] placeholder:text-slate-500 transition-colors shadow-inner resize-none",
                             isReadOnly && "pointer-events-none opacity-80"
                           )}
-                          placeholder="Note"
+                          placeholder="Add a quick note..."
                         />
                       </div>
                     </div>
@@ -368,7 +385,7 @@ const Inspector: React.FC = () => {
                 {activeTab === 'status' && (
                   <div className="space-y-8">
                     <div className="space-y-3">
-                      <label className="text-[9px] uppercase font-black tracking-widest text-[var(--text-muted)] ml-1">Date & Time</label>
+                      <label className="text-[10px] uppercase font-bold tracking-widest text-slate-500 ml-1">Date & Time</label>
                       <DateTimePicker
                         startTime={localStartTime}
                         endTime={localEndTime}
@@ -388,7 +405,7 @@ const Inspector: React.FC = () => {
                     </div>
 
                     <div className="space-y-3">
-                      <label className="text-[9px] uppercase font-black tracking-widest text-[var(--text-muted)] ml-1">Progress</label>
+                      <label className="text-[10px] uppercase font-bold tracking-widest text-slate-500 ml-1">Progress</label>
                       <div className="grid grid-cols-4 gap-1.5">
                         {(['none', 'todo', 'doing', 'done'] as const).map((s) => (
                           <button
@@ -396,15 +413,15 @@ const Inspector: React.FC = () => {
                             disabled={isReadOnly}
                             onClick={() => !isReadOnly && updateThought(thought.id, { status: s })}
                             className={cn(
-                              "border rounded-xl py-2.5 text-[9px] font-black uppercase tracking-[0.2em] transition-all",
+                              "border rounded-xl py-2.5 text-[9px] font-bold uppercase tracking-[0.2em] transition-all",
                               thought.status === s
                                 ? {
-                                  'none': 'bg-[var(--glass-border)] border-white/30 text-[var(--text-primary)] shadow-lg',
-                                  'todo': 'bg-[var(--status-todo)]/10 border-[var(--status-todo)] text-[var(--status-todo)] shadow-[0_0_15px_rgba(99,102,241,0.1)]',
-                                  'doing': 'bg-[var(--status-doing)]/10 border-[var(--status-doing)] text-[var(--status-doing)] shadow-[0_0_15px_rgba(234,179,8,0.1)]',
-                                  'done': 'bg-[var(--status-done)]/10 border-[var(--status-done)] text-[var(--status-done)] shadow-[0_0_15px_rgba(34,197,94,0.1)]',
+                                  'none': 'bg-white/[0.05] border-white/30 text-[var(--text-primary)] shadow-md',
+                                  'todo': 'bg-[var(--status-todo)]/10 border-[var(--status-todo)] text-[var(--status-todo)] shadow-[0_0_15px_rgba(99,102,241,0.15)]',
+                                  'doing': 'bg-[var(--status-doing)]/10 border-[var(--status-doing)] text-[var(--status-doing)] shadow-[0_0_15px_rgba(234,179,8,0.15)]',
+                                  'done': 'bg-[var(--status-done)]/10 border-[var(--status-done)] text-[var(--status-done)] shadow-[0_0_15px_rgba(34,197,94,0.15)]',
                                 }[s]
-                                : "bg-white/[0.03] border-[var(--glass-border)] text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--glass-border)] hover:border-white/20",
+                                : "bg-white/[0.02] border-white/5 text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-white/[0.05] hover:border-white/20",
                               isReadOnly && thought.status !== s && "opacity-30 grayscale cursor-default"
                             )}
                           >
@@ -415,7 +432,7 @@ const Inspector: React.FC = () => {
                     </div>
 
                     <div className="space-y-3">
-                      <label className="text-[9px] uppercase font-black tracking-widest text-[var(--text-muted)] ml-1">Priority</label>
+                      <label className="text-[10px] uppercase font-bold tracking-widest text-slate-500 ml-1">Priority</label>
                       <div className="grid grid-cols-5 gap-1.5">
                         {(['none', 'low', 'medium', 'high', 'urgent'] as const).map((p) => (
                           <button
@@ -423,16 +440,16 @@ const Inspector: React.FC = () => {
                             disabled={isReadOnly}
                             onClick={() => handlePriorityChange(p)}
                             className={cn(
-                              "border rounded-xl py-2.5 text-[9px] font-black uppercase tracking-[0.2em] transition-all",
+                              "border rounded-xl py-2.5 text-[9px] font-bold uppercase tracking-[0.2em] transition-all",
                               thought.priority === p
                                 ? {
-                                  'none': 'bg-[var(--glass-border)] border-white/30 text-[var(--text-primary)] shadow-lg',
-                                  'low': 'bg-[var(--prio-low)]/10 border-[var(--prio-low)] text-[var(--prio-low)] shadow-[0_0_15px_rgba(148,163,184,0.1)]',
-                                  'medium': 'bg-[var(--prio-medium)]/10 border-[var(--prio-medium)] text-[var(--prio-medium)] shadow-[0_0_15px_rgba(168,85,247,0.1)]',
-                                  'high': 'bg-[var(--prio-high)]/10 border-[var(--prio-high)] text-[var(--prio-high)] shadow-[0_0_15px_rgba(245,158,11,0.1)]',
-                                  'urgent': 'bg-[var(--prio-urgent)]/10 border-[var(--prio-urgent)] text-[var(--prio-urgent)] shadow-[0_0_15px_rgba(239,68,68,0.1)]',
+                                  'none': 'bg-white/[0.05] border-white/30 text-[var(--text-primary)] shadow-md',
+                                  'low': 'bg-[var(--prio-low)]/10 border-[var(--prio-low)] text-[var(--prio-low)] shadow-[0_0_15px_rgba(148,163,184,0.15)]',
+                                  'medium': 'bg-[var(--prio-medium)]/10 border-[var(--prio-medium)] text-[var(--prio-medium)] shadow-[0_0_15px_rgba(168,85,247,0.15)]',
+                                  'high': 'bg-[var(--prio-high)]/10 border-[var(--prio-high)] text-[var(--prio-high)] shadow-[0_0_15px_rgba(245,158,11,0.15)]',
+                                  'urgent': 'bg-[var(--prio-urgent)]/10 border-[var(--prio-urgent)] text-[var(--prio-urgent)] shadow-[0_0_15px_rgba(239,68,68,0.15)]',
                                 }[p]
-                                : "bg-white/[0.03] border-[var(--glass-border)] text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--glass-border)] hover:border-white/20",
+                                : "bg-white/[0.02] border-white/5 text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-white/[0.05] hover:border-white/20",
                               isReadOnly && thought.priority !== p && "opacity-30 grayscale cursor-default"
                             )}
                           >
@@ -443,13 +460,10 @@ const Inspector: React.FC = () => {
                     </div>
 
                     <div className="space-y-3 pt-6 border-t border-[var(--glass-border)]">
-                      <div className="flex items-center mb-2 px-1">
-                        <span className="text-[9px] uppercase font-black tracking-widest text-[var(--text-primary)]">Group</span>
-                      </div>
-
+                      <label className="text-[10px] uppercase font-bold tracking-widest text-slate-500 ml-1">Group</label>
                       {stack ? (
-                        <div className="p-4 bg-[var(--bg-page)]/20 border border-[var(--glass-border)] rounded-2xl space-y-4">
-                          <div className="flex items-center gap-3">
+                        <div className="p-4 bg-white/[0.03] border border-[var(--glass-border)] rounded-2xl space-y-4 shadow-inner">
+                          <div className="flex items-center gap-4">
                             <ColorPicker 
                               value={stack.color} 
                               disabled={isReadOnly}
@@ -464,7 +478,7 @@ const Inspector: React.FC = () => {
                                 updateStack(stack.id, { name: e.target.value });
                               }}
                               className={cn(
-                                "bg-transparent text-[10px] font-black uppercase tracking-widest text-white outline-none flex-1",
+                                "bg-transparent text-[11px] font-extrabold uppercase tracking-widest text-white outline-none flex-1 border-b border-transparent focus:border-white/20 pb-1 transition-colors",
                                 isReadOnly && "pointer-events-none"
                               )}
                               placeholder="Group Name"
@@ -473,9 +487,9 @@ const Inspector: React.FC = () => {
                           {!isReadOnly && (
                             <button
                               onClick={() => unlinkSelectedThoughts()}
-                              className="w-full py-2.5 bg-red-500/5 hover:bg-red-500/10 text-red-400/80 hover:text-red-400 border border-red-500/10 hover:border-red-500/20 rounded-xl text-[9px] font-black uppercase tracking-[0.2em] transition-all"
+                              className="w-full py-2.5 bg-red-500/5 hover:bg-red-500/10 text-red-400/90 hover:text-red-400 border border-red-500/10 hover:border-red-500/20 rounded-xl text-[9px] font-bold uppercase tracking-[0.2em] transition-all"
                             >
-                              Remove
+                              Remove from Group
                             </button>
                           )}
                         </div>
@@ -484,7 +498,7 @@ const Inspector: React.FC = () => {
                           <div className="relative group">
                             <input
                               type="text"
-                              placeholder="Type to create or join..."
+                              placeholder="Type to create or join group..."
                               onKeyDown={(e) => {
                                 if (e.key === 'Enter' && e.currentTarget.value.trim()) {
                                   const name = e.currentTarget.value.trim();
@@ -497,22 +511,22 @@ const Inspector: React.FC = () => {
                                   e.currentTarget.value = '';
                                 }
                               }}
-                              className="w-full bg-[var(--bg-page)]/20 border border-[var(--glass-border)] rounded-xl p-3 text-xs outline-none focus:border-[var(--accent)] text-[var(--text-primary)] placeholder:text-slate-500 transition-all"
+                              className="w-full bg-white/[0.03] border border-[var(--glass-border)] rounded-xl p-3 text-[12px] outline-none focus:border-[var(--accent)] focus:bg-white/[0.05] text-[var(--text-primary)] placeholder:text-slate-500 transition-colors shadow-inner"
                             />
                           </div>
 
                           {stacks.length > 0 && (
-                            <div className="space-y-1.5">
-                              <label className="text-[7px] uppercase font-black tracking-[0.2em] text-slate-600 ml-1">Groups</label>
+                            <div className="space-y-2">
+                              <label className="text-[9px] uppercase font-bold tracking-[0.2em] text-slate-500 ml-1">Existing Groups</label>
                               <div className="flex flex-col gap-1 max-h-[160px] overflow-y-auto custom-scroll pr-1">
                                 {stacks.map(s => (
                                   <div key={s.id} className="relative group/s">
                                     <button
                                       onClick={() => updateThought(thought.id, { stackId: s.id })}
-                                      className="w-full flex items-center gap-3 p-2.5 rounded-xl bg-white/[0.02] hover:bg-white/[0.05] border border-transparent hover:border-[var(--glass-border)] transition-all"
+                                      className="w-full flex items-center gap-3 p-3 rounded-xl bg-white/[0.02] hover:bg-white/[0.06] border border-transparent hover:border-[var(--glass-border)] transition-all"
                                     >
-                                      <div className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: s.color, boxShadow: `0 0 8px ${s.color}44` }} />
-                                      <span className="text-[9px] font-bold uppercase tracking-widest text-slate-400 group-hover/s:text-white transition-colors">{s.name}</span>
+                                      <div className="w-2 h-2 rounded-full" style={{ backgroundColor: s.color, boxShadow: `0 0 8px ${s.color}44` }} />
+                                      <span className="text-[10px] font-bold uppercase tracking-widest text-slate-400 group-hover/s:text-white transition-colors">{s.name}</span>
                                     </button>
                                     {!isReadOnly && (
                                         <button
@@ -526,7 +540,7 @@ const Inspector: React.FC = () => {
                                               onConfirm: () => useStore.getState().deleteStack(s.id)
                                             });
                                         }}
-                                        className="absolute right-2 top-1/2 -translate-y-1/2 p-1 text-slate-600 hover:text-red-400 opacity-0 group-hover/s:opacity-100 transition-all"
+                                        className="absolute right-3 top-1/2 -translate-y-1/2 p-1.5 rounded-md bg-red-500/10 text-red-400 hover:bg-red-500 hover:text-white opacity-0 group-hover/s:opacity-100 transition-all shadow-lg"
                                       >
                                         <X className="w-3 h-3" />
                                       </button>
@@ -546,8 +560,8 @@ const Inspector: React.FC = () => {
                   <div className="space-y-8">
                     <div className="space-y-4">
                       <div className="flex justify-between items-center ml-1">
-                        <label className="text-[9px] uppercase font-bold tracking-widest text-slate-500">Scale</label>
-                        <span className="text-[9px] font-mono text-[var(--accent-secondary)]">{(thought.size || 1.0).toFixed(1)}x</span>
+                        <label className="text-[10px] uppercase font-bold tracking-widest text-slate-500">Scale</label>
+                        <span className="text-[10px] font-mono text-[var(--accent-secondary)] font-bold">{(thought.size || 1.0).toFixed(1)}x</span>
                       </div>
                       <input
                         type="range"
@@ -558,38 +572,36 @@ const Inspector: React.FC = () => {
                         disabled={isReadOnly}
                         onChange={(e) => updateThought(thought.id, { size: parseFloat(e.target.value) })}
                         className={cn(
-                          "w-full h-1.5 bg-[var(--glass-border)] rounded-lg appearance-none cursor-pointer accent-[var(--accent)]",
+                          "w-full h-1.5 bg-white/10 rounded-lg appearance-none cursor-pointer accent-[var(--accent)]",
                           isReadOnly && "opacity-30 pointer-events-none"
                         )}
                       />
                     </div>
 
-                    <div className="space-y-3 pt-6 border-t border-[var(--glass-border)]">
-                      <div className="flex items-center mb-2 px-1">
-                        <span className="text-[9px] uppercase font-black tracking-widest text-white">Layers</span>
-                      </div>
+                    <div className="space-y-4 pt-6 border-t border-[var(--glass-border)]">
+                      <label className="text-[10px] uppercase font-bold tracking-widest text-slate-500 ml-1">Layers</label>
                       <div className="grid grid-cols-2 gap-2">
                         <button
                           disabled={isReadOnly}
                           onClick={() => !isReadOnly && bringToFront(thought.id)}
                           className={cn(
-                            "flex items-center justify-center gap-2 py-3 bg-[var(--glass-border)] border border-[var(--glass-border)] rounded-xl text-[8px] font-black uppercase tracking-widest text-slate-300 hover:bg-[var(--glass-border)] hover:text-white transition-all",
+                            "flex items-center justify-center gap-2 py-3 bg-white/[0.03] border border-white/5 rounded-xl text-[9px] font-bold uppercase tracking-widest text-slate-400 hover:bg-white/[0.08] hover:text-white transition-all",
                             isReadOnly && "opacity-30 cursor-default"
                           )}
                         >
-                          <ArrowUp className="w-3 h-3" />
-                          Bring to Front
+                          <ArrowUp className="w-3.5 h-3.5" />
+                          Front
                         </button>
                         <button
                           disabled={isReadOnly}
                           onClick={() => !isReadOnly && sendToBack(thought.id)}
                           className={cn(
-                            "flex items-center justify-center gap-2 py-3 bg-[var(--glass-border)] border border-[var(--glass-border)] rounded-xl text-[8px] font-black uppercase tracking-widest text-slate-300 hover:bg-[var(--glass-border)] hover:text-white transition-all",
+                            "flex items-center justify-center gap-2 py-3 bg-white/[0.03] border border-white/5 rounded-xl text-[9px] font-bold uppercase tracking-widest text-slate-400 hover:bg-white/[0.08] hover:text-white transition-all",
                             isReadOnly && "opacity-30 cursor-default"
                           )}
                         >
-                          <ArrowDown className="w-3 h-3" />
-                          Send to Back
+                          <ArrowDown className="w-3.5 h-3.5" />
+                          Back
                         </button>
                       </div>
                     </div>
@@ -599,14 +611,15 @@ const Inspector: React.FC = () => {
             </AnimatePresence>
           </div>
 
+          {/* Persistent Action Footer */}
           {!isReadOnly && (
-            <div className="bg-[var(--bg-main)]/40 border-t border-[var(--glass-border)] p-4 md:p-6 mt-auto flex items-center gap-3">
+            <div className="bg-[var(--bg-main)]/60 backdrop-blur-md border-t border-[var(--glass-border)] p-4 md:p-5 flex items-center gap-3">
               <button
                 onClick={handleDeleteThought}
-                className="flex-1 bg-red-500/5 hover:bg-red-500/10 text-red-400 py-3.5 rounded-xl text-[9px] font-black uppercase tracking-[0.2em] transition-all border border-red-500/20 hover:border-red-500/40 flex items-center justify-center gap-2.5 group"
+                className="flex-1 bg-red-500/5 hover:bg-red-500/10 text-red-400/90 py-3 rounded-xl text-[10px] font-extrabold uppercase tracking-[0.2em] transition-all border border-red-500/20 hover:border-red-500/40 flex items-center justify-center gap-2 group"
               >
-                <Trash2 className="w-3.5 h-3.5 group-hover:scale-110 transition-transform" />
-                <span>DELETE</span>
+                <Trash2 className="w-4 h-4 group-hover:scale-110 transition-transform" />
+                <span>Delete</span>
               </button>
               {thought.type !== 'label' && (
                 <button
@@ -617,10 +630,10 @@ const Inspector: React.FC = () => {
                     const focusType = (triggers[thought.type] || 'text') as any;
                     setActiveFocus(thought.id, focusType);
                   }}
-                  className="flex-1 bg-[var(--accent)]/5 hover:bg-[var(--accent)]/10 border border-[var(--accent)]/20 hover:border-[var(--accent)]/50 text-[var(--accent-secondary)] py-3.5 rounded-xl text-[9px] font-black uppercase tracking-[0.2em] transition-all flex items-center justify-center gap-2.5 shadow-lg shadow-[var(--accent-glow)]/5 group"
+                  className="flex-1 bg-[var(--accent)]/10 hover:bg-[var(--accent)]/20 border border-[var(--accent)]/30 hover:border-[var(--accent)]/60 text-[var(--accent-secondary)] py-3 rounded-xl text-[10px] font-extrabold uppercase tracking-[0.2em] transition-all flex items-center justify-center gap-2 shadow-lg shadow-[var(--accent-glow)]/10 group"
                 >
-                  <Maximize2 className="w-3.5 h-3.5 group-hover:scale-110 transition-transform" />
-                  <span>OPEN</span>
+                  <Maximize2 className="w-4 h-4 group-hover:scale-110 transition-transform" />
+                  <span>Open</span>
                 </button>
               )}
             </div>
