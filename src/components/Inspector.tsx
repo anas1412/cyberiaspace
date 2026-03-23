@@ -284,55 +284,6 @@ const Inspector: React.FC = () => {
               >
                 {activeTab === 'content' && (
                   <div className="space-y-6">
-                    {thought.type !== 'file' && (
-                      <div className="space-y-3">
-                        <div className="grid grid-cols-3 gap-2">
-                          {(['label', 'text', 'tasks', 'table', 'paint', 'embed'] as const)
-                            .map((type) => {
-                              const tConfig = getThoughtConfig(type);
-                              const isActive = (pendingType || thought.type) === type;
-                              return (
-                                <button
-                                  key={type}
-                                  onClick={() => setPendingType(type)}
-                                  className={cn(
-                                    "py-3 px-2 rounded-xl flex flex-col items-center justify-center transition-all border gap-1.5",
-                                    isActive
-                                      ? "bg-[var(--accent)]/10 border-[var(--accent)] text-[var(--text-primary)] shadow-[0_0_15px_var(--accent-glow)]"
-                                      : "bg-white/[0.02] border-white/[0.05] text-[var(--text-muted)] hover:bg-white/[0.06] hover:text-[var(--text-primary)] hover:border-white/10",
-                                    isReadOnly && thought.type !== type && "opacity-30 grayscale cursor-default"
-                                  )}
-                                  disabled={isReadOnly}
-                                  title={tConfig?.label || type}
-                                >
-                                  {tConfig?.icon && <tConfig.icon className="w-4 h-4" />}
-                                  <span className="text-[9px] font-bold uppercase tracking-widest">{type === 'tasks' ? 'Task' : type}</span>
-                                </button>
-                              );
-                            })}
-                        </div>
-                        
-                        <button
-                          onClick={() => {
-                            if (pendingType) {
-                              handleTypeChange(pendingType);
-                              setPendingType(null);
-                            }
-                          }}
-                          disabled={!(pendingType !== null && pendingType !== thought.type)}
-                          className={cn(
-                            "w-full p-3 rounded-xl flex items-center justify-center gap-2 transition-all border",
-                            (pendingType !== null && pendingType !== thought.type)
-                              ? "bg-[var(--accent)] border-[var(--accent)] text-[var(--accent-contrast)] shadow-[0_0_20px_var(--accent-glow)] scale-100 opacity-100 font-extrabold"
-                              : "bg-[var(--bg-main)]/20 border-[var(--glass-border)] text-[var(--text-muted)] scale-[0.98] opacity-40 cursor-default"
-                          )}
-                        >
-                          <Save className="w-4 h-4" />
-                          <span className="text-[9px] font-bold uppercase tracking-widest">Save Change</span>
-                        </button>
-                      </div>
-                    )}
-
                     <div className="space-y-5">
                       <div className="space-y-2.5">
                         <label className="text-[10px] uppercase font-bold tracking-widest text-slate-500 ml-1">Name</label>
@@ -377,6 +328,55 @@ const Inspector: React.FC = () => {
                     {InspectorPanel && (
                       <div className="pt-6 border-t border-[var(--glass-border)]">
                         <InspectorPanel thought={thought} isReadOnly={isReadOnly} />
+                      </div>
+                    )}
+
+                    {thought.type !== 'file' && (
+                      <div className="pt-6 border-t border-[var(--glass-border)] space-y-3">
+                        <div className="grid grid-cols-3 gap-2">
+                          {(['label', 'text', 'tasks', 'table', 'paint', 'embed'] as const)
+                            .map((type) => {
+                              const tConfig = getThoughtConfig(type);
+                              const isActive = (pendingType || thought.type) === type;
+                              return (
+                                <button
+                                  key={type}
+                                  onClick={() => setPendingType(type)}
+                                  className={cn(
+                                    "py-3 px-2 rounded-xl flex flex-col items-center justify-center transition-all border gap-1.5",
+                                    isActive
+                                      ? "bg-[var(--accent)]/10 border-[var(--accent)] text-[var(--text-primary)] shadow-[0_0_15px_var(--accent-glow)]"
+                                      : "bg-white/[0.02] border-white/[0.05] text-[var(--text-muted)] hover:bg-white/[0.06] hover:text-[var(--text-primary)] hover:border-white/10",
+                                    isReadOnly && thought.type !== type && "opacity-30 grayscale cursor-default"
+                                  )}
+                                  disabled={isReadOnly}
+                                  title={tConfig?.label || type}
+                                >
+                                  {tConfig?.icon && <tConfig.icon className="w-4 h-4" />}
+                                  <span className="text-[9px] font-bold uppercase tracking-widest">{type === 'tasks' ? 'Task' : type}</span>
+                                </button>
+                              );
+                            })}
+                        </div>
+                        
+                        <button
+                          onClick={() => {
+                            if (pendingType) {
+                              handleTypeChange(pendingType);
+                              setPendingType(null);
+                            }
+                          }}
+                          disabled={!(pendingType !== null && pendingType !== thought.type)}
+                          className={cn(
+                            "w-full p-3 rounded-xl flex items-center justify-center gap-2 transition-all border",
+                            (pendingType !== null && pendingType !== thought.type)
+                              ? "bg-[var(--accent)] border-[var(--accent)] text-[var(--accent-contrast)] shadow-[0_0_20px_var(--accent-glow)] scale-100 opacity-100 font-extrabold"
+                              : "bg-[var(--bg-main)]/20 border-[var(--glass-border)] text-[var(--text-muted)] scale-[0.98] opacity-40 cursor-default"
+                          )}
+                        >
+                          <Save className="w-4 h-4" />
+                          <span className="text-[9px] font-bold uppercase tracking-widest">Save Change</span>
+                        </button>
                       </div>
                     )}
                   </div>
