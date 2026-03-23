@@ -614,13 +614,6 @@ const Inspector: React.FC = () => {
           {/* Persistent Action Footer */}
           {!isReadOnly && (
             <div className="bg-[var(--bg-main)]/60 backdrop-blur-md border-t border-[var(--glass-border)] p-4 md:p-5 flex items-center gap-3">
-              <button
-                onClick={handleDeleteThought}
-                className="flex-1 bg-red-500/5 hover:bg-red-500/10 text-red-400/90 py-3 rounded-xl text-[10px] font-extrabold uppercase tracking-[0.2em] transition-all border border-red-500/20 hover:border-red-500/40 flex items-center justify-center gap-2 group"
-              >
-                <Trash2 className="w-4 h-4 group-hover:scale-110 transition-transform" />
-                <span>Delete</span>
-              </button>
               {thought.type !== 'label' && (
                 <button
                   onClick={() => {
@@ -636,6 +629,13 @@ const Inspector: React.FC = () => {
                   <span>Open</span>
                 </button>
               )}
+              <button
+                onClick={handleDeleteThought}
+                className="flex-1 bg-red-500/5 hover:bg-red-500/10 text-red-400/90 py-3 rounded-xl text-[10px] font-extrabold uppercase tracking-[0.2em] transition-all border border-red-500/20 hover:border-red-500/40 flex items-center justify-center gap-2 group"
+              >
+                <Trash2 className="w-4 h-4 group-hover:scale-110 transition-transform" />
+                <span>Delete</span>
+              </button>
             </div>
           )}
         </motion.div>

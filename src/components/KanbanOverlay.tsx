@@ -37,7 +37,7 @@ const KanbanOverlay: React.FC = () => {
         </div>
         <div className="col-section flex-1 border-b md:border-b-0 md:border-r border-dashed border-[var(--glass-border)] min-h-[200px] md:min-h-0">
           <div className="col-header-box h-[50px] md:h-[60px] flex items-center justify-center bg-[var(--bg-main)]/85 backdrop-blur-[12px] border-b border-[var(--glass-border)]">
-            <span className="col-label text-[10px] md:text-[11px] font-900 text-[var(--accent-secondary)] tracking-[0.4em] uppercase">Todo</span>
+            <span className="col-label text-[10px] md:text-[11px] font-900 text-[var(--accent-secondary)] tracking-[0.4em] uppercase">To Do</span>
           </div>
         </div>
         <div className="col-section flex-1 border-b md:border-b-0 md:border-r border-dashed border-[var(--glass-border)] min-h-[200px] md:min-h-0">
