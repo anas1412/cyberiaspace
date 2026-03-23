@@ -326,7 +326,7 @@ const Inspector: React.FC = () => {
                     </div>
 
                     {InspectorPanel && (
-                      <div className="pt-6 border-t border-[var(--glass-border)]">
+                      <div>
                         <InspectorPanel thought={thought} isReadOnly={isReadOnly} />
                       </div>
                     )}
