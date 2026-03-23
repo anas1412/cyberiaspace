@@ -151,6 +151,12 @@ export const executeOracleTool = async (toolCall: any, store: any) => {
         if (thoughtArgs.status) thoughtArgs.status = sanitizeStatus(thoughtArgs.status);
         if (thoughtArgs.priority) thoughtArgs.priority = sanitizePriority(thoughtArgs.priority);
 
+        // Transform content to data.url for embed type
+        if (thoughtArgs.type === 'embed' && thoughtArgs.content) {
+          thoughtArgs.data = { type: 'embed', url: thoughtArgs.content };
+          delete thoughtArgs.content;
+        }
+
         // Use bulk addThoughts for consistency (handles jitter, limits, single sync)
         const ids = await store.addThoughts([{ ...thoughtArgs }]);
         if (ids.length === 0) {
@@ -180,6 +186,11 @@ export const executeOracleTool = async (toolCall: any, store: any) => {
           const processedItem = processDrawing({ ...item });
           const { stackName, ...thoughtArgs } = processedItem;
           
+          if (thoughtArgs.type === 'embed' && thoughtArgs.content) {
+            thoughtArgs.data = { type: 'embed', url: thoughtArgs.content };
+            delete thoughtArgs.content;
+          }
+
           if (thoughtArgs.type === ('image' as any)) thoughtArgs.type = 'file';
 
           const x = typeof thoughtArgs.x !== 'undefined' ? Number(thoughtArgs.x) : window.innerWidth / 2;
