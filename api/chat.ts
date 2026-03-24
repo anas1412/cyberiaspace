@@ -1,6 +1,6 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { createClient } from '@supabase/supabase-js';
-import { TOP_MODELS, MEDIUM_MODELS, SMALL_MODELS, FREE_MODELS, MODEL_TIERS } from './models';
+import { TOP_MODELS, MEDIUM_MODELS, SMALL_MODELS, FREE_MODELS, MODEL_TIERS } from './models.js';
 
 
 
