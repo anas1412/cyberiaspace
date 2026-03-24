@@ -3,7 +3,7 @@ import {
   CheckCircle, MessageSquare, Loader2, Send, MousePointer2,
   Palette, Database, HelpCircle, Laptop, Download, Upload, 
   Camera, RefreshCw, Trash2, X, Info, ExternalLink,
-  FileText, Smartphone
+  FileText, Smartphone, Zap
 } from 'lucide-react';
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
@@ -82,8 +82,9 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
   handleExport, handleImport, handleScreenshot, isCapturing,
   deferredPrompt, handleInstall
 }) => {
-  const [activeTab, setActiveTab] = useState<'general' | 'custom' | 'storage'>('general');
-  const { user, storageUsageMB, calculateUsage, updateSettings, refreshProfile } = useAuthStore();
+  const [activeTab, setActiveTab] = useState<'general' | 'custom' | 'storage' | 'quota'>('general');
+  const [quotaPeriod, setQuotaPeriod] = useState<'daily' | 'weekly' | 'monthly'>('daily');
+  const { user, storageUsageMB, updateSettings, updateQuotaUsage } = useAuthStore();
   const totalThoughtCount = useStore((state) => state.totalThoughtCount);
   const clearWorkspace = useStore((state) => state.clearWorkspace);
   const clearLocalData = useStore((state) => state.clearLocalData);
@@ -93,12 +94,71 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
     ? PLAN_CONFIG[user.plan as keyof typeof PLAN_CONFIG] 
     : PLAN_CONFIG.free;
 
+  // Reset to general tab if user is no longer pro but quota tab was selected
   useEffect(() => {
-    if (isOpen) {
-      refreshProfile();
-      calculateUsage(totalThoughtCount);
+    if (activeTab === 'quota' && user?.plan !== 'pro') {
+      setActiveTab('general');
     }
-  }, [isOpen, totalThoughtCount, calculateUsage, refreshProfile]);
+  }, [user?.plan, activeTab]);
+
+  // Fetch fresh usage when quota tab is opened and update centralized auth store
+  useEffect(() => {
+    if (activeTab === 'quota' && user?.id && user.id !== 'guest') {
+      const fetchQuotaUsage = async () => {
+        try {
+          const { useAuthStore } = await import('../../store/useAuthStore');
+          const authStore = useAuthStore.getState();
+          const token = await authStore.getOrRefreshToken();
+          if (!token) return;
+          
+          const res = await fetch('/api/chat', {
+            headers: { 'Authorization': `Bearer ${token}` }
+          });
+          const data = await res.json();
+          
+          // Update centralized auth store - propagates to all components including ChatOverlay and Settings
+          updateQuotaUsage({
+            daily_anchor: data.daily_anchor,
+            weekly_anchor: data.weekly_anchor,
+            monthly_anchor: data.monthly_anchor,
+            ai_daily_count: data.count,
+            ai_top_count: data.top_count,
+            ai_medium_count: data.medium_count,
+            ai_small_count: data.small_count,
+            weekly_top_count: data.weekly_top_count,
+            weekly_medium_count: data.weekly_medium_count,
+            weekly_small_count: data.weekly_small_count,
+            monthly_top_count: data.monthly_top_count,
+            monthly_medium_count: data.monthly_medium_count,
+            monthly_small_count: data.monthly_small_count,
+          });
+        } catch (err) {
+          console.error('[Settings] Failed to fetch quota usage:', err);
+        }
+      };
+      fetchQuotaUsage();
+    }
+  }, [activeTab, user?.id, updateQuotaUsage]);
+
+  // Read from centralized auth store - no local state needed
+  const usage = {
+    daily: {
+      top: user?.usage?.ai_top_count || 0,
+      medium: user?.usage?.ai_medium_count || 0,
+      small: user?.usage?.ai_small_count || 0,
+      free: user?.usage?.ai_daily_count || 0,
+    },
+    weekly: {
+      top: user?.usage?.weekly_top_count || 0,
+      medium: user?.usage?.weekly_medium_count || 0,
+      small: user?.usage?.weekly_small_count || 0,
+    },
+    monthly: {
+      top: user?.usage?.monthly_top_count || 0,
+      medium: user?.usage?.monthly_medium_count || 0,
+      small: user?.usage?.monthly_small_count || 0,
+    },
+  };
 
   const handleBgUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -159,7 +219,8 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
           {[
             { id: 'general', label: 'General', icon: Info },
             { id: 'custom', label: 'Customization', icon: Palette },
-            { id: 'storage', label: 'Storage Settings', icon: Database }
+            ...(user?.plan === 'pro' ? [{ id: 'quota', label: 'Quota Usage', icon: Zap }] : []),
+            { id: 'storage', label: 'Storage', icon: Database }
           ].map((tab) => (
             <button 
               key={tab.id} 
@@ -490,6 +551,173 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                     </button>
                   </div>
                 </section>
+              </motion.div>
+            )}
+
+            {activeTab === 'quota' && (
+              <motion.div 
+                key="quota"
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -10 }}
+                transition={{ duration: 0.2 }}
+                className="space-y-4"
+              >
+                {/* Period Tabs */}
+                <div className="flex gap-2 mb-4">
+                  {(['daily', 'weekly', 'monthly'] as const).map((period) => (
+                    <button
+                      key={period}
+                      onClick={() => setQuotaPeriod(period)}
+                      className={cn(
+                        "px-4 py-2 rounded-lg text-[9px] font-black uppercase tracking-widest transition-all",
+                        quotaPeriod === period 
+                          ? "bg-white/10 text-white border border-white/10" 
+                          : "text-slate-500 hover:text-slate-300"
+                      )}
+                    >
+                      {period}
+                    </button>
+                  ))}
+                </div>
+
+                {/* Usage Bars - show remaining percentage (100% = full quota remaining, 0% = quota exhausted) */}
+                {quotaPeriod === 'daily' && (
+                  <>
+                    {/* Premium */}
+                    <div className="p-4 rounded-2xl bg-white/[0.03] border border-white/5">
+                      <div className="flex justify-between items-center mb-3">
+                        <span className="text-[11px] font-bold text-[var(--accent-secondary)]">PREMIUM</span>
+                        <span className="text-[14px] font-black text-white">{Math.max(0, 100 - Math.round((usage.daily.top / 15) * 100))}%</span>
+                      </div>
+                      <div className="h-2 w-full bg-white/5 rounded-full overflow-hidden border border-white/5 p-0.5">
+                        <div className="h-full bg-[var(--accent)] rounded-full" style={{ width: `${Math.max(0, Math.min(100, 100 - (usage.daily.top / 15) * 100))}%` }} />
+                      </div>
+                    </div>
+
+                    {/* Normal */}
+                    <div className="p-4 rounded-2xl bg-white/[0.03] border border-white/5">
+                      <div className="flex justify-between items-center mb-3">
+                        <span className="text-[11px] font-bold text-blue-400">NORMAL</span>
+                        <span className="text-[14px] font-black text-white">{Math.max(0, 100 - Math.round((usage.daily.medium / 60) * 100))}%</span>
+                      </div>
+                      <div className="h-2 w-full bg-white/5 rounded-full overflow-hidden border border-white/5 p-0.5">
+                        <div className="h-full bg-blue-500 rounded-full" style={{ width: `${Math.max(0, Math.min(100, 100 - (usage.daily.medium / 60) * 100))}%` }} />
+                      </div>
+                    </div>
+
+                    {/* Small */}
+                    <div className="p-4 rounded-2xl bg-white/[0.03] border border-white/5">
+                      <div className="flex justify-between items-center mb-3">
+                        <span className="text-[11px] font-bold text-green-400">SMALL</span>
+                        <span className="text-[14px] font-black text-white">{Math.max(0, 100 - Math.round((usage.daily.small / 500) * 100))}%</span>
+                      </div>
+                      <div className="h-2 w-full bg-white/5 rounded-full overflow-hidden border border-white/5 p-0.5">
+                        <div className="h-full bg-green-500 rounded-full" style={{ width: `${Math.max(0, Math.min(100, 100 - (usage.daily.small / 500) * 100))}%` }} />
+                      </div>
+                    </div>
+
+                    {/* Free */}
+                    <div className="p-4 rounded-2xl bg-white/[0.03] border border-white/5">
+                      <div className="flex justify-between items-center mb-3">
+                        <span className="text-[11px] font-bold text-slate-500">FREE</span>
+                        <span className="text-[14px] font-black text-white">{(user?.plan || 'free') === 'pro' ? '∞' : `${Math.max(0, 100 - Math.round((usage.daily.free / 15) * 100))}%`}</span>
+                      </div>
+                      <div className="h-2 w-full bg-white/5 rounded-full overflow-hidden border border-white/5 p-0.5">
+                        <div className="h-full bg-slate-500 rounded-full" style={{ width: `${(user?.plan || 'free') === 'pro' ? 100 : Math.max(0, Math.min(100, 100 - (usage.daily.free / 15) * 100))}%` }} />
+                      </div>
+                    </div>
+                  </>
+                )}
+
+                {quotaPeriod === 'weekly' && (
+                  <>
+                    {/* Weekly - shows remaining percentage */}
+                    <div className="p-4 rounded-2xl bg-white/[0.03] border border-white/5">
+                      <div className="flex justify-between items-center mb-3">
+                        <span className="text-[11px] font-bold text-[var(--accent-secondary)]">PREMIUM</span>
+                        <span className="text-[14px] font-black text-white">{Math.max(0, 100 - Math.round((usage.weekly.top / 100) * 100))}%</span>
+                      </div>
+                      <div className="h-2 w-full bg-white/5 rounded-full overflow-hidden border border-white/5 p-0.5">
+                        <div className="h-full bg-[var(--accent)] rounded-full" style={{ width: `${Math.max(0, Math.min(100, 100 - (usage.weekly.top / 100) * 100))}%` }} />
+                      </div>
+                    </div>
+
+                    <div className="p-4 rounded-2xl bg-white/[0.03] border border-white/5">
+                      <div className="flex justify-between items-center mb-3">
+                        <span className="text-[11px] font-bold text-blue-400">NORMAL</span>
+                        <span className="text-[14px] font-black text-white">{Math.max(0, 100 - Math.round((usage.weekly.medium / 420) * 100))}%</span>
+                      </div>
+                      <div className="h-2 w-full bg-white/5 rounded-full overflow-hidden border border-white/5 p-0.5">
+                        <div className="h-full bg-blue-500 rounded-full" style={{ width: `${Math.max(0, Math.min(100, 100 - (usage.weekly.medium / 420) * 100))}%` }} />
+                      </div>
+                    </div>
+
+                    <div className="p-4 rounded-2xl bg-white/[0.03] border border-white/5">
+                      <div className="flex justify-between items-center mb-3">
+                        <span className="text-[11px] font-bold text-green-400">SMALL</span>
+                        <span className="text-[14px] font-black text-white">{Math.max(0, 100 - Math.round((usage.weekly.small / 3500) * 100))}%</span>
+                      </div>
+                      <div className="h-2 w-full bg-white/5 rounded-full overflow-hidden border border-white/5 p-0.5">
+                        <div className="h-full bg-green-500 rounded-full" style={{ width: `${Math.max(0, Math.min(100, 100 - (usage.weekly.small / 3500) * 100))}%` }} />
+                      </div>
+                    </div>
+
+                    <div className="p-4 rounded-2xl bg-white/[0.03] border border-white/5">
+                      <div className="flex justify-between items-center mb-3">
+                        <span className="text-[11px] font-bold text-slate-500">FREE</span>
+                        <span className="text-[14px] font-black text-white">{(user?.plan || 'free') === 'pro' ? '∞' : `${Math.max(0, 100 - Math.round((usage.daily.free / 15) * 100))}%`}</span>
+                      </div>
+                      <div className="h-2 w-full bg-white/5 rounded-full overflow-hidden border border-white/5 p-0.5">
+                        <div className="h-full bg-slate-500 rounded-full" style={{ width: `${(user?.plan || 'free') === 'pro' ? 100 : Math.max(0, Math.min(100, 100 - (usage.daily.free / 15) * 100))}%` }} />
+                      </div>
+                    </div>
+                  </>
+                )}
+
+                {quotaPeriod === 'monthly' && (
+                  <>
+                    <div className="p-4 rounded-2xl bg-white/[0.03] border border-white/5">
+                      <div className="flex justify-between items-center mb-3">
+                        <span className="text-[11px] font-bold text-[var(--accent-secondary)]">PREMIUM</span>
+                        <span className="text-[14px] font-black text-white">{Math.max(0, 100 - Math.round((usage.monthly.top / 400) * 100))}%</span>
+                      </div>
+                      <div className="h-2 w-full bg-white/5 rounded-full overflow-hidden border border-white/5 p-0.5">
+                        <div className="h-full bg-[var(--accent)] rounded-full" style={{ width: `${Math.max(0, Math.min(100, 100 - (usage.monthly.top / 400) * 100))}%` }} />
+                      </div>
+                    </div>
+
+                    <div className="p-4 rounded-2xl bg-white/[0.03] border border-white/5">
+                      <div className="flex justify-between items-center mb-3">
+                        <span className="text-[11px] font-bold text-blue-400">NORMAL</span>
+                        <span className="text-[14px] font-black text-white">{Math.max(0, 100 - Math.round((usage.monthly.medium / 1800) * 100))}%</span>
+                      </div>
+                      <div className="h-2 w-full bg-white/5 rounded-full overflow-hidden border border-white/5 p-0.5">
+                        <div className="h-full bg-blue-500 rounded-full" style={{ width: `${Math.max(0, Math.min(100, 100 - (usage.monthly.medium / 1800) * 100))}%` }} />
+                      </div>
+                    </div>
+
+                    <div className="p-4 rounded-2xl bg-white/[0.03] border border-white/5">
+                      <div className="flex justify-between items-center mb-3">
+                        <span className="text-[11px] font-bold text-green-400">SMALL</span>
+                        <span className="text-[14px] font-black text-white">{Math.max(0, 100 - Math.round((usage.monthly.small / 15000) * 100))}%</span>
+                      </div>
+                      <div className="h-2 w-full bg-white/5 rounded-full overflow-hidden border border-white/5 p-0.5">
+                        <div className="h-full bg-green-500 rounded-full" style={{ width: `${Math.max(0, Math.min(100, 100 - (usage.monthly.small / 15000) * 100))}%` }} />
+                      </div>
+                    </div>
+
+                    <div className="p-4 rounded-2xl bg-white/[0.03] border border-white/5">
+                      <div className="flex justify-between items-center mb-3">
+                        <span className="text-[11px] font-bold text-slate-500">FREE</span>
+                        <span className="text-[14px] font-black text-white">{(user?.plan || 'free') === 'pro' ? '∞' : `${Math.max(0, 100 - Math.round((usage.daily.free / 15) * 100))}%`}</span>
+                      </div>
+                      <div className="h-2 w-full bg-white/5 rounded-full overflow-hidden border border-white/5 p-0.5">
+                        <div className="h-full bg-slate-500 rounded-full" style={{ width: `${(user?.plan || 'free') === 'pro' ? 100 : Math.max(0, Math.min(100, 100 - (usage.daily.free / 15) * 100))}%` }} />
+                      </div>
+                    </div>
+                  </>
+                )}
               </motion.div>
             )}
           </AnimatePresence>

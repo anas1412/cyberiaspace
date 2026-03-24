@@ -36,8 +36,19 @@ const getInitialUser = (): User | null => {
       subscriptionStatus: user.subscriptionStatus || 'none',
       usage: {
         ai_daily_count: user.usage?.ai_daily_count ?? 0,
+        ai_top_count: user.usage?.ai_top_count ?? 0,
+        ai_medium_count: user.usage?.ai_medium_count ?? 0,
+        ai_small_count: user.usage?.ai_small_count ?? 0,
         sync_thoughts: user.usage?.sync_thoughts ?? 0,
-        last_ai_reset: user.usage?.last_ai_reset ?? today,
+        daily_anchor: user.usage?.daily_anchor ?? today,
+        weekly_anchor: user.usage?.weekly_anchor ?? today,
+        monthly_anchor: user.usage?.monthly_anchor ?? today,
+        weekly_top_count: user.usage?.weekly_top_count ?? 0,
+        weekly_medium_count: user.usage?.weekly_medium_count ?? 0,
+        weekly_small_count: user.usage?.weekly_small_count ?? 0,
+        monthly_top_count: user.usage?.monthly_top_count ?? 0,
+        monthly_medium_count: user.usage?.monthly_medium_count ?? 0,
+        monthly_small_count: user.usage?.monthly_small_count ?? 0,
       },
       settings: {
         theme: user.settings?.theme ?? 'cyberia',
@@ -231,24 +242,124 @@ export const createAuthSlice: StateCreator<AuthState, [], [], any> = (set, get, 
   status: localStorage.getItem('cyberia-user') ? 'authenticated' : 'unauthenticated' as 'idle' | 'loading' | 'authenticated' | 'unauthenticated',
   _migrationInProgress: false,
   setMigrationInProgress: (inProgress: boolean) => set({ _migrationInProgress: inProgress }),
+  modelConfig: null,
+
+  fetchModelConfig: async () => {
+    try {
+      const res = await fetch('/api/models');
+      const data = await res.json();
+      if (data.tiers && data.config) {
+        set({ modelConfig: data });
+        console.log('[Auth] Model config fetched successfully');
+      }
+    } catch (err) {
+      console.error('[Auth] Failed to fetch model config:', err);
+    }
+  },
 
   initAuth: async () => {
     window.addEventListener('online', async () => { 
       set({ isOnline: true });
+      const { accessTokenExpiresAt, refreshSecret, status } = get();
+      const now = Date.now();
+      const BUFFER_MS = 60 * 1000; // 1 minute - only refresh when truly needed
+      
+      if (status === 'authenticated' && accessTokenExpiresAt && (accessTokenExpiresAt - now) < BUFFER_MS) {
+        console.log('[Auth] Back online with expired/near expiry token, refreshing...');
+        if (refreshSecret) {
+          await get().refreshProfile();
+        }
+      }
+      
       if (typeof get().processOfflineChanges === 'function') {
         await get().processOfflineChanges();
       }
     });
     window.addEventListener('offline', () => set({ isOnline: false, syncStatus: 'offline' }));
+    
+    // Debounce timer for visibility changes
+    let visibilityDebounceTimer: NodeJS.Timeout | null = null;
+    
     document.addEventListener('visibilitychange', () => {
       if (document.visibilityState === 'visible' && get().status === 'authenticated') {
-        console.log('[Auth] App visible, checking for profile refresh...');
-        get().refreshProfile();
+        // Clear any pending debounce
+        if (visibilityDebounceTimer) {
+          clearTimeout(visibilityDebounceTimer);
+        }
+        
+        // Debounce by 2 seconds to prevent rapid refreshes
+        visibilityDebounceTimer = setTimeout(() => {
+          const { accessTokenExpiresAt, refreshSecret } = get();
+          const now = Date.now();
+          const BUFFER_MS = 60 * 1000; // 1 minute
+          
+          // Only refresh if token is near expiry or every 30 minutes
+          const timeSinceLastExpiry = accessTokenExpiresAt ? accessTokenExpiresAt - now : Infinity;
+          const shouldRefresh = timeSinceLastExpiry < BUFFER_MS;
+          
+          if (shouldRefresh) {
+            console.log('[Auth] Token near expiry when tab became visible, refreshing...');
+            if (refreshSecret) {
+              get().refreshProfile();
+            } else {
+              get().refreshProfile();
+            }
+          } else {
+            console.log('[Auth] Token still valid, skipping profile refresh on visibility');
+          }
+        }, 2000);
       }
     });
     
     get().checkExpiry();
     get().setupRefreshInterval();
+    get().fetchModelConfig();
+
+    const { accessTokenExpiresAt, refreshSecret, accessToken, user } = get();
+    const now = Date.now();
+    const BUFFER_MS = 60 * 1000; // 1 minute - only refresh when truly needed
+    
+    // Try to fetch refreshSecret from database if not in localStorage
+    if (!refreshSecret && accessToken && user) {
+      console.log('[Auth] No refreshSecret in memory, fetching from database...');
+      try {
+        const profileData = await supabaseSync.getProfile(user.id);
+        const profileAny = profileData?.user as any;
+        if (profileAny?.refreshSecret) {
+          localStorage.setItem('cyberia-refresh-secret', profileAny.refreshSecret);
+          set({ refreshSecret: profileAny.refreshSecret });
+          console.log('[Auth] Retrieved refreshSecret from database on startup');
+        }
+      } catch (e) {
+        console.warn('[Auth] Could not fetch profile on startup:', e);
+      }
+    }
+    
+    // Now check if we have refreshSecret after the fetch
+    const currentRefreshSecret = get().refreshSecret;
+    
+    if (accessTokenExpiresAt && (accessTokenExpiresAt - now) < BUFFER_MS) {
+      console.log('[Auth] Token expired/near expiry on startup, attempting refresh...');
+      if (currentRefreshSecret) {
+        await get().refreshProfile();
+      } else if (accessToken && user) {
+        // Legacy user without refreshSecret - try to verify token validity
+        console.log('[Auth] No refreshSecret (legacy user), verifying token validity...');
+        try {
+          const tokenInfoRes = await fetch(`https://www.googleapis.com/oauth2/v3/tokeninfo?access_token=${accessToken}`);
+          if (!tokenInfoRes.ok) {
+            console.warn('[Auth] Token invalid, signing out legacy user');
+            get().signOut();
+          } else {
+            console.log('[Auth] Token still valid for legacy user, proceeding');
+          }
+        } catch (e) {
+          console.warn('[Auth] Could not verify token, proceeding anyway:', e);
+        }
+      } else {
+        console.warn('[Auth] No accessToken or user, cannot refresh token');
+      }
+    }
 
     const currentUser = get().user;
     if (get().status === 'authenticated' && currentUser?.id) {
@@ -270,8 +381,19 @@ export const createAuthSlice: StateCreator<AuthState, [], [], any> = (set, get, 
       subscriptionStatus: user.subscriptionStatus || 'none',
       usage: {
         ai_daily_count: user.usage?.ai_daily_count ?? 0,
+        ai_top_count: user.usage?.ai_top_count ?? 0,
+        ai_medium_count: user.usage?.ai_medium_count ?? 0,
+        ai_small_count: user.usage?.ai_small_count ?? 0,
         sync_thoughts: user.usage?.sync_thoughts ?? 0,
-        last_ai_reset: user.usage?.last_ai_reset ?? today,
+        daily_anchor: user.usage?.daily_anchor ?? today,
+        weekly_anchor: user.usage?.weekly_anchor ?? today,
+        monthly_anchor: user.usage?.monthly_anchor ?? today,
+        weekly_top_count: user.usage?.weekly_top_count ?? 0,
+        weekly_medium_count: user.usage?.weekly_medium_count ?? 0,
+        weekly_small_count: user.usage?.weekly_small_count ?? 0,
+        monthly_top_count: user.usage?.monthly_top_count ?? 0,
+        monthly_medium_count: user.usage?.monthly_medium_count ?? 0,
+        monthly_small_count: user.usage?.monthly_small_count ?? 0,
       },
       settings: {
         space: user.settings?.space ?? 'cyberia',
@@ -502,7 +624,67 @@ export const createAuthSlice: StateCreator<AuthState, [], [], any> = (set, get, 
 
   refreshProfile: async () => {
     const { accessToken, user, refreshSecret } = get();
-    if (!accessToken || !user || !refreshSecret) return;
+    if (!accessToken || !user) {
+      console.warn('[Auth] refreshProfile: No accessToken or user, cannot refresh');
+      return;
+    }
+
+    // For legacy users without refreshSecret, verify token and fetch profile only
+    if (!refreshSecret) {
+      console.warn('[Auth] refreshProfile: No refreshSecret (legacy user), verifying token validity...');
+      try {
+        const tokenInfoRes = await fetch(`https://www.googleapis.com/oauth2/v3/tokeninfo?access_token=${accessToken}`);
+        if (!tokenInfoRes.ok) {
+          console.warn('[Auth] Token invalid, signing out legacy user');
+          get().signOut();
+          return;
+        }
+        console.log('[Auth] Token valid for legacy user, fetching profile...');
+      } catch (e) {
+        console.warn('[Auth] Could not verify token:', e);
+      }
+      
+      // For legacy users, just fetch the profile without trying to refresh the token
+      try {
+        const supabaseProfile = await supabaseSync.getProfile(user.id);
+        console.log('[Auth] Profile data received:', JSON.stringify(supabaseProfile));
+        if (supabaseProfile?.user) {
+          const supabaseUser = supabaseProfile.user as any; // Use any to access refreshSecret
+          console.log('[Auth] supabaseUser keys:', Object.keys(supabaseUser));
+          console.log('[Auth] supabaseUser.refreshSecret:', supabaseUser.refreshSecret);
+          const now = new Date();
+          const isPro = supabaseUser.plan === 'pro' && supabaseUser.expiryDate && new Date(supabaseUser.expiryDate) > now;
+          
+          const updatedUser = { 
+            ...user, 
+            ...supabaseUser,
+            settings: {
+              ...user.settings,
+              ...supabaseUser.settings,
+              autoSync: supabaseUser.settings?.autoSync ?? user.settings?.autoSync ?? true
+            }
+          };
+          
+          if (!isPro) {
+            updatedUser.plan = 'free';
+            updatedUser.settings.personality = '';
+          }
+
+          // If profile has refreshSecret, save it to localStorage
+          if (supabaseUser.refreshSecret) {
+            localStorage.setItem('cyberia-refresh-secret', supabaseUser.refreshSecret);
+            set({ refreshSecret: supabaseUser.refreshSecret });
+            console.log('[Auth] Retrieved refreshSecret from database, saved to localStorage');
+          }
+
+          set({ user: updatedUser });
+          localStorage.setItem('cyberia-user', JSON.stringify(updatedUser));
+        }
+      } catch (err: any) {
+        console.warn('[Auth] Profile sync failed for legacy user:', err.message);
+      }
+      return;
+    }
 
     if (refreshProfilePromise) return refreshProfilePromise;
 
@@ -532,7 +714,7 @@ export const createAuthSlice: StateCreator<AuthState, [], [], any> = (set, get, 
             localStorage.setItem('cyberia-token', currentToken);
             localStorage.setItem('cyberia-token-expiry', expiryTime.toString());
           } else if (refreshRes.status === 401) {
-            console.warn('[Auth] Session expired (401), executing safety sign-out');
+            console.warn('[Auth] Session expired (401), signing out');
             clearTimeout(timeoutId);
             get().signOut();
             return;
@@ -578,6 +760,14 @@ export const createAuthSlice: StateCreator<AuthState, [], [], any> = (set, get, 
               setHasRegressedToFree(false);
             }
 
+            // Save refreshSecret if present in profile
+            const profileAny = supabaseUser as any;
+            if (profileAny.refreshSecret) {
+              localStorage.setItem('cyberia-refresh-secret', profileAny.refreshSecret);
+              set({ refreshSecret: profileAny.refreshSecret });
+              console.log('[Auth] Saved refreshSecret from profile');
+            }
+
             set({ user: updatedUser });
             localStorage.setItem('cyberia-user', JSON.stringify(updatedUser));
           }
@@ -600,11 +790,12 @@ export const createAuthSlice: StateCreator<AuthState, [], [], any> = (set, get, 
     const { accessToken, accessTokenExpiresAt, status, isOnline } = get();
     if (status !== 'authenticated' || !isOnline) return accessToken;
 
-    const BUFFER_MS = 5 * 60 * 1000;
+    // Reduced buffer to 1 minute to minimize unnecessary refreshes
+    const BUFFER_MS = 60 * 1000;
     const now = Date.now();
     
     if (!accessToken || !accessTokenExpiresAt || (accessTokenExpiresAt - now) < BUFFER_MS) {
-      console.log('[Auth] OIDC token critically near expiry, enforcing manual refresh.');
+      console.log('[Auth] OIDC token near expiry, enforcing manual refresh.');
       await get().refreshProfile();
       return get().accessToken;
     }
@@ -621,7 +812,7 @@ export const createAuthSlice: StateCreator<AuthState, [], [], any> = (set, get, 
         console.log('[Auth] Core Loop: Processing token/profile maintenance.');
         get().refreshProfile();
       }
-    }, 30 * 60 * 1000);
+    }, 55 * 60 * 1000); // 55 minutes - tokens expire at 60 min
   },
 
   updateSettings: async (settings: Partial<User['settings']>) => {
@@ -637,6 +828,38 @@ export const createAuthSlice: StateCreator<AuthState, [], [], any> = (set, get, 
     } catch (e) {
       console.warn('Settings synchronization rejected', e);
     }
+  },
+
+  // Centralized quota update - single source of truth for all components
+  updateQuotaUsage: (usageData: {
+    daily_anchor?: string;
+    weekly_anchor?: string;
+    monthly_anchor?: string;
+    ai_daily_count?: number;
+    ai_top_count?: number;
+    ai_medium_count?: number;
+    ai_small_count?: number;
+    weekly_top_count?: number;
+    weekly_medium_count?: number;
+    weekly_small_count?: number;
+    monthly_top_count?: number;
+    monthly_medium_count?: number;
+    monthly_small_count?: number;
+  }) => {
+    const { user } = get();
+    if (!user) return;
+    
+    const updatedUser = {
+      ...user,
+      usage: {
+        ...user.usage,
+        ...usageData,
+      }
+    };
+    
+    set({ user: updatedUser });
+    // Note: We don't persist to localStorage here - quota is fetched fresh from API
+    // This in-memory state is shared across all components for real-time updates
   },
 
   handlePlanRegression: async () => {

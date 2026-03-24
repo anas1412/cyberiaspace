@@ -178,5 +178,43 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(400).json({ error: 'Invalid resource' });
   }
 
+  if (req.method === 'POST') {
+    const { resource, userId } = req.body;
+
+    if (resource === 'resetQuota') {
+      // Reset all usage counters for a user
+      const resetUsage = {
+        ai_daily_count: 0,
+        ai_top_count: 0,
+        ai_medium_count: 0,
+        ai_small_count: 0,
+        daily_anchor: null,
+        weekly_anchor: null,
+        monthly_anchor: null,
+        weekly_top_count: 0,
+        weekly_medium_count: 0,
+        weekly_small_count: 0,
+        monthly_top_count: 0,
+        monthly_medium_count: 0,
+        monthly_small_count: 0
+      };
+
+      const { data, error } = await supabase
+        .from('users')
+        .update({ usage: resetUsage })
+        .eq('id', userId)
+        .select()
+        .single();
+
+      if (error) {
+        return res.status(500).json({ error: error.message });
+      }
+
+      return res.status(200).json({ success: true, user: data });
+    }
+
+    return res.status(400).json({ error: 'Invalid resource' });
+  }
+
   return res.status(405).json({ error: 'Method not allowed' });
 }

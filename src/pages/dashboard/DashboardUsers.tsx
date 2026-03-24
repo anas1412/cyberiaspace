@@ -4,7 +4,7 @@ import { useAuthStore } from '../../store/useAuthStore';
 import {
   Users, Search, Loader2, ChevronLeft, ChevronRight,
   Shield, UserX, Eye, Mail, Calendar,
-  Crown
+  Crown, RotateCcw
 } from 'lucide-react';
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
@@ -103,6 +103,39 @@ const DashboardUsers: React.FC<DashboardUsersProps> = ({ onBack }) => {
       }
     } catch (err) {
       console.error('Update user error:', err);
+    } finally {
+      setUpdatingId(null);
+    }
+  };
+
+  const handleResetQuota = async (userId: string) => {
+    if (!confirm('Reset all quota usage for this user? This will clear all daily, weekly, and monthly usage counters.')) return;
+    
+    const authUser = useAuthStore.getState().user;
+    if (!authUser?.id) return;
+    
+    setUpdatingId(userId);
+    try {
+      const encodedId = btoa(authUser.id);
+      const res = await fetch('/api/dashboard?route=resetQuota', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${encodedId}`
+        },
+        body: JSON.stringify({ userId })
+      });
+      
+      const data = await res.json();
+      if (res.ok) {
+        console.log('Quota reset successfully');
+      } else {
+        console.error('Reset quota error:', data.error);
+        alert(`Failed to reset quota: ${data.error}`);
+      }
+    } catch (err) {
+      console.error('Reset quota error:', err);
+      alert('Failed to reset quota');
     } finally {
       setUpdatingId(null);
     }
@@ -254,6 +287,14 @@ const DashboardUsers: React.FC<DashboardUsersProps> = ({ onBack }) => {
                           ) : (
                             user.is_admin === true ? <UserX className="w-4 h-4" /> : <Shield className="w-4 h-4" />
                           )}
+                        </button>
+                        <button
+                          disabled={updatingId === user.id}
+                          onClick={() => handleResetQuota(user.id)}
+                          className="p-2 rounded-lg bg-orange-500/10 hover:bg-orange-500/20 text-orange-400 transition-all"
+                          title="Reset Quota"
+                        >
+                          <RotateCcw className="w-4 h-4" />
                         </button>
                       </div>
                     </td>

@@ -40,6 +40,13 @@ async function handleExchange(req: VercelRequest, res: VercelResponse) {
         const client = new OAuth2Client(CLIENT_ID, CLIENT_SECRET, REDIRECT_URI);
         const { tokens } = await client.getToken(code);
 
+        console.log('[Google Auth] Tokens received:', { 
+            hasAccessToken: !!tokens.access_token, 
+            hasRefreshToken: !!tokens.refresh_token,
+            hasIdToken: !!tokens.id_token,
+            expiryDate: tokens.expiry_date
+        });
+
         if (!tokens.access_token || !tokens.id_token) {
             throw new Error('Failed to obtain tokens from Google');
         }
@@ -63,7 +70,8 @@ async function handleExchange(req: VercelRequest, res: VercelResponse) {
         console.log('[Google Auth] Existing user state:', JSON.stringify(existingUser));
 
         let profile;
-        const refreshSecret = existingUser?.refresh_secret || crypto.randomUUID();
+        // Always generate a fresh refreshSecret on each login for security
+        const refreshSecret = crypto.randomUUID();
 
         if (existingUser) {
             // Update ONLY the basic fields to prevent "Free reset" bug
@@ -78,8 +86,16 @@ async function handleExchange(req: VercelRequest, res: VercelResponse) {
                 is_admin: existingUser.is_admin
             };
 
+            // Always update refresh_token if Google provided one
             if (tokens.refresh_token) {
                 updatePayload.refresh_token = tokens.refresh_token;
+                console.log('[Google Auth] Got refresh_token from Google');
+            } else if (existingUser.refresh_token) {
+                // Preserve existing refresh_token if Google didn't return a new one
+                updatePayload.refresh_token = existingUser.refresh_token;
+                console.log('[Google Auth] No new refresh_token from Google, preserving existing');
+            } else {
+                console.log('[Google Auth] WARNING: No refresh_token available at all!');
             }
 
             console.log('[Google Auth] Update payload:', JSON.stringify(updatePayload));
@@ -90,7 +106,7 @@ async function handleExchange(req: VercelRequest, res: VercelResponse) {
             profile = updatedUser;
         } else {
             // Create the new profile with defaults
-            const { data: newUser, error: insertError } = await supabase.from('users').insert({
+            const insertData: any = {
                 id: userId,
                 email: payload.email,
                 name: payload.name,
@@ -100,10 +116,18 @@ async function handleExchange(req: VercelRequest, res: VercelResponse) {
                 settings: { theme: 'cyberia', autoSync: false },
                 usage: { ai_daily_count: 0, sync_thoughts: 0, last_ai_reset: new Date().toISOString().split('T')[0] },
                 updated_at: new Date().toISOString(),
-                refresh_token: tokens.refresh_token,
                 refresh_secret: refreshSecret,
                 is_admin: false
-            }).select().single();
+            };
+            
+            if (tokens.refresh_token) {
+                insertData.refresh_token = tokens.refresh_token;
+                console.log('[Google Auth] New user - got refresh_token from Google');
+            } else {
+                console.log('[Google Auth] WARNING: New user with no refresh_token!');
+            }
+
+            const { data: newUser, error: insertError } = await supabase.from('users').insert(insertData).select().single();
 
             if (insertError) throw insertError;
             profile = newUser;

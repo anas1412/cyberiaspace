@@ -377,6 +377,70 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       }
     }
 
+    case 'resetQuota': {
+      if (req.method !== 'POST') {
+        return res.status(405).json({ error: 'Method not allowed' });
+      }
+
+      const authHeader = req.headers.authorization?.replace('Bearer ', '');
+      
+      if (!authHeader) {
+        return res.status(401).json({ error: 'Unauthorized' });
+      }
+
+      let adminUserId: string;
+      try {
+        adminUserId = Buffer.from(authHeader, 'base64').toString('utf8');
+      } catch {
+        return res.status(400).json({ error: 'Invalid token format' });
+      }
+
+      if (!(await isAdmin(adminUserId))) {
+        return res.status(401).json({ error: 'Unauthorized' });
+      }
+
+      const { userId } = req.body;
+
+      if (!userId) {
+        return res.status(400).json({ error: 'Missing userId' });
+      }
+
+      const resetUsage = {
+        ai_daily_count: 0,
+        ai_top_count: 0,
+        ai_medium_count: 0,
+        ai_small_count: 0,
+        daily_anchor: null,
+        weekly_anchor: null,
+        monthly_anchor: null,
+        weekly_top_count: 0,
+        weekly_medium_count: 0,
+        weekly_small_count: 0,
+        monthly_top_count: 0,
+        monthly_medium_count: 0,
+        monthly_small_count: 0
+      };
+
+      try {
+        const { data: updatedUser, error } = await supabase
+          .from('users')
+          .update({ usage: resetUsage })
+          .eq('id', userId)
+          .select('id, email, name, usage')
+          .single();
+
+        if (error) {
+          console.error('[Dashboard ResetQuota] Error:', error.message);
+          return res.status(500).json({ error: 'Failed to reset quota' });
+        }
+
+        return res.status(200).json({ success: true, user: updatedUser });
+      } catch (err) {
+        console.error('[Dashboard ResetQuota] Error:', err);
+        return res.status(500).json({ error: 'Failed to reset quota' });
+      }
+    }
+
     case 'feedback': {
       const authHeader = req.headers.authorization?.replace('Bearer ', '');
       

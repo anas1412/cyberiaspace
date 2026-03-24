@@ -150,6 +150,21 @@ export interface AuthState {
   _migrationInProgress: boolean;
   setMigrationInProgress: (inProgress: boolean) => void;
 
+  // AI Model configuration (fetched from backend)
+  modelConfig: {
+    tiers: {
+      top: { name: string; quota: number; weeklyQuota: number; monthlyQuota: number; models: { id: string; name: string; desc: string }[] };
+      medium: { name: string; quota: number; weeklyQuota: number; monthlyQuota: number; models: { id: string; name: string; desc: string }[] };
+      small: { name: string; quota: number; weeklyQuota: number; monthlyQuota: number; models: { id: string; name: string; desc: string }[] };
+      free: { name: string; quota: number | null; weeklyQuota: number | null; monthlyQuota: number | null; models: { id: string; name: string; desc: string }[] };
+    };
+    config: {
+      free: { AI_DAILY_LIMIT: number; AI_TOP_LIMIT: number; AI_MEDIUM_LIMIT: number; AI_SMALL_LIMIT: number; AI_TOP_WEEKLY: number; AI_MEDIUM_WEEKLY: number; AI_SMALL_WEEKLY: number; AI_TOP_MONTHLY: number; AI_MEDIUM_MONTHLY: number; AI_SMALL_MONTHLY: number };
+      pro: { AI_DAILY_LIMIT: number; AI_TOP_LIMIT: number; AI_MEDIUM_LIMIT: number; AI_SMALL_LIMIT: number; AI_TOP_WEEKLY: number; AI_MEDIUM_WEEKLY: number; AI_SMALL_WEEKLY: number; AI_TOP_MONTHLY: number; AI_MEDIUM_MONTHLY: number; AI_SMALL_MONTHLY: number };
+    };
+  } | null;
+  fetchModelConfig: () => Promise<void>;
+
   setAuthenticatedUser: (user: User, token: string, refreshSecret?: string, scopes?: string[], expiresIn?: number) => Promise<void>;
   handleAuthCode: (code: string) => Promise<void>;
   requestServiceAccess: (scope: string, token: string) => void;
@@ -179,4 +194,19 @@ export interface AuthState {
   updateSettings: (settings: Partial<User['settings']>) => Promise<void>;
   cancelSubscription: () => void;
   setupRefreshInterval: () => void;
+  updateQuotaUsage: (usageData: {
+    daily_anchor?: string;
+    weekly_anchor?: string;
+    monthly_anchor?: string;
+    ai_daily_count?: number;
+    ai_top_count?: number;
+    ai_medium_count?: number;
+    ai_small_count?: number;
+    weekly_top_count?: number;
+    weekly_medium_count?: number;
+    weekly_small_count?: number;
+    monthly_top_count?: number;
+    monthly_medium_count?: number;
+    monthly_small_count?: number;
+  }) => void;
 }

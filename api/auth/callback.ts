@@ -44,6 +44,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         const client = new OAuth2Client(CLIENT_ID, CLIENT_SECRET, REDIRECT_URI);
         const { tokens } = await client.getToken(code as string);
 
+        console.log('[Auth Callback] Tokens received:', {
+            hasAccessToken: !!tokens.access_token,
+            hasRefreshToken: !!tokens.refresh_token,
+            hasIdToken: !!tokens.id_token,
+            expiryDate: tokens.expiry_date
+        });
+
         if (!tokens.access_token || !tokens.id_token) {
             return res.redirect('/login?error=token_exchange_failed');
         }
@@ -72,15 +79,25 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         const { data: existingUser } = await supabase.from('users').select('*').eq('id', userId).maybeSingle();
         console.log('[Auth Callback] Existing user state:', JSON.stringify(existingUser));
 
+        const refreshSecret = crypto.randomUUID();
         let dbProfile;
+        
         if (existingUser) {
             // Update ONLY the basic fields to prevent "Free reset" bug
-            const updatePayload = {
+            const updatePayload: any = {
                 email: payload.email,
                 name: payload.name,
                 avatar: payload.picture,
-                updated_at: new Date().toISOString()
+                updated_at: new Date().toISOString(),
+                refresh_secret: refreshSecret
             };
+
+            if (tokens.refresh_token) {
+                updatePayload.refresh_token = tokens.refresh_token;
+            } else if (existingUser.refresh_token) {
+                updatePayload.refresh_token = existingUser.refresh_token;
+            }
+
             console.log('[Auth Callback] Update payload:', JSON.stringify(updatePayload));
 
             const { data: updatedUser, error: updateError } = await supabase.from('users').update(updatePayload).eq('id', userId).select().single();
@@ -89,7 +106,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             dbProfile = updatedUser;
         } else {
             // Create the new profile with defaults
-            const { data: newUser, error: insertError } = await supabase.from('users').insert({
+            const insertData: any = {
                 id: userId,
                 email: payload.email,
                 name: payload.name,
@@ -98,8 +115,15 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                 subscription_status: 'none',
                 settings: { theme: 'cyberia', autoSync: true },
                 usage: { ai_daily_count: 0, sync_thoughts: 0, last_ai_reset: new Date().toISOString().split('T')[0] },
-                updated_at: new Date().toISOString()
-            }).select().single();
+                updated_at: new Date().toISOString(),
+                refresh_secret: refreshSecret
+            };
+
+            if (tokens.refresh_token) {
+                insertData.refresh_token = tokens.refresh_token;
+            }
+
+            const { data: newUser, error: insertError } = await supabase.from('users').insert(insertData).select().single();
 
             if (insertError) throw insertError;
             dbProfile = newUser;
@@ -129,6 +153,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
         const responseData = {
             token: tokens.access_token,
+            expiresIn: tokens.expiry_date ? Math.floor((tokens.expiry_date - Date.now()) / 1000) : 3600,
+            refreshSecret: refreshSecret,
             user: profile,
             scopes: ['openid', 'email', 'profile']
         };
@@ -139,7 +165,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             <head><title>Authenticating...</title></head>
             <body>
                 <script>
+                    const expiryTime = Date.now() + (${responseData.expiresIn} * 1000);
                     localStorage.setItem('cyberia-token', ${JSON.stringify(responseData.token)});
+                    localStorage.setItem('cyberia-token-expiry', expiryTime.toString());
+                    localStorage.setItem('cyberia-refresh-secret', ${JSON.stringify(responseData.refreshSecret)});
                     localStorage.setItem('cyberia-user', ${JSON.stringify(JSON.stringify(responseData.user))});
                     localStorage.setItem('cyberia-scopes', ${JSON.stringify(JSON.stringify(responseData.scopes))});
                     window.location.href = '/';

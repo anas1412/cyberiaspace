@@ -1,11 +1,6 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { createClient } from '@supabase/supabase-js';
-const BASIC_MODELS = ['openrouter/free'];
-const PREMIUM_MODELS = ['openrouter/free'];
-const AI_PLAN_CONFIG = {
-  free: { AI_DAILY_LIMIT: 15 },
-  pro: { AI_DAILY_LIMIT: 60 }
-};
+import { TOP_MODELS, MEDIUM_MODELS, SMALL_MODELS, FREE_MODELS, MODEL_TIERS } from './models';
 
 
 
@@ -628,14 +623,57 @@ function convertToBatchFormat(batch: any[]): { toolName: string; args: any } | n
   return null;
 }
 
+// === CACHE FOR PERFORMANCE ===
+const tokenCache = new Map<string, { userId: string; expiresAt: number }>();
+const profileCache = new Map<string, { profile: any; expiresAt: number }>();
+const CACHE_TTL_MS = 60 * 1000; // 60 seconds cache
+
+function getCachedUserId(token: string): string | null {
+  const cached = tokenCache.get(token);
+  if (cached && cached.expiresAt > Date.now()) {
+    return cached.userId;
+  }
+  return null;
+}
+
+function setCachedUserId(token: string, userId: string): void {
+  tokenCache.set(token, { userId, expiresAt: Date.now() + CACHE_TTL_MS });
+}
+
+function getCachedProfile(userId: string): any | null {
+  const cached = profileCache.get(userId);
+  if (cached && cached.expiresAt > Date.now()) {
+    return cached.profile;
+  }
+  return null;
+}
+
+function setCachedProfile(userId: string, profile: any): void {
+  profileCache.set(userId, { profile, expiresAt: Date.now() + CACHE_TTL_MS });
+}
+
 async function getUserIdFromAuth(authHeader: string | undefined): Promise<string | null> {
   if (!authHeader?.startsWith('Bearer ')) return null;
   const token = authHeader.split(' ')[1];
+  
+  // Check cache first
+  const cachedUserId = getCachedUserId(token);
+  if (cachedUserId) {
+    return cachedUserId;
+  }
+  
   try {
     const tokenInfo = await fetch(`https://www.googleapis.com/oauth2/v3/tokeninfo?access_token=${token}`);
     if (!tokenInfo.ok) return null;
     const info = await tokenInfo.json() as any;
-    return info.sub || info.user_id;
+    const userId = info.sub || info.user_id;
+    
+    // Cache the result
+    if (userId) {
+      setCachedUserId(token, userId);
+    }
+    
+    return userId;
   } catch (e) {
     return null;
   }
@@ -740,6 +778,20 @@ async function* streamOpenRouter(
   }
 }
 
+// Helper to get Monday of current week (local time)
+function getWeekAnchor(date: Date): string {
+  const d = new Date(date);
+  const day = d.getDay();
+  const diff = d.getDate() - day + (day === 0 ? -6 : 1); // Monday
+  const monday = new Date(d.setDate(diff));
+  return monday.toISOString().split('T')[0];
+}
+
+// Helper to get month anchor (local time)
+function getMonthAnchor(date: Date): string {
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+}
+
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   const userId = await getUserIdFromAuth(req.headers.authorization);
   if (!userId) return res.status(401).json({ error: 'Unauthorized' });
@@ -748,34 +800,174 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(500).json({ error: 'OpenRouter API key not configured' });
   }
 
-  const today = new Date().toISOString().split('T')[0];
+  const now = new Date();
+  const today = now.toLocaleDateString('en-CA'); // YYYY-MM-DD local
+  const weekAnchor = getWeekAnchor(now);
+  const monthAnchor = getMonthAnchor(now);
 
-  const { data: profile, error: profileError } = await supabase!
-    .from('users')
-    .select('*')
-    .eq('id', userId)
-    .maybeSingle();
+  // Check profile cache first
+  let profile = getCachedProfile(userId);
+  
+  if (!profile) {
+    const { data: profileData, error: profileError } = await supabase!
+      .from('users')
+      .select('*')
+      .eq('id', userId)
+      .maybeSingle();
 
-  if (profileError || !profile) {
-    return res.status(403).json({ error: 'User profile not initialized' });
+    if (profileError || !profileData) {
+      return res.status(403).json({ error: 'User profile not initialized' });
+    }
+    
+    profile = profileData;
+    setCachedProfile(userId, profile);
   }
 
-  let usage = profile.usage || { ai_daily_count: 0, sync_thoughts: 0, last_ai_reset: '' };
+  // Initialize usage with all fields (backwards compatible)
+  let usage: any = profile.usage || { 
+    ai_daily_count: 0, 
+    ai_top_count: 0,
+    ai_medium_count: 0,
+    ai_small_count: 0,
+    sync_thoughts: 0, 
+    daily_anchor: '', 
+    weekly_anchor: '',
+    monthly_anchor: '',
+    weekly_top_count: 0,
+    weekly_medium_count: 0,
+    weekly_small_count: 0,
+    monthly_top_count: 0,
+    monthly_medium_count: 0,
+    monthly_small_count: 0,
+  };
 
-  if (usage.last_ai_reset !== today) {
+  // Handle migration from old last_ai_reset field
+  if (usage.last_ai_reset && !usage.daily_anchor) {
+    usage.daily_anchor = usage.last_ai_reset;
+    delete usage.last_ai_reset;
+  }
+
+  // === RESET LOGIC ===
+  let dailyReset = false;
+  let weeklyReset = false;
+  let monthlyReset = false;
+
+  // Daily reset
+  if (usage.daily_anchor !== today) {
+    console.log('[Oracle] Daily reset triggered - old:', usage.daily_anchor, 'new:', today);
     usage.ai_daily_count = 0;
-    usage.last_ai_reset = today;
-    await supabase!.from('users').update({ usage }).eq('id', userId);
+    usage.ai_top_count = 0;
+    usage.ai_medium_count = 0;
+    usage.ai_small_count = 0;
+    usage.daily_anchor = today;
+    dailyReset = true;
   }
+
+  // Weekly reset - only if monthly NOT exhausted (prevents resetting exhausted weekly)
+  const monthlyNotExhausted = (plan: string) => {
+    if (plan !== 'pro') return true;
+    const mTop = usage.monthly_top_count || 0;
+    const mMedium = usage.monthly_medium_count || 0;
+    const mSmall = usage.monthly_small_count || 0;
+    return mTop < MODEL_TIERS.top.monthlyQuota || 
+           mMedium < MODEL_TIERS.medium.monthlyQuota ||
+           mSmall < MODEL_TIERS.small.monthlyQuota;
+  };
 
   const plan = profile.plan || 'free';
-  const config = AI_PLAN_CONFIG[plan as keyof typeof AI_PLAN_CONFIG] || AI_PLAN_CONFIG.free;
-  const limit = config.AI_DAILY_LIMIT || 15;
+  
+  if (usage.weekly_anchor !== weekAnchor) {
+    // Only reset weekly if monthly is not exhausted
+    if (monthlyNotExhausted(plan)) {
+      console.log('[Oracle] Weekly reset triggered - old:', usage.weekly_anchor, 'new:', weekAnchor);
+      usage.weekly_top_count = 0;
+      usage.weekly_medium_count = 0;
+      usage.weekly_small_count = 0;
+      usage.weekly_anchor = weekAnchor;
+      weeklyReset = true;
+    } else {
+      console.log('[Oracle] Weekly reset SKIPPED - monthly exhausted');
+    }
+  }
 
+  // Monthly reset
+  if (usage.monthly_anchor !== monthAnchor) {
+    console.log('[Oracle] Monthly reset triggered - old:', usage.monthly_anchor, 'new:', monthAnchor);
+    usage.monthly_top_count = 0;
+    usage.monthly_medium_count = 0;
+    usage.monthly_small_count = 0;
+    usage.monthly_anchor = monthAnchor;
+    monthlyReset = true;
+  }
+
+  // Persist usage changes and invalidate cache
+  if (dailyReset || weeklyReset || monthlyReset) {
+    await supabase!.from('users').update({ usage }).eq('id', userId);
+    profileCache.delete(userId); // Invalidate cache after update
+  }
+
+  // Build plan limits from MODEL_TIERS (single source of truth)
+  let planLimits: any;
+  if (plan === 'pro') {
+    planLimits = {
+      AI_DAILY_LIMIT: 10000,
+      AI_TOP_LIMIT: MODEL_TIERS.top.quota,
+      AI_MEDIUM_LIMIT: MODEL_TIERS.medium.quota,
+      AI_SMALL_LIMIT: MODEL_TIERS.small.quota,
+      AI_TOP_WEEKLY: MODEL_TIERS.top.weeklyQuota,
+      AI_MEDIUM_WEEKLY: MODEL_TIERS.medium.weeklyQuota,
+      AI_SMALL_WEEKLY: MODEL_TIERS.small.weeklyQuota,
+      AI_TOP_MONTHLY: MODEL_TIERS.top.monthlyQuota,
+      AI_MEDIUM_MONTHLY: MODEL_TIERS.medium.monthlyQuota,
+      AI_SMALL_MONTHLY: MODEL_TIERS.small.monthlyQuota,
+    };
+  } else {
+    // Free users have unlimited via free OpenRouter models
+    planLimits = {
+      AI_DAILY_LIMIT: 10000, // essentially unlimited
+      AI_TOP_LIMIT: 0,
+      AI_MEDIUM_LIMIT: 0,
+      AI_SMALL_LIMIT: 0,
+      AI_TOP_WEEKLY: 0,
+      AI_MEDIUM_WEEKLY: 0,
+      AI_SMALL_WEEKLY: 0,
+      AI_TOP_MONTHLY: 0,
+      AI_MEDIUM_MONTHLY: 0,
+      AI_SMALL_MONTHLY: 0,
+    };
+  }
+  
   if (req.method === 'GET') {
+    console.log('[Oracle] GET returning - daily:', usage.ai_daily_count, 'weekly:', usage.weekly_top_count, 'monthly:', usage.monthly_top_count);
     return res.status(200).json({ 
-      count: usage.ai_daily_count, 
-      limit 
+      // Daily
+      count: usage.ai_daily_count,
+      top_count: usage.ai_top_count || 0,
+      medium_count: usage.ai_medium_count || 0,
+      small_count: usage.ai_small_count || 0,
+      // Weekly
+      weekly_top_count: usage.weekly_top_count || 0,
+      weekly_medium_count: usage.weekly_medium_count || 0,
+      weekly_small_count: usage.weekly_small_count || 0,
+      // Monthly
+      monthly_top_count: usage.monthly_top_count || 0,
+      monthly_medium_count: usage.monthly_medium_count || 0,
+      monthly_small_count: usage.monthly_small_count || 0,
+      // Anchors
+      daily_anchor: usage.daily_anchor || today,
+      weekly_anchor: usage.weekly_anchor || weekAnchor,
+      monthly_anchor: usage.monthly_anchor || monthAnchor,
+      // Limits
+      limit: planLimits.AI_DAILY_LIMIT,
+      top_limit: planLimits.AI_TOP_LIMIT,
+      medium_limit: planLimits.AI_MEDIUM_LIMIT,
+      small_limit: planLimits.AI_SMALL_LIMIT,
+      weekly_top_limit: planLimits.AI_TOP_WEEKLY,
+      weekly_medium_limit: planLimits.AI_MEDIUM_WEEKLY,
+      weekly_small_limit: planLimits.AI_SMALL_WEEKLY,
+      monthly_top_limit: planLimits.AI_TOP_MONTHLY,
+      monthly_medium_limit: planLimits.AI_MEDIUM_MONTHLY,
+      monthly_small_limit: planLimits.AI_SMALL_MONTHLY,
     });
   }
 
@@ -784,29 +976,136 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   try {
-    const { messages = [], context = '', mode = 'chat' } = req.body || {};
+    const { messages = [], context = '', mode = 'chat', model: requestedModel } = req.body || {};
 
-    if (usage.ai_daily_count >= limit) {
-      return res.status(429).json({ 
-        error: "Daily limit reached", 
-        message: "You've reached your daily AI message limit. Upgrade to Pro for unlimited access!",
-        usage: usage.ai_daily_count,
-        limit
-      });
+    // Helper to check if a tier is available across all periods
+    const isTierAvailable = (tier: 'top' | 'medium' | 'small') => {
+      const dailyLimit = tier === 'top' ? planLimits.AI_TOP_LIMIT : tier === 'medium' ? planLimits.AI_MEDIUM_LIMIT : planLimits.AI_SMALL_LIMIT;
+      const weeklyLimit = tier === 'top' ? planLimits.AI_TOP_WEEKLY : tier === 'medium' ? planLimits.AI_MEDIUM_WEEKLY : planLimits.AI_SMALL_WEEKLY;
+      const monthlyLimit = tier === 'top' ? planLimits.AI_TOP_MONTHLY : tier === 'medium' ? planLimits.AI_MEDIUM_MONTHLY : planLimits.AI_SMALL_MONTHLY;
+      
+      const dailyUsed = tier === 'top' ? (usage.ai_top_count || 0) : tier === 'medium' ? (usage.ai_medium_count || 0) : (usage.ai_small_count || 0);
+      const weeklyUsed = tier === 'top' ? (usage.weekly_top_count || 0) : tier === 'medium' ? (usage.weekly_medium_count || 0) : (usage.weekly_small_count || 0);
+      const monthlyUsed = tier === 'top' ? (usage.monthly_top_count || 0) : tier === 'medium' ? (usage.monthly_medium_count || 0) : (usage.monthly_small_count || 0);
+      
+      const dailyOk = dailyUsed < dailyLimit;
+      const weeklyOk = weeklyUsed < weeklyLimit;
+      const monthlyOk = monthlyUsed < monthlyLimit;
+      
+      // Must have availability in at least one period
+      return dailyOk || weeklyOk || monthlyOk;
+    };
+
+    // WATERFALL LOGIC - checks all periods (daily, weekly, monthly)
+    let selectedModel = requestedModel || (plan === 'pro' ? MEDIUM_MODELS[0] : FREE_MODELS[0]);
+    let tier: 'top' | 'medium' | 'small' | 'free' = 'free';
+    let autoSwitch = false;
+
+    if (plan === 'pro') {
+      // Determine tier of requested model or default to medium
+      if (TOP_MODELS.includes(selectedModel)) {
+        if (isTierAvailable('top')) {
+          tier = 'top';
+        } else if (isTierAvailable('medium')) {
+          tier = 'medium';
+          autoSwitch = true;
+          selectedModel = MEDIUM_MODELS[0]; // Auto-switch to medium
+        } else if (isTierAvailable('small')) {
+          tier = 'small';
+          autoSwitch = true;
+          selectedModel = SMALL_MODELS[0]; // Auto-switch to small
+        } else {
+          tier = 'free';
+          autoSwitch = true;
+          selectedModel = FREE_MODELS[0]; // Auto-switch to free
+        }
+      } else if (MEDIUM_MODELS.includes(selectedModel)) {
+        if (isTierAvailable('medium')) {
+          tier = 'medium';
+        } else if (isTierAvailable('small')) {
+          tier = 'small';
+          autoSwitch = true;
+          selectedModel = SMALL_MODELS[0]; // Auto-switch to small
+        } else {
+          tier = 'free';
+          autoSwitch = true;
+          selectedModel = FREE_MODELS[0]; // Auto-switch to free
+        }
+      } else if (SMALL_MODELS.includes(selectedModel)) {
+        if (isTierAvailable('small')) {
+          tier = 'small';
+        } else {
+          tier = 'free';
+          autoSwitch = true;
+          selectedModel = FREE_MODELS[0]; // Auto-switch to free
+        }
+      } else {
+        tier = 'free';
+      }
+    } else {
+      // Free plan only has free tier - unlimited via free OpenRouter models
+      tier = 'free';
+      selectedModel = FREE_MODELS.includes(selectedModel) ? selectedModel : FREE_MODELS[0];
+      
+      // Free users now have unlimited access - no blocking, just track usage
     }
 
-    usage.ai_daily_count += 1;
-    await supabase!.from('users').update({ usage }).eq('id', userId);
+    // Increment counters for all periods (even free users for analytics)
+    usage.ai_daily_count = (usage.ai_daily_count || 0) + 1;
+    if (tier === 'top') {
+      usage.ai_top_count = (usage.ai_top_count || 0) + 1;
+      usage.weekly_top_count = (usage.weekly_top_count || 0) + 1;
+      usage.monthly_top_count = (usage.monthly_top_count || 0) + 1;
+    } else if (tier === 'medium') {
+      usage.ai_medium_count = (usage.ai_medium_count || 0) + 1;
+      usage.weekly_medium_count = (usage.weekly_medium_count || 0) + 1;
+      usage.monthly_medium_count = (usage.monthly_medium_count || 0) + 1;
+    } else if (tier === 'small') {
+      usage.ai_small_count = (usage.ai_small_count || 0) + 1;
+      usage.weekly_small_count = (usage.weekly_small_count || 0) + 1;
+      usage.monthly_small_count = (usage.monthly_small_count || 0) + 1;
+    }
 
-    const model = plan === 'pro' ? PREMIUM_MODELS[0] : BASIC_MODELS[0];
+    await supabase!.from('users').update({ usage }).eq('id', userId);
+    profileCache.delete(userId); // Invalidate cache after update
+
     const filteredTools = getFilteredTools(plan, mode);
 
-    
     res.setHeader('Content-Type', 'text/event-stream');
     res.setHeader('Cache-Control', 'no-cache');
     res.setHeader('Connection', 'keep-alive');
 
-    res.write(`data: ${JSON.stringify({ type: 'usage', count: usage.ai_daily_count, limit })}\n\n`);
+    res.write(`data: ${JSON.stringify({ 
+      type: 'usage', 
+      // Daily
+      count: usage.ai_daily_count, 
+      top_count: usage.ai_top_count,
+      medium_count: usage.ai_medium_count,
+      small_count: usage.ai_small_count,
+      // Weekly
+      weekly_top_count: usage.weekly_top_count,
+      weekly_medium_count: usage.weekly_medium_count,
+      weekly_small_count: usage.weekly_small_count,
+      // Monthly
+      monthly_top_count: usage.monthly_top_count,
+      monthly_medium_count: usage.monthly_medium_count,
+      monthly_small_count: usage.monthly_small_count,
+      // Info
+      tier,
+      model: selectedModel,
+      autoSwitch,
+      // Limits
+      limit: planLimits.AI_DAILY_LIMIT,
+      top_limit: planLimits.AI_TOP_LIMIT,
+      medium_limit: planLimits.AI_MEDIUM_LIMIT,
+      small_limit: planLimits.AI_SMALL_LIMIT,
+      weekly_top_limit: planLimits.AI_TOP_WEEKLY,
+      weekly_medium_limit: planLimits.AI_MEDIUM_WEEKLY,
+      weekly_small_limit: planLimits.AI_SMALL_WEEKLY,
+      monthly_top_limit: planLimits.AI_TOP_MONTHLY,
+      monthly_medium_limit: planLimits.AI_MEDIUM_MONTHLY,
+      monthly_small_limit: planLimits.AI_SMALL_MONTHLY,
+    })}\n\n`);
 
     async function runChat(currentMessages: any[], currentModel: string, currentTools: any[], mode: string, personality?: string, isRetry = false) {
       const sanitizedMessages = currentMessages.map((m: any) => {
@@ -982,15 +1281,15 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       } catch (err: any) {
         console.error(`[OpenRouter API] Model ${currentModel} failed:`, err.message);
         const isSizeError = err.message && err.message.includes('tokens');
-        if (!isRetry && isSizeError && currentModel !== BASIC_MODELS[0]) {
+        if (!isRetry && isSizeError && currentModel !== FREE_MODELS[0]) {
           res.write(`data: ${JSON.stringify({ type: 'text', content: "\n\n*Optimizing for large dataset...*\n\n" })}\n\n`);
-          return await runChat(currentMessages, BASIC_MODELS[0], filteredTools, mode, personality, true);
+          return await runChat(currentMessages, FREE_MODELS[0], filteredTools, mode, personality, true);
         }
         throw err;
       }
     }
 
-    await runChat(messages, model, filteredTools, mode, profile.settings.personality);
+    await runChat(messages, selectedModel, filteredTools, mode, profile.settings.personality);
 
     res.write('data: [DONE]\n\n');
     res.end();

@@ -12,9 +12,24 @@ export interface User {
   polarCustomerId?: string | null;
   paymentProvider?: 'polar' | 'flouci';
   usage: {
+    // Daily counters
     ai_daily_count: number;
+    ai_top_count: number;
+    ai_medium_count: number;
+    ai_small_count: number;
     sync_thoughts: number;
-    last_ai_reset: string;
+    // Anchors (local date strings)
+    daily_anchor: string;
+    weekly_anchor: string;
+    monthly_anchor: string;
+    // Weekly counters
+    weekly_top_count: number;
+    weekly_medium_count: number;
+    weekly_small_count: number;
+    // Monthly counters
+    monthly_top_count: number;
+    monthly_medium_count: number;
+    monthly_small_count: number;
   };
   settings: {
     // Account-wide settings only
@@ -32,6 +47,17 @@ export interface PlanLimits {
   MAX_STORAGE_MB: number;
   AI_ENABLED: boolean;
   AI_DAILY_LIMIT?: number;
+  AI_TOP_LIMIT?: number;
+  AI_MEDIUM_LIMIT?: number;
+  AI_SMALL_LIMIT?: number;
+  // Weekly limits
+  AI_TOP_WEEKLY?: number;
+  AI_MEDIUM_WEEKLY?: number;
+  AI_SMALL_WEEKLY?: number;
+  // Monthly limits
+  AI_TOP_MONTHLY?: number;
+  AI_MEDIUM_MONTHLY?: number;
+  AI_SMALL_MONTHLY?: number;
   THEMES_ENABLED: string[];
   PRICE?: {
     monthly: { usd: number; tnd: number };
@@ -47,6 +73,15 @@ export const PLAN_CONFIG: Record<SubscriptionPlan, PlanLimits> = {
     MAX_STORAGE_MB: 20,
     AI_ENABLED: true,
     AI_DAILY_LIMIT: 15,
+    AI_TOP_LIMIT: 0,
+    AI_MEDIUM_LIMIT: 0,
+    AI_SMALL_LIMIT: 0,
+    AI_TOP_WEEKLY: 0,
+    AI_MEDIUM_WEEKLY: 0,
+    AI_SMALL_WEEKLY: 0,
+    AI_TOP_MONTHLY: 0,
+    AI_MEDIUM_MONTHLY: 0,
+    AI_SMALL_MONTHLY: 0,
     THEMES_ENABLED: ['cyberia'],
   },
   pro: {
@@ -55,7 +90,16 @@ export const PLAN_CONFIG: Record<SubscriptionPlan, PlanLimits> = {
     MAX_CLOUD_THOUGHTS: 2000,
     MAX_STORAGE_MB: 200,
     AI_ENABLED: true,
-    AI_DAILY_LIMIT: 40,
+    AI_DAILY_LIMIT: 10000, // Legacy - AI limits now fetched from /api/models
+    AI_TOP_LIMIT: 0,       // Legacy - now fetched from /api/models
+    AI_MEDIUM_LIMIT: 0,    // Legacy - now fetched from /api/models
+    AI_SMALL_LIMIT: 0,     // Legacy - now fetched from /api/models
+    AI_TOP_WEEKLY: 0,      // Legacy - now fetched from /api/models
+    AI_MEDIUM_WEEKLY: 0,   // Legacy - now fetched from /api/models
+    AI_SMALL_WEEKLY: 0,    // Legacy - now fetched from /api/models
+    AI_TOP_MONTHLY: 0,     // Legacy - now fetched from /api/models
+    AI_MEDIUM_MONTHLY: 0,  // Legacy - now fetched from /api/models
+    AI_SMALL_MONTHLY: 0,   // Legacy - now fetched from /api/models
     THEMES_ENABLED: ['cyberia', 'sea', 'forest', 'rain', 'sakura'],
     PRICE: {
       monthly: { usd: 8, tnd: 19 },
@@ -98,37 +142,6 @@ const getDefaultModel = () => {
     || 'openrouter/free';
 };
 export const DEFAULT_MODEL = getDefaultModel();
-
-export const BASIC_MODELS = [
-  { id: 'openrouter/free', name: 'Random Free Model', desc: 'Versatile & balanced performance' },
-  { id: 'stepfun/step-3.5-flash:free', name: 'Step 3.5 Flash', desc: 'Ultra-low latency processing' },
-  { id: 'minimax/minimax-m2.5:free', name: 'MiniMax 2.5', desc: 'Optimized for high-speed chat' },
-  { id: 'nvidia/nemotron-3-super-120b-a12b:free', name: 'Nemotron 3 Super', desc: 'High-parameter reasoning power' },
-  { id: 'arcee-ai/trinity-large-preview:free', name: 'Trinity Large Preview', desc: 'Broad knowledge & complex tasks' },
-];
-
-export const PREMIUM_MODELS = [
-  { id: 'openrouter/free', name: 'Random Free Model', desc: 'Versatile & balanced performance' },
-  { id: 'stepfun/step-3.5-flash:free', name: 'Step 3.5 Flash', desc: 'Ultra-low latency processing' },
-  { id: 'minimax/minimax-m2.5:free', name: 'MiniMax 2.5', desc: 'Optimized for high-speed chat' },
-  { id: 'nvidia/nemotron-3-super-120b-a12b:free', name: 'Nemotron 3 Super', desc: 'High-parameter reasoning power' },
-  { id: 'arcee-ai/trinity-large-preview:free', name: 'Trinity Large Preview', desc: 'Broad knowledge & complex tasks' },
-  //{ id: 'openrouter/auto', name: 'Smarter Models First', desc: 'Auto-routes to the best logic available' },
-  //{ id: 'anthropic/claude-opus-4.6', name: 'Claude Opus 4.6', desc: 'Peak reasoning & 1M context' },
-  //{ id: 'anthropic/claude-sonnet-4.6', name: 'Claude Sonnet 4.6', desc: 'Elite speed-to-intelligence ratio' },
-  //{ id: 'openai/gpt-5.4', name: 'ChatGPT 5.4', desc: 'Master of agentic & professional tasks' },
-  //{ id: 'openai/gpt-5-nano', name: 'ChatGPT 5 Nano', desc: 'Smart reasoning in a compact frame' },
-  //{ id: 'google/gemini-3.1-pro-preview', name: 'Gemini 3.1 Pro Preview', desc: 'Best for massive data & multimodal' },
-  //{ id: 'google/gemini-3-flash-preview', name: 'Gemini 3 Flash Preview', desc: 'High-speed intelligence for rapid chat' },
-  //{ id: 'google/gemini-3.1-flash-lite-preview', name: 'Gemini 3.1 Flash Lite Preview', desc: 'Instant responses for simple logic' },
-];
-
-export type ModelOption = typeof BASIC_MODELS[number];
-
-export const AVAILABLE_MODELS = [
-  ...BASIC_MODELS,
-  ...PREMIUM_MODELS,
-];
 
 export const VERIFICATION_MODEL = [
 /*   'gemma-3-27b-it', */
