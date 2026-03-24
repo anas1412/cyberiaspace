@@ -43,8 +43,8 @@ const LoginPage: React.FC = () => {
     const CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID;
     
     const REDIRECT_URI = isLocalhost 
-      ? `${window.location.origin}/api/auth/callback`
-      : 'https://app.cyberia.tn/api/auth/callback';
+      ? `${window.location.origin}/api/auth?route=callback`
+      : 'https://app.cyberia.tn/api/auth?route=callback';
     
     console.log('[Auth] Starting flow with REDIRECT_URI:', REDIRECT_URI);
 
