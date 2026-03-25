@@ -618,7 +618,7 @@ const Homepage: React.FC = () => {
               <div className="space-y-4 mb-10 flex-1">
                 <PricingFeature text={`Limited Spaces with limited Thoughts per Space`} />
                 <PricingFeature text={`Rate limited AI usage with basic AI models`} />
-                <PricingFeature text={`Very Limited Storage with limited size`} />
+                <PricingFeature text={`Very Limited Storage with limited upload size`} />
                 <PricingFeature text={`Default theme`} />
                 <PricingFeature text="Limited Support" />
               </div>
