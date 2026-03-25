@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { MousePointer2, Layout, Database, ArrowRight, Menu, X, Cpu, Check, Compass, Rocket, Send, Loader2, CheckCircle, Shield, ChevronDown } from 'lucide-react';
+import { MousePointer2, Layout, Database, ArrowRight, Menu, X, Cpu, Check, Compass, Rocket, Send, Loader2, CheckCircle, Shield, ChevronDown, MessageCircle } from 'lucide-react';
 import { PLAN_CONFIG } from '../constants';
 import { useAuthStore } from '../store/useAuthStore';
 import { resolvePricingLocation } from '../utils/pricing';
@@ -180,9 +180,6 @@ const FeatureVisual: React.FC<{ activeFeature: number }> = React.memo(({ activeF
   );
 });
 
-
-
-
 const Homepage: React.FC = () => {
   const { user } = useAuthStore();
   const [activeFeature, setActiveFeature] = useState(0);
@@ -190,6 +187,7 @@ const Homepage: React.FC = () => {
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [location, setLocation] = useState<{ country: string; currency: string; isLocalPricing: boolean } | null>(null);
+  const [discordData, setDiscordData] = useState<{ member_count: number; presence_count: number; instant_invite: string } | null>(null);
   
   const [contactName, setContactName] = useState('');
   const [contactEmail, setContactEmail] = useState('');
@@ -236,6 +234,22 @@ const Homepage: React.FC = () => {
         setLocation(resolvePricingLocation(null, user));
       });
   }, [user]);
+
+  useEffect(() => {
+    const INVITE_CODE = '6DRsnY3ajE'; 
+    fetch(`https://discord.com/api/v10/invites/${INVITE_CODE}?with_counts=true`)
+      .then(res => res.json())
+      .then(data => {
+        if (data.approximate_member_count) {
+          setDiscordData({
+            member_count: data.approximate_member_count,
+            presence_count: data.approximate_presence_count,
+            instant_invite: `https://discord.gg/${data.code}`
+          });
+        }
+      })
+      .catch(() => {});
+  }, []);
 
   const scrollToSection = (id: string) => {
     const element = document.getElementById(id);
@@ -538,64 +552,45 @@ const Homepage: React.FC = () => {
         </div>
       </section>
 
-      {/* Testimonials Section */}
+      {/* Community / Discord Section */}
       <section className="py-24 px-6 relative z-10">
-        <div className="max-w-6xl mx-auto">
-          <div className="text-center mb-16">
-            <h2 className="text-4xl md:text-5xl font-black tracking-tighter uppercase mb-6">
-              What People Are <span style={{ color: 'var(--accent)' }}>Saying</span>
+        <div className="max-w-3xl mx-auto text-center">
+          <div className="glass rounded-3xl p-10 border border-white/10">
+            <div className="w-16 h-16 rounded-2xl bg-[var(--accent)]/20 flex items-center justify-center mx-auto mb-6">
+              <MessageCircle className="w-8 h-8 text-[var(--accent)]" />
+            </div>
+            
+            <h2 className="text-3xl md:text-4xl font-black text-white uppercase tracking-tight mb-4">
+              Join the <span style={{ color: 'var(--accent)' }}>Community</span>
             </h2>
-            <p className="text-slate-400 font-medium">See what the community is saying after trying our product</p>
-          </div>
-          
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {/* Testimonial 1 */}
-            <div className="glass rounded-2xl p-6 border border-white/5">
-              <p className="text-sm text-slate-300 leading-relaxed mb-6">
-                "Finally, a tool that ended my procrastination. It's fun moving things around while organizing my tasks."
-              </p>
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-full bg-[var(--accent)]/20 flex items-center justify-center">
-                  <span className="text-[var(--accent)] font-black text-sm">FB</span>
-                </div>
-                <div>
-                  <p className="text-white text-xs font-bold uppercase tracking-wide">Farouk B.</p>
-                  <p className="text-slate-500 text-[10px] font-medium uppercase tracking-wider">University Student</p>
-                </div>
-              </div>
-            </div>
+            
+            <p className="text-slate-400 font-medium mb-8 max-w-lg mx-auto">
+              Help shape Cyberia Space. Share feedback, report bugs, and connect with other thinkers building the future of thinking.
+            </p>
 
-            {/* Testimonial 2 */}
-            <div className="glass rounded-2xl p-6 border border-white/5">
-              <p className="text-sm text-slate-300 leading-relaxed mb-6">
-                "The AI actually sees and analyzes my data. It finds connections I missed and helps me summarize and generate new insights from hundreds of documents."
-              </p>
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-full bg-[var(--accent)]/20 flex items-center justify-center">
-                  <span className="text-[var(--accent)] font-black text-sm">NG</span>
+            {discordData && (
+              <div className="flex items-center justify-center gap-8 mb-6">
+                <div className="text-center">
+                  <p className="text-2xl font-black text-white">{discordData.member_count.toLocaleString()}</p>
+                  <p className="text-[10px] font-bold uppercase tracking-widest text-slate-500">Members</p>
                 </div>
-                <div>
-                  <p className="text-white text-xs font-bold uppercase tracking-wide">Nidhal G.</p>
-                  <p className="text-slate-500 text-[10px] font-medium uppercase tracking-wider">Sofwatre Engineer</p>
+                <div className="w-px h-10 bg-white/10" />
+                <div className="text-center">
+                  <p className="text-2xl font-black text-green-400">{discordData.presence_count.toLocaleString()}</p>
+                  <p className="text-[10px] font-bold uppercase tracking-widest text-slate-500">Online Now</p>
                 </div>
               </div>
-            </div>
-
-            {/* Testimonial 3 */}
-            <div className="glass rounded-2xl p-6 border border-white/5">
-              <p className="text-sm text-slate-300 leading-relaxed mb-6">
-                "I've tried Notion and Obsidian. None of them clicked. Cyberia Space feels so simple and unique."
-              </p>
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-full bg-[var(--accent)]/20 flex items-center justify-center">
-                  <span className="text-[var(--accent)] font-black text-sm">AK</span>
-                </div>
-                <div>
-                  <p className="text-white text-xs font-bold uppercase tracking-wide">Alex K.</p>
-                  <p className="text-slate-500 text-[10px] font-medium uppercase tracking-wider">Freelancer</p>
-                </div>
-              </div>
-            </div>
+            )}
+            
+            <a 
+              href={discordData?.instant_invite || "https://discord.gg/YOUR_INVITE_CODE"} 
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-3 px-8 py-4 bg-[var(--accent)] hover:bg-[var(--accent-secondary)] text-white rounded-2xl text-xs font-black uppercase tracking-[0.3em] transition-all shadow-lg shadow-[var(--accent)]/20 hover:shadow-[var(--accent)]/40"
+            >
+              Join Discord
+              <ArrowRight className="w-4 h-4" />
+            </a>
           </div>
         </div>
       </section>
