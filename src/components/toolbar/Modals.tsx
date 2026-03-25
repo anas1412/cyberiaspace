@@ -800,7 +800,7 @@ export const HelpModal: React.FC<HelpModalProps> = ({
                 className="space-y-5"
               >
                 <h4 className="text-[11px] font-black text-white uppercase tracking-widest">About Cyberia</h4>
-                <p className="text-xs text-slate-400 leading-relaxed italic">Cyberia is a spatial workspace designed for fluid information management. We treat data as physical objects to help you visualize connections and organize your thoughts naturally.</p>
+                <p className="text-xs text-slate-400 leading-relaxed italic">Cyberia Space is a spatial thinking space designed for fluid information management. We treat data as physical objects to help you visualize connections and organize your thoughts naturally.</p>
                 <p className="text-xs text-slate-500 leading-relaxed">Designed for non-linear thinkers, visionaries, and digital architects. We believe productivity shouldn't feel like a spreadsheet. It should feel like a world.</p>
               </motion.div>
             )}

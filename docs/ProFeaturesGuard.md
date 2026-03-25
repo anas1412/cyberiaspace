@@ -1,6 +1,6 @@
 # ProFeaturesGuard: Centralized Access Control
 
-This document outlines the design for a centralized, flexible access control system for Pro-tier features in Cyberia Workspace. This system supports both **Removing** (unmounting) and **Disabling** (making non-interactive) restricted features based on the user's current subscription plan.
+This document outlines the design for a centralized, flexible access control system for Pro-tier features in Cyberia Space. This system supports both **Removing** (unmounting) and **Disabling** (making non-interactive) restricted features based on the user's current subscription plan.
 
 ## 1. Centralized Utility (`src/utils/access.ts`)
 

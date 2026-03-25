@@ -323,7 +323,7 @@ const Toolbar: React.FC = () => {
             }`}
           >
             <BotMessageSquare className="w-4 h-4" />
-            <span className="text-[10px] font-black uppercase tracking-[0.25em]">Oracle AI</span>
+            <span className="text-[10px] font-black uppercase tracking-[0.25em]">AI</span>
           </button>
         </div>
 

@@ -16,41 +16,41 @@ const FEATURES = [
   {
     id: 'agentic',
     icon: Cpu,
-    title: 'Agentic Workspace',
-    description: 'Interact with ChatGPT, Claude, and Gemini in one place. Our workspace-aware agents natively analyze your files, PDFs, and notes to find answers, connect dots, and automate tasks right where you work.'
+    title: 'The Agentic Space',
+    description: 'The AI lives in your space. It reads your files, PDFs, and notes to find answers, connect dots, and synthesize insights. All without leaving your space.'
   },
   {
     id: 'spatial',
     icon: MousePointer2,
     title: 'Spatial Thinking',
-    description: 'Think visually in an infinite space. Thoughts have presence, momentum, and can be grouped into living collections.'
+    description: 'Think visually in an infinite space. Your thoughts have mass, momentum, and cluster naturally into collections.'
   },
   {
     id: 'views',
     icon: Layout,
-    title: 'Dynamic Views',
-    description: 'Instantly transform your workspace between Spatial, Kanban, and Calendar depending on how you want to work.'
+    title: 'Infinite Views',
+    description: 'Switch between Spatial, Kanban, and Calendar instantly. Same space, different perspectives.'
   },
   {
     id: 'cloud',
     icon: Database,
-    title: 'Real-time Sync',
-    description: 'Everything updates instantly across your devices so your workspace is always perfectly in sync.'
+    title: 'Always in Sync',
+    description: 'Your space, on all your devices. Work offline, stay in sync everywhere.'
   }
 ];
 
 const FAQ_ITEMS = [
   {
-    question: "What is a Spatial Workspace?",
-    answer: "Unlike traditional apps that use static grids or lists, Cyberia Workspace treats information as physical entities. Your thoughts have mass, velocity, and gravity, allowing you to organize data visually and discover non-linear connections through interaction."
+    question: "What is a Thinking Space?",
+    answer: "Unlike traditional apps that use static grids or lists, your space treats information as physical entities. Your thoughts have mass, velocity, and gravity, allowing you to organize visually and discover non-linear connections through interaction."
   },
   {
     question: "Is my data private and secure?",
-    answer: "Yes. Cyberia Workspace follows a Local-First philosophy. By default, all your work is stored locally in your browser's IndexedDB. When you authenticate, data is synced securely via HTTPS/TLS encryption in transit and stored securely in the cloud."
+    answer: "Yes. Your space follows a Local-First philosophy. By default, all your work is stored locally in your browser's IndexedDB. When you authenticate, data is synced securely via HTTPS/TLS encryption in transit and stored securely in the cloud."
   },
   {
     question: "How does the 'Oracle' AI handle my data?",
-    answer: "Oracle uses advanced reasoning models to analyze your workspace snippets in real-time. We never use your personal data or workspace content to train AI models. Your history is stored locally on your device."
+    answer: "Oracle uses advanced reasoning models to analyze your space in real-time. We never use your personal data or content to train AI models. Your history stays local on your device."
   },
   {
     question: "Do subscriptions automatically renew?",
@@ -58,11 +58,11 @@ const FAQ_ITEMS = [
   },
   {
     question: "What happens when I downgrade from Pro to Free?",
-    answer: "When you downgrade, your existing thoughts, spaces, and files stay safe—you keep full access to everything you created. However, premium features like advanced Oracle AI and higher limits become unavailable. You can still read and edit all your content, but won't be able to use Pro-only features until you resubscribe."
+    answer: "When you downgrade, your existing thoughts, spaces, and files stay safe. You keep full access to everything you created. However, premium features like advanced Oracle AI and higher limits become unavailable. You can still read and edit all your content, but won't be able to use Pro-only features until you resubscribe."
   },
   {
     question: "Why is there no mobile app yet?",
-    answer: "The Cyberia spatial engine is designed for precision thinking and large-scale mapping, which requires a mouse and a large display. While we are working on companion apps, the full workspace experience is currently optimized for Desktop."
+    answer: "The spatial thinking engine is designed for precision and large-scale mapping, which requires a mouse and a large display. While we are working on companion apps, the full experience is currently optimized for Desktop."
   }
 ];
 
@@ -258,7 +258,7 @@ const Homepage: React.FC = () => {
       }`}>
         <div className="max-w-7xl mx-auto px-6 flex items-center justify-between">
           <button className="text-2xl font-black tracking-tighter uppercase cursor-pointer" onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}>
-            Cyberia <span style={{ color: 'var(--accent)' }}>Workspace</span>
+            Cyberia <span style={{ color: 'var(--accent)' }}>Space</span>
           </button>
 
           {/* Desktop Nav - ViewSwitcher Style */}
@@ -280,11 +280,11 @@ const Homepage: React.FC = () => {
 
   {/* The CTA Button - Now height matched and radius matched */}
   <a 
-    href="https://app.cyberia.tn" 
+    href="https://app.cyberia.tn/login" 
     className="h-10 px-6 bg-[var(--accent)] hover:bg-[var(--accent-secondary)] text-white rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] transition-all shadow-lg shadow-[var(--accent)]/20 hover:shadow-[var(--accent)]/40 flex items-center justify-center border border-white/10 gap-2 group"
   >
-    Enter Cyberia
-    <ArrowRight className="w-3 h-3 group-hover:translate-x-1 transition-transform" />
+    Log In
+    {/* <ArrowRight className="w-3 h-3 group-hover:translate-x-1 transition-transform" />*/}
   </a>
 </div>
 
@@ -317,7 +317,7 @@ const Homepage: React.FC = () => {
                   </button>
                 ))}
                 <a href="https://app.cyberia.tn" className="w-full py-3 bg-[var(--accent)] text-white rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] transition-all text-center flex items-center justify-center gap-2 group">
-                  Enter Cyberia
+                  Log In
                   <ArrowRight className="w-3 h-3 group-hover:translate-x-1 transition-transform" />
                 </a>
               </div>
@@ -327,29 +327,27 @@ const Homepage: React.FC = () => {
       </nav>
 
       <section className="pt-40 pb-24 px-6 relative z-10">
-        <div className="max-w-5xl mx-auto text-center">
+       <div className="max-w-5xl mx-auto text-center">
           <motion.div
             initial={{ opacity: 0, scale: 0.9, y: 20 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             transition={{ type: 'spring', damping: 25, stiffness: 120 }}
           >
-            <h1 className="text-6xl md:text-8xl font-black tracking-tighter leading-[0.9] mb-8 uppercase">
-            Your Mind, <br />
+            {/* Changed text size here from 6xl/8xl to 5xl/7xl */}
+            <h1 className="text-5xl md:text-7xl font-black tracking-tighter leading-[0.9] mb-8 uppercase">
+            Your brain moves. <br />
           <motion.span 
             initial={{ filter: 'blur(10px)', opacity: 0, x: -50 }}
             animate={{ filter: 'blur(0px)', opacity: 1, x: 0 }}
             transition={{ duration: 1.2, ease: "circOut" }}
             style={{ color: 'var(--accent)', display: 'inline-block' }}
           >
-            In Motion
+            So does your space.
           </motion.span>
           </h1>
             
-            <p className="text-lg md:text-xl text-slate-400 max-w-2xl mx-auto mb-12 leading-relaxed font-medium">
-              Stop <span className="text-white font-bold">digging through folders</span>. 
-              Cyberia uses <span style={{ color: 'var(--accent-secondary)' }}>AI agents that find, connect, and organize</span> your 
-              notes, files, and links in a visual workspace where your ideas actually 
-              <span className="text-white font-bold"> stick together</span>.
+            <p className="text-xl md:text-2xl text-slate-400 max-w-2xl mx-auto mb-12 leading-relaxed font-medium">
+              A personal and team thinking space. Add docs, images, links, tables. <span style={{ color: 'var(--accent-secondary)' }}>Chat with AI</span> to explore your ideas, or command it to <span style={{ color: 'var(--accent-secondary)' }}>find, create, and organize</span> everything.
             </p>
 
             <div className="flex flex-col sm:flex-row items-center justify-center gap-5">
@@ -363,33 +361,32 @@ const Homepage: React.FC = () => {
                 href="https://app.cyberia.tn"
                 className="w-full sm:w-auto px-10 py-5 bg-[var(--accent)] hover:bg-[var(--accent-secondary)] text-white rounded-2xl text-xs font-black uppercase tracking-[0.3em] transition-all shadow-2xl shadow-[var(--accent)]/30 active:scale-[0.98] flex items-center justify-center gap-3 group"
               >
-                Enter Cyberia
+                Try for Free
                 <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
               </a>
             </div>
           </motion.div>
         </div>
 
-        {/* <motion.div 
+        {/* Screenshot Preview */}
+        <motion.div 
           initial={{ opacity: 0, y: 60 }}
           whileInView={{ opacity: 1, y: 0 }}
           transition={{ duration: 1, delay: 0.2 }}
           viewport={{ once: true }}
           className="block max-w-6xl mx-auto mt-16 md:mt-24 px-4 md:px-0 relative"
         >
-          {typeof window !== 'undefined' && window.innerWidth >= 1024 && (
-            <Suspense fallback={
-              <div className="w-full h-[400px] md:h-[600px] glass rounded-2xl animate-pulse flex items-center justify-center">
-                <span className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-500">Initializing Core Engine...</span>
-              </div>
-            }>
-              <InteractiveDemo />
-            </Suspense>
-          )}
+          <div className="w-full h-auto glass rounded-2xl border border-white/10 overflow-hidden shadow-2xl">
+            <img 
+              src="/Screenshot.png" 
+              alt="Cyberia Space - Your thinking space in action" 
+              className="w-full h-auto"
+            />
+          </div>
           
-              <div className="absolute inset-0 bg-[var(--accent)]/10 blur-[100px] rounded-full pointer-events-none" />
-              <div className="absolute -bottom-10 -left-10 w-40 h-40 bg-[var(--accent)]/10 blur-[100px] rounded-full pointer-events-none" />
-        </motion.div> */}
+          <div className="absolute inset-0 bg-[var(--accent)]/10 blur-[100px] rounded-full pointer-events-none" />
+          <div className="absolute -bottom-10 -left-10 w-40 h-40 bg-[var(--accent)]/10 blur-[100px] rounded-full pointer-events-none" />
+        </motion.div>
       </section>
 
       <section id="features" className="py-32 px-6 relative z-10">
@@ -397,10 +394,10 @@ const Homepage: React.FC = () => {
           <div className="mb-20">
             <div className="max-w-2xl">
 <h2 className="text-4xl md:text-5xl font-black tracking-tighter uppercase mb-6">
-                Redefining <br /><span style={{ color: 'var(--accent)' }}>Thinking Architecture</span>
+                Redefining <br /><span style={{ color: 'var(--accent)' }}>Thinking Space</span>
               </h2>
               <p className="text-slate-400 font-medium leading-relaxed">
-                Designed for non-linear thinkers, visionaries, and digital architects. We believe that productivity shouldn't feel like a spreadsheet. It should feel like a world.
+                Not a tool. A place for your mind to move. Designed for brains that won't sit still.
               </p>
             </div>
           </div>
@@ -482,7 +479,7 @@ const Homepage: React.FC = () => {
         <div className="max-w-4xl mx-auto">
           <div className="text-center mb-12">
             <h2 className="text-4xl md:text-5xl font-black tracking-tighter uppercase mb-4">
-              Why <span style={{ color: 'var(--accent)' }}>Cyberia Workspace</span>?
+              Why a <span style={{ color: 'var(--accent)' }}>Spatial Thinking Space</span>?
             </h2>
             <p className="text-slate-400">Simple. Your brain isn't a spreadsheet.</p>
           </div>
@@ -496,7 +493,7 @@ const Homepage: React.FC = () => {
             >
               <h3 className="text-[14px] font-black uppercase tracking-[0.2em] text-white mb-4">The Problem</h3>
               <p className="text-sm text-[var(--text-dimmed)] leading-relaxed">
-                <span className="text-white font-semibold">Spreadsheets kill creativity.</span> Your brain doesn't think in rows and columns—so why should your tools?
+                <span className="text-white font-semibold">Static lists kill momentum.</span> Your brain doesn't think in rows and columns. So why should your space?
               </p>
             </motion.div>
 
@@ -508,7 +505,7 @@ const Homepage: React.FC = () => {
             >
               <h3 className="text-[14px] font-black uppercase tracking-[0.2em] text-white mb-4">The Physics</h3>
               <p className="text-sm text-[var(--text-dimmed)] leading-relaxed">
-                Your thoughts <span className="text-white font-semibold">drift, collide, and cluster</span> like galaxies. We built a workspace that respects that.
+                Your thinking <span className="text-white font-semibold">has physics.</span> Thoughts drift, collide, and cluster like galaxies. We built a space that respects that.
               </p>
             </motion.div>
 
@@ -521,7 +518,7 @@ const Homepage: React.FC = () => {
             >
               <h3 className="text-[14px] font-black uppercase tracking-[0.2em] text-white mb-4">The Agentic Space</h3>
               <p className="text-sm text-[var(--text-dimmed)] leading-relaxed">
-                Oracle doesn't just chat. It <span className="text-white font-semibold">lives in your space</span>, reading docs and connecting dots.
+                The AI doesn't just chat. It <span className="text-white font-semibold">lives in your space</span>, reading your docs and connecting the dots you missed.
               </p>
             </motion.div>
 
@@ -534,9 +531,71 @@ const Homepage: React.FC = () => {
             >
               <h3 className="text-[14px] font-black uppercase tracking-[0.2em] text-white mb-4">The Ownership</h3>
               <p className="text-sm text-[var(--text-dimmed)] leading-relaxed">
-                <span className="text-white font-semibold">Your data stays local.</span> No cloud lock-in. You own your mind.
+                <span className="text-white font-semibold">Your mind, your space, your data.</span> No cloud lock-in. You own what you create.
               </p>
             </motion.div>
+          </div>
+        </div>
+      </section>
+
+      {/* Testimonials Section */}
+      <section className="py-24 px-6 relative z-10">
+        <div className="max-w-6xl mx-auto">
+          <div className="text-center mb-16">
+            <h2 className="text-4xl md:text-5xl font-black tracking-tighter uppercase mb-6">
+              What People Are <span style={{ color: 'var(--accent)' }}>Saying</span>
+            </h2>
+            <p className="text-slate-400 font-medium">See what the community is saying after trying our product</p>
+          </div>
+          
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {/* Testimonial 1 */}
+            <div className="glass rounded-2xl p-6 border border-white/5">
+              <p className="text-sm text-slate-300 leading-relaxed mb-6">
+                "Finally, a tool that ended my procrastination. It's fun moving things around while organizing my tasks."
+              </p>
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-full bg-[var(--accent)]/20 flex items-center justify-center">
+                  <span className="text-[var(--accent)] font-black text-sm">FB</span>
+                </div>
+                <div>
+                  <p className="text-white text-xs font-bold uppercase tracking-wide">Farouk B.</p>
+                  <p className="text-slate-500 text-[10px] font-medium uppercase tracking-wider">University Student</p>
+                </div>
+              </div>
+            </div>
+
+            {/* Testimonial 2 */}
+            <div className="glass rounded-2xl p-6 border border-white/5">
+              <p className="text-sm text-slate-300 leading-relaxed mb-6">
+                "The AI actually sees and analyzes my data. It finds connections I missed and helps me summarize and generate new insights from hundreds of documents."
+              </p>
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-full bg-[var(--accent)]/20 flex items-center justify-center">
+                  <span className="text-[var(--accent)] font-black text-sm">NG</span>
+                </div>
+                <div>
+                  <p className="text-white text-xs font-bold uppercase tracking-wide">Nidhal G.</p>
+                  <p className="text-slate-500 text-[10px] font-medium uppercase tracking-wider">Sofwatre Engineer</p>
+                </div>
+              </div>
+            </div>
+
+            {/* Testimonial 3 */}
+            <div className="glass rounded-2xl p-6 border border-white/5">
+              <p className="text-sm text-slate-300 leading-relaxed mb-6">
+                "I've tried Notion and Obsidian. None of them clicked. Cyberia Space feels so simple and unique."
+              </p>
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-full bg-[var(--accent)]/20 flex items-center justify-center">
+                  <span className="text-[var(--accent)] font-black text-sm">AK</span>
+                </div>
+                <div>
+                  <p className="text-white text-xs font-bold uppercase tracking-wide">Alex K.</p>
+                  <p className="text-slate-500 text-[10px] font-medium uppercase tracking-wider">Freelancer</p>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </section>
@@ -544,7 +603,7 @@ const Homepage: React.FC = () => {
       <section id="pricing" className="py-32 px-6 relative z-10 bg-[var(--accent)]/[0.02]">
         <div className="max-w-6xl mx-auto">
           <div className="text-center mb-20">
-<h2 className="text-4xl md:text-5xl font-black tracking-tighter uppercase mb-6">
+            <h2 className="text-4xl md:text-5xl font-black tracking-tighter uppercase mb-6">
               Unlock <span style={{ color: 'var(--accent)' }}>Your Potential</span>
             </h2>
             <p className="text-slate-400 font-medium">Start for free, upgrade when you're ready.</p>
@@ -595,7 +654,7 @@ const Homepage: React.FC = () => {
               </div>
 
               <div className="mb-8 relative z-10">
-                <h3 className="text-xl font-black uppercase tracking-[0.2em] text-[var(--accent-secondary)] mb-2">Cyberia Pro</h3>
+                <h3 className="text-xl font-black uppercase tracking-[0.2em] text-[var(--accent-secondary)] mb-2">Pro</h3>
                 
                 {location?.isLocalPricing ? (
                   <div className="flex flex-col gap-2 mb-2">
@@ -607,7 +666,7 @@ const Homepage: React.FC = () => {
                       <div className="text-xl text-slate-500 font-bold uppercase tracking-widest">DT / Month</div>
                     </div>
                     <div className="text-[10px] font-bold text-[var(--accent-secondary)]/60 uppercase tracking-widest">
-                      Save {savingsTnd} DT Yearly — Global: ${proPrice.monthly.usd} USD
+                      Save {savingsTnd} DT Yearly. Global: ${proPrice.monthly.usd} USD
                     </div>
                   </div>
                 ) : (
@@ -657,7 +716,7 @@ const Homepage: React.FC = () => {
             <h2 className="text-4xl md:text-5xl font-black tracking-tighter uppercase mb-6">
               Frequently Asked <span style={{ color: 'var(--accent)' }}>Questions</span>
             </h2>
-            <p className="text-slate-400 font-medium uppercase tracking-[0.2em] text-[10px]">Everything you need to know about Cyberia Workspace</p>
+            <p className="text-slate-400 font-medium uppercase tracking-[0.2em] text-[10px]">Everything you need to know about your space</p>
           </div>
 
           <div className="glass rounded-2xl border border-white/5 overflow-hidden shadow-2xl shadow-black/50 transition-all duration-700">
@@ -679,7 +738,7 @@ const Homepage: React.FC = () => {
           >
             <div>
               <h3 className="text-sm font-black text-white uppercase tracking-widest mb-2">Still have questions?</h3>
-              <p className="text-xs text-slate-500 uppercase tracking-wider">Our team is here to help you build your perfect workspace.</p>
+              <p className="text-xs text-slate-500 uppercase tracking-wider">Our team is here to help you build your perfect space.</p>
             </div>
             <button 
               onClick={() => scrollToSection('contact')}
@@ -786,7 +845,7 @@ const Homepage: React.FC = () => {
               Start <span style={{ color: 'var(--accent)' }}>Now</span>
             </h2>
             <p className="text-slate-400 mb-12 font-medium">
-              Join a new generation of thinkers who are mapping the future in Cyberia Workspace.
+              Join a new generation of thinkers who are mapping the future in their space.
             </p>
             <a 
               href="https://app.cyberia.tn"

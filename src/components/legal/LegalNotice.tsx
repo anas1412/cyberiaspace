@@ -20,7 +20,7 @@ const LegalNotice: React.FC = () => {
       content: (
         <div className="space-y-4">
           <p className="leading-relaxed text-slate-400">
-            Cyberia Workspace is developed and operated by <strong>Anas Bassoumi</strong>, operating under the trade name <strong>Cyberia AI Studio</strong> in Tunisia.
+            Cyberia Space is developed and operated by <strong>Anas Bassoumi</strong>, operating under the trade name <strong>Cyberia AI Studio</strong> in Tunisia.
           </p>
           <div className="bg-black/40 border border-white/5 p-6 rounded-2xl space-y-3 font-mono text-[11px] uppercase tracking-wider">
             <div className="flex justify-between items-center border-b border-white/5 pb-2">
@@ -59,7 +59,7 @@ const LegalNotice: React.FC = () => {
       icon: <Shield className="w-5 h-5 text-blue-400" />,
       content: (
         <p className="leading-relaxed text-slate-400">
-          All content, design, code, and interfaces related to Cyberia Workspace are the exclusive property of <strong>Cyberia AI Studio</strong>. Unauthorized reproduction, modification, or distribution is strictly prohibited. Users retain ownership of the content they create within their workspace.
+          All content, design, code, and interfaces related to Cyberia Space are the exclusive property of <strong>Cyberia AI Studio</strong>. Unauthorized reproduction, modification, or distribution is strictly prohibited. Users retain ownership of the content they create within their workspace.
         </p>
       )
     },

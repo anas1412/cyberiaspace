@@ -9,6 +9,8 @@ import { migrateThoughtsToModular, migrateThoughtsToTimeFields } from '../../uti
 import { isStorageUrl } from '../../services/supabaseStorage';
 import { ulid } from 'ulid';
 
+const SPACE_NAMES = ['Orion', 'Cassiopeia', 'Andromeda', 'Pegasus', 'Cygnus', 'Draco', 'Lyra'];
+
 let isCreatingInitialWorkspace = false;
 
 export const createDataSlice: StateCreator<CyberiaState, [], [], any> = (set, get, _api) => ({
@@ -200,7 +202,8 @@ export const createDataSlice: StateCreator<CyberiaState, [], [], any> = (set, ge
 
       const workspaceId = ulid();
       const now = Date.now();
-      const newSpace = { id: workspaceId, userId: currentUserId, name: 'Workspace', mode: 'spatial' as const, physics: true, order: 0, updatedAt: now, syncStatus: 'local' as const };
+      const randomSpaceName = SPACE_NAMES[Math.floor(Math.random() * SPACE_NAMES.length)];
+      const newSpace = { id: workspaceId, userId: currentUserId, name: randomSpaceName, mode: 'spatial' as const, physics: true, order: 0, updatedAt: now, syncStatus: 'local' as const };
       
       await db.transaction('rw', [db.spaces, db.thoughts, db.stacks, db.blobs], async () => {
         await Promise.all([

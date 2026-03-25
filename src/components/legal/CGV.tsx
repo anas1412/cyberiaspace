@@ -19,7 +19,7 @@ const CGV: React.FC = () => {
       icon: <Scale className="w-5 h-5 text-blue-400" />,
       content: (
         <p className="leading-relaxed text-slate-400">
-          These General Terms of Sale (CGV) apply to all subscriptions and services purchased on Cyberia Workspace (cyberia.tn). By upgrading your account, you agree to be bound by these terms. Cyberia Workspace is a spatial workspace platform developed by Cyberia AI Studio.
+          These General Terms of Sale (CGV) apply to all subscriptions and services purchased on Cyberia Space (cyberia.tn). By upgrading your account, you agree to be bound by these terms. Cyberia Space is a spatial workspace platform developed by Cyberia AI Studio.
         </p>
       )
     },
@@ -110,7 +110,7 @@ const CGV: React.FC = () => {
       icon: <ShieldCheck className="w-5 h-5 text-blue-400" />,
       content: (
         <p className="leading-relaxed font-mono text-xs uppercase tracking-wider text-slate-500 italic">
-          Cyberia Workspace strives for high uptime but is provided "as is". We are not liable for data loss due to technical failure, browser instability, or synchronization conflicts. Users are encouraged to use the "Export Workspace" feature regularly.
+          Cyberia Space strives for high uptime but is provided "as is". We are not liable for data loss due to technical failure, browser instability, or synchronization conflicts. Users are encouraged to use the "Export Workspace" feature regularly.
         </p>
       )
     },

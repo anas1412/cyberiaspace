@@ -3,6 +3,21 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useStore } from '../store/useStore';
 import { RefreshCw } from 'lucide-react';
 
+const LOADING_TIPS = [
+  // Shortcuts
+  "Press SPACE to create a new thought",
+  "Drag to move. Scroll to zoom.",
+  "CTRL+Z to undo, CTRL+Y to redo",
+  "CTRL+V to paste from clipboard",
+  "Drag files directly onto the canvas to import",
+  // Features
+  "Switch between Spatial, Kanban, and Calendar views",
+  "Group thoughts into Stacks by dragging them together",
+  "Ask Oracle to find, create, or connect anything",
+  "Share your space with your team",
+  "Your data syncs automatically across devices",
+];
+
 interface LoadingOverlayProps {
   force?: boolean;
 }
@@ -13,6 +28,15 @@ const LoadingOverlay: React.FC<LoadingOverlayProps> = ({ force }) => {
   const [isStabilizing, setIsStabilizing] = useState(true);
   const show = force || isInitializing || isSpaceLoading || isStabilizing;
   const [showReset, setShowReset] = useState(false);
+
+  // Pick random tip when loading shows
+  const [randomTip, setRandomTip] = useState('');
+
+  useEffect(() => {
+    if (show) {
+      setRandomTip(LOADING_TIPS[Math.floor(Math.random() * LOADING_TIPS.length)]);
+    }
+  }, [show]);
 
   useEffect(() => {
     if (!isInitializing && !isSpaceLoading) {
@@ -57,8 +81,13 @@ const LoadingOverlay: React.FC<LoadingOverlayProps> = ({ force }) => {
         >
           <div className="flex flex-col items-center gap-6">
             <h1 className="text-2xl font-bold tracking-tighter text-[var(--text-primary)] uppercase">
-              CYBERIA<span className="text-[var(--accent)]"> WORKSPACE</span>
+              CYBERIA<span className="text-[var(--accent)]"> SPACE</span>
             </h1>
+            
+            {/* Random Loading Tip */}
+            <p className="text-[10px] text-slate-500 font-medium uppercase tracking-widest max-w-[280px] text-center">
+              {randomTip}
+            </p>
             
             {/* Simple Spinner */}
             <div className="w-5 h-5 border-2 border-white/5 border-t-[var(--accent)] rounded-full animate-spin" />

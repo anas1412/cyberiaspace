@@ -19,7 +19,7 @@ const PrivacyPolicy: React.FC = () => {
       icon: <Shield className="w-5 h-5 text-blue-400" />,
       content: (
         <p className="leading-relaxed text-slate-400">
-          Cyberia Workspace ("we," "us," or "our") is a spatial productivity tool designed with a Local-First philosophy. We attach the greatest importance to the protection of your personal data and wish to ensure the best level of protection in compliance with applicable regulations.
+          Cyberia Space ("we," "us," or "our") is a spatial productivity tool designed with a Local-First philosophy. We attach the greatest importance to the protection of your personal data and wish to ensure the best level of protection in compliance with applicable regulations.
         </p>
       )
     },
