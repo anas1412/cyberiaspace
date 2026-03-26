@@ -18,14 +18,6 @@ export function usePWAUpdate() {
   useEffect(() => {
     if (!registerSW) return;
 
-    const hostname = window.location.hostname;
-    const isApp = hostname === 'app.cyberia.tn' || hostname === 'localhost' || hostname === '127.0.0.1';
-    
-    if (!isApp) {
-      console.log('[PWA] Skipping registration on non-app domain:', hostname);
-      return;
-    }
-
     console.log('[PWA] Registering service worker...');
     const updateSW = registerSW({
       async onNeedRefresh() {

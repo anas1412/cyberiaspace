@@ -3,4 +3,4 @@ Allow: /
 Disallow: /api/
 
 # Sitemap for Cyberia
-Sitemap: https://cyberia.tn/sitemap.xml
+Sitemap: https://www.cyberiaspace.app/sitemap.xml

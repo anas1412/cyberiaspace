@@ -1,6 +1,28 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { createClient } from '@supabase/supabase-js';
+import { z } from 'zod';
+import { 
+  CreateThoughtsSchema, 
+  UpdateThoughtsSchema, 
+  CreateStackSchema, 
+  LinkThoughtsSchema, 
+  UnlinkThoughtsSchema, 
+  ReadFilesContentSchema, 
+  GetThoughtDetailsSchema,
+  OracleThoughtSchema
+} from '../src/types/schemas.js';
 import { TOP_MODELS, MEDIUM_MODELS, SMALL_MODELS, FREE_MODELS, MODEL_TIERS } from './models.js';
+
+const SCHEMA_MAP: Record<string, z.ZodSchema> = {
+  'create_thoughts': CreateThoughtsSchema,
+  'update_thoughts': UpdateThoughtsSchema,
+  'create_stack': CreateStackSchema,
+  'link_thoughts': LinkThoughtsSchema,
+  'unlink_thoughts': UnlinkThoughtsSchema,
+  'read_files_content': ReadFilesContentSchema,
+  'get_thought_details': GetThoughtDetailsSchema,
+  'create_thought': OracleThoughtSchema, // Legacy support
+};
 
 
 
@@ -1100,11 +1122,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           const batchedClientCalls = groupClientToolCalls(clientToolCalls);
           
           for (const batch of batchedClientCalls) {
+            let toolName = batch[0].function.name;
+            let args: any = null;
+            let isBatchAction = false;
+
             if (batch.length === 1) {
               const tc = batch[0];
-              const args = safeParseJSON(tc.function.arguments, { _parseError: true, raw: tc.function.arguments });
+              args = safeParseJSON(tc.function.arguments, { _parseError: true, raw: tc.function.arguments });
               
-              // FIX: If JSON parsing failed, send error to client instead of tool call
               if (args._parseError) {
                 res.write(`data: ${JSON.stringify({ 
                   type: 'error', 
@@ -1112,34 +1137,69 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                 })}\n\n`);
                 continue;
               }
-              
-              res.write(`data: ${JSON.stringify({ 
-                type: 'tool_call', 
-                toolCall: { id: tc.id, toolName: tc.function.name, args } 
-              })}\n\n`);
-
-              if (tc.function.name !== 'get_thought_details') {
-                nextMessages.push({
-                  role: 'tool',
-                  tool_call_id: tc.id,
-                  name: tc.function.name,
-                  content: JSON.stringify({ success: true, observed: false, message: "Action queued for client execution." })
-                });
-              }
             } else {
-              let batchArgs = null;
-              try {
-                batchArgs = convertToBatchFormat(batch);
-              } catch (e) {
-                console.error('Failed to convert batch format:', e);
+              const batchData = convertToBatchFormat(batch);
+              if (batchData) {
+                toolName = batchData.toolName;
+                args = batchData.args;
+                isBatchAction = true;
               }
-              if (batchArgs) {
+            }
+
+            if (args) {
+              // ZOD VALIDATION
+              const schema = SCHEMA_MAP[toolName];
+              if (schema) {
+                const validation = schema.safeParse(args);
+                if (!validation.success) {
+                  const errorMsg = `Validation failed for ${toolName}: ` + validation.error.issues.map(e => e.path.join('.') + ': ' + e.message).join('; ');
+                  console.warn(`[Oracle Validation Failure] ${toolName}`, errorMsg);
+                  
+                  // Inform the AI about the mistake so it can fix it (silent correction)
+                  batch.forEach(tc => {
+                    nextMessages.push({
+                      role: 'tool',
+                      tool_call_id: tc.id,
+                      name: tc.function.name,
+                      content: JSON.stringify({ 
+                        success: false, 
+                        error: errorMsg,
+                        suggestion: "Please correct the parameters and try again. Ensure required fields for the chosen type are provided."
+                      })
+                    });
+                  });
+
+                  // Silent re-generation: AI self-corrects without user seeing the internal fix
+                  return await runChat(nextMessages, currentModel, currentTools, mode, personality, isRetry);
+                }
+                
+                // Use validated data
+                args = validation.data;
+              }
+
+              // Send to client if valid
+              if (!isBatchAction) {
+                const tc = batch[0];
+                res.write(`data: ${JSON.stringify({ 
+                  type: 'tool_call', 
+                  toolCall: { id: tc.id, toolName: tc.function.name, args } 
+                })}\n\n`);
+
+                if (tc.function.name !== 'get_thought_details') {
+                  nextMessages.push({
+                    role: 'tool',
+                    tool_call_id: tc.id,
+                    name: tc.function.name,
+                    content: JSON.stringify({ success: true, observed: false, message: "Action queued for client execution." })
+                  });
+                }
+              } else {
                 res.write(`data: ${JSON.stringify({ 
                   type: 'tool_call', 
                   toolCall: { 
                     id: batch[0].id, 
-                    toolName: batchArgs.toolName, 
-                    args: batchArgs.args 
+                    toolName, 
+                    args 
                   },
                   isBatch: true,
                   batchCount: batch.length
@@ -1148,7 +1208,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                 nextMessages.push({
                   role: 'tool',
                   tool_call_id: batch[0].id,
-                  name: batchArgs.toolName,
+                  name: toolName,
                   content: JSON.stringify({ success: true, observed: false, message: `Batch action queued for ${batch.length} items.` })
                 });
               }

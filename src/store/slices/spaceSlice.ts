@@ -10,7 +10,7 @@ import { ulid } from 'ulid';
 export const createSpaceSlice: StateCreator<CyberiaState, [], [], any> = (set, get, _api) => ({
   activeSpaceId: null,
   spaces: [],
-  isSpaceLoading: typeof window !== 'undefined' ? (window.location.hostname !== 'cyberia.tn' && window.location.hostname !== 'www.cyberia.tn') : true,
+  isSpaceLoading: typeof window !== 'undefined' ? (window.location.hostname !== 'cyberiaspace.app' && window.location.hostname !== 'www.cyberiaspace.app') : true,
   isReadOnly: false,
   creatorName: null,
   lastUpdated: null,
