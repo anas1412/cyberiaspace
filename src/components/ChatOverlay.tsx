@@ -35,7 +35,7 @@ const ModelItem: React.FC<{
     className={cn(
       "w-full flex items-center justify-between px-3 py-2 rounded-lg transition-all border text-left",
       selected 
-        ? "bg-[var(--accent)]/20 border-[var(--accent)]/30" 
+        ? "bg-white/10 border-white/20" 
         : "hover:bg-white/[0.05] border-transparent",
       disabled && "opacity-50 cursor-not-allowed grayscale"
     )}
@@ -43,7 +43,7 @@ const ModelItem: React.FC<{
     <div className="flex flex-col gap-0.5">
       <span className={cn(
         "text-[10px] font-bold uppercase tracking-widest leading-none",
-        selected ? "text-[var(--accent)]" : "text-[var(--text-primary)]"
+        selected ? "text-white" : "text-[var(--text-primary)]"
       )}>
         {model.name}
       </span>
@@ -51,7 +51,7 @@ const ModelItem: React.FC<{
         {model.desc}
       </span>
     </div>
-    {selected && <Check className="w-3 h-3 text-[var(--accent)] ml-2 flex-shrink-0" />}
+    {selected && <Check className="w-3 h-3 text-white ml-2 flex-shrink-0" />}
   </button>
 );
 
@@ -777,7 +777,7 @@ if (data.tier && data.autoSwitch) {
                     activeTier === 'small' ? "bg-[var(--accent)]/10 border-[var(--accent)]/30 text-[var(--accent)]" :
                     "bg-slate-500/10 border-slate-500/30 text-[var(--text-muted)]"
                   )}>
-                    {activeTier}
+                    {activeTier === 'top' ? 'reasoning' : activeTier === 'medium' ? 'balanced' : activeTier === 'small' ? 'fast' : activeTier}
                   </div>
                 )}
                 </div>
@@ -787,7 +787,7 @@ if (data.tier && data.autoSwitch) {
                     onClick={() => { setShowModelDropdown(!showModelDropdown); if (!showModelDropdown) setModelSearch(''); }}
                     className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white/[0.03] hover:bg-white/[0.08] border border-[var(--glass-border)] transition-all group"
                   >
-                    <span className="text-[9px] font-bold text-[var(--accent)] uppercase tracking-widest leading-none mt-[1px]">
+                    <span className="text-[9px] font-bold text-white uppercase tracking-widest leading-none mt-[1px]">
                       {currentModelInfo.name}
                     </span>
                     <ChevronDown className={cn("w-3 h-3 text-[var(--text-muted)] transition-transform", showModelDropdown && "rotate-180")} />
@@ -817,7 +817,7 @@ if (data.tier && data.autoSwitch) {
                           {/* MEDIUM TIER - visible to all, disabled for free users */}
                           <div className="p-2">
                             <div className="flex justify-between items-center px-2 py-1 mb-1">
-                              <span className="text-[8px] font-extrabold uppercase tracking-widest text-[var(--accent)]">Limited Usage: Premium Models</span>
+                              <span className="text-[8px] font-extrabold uppercase tracking-widest text-[var(--accent)]">Balanced</span>
                               <span className="text-[8px] font-bold text-[var(--text-muted)] uppercase tracking-widest">
                                 {plan === 'pro' ? getTierResetTimer(mediumUsage, weeklyMediumUsage, monthlyMediumUsage, dailyAnchor, limits.AI_MEDIUM_LIMIT || 60, limits.AI_MEDIUM_WEEKLY || 420, limits.AI_MEDIUM_MONTHLY || 1800) : 'Pro only'}
                               </span>
@@ -833,7 +833,7 @@ if (data.tier && data.autoSwitch) {
                           {smallModels.length > 0 && (
                             <div className="p-2 border-t border-[var(--glass-border)]/20">
                               <div className="flex justify-between items-center px-2 py-1 mb-1">
-                                <span className="text-[8px] font-extrabold uppercase tracking-widest text-green-500">Higher Usage: Small Models</span>
+                                <span className="text-[8px] font-extrabold uppercase tracking-widest text-[var(--accent)]">Fast</span>
                                 <span className="text-[8px] font-bold text-[var(--text-muted)] uppercase tracking-widest">
                                   {plan === 'pro' ? getTierResetTimer(smallUsage, weeklySmallUsage, monthlySmallUsage, dailyAnchor, limits.AI_SMALL_LIMIT || 500, limits.AI_SMALL_WEEKLY || 3500, limits.AI_SMALL_MONTHLY || 15000) : 'Pro only'}
                                 </span>
@@ -849,7 +849,7 @@ if (data.tier && data.autoSwitch) {
                           {/* TOP TIER - visible to all, disabled for free users */}
                           <div className="p-2 border-t border-[var(--glass-border)]/20">
                             <div className="flex justify-between items-center px-2 py-1 mb-1">
-                              <span className="text-[8px] font-extrabold uppercase tracking-widest text-[var(--accent)]">Limited Usage: Premium Models</span>
+                              <span className="text-[8px] font-extrabold uppercase tracking-widest text-[var(--accent)]">Reasoning</span>
                               <span className="text-[8px] font-bold text-[var(--text-muted)] uppercase tracking-widest">
                                 {plan === 'pro' ? getTierResetTimer(topUsage, weeklyTopUsage, monthlyTopUsage, dailyAnchor, limits.AI_TOP_LIMIT || 15, limits.AI_TOP_WEEKLY || 100, limits.AI_TOP_MONTHLY || 400) : 'Pro only'}
                               </span>
