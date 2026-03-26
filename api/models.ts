@@ -17,8 +17,11 @@ export const MODEL_TIERS = {
     monthlyQuota: 200,   // 10 * 20
     description: 'Premium models for complex reasoning',
     models: [
-      
-      { id: 'minimax/minimax-m2.5:free', name: 'MiniMax 2.5', desc: 'Optimized for high-speed chat' },
+      { id: 'deepseek/deepseek-r1', name: 'DeepSeek: R1', desc: '' },
+      { id: 'openai/gpt-5.4', name: 'OpenAI: GPT-5.4', desc: '' },
+      { id: 'google/gemini-3.1-pro-preview', name: 'Google: Gemini 3.1 Pro Preview', desc: '' },
+      { id: 'anthropic/claude-sonnet-4.6', name: 'Anthropic: Claude Sonnet 4.6', desc: '' },
+      { id: 'anthropic/claude-opus-4.6', name: 'Anthropic: Claude Opus 4.6', desc: '' },
     ]
   },
   // Est. Monthly Cost: ~$1.50 | Est. Margin: ~$8.50
@@ -29,7 +32,12 @@ export const MODEL_TIERS = {
     monthlyQuota: 800,   // 40 * 20
     description: 'Balanced models for everyday tasks',
     models: [
-      { id: 'stepfun/step-3.5-flash:free', name: 'Step 3.5 Flash', desc: 'Ultra-low latency processing' },
+      { id: 'deepseek/deepseek-v3.2', name: 'DeepSeek: V3.2', desc: '' },
+      { id: 'openai/gpt-5.4-mini', name: 'OpenAI: GPT-5.4 Mini', desc: '' },
+      { id: 'openai/o4-mini', name: 'OpenAI: o4 Mini', desc: '' },
+      { id: 'google/gemini-3-flash-preview', name: 'Google: Gemini 3 Flash Preview', desc: '' },
+      { id: 'google/gemini-3.1-flash-lite-preview', name: 'Google: Gemini 3.1 Flash Lite Preview', desc: '' },
+      { id: 'anthropic/claude-haiku-4.5', name: 'Anthropic: Claude Haiku 4.5', desc: '' },
     ]
   },
   // Est. Monthly Cost: ~$2.00 | Est. Margin: ~$8.00
@@ -40,7 +48,11 @@ export const MODEL_TIERS = {
     monthlyQuota: 6000,  // 200 * 30
     description: 'Ultra-fast budget AI for everyday tasks',
     models: [
-      { id: 'nvidia/nemotron-3-super-120b-a12b:free', name: 'Nemotron 3 Super', desc: 'High-parameter reasoning power' },
+      { id: 'openai/gpt-5-nano', name: 'OpenAI: GPT-5 Nano', desc: '' },
+      { id: 'google/gemini-2.5-flash-lite', name: 'Google: Gemini 2.5 Flash Lite', desc: '' },
+      { id: 'meta/llama-4-scout', name: 'Meta: Llama 4 Scout', desc: '' },
+      { id: 'mistral/mistral-small-2603', name: 'Mistral: Small 4', desc: '' },
+      { id: 'deepseek/deepseek-chat-v3.1', name: 'DeepSeek: V3.1', desc: '' },
     ]
   },
   free: {
@@ -50,7 +62,12 @@ export const MODEL_TIERS = {
     monthlyQuota: null,
     description: 'Free models with unlimited access',
     models: [
-      { id: 'openrouter/free', name: 'Random Free Model', desc: 'Versatile & balanced performance' },
+      { id: 'openrouter/free', name: 'Random Free Model', desc: '' },
+      { id: 'minimax/minimax-m2.5:free', name: 'MiniMax M2.5', desc: '' },
+      { id: 'arcee-ai/trinity-mini:free', name: 'Arcee AI: Trinity Mini', desc: '' },
+      { id: 'nvidia/nemotron-3-super-120b-a12b:free', name: 'NVIDIA: Nemotron 3 Super', desc: '' },
+      { id: 'stepfun/step-3.5-flash:free', name: 'StepFun: Step 3.5 Flash', desc: '' },
+      { id: 'z-ai/glm-4.5-air:free', name: 'Z.ai: GLM 4.5 Air', desc: '' },
 
     ]
   }
