@@ -142,7 +142,7 @@ const allTools: any[] = [
         properties: {
           ids: { 
             type: "array", 
-            items: { type: "number" },
+            items: { type: "string" },
             description: "An array of thought IDs to retrieve details for."
           }
         },
@@ -315,7 +315,7 @@ const allTools: any[] = [
       parameters: {
         type: "object",
         properties: {
-          ids: { type: "array", items: { type: "number" }, description: "Array of thought IDs." },
+          ids: { type: "array", items: { type: "string" }, description: "Array of thought IDs." },
           text: { type: "string", description: "Bulk rename thoughts." },
           content: { type: "string", description: "Bulk update content." },
           description: { type: "string", description: "Bulk update description." },
@@ -362,7 +362,7 @@ const allTools: any[] = [
       parameters: {
         type: "object",
         properties: {
-          ids: { type: "array", items: { type: "number" } }
+          ids: { type: "array", items: { type: "string" } }
         },
         required: ["ids"]
       }
@@ -377,7 +377,7 @@ const allTools: any[] = [
         type: "object",
         properties: {
           name: { type: "string", description: "The name of the stack." },
-          ids: { type: "array", items: { type: "number" }, description: "IDs of thoughts to include in the stack." }
+          ids: { type: "array", items: { type: "string" }, description: "IDs of thoughts to include in the stack." }
         },
         required: ["name", "ids"]
       }
@@ -391,7 +391,7 @@ const allTools: any[] = [
       parameters: {
         type: "object",
         properties: {
-          ids: { type: "array", items: { type: "number" }, description: "IDs of thoughts to link." },
+          ids: { type: "array", items: { type: "string" }, description: "IDs of thoughts to link." },
           name: { type: "string", description: "Optional name for the stack." }
         },
         required: ["ids"]
@@ -406,7 +406,7 @@ const allTools: any[] = [
       parameters: {
         type: "object",
         properties: {
-          ids: { type: "array", items: { type: "number" }, description: "IDs of thoughts to unlink." }
+          ids: { type: "array", items: { type: "string" }, description: "IDs of thoughts to unlink." }
         },
         required: ["ids"]
       }
@@ -474,7 +474,7 @@ const allTools: any[] = [
       parameters: {
         type: "object",
         properties: {
-          ids: { type: "array", items: { type: "number" }, description: "Array of thought IDs to read." }
+          ids: { type: "array", items: { type: "string" }, description: "Array of thought IDs to read." }
         },
         required: ["ids"]
       }
