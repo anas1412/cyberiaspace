@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { MousePointer2, Layout, Database, ArrowRight, Menu, X, Cpu, Rocket, Send, Loader2, CheckCircle, ChevronDown, MessageCircle } from 'lucide-react';
+import { useAuthStore } from '../store/useAuthStore';
 
 import SpatialThinkingVisual from './demo/SpatialThinkingVisual';
 import DynamicViewsVisual from './demo/DynamicViewsVisual';
@@ -178,6 +179,7 @@ const FeatureVisual: React.FC<{ activeFeature: number }> = React.memo(({ activeF
 });
 
 const Homepage: React.FC = () => {
+  const { user } = useAuthStore();
   const [activeFeature, setActiveFeature] = useState(0);
   const [activeFAQIndex, setActiveFAQIndex] = useState<number | null>(null);
   const [isScrolled, setIsScrolled] = useState(false);
@@ -281,13 +283,21 @@ const Homepage: React.FC = () => {
   </div>
 
   {/* The CTA Button - Now height matched and radius matched */}
-  <a 
-    href="/login" 
-    className="h-10 px-6 bg-[var(--accent)] hover:bg-[var(--accent-secondary)] text-white rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] transition-all shadow-lg shadow-[var(--accent)]/20 hover:shadow-[var(--accent)]/40 flex items-center justify-center border border-white/10 gap-2 group"
-  >
-    Log In
-    {/* <ArrowRight className="w-3 h-3 group-hover:translate-x-1 transition-transform" />*/}
-  </a>
+  {user ? (
+    <a 
+      href="/home" 
+      className="h-10 px-6 bg-[var(--accent)] hover:bg-[var(--accent-secondary)] text-white rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] transition-all shadow-lg shadow-[var(--accent)]/20 hover:shadow-[var(--accent)]/40 flex items-center justify-center border border-white/10 gap-2 group"
+    >
+      Access My Space
+    </a>
+  ) : (
+    <a 
+      href="/login" 
+      className="h-10 px-6 bg-[var(--accent)] hover:bg-[var(--accent-secondary)] text-white rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] transition-all shadow-lg shadow-[var(--accent)]/20 hover:shadow-[var(--accent)]/40 flex items-center justify-center border border-white/10 gap-2 group"
+    >
+      Log In
+    </a>
+  )}
 </div>
 
           {/* Mobile Toggle */}
@@ -324,10 +334,17 @@ const Homepage: React.FC = () => {
                 >
                   pricing
                 </a>
-                <a href="/home" className="w-full py-3 bg-[var(--accent)] text-white rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] transition-all text-center flex items-center justify-center gap-2 group">
-                  Log In
-                  <ArrowRight className="w-3 h-3 group-hover:translate-x-1 transition-transform" />
-                </a>
+                {user ? (
+                  <a href="/home" className="w-full py-3 bg-[var(--accent)] text-white rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] transition-all text-center flex items-center justify-center gap-2 group">
+                    Access My Space
+                    <ArrowRight className="w-3 h-3 group-hover:translate-x-1 transition-transform" />
+                  </a>
+                ) : (
+                  <a href="/home" className="w-full py-3 bg-[var(--accent)] text-white rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] transition-all text-center flex items-center justify-center gap-2 group">
+                    Log In
+                    <ArrowRight className="w-3 h-3 group-hover:translate-x-1 transition-transform" />
+                  </a>
+                )}
               </div>
             </motion.div>
           )}

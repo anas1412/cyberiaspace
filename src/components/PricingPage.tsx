@@ -299,7 +299,7 @@ const PricingPage: React.FC = () => {
             href="/home"
             className="h-10 px-6 bg-[var(--accent)] hover:bg-[var(--accent-secondary)] text-white rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] transition-all shadow-lg shadow-[var(--accent)]/20 hover:shadow-[var(--accent)]/40 flex items-center justify-center border border-white/10 gap-2 group"
           >
-            Launch Space
+            Access Space
             <ArrowRight className="w-3 h-3 group-hover:translate-x-1 transition-transform" />
           </a>
         </div>
@@ -362,7 +362,7 @@ const PricingPage: React.FC = () => {
                   className="flex-1 h-12 rounded-xl text-sm font-bold bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-500 hover:to-emerald-500 text-white transition-all shadow-lg shadow-green-500/25 flex items-center justify-center gap-2 active:scale-95"
                 >
                   <Layout className="w-4 h-4" />
-                  Launch Workspace
+                  Access My Space
                 </button>
               </div>
             </div>
@@ -617,13 +617,13 @@ const PricingPage: React.FC = () => {
         </motion.div>
 
         {/* Toggle Features Button */}
-        {!isProUser && (
+        
           <div className="text-center mb-8">
             <button
               onClick={() => setShowFeatures(!showFeatures)}
               className="px-6 py-2 rounded-full border border-white/10 bg-white/5 hover:bg-white/10 text-sm font-semibold text-white transition-colors flex items-center gap-2 mx-auto"
             >
-              <Layout className="w-4 h-4 text-blue-400" />
+              
               {showFeatures ? 'Hide' : 'View'} Full Comparison
               <motion.div
                 animate={{ rotate: showFeatures ? 180 : 0 }}
@@ -635,10 +635,10 @@ const PricingPage: React.FC = () => {
               </motion.div>
             </button>
           </div>
-        )}
+        
 
         {/* 3-Column Comparison Table */}
-        {!isProUser && (
+        
           <motion.div
             initial={false}
             animate={{ 
@@ -721,7 +721,7 @@ const PricingPage: React.FC = () => {
               </div>
             </div>
           </motion.div>
-        )}
+        
 
         {/* Footer Links */}
         <div className="flex flex-wrap items-center justify-center gap-6 mt-16 text-[13px]">
