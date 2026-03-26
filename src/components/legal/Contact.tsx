@@ -18,8 +18,8 @@ const Contact: React.FC = () => {
       title: "Support Email",
       icon: <Mail className="w-6 h-6 text-blue-400" />,
       desc: "For any technical issues, billing questions, or feedback.",
-      value: "anas.bassoumi@gmail.com",
-      link: "mailto:anas.bassoumi@gmail.com"
+      value: "support@cyberiaspace.app",
+      link: "mailto:support@cyberiaspace.app"
     },
     {
       id: 2,

@@ -122,7 +122,7 @@ const PrivacyPolicy: React.FC = () => {
         <p className="leading-relaxed text-slate-400">
           For any questions regarding this policy or to exercise your rights, please contact us at: 
           <br />
-          <a href="mailto:anas.bassoumi@gmail.com" className="text-blue-400 font-bold hover:text-white transition-colors">anas.bassoumi@gmail.com</a>
+          <a href="mailto:support@cyberiaspace.app" className="text-blue-400 font-bold hover:text-white transition-colors">support@cyberiaspace.app</a>
         </p>
       )
     }

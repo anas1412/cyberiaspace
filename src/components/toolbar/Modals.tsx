@@ -896,7 +896,7 @@ export const HelpModal: React.FC<HelpModalProps> = ({
                 <div className="pt-2 border-t border-white/5 flex items-center justify-between">
                   <div className="flex flex-col">
                     <span className="text-[8px] font-black text-[var(--text-muted)] uppercase tracking-wide">Support Email</span>
-                    <span className="text-[9px] font-bold text-[var(--accent-secondary)]">{import.meta.env.VITE_CONTACT_EMAIL || 'anasbassoumi@gmail.com'}</span>
+                    <span className="text-[9px] font-bold text-[var(--accent-secondary)]">{import.meta.env.VITE_CONTACT_EMAIL || 'support@cyberiaspace.app'}</span>
                   </div>
                   <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-white/5 border border-white/5">
                     <div className="w-1.5 h-1.5 rounded-full bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.5)]" />
