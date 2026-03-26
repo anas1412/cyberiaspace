@@ -20,9 +20,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
         const host = req.headers.host || '';
         const isLocalhost = host.includes('localhost') || host.includes('127.0.0.1');
-        const REDIRECT_URI = isLocalhost
-            ? `http://${host}/api/auth?route=callback`
-            : 'https://app.cyberia.tn/api/auth?route=callback';
+        const protocol = isLocalhost ? 'http' : 'https';
+        const REDIRECT_URI = `${protocol}://${host}/api/auth?route=callback`;
 
         if (error) {
             return res.redirect('/login?error=' + encodeURIComponent(error as string));
@@ -157,7 +156,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                         localStorage.setItem('cyberia-refresh-secret', ${JSON.stringify(responseData.refreshSecret)});
                         localStorage.setItem('cyberia-user', ${JSON.stringify(JSON.stringify(responseData.user))});
                         localStorage.setItem('cyberia-scopes', ${JSON.stringify(JSON.stringify(responseData.scopes))});
-                        window.location.href = '/';
+                        window.location.href = '/home';
                     </script>
                     <div style="font-family: sans-serif; display: flex; align-items: center; justify-content: center; height: 100vh; background: #000; color: #fff;">
                         <p>Redirecting to Cyberia...</p>

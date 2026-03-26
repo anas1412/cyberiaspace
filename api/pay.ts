@@ -196,7 +196,9 @@ async function handleInit(req: VercelRequest, res: VercelResponse) {
 
         const publicKey = process.env.FLOUCI_PUBLIC_KEY;
         const privateKey = process.env.FLOUCI_PRIVATE_KEY;
-        const appUrl = 'https://app.cyberia.tn';
+        const host = req.headers.host || '';
+        const protocol = host.includes('localhost') || host.includes('127.0.0.1') ? 'http' : 'https';
+        const appUrl = `${protocol}://${host}`;
 
         if (!publicKey || !privateKey) {
             console.error('[Flouci Init] Configuration missing (PUBLIC/PRIVATE KEY)');
@@ -214,11 +216,12 @@ async function handleInit(req: VercelRequest, res: VercelResponse) {
                 'Authorization': `Bearer ${publicKey}:${privateKey}`
             },
             body: JSON.stringify({
-                amount: amountInMillimes,
-                success_link: `${appUrl}/pricing?success=true`,
-                fail_link: `${appUrl}/pricing?fail=true`,
+                amount: amountInMillimes.toString(), // Doc says string in some places, integer in others. String is safer.
+                success_link: `${appUrl}/home/pricing?success=true`,
+                fail_link: `${appUrl}/home/pricing?fail=true`,
                 webhook: `${appUrl}/api/pay?action=webhook`,
                 developer_tracking_id: orderId,
+                client_id: userId, // Track by userId in Flouci dashboard
                 session_timeout_secs: 1200,
                 accept_card: true
             })
@@ -467,7 +470,9 @@ async function handlePolarInit(req: VercelRequest, res: VercelResponse) {
 
         console.log('[Polar Init] Creating checkout for product:', productId);
         
-        const successUrl = 'https://app.cyberia.tn/pricing?success=true';
+        const host = req.headers.host || '';
+        const protocol = host.includes('localhost') || host.includes('127.0.0.1') ? 'http' : 'https';
+        const successUrl = `${protocol}://${host}/pricing?success=true`;
 
         const checkout = await polar.checkouts.create({
             products: [productId],

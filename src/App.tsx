@@ -63,11 +63,6 @@ function App() {
   
   const [path, setPath] = useState(window.location.pathname);
 
-  const hostname = typeof window !== 'undefined' ? window.location.hostname : '';
-  const isMainDomain = hostname === 'cyberia.tn' || hostname === 'www.cyberia.tn';
-  const isDashboard = hostname === 'dashboard.cyberia.tn';
-  const isApp = hostname === 'app.cyberia.tn' || hostname === 'localhost' || hostname === '127.0.0.1';
-
   // Hook: Dashboard admin check - use useAuthStore directly
   const authStatus = useAuthStore((state) => state.status);
   const authUser = useAuthStore((state) => state.user);
@@ -108,24 +103,16 @@ function App() {
     checkAdmin();
   }, [path, authStatus, authUser?.id]);
 
-  // Hook: Remove PWA manifest on non-app domains
-  useEffect(() => {
-    if (!isApp || isDashboard) {
-      const manifest = document.querySelector('link[rel="manifest"]');
-      if (manifest) manifest.remove();
-    }
-  }, [isApp]);
-
   // Hook: Body class
   useEffect(() => {
-    const isLandingPath = path === '/' || path === '/home';
-    if (!isMainDomain && !isLandingPath && (path.startsWith('/s/') || path === '/pricing')) {
+    const isAppPath = path.startsWith('/home');
+    if (isAppPath) {
       document.body.classList.add('app-body');
     } else {
       document.body.classList.remove('app-body');
     }
     return () => document.body.classList.remove('app-body');
-  }, [path, isMainDomain]);
+  }, [path]);
 
   // Hook: Popstate
   useEffect(() => {
@@ -169,20 +156,11 @@ function App() {
 
   // Hook: Init and PWA
   useEffect(() => {
-    const hostname = window.location.hostname;
-    const isMainDomain = hostname === 'cyberia.tn' || hostname === 'www.cyberia.tn';
-
-    if (path === '/pricing') {
-      const params = new URLSearchParams(window.location.search);
-      // "Sling-shot" redirect: If on main domain with payment result, bounce to authenticated App domain
-      if (isMainDomain && (params.has('success') || params.has('payment_id') || params.has('checkout_id'))) {
-        window.location.href = `https://app.cyberia.tn${window.location.pathname}${window.location.search}`;
-        return;
-      }
+    if (path === '/pricing' || path === '/home/pricing') {
       useModalStore.getState().openPricing();
     }
 
-    if ((path === '/' || path.startsWith('/s/') || path === '/pricing') && !isMainDomain) {
+    if (path.startsWith('/home')) {
       init();
     }
 
@@ -405,15 +383,14 @@ function App() {
     };
   }, [addThought, setSelectedThoughtId, setInspectorOpen, thoughts.length, openModal, path, spaces, activeSpaceId]);
 
-  // Landing page is only available on main domain or localhost (for dev)
-  const canSeeLanding = isMainDomain || hostname === 'localhost' || hostname === '127.0.0.1';
-
   // ========== RENDER BASED ON PATH ==========
   
-  if (path === '/home' && canSeeLanding) {
+  if (path === '/' || path === '/pricing') {
     return (
       <Suspense fallback={<LoadingOverlay force />}>
         <Homepage />
+        <PricingModal isOpen={isPricingOpen} onClose={closePricing} />
+        <Modal />
       </Suspense>
     );
   }
@@ -475,6 +452,7 @@ function App() {
     );
   }
 
+  // Dashboard check
   if (path.startsWith('/dashboard')) {
     // Wait for admin check to complete
     if (!dashboardReady) {
@@ -509,75 +487,54 @@ function App() {
     );
   }
 
-  // Landing page routes - only on main domain
-  if (isMainDomain) {
-    if (path === '/' || path === '/home' || path === '/pricing') {
+  // Main Workspace logic for /home
+  const isWorkspacePath = path.startsWith('/home');
+  if (isWorkspacePath) {
+    // Guard: Mobile/Tablet access to workspace
+    if (!isBrowser) {
       return (
         <Suspense fallback={<LoadingOverlay force />}>
-          <Homepage />
-          <PricingModal isOpen={isPricingOpen} onClose={closePricing} />
-          <Modal />
+          <MobilePage />
         </Suspense>
       );
     }
-    return (
-      <Suspense fallback={<LoadingOverlay force />}>
-        <NotFound />
-      </Suspense>
-    );
-  }
 
-  // App domain: check for valid routes, otherwise show NotFound
-  const validAppRoutes = ['/feedback', '/privacy', '/terms', '/legal', '/contact', '/login', '/pricing', '/dashboard', '/dashboard/login'];
-  const isValidAppRoute = path === '/' || path.startsWith('/s/') || validAppRoutes.includes(path) || path.startsWith('/dashboard') || (path === '/home' && canSeeLanding);
-  
-  if (!isValidAppRoute) {
     return (
-      <Suspense fallback={<LoadingOverlay force />}>
-        <NotFound />
-      </Suspense>
-    );
-  }
-
-  // Guard: Mobile/Tablet access to workspace
-  const isWorkspacePath = path === '/' || path.startsWith('/s/');
-  if (!isBrowser && isWorkspacePath && !isMainDomain) {
-    return (
-      <Suspense fallback={<LoadingOverlay force />}>
-        <MobilePage />
-      </Suspense>
+      <main className="w-full h-full relative overflow-hidden app-body">
+        <BackgroundEngine />
+        <LoadingOverlay />
+        
+        <Suspense fallback={<LoadingOverlay force />}>
+          <Viewport />
+          <EmptyState />
+          <KanbanOverlay />
+          <CalendarOverlay />
+          <Toolbar />
+          <Inspector />
+          <MultiSelectionMenu />
+          <ChatOverlay />
+          <Modal />
+          <PricingModal isOpen={isPricingOpen} onClose={closePricing} />
+          <Lightbox />
+          <TextFocusEditor />
+          <TableFocusEditor />
+          <PaintFocusEditor />
+          <TasksFocusEditor />
+          <EmbedFocusEditor />
+          <FileFocusEditor />
+          <UpdateToast />
+          <ExternalScripts />
+        </Suspense>
+        <Analytics />
+        <SpeedInsights />
+      </main>
     );
   }
 
   return (
-    <main className="w-full h-full relative overflow-hidden">
-      <BackgroundEngine />
-      <LoadingOverlay />
-      
-      <Suspense fallback={<LoadingOverlay force />}>
-        <Viewport />
-        <EmptyState />
-        <KanbanOverlay />
-        <CalendarOverlay />
-        <Toolbar />
-        <Inspector />
-        <MultiSelectionMenu />
-        <ChatOverlay />
-        <Modal />
-        <PricingModal isOpen={isPricingOpen} onClose={closePricing} />
-        <Lightbox />
-        <TextFocusEditor />
-        <TableFocusEditor />
-        <PaintFocusEditor />
-        <TasksFocusEditor />
-        <EmbedFocusEditor />
-        <FileFocusEditor />
-        <UpdateToast />
-        <ExternalScripts />
-      </Suspense>
-      <Analytics />
-      <SpeedInsights />
-    </main>
+    <Suspense fallback={<LoadingOverlay force />}>
+      <NotFound />
+    </Suspense>
   );
 }
 

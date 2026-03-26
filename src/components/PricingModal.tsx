@@ -71,7 +71,7 @@ const PricingModal: React.FC<PricingModalProps> = ({ isOpen, onClose }) => {
                   zIndex: 20000
                 });
               });
-              window.history.replaceState({}, '', '/pricing');
+              window.history.replaceState({}, '', window.location.pathname);
             } else {
               setPaymentStatus('failed');
               setPaymentMessage(data.message || 'Payment failed. Please try again.');
@@ -121,12 +121,12 @@ const PricingModal: React.FC<PricingModalProps> = ({ isOpen, onClose }) => {
             });
 
             // Clean up the URL parameters without closing the modal
-            window.history.replaceState({}, '', '/pricing');
+            window.history.replaceState({}, '', window.location.pathname);
           } else if (attempts >= maxAttempts) {
             clearInterval(pollInterval);
             setPaymentStatus('idle');
             setPaymentMessage('We are still processing your upgrade. It will appear shortly!');
-            window.history.replaceState({}, '', '/pricing');
+            window.history.replaceState({}, '', window.location.pathname);
           }
         }, 2000);
       } else if (fail !== null) {
@@ -153,7 +153,10 @@ const PricingModal: React.FC<PricingModalProps> = ({ isOpen, onClose }) => {
           description: 'Please sign in to your Google account to upgrade to Cyberia Pro.',
           type: 'alert',
           confirmText: 'Sign In',
-          onConfirm: () => window.location.href = 'https://cyberia.tn/login'
+          onConfirm: () => {
+            window.history.pushState({}, '', '/login');
+            window.dispatchEvent(new PopStateEvent('popstate'));
+          }
         });
         setIsLoading(false);
         return;

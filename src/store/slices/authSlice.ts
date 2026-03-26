@@ -629,63 +629,6 @@ export const createAuthSlice: StateCreator<AuthState, [], [], any> = (set, get, 
       return;
     }
 
-    // For legacy users without refreshSecret, verify token and fetch profile only
-    if (!refreshSecret) {
-      console.warn('[Auth] refreshProfile: No refreshSecret (legacy user), verifying token validity...');
-      try {
-        const tokenInfoRes = await fetch(`https://www.googleapis.com/oauth2/v3/tokeninfo?access_token=${accessToken}`);
-        if (!tokenInfoRes.ok) {
-          console.warn('[Auth] Token invalid, signing out legacy user');
-          get().signOut();
-          return;
-        }
-        console.log('[Auth] Token valid for legacy user, fetching profile...');
-      } catch (e) {
-        console.warn('[Auth] Could not verify token:', e);
-      }
-      
-      // For legacy users, just fetch the profile without trying to refresh the token
-      try {
-        const supabaseProfile = await supabaseSync.getProfile(user.id);
-        console.log('[Auth] Profile data received:', JSON.stringify(supabaseProfile));
-        if (supabaseProfile?.user) {
-          const supabaseUser = supabaseProfile.user as any; // Use any to access refreshSecret
-          console.log('[Auth] supabaseUser keys:', Object.keys(supabaseUser));
-          console.log('[Auth] supabaseUser.refreshSecret:', supabaseUser.refreshSecret);
-          const now = new Date();
-          const isPro = supabaseUser.plan === 'pro' && supabaseUser.expiryDate && new Date(supabaseUser.expiryDate) > now;
-          
-          const updatedUser = { 
-            ...user, 
-            ...supabaseUser,
-            settings: {
-              ...user.settings,
-              ...supabaseUser.settings,
-              autoSync: supabaseUser.settings?.autoSync ?? user.settings?.autoSync ?? true
-            }
-          };
-          
-          if (!isPro) {
-            updatedUser.plan = 'free';
-            updatedUser.settings.personality = '';
-          }
-
-          // If profile has refreshSecret, save it to localStorage
-          if (supabaseUser.refreshSecret) {
-            localStorage.setItem('cyberia-refresh-secret', supabaseUser.refreshSecret);
-            set({ refreshSecret: supabaseUser.refreshSecret });
-            console.log('[Auth] Retrieved refreshSecret from database, saved to localStorage');
-          }
-
-          set({ user: updatedUser });
-          localStorage.setItem('cyberia-user', JSON.stringify(updatedUser));
-        }
-      } catch (err: any) {
-        console.warn('[Auth] Profile sync failed for legacy user:', err.message);
-      }
-      return;
-    }
-
     if (refreshProfilePromise) return refreshProfilePromise;
 
     refreshProfilePromise = (async () => {
@@ -693,40 +636,7 @@ export const createAuthSlice: StateCreator<AuthState, [], [], any> = (set, get, 
         const controller = new AbortController();
         const timeoutId = setTimeout(() => controller.abort(), 20000);
 
-        try {
-          const refreshRes = await fetch('/api/google-auth?action=refresh', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ userId: user.id, refreshSecret }),
-            signal: controller.signal
-          });
-          
-          if (refreshRes.ok) {
-            const refreshData = await refreshRes.json();
-            const currentToken = refreshData.access_token;
-            const expiresIn = refreshData.expires_in || 3600;
-            const expiryTime = Date.now() + (expiresIn * 1000);
-            
-            set({ 
-              accessToken: currentToken,
-              accessTokenExpiresAt: expiryTime
-            });
-            localStorage.setItem('cyberia-token', currentToken);
-            localStorage.setItem('cyberia-token-expiry', expiryTime.toString());
-          } else if (refreshRes.status === 401) {
-            console.warn('[Auth] Session expired (401), signing out');
-            clearTimeout(timeoutId);
-            get().signOut();
-            return;
-          }
-        } catch (err: any) {
-          if (err.name === 'AbortError') {
-            console.log('[Auth] Token refresh heartbeat timed out.');
-          } else {
-            console.warn('[Auth] Token refresh error:', err.message);
-          }
-        }
-
+        // 1. First, always try to refresh the profile data from Supabase to ensure we have the latest plan
         try {
           const supabaseProfile = await supabaseSync.getProfile(user.id);
           if (supabaseProfile?.user) {
@@ -765,17 +675,57 @@ export const createAuthSlice: StateCreator<AuthState, [], [], any> = (set, get, 
             if (profileAny.refreshSecret) {
               localStorage.setItem('cyberia-refresh-secret', profileAny.refreshSecret);
               set({ refreshSecret: profileAny.refreshSecret });
-              console.log('[Auth] Saved refreshSecret from profile');
             }
 
             set({ user: updatedUser });
             localStorage.setItem('cyberia-user', JSON.stringify(updatedUser));
+            console.log('[Auth] Profile refreshed from Supabase. Plan:', updatedUser.plan);
           }
         } catch (err: any) {
           console.warn('[Auth] Profile sync failed:', err.message);
-        } finally {
-          clearTimeout(timeoutId);
         }
+
+        // 2. Then, try to refresh the Google OAuth token if we have a refreshSecret
+        if (refreshSecret) {
+          try {
+            const refreshRes = await fetch('/api/google-auth?action=refresh', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ userId: user.id, refreshSecret }),
+              signal: controller.signal
+            });
+            
+            if (refreshRes.ok) {
+              const refreshData = await refreshRes.json();
+              const currentToken = refreshData.access_token;
+              const expiresIn = refreshData.expires_in || 3600;
+              const expiryTime = Date.now() + (expiresIn * 1000);
+              
+              set({ 
+                accessToken: currentToken,
+                accessTokenExpiresAt: expiryTime
+              });
+              localStorage.setItem('cyberia-token', currentToken);
+              localStorage.setItem('cyberia-token-expiry', expiryTime.toString());
+            } else if (refreshRes.status === 401) {
+              console.warn('[Auth] Session expired (401), signing out');
+              clearTimeout(timeoutId);
+              get().signOut();
+              return;
+            }
+          } catch (err: any) {
+            if (err.name === 'AbortError') {
+              console.log('[Auth] Token refresh heartbeat timed out.');
+            } else {
+              console.warn('[Auth] Token refresh error:', err.message);
+            }
+          }
+        } else {
+          // Legacy/missing refreshSecret fallback
+          console.warn('[Auth] No refreshSecret, skipping OAuth token refresh');
+        }
+
+        clearTimeout(timeoutId);
       } catch (e) {
         console.warn('[Auth] Refresh profile hard failure:', e);
       } finally {

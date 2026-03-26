@@ -48,7 +48,7 @@ const ShareDialog: React.FC<ShareDialogProps> = ({ spaceId }) => {
         });
     };
 
-    const shareUrl = space?.publishedId ? `${window.location.origin}/s/${space.publishedId}` : '';
+    const shareUrl = space?.publishedId ? `${window.location.origin}/home/s/${space.publishedId}` : '';
 
     const handleCopy = () => {
         navigator.clipboard.writeText(shareUrl);

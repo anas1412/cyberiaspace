@@ -44,8 +44,8 @@ export const createDataSlice: StateCreator<CyberiaState, [], [], any> = (set, ge
       if (user) set({ oracleMode: true });
 
       const path = window.location.pathname;
-      if (path.startsWith('/s/')) {
-        const parts = path.split('/s/');
+      if (path.startsWith('/home/s/')) {
+        const parts = path.split('/home/s/');
         const sharedId = parts[1]?.split('/')[0];
         if (sharedId) {
           set({ isSpaceLoading: true, isReadOnly: true });

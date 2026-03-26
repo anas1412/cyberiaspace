@@ -294,7 +294,7 @@ const Homepage: React.FC = () => {
 
   {/* The CTA Button - Now height matched and radius matched */}
   <a 
-    href="https://app.cyberia.tn/login" 
+    href="/login" 
     className="h-10 px-6 bg-[var(--accent)] hover:bg-[var(--accent-secondary)] text-white rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] transition-all shadow-lg shadow-[var(--accent)]/20 hover:shadow-[var(--accent)]/40 flex items-center justify-center border border-white/10 gap-2 group"
   >
     Log In
@@ -330,7 +330,7 @@ const Homepage: React.FC = () => {
                     {item}
                   </button>
                 ))}
-                <a href="https://app.cyberia.tn" className="w-full py-3 bg-[var(--accent)] text-white rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] transition-all text-center flex items-center justify-center gap-2 group">
+                <a href="/home" className="w-full py-3 bg-[var(--accent)] text-white rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] transition-all text-center flex items-center justify-center gap-2 group">
                   Log In
                   <ArrowRight className="w-3 h-3 group-hover:translate-x-1 transition-transform" />
                 </a>
@@ -372,7 +372,8 @@ const Homepage: React.FC = () => {
                 Explore Features
               </button>
               <a 
-                href="https://app.cyberia.tn"
+              href="/home"
+
                 className="w-full sm:w-auto px-10 py-5 bg-[var(--accent)] hover:bg-[var(--accent-secondary)] text-white rounded-2xl text-xs font-black uppercase tracking-[0.3em] transition-all shadow-2xl shadow-[var(--accent)]/30 active:scale-[0.98] flex items-center justify-center gap-3 group"
               >
                 Try for Free
@@ -622,7 +623,7 @@ const Homepage: React.FC = () => {
                 <PricingFeature text={`Default theme`} />
                 <PricingFeature text="Limited Support" />
               </div>
-              <a href="https://app.cyberia.tn" className="w-full py-5 bg-white/5 hover:bg-white/10 border border-white/10 text-white rounded-2xl text-[10px] font-black uppercase tracking-[0.3em] transition-all text-center">
+              <a href="/home" className="w-full py-5 bg-white/5 hover:bg-white/10 border border-white/10 text-white rounded-2xl text-[10px] font-black uppercase tracking-[0.3em] transition-all text-center">
                 Get Started Free
               </a>
 
@@ -690,7 +691,7 @@ const Homepage: React.FC = () => {
                 <PricingFeature text="24/7 Priority Support" pro />
               </div>
 
-              <a href="https://app.cyberia.tn/pricing" className="w-full py-5 bg-[var(--accent)] hover:bg-[var(--accent-secondary)] text-white rounded-2xl text-[10px] font-black uppercase tracking-[0.3em] transition-all text-center shadow-xl shadow-[var(--accent)]/20 active:scale-95">
+              <a href="/pricing" className="w-full py-5 bg-[var(--accent)] hover:bg-[var(--accent-secondary)] text-white rounded-2xl text-[10px] font-black uppercase tracking-[0.3em] transition-all text-center shadow-xl shadow-[var(--accent)]/20 active:scale-95">
                 Go Pro
               </a>
 
@@ -843,7 +844,8 @@ const Homepage: React.FC = () => {
               Join a new generation of thinkers who are mapping the future in their space.
             </p>
             <a 
-              href="https://app.cyberia.tn"
+                href="/home"
+
               className="inline-flex items-center gap-4 px-12 py-6 bg-[var(--accent)] hover:bg-[var(--accent-secondary)] text-white rounded-2xl text-xs font-black uppercase tracking-[0.4em] transition-all shadow-[0_20px_50px_rgba(99,102,241,0.3)] hover:-translate-y-1 active:translate-y-0"
             >
               Try for Free
@@ -861,10 +863,10 @@ const Homepage: React.FC = () => {
             <span className="font-black uppercase tracking-widest text-slate-500">Cyberia AI Studio</span>
           </div>
           <div className="flex flex-wrap items-center justify-center gap-x-8 gap-y-4 text-[10px] font-black uppercase tracking-[0.2em] text-slate-500">
-            <a href="https://cyberia.tn/privacy" className="hover:text-white transition-colors">Privacy Policy</a>
-            <a href="https://cyberia.tn/terms" className="hover:text-white transition-colors">Terms of Sale (CGV)</a>
-            <a href="https://cyberia.tn/legal" className="hover:text-white transition-colors">Legal Notice</a>
-            <a href="https://cyberia.tn/contact" className="hover:text-white transition-colors">Contact</a>
+            <a href="/privacy" className="hover:text-white transition-colors">Privacy Policy</a>
+            <a href="/terms" className="hover:text-white transition-colors">Terms of Sale (CGV)</a>
+            <a href="/legal" className="hover:text-white transition-colors">Legal Notice</a>
+            <a href="/contact" className="hover:text-white transition-colors">Contact</a>
           </div>
           <div className="text-[10px] font-black uppercase tracking-widest text-slate-600">
             © {new Date().getFullYear()} CYBERIA AI STUDIO

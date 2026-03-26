@@ -16,6 +16,12 @@ const GoogleIcon = () => (
 
 const LoginPage: React.FC = () => {
   const { status } = useAuthStore();
+  
+  useEffect(() => {
+    if (status === 'authenticated') {
+      window.location.href = '/home';
+    }
+  }, [status]);
 
   // 1. Error Handling & Loading State Management
   const searchParams = new URLSearchParams(window.location.search);
@@ -31,20 +37,9 @@ const LoginPage: React.FC = () => {
   }, [errorParam]);
 
   const handleLogin = () => {
-    const hostname = window.location.hostname;
-    const isLocalhost = hostname === 'localhost' || hostname === '127.0.0.1';
-    
-    if (!isLocalhost && hostname !== 'app.cyberia.tn') {
-      console.log('[Auth] Non-app domain detected. Redirecting to app.cyberia.tn for secure login...');
-      window.location.href = 'https://app.cyberia.tn/login';
-      return;
-    }
-
     const CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID;
     
-    const REDIRECT_URI = isLocalhost 
-      ? `${window.location.origin}/api/auth?route=callback`
-      : 'https://app.cyberia.tn/api/auth?route=callback';
+    const REDIRECT_URI = `${window.location.origin}/api/auth?route=callback`;
     
     console.log('[Auth] Starting flow with REDIRECT_URI:', REDIRECT_URI);
 
@@ -76,12 +71,8 @@ const LoginPage: React.FC = () => {
   };
 
   const handleBack = () => {
-    if (window.history.length > 1) {
-      window.history.back();
-    } else {
-      window.history.pushState({}, '', '/');
-      window.dispatchEvent(new PopStateEvent('popstate'));
-    }
+    window.history.pushState({}, '', '/');
+    window.dispatchEvent(new PopStateEvent('popstate'));
   };
 
   return (
