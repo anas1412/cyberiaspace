@@ -19,7 +19,7 @@ export const MODEL_TIERS = {
     models: [
       { id: 'deepseek/deepseek-r1', name: 'DeepSeek: R1', desc: '' },
       { id: 'openai/gpt-5.4', name: 'OpenAI: GPT-5.4', desc: '' },
-      { id: 'google/gemini-3.1-pro-preview', name: 'Google: Gemini 3.1 Pro Preview', desc: '' },
+      { id: 'google/gemini-3.1-pro-preview', name: 'Google: Gemini 3.1 Pro', desc: '' },
       { id: 'anthropic/claude-sonnet-4.6', name: 'Anthropic: Claude Sonnet 4.6', desc: '' },
       { id: 'anthropic/claude-opus-4.6', name: 'Anthropic: Claude Opus 4.6', desc: '' },
     ]
@@ -35,8 +35,8 @@ export const MODEL_TIERS = {
       { id: 'deepseek/deepseek-v3.2', name: 'DeepSeek: V3.2', desc: '' },
       { id: 'openai/gpt-5.4-mini', name: 'OpenAI: GPT-5.4 Mini', desc: '' },
       { id: 'openai/o4-mini', name: 'OpenAI: o4 Mini', desc: '' },
-      { id: 'google/gemini-3-flash-preview', name: 'Google: Gemini 3 Flash Preview', desc: '' },
-      { id: 'google/gemini-3.1-flash-lite-preview', name: 'Google: Gemini 3.1 Flash Lite Preview', desc: '' },
+      { id: 'google/gemini-3-flash-preview', name: 'Google: Gemini 3 Flash', desc: '' },
+      { id: 'google/gemini-3.1-flash-lite-preview', name: 'Google: Gemini 3.1 Flash Lite', desc: '' },
       { id: 'anthropic/claude-haiku-4.5', name: 'Anthropic: Claude Haiku 4.5', desc: '' },
     ]
   },
