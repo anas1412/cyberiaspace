@@ -76,7 +76,7 @@ export const StatusBar: React.FC<StatusBarProps> = ({
             disabled={performanceMode}
             className={cn(
               "p-1.5 md:p-2 flex items-center justify-center rounded-xl transition-all", 
-              performanceMode ? "text-slate-500 opacity-30 cursor-not-allowed" : activeSpace?.physics ? "text-amber-400" : "text-slate-400 hover:text-white hover:bg-white/10"
+              performanceMode ? "text-[var(--text-muted)] opacity-30 cursor-not-allowed" : activeSpace?.physics ? "text-amber-400" : "text-slate-400 hover:text-white hover:bg-white/10"
             )}
           >
             <Magnet 
@@ -84,7 +84,7 @@ export const StatusBar: React.FC<StatusBarProps> = ({
                 "w-3.5 h-3.5 md:w-4 md:h-4 transition-colors", 
                 activeSpace?.physics && !performanceMode 
                   ? "text-[var(--accent)]"    // <--- THIS IS THE FIX
-                  : "text-slate-500"          // Matches the inactive color in your FAB
+                  : "text-[var(--text-muted)]"          // Matches the inactive color in your FAB
               )} 
             />
           </button>

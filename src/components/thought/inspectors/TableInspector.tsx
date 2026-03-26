@@ -57,7 +57,7 @@ export const TableInspector: React.FC<InspectorPanelProps> = ({ thought, isReadO
       </div>
 
       <div className="pt-6 border-t border-[var(--glass-border)] space-y-2">
-        <div className="text-[10px] uppercase font-bold text-slate-500 mb-2">Actions</div>
+        <div className="text-[10px] uppercase font-bold text-[var(--text-muted)] mb-2">Actions</div>
         <div className="grid grid-cols-2 gap-2">
           <button
             onClick={addRow}
@@ -65,7 +65,7 @@ export const TableInspector: React.FC<InspectorPanelProps> = ({ thought, isReadO
             className={cn(
               "flex items-center justify-center gap-1.5 py-2 px-3 rounded-xl text-[10px] uppercase font-bold border border-white/10 transition-colors",
               isReadOnly
-                ? "text-slate-600 cursor-not-allowed"
+                ? "text-[var(--text-muted)] cursor-not-allowed"
                 : "text-slate-400 hover:text-white hover:border-white/20"
             )}
           >
@@ -78,7 +78,7 @@ export const TableInspector: React.FC<InspectorPanelProps> = ({ thought, isReadO
             className={cn(
               "flex items-center justify-center gap-1.5 py-2 px-3 rounded-xl text-[10px] uppercase font-bold border border-white/10 transition-colors",
               isReadOnly
-                ? "text-slate-600 cursor-not-allowed"
+                ? "text-[var(--text-muted)] cursor-not-allowed"
                 : "text-slate-400 hover:text-white hover:border-white/20"
             )}
           >
@@ -93,7 +93,7 @@ export const TableInspector: React.FC<InspectorPanelProps> = ({ thought, isReadO
             className={cn(
               "flex items-center justify-center gap-1.5 py-2 px-3 rounded-xl text-[10px] uppercase font-bold border border-white/10 transition-colors",
               numRows === 0
-                ? "text-slate-600 cursor-not-allowed"
+                ? "text-[var(--text-muted)] cursor-not-allowed"
                 : "text-slate-400 hover:text-white hover:border-white/20"
             )}
           >
@@ -106,7 +106,7 @@ export const TableInspector: React.FC<InspectorPanelProps> = ({ thought, isReadO
             className={cn(
               "flex items-center justify-center gap-1.5 py-2 px-3 rounded-xl text-[10px] uppercase font-bold border border-white/10 transition-colors",
               isReadOnly
-                ? "text-slate-600 cursor-not-allowed"
+                ? "text-[var(--text-muted)] cursor-not-allowed"
                 : "text-slate-400 hover:text-white hover:border-white/20"
             )}
           >

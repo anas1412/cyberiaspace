@@ -1,6 +1,5 @@
 import React from 'react';
 import { useAuthStore } from '../../store/useAuthStore';
-import { useModalStore } from '../../store/useModalStore';
 import { 
   Keyboard, CircleHelp, Settings, Zap
 } from 'lucide-react';
@@ -25,7 +24,6 @@ export const SystemTray: React.FC<SystemTrayProps> = ({
   isSettingsOpen, setIsSettingsOpen
 }) => {
   const user = useAuthStore((state) => state.user);
-  const { openPricing } = useModalStore();
 
   return (
     <div className="fixed bottom-4 md:bottom-8 right-4 md:right-8 z-[9999] flex flex-col items-end gap-4 pointer-events-none system-tray-container mobile-bottom-bar-adjust">
@@ -40,7 +38,7 @@ export const SystemTray: React.FC<SystemTrayProps> = ({
                 </div>
               </div>
               <button 
-                onClick={openPricing}
+                onClick={() => window.location.href = '/pricing'}
                 className="flex items-center gap-2.5 px-3 h-9 md:h-10 rounded-xl bg-amber-600/10 hover:bg-amber-600/20 text-amber-400 transition-all border border-amber-500/20 group/upgrade shadow-inner"
               >
                 <Zap className="w-3.5 h-3.5 fill-amber-500/20 group-hover:scale-110 transition-transform animate-pulse" />

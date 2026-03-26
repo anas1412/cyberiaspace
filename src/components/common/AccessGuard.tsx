@@ -20,7 +20,7 @@ export function AccessGuard({
   modalTitle,
   modalMessage,
 }: AccessGuardProps) {
-  const { openModal, openPricing } = useModalStore();
+  const { openModal } = useModalStore();
 
   const hasAccess =
     feature === 'pro' ? isPro(user) : isAuthenticated(user);
@@ -47,7 +47,7 @@ export function AccessGuard({
       const handleClick = (e: React.MouseEvent) => {
         e.stopPropagation();
         if (feature === 'pro') {
-          openPricing();
+          window.location.href = '/pricing';
         } else {
           openModal({
             title: modalTitle || 'Sign in required',

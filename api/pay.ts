@@ -34,32 +34,28 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         const contentType = req.headers['content-type'] || '';
         console.log('[Pay Handler] Content-Type:', contentType);
 
-        // If body is already parsed (sometimes happens in local dev or specific runtimes)
-        if (req.body && typeof req.body === 'object' && Object.keys(req.body).length > 0) {
-            console.log('[Pay Handler] Body already present in request object');
-            if (action === 'polar_webhook') {
-                // Warning: Re-stringifying might break signature verification if ordering/spacing differs.
-                // However, we should try to capture it if the stream is already gone.
-                rawBodyStr = JSON.stringify(req.body);
-            }
-        } else {
-            try {
-                const rawBody = await buffer(req);
-                rawBodyStr = rawBody.toString();
-                console.log('[Pay Handler] Read raw body. Length:', rawBodyStr.length);
-                
-                if (contentType.includes('application/json') && rawBodyStr.trim()) {
-                    try {
-                        req.body = JSON.parse(rawBodyStr);
-                        console.log('[Pay Handler] Parsed body keys:', Object.keys(req.body));
-                    } catch (err) {
-                        console.error('[Pay Handler] JSON parse error:', err);
-                        return res.status(400).json({ error: 'Invalid JSON body' });
-                    }
+        try {
+            const rawBody = await buffer(req);
+            rawBodyStr = rawBody.toString();
+            console.log('[Pay Handler] Read raw body. Length:', rawBodyStr.length);
+            
+            if (contentType.includes('application/json') && rawBodyStr.trim()) {
+                try {
+                    req.body = JSON.parse(rawBodyStr);
+                    console.log('[Pay Handler] Parsed body keys:', Object.keys(req.body));
+                } catch (err) {
+                    console.error('[Pay Handler] JSON parse error:', err);
+                    return res.status(400).json({ error: 'Invalid JSON body' });
                 }
-            } catch (err) {
-                console.error('[Pay Handler] Failed to read request buffer:', err);
-                // Don't fail immediately, try to proceed if body might be in req.body anyway
+            }
+        } catch (err) {
+            console.error('[Pay Handler] Failed to read request buffer:', err);
+            // If stream is already consumed, check if body is already present
+            if (req.body && typeof req.body === 'object' && Object.keys(req.body).length > 0) {
+                console.log('[Pay Handler] Body already present in request object');
+                if (action === 'polar_webhook') {
+                    rawBodyStr = JSON.stringify(req.body);
+                }
             }
         }
 
@@ -217,8 +213,8 @@ async function handleInit(req: VercelRequest, res: VercelResponse) {
             },
             body: JSON.stringify({
                 amount: amountInMillimes.toString(), // Doc says string in some places, integer in others. String is safer.
-                success_link: `${appUrl}/home/pricing?success=true`,
-                fail_link: `${appUrl}/home/pricing?fail=true`,
+                success_link: `${appUrl}/pricing?success=true`,
+                fail_link: `${appUrl}/pricing?fail=true`,
                 webhook: `${appUrl}/api/pay?action=webhook`,
                 developer_tracking_id: orderId,
                 client_id: userId, // Track by userId in Flouci dashboard

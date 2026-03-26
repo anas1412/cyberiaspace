@@ -72,7 +72,7 @@ export const ThoughtFooter: React.FC<ThoughtFooterProps> = ({
                 "p-1.5 rounded-xl transition-all relative shrink-0",
                 linkingSourceId === thought.id
                   ? "bg-[var(--accent)] text-white shadow-[0_0_20px_var(--accent-glow)]"
-                  : "bg-white/5 text-slate-500 hover:text-white hover:bg-white/10 border border-white/5",
+                  : "bg-white/5 text-[var(--text-muted)] hover:text-white hover:bg-white/10 border border-white/5",
                 thought.stackId && !linkingSourceId && "hover:text-red-400 hover:bg-red-500/10"
               )}
               title={

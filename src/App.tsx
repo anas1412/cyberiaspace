@@ -14,7 +14,7 @@ import BackgroundEngine from './components/background/BackgroundEngine';
 import MultiSelectionMenu from './components/MultiSelectionMenu';
 import EmptyState from './components/EmptyState';
 import Modal from './components/Modal';
-import PricingModal from './components/PricingModal';
+import PricingPage from './components/PricingPage';
 import Lightbox from './components/Lightbox';
 import LoadingOverlay from './components/LoadingOverlay';
 import UpdateToast from './components/UpdateToast';
@@ -56,7 +56,7 @@ function App() {
   const activeSpaceId = useStore((state) => state.activeSpaceId);
   const spaces = useStore((state) => state.spaces);
 
-  const { isPricingOpen, closePricing, openModal } = useModalStore();
+  const { openModal } = useModalStore();
   
   const mouseWorldPos = useRef({ x: 0, y: 0 });
   const mouseScreenPos = useRef({ x: 0, y: 0 });
@@ -156,10 +156,6 @@ function App() {
 
   // Hook: Init and PWA
   useEffect(() => {
-    if (path === '/pricing' || path === '/home/pricing') {
-      useModalStore.getState().openPricing();
-    }
-
     if (path.startsWith('/home')) {
       init();
     }
@@ -214,7 +210,7 @@ function App() {
           description: `You’ve reached the free limit of ${currentLimits.MAX_THOUGHTS_PER_SPACE} thoughts for this space. Upgrade to Cyberia Pro to unlock unlimited mapping and premium Oracle AI features.`,
           type: 'limit_thought',
           confirmText: 'Upgrade to Pro',
-          onConfirm: () => useModalStore.getState().openPricing()
+          onConfirm: () => window.location.href = '/pricing'
         });
         return;
       }
@@ -385,11 +381,19 @@ function App() {
 
   // ========== RENDER BASED ON PATH ==========
   
-  if (path === '/' || path === '/pricing') {
+  // Standalone Pricing Page - no init required
+  if (path === '/pricing') {
+    return (
+      <Suspense fallback={<LoadingOverlay force />}>
+        <PricingPage />
+      </Suspense>
+    );
+  }
+
+  if (path === '/') {
     return (
       <Suspense fallback={<LoadingOverlay force />}>
         <Homepage />
-        <PricingModal isOpen={isPricingOpen} onClose={closePricing} />
         <Modal />
       </Suspense>
     );
@@ -514,7 +518,6 @@ function App() {
           <MultiSelectionMenu />
           <ChatOverlay />
           <Modal />
-          <PricingModal isOpen={isPricingOpen} onClose={closePricing} />
           <Lightbox />
           <TextFocusEditor />
           <TableFocusEditor />

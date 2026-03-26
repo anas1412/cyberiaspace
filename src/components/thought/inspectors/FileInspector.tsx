@@ -94,7 +94,7 @@ export const FileInspector: React.FC<InspectorPanelProps> = ({ thought, isReadOn
               }
             }}
           />
-          <Upload className="w-5 h-5 text-slate-500" />
+          <Upload className="w-5 h-5 text-[var(--text-muted)]" />
           <p className="text-[9px] text-slate-400 uppercase font-bold tracking-widest">Upload or Drag File</p>
         </div>
       )}

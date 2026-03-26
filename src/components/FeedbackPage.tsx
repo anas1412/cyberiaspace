@@ -154,7 +154,7 @@ const FeedbackPage: React.FC = () => {
               <span className="text-[10px] font-black uppercase tracking-[0.3em] text-[var(--accent-secondary)]">Feedback Portal</span>
             </div>
             <h1 className="text-3xl md:text-4xl font-bold text-white tracking-tight">System Reliability & Feedback</h1>
-            <p className="text-sm text-slate-500 max-w-md">Help us refine the kinetic workspace. Share your thoughts, report issues, or suggest new workspace protocols.</p>
+            <p className="text-sm text-[var(--text-muted)] max-w-md">Help us refine the kinetic workspace. Share your thoughts, report issues, or suggest new workspace protocols.</p>
           </div>
           
           <div className="flex items-center gap-3">
@@ -223,7 +223,7 @@ const FeedbackPage: React.FC = () => {
                   <div className="glass rounded-2xl p-12 md:p-20 text-center border border-white/5">
                     <MessageSquare className="w-12 h-12 text-slate-800 mx-auto mb-6" />
                     <h3 className="text-lg font-bold text-white mb-2">Sign In Required</h3>
-                    <p className="text-xs text-slate-500 uppercase tracking-widest mb-6">Sign in to see your submitted feedback.</p>
+                    <p className="text-xs text-[var(--text-muted)] uppercase tracking-widest mb-6">Sign in to see your submitted feedback.</p>
                     <button
                       onClick={() => setView('submit')}
                       className="px-6 py-3 bg-[var(--accent)] hover:bg-[var(--accent)]/90 text-white rounded-xl text-[10px] font-black uppercase tracking-widest transition-all"
@@ -235,7 +235,7 @@ const FeedbackPage: React.FC = () => {
                   <div className="glass rounded-2xl p-12 md:p-20 text-center border border-white/5">
                     <MessageSquare className="w-12 h-12 text-slate-800 mx-auto mb-6" />
                     <h3 className="text-lg font-bold text-white mb-2">No Feedback Yet</h3>
-                    <p className="text-xs text-slate-500 uppercase tracking-widest mb-6">You haven't submitted any feedback yet.</p>
+                    <p className="text-xs text-[var(--text-muted)] uppercase tracking-widest mb-6">You haven't submitted any feedback yet.</p>
                     <button
                       onClick={() => setView('submit')}
                       className="px-6 py-3 bg-[var(--accent)] hover:bg-[var(--accent)]/90 text-white rounded-xl text-[10px] font-black uppercase tracking-widest transition-all"
@@ -272,7 +272,7 @@ const FeedbackPage: React.FC = () => {
                           {item.status || 'none'}
                         </span>
 
-                        <div className="flex items-center gap-2 text-slate-500">
+                        <div className="flex items-center gap-2 text-[var(--text-muted)]">
                           <Clock className="w-3 h-3" />
                           <span className="text-[9px] font-bold uppercase tracking-widest">
                             {new Date(getTimestamp(item)).toLocaleDateString()}
@@ -321,7 +321,7 @@ const FeedbackPage: React.FC = () => {
                   <div className="glass rounded-2xl p-12 md:p-20 text-center border border-white/5">
                     <MessageSquare className="w-12 h-12 text-slate-800 mx-auto mb-6" />
                     <h3 className="text-lg font-bold text-white mb-2">No Feedback Yet</h3>
-                    <p className="text-xs text-slate-500 uppercase tracking-widest">Be the first to submit feedback!</p>
+                    <p className="text-xs text-[var(--text-muted)] uppercase tracking-widest">Be the first to submit feedback!</p>
                   </div>
                 ) : (
                   feedbackList.map((item) => (
@@ -352,14 +352,14 @@ const FeedbackPage: React.FC = () => {
                           {item.status || 'none'}
                         </span>
 
-                        <div className="flex items-center gap-2 text-slate-500">
+                        <div className="flex items-center gap-2 text-[var(--text-muted)]">
                           <Clock className="w-3 h-3" />
                           <span className="text-[9px] font-bold uppercase tracking-widest">
                             {new Date(getTimestamp(item)).toLocaleDateString()}
                           </span>
                         </div>
 
-                        <div className="flex items-center gap-2 text-slate-600 ml-auto">
+                        <div className="flex items-center gap-2 text-[var(--text-muted)] ml-auto">
                           <span className="text-[9px] font-bold uppercase tracking-widest">
                             {getUserDisplay(item)}
                           </span>
@@ -403,7 +403,7 @@ const FeedbackPage: React.FC = () => {
                     </div>
                     <div>
                       <h3 className="text-xl font-bold text-white mb-2">Sent!</h3>
-                      <p className="text-xs text-slate-500 uppercase tracking-widest">Your feedback has been logged in the system.</p>
+                      <p className="text-xs text-[var(--text-muted)] uppercase tracking-widest">Your feedback has been logged in the system.</p>
                     </div>
                     <div className="flex justify-center gap-3">
                       <button
@@ -430,7 +430,7 @@ const FeedbackPage: React.FC = () => {
                     <div className="space-y-6">
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div className="space-y-2">
-                          <label className="text-[9px] font-black uppercase tracking-widest text-slate-500 ml-1">Type</label>
+                          <label className="text-[9px] font-black uppercase tracking-widest text-[var(--text-muted)] ml-1">Type</label>
                           <div className="flex gap-2 p-1.5 bg-black/40 border border-white/5 rounded-xl">
                             {(['issue', 'feedback', 'feature'] as const).map((t) => (
                               <button
@@ -441,7 +441,7 @@ const FeedbackPage: React.FC = () => {
                                   "flex-1 py-2.5 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all",
                                   type === t 
                                     ? "bg-white/10 text-white shadow-lg border border-white/10" 
-                                    : "text-slate-600 hover:text-slate-400 hover:bg-white/[0.02]"
+                                    : "text-[var(--text-muted)] hover:text-slate-400 hover:bg-white/[0.02]"
                                 )}
                               >
                                 {t}
@@ -450,7 +450,7 @@ const FeedbackPage: React.FC = () => {
                           </div>
                         </div>
                         <div className="space-y-2">
-                          <label className="text-[9px] font-black uppercase tracking-widest text-slate-500 ml-1">Email (optional)</label>
+                          <label className="text-[9px] font-black uppercase tracking-widest text-[var(--text-muted)] ml-1">Email (optional)</label>
                           <input 
                             type="email" 
                             placeholder="your@email.com"
@@ -462,7 +462,7 @@ const FeedbackPage: React.FC = () => {
                       </div>
 
                       <div className="space-y-2">
-                        <label className="text-[9px] font-black uppercase tracking-widest text-slate-500 ml-1">Your Message</label>
+                        <label className="text-[9px] font-black uppercase tracking-widest text-[var(--text-muted)] ml-1">Your Message</label>
                         <textarea 
                           required
                           placeholder="Describe the issue or share your thoughts..."

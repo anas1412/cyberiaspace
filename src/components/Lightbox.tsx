@@ -116,7 +116,7 @@ const Lightbox: React.FC = () => {
         </button>
       }
       footerStatus={
-        <p className="text-[8px] md:text-[10px] uppercase font-black tracking-widest text-slate-600 italic">
+        <p className="text-[8px] md:text-[10px] uppercase font-black tracking-widest text-[var(--text-muted)] italic">
           Resolution: {image?.startsWith('data:image/') ? 'Buffered Asset' : 'External Link'}
         </p>
       }
@@ -165,8 +165,8 @@ const Lightbox: React.FC = () => {
               className="bg-black/40 backdrop-blur-md border-t border-white/5 p-4 md:p-6"
             >
               <div className="flex items-center justify-between mb-3 px-1">
-                <span className="text-[9px] font-black uppercase tracking-[0.2em] text-slate-500">Stack Gallery: {stack?.name || 'Clustered'}</span>
-                <span className="text-[8px] font-bold text-slate-600 uppercase tracking-widest">{currentIndex + 1} / {stackItems.length} Images</span>
+                <span className="text-[9px] font-black uppercase tracking-[0.2em] text-[var(--text-muted)]">Stack Gallery: {stack?.name || 'Clustered'}</span>
+                <span className="text-[8px] font-bold text-[var(--text-muted)] uppercase tracking-widest">{currentIndex + 1} / {stackItems.length} Images</span>
               </div>
               <div className="flex gap-3 overflow-x-auto custom-scroll pb-2 w-full snap-x px-1" ref={scrollerRef}>
                 {stackItems.map((item, idx) => {

@@ -68,7 +68,7 @@ export const TasksInspector: React.FC<InspectorPanelProps> = ({ thought, isReadO
       {!isReadOnly && (
         <button
           onClick={() => handleUpdateTasks([...tasks, { text: 'Task', done: false }])}
-          className="w-full py-2 border border-dashed border-white/10 rounded-xl text-[10px] uppercase font-bold text-slate-500 hover:text-white"
+          className="w-full py-2 border border-dashed border-white/10 rounded-xl text-[10px] uppercase font-bold text-[var(--text-muted)] hover:text-white"
         >
           + Add Task
         </button>

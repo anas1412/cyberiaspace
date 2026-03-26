@@ -1,9 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { MousePointer2, Layout, Database, ArrowRight, Menu, X, Cpu, Check, Compass, Rocket, Send, Loader2, CheckCircle, Shield, ChevronDown, MessageCircle } from 'lucide-react';
-import { PLAN_CONFIG } from '../constants';
-import { useAuthStore } from '../store/useAuthStore';
-import { resolvePricingLocation } from '../utils/pricing';
+import { MousePointer2, Layout, Database, ArrowRight, Menu, X, Cpu, Rocket, Send, Loader2, CheckCircle, ChevronDown, MessageCircle } from 'lucide-react';
 
 import SpatialThinkingVisual from './demo/SpatialThinkingVisual';
 import DynamicViewsVisual from './demo/DynamicViewsVisual';
@@ -81,7 +78,7 @@ const FAQItem: React.FC<{
         <span className={`text-[12px] md:text-[13px] font-black uppercase tracking-[0.2em] transition-colors duration-300 pr-8 ${isOpen ? 'text-[var(--accent-secondary)]' : 'text-slate-300 group-hover:text-white'}`}>
           {question}
         </span>
-        <div className={`w-10 h-10 rounded-xl border border-white/10 flex items-center justify-center transition-all duration-500 shrink-0 ${isOpen ? 'rotate-180 bg-[var(--accent)] border-[var(--accent)] text-white shadow-lg shadow-[var(--accent)]/20' : 'group-hover:border-white/30 text-slate-500 bg-white/5'}`}>
+        <div className={`w-10 h-10 rounded-xl border border-white/10 flex items-center justify-center transition-all duration-500 shrink-0 ${isOpen ? 'rotate-180 bg-[var(--accent)] border-[var(--accent)] text-white shadow-lg shadow-[var(--accent)]/20' : 'group-hover:border-white/30 text-[var(--text-muted)] bg-white/5'}`}>
           <ChevronDown className="w-4 h-4" />
         </div>
       </button>
@@ -181,12 +178,10 @@ const FeatureVisual: React.FC<{ activeFeature: number }> = React.memo(({ activeF
 });
 
 const Homepage: React.FC = () => {
-  const { user } = useAuthStore();
   const [activeFeature, setActiveFeature] = useState(0);
   const [activeFAQIndex, setActiveFAQIndex] = useState<number | null>(null);
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const [location, setLocation] = useState<{ country: string; currency: string; isLocalPricing: boolean } | null>(null);
   const [discordData, setDiscordData] = useState<{ member_count: number; presence_count: number; instant_invite: string } | null>(null);
   
   const [contactName, setContactName] = useState('');
@@ -225,17 +220,6 @@ const Homepage: React.FC = () => {
   }, []);
 
   useEffect(() => {
-    fetch('/api/pay?action=pricing')
-      .then(res => res.json())
-      .then(data => {
-        setLocation(resolvePricingLocation(data, user));
-      })
-      .catch(() => {
-        setLocation(resolvePricingLocation(null, user));
-      });
-  }, [user]);
-
-  useEffect(() => {
     const INVITE_CODE = '6DRsnY3ajE'; 
     fetch(`https://discord.com/api/v10/invites/${INVITE_CODE}?with_counts=true`)
       .then(res => res.json())
@@ -257,10 +241,6 @@ const Homepage: React.FC = () => {
     setIsMobileMenuOpen(false);
   };
 
-  const proPrice = PLAN_CONFIG.pro.PRICE!;
-  const savingsUsd = proPrice.monthly.usd * 12 - proPrice.yearly.usd;
-  const savingsTnd = proPrice.monthly.tnd * 12 - proPrice.yearly.tnd;
-
   return (
     <div className="min-h-screen text-[#e2e8f0] selection:bg-[var(--accent)]/30 relative">
       <BackgroundEngine />
@@ -279,7 +259,7 @@ const Homepage: React.FC = () => {
           <div className="hidden md:flex items-center gap-3"> {/* Increased gap slightly to 3 */}
   {/* The Nav Container */}
   <div className="flex items-center h-10 p-1 rounded-2xl">
-                {['features', 'about', 'pricing', 'faq', 'contact'].map((item) => (
+                {['features', 'about', 'faq', 'contact'].map((item) => (
       <button 
         key={item}
         onClick={() => scrollToSection(item)} 
@@ -290,6 +270,14 @@ const Homepage: React.FC = () => {
         </span>
       </button>
     ))}
+    <a 
+      href="/pricing"
+      className="px-3 h-full rounded-xl transition-all duration-300 flex items-center group/nav"
+    >
+      <span className="text-[10px] font-black uppercase tracking-[0.15em] text-slate-400 group-hover/nav:text-white transition-colors">
+        pricing
+      </span>
+    </a>
   </div>
 
   {/* The CTA Button - Now height matched and radius matched */}
@@ -321,7 +309,7 @@ const Homepage: React.FC = () => {
               className="md:hidden glass border-t border-white/5 overflow-hidden"
             >
               <div className="flex flex-col p-6 gap-6">
-    {['features', 'about', 'pricing', 'faq', 'contact'].map((item) => (
+    {['features', 'about', 'faq', 'contact'].map((item) => (
                   <button 
                     key={item}
                     onClick={() => scrollToSection(item)} 
@@ -330,6 +318,12 @@ const Homepage: React.FC = () => {
                     {item}
                   </button>
                 ))}
+                <a 
+                  href="/pricing"
+                  className="text-left text-[12px] font-black uppercase tracking-[0.3em] text-[var(--accent)] hover:text-[var(--accent-secondary)] transition-colors"
+                >
+                  pricing
+                </a>
                 <a href="/home" className="w-full py-3 bg-[var(--accent)] text-white rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] transition-all text-center flex items-center justify-center gap-2 group">
                   Log In
                   <ArrowRight className="w-3 h-3 group-hover:translate-x-1 transition-transform" />
@@ -434,7 +428,7 @@ const Homepage: React.FC = () => {
                     <div className={`w-14 h-14 rounded-xl flex items-center justify-center transition-all duration-500 ${
                       activeFeature === index 
                         ? 'bg-[var(--accent)] text-white shadow-lg shadow-[var(--accent)]/40' 
-                        : 'bg-white/5 text-slate-500 group-hover:text-slate-300'
+                        : 'bg-white/5 text-[var(--text-muted)] group-hover:text-slate-300'
                     }`}>
                       <feature.icon className="w-7 h-7" />
                     </div>
@@ -446,7 +440,7 @@ const Homepage: React.FC = () => {
                         {feature.title}
                       </h3>
                       <p className={`text-[11px] leading-relaxed uppercase font-bold tracking-widest transition-all duration-500 ${
-                        activeFeature === index ? 'text-slate-300 opacity-100' : 'text-slate-600 opacity-0 h-0 overflow-hidden group-hover:h-auto group-hover:opacity-60'
+                        activeFeature === index ? 'text-slate-300 opacity-100' : 'text-[var(--text-muted)] opacity-0 h-0 overflow-hidden group-hover:h-auto group-hover:opacity-60'
                       }`}>
                         {feature.description}
                       </p>
@@ -573,12 +567,12 @@ const Homepage: React.FC = () => {
               <div className="flex items-center justify-center gap-8 mb-6">
                 <div className="text-center">
                   <p className="text-2xl font-black text-white">{discordData.member_count.toLocaleString()}</p>
-                  <p className="text-[10px] font-bold uppercase tracking-widest text-slate-500">Members</p>
+                  <p className="text-[10px] font-bold uppercase tracking-widest text-[var(--text-muted)]">Members</p>
                 </div>
                 <div className="w-px h-10 bg-white/10" />
                 <div className="text-center">
                   <p className="text-2xl font-black text-green-400">{discordData.presence_count.toLocaleString()}</p>
-                  <p className="text-[10px] font-bold uppercase tracking-widest text-slate-500">Online Now</p>
+                  <p className="text-[10px] font-bold uppercase tracking-widest text-[var(--text-muted)]">Online Now</p>
                 </div>
               </div>
             )}
@@ -592,116 +586,6 @@ const Homepage: React.FC = () => {
               Join Discord
               <ArrowRight className="w-4 h-4" />
             </a>
-          </div>
-        </div>
-      </section>
-
-      <section id="pricing" className="py-32 px-6 relative z-10 bg-[var(--accent)]/[0.02]">
-        <div className="max-w-6xl mx-auto">
-          <div className="text-center mb-20">
-            <h2 className="text-4xl md:text-5xl font-black tracking-tighter uppercase mb-6">
-              Unlock <span style={{ color: 'var(--accent)' }}>Your Potential</span>
-            </h2>
-            <p className="text-slate-400 font-medium">Start for free, upgrade when you're ready.</p>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-8xl mx-auto">
-            <motion.div 
-              initial={{ opacity: 0, x: -20 }}
-              whileInView={{ opacity: 1, x: 0 }}
-              viewport={{ once: true }}
-              className="glass p-10 rounded-2xl border-white/5 flex flex-col hover:-translate-y-2 transition-all duration-500 group"
-            >
-              <div className="mb-8">
-                <h3 className="text-xl font-black uppercase tracking-[0.2em] text-white mb-2 group-hover:text-[var(--accent-secondary)] transition-colors">Explorer</h3>
-                <div className="text-4xl font-black text-white group-hover:scale-105 transition-transform origin-left duration-500">$0 <span className="text-sm text-slate-500 font-bold uppercase tracking-widest">/ Forever</span></div>
-              </div>
-              <div className="space-y-4 mb-10 flex-1">
-                <PricingFeature text={`Limited Spaces with limited Thoughts per Space`} />
-                <PricingFeature text={`Rate limited AI usage with basic AI models`} />
-                <PricingFeature text={`Very Limited Storage with limited upload size`} />
-                <PricingFeature text={`Default theme`} />
-                <PricingFeature text="Limited Support" />
-              </div>
-              <a href="/home" className="w-full py-5 bg-white/5 hover:bg-white/10 border border-white/10 text-white rounded-2xl text-[10px] font-black uppercase tracking-[0.3em] transition-all text-center">
-                Get Started Free
-              </a>
-
-              <div className="mt-6 flex items-center justify-center gap-3 opacity-60">
-                <Compass className="w-4 h-4 text-slate-500" />
-                <span className="text-[9px] font-black uppercase tracking-widest text-slate-500">
-                  Free forever. No credit card required.
-                </span>
-              </div>
-            </motion.div>
-
-            <motion.div 
-              initial={{ opacity: 0, x: 20 }}
-              whileInView={{ opacity: 1, x: 0 }}
-              viewport={{ once: true }}
-              className="glass p-10 rounded-2xl border-[var(--accent)]/30 bg-[var(--accent)]/5 flex flex-col relative overflow-hidden hover:-translate-y-2 transition-all duration-500 group"
-            >
-              <div className="absolute top-0 right-0 w-32 h-32 bg-[var(--accent)]/10 blur-[50px] rounded-full translate-x-10 -translate-y-10 group-hover:scale-150 transition-transform duration-1000" />
-
-              <div className="absolute top-6 right-6 z-10">
-                <div className="px-3 py-1 bg-[var(--accent)] text-white text-[9px] font-black uppercase tracking-[0.2em] rounded-xl shadow-lg shadow-[var(--accent)]/20 group-hover:scale-110 transition-transform">
-                  Recommended
-                </div>
-              </div>
-
-              <div className="mb-8 relative z-10">
-                <h3 className="text-xl font-black uppercase tracking-[0.2em] text-[var(--accent-secondary)] mb-2">Pro</h3>
-                
-                {location?.isLocalPricing ? (
-                  <div className="flex flex-col gap-2 mb-2">
-                    <span className="text-[9px] font-bold uppercase tracking-widest bg-[var(--accent)]/20 text-[var(--accent-secondary)] px-3 py-1 rounded-xl border border-[var(--accent)]/30 w-fit">
-                      Local Pricing Active
-                    </span>
-                    <div className="flex items-baseline gap-2 group-hover:scale-105 transition-transform origin-left duration-500">
-                      <div className="text-4xl font-black text-white">{proPrice.monthly.tnd}</div>
-                      <div className="text-xl text-slate-500 font-bold uppercase tracking-widest">DT / Month</div>
-                    </div>
-                    <div className="text-[10px] font-bold text-[var(--accent-secondary)]/60 uppercase tracking-widest">
-                      Save {savingsTnd} DT Yearly. Global: ${proPrice.monthly.usd} USD
-                    </div>
-                  </div>
-                ) : (
-                  <div className="flex items-baseline gap-2 group-hover:scale-105 transition-transform origin-left duration-500">
-                    <div className="text-4xl font-black text-white">${proPrice.monthly.usd}</div>
-                    <div className="text-xl text-slate-500 font-bold uppercase tracking-widest">/ Month</div>
-                  </div>
-                )}
-                
-                {!location?.isLocalPricing && (
-                  <div className="mt-2 text-[10px] font-bold text-[var(--accent-secondary)]/60 uppercase tracking-widest">
-                    Save ${savingsUsd} Yearly
-                  </div>
-                )}
-              </div>
-
-              <div className="space-y-4 mb-10 flex-1">
-                <PricingFeature text={`${PLAN_CONFIG.pro.MAX_SPACES} Spaces with ${PLAN_CONFIG.pro.MAX_THOUGHTS_PER_SPACE} Thoughts per Space`} pro />
-                <PricingFeature text={`Unlimited AI usage: ChatGPT, Claude, Gemini & More`} pro />
-                <PricingFeature text="Unlock Agentic AI Capabilities" pro />
-                <PricingFeature text="Analyze your Files, Images & PDFs natively" pro />
-                <PricingFeature 
-                  text={`X10 Cloud Storage with Unlimited Upload Size`} pro />
-                <PricingFeature text="Custom AI Personality, Background & More themes" pro />
-                <PricingFeature text="Early Access to New Features" pro />
-                <PricingFeature text="24/7 Priority Support" pro />
-              </div>
-
-              <a href="/pricing" className="w-full py-5 bg-[var(--accent)] hover:bg-[var(--accent-secondary)] text-white rounded-2xl text-[10px] font-black uppercase tracking-[0.3em] transition-all text-center shadow-xl shadow-[var(--accent)]/20 active:scale-95">
-                Go Pro
-              </a>
-
-<div className="mt-6 flex items-center justify-center gap-3 opacity-60">
-                <Shield className="w-4 h-4 text-[var(--accent-secondary)]" />
-                <span className="text-[9px] font-black uppercase tracking-widest text-slate-500">
-                  Secure local & global payments via {location?.isLocalPricing ? 'Flouci' : 'Polar.sh'}
-                </span>
-              </div>
-            </motion.div>
           </div>
         </div>
       </section>
@@ -734,7 +618,7 @@ const Homepage: React.FC = () => {
           >
             <div>
               <h3 className="text-sm font-black text-white uppercase tracking-widest mb-2">Still have questions?</h3>
-              <p className="text-xs text-slate-500 uppercase tracking-wider">Our team is here to help you build your perfect space.</p>
+              <p className="text-xs text-[var(--text-muted)] uppercase tracking-wider">Our team is here to help you build your perfect space.</p>
             </div>
             <button 
               onClick={() => scrollToSection('contact')}
@@ -766,14 +650,14 @@ const Homepage: React.FC = () => {
                 <CheckCircle className="w-16 h-16 text-green-400 mx-auto" />
                 <div>
                   <p className="text-lg font-black uppercase tracking-widest text-green-400">Message Sent</p>
-                  <p className="text-sm font-bold text-slate-500 uppercase tracking-widest mt-2">We will get back to you shortly.</p>
+                  <p className="text-sm font-bold text-[var(--text-muted)] uppercase tracking-widest mt-2">We will get back to you shortly.</p>
                 </div>
               </div>
             ) : (
               <form onSubmit={handleContactSubmit} className="space-y-6">
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                   <div className="space-y-3">
-                    <label className="text-[10px] font-black uppercase tracking-widest text-slate-500 ml-1">Name</label>
+                    <label className="text-[10px] font-black uppercase tracking-widest text-[var(--text-muted)] ml-1">Name</label>
                     <input 
                       type="text" 
                       placeholder="Your Name" 
@@ -783,7 +667,7 @@ const Homepage: React.FC = () => {
                     />
                   </div>
                   <div className="space-y-3">
-                    <label className="text-[10px] font-black uppercase tracking-widest text-slate-500 ml-1">Email</label>
+                    <label className="text-[10px] font-black uppercase tracking-widest text-[var(--text-muted)] ml-1">Email</label>
                     <input 
                       type="email" 
                       required 
@@ -795,7 +679,7 @@ const Homepage: React.FC = () => {
                   </div>
                 </div>
                 <div className="space-y-3">
-                  <label className="text-[10px] font-black uppercase tracking-widest text-slate-500 ml-1">Message</label>
+                  <label className="text-[10px] font-black uppercase tracking-widest text-[var(--text-muted)] ml-1">Message</label>
                   <textarea 
                     required 
                     value={contactMessage} 
@@ -860,15 +744,15 @@ const Homepage: React.FC = () => {
         <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-10">
           <div className="flex items-center gap-3">
             <img src="/logo.png" alt="Cyberia AI Studio" className="w-8 h-8 opacity-50" />
-            <span className="font-black uppercase tracking-widest text-slate-500">Cyberia AI Studio</span>
+            <span className="font-black uppercase tracking-widest text-[var(--text-muted)]">Cyberia AI Studio</span>
           </div>
-          <div className="flex flex-wrap items-center justify-center gap-x-8 gap-y-4 text-[10px] font-black uppercase tracking-[0.2em] text-slate-500">
+          <div className="flex flex-wrap items-center justify-center gap-x-8 gap-y-4 text-[10px] font-black uppercase tracking-[0.2em] text-[var(--text-muted)]">
             <a href="/privacy" className="hover:text-white transition-colors">Privacy Policy</a>
             <a href="/terms" className="hover:text-white transition-colors">Terms of Sale (CGV)</a>
             <a href="/legal" className="hover:text-white transition-colors">Legal Notice</a>
             <a href="/contact" className="hover:text-white transition-colors">Contact</a>
           </div>
-          <div className="text-[10px] font-black uppercase tracking-widest text-slate-600">
+          <div className="text-[10px] font-black uppercase tracking-widest text-[var(--text-muted)]">
             © {new Date().getFullYear()} CYBERIA AI STUDIO
           </div>
         </div>
@@ -876,14 +760,5 @@ const Homepage: React.FC = () => {
     </div>
   );
 };
-
-const PricingFeature: React.FC<{ text: string; pro?: boolean }> = ({ text, pro }) => (
-  <div className="flex items-center gap-3">
-    <div className={`w-5 h-5 rounded-full flex items-center justify-center border ${pro ? 'bg-[var(--accent)]/20 border-[var(--accent)]/30 text-[var(--accent-secondary)]' : 'bg-white/5 border-white/10 text-slate-500'}`}>
-      <Check className="w-3 h-3" />
-    </div>
-    <span className={`text-[13px] font-bold uppercase tracking-widest ${pro ? 'text-slate-300' : 'text-slate-500'}`}>{text}</span>
-  </div>
-);
 
 export default Homepage;

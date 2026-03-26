@@ -144,7 +144,7 @@ export const createSpaceSlice: StateCreator<CyberiaState, [], [], any> = (set, g
         description: `You've reached the free limit of ${limits.MAX_SPACES} spaces. Upgrade to Cyberia Pro to create more workspaces and unlock premium features.`, 
         type: 'limit_space', 
         confirmText: 'Upgrade to Pro', 
-        onConfirm: () => useModalStore.getState().openPricing() 
+        onConfirm: () => window.location.href = '/pricing' 
       });
       return;
     }

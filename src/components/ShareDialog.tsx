@@ -67,7 +67,7 @@ const ShareDialog: React.FC<ShareDialogProps> = ({ spaceId }) => {
                 </div>
                 <button
                     onClick={closeModal}
-                    className="p-2 hover:bg-white/5 rounded-xl text-slate-500 hover:text-white transition-all flex-shrink-0"
+                    className="p-2 hover:bg-white/5 rounded-xl text-[var(--text-muted)] hover:text-white transition-all flex-shrink-0"
                     title="Close"
                 >
                     <X className="w-5 h-5" />
@@ -90,7 +90,7 @@ const ShareDialog: React.FC<ShareDialogProps> = ({ spaceId }) => {
             ) : (
                 <div className="flex flex-col gap-4">
                     <div className="bg-slate-900/50 border border-slate-800 rounded-xl p-3 flex flex-col gap-3">
-                        <div className="flex items-center justify-between text-xs text-slate-500 font-mono uppercase tracking-wider">
+                        <div className="flex items-center justify-between text-xs text-[var(--text-muted)] font-mono uppercase tracking-wider">
                             <span>Public Link</span>
                             {space.lastPublished && (
                                 <span>Updated: {new Date(space.lastPublished).toLocaleDateString()}</span>

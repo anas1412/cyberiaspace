@@ -52,8 +52,8 @@ export const Dropdown: React.FC<DropdownProps> = ({
     <div className="relative" ref={containerRef}>
       {label && (
         <div className="flex items-center gap-1.5 mb-1.5">
-          {icon && <span className="text-slate-500">{icon}</span>}
-          <span className="text-[8px] font-black uppercase tracking-widest text-slate-500">{label}</span>
+          {icon && <span className="text-[var(--text-muted)]">{icon}</span>}
+          <span className="text-[8px] font-black uppercase tracking-widest text-[var(--text-muted)]">{label}</span>
         </div>
       )}
       <button
@@ -68,16 +68,16 @@ export const Dropdown: React.FC<DropdownProps> = ({
         )}
       >
         <div className="flex items-center gap-2 flex-1 min-w-0">
-          {icon && <span className="text-slate-500 flex-shrink-0">{icon}</span>}
+          {icon && <span className="text-[var(--text-muted)] flex-shrink-0">{icon}</span>}
           <span className={cn(
             "text-[10px] font-medium truncate",
-            selectedOption ? "text-[var(--text-primary)]" : "text-slate-500"
+            selectedOption ? "text-[var(--text-primary)]" : "text-[var(--text-muted)]"
           )}>
             {selectedOption ? selectedOption.label : placeholder}
           </span>
         </div>
         <ChevronDown className={cn(
-          "w-3.5 h-3.5 text-slate-500 flex-shrink-0 transition-transform duration-200",
+          "w-3.5 h-3.5 text-[var(--text-muted)] flex-shrink-0 transition-transform duration-200",
           isOpen && "rotate-180"
         )} />
       </button>
@@ -105,7 +105,7 @@ export const Dropdown: React.FC<DropdownProps> = ({
                     option.value === value && "bg-[var(--accent)]/5"
                   )}
                 >
-                  {option.icon && <span className="text-slate-500">{option.icon}</span>}
+                  {option.icon && <span className="text-[var(--text-muted)]">{option.icon}</span>}
                   <span className={cn(
                     "text-[10px] font-medium flex-1",
                     option.value === value ? "text-[var(--text-primary)]" : "text-slate-400"

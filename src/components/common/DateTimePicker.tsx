@@ -239,7 +239,7 @@ export const DateTimePicker: React.FC<DateTimePickerProps> = ({
         )}
       >
         <span className="flex-1 text-center truncate">{formatDisplayValue()}</span>
-        <Calendar className="w-4 h-4 text-slate-500 group-hover:text-[var(--accent)] transition-colors flex-shrink-0 ml-2" />
+        <Calendar className="w-4 h-4 text-[var(--text-muted)] group-hover:text-[var(--accent)] transition-colors flex-shrink-0 ml-2" />
       </button>
 
       <AnimatePresence>
@@ -298,12 +298,12 @@ export const DateTimePicker: React.FC<DateTimePickerProps> = ({
             {!isAllDay && (
               <div className="mt-4 pt-3 border-t border-[var(--glass-border)]">
                 <div className="flex items-center gap-2 mb-2">
-                  <Clock className="w-3 h-3 text-slate-500" />
-                  <span className="text-[8px] font-black uppercase tracking-widest text-slate-500">Time</span>
+                  <Clock className="w-3 h-3 text-[var(--text-muted)]" />
+                  <span className="text-[8px] font-black uppercase tracking-widest text-[var(--text-muted)]">Time</span>
                 </div>
                 <div className="grid grid-cols-2 gap-2">
                   <div className="flex items-center gap-1 bg-[var(--bg-page)]/20 rounded-lg px-2 py-1.5 border border-[var(--glass-border)]">
-                    <span className="text-[7px] font-bold text-slate-500 uppercase">From</span>
+                    <span className="text-[7px] font-bold text-[var(--text-muted)] uppercase">From</span>
                     <input
                       type="time"
                       value={`${String(formatTime(startTime).hours).padStart(2, '0')}:${String(formatTime(startTime).minutes).padStart(2, '0')}`}
@@ -315,7 +315,7 @@ export const DateTimePicker: React.FC<DateTimePickerProps> = ({
                     />
                   </div>
                   <div className="flex items-center gap-1 bg-[var(--bg-page)]/20 rounded-lg px-2 py-1.5 border border-[var(--glass-border)]">
-                    <span className="text-[7px] font-bold text-slate-500 uppercase">To</span>
+                    <span className="text-[7px] font-bold text-[var(--text-muted)] uppercase">To</span>
                     <input
                       type="time"
                       value={`${String(formatTime(endTime).hours).padStart(2, '0')}:${String(formatTime(endTime).minutes).padStart(2, '0')}`}
@@ -374,8 +374,8 @@ export const DateTimePicker: React.FC<DateTimePickerProps> = ({
                     {showLocation && (
                       <div className="space-y-1.5">
                         <div className="flex items-center gap-1.5">
-                          <MapPin className="w-3 h-3 text-slate-500" />
-                          <span className="text-[8px] font-black uppercase tracking-widest text-slate-500">Location</span>
+                          <MapPin className="w-3 h-3 text-[var(--text-muted)]" />
+                          <span className="text-[8px] font-black uppercase tracking-widest text-[var(--text-muted)]">Location</span>
                         </div>
                         <input
                           type="text"
@@ -383,7 +383,7 @@ export const DateTimePicker: React.FC<DateTimePickerProps> = ({
                           onChange={(e) => handleLocationChange(e.target.value)}
                           onBlur={handleLocationBlur}
                           placeholder="Add location..."
-                          className="w-full bg-[var(--bg-page)]/20 border border-[var(--glass-border)] rounded-lg px-3 py-2 text-[10px] text-[var(--text-primary)] placeholder:text-slate-600 outline-none focus:border-[var(--accent)] transition-colors"
+                          className="w-full bg-[var(--bg-page)]/20 border border-[var(--glass-border)] rounded-lg px-3 py-2 text-[10px] text-[var(--text-primary)] placeholder:text-[var(--text-muted)] outline-none focus:border-[var(--accent)] transition-colors"
                         />
                       </div>
                     )}
@@ -412,7 +412,7 @@ export const DateTimePicker: React.FC<DateTimePickerProps> = ({
                   "flex-1 py-2 rounded-lg text-[8px] font-black uppercase tracking-widest transition-all",
                   hasChanges
                     ? "bg-[var(--accent)] text-[var(--bg-main)] shadow-[0_0_15px_var(--accent-glow)]"
-                    : "bg-[var(--glass-border)]/50 text-slate-500"
+                    : "bg-[var(--glass-border)]/50 text-[var(--text-muted)]"
                 )}
               >
                 Done

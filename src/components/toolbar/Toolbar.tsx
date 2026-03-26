@@ -52,7 +52,7 @@ const Toolbar: React.FC = () => {
   const creatorName = useStore((state) => state.creatorName);
   const isSpaceLoading = useStore((state) => state.isSpaceLoading);
 
-  const { openModal, openPricing } = useModalStore();
+  const { openModal } = useModalStore();
 
   const setTransform = useStore((state) => state.setTransform);
 
@@ -216,7 +216,7 @@ const Toolbar: React.FC = () => {
       return;
     }
     if (!limits.AI_ENABLED) {
-      openPricing();
+      window.location.href = '/pricing';
       return;
     }
     setChatOpen(!isChatOpen);
@@ -240,7 +240,7 @@ const Toolbar: React.FC = () => {
           : `You’ve reached the free limit of ${limits.MAX_THOUGHTS_PER_SPACE} thoughts for this space. Upgrade to Cyberia Pro to unlock unlimited mapping and premium Oracle AI features.`,
         type: 'limit_thought', 
         confirmText: isPro ? 'Acknowledged' : 'Upgrade to Pro', 
-        onConfirm: isPro ? undefined : () => openPricing()
+        onConfirm: isPro ? undefined : () => window.location.href = '/pricing'
       });
       return;
     }
@@ -278,7 +278,7 @@ const Toolbar: React.FC = () => {
           : `You’ve reached the free limit of ${limits.MAX_SPACES} spaces. Upgrade to Cyberia Pro to create more workspaces and unlock premium features.`, 
         type: 'limit_space', 
         confirmText: isPro ? 'Acknowledged' : 'Upgrade to Pro', 
-        onConfirm: isPro ? undefined : () => openPricing() 
+        onConfirm: isPro ? undefined : () => window.location.href = '/pricing' 
       });
       return;
     }

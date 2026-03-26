@@ -28,7 +28,7 @@ const formatStorage = (mb: number) => {
 const ModalHeader: React.FC<{ title: string; onClose: () => void }> = ({ title, onClose }) => (
   <div className="flex justify-between items-center px-8 py-6 border-b border-white/5 shrink-0">
     <h3 className="text-sm font-black uppercase tracking-[0.2em] text-[var(--accent-secondary)]">{title}</h3>
-    <button onClick={onClose} className="text-slate-500 hover:text-white transition-colors p-2">
+    <button onClick={onClose} className="text-[var(--text-muted)] hover:text-white transition-colors p-2">
       <X className="w-5 h-5" />
     </button>
   </div>
@@ -50,12 +50,12 @@ const ModalFooter: React.FC<{ onClose: () => void }> = ({ onClose }) => (
             window.dispatchEvent(new PopStateEvent('popstate'));
             onClose();
           }}
-          className="text-[11px] font-medium text-slate-500 hover:text-slate-300 transition-colors"
+          className="text-[11px] font-medium text-[var(--text-muted)] hover:text-slate-300 transition-colors"
         >
           {link.label}
         </button>
       ))}
-      <span className="text-[10px] text-slate-600 font-medium">v{APP_VERSION}</span>
+      <span className="text-[10px] text-[var(--text-muted)] font-medium">v{APP_VERSION}</span>
     </div>
   </div>
 );
@@ -226,8 +226,8 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
               key={tab.id} 
               onClick={() => setActiveTab(tab.id as any)} 
               className={cn(
-                "relative flex items-center gap-2.5 px-5 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all shrink-0", 
-                activeTab === tab.id ? "text-white" : "text-slate-500 hover:text-slate-300 hover:bg-white/5"
+                "relative flex items-center gap-2.5 px-5 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-wide transition-all shrink-0", 
+                activeTab === tab.id ? "text-white" : "text-[var(--text-muted)] hover:text-slate-300 hover:bg-white/5"
               )}
             >
               {activeTab === tab.id && (
@@ -259,7 +259,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
               >
                 {/* Internal Navigation */}
                 <section>
-                  <p className="text-[10px] font-black uppercase tracking-widest text-slate-500 mb-4 flex items-center gap-2">
+                  <p className="text-[10px] font-black uppercase tracking-wide text-[var(--text-muted)] mb-4 flex items-center gap-2">
                     <Info className="w-3.5 h-3.5" /> System Navigation
                   </p>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -268,27 +268,27 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                       className="flex items-center justify-between p-4 rounded-2xl bg-white/[0.03] border border-white/5 hover:bg-white/5 transition-all group"
                     >
                       <div className="flex items-center gap-3">
-                        <MousePointer2 className="w-4 h-4 text-slate-500 group-hover:text-[var(--accent-secondary)] transition-colors" />
-                        <span className="text-[10px] font-bold uppercase tracking-widest text-slate-300 group-hover:text-white">Command Center</span>
+                        <MousePointer2 className="w-4 h-4 text-[var(--text-muted)] group-hover:text-[var(--accent-secondary)] transition-colors" />
+                        <span className="text-[10px] font-bold uppercase tracking-wide text-slate-300 group-hover:text-white">Command Center</span>
                       </div>
-                      <ExternalLink className="w-3 h-3 text-slate-600 group-hover:text-slate-400" />
+                      <ExternalLink className="w-3 h-3 text-[var(--text-muted)] group-hover:text-slate-400" />
                     </button>
                     <button 
                       onClick={() => { onClose(); (window as any)._openHelp?.(); }}
                       className="flex items-center justify-between p-4 rounded-2xl bg-white/[0.03] border border-white/5 hover:bg-white/5 transition-all group"
                     >
                       <div className="flex items-center gap-3">
-                        <HelpCircle className="w-4 h-4 text-slate-500 group-hover:text-[var(--accent-secondary)] transition-colors" />
-                        <span className="text-[10px] font-bold uppercase tracking-widest text-slate-300 group-hover:text-white">System Help</span>
+                        <HelpCircle className="w-4 h-4 text-[var(--text-muted)] group-hover:text-[var(--accent-secondary)] transition-colors" />
+                        <span className="text-[10px] font-bold uppercase tracking-wide text-slate-300 group-hover:text-white">System Help</span>
                       </div>
-                      <ExternalLink className="w-3 h-3 text-slate-600 group-hover:text-slate-400" />
+                      <ExternalLink className="w-3 h-3 text-[var(--text-muted)] group-hover:text-slate-400" />
                     </button>
                   </div>
                 </section>
 
                 {/* Help Links (External) */}
                 <section>
-                  <p className="text-[10px] font-black uppercase tracking-widest text-slate-500 mb-4 flex items-center gap-2">
+                  <p className="text-[10px] font-black uppercase tracking-wide text-[var(--text-muted)] mb-4 flex items-center gap-2">
                     <MessageSquare className="w-3.5 h-3.5" /> Support & Resources
                   </p>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -302,10 +302,10 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                         className="flex items-center justify-between p-4 rounded-2xl bg-white/[0.03] border border-white/5 hover:bg-white/5 hover:border-white/10 transition-all group"
                       >
                         <div className="flex items-center gap-3">
-                          <link.icon className="w-4 h-4 text-slate-500 group-hover:text-blue-400 transition-colors" />
-                          <span className="text-[10px] font-bold uppercase tracking-widest text-slate-300 group-hover:text-white">{link.label}</span>
+                          <link.icon className="w-4 h-4 text-[var(--text-muted)] group-hover:text-blue-400 transition-colors" />
+                          <span className="text-[10px] font-bold uppercase tracking-wide text-slate-300 group-hover:text-white">{link.label}</span>
                         </div>
-                        <ExternalLink className="w-3 h-3 text-slate-600 group-hover:text-slate-400" />
+                        <ExternalLink className="w-3 h-3 text-[var(--text-muted)] group-hover:text-slate-400" />
                       </button>
                     ))}
                   </div>
@@ -313,38 +313,38 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
 
                 {/* Tools */}
                 <section>
-                  <p className="text-[10px] font-black uppercase tracking-widest text-slate-500 mb-4 flex items-center gap-2">
+                  <p className="text-[10px] font-black uppercase tracking-wide text-[var(--text-muted)] mb-4 flex items-center gap-2">
                     <Laptop className="w-3.5 h-3.5" /> Workspace Tools
                   </p>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <button onClick={handleExport} className="flex items-center gap-3 p-4 rounded-2xl bg-white/[0.03] border border-white/5 hover:bg-white/5 transition-all text-left group">
-                      <Download className="w-4 h-4 text-slate-500 group-hover:text-green-400" />
+                      <Download className="w-4 h-4 text-[var(--text-muted)] group-hover:text-green-400" />
                       <div>
-                        <p className="text-[10px] font-bold uppercase tracking-widest text-slate-300 group-hover:text-white">Export Backup</p>
-                        <p className="text-[8px] font-medium text-slate-600 uppercase tracking-widest mt-0.5">Save to JSON</p>
+                        <p className="text-[10px] font-bold uppercase tracking-wide text-slate-300 group-hover:text-white">Export Backup</p>
+                        <p className="text-[8px] font-medium text-[var(--text-muted)] uppercase tracking-wide mt-0.5">Save to JSON</p>
                       </div>
                     </button>
                     <label className="flex items-center gap-3 p-4 rounded-2xl bg-white/[0.03] border border-white/5 hover:bg-white/5 transition-all cursor-pointer group">
-                      <Upload className="w-4 h-4 text-slate-500 group-hover:text-blue-400" />
+                      <Upload className="w-4 h-4 text-[var(--text-muted)] group-hover:text-blue-400" />
                       <div>
-                        <p className="text-[10px] font-bold uppercase tracking-widest text-slate-300 group-hover:text-white">Import Backup</p>
-                        <p className="text-[8px] font-medium text-slate-600 uppercase tracking-widest mt-0.5">Restore from JSON</p>
+                        <p className="text-[10px] font-bold uppercase tracking-wide text-slate-300 group-hover:text-white">Import Backup</p>
+                        <p className="text-[8px] font-medium text-[var(--text-muted)] uppercase tracking-wide mt-0.5">Restore from JSON</p>
                       </div>
                       <input type="file" className="hidden" accept=".json" onChange={handleImport} />
                     </label>
                     <button onClick={handleScreenshot} disabled={isCapturing} className="flex items-center gap-3 p-4 rounded-2xl bg-white/[0.03] border border-white/5 hover:bg-white/5 transition-all text-left group">
-                      <Camera className="w-4 h-4 text-slate-500 group-hover:text-purple-400" />
+                      <Camera className="w-4 h-4 text-[var(--text-muted)] group-hover:text-purple-400" />
                       <div>
-                        <p className="text-[10px] font-bold uppercase tracking-widest text-slate-300 group-hover:text-white">{isCapturing ? 'Capturing...' : 'Capture Space'}</p>
-                        <p className="text-[8px] font-medium text-slate-600 uppercase tracking-widest mt-0.5">High-Res Screenshot</p>
+                        <p className="text-[10px] font-bold uppercase tracking-wide text-slate-300 group-hover:text-white">{isCapturing ? 'Capturing...' : 'Capture Space'}</p>
+                        <p className="text-[8px] font-medium text-[var(--text-muted)] uppercase tracking-wide mt-0.5">High-Res Screenshot</p>
                       </div>
                     </button>
                     {deferredPrompt && (
                       <button onClick={handleInstall} className="flex items-center gap-3 p-4 rounded-2xl bg-blue-500/5 border border-blue-500/10 hover:bg-blue-500/10 transition-all text-left group">
                         <Smartphone className="w-4 h-4 text-blue-400 group-hover:scale-110 transition-transform" />
                         <div>
-                          <p className="text-[10px] font-bold uppercase tracking-widest text-blue-400 group-hover:text-blue-300">Install Cyberia</p>
-                          <p className="text-[8px] font-medium text-blue-500/60 uppercase tracking-widest mt-0.5">Native PWA Experience</p>
+                          <p className="text-[10px] font-bold uppercase tracking-wide text-blue-400 group-hover:text-blue-300">Install Cyberia</p>
+                          <p className="text-[8px] font-medium text-blue-500/60 uppercase tracking-wide mt-0.5">Native PWA Experience</p>
                         </div>
                       </button>
                     )}
@@ -365,7 +365,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                 {/* Themes */}
                 {/* App Themes */}
                 <section>
-                  <p className="text-[10px] font-black uppercase tracking-widest text-slate-500 mb-4 flex items-center gap-2">
+                  <p className="text-[10px] font-black uppercase tracking-wide text-[var(--text-muted)] mb-4 flex items-center gap-2">
                     <Palette className="w-3.5 h-3.5" /> App Themes
                   </p>
                   <AccessGuard 
@@ -393,7 +393,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                               className="w-8 h-8 rounded-full border-4 border-black/20 shadow-lg group-hover:scale-110 transition-transform" 
                               style={{ backgroundColor: colors[id] }} 
                             />
-                            <span className={cn("text-[9px] font-black uppercase tracking-widest", active ? "text-white" : "text-slate-500 group-hover:text-slate-300")}>
+                            <span className={cn("text-[9px] font-black uppercase tracking-wide", active ? "text-white" : "text-[var(--text-muted)] group-hover:text-slate-300")}>
                               {labels[id]}
                             </span>
                           </button>
@@ -405,7 +405,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
 
                 {/* AI Personality */}
                 <section>
-                  <p className="text-[10px] font-black uppercase tracking-widest text-slate-500 mb-4 flex items-center gap-2">
+                  <p className="text-[10px] font-black uppercase tracking-wide text-[var(--text-muted)] mb-4 flex items-center gap-2">
                     <MessageSquare className="w-3.5 h-3.5" /> AI Personality
                   </p>
                   <AccessGuard 
@@ -427,13 +427,13 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                 {/* Custom Background */}
                 <section>
                   <div className="flex items-center justify-between mb-4">
-                    <p className="text-[10px] font-black uppercase tracking-widest text-slate-500 flex items-center gap-2">
+                    <p className="text-[10px] font-black uppercase tracking-wide text-[var(--text-muted)] flex items-center gap-2">
                       <Camera className="w-3.5 h-3.5" /> Workspace Background
                     </p>
                     {customBg && (
                       <button 
                         onClick={handleBgReset}
-                        className="text-[9px] font-black uppercase tracking-widest text-red-400 hover:text-red-300 transition-colors flex items-center gap-1.5"
+                        className="text-[9px] font-black uppercase tracking-wide text-red-400 hover:text-red-300 transition-colors flex items-center gap-1.5"
                       >
                         <Trash2 className="w-3 h-3" /> Reset
                       </button>
@@ -449,13 +449,13 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                   >
                     <label className="relative flex flex-col items-center justify-center gap-4 p-8 rounded-3xl bg-white/[0.02] border-2 border-dashed border-white/5 hover:border-white/20 hover:bg-white/[0.04] transition-all cursor-pointer group">
                       <div className="w-12 h-12 rounded-2xl bg-white/5 flex items-center justify-center group-hover:scale-110 group-hover:bg-white/10 transition-all">
-                        <Upload className="w-6 h-6 text-slate-500 group-hover:text-white" />
+                        <Upload className="w-6 h-6 text-[var(--text-muted)] group-hover:text-white" />
                       </div>
                       <div className="text-center">
                         <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-300 group-hover:text-white transition-colors">
                           {customBg ? 'Update Background' : 'Upload Custom Background'}
                         </p>
-                        <p className="text-[8px] font-bold text-slate-600 uppercase tracking-widest mt-1.5">Supports JPG, PNG, GIF • Max 2MB</p>
+                        <p className="text-[8px] font-bold text-[var(--text-muted)] uppercase tracking-wide mt-1.5">Supports JPG, PNG, GIF • Max 2MB</p>
                       </div>
                       <input type="file" className="hidden" accept="image/*,.gif" onChange={handleBgUpload} />
                     </label>
@@ -475,18 +475,18 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
               >
                 {/* Metrics */}
                 <section>
-                  <p className="text-[10px] font-black uppercase tracking-widest text-slate-500 mb-4 flex items-center gap-2">
+                  <p className="text-[10px] font-black uppercase tracking-wide text-[var(--text-muted)] mb-4 flex items-center gap-2">
                     <Database className="w-3.5 h-3.5" /> Storage Usage
                   </p>
                   <div className="p-6 rounded-2xl bg-white/[0.03] border border-white/5">
                     <div className="flex justify-between items-end mb-4">
                       <div>
                         <p className="text-[14px] font-black text-white">{formatStorage(storageUsageMB)}</p>
-                        <p className="text-[9px] font-bold text-slate-500 uppercase tracking-widest mt-0.5">Used</p>
+                        <p className="text-[9px] font-bold text-[var(--text-muted)] uppercase tracking-wide mt-0.5">Used</p>
                       </div>
                       <div className="text-right">
                         <p className="text-[11px] font-black text-slate-400">{formatStorage(limits.MAX_STORAGE_MB)}</p>
-                        <p className="text-[9px] font-bold text-slate-600 uppercase tracking-widest mt-0.5">Quota Limit</p>
+                        <p className="text-[9px] font-bold text-[var(--text-muted)] uppercase tracking-wide mt-0.5">Quota Limit</p>
                       </div>
                     </div>
                     <div className="h-2 w-full bg-white/5 rounded-full overflow-hidden border border-white/5 p-0.5">
@@ -501,11 +501,11 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                     <div className="mt-6 grid grid-cols-2 gap-4">
                       <div className="p-3 rounded-xl bg-white/[0.02] border border-white/5">
                         <p className="text-[11px] font-black text-white">{totalThoughtCount}</p>
-                        <p className="text-[8px] font-bold text-slate-500 uppercase tracking-widest mt-0.5">Total Thoughts</p>
+                        <p className="text-[8px] font-bold text-[var(--text-muted)] uppercase tracking-wide mt-0.5">Total Thoughts</p>
                       </div>
                       <div className="p-3 rounded-xl bg-white/[0.02] border border-white/5">
                         <p className="text-[11px] font-black text-white">{Math.round((storageUsageMB / limits.MAX_STORAGE_MB) * 100)}%</p>
-                        <p className="text-[8px] font-bold text-slate-500 uppercase tracking-widest mt-0.5">Storage Used</p>
+                        <p className="text-[8px] font-bold text-[var(--text-muted)] uppercase tracking-wide mt-0.5">Storage Used</p>
                       </div>
                     </div>
                   </div>
@@ -513,7 +513,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
 
                 {/* Data Management */}
                 <section>
-                  <p className="text-[10px] font-black uppercase tracking-widest text-red-500/50 mb-4 flex items-center gap-2">
+                  <p className="text-[10px] font-black uppercase tracking-wide text-red-500/50 mb-4 flex items-center gap-2">
                     <RefreshCw className="w-3.5 h-3.5" /> Local Management
                   </p>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -529,9 +529,9 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                       }} 
                       className="flex flex-col items-start gap-1 p-5 rounded-2xl bg-white/[0.02] border border-white/5 hover:bg-red-500/5 hover:border-red-500/20 transition-all group"
                     >
-                      <RefreshCw className="w-4 h-4 text-slate-500 group-hover:text-red-400 transition-colors" />
-                      <p className="text-[10px] font-bold uppercase tracking-widest text-slate-300 group-hover:text-red-400 mt-2">Reset Session</p>
-                      <p className="text-[8px] font-medium text-slate-600 uppercase tracking-widest leading-relaxed mt-1">Clears local cache and logs you out</p>
+                      <RefreshCw className="w-4 h-4 text-[var(--text-muted)] group-hover:text-red-400 transition-colors" />
+                      <p className="text-[10px] font-bold uppercase tracking-wide text-slate-300 group-hover:text-red-400 mt-2">Reset Session</p>
+                      <p className="text-[8px] font-medium text-[var(--text-muted)] uppercase tracking-wide leading-relaxed mt-1">Clears local cache and logs you out</p>
                     </button>
                     <button 
                       onClick={() => { 
@@ -545,9 +545,9 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                       }} 
                       className="flex flex-col items-start gap-1 p-5 rounded-2xl bg-white/[0.02] border border-white/5 hover:bg-red-500/5 hover:border-red-500/20 transition-all group"
                     >
-                      <Trash2 className="w-4 h-4 text-slate-500 group-hover:text-red-400 transition-colors" />
-                      <p className="text-[10px] font-bold uppercase tracking-widest text-slate-300 group-hover:text-red-400 mt-2">Wipe All Data</p>
-                      <p className="text-[8px] font-medium text-slate-600 uppercase tracking-widest leading-relaxed mt-1">Permanently deletes all local thoughts</p>
+                      <Trash2 className="w-4 h-4 text-[var(--text-muted)] group-hover:text-red-400 transition-colors" />
+                      <p className="text-[10px] font-bold uppercase tracking-wide text-slate-300 group-hover:text-red-400 mt-2">Wipe All Data</p>
+                      <p className="text-[8px] font-medium text-[var(--text-muted)] uppercase tracking-wide leading-relaxed mt-1">Permanently deletes all local thoughts</p>
                     </button>
                   </div>
                 </section>
@@ -570,10 +570,10 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                       key={period}
                       onClick={() => setQuotaPeriod(period)}
                       className={cn(
-                        "px-4 py-2 rounded-lg text-[9px] font-black uppercase tracking-widest transition-all",
+                        "px-4 py-2 rounded-lg text-[9px] font-black uppercase tracking-wide transition-all",
                         quotaPeriod === period 
                           ? "bg-white/10 text-white border border-white/10" 
-                          : "text-slate-500 hover:text-slate-300"
+                          : "text-[var(--text-muted)] hover:text-slate-300"
                       )}
                     >
                       {period}
@@ -598,29 +598,29 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                     {/* Normal */}
                     <div className="p-4 rounded-2xl bg-white/[0.03] border border-white/5">
                       <div className="flex justify-between items-center mb-3">
-                        <span className="text-[11px] font-bold text-blue-400">NORMAL</span>
+                        <span className="text-[11px] font-bold text-[var(--accent-secondary)]">NORMAL</span>
                         <span className="text-[14px] font-black text-white">{Math.max(0, 100 - Math.round((usage.daily.medium / 60) * 100))}%</span>
                       </div>
                       <div className="h-2 w-full bg-white/5 rounded-full overflow-hidden border border-white/5 p-0.5">
-                        <div className="h-full bg-blue-500 rounded-full" style={{ width: `${Math.max(0, Math.min(100, 100 - (usage.daily.medium / 60) * 100))}%` }} />
+                        <div className="h-full bg-[var(--accent)] rounded-full" style={{ width: `${Math.max(0, Math.min(100, 100 - (usage.daily.medium / 60) * 100))}%` }} />
                       </div>
                     </div>
 
                     {/* Small */}
                     <div className="p-4 rounded-2xl bg-white/[0.03] border border-white/5">
                       <div className="flex justify-between items-center mb-3">
-                        <span className="text-[11px] font-bold text-green-400">SMALL</span>
+                        <span className="text-[11px] font-bold text-[var(--accent-secondary)]">SMALL</span>
                         <span className="text-[14px] font-black text-white">{Math.max(0, 100 - Math.round((usage.daily.small / 500) * 100))}%</span>
                       </div>
                       <div className="h-2 w-full bg-white/5 rounded-full overflow-hidden border border-white/5 p-0.5">
-                        <div className="h-full bg-green-500 rounded-full" style={{ width: `${Math.max(0, Math.min(100, 100 - (usage.daily.small / 500) * 100))}%` }} />
+                        <div className="h-full bg-[var(--accent)] rounded-full" style={{ width: `${Math.max(0, Math.min(100, 100 - (usage.daily.small / 500) * 100))}%` }} />
                       </div>
                     </div>
 
                     {/* Free */}
                     <div className="p-4 rounded-2xl bg-white/[0.03] border border-white/5">
                       <div className="flex justify-between items-center mb-3">
-                        <span className="text-[11px] font-bold text-slate-500">FREE</span>
+                        <span className="text-[11px] font-bold text-[var(--text-muted)]">FREE</span>
                         <span className="text-[14px] font-black text-white">{(user?.plan || 'free') === 'pro' ? '∞' : `${Math.max(0, 100 - Math.round((usage.daily.free / 15) * 100))}%`}</span>
                       </div>
                       <div className="h-2 w-full bg-white/5 rounded-full overflow-hidden border border-white/5 p-0.5">
@@ -645,27 +645,27 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
 
                     <div className="p-4 rounded-2xl bg-white/[0.03] border border-white/5">
                       <div className="flex justify-between items-center mb-3">
-                        <span className="text-[11px] font-bold text-blue-400">NORMAL</span>
+                        <span className="text-[11px] font-bold text-[var(--accent-secondary)]">NORMAL</span>
                         <span className="text-[14px] font-black text-white">{Math.max(0, 100 - Math.round((usage.weekly.medium / 420) * 100))}%</span>
                       </div>
                       <div className="h-2 w-full bg-white/5 rounded-full overflow-hidden border border-white/5 p-0.5">
-                        <div className="h-full bg-blue-500 rounded-full" style={{ width: `${Math.max(0, Math.min(100, 100 - (usage.weekly.medium / 420) * 100))}%` }} />
+                        <div className="h-full bg-[var(--accent)] rounded-full" style={{ width: `${Math.max(0, Math.min(100, 100 - (usage.weekly.medium / 420) * 100))}%` }} />
                       </div>
                     </div>
 
                     <div className="p-4 rounded-2xl bg-white/[0.03] border border-white/5">
                       <div className="flex justify-between items-center mb-3">
-                        <span className="text-[11px] font-bold text-green-400">SMALL</span>
+                        <span className="text-[11px] font-bold text-[var(--accent-secondary)]">SMALL</span>
                         <span className="text-[14px] font-black text-white">{Math.max(0, 100 - Math.round((usage.weekly.small / 3500) * 100))}%</span>
                       </div>
                       <div className="h-2 w-full bg-white/5 rounded-full overflow-hidden border border-white/5 p-0.5">
-                        <div className="h-full bg-green-500 rounded-full" style={{ width: `${Math.max(0, Math.min(100, 100 - (usage.weekly.small / 3500) * 100))}%` }} />
+                        <div className="h-full bg-[var(--accent)] rounded-full" style={{ width: `${Math.max(0, Math.min(100, 100 - (usage.weekly.small / 3500) * 100))}%` }} />
                       </div>
                     </div>
 
                     <div className="p-4 rounded-2xl bg-white/[0.03] border border-white/5">
                       <div className="flex justify-between items-center mb-3">
-                        <span className="text-[11px] font-bold text-slate-500">FREE</span>
+                        <span className="text-[11px] font-bold text-[var(--text-muted)]">FREE</span>
                         <span className="text-[14px] font-black text-white">{(user?.plan || 'free') === 'pro' ? '∞' : `${Math.max(0, 100 - Math.round((usage.daily.free / 15) * 100))}%`}</span>
                       </div>
                       <div className="h-2 w-full bg-white/5 rounded-full overflow-hidden border border-white/5 p-0.5">
@@ -689,27 +689,27 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
 
                     <div className="p-4 rounded-2xl bg-white/[0.03] border border-white/5">
                       <div className="flex justify-between items-center mb-3">
-                        <span className="text-[11px] font-bold text-blue-400">NORMAL</span>
+                        <span className="text-[11px] font-bold text-[var(--accent-secondary)]">NORMAL</span>
                         <span className="text-[14px] font-black text-white">{Math.max(0, 100 - Math.round((usage.monthly.medium / 1800) * 100))}%</span>
                       </div>
                       <div className="h-2 w-full bg-white/5 rounded-full overflow-hidden border border-white/5 p-0.5">
-                        <div className="h-full bg-blue-500 rounded-full" style={{ width: `${Math.max(0, Math.min(100, 100 - (usage.monthly.medium / 1800) * 100))}%` }} />
+                        <div className="h-full bg-[var(--accent)] rounded-full" style={{ width: `${Math.max(0, Math.min(100, 100 - (usage.monthly.medium / 1800) * 100))}%` }} />
                       </div>
                     </div>
 
                     <div className="p-4 rounded-2xl bg-white/[0.03] border border-white/5">
                       <div className="flex justify-between items-center mb-3">
-                        <span className="text-[11px] font-bold text-green-400">SMALL</span>
+                        <span className="text-[11px] font-bold text-[var(--accent-secondary)]">SMALL</span>
                         <span className="text-[14px] font-black text-white">{Math.max(0, 100 - Math.round((usage.monthly.small / 15000) * 100))}%</span>
                       </div>
                       <div className="h-2 w-full bg-white/5 rounded-full overflow-hidden border border-white/5 p-0.5">
-                        <div className="h-full bg-green-500 rounded-full" style={{ width: `${Math.max(0, Math.min(100, 100 - (usage.monthly.small / 15000) * 100))}%` }} />
+                        <div className="h-full bg-[var(--accent)] rounded-full" style={{ width: `${Math.max(0, Math.min(100, 100 - (usage.monthly.small / 15000) * 100))}%` }} />
                       </div>
                     </div>
 
                     <div className="p-4 rounded-2xl bg-white/[0.03] border border-white/5">
                       <div className="flex justify-between items-center mb-3">
-                        <span className="text-[11px] font-bold text-slate-500">FREE</span>
+                        <span className="text-[11px] font-bold text-[var(--text-muted)]">FREE</span>
                         <span className="text-[14px] font-black text-white">{(user?.plan || 'free') === 'pro' ? '∞' : `${Math.max(0, 100 - Math.round((usage.daily.free / 15) * 100))}%`}</span>
                       </div>
                       <div className="h-2 w-full bg-white/5 rounded-full overflow-hidden border border-white/5 p-0.5">
@@ -770,8 +770,8 @@ export const HelpModal: React.FC<HelpModalProps> = ({
               key={tab.id} 
               onClick={() => setActiveTab(tab.id)} 
               className={cn(
-                "relative flex items-center gap-2.5 px-5 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all shrink-0", 
-                activeTab === tab.id ? "text-white" : "text-slate-500 hover:text-slate-300 hover:bg-white/5"
+                "relative flex items-center gap-2.5 px-5 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-wide transition-all shrink-0", 
+                activeTab === tab.id ? "text-white" : "text-[var(--text-muted)] hover:text-slate-300 hover:bg-white/5"
               )}
             >
               {activeTab === tab.id && (
@@ -799,9 +799,9 @@ export const HelpModal: React.FC<HelpModalProps> = ({
                 transition={{ duration: 0.2 }}
                 className="space-y-5"
               >
-                <h4 className="text-[11px] font-black text-white uppercase tracking-widest">About Cyberia</h4>
+                <h4 className="text-[11px] font-black text-white uppercase tracking-wide">About Cyberia</h4>
                 <p className="text-xs text-slate-400 leading-relaxed italic">Cyberia Space is a spatial thinking space designed for fluid information management. We treat data as physical objects to help you visualize connections and organize your thoughts naturally.</p>
-                <p className="text-xs text-slate-500 leading-relaxed">Designed for non-linear thinkers, visionaries, and digital architects. We believe productivity shouldn't feel like a spreadsheet. It should feel like a world.</p>
+                <p className="text-xs text-[var(--text-muted)] leading-relaxed">Designed for non-linear thinkers, visionaries, and digital architects. We believe productivity shouldn't feel like a spreadsheet. It should feel like a world.</p>
               </motion.div>
             )}
             
@@ -814,11 +814,11 @@ export const HelpModal: React.FC<HelpModalProps> = ({
                 transition={{ duration: 0.2 }}
                 className="space-y-5"
               >
-                <h4 className="text-[11px] font-black text-white uppercase tracking-widest">Report an Issue</h4>
+                <h4 className="text-[11px] font-black text-white uppercase tracking-wide">Report an Issue</h4>
                 {quickSubmitStatus === 'success' ? (
                   <div className="py-6 text-center space-y-3 bg-green-500/5 border border-green-500/10 rounded-2xl animate-in zoom-in-95 duration-300">
                     <CheckCircle className="w-8 h-8 text-green-400 mx-auto" />
-                    <p className="text-[10px] font-black uppercase tracking-widest text-green-400">Report Transmitted</p>
+                    <p className="text-[10px] font-black uppercase tracking-wide text-green-400">Report Transmitted</p>
                   </div>
                 ) : (
                   <form onSubmit={handleQuickSubmit} className="space-y-3">
@@ -828,25 +828,25 @@ export const HelpModal: React.FC<HelpModalProps> = ({
                           key={t} 
                           type="button" 
                           onClick={() => setQuickType(t)} 
-                          className={cn("flex-1 py-1.5 rounded-lg text-[8px] font-black uppercase tracking-widest transition-all", quickType === t ? "bg-white/10 text-white shadow-md border border-white/10" : "text-slate-600 hover:text-slate-400")}
+                          className={cn("flex-1 py-1.5 rounded-lg text-[8px] font-black uppercase tracking-wide transition-all", quickType === t ? "bg-white/10 text-white shadow-md border border-white/10" : "text-[var(--text-muted)] hover:text-slate-400")}
                         >
                           {t}
                         </button>
                       ))}
                     </div>
                     <textarea required value={quickMessage} onChange={(e) => setQuickMessage(e.target.value)} placeholder="Quick report... (System logs will be attached)" className="w-full h-24 bg-black/40 border border-white/5 rounded-xl p-3 text-xs text-white outline-none focus:border-[var(--accent)]/50 transition-all resize-none" />
-                    <button type="submit" disabled={isQuickSubmitting || !quickMessage.trim()} className="w-full h-10 bg-[var(--accent)] hover:bg-[var(--accent)]/90 disabled:opacity-50 text-[var(--accent-contrast)] rounded-xl font-black uppercase text-[9px] tracking-widest transition-all flex items-center justify-center gap-2">
+                    <button type="submit" disabled={isQuickSubmitting || !quickMessage.trim()} className="w-full h-10 bg-[var(--accent)] hover:bg-[var(--accent)]/90 disabled:opacity-50 text-[var(--accent-contrast)] rounded-xl font-black uppercase text-[9px] tracking-wide transition-all flex items-center justify-center gap-2">
                       {isQuickSubmitting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <><Send className="w-3 h-3" /> Send Quick Report</>}
                     </button>
                   </form>
                 )}
                 <div className="relative flex items-center py-2">
                   <div className="flex-grow border-t border-white/5"></div>
-                  <span className="flex-shrink mx-4 text-[8px] font-black uppercase tracking-widest text-slate-700">OR</span>
+                  <span className="flex-shrink mx-4 text-[8px] font-black uppercase tracking-wide text-slate-700">OR</span>
                   <div className="flex-grow border-t border-white/5"></div>
                 </div>
                 <div className="pt-1">
-                  <button onClick={() => window.open('/feedback', '_blank')} className="w-full px-6 py-4 rounded-xl bg-white/5 border border-white/10 text-[9px] font-black uppercase tracking-widest text-slate-300 hover:bg-white/10 transition-all flex items-center justify-center gap-2 group">
+                  <button onClick={() => window.open('/feedback', '_blank')} className="w-full px-6 py-4 rounded-xl bg-white/5 border border-white/10 text-[9px] font-black uppercase tracking-wide text-slate-300 hover:bg-white/10 transition-all flex items-center justify-center gap-2 group">
                     <MessageSquare className="w-3.5 h-3.5" /> Open Feedback Portal
                   </button>
                 </div>
@@ -862,32 +862,32 @@ export const HelpModal: React.FC<HelpModalProps> = ({
                 transition={{ duration: 0.2 }}
                 className="space-y-5"
               >
-                <h4 className="text-[11px] font-black text-white uppercase tracking-widest">Contact Support</h4>
+                <h4 className="text-[11px] font-black text-white uppercase tracking-wide">Contact Support</h4>
                 {contactSubmitStatus === 'success' ? (
                   <div className="py-10 text-center space-y-4 bg-green-500/5 border border-green-500/10 rounded-2xl animate-in zoom-in-95 duration-300">
                     <CheckCircle className="w-10 h-10 text-green-400 mx-auto" />
                     <div>
-                      <p className="text-[10px] font-black uppercase tracking-widest text-green-400">Message Sent</p>
-                      <p className="text-[9px] font-bold text-slate-500 uppercase tracking-widest mt-1">We will get back to you shortly.</p>
+                      <p className="text-[10px] font-black uppercase tracking-wide text-green-400">Message Sent</p>
+                      <p className="text-[9px] font-bold text-[var(--text-muted)] uppercase tracking-wide mt-1">We will get back to you shortly.</p>
                     </div>
                   </div>
                 ) : (
                   <form onSubmit={handleContactSubmit} className="space-y-3">
                     <div className="grid grid-cols-2 gap-3">
                       <div className="space-y-1.5">
-                        <label className="text-[8px] font-black uppercase tracking-widest text-slate-600 ml-1">Name</label>
+                        <label className="text-[8px] font-black uppercase tracking-wide text-[var(--text-muted)] ml-1">Name</label>
                         <input type="text" placeholder="Your Name" value={contactName} onChange={(e) => setContactName(e.target.value)} className="w-full h-10 bg-black/40 border border-white/5 rounded-xl px-4 text-xs text-white outline-none focus:border-[var(--accent)]/50 transition-all" />
                       </div>
                       <div className="space-y-1.5">
-                        <label className="text-[8px] font-black uppercase tracking-widest text-slate-600 ml-1">Email</label>
+                        <label className="text-[8px] font-black uppercase tracking-wide text-[var(--text-muted)] ml-1">Email</label>
                         <input type="email" required placeholder="your@email.com" value={contactEmail} onChange={(e) => setContactEmail(e.target.value)} className="w-full h-10 bg-black/40 border border-white/5 rounded-xl px-4 text-xs text-white outline-none focus:border-[var(--accent)]/50 transition-all" />
                       </div>
                     </div>
                     <div className="space-y-1.5">
-                      <label className="text-[8px] font-black uppercase tracking-widest text-slate-600 ml-1">Message</label>
+                      <label className="text-[8px] font-black uppercase tracking-wide text-[var(--text-muted)] ml-1">Message</label>
                       <textarea required value={contactMessage} onChange={(e) => setContactMessage(e.target.value)} placeholder="How can we help?" className="w-full h-24 bg-black/40 border border-white/5 rounded-xl p-4 text-xs text-white outline-none focus:border-[var(--accent)]/50 transition-all resize-none" />
                     </div>
-                    {contactSubmitStatus === 'error' && <div className="p-3 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 text-[8px] font-black uppercase tracking-widest text-center">Failed to send message. Please try again.</div>}
+                    {contactSubmitStatus === 'error' && <div className="p-3 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 text-[8px] font-black uppercase tracking-wide text-center">Failed to send message. Please try again.</div>}
                     <button type="submit" disabled={isContactSubmitting || !contactMessage.trim()} className="w-full h-12 bg-[var(--accent)] hover:bg-[var(--accent-secondary)] disabled:opacity-50 text-[var(--accent-contrast)] rounded-xl font-black uppercase text-[10px] tracking-[0.1em] transition-all flex items-center justify-center gap-2 shadow-lg shadow-[var(--accent)]/10">
                       {isContactSubmitting ? <Loader2 className="w-4 h-4 animate-spin" /> : <><Send className="w-3.5 h-3.5" /> Send Message</>}
                     </button>
@@ -895,12 +895,12 @@ export const HelpModal: React.FC<HelpModalProps> = ({
                 )}
                 <div className="pt-2 border-t border-white/5 flex items-center justify-between">
                   <div className="flex flex-col">
-                    <span className="text-[8px] font-black text-slate-600 uppercase tracking-widest">Support Email</span>
+                    <span className="text-[8px] font-black text-[var(--text-muted)] uppercase tracking-wide">Support Email</span>
                     <span className="text-[9px] font-bold text-[var(--accent-secondary)]">{import.meta.env.VITE_CONTACT_EMAIL || 'anasbassoumi@gmail.com'}</span>
                   </div>
                   <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-white/5 border border-white/5">
                     <div className="w-1.5 h-1.5 rounded-full bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.5)]" />
-                    <span className="text-[8px] font-black uppercase tracking-widest text-slate-400">System Online</span>
+                    <span className="text-[8px] font-black uppercase tracking-wide text-slate-400">System Online</span>
                   </div>
                 </div>
               </motion.div>
@@ -933,7 +933,7 @@ export const ShortcutsModal: React.FC<{ isOpen: boolean; onClose: () => void }> 
             { keys: ['Wheel'], label: 'Zoom In / Out' },
           ].map((s, i) => (
             <div key={i} className="flex justify-between items-center group">
-              <span className="text-[10px] font-bold uppercase tracking-widest text-slate-400 group-hover:text-white transition-colors">{s.label}</span>
+              <span className="text-[10px] font-bold uppercase tracking-wide text-slate-400 group-hover:text-white transition-colors">{s.label}</span>
               <div className="flex gap-1">
                 {s.keys.map(k => (
                   <kbd key={k} className="bg-white/5 border border-white/10 px-2 py-1 rounded-lg text-[9px] font-black text-[var(--accent-secondary)] min-w-[30px] text-center">

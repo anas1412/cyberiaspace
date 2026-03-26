@@ -28,7 +28,7 @@ const typeIcons = {
 };
 
 const statusOptions = [
-  { value: 'none', label: 'None', color: 'bg-slate-500', icon: Circle, iconColor: 'text-slate-500' },
+  { value: 'none', label: 'None', color: 'bg-slate-500', icon: Circle, iconColor: 'text-[var(--text-muted)]' },
   { value: 'todo', label: 'Todo', color: 'bg-[var(--status-todo)]', icon: Circle, iconColor: 'text-[var(--status-todo)]' },
   { value: 'doing', label: 'Doing', color: 'bg-[var(--status-doing)]', icon: Clock, iconColor: 'text-[var(--status-doing)]' },
   { value: 'done', label: 'Done', color: 'bg-[var(--status-done)]', icon: CheckCircle, iconColor: 'text-[var(--status-done)]' },
@@ -344,12 +344,12 @@ const NodeMenu: React.FC<NodeMenuProps> = ({ thought, isOpen, onClose, triggerRe
             >
               {/* Header */}
               <div className="flex items-center justify-between p-3 border-b border-white/5 mb-2">
-                <span className="text-[9px] font-black uppercase tracking-widest text-slate-500">Actions</span>
+                <span className="text-[9px] font-black uppercase tracking-widest text-[var(--text-muted)]">Actions</span>
                 <button
                   onClick={onClose}
                   className="p-1 hover:bg-white/10 rounded-lg transition-colors"
                 >
-                  <X className="w-3.5 h-3.5 text-slate-500" />
+                  <X className="w-3.5 h-3.5 text-[var(--text-muted)]" />
                 </button>
               </div>
 
@@ -364,17 +364,17 @@ const NodeMenu: React.FC<NodeMenuProps> = ({ thought, isOpen, onClose, triggerRe
                   <div className="flex items-center gap-3">
                     {(() => {
                       const opt = statusOptions.find(s => s.value === thought.status);
-                      if (!opt) return <ListTodo className="w-4 h-4 text-slate-500" />;
+                      if (!opt) return <ListTodo className="w-4 h-4 text-[var(--text-muted)]" />;
                       const Icon = opt.icon;
                       return <Icon className={cn("w-4 h-4", opt.iconColor)} />;
                     })()}
                     <span className="text-[10px] font-bold uppercase tracking-widest text-slate-300">Status</span>
                   </div>
                   <div className="flex items-center gap-2">
-                    <span className="text-[9px] font-medium text-slate-500 uppercase">
+                    <span className="text-[9px] font-medium text-[var(--text-muted)] uppercase">
                       {statusOptions.find(s => s.value === thought.status)?.label}
                     </span>
-                    <ChevronRight className="w-3 h-3 text-slate-600 group-hover:text-white transition-colors" />
+                    <ChevronRight className="w-3 h-3 text-[var(--text-dimmed)] group-hover:text-white transition-colors" />
                   </div>
                 </button>
 
@@ -385,14 +385,14 @@ const NodeMenu: React.FC<NodeMenuProps> = ({ thought, isOpen, onClose, triggerRe
                   className="w-full flex items-center justify-between p-3 rounded-xl hover:bg-white/5 transition-all group"
                 >
                   <div className="flex items-center gap-3">
-                    <Star className={cn("w-4 h-4", thought.priority !== 'none' ? 'text-yellow-400' : 'text-slate-500')} />
+                    <Star className={cn("w-4 h-4", thought.priority !== 'none' ? 'text-yellow-400' : 'text-[var(--text-muted)]')} />
                     <span className="text-[10px] font-bold uppercase tracking-widest text-slate-300">Priority</span>
                   </div>
                   <div className="flex items-center gap-2">
-                    <span className="text-[9px] font-medium text-slate-500 uppercase">
+                    <span className="text-[9px] font-medium text-[var(--text-muted)] uppercase">
                       {priorityOptions.find(p => p.value === thought.priority)?.label}
                     </span>
-                    <ChevronRight className="w-3 h-3 text-slate-600 group-hover:text-white transition-colors" />
+                    <ChevronRight className="w-3 h-3 text-[var(--text-dimmed)] group-hover:text-white transition-colors" />
                   </div>
                 </button>
 
@@ -407,8 +407,8 @@ const NodeMenu: React.FC<NodeMenuProps> = ({ thought, isOpen, onClose, triggerRe
                     <span className="text-[10px] font-bold uppercase tracking-widest text-slate-300">Type</span>
                   </div>
                   <div className="flex items-center gap-2">
-                    <span className="text-[9px] font-medium text-slate-500 uppercase">{thought.type}</span>
-                    <ChevronRight className="w-3 h-3 text-slate-600 group-hover:text-white transition-colors" />
+                    <span className="text-[9px] font-medium text-[var(--text-muted)] uppercase">{thought.type}</span>
+                    <ChevronRight className="w-3 h-3 text-[var(--text-dimmed)] group-hover:text-white transition-colors" />
                   </div>
                 </button>
 
@@ -424,15 +424,15 @@ const NodeMenu: React.FC<NodeMenuProps> = ({ thought, isOpen, onClose, triggerRe
                         <div className="w-2 h-2 rounded-full" style={{ backgroundColor: currentStack.color }} />
                       </div>
                     ) : (
-                      <Folder className="w-4 h-4 text-slate-500" />
+                      <Folder className="w-4 h-4 text-[var(--text-muted)]" />
                     )}
                     <span className="text-[10px] font-bold uppercase tracking-widest text-slate-300">Collection</span>
                   </div>
                   <div className="flex items-center gap-2">
-                    <span className="text-[9px] font-medium text-slate-500 uppercase truncate max-w-[100px]">
+                    <span className="text-[9px] font-medium text-[var(--text-muted)] uppercase truncate max-w-[100px]">
                       {currentStack?.name || 'None'}
                     </span>
-                    <ChevronRight className="w-3 h-3 text-slate-600 group-hover:text-white transition-colors" />
+                    <ChevronRight className="w-3 h-3 text-[var(--text-dimmed)] group-hover:text-white transition-colors" />
                   </div>
                 </button>
               </div>
@@ -483,7 +483,7 @@ const NodeMenu: React.FC<NodeMenuProps> = ({ thought, isOpen, onClose, triggerRe
                 disabled={isReadOnly}
                 className="w-full flex items-center gap-3 p-3 rounded-xl hover:bg-red-500/10 transition-all group"
               >
-                <Trash2 className="w-4 h-4 text-slate-500 group-hover:text-red-400 transition-colors" />
+                <Trash2 className="w-4 h-4 text-[var(--text-muted)] group-hover:text-red-400 transition-colors" />
                 <span className="text-[10px] font-bold uppercase tracking-widest text-slate-400 group-hover:text-red-400 transition-colors">Delete</span>
               </button>
             </motion.div>

@@ -37,7 +37,7 @@ export const createThoughtSlice: StateCreator<CyberiaState, [], [], any> = (set,
           : `You’ve reached the free limit of ${limits.MAX_THOUGHTS_PER_SPACE} thoughts for this space. Upgrade to Cyberia Pro to unlock unlimited mapping and premium Oracle AI features.`,
         type: 'limit_thought',
         confirmText: isPro ? 'Acknowledged' : 'Upgrade to Pro',
-        onConfirm: isPro ? undefined : () => useModalStore.getState().openPricing()
+        onConfirm: isPro ? undefined : () => window.location.href = '/pricing'
       });
       return '';
     }
@@ -131,7 +131,7 @@ export const createThoughtSlice: StateCreator<CyberiaState, [], [], any> = (set,
           : `You’ve reached the free limit of ${limits.MAX_THOUGHTS_PER_SPACE} thoughts for this space. Upgrade to Cyberia Pro to unlock unlimited mapping and premium Oracle AI features.`,
         type: 'limit_thought',
         confirmText: isPro ? 'Acknowledged' : 'Upgrade to Pro',
-        onConfirm: isPro ? undefined : () => useModalStore.getState().openPricing()
+        onConfirm: isPro ? undefined : () => window.location.href = '/pricing'
       });
       return [];
     }

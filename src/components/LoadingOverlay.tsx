@@ -85,7 +85,7 @@ const LoadingOverlay: React.FC<LoadingOverlayProps> = ({ force }) => {
             </h1>
             
             {/* Random Loading Tip */}
-            <p className="text-[10px] text-slate-500 font-medium uppercase tracking-widest max-w-[280px] text-center">
+            <p className="text-[10px] text-[var(--text-muted)] font-medium uppercase tracking-widest max-w-[280px] text-center">
               {randomTip}
             </p>
             
@@ -97,7 +97,7 @@ const LoadingOverlay: React.FC<LoadingOverlayProps> = ({ force }) => {
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 onClick={handleForceReset}
-                className="mt-8 flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest text-slate-500 hover:text-white transition-colors group whitespace-nowrap"
+                className="mt-8 flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest text-[var(--text-muted)] hover:text-white transition-colors group whitespace-nowrap"
               >
                 <RefreshCw className="w-3 h-3 group-hover:rotate-45 transition-transform" />
                 <span>Don't panic, your data is being processed</span>

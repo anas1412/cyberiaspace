@@ -205,7 +205,7 @@ async function runAuthenticationFlow(user: User, get: any, isFreshLogin: boolean
             cancelText: 'Keep Separate',
             onConfirm: async () => {
               useStore.setState({ isInitializing: true, isSpaceLoading: true });
-              useModalStore.getState().openPricing();
+              window.location.href = '/pricing';
               await applyCloudDataIfNeeded();
               await finalizeSetup();
               resolve();

@@ -56,7 +56,7 @@ export const SpaceSwitcher: React.FC<SpaceSwitcherProps> = ({
                     {creatorName}'s {activeSpace?.name || 'Space'}
                   </span>
                   {lastUpdated && (
-                    <span className="text-[7px] font-bold text-slate-500 uppercase tracking-[0.15em] whitespace-nowrap leading-none mt-0.5">
+                    <span className="text-[7px] font-bold text-[var(--text-muted)] uppercase tracking-[0.15em] whitespace-nowrap leading-none mt-0.5">
                       Updated {formatLastUpdated(lastUpdated)}
                     </span>
                   )}
@@ -112,7 +112,7 @@ export const SpaceSwitcher: React.FC<SpaceSwitcherProps> = ({
                 <Layers className="w-3.5 h-3.5" />
                 <span className="text-[10px] font-black uppercase tracking-[0.2em] text-white/90">Switch Space</span>
               </div>
-              <span className="text-[8px] font-bold text-slate-500 bg-white/5 px-2 py-0.5 rounded-md border border-white/5">
+              <span className="text-[8px] font-bold text-[var(--text-muted)] bg-white/5 px-2 py-0.5 rounded-md border border-white/5">
                 {spaces.length} / {limits.MAX_SPACES}
               </span>
             </div>
@@ -179,7 +179,7 @@ export const SpaceSwitcher: React.FC<SpaceSwitcherProps> = ({
               {spaces.length < limits.MAX_SPACES && (
                 <button 
                   onClick={() => { handleCreateSpace(); setIsSpaceMenuOpen(false); }} 
-                  className="w-full px-3 py-2 rounded-xl text-[10px] uppercase font-black tracking-[0.2em] flex items-center gap-3 text-slate-500 hover:text-white hover:bg-white/5 transition-all group border border-dashed border-white/5 mt-1"
+                  className="w-full px-3 py-2 rounded-xl text-[10px] uppercase font-black tracking-[0.2em] flex items-center gap-3 text-[var(--text-muted)] hover:text-white hover:bg-white/5 transition-all group border border-dashed border-white/5 mt-1"
                 >
                   <div className="w-6 h-6 rounded-lg bg-white/5 flex items-center justify-center group-hover:bg-[var(--accent)] group-hover:text-white transition-all shadow-inner">
                     <Plus className="w-3 h-3" />

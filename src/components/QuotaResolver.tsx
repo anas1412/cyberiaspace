@@ -11,7 +11,7 @@ interface QuotaResolverProps {
 
 export const QuotaResolver: React.FC<QuotaResolverProps> = ({ guestSpaces, cloudSpaces }) => {
   const { getLimits, migrateGuestSpaces, discardGuestSpaces } = useStore();
-  const { closeModal, openPricing } = useModalStore();
+  const { closeModal } = useModalStore();
   const { user } = useAuthStore();
   
   const limits = getLimits();
@@ -53,7 +53,7 @@ export const QuotaResolver: React.FC<QuotaResolverProps> = ({ guestSpaces, cloud
           // Scenario B: Exceeded Quota
           <>
             <button
-              onClick={() => { closeModal(); openPricing(); }}
+              onClick={() => { closeModal(); window.location.href = '/pricing'; }}
               className="w-full py-3.5 px-4 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white font-bold text-xs uppercase tracking-widest rounded-xl transition-all shadow-lg shadow-indigo-500/20 flex items-center justify-center gap-2"
             >
               <ArrowUpRight className="w-4 h-4" />

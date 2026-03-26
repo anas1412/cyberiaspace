@@ -1,7 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { useStore } from '../store/useStore';
 import { useAuthStore } from '../store/useAuthStore';
-import { useModalStore } from '../store/useModalStore';
 import { serializeWorkspace } from '../utils/contextBuilder';
 import { X, Send, MessageSquare, Loader2, History, Square, ChevronDown, Check } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -105,7 +104,6 @@ const ChatOverlay: React.FC = () => {
   const store = useStore();
   const { user, modelConfig } = useAuthStore();
   const plan = user?.plan || 'free';
-  const { openPricing } = useModalStore();
   
   // Use modelConfig from store (fetched from backend) or plan-specific fallbacks
   const limits = modelConfig?.config?.[plan] || 
@@ -775,9 +773,9 @@ if (data.tier && data.autoSwitch) {
                   <div className={cn(
                     "px-1.5 py-0.5 rounded text-[8px] font-bold uppercase tracking-wider border",
                     activeTier === 'top' ? "bg-[var(--accent)]/10 border-[var(--accent)]/30 text-[var(--accent)]" :
-                    activeTier === 'medium' ? "bg-yellow-500/10 border-yellow-500/30 text-yellow-500" :
-                    activeTier === 'small' ? "bg-green-500/10 border-green-500/30 text-green-500" :
-                    "bg-slate-500/10 border-slate-500/30 text-slate-500"
+                    activeTier === 'medium' ? "bg-[var(--accent)]/10 border-[var(--accent)]/30 text-[var(--accent)]" :
+                    activeTier === 'small' ? "bg-[var(--accent)]/10 border-[var(--accent)]/30 text-[var(--accent)]" :
+                    "bg-slate-500/10 border-slate-500/30 text-[var(--text-muted)]"
                   )}>
                     {activeTier}
                   </div>
@@ -819,7 +817,7 @@ if (data.tier && data.autoSwitch) {
                           {/* MEDIUM TIER - visible to all, disabled for free users */}
                           <div className="p-2">
                             <div className="flex justify-between items-center px-2 py-1 mb-1">
-                              <span className="text-[8px] font-extrabold uppercase tracking-widest text-yellow-500">Recommended: Normal Models</span>
+                              <span className="text-[8px] font-extrabold uppercase tracking-widest text-[var(--accent)]">Limited Usage: Premium Models</span>
                               <span className="text-[8px] font-bold text-[var(--text-muted)] uppercase tracking-widest">
                                 {plan === 'pro' ? getTierResetTimer(mediumUsage, weeklyMediumUsage, monthlyMediumUsage, dailyAnchor, limits.AI_MEDIUM_LIMIT || 60, limits.AI_MEDIUM_WEEKLY || 420, limits.AI_MEDIUM_MONTHLY || 1800) : 'Pro only'}
                               </span>
@@ -866,7 +864,7 @@ if (data.tier && data.autoSwitch) {
                           {/* FREE TIER */}
                           <div className="p-2 border-t border-[var(--glass-border)]/20">
                             <div className="flex justify-between items-center px-2 py-1 mb-1">
-                              <span className="text-[8px] font-extrabold uppercase tracking-widest text-slate-500">Free</span>
+                              <span className="text-[8px] font-extrabold uppercase tracking-widest text-[var(--text-muted)]">Free</span>
                               <span className="text-[8px] font-bold text-[var(--text-muted)] uppercase tracking-widest">Unlimited (Experimental)</span>
                             </div>
                             <div className="space-y-1">
@@ -882,7 +880,7 @@ if (data.tier && data.autoSwitch) {
                             <button
                               onClick={() => {
                                 setShowModelDropdown(false);
-                                openPricing();
+                                window.location.href = '/pricing';
                               }}
                               className="w-full flex items-center justify-center gap-2 px-3 py-2 rounded-lg bg-[var(--accent)]/10 hover:bg-[var(--accent)]/20 border border-[var(--accent)]/20 transition-all"
                             >

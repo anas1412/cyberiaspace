@@ -400,7 +400,7 @@ const PricingModal: React.FC<PricingModalProps> = ({ isOpen, onClose }) => {
                     <span className="text-5xl md:text-6xl font-extrabold tracking-tight text-white">{currentPrice.tnd}</span>
                     <span className="text-xl text-slate-400 ml-2 font-semibold">DT</span>
                   </div>
-                  <span className="text-xs font-medium text-slate-500 bg-black/20 px-3 py-1 rounded-full">
+                  <span className="text-xs font-medium text-[var(--text-muted)] bg-black/20 px-3 py-1 rounded-full">
                     Global Price: ${currentPrice.usd} USD
                   </span>
                 </div>
@@ -414,7 +414,7 @@ const PricingModal: React.FC<PricingModalProps> = ({ isOpen, onClose }) => {
                 {billingCycle === 'monthly' ? 'Per Month' : 'Per Year'}
               </span>
             </div>
-            <p className="text-xs text-slate-500 leading-relaxed px-4">
+            <p className="text-xs text-[var(--text-muted)] leading-relaxed px-4">
               {location?.isLocalPricing 
                 ? (billingCycle === 'yearly' ? `One-time payment of ${currentPrice.tnd} DT per year.` : 'Manual renewal via Flouci. No auto-charges.')
                 : (billingCycle === 'yearly' ? `Recurring payment of $${proPrice.yearly.usd} per year via Polar.sh. Cancel anytime.` : `Recurring monthly subscription via Polar.sh. Cancel anytime.`)
@@ -552,7 +552,7 @@ const PricingModal: React.FC<PricingModalProps> = ({ isOpen, onClose }) => {
 
           {!user && (
             <div className="text-center mb-6">
-              <p className="text-[11px] text-slate-500 mb-3">
+              <p className="text-[11px] text-[var(--text-muted)] mb-3">
                 Please sign in to your account before upgrading.
               </p>
               <button
@@ -587,7 +587,7 @@ const PricingModal: React.FC<PricingModalProps> = ({ isOpen, onClose }) => {
                     window.history.pushState({}, '', link.path);
                     window.dispatchEvent(new PopStateEvent('popstate'));
                   }}
-                  className="text-[11px] font-medium text-slate-500 hover:text-slate-300 transition-colors"
+                  className="text-[11px] font-medium text-[var(--text-muted)] hover:text-slate-300 transition-colors"
                 >
                   {link.label}
                 </button>

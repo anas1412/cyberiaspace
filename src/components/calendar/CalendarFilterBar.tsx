@@ -38,18 +38,18 @@ export const CalendarFilterBar: React.FC = () => {
     <div className="flex flex-col gap-4 p-4 border-b border-[var(--glass-border)] bg-black/10">
       {/* Search Input */}
       <div className="relative group">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-500 group-focus-within:text-[var(--accent-secondary)] transition-colors" />
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-[var(--text-muted)] group-focus-within:text-[var(--accent-secondary)] transition-colors" />
         <input
           type="text"
           value={calendarSearchQuery}
           onChange={(e) => setCalendarSearchQuery(e.target.value)}
           placeholder="Search..."
-          className="w-full h-9 bg-white/5 border border-white/5 rounded-xl pl-9 pr-9 text-[11px] text-white outline-none focus:border-[var(--accent)]/50 focus:ring-2 focus:ring-[var(--accent)]/10 transition-all placeholder:text-slate-600"
+          className="w-full h-9 bg-white/5 border border-white/5 rounded-xl pl-9 pr-9 text-[11px] text-white outline-none focus:border-[var(--accent)]/50 focus:ring-2 focus:ring-[var(--accent)]/10 transition-all placeholder:text-[var(--text-muted)]"
         />
         {calendarSearchQuery && (
           <button
             onClick={() => setCalendarSearchQuery('')}
-            className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 hover:bg-white/10 rounded-lg text-slate-500 hover:text-white transition-all"
+            className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 hover:bg-white/10 rounded-lg text-[var(--text-muted)] hover:text-white transition-all"
           >
             <X className="w-3 h-3" />
           </button>
@@ -60,8 +60,8 @@ export const CalendarFilterBar: React.FC = () => {
       <div className="space-y-2">
         <div className="flex items-center justify-between px-1">
           <div className="flex items-center gap-2">
-            <Layers className="w-3 h-3 text-slate-500" />
-            <span className="text-[8px] font-black uppercase tracking-widest text-slate-500">Stacks</span>
+            <Layers className="w-3 h-3 text-[var(--text-muted)]" />
+            <span className="text-[8px] font-black uppercase tracking-widest text-[var(--text-muted)]">Stacks</span>
           </div>
           {calendarStackFilter && (
             <button
@@ -82,7 +82,7 @@ export const CalendarFilterBar: React.FC = () => {
               "flex-shrink-0 px-3 py-1.5 rounded-lg text-[9px] font-bold uppercase tracking-widest border transition-all",
               !calendarStackFilter
                 ? "bg-[var(--accent)]/20 border-[var(--accent)] text-white shadow-[0_0_10px_var(--accent-glow)]"
-                : "bg-white/5 border-transparent text-slate-500 hover:text-slate-300"
+                : "bg-white/5 border-transparent text-[var(--text-muted)] hover:text-slate-300"
             )}
           >
             All
@@ -96,7 +96,7 @@ export const CalendarFilterBar: React.FC = () => {
                   !isReadOnly && "pr-6",
                   calendarStackFilter === stack.id
                     ? "border-current text-white shadow-lg"
-                    : "bg-white/5 border-transparent text-slate-500 hover:text-slate-300"
+                    : "bg-white/5 border-transparent text-[var(--text-muted)] hover:text-slate-300"
                 )}
                 style={calendarStackFilter === stack.id ? { 
                   backgroundColor: stack.color.replace('1)', '0.3)'),

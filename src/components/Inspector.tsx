@@ -74,7 +74,7 @@ const ColorPicker: React.FC<{ value: string; onChange: (val: string) => void; di
                 onChange={(e) => onChange(e.target.value)}
                 className="w-full h-8 bg-transparent cursor-pointer rounded-lg overflow-hidden"
               />
-              <p className="text-[9px] font-bold uppercase tracking-widest text-slate-500 mt-1 text-center">Custom Hex</p>
+              <p className="text-[9px] font-bold uppercase tracking-widest text-[var(--text-muted)] mt-1 text-center">Custom Hex</p>
             </div>
           </motion.div>
         )}
@@ -286,7 +286,7 @@ const Inspector: React.FC = () => {
                   <div className="space-y-6">
                     <div className="space-y-5">
                       <div className="space-y-2.5">
-                        <label className="text-[10px] uppercase font-bold tracking-widest text-slate-500 ml-1">Name</label>
+                        <label className="text-[10px] uppercase font-bold tracking-widest text-[var(--text-muted)] ml-1">Name</label>
                         <input
                           ref={titleInputRef}
                           type="text"
@@ -298,7 +298,7 @@ const Inspector: React.FC = () => {
                           }}
                           maxLength={100}
                           className={cn(
-                            "w-full bg-white/[0.03] border border-[var(--glass-border)] rounded-xl p-3 text-[13px] outline-none focus:border-[var(--accent)] focus:bg-white/[0.05] text-[var(--text-primary)] placeholder:text-slate-500 transition-colors shadow-inner",
+                            "w-full bg-white/[0.03] border border-[var(--glass-border)] rounded-xl p-3 text-[13px] outline-none focus:border-[var(--accent)] focus:bg-white/[0.05] text-[var(--text-primary)] placeholder:text-[var(--text-muted)] transition-colors shadow-inner",
                             isReadOnly && "pointer-events-none opacity-80"
                           )}
                           placeholder="Thought Name"
@@ -306,7 +306,7 @@ const Inspector: React.FC = () => {
                       </div>
 
                       <div className="space-y-2.5">
-                        <label className="text-[10px] uppercase font-bold tracking-widest text-slate-500 ml-1">Note</label>
+                        <label className="text-[10px] uppercase font-bold tracking-widest text-[var(--text-muted)] ml-1">Note</label>
                         <textarea
                           readOnly={isReadOnly}
                           value={localDesc}
@@ -317,7 +317,7 @@ const Inspector: React.FC = () => {
                           rows={4}
                           maxLength={150}
                           className={cn(
-                            "w-full bg-white/[0.03] border border-[var(--glass-border)] rounded-xl p-3 text-[12px] outline-none focus:border-[var(--accent)] focus:bg-white/[0.05] text-[var(--text-primary)] placeholder:text-slate-500 transition-colors shadow-inner resize-none",
+                            "w-full bg-white/[0.03] border border-[var(--glass-border)] rounded-xl p-3 text-[12px] outline-none focus:border-[var(--accent)] focus:bg-white/[0.05] text-[var(--text-primary)] placeholder:text-[var(--text-muted)] transition-colors shadow-inner resize-none",
                             isReadOnly && "pointer-events-none opacity-80"
                           )}
                           placeholder="Add a quick note..."
@@ -385,7 +385,7 @@ const Inspector: React.FC = () => {
                 {activeTab === 'status' && (
                   <div className="space-y-8">
                     <div className="space-y-3">
-                      <label className="text-[10px] uppercase font-bold tracking-widest text-slate-500 ml-1">Date & Time</label>
+                      <label className="text-[10px] uppercase font-bold tracking-widest text-[var(--text-muted)] ml-1">Date & Time</label>
                       <DateTimePicker
                         startTime={localStartTime}
                         endTime={localEndTime}
@@ -405,7 +405,7 @@ const Inspector: React.FC = () => {
                     </div>
 
                     <div className="space-y-3">
-                      <label className="text-[10px] uppercase font-bold tracking-widest text-slate-500 ml-1">Progress</label>
+                      <label className="text-[10px] uppercase font-bold tracking-widest text-[var(--text-muted)] ml-1">Progress</label>
                       <div className="grid grid-cols-4 gap-1.5">
                         {(['none', 'todo', 'doing', 'done'] as const).map((s) => (
                           <button
@@ -432,7 +432,7 @@ const Inspector: React.FC = () => {
                     </div>
 
                     <div className="space-y-3">
-                      <label className="text-[10px] uppercase font-bold tracking-widest text-slate-500 ml-1">Priority</label>
+                      <label className="text-[10px] uppercase font-bold tracking-widest text-[var(--text-muted)] ml-1">Priority</label>
                       <div className="grid grid-cols-5 gap-1.5">
                         {(['none', 'low', 'medium', 'high', 'urgent'] as const).map((p) => (
                           <button
@@ -460,7 +460,7 @@ const Inspector: React.FC = () => {
                     </div>
 
                     <div className="space-y-3 pt-6 border-t border-[var(--glass-border)]">
-                      <label className="text-[10px] uppercase font-bold tracking-widest text-slate-500 ml-1">Group</label>
+                      <label className="text-[10px] uppercase font-bold tracking-widest text-[var(--text-muted)] ml-1">Group</label>
                       {stack ? (
                         <div className="p-4 bg-white/[0.03] border border-[var(--glass-border)] rounded-2xl space-y-4 shadow-inner">
                           <div className="flex items-center gap-4">
@@ -511,13 +511,13 @@ const Inspector: React.FC = () => {
                                   e.currentTarget.value = '';
                                 }
                               }}
-                              className="w-full bg-white/[0.03] border border-[var(--glass-border)] rounded-xl p-3 text-[12px] outline-none focus:border-[var(--accent)] focus:bg-white/[0.05] text-[var(--text-primary)] placeholder:text-slate-500 transition-colors shadow-inner"
+                              className="w-full bg-white/[0.03] border border-[var(--glass-border)] rounded-xl p-3 text-[12px] outline-none focus:border-[var(--accent)] focus:bg-white/[0.05] text-[var(--text-primary)] placeholder:text-[var(--text-muted)] transition-colors shadow-inner"
                             />
                           </div>
 
                           {stacks.length > 0 && (
                             <div className="space-y-2">
-                              <label className="text-[9px] uppercase font-bold tracking-[0.2em] text-slate-500 ml-1">Existing Groups</label>
+                              <label className="text-[9px] uppercase font-bold tracking-[0.2em] text-[var(--text-muted)] ml-1">Existing Groups</label>
                               <div className="flex flex-col gap-1 max-h-[160px] overflow-y-auto custom-scroll pr-1">
                                 {stacks.map(s => (
                                   <div key={s.id} className="relative group/s">
@@ -560,7 +560,7 @@ const Inspector: React.FC = () => {
                   <div className="space-y-8">
                     <div className="space-y-4">
                       <div className="flex justify-between items-center ml-1">
-                        <label className="text-[10px] uppercase font-bold tracking-widest text-slate-500">Scale</label>
+                        <label className="text-[10px] uppercase font-bold tracking-widest text-[var(--text-muted)]">Scale</label>
                         <span className="text-[10px] font-mono text-[var(--accent-secondary)] font-bold">{(thought.size || 1.0).toFixed(1)}x</span>
                       </div>
                       <input
@@ -579,7 +579,7 @@ const Inspector: React.FC = () => {
                     </div>
 
                     <div className="space-y-4 pt-6 border-t border-[var(--glass-border)]">
-                      <label className="text-[10px] uppercase font-bold tracking-widest text-slate-500 ml-1">Layers</label>
+                      <label className="text-[10px] uppercase font-bold tracking-widest text-[var(--text-muted)] ml-1">Layers</label>
                       <div className="grid grid-cols-2 gap-2">
                         <button
                           disabled={isReadOnly}

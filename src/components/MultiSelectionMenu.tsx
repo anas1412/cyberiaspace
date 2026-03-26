@@ -69,7 +69,7 @@ const ColorPicker: React.FC<{ value: string; onChange: (val: string) => void; di
                 onChange={(e) => onChange(e.target.value)}
                 className="w-full h-8 bg-transparent cursor-pointer rounded-lg overflow-hidden"
               />
-              <p className="text-[9px] font-bold uppercase tracking-widest text-slate-500 mt-1 text-center">Custom Hex</p>
+              <p className="text-[9px] font-bold uppercase tracking-widest text-[var(--text-muted)] mt-1 text-center">Custom Hex</p>
             </div>
           </motion.div>
         )}
@@ -201,7 +201,7 @@ const MultiSelectionMenu: React.FC = () => {
             
             {/* 1. Status Batch */}
             <div className="space-y-3">
-              <label className="text-[10px] uppercase font-bold tracking-widest text-slate-500 ml-1">Batch Progress</label>
+              <label className="text-[10px] uppercase font-bold tracking-widest text-[var(--text-muted)] ml-1">Batch Progress</label>
               <div className="grid grid-cols-4 gap-1.5">
                 {(['none', 'todo', 'doing', 'done'] as const).map(s => (
                   <button
@@ -227,7 +227,7 @@ const MultiSelectionMenu: React.FC = () => {
 
             {/* 2. Priority Batch */}
             <div className="space-y-3">
-              <label className="text-[10px] uppercase font-bold tracking-widest text-slate-500 ml-1">Batch Priority</label>
+              <label className="text-[10px] uppercase font-bold tracking-widest text-[var(--text-muted)] ml-1">Batch Priority</label>
               <div className="grid grid-cols-5 gap-1.5">
                 {(['none', 'low', 'medium', 'high', 'urgent'] as const).map(p => (
                   <button
@@ -254,7 +254,7 @@ const MultiSelectionMenu: React.FC = () => {
 
             {/* 3. Schedule Batch */}
             <div className="space-y-3">
-              <label className="text-[10px] uppercase font-bold tracking-widest text-slate-500 ml-1">Schedule Batch</label>
+              <label className="text-[10px] uppercase font-bold tracking-widest text-[var(--text-muted)] ml-1">Schedule Batch</label>
               <div className="calendar-theme-override [&_.calendar-done-button]:!text-[var(--bg-main)]">
                 <DateTimePicker
                   startTime={localDate}
@@ -280,14 +280,14 @@ const MultiSelectionMenu: React.FC = () => {
 
             {/* 4. Group Management */}
             <div className="space-y-3 pt-6 border-t border-[var(--glass-border)]">
-              <label className="text-[10px] uppercase font-bold tracking-widest text-slate-500 ml-1">Group Actions</label>
+              <label className="text-[10px] uppercase font-bold tracking-widest text-[var(--text-muted)] ml-1">Group Actions</label>
               <div className="p-4 bg-white/[0.03] border border-[var(--glass-border)] rounded-2xl space-y-4 shadow-inner">
                 <div className="flex items-center gap-4">
                   {sharedStack ? (
                     <ColorPicker value={sharedStack.color} onChange={(color) => useStore.getState().updateStack(sharedStack.id, { color })} />
                   ) : (
                     <div className="w-8 h-8 rounded-full border border-[var(--glass-border)] bg-white/5 flex items-center justify-center">
-                      <Palette className="w-3.5 h-3.5 text-slate-500" />
+                      <Palette className="w-3.5 h-3.5 text-[var(--text-muted)]" />
                     </div>
                   )}
                   <input
@@ -311,7 +311,7 @@ const MultiSelectionMenu: React.FC = () => {
 
                 {stacks.length > 0 && !sharedStack && (
                   <div className="space-y-2 pt-2">
-                    <label className="text-[9px] uppercase font-bold tracking-[0.2em] text-slate-500 ml-1">Add to Existing</label>
+                    <label className="text-[9px] uppercase font-bold tracking-[0.2em] text-[var(--text-muted)] ml-1">Add to Existing</label>
                     <div className="flex flex-col gap-1.5 max-h-[160px] overflow-y-auto custom-scroll pr-1">
                       {stacks.map(s => (
                         <button
