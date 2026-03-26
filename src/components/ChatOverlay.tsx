@@ -4,7 +4,6 @@ import { useAuthStore } from '../store/useAuthStore';
 import { serializeWorkspace } from '../utils/contextBuilder';
 import { 
   resolveAllReferences, 
-  getReferenceDisplayText,
   filterThoughts, 
   filterStacks, 
   type SuggestionItem 
@@ -400,9 +399,9 @@ useEffect(() => {
     const cursorPos = textarea.selectionStart;
     const textBeforeCursor = value.substring(0, cursorPos);
     
-    // Check for @ or # trigger at cursor position
-    const atMatch = textBeforeCursor.match(/@(\S*)$/);
-    const hashMatch = textBeforeCursor.match(/#(\S*)$/);
+    // Check for @ or # trigger at cursor position - handle multi-word names
+    const atMatch = textBeforeCursor.match(/@(.*)$/);
+    const hashMatch = textBeforeCursor.match(/#(.*)$/);
     
     if (atMatch) {
       const query = atMatch[1];
@@ -423,7 +422,7 @@ useEffect(() => {
     
     if (hashMatch) {
       const query = hashMatch[1];
-      const filtered = filterStacks(store.stacks, store.thoughts, query, 5);
+      const filtered = filterStacks(store.stacks, query, 5);
       
       if (filtered.length > 0) {
         setSuggestions({
@@ -548,11 +547,8 @@ useEffect(() => {
       messageContent = contentBlocks;
     }
 
-    // Get clean display text for UI (not raw JSON)
-    const displayText = getReferenceDisplayText(resolvedReferences.references as any);
-    const contentForUI = displayText 
-      ? `${displayText}\n\n${resolvedReferences.userMessage}`
-      : input;
+    // For UI display - just use the input directly, it already contains the references
+    const contentForUI = input;
 
     const userMessage: Message = { 
       id: ulid(), 

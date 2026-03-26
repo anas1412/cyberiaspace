@@ -6,6 +6,7 @@ import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 import { motion } from 'framer-motion';
 import { FocusEditorShell } from './FocusEditorShell';
+import { db } from '../../db';
 
 function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -111,7 +112,7 @@ const TableFocusEditor: React.FC = () => {
   const setActiveFocus = useStore((state) => state.setActiveFocus);
   const thoughts = useStore((state) => state.thoughts);
   const stacks = useStore((state) => state.stacks);
-  const updateThought = useStore((state) => state.updateThought);
+  const patchThought = useStore((state) => state.patchThought);
   const isReadOnly = useStore((state) => state.isReadOnly);
 
   const [isEditMode, setIsEditMode] = useState(false);
@@ -122,9 +123,20 @@ const TableFocusEditor: React.FC = () => {
 
   const saveTable = (newTable: string[][]) => {
     if (!thought) return;
-    updateThought(thought.id, { 
+    patchThought(thought.id, { 
       data: { type: 'table', rows: newTable } 
     });
+    // Debounced DB save
+    const timerKey = `table-save-${thought.id}`;
+    if ((window as any)[timerKey]) clearTimeout((window as any)[timerKey]);
+    (window as any)[timerKey] = setTimeout(async () => {
+      await db.thoughts.update(thought.id, { 
+        data: { type: 'table', rows: newTable },
+        updatedAt: Date.now(),
+        syncStatus: 'local'
+      });
+      delete (window as any)[timerKey];
+    }, 1000);
   };
 
   const handleUpdateCell = (r: number, c: number, val: string) => {
@@ -182,7 +194,22 @@ const TableFocusEditor: React.FC = () => {
       isVisible={isVisible}
       onClose={() => setActiveFocus(null, null)}
       title={thought.text}
-      onTitleChange={(val) => { if (!isReadOnly) updateThought(thought.id, { text: val }); }}
+      onTitleChange={(val) => { 
+        if (!isReadOnly) {
+          patchThought(thought.id, { text: val });
+          // Debounced DB save
+          const timerKey = `title-save-${thought.id}`;
+          if ((window as any)[timerKey]) clearTimeout((window as any)[timerKey]);
+          (window as any)[timerKey] = setTimeout(async () => {
+            await db.thoughts.update(thought.id, { 
+              text: val,
+              updatedAt: Date.now(),
+              syncStatus: 'local'
+            });
+            delete (window as any)[timerKey];
+          }, 1000);
+        }
+      }}
       description={thought.description}
       isReadOnly={isReadOnly}
       stack={stack}
