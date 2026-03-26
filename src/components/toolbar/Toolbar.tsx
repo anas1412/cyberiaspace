@@ -201,7 +201,7 @@ const Toolbar: React.FC = () => {
       setTimeout(() => { if (document.body.contains(link)) document.body.removeChild(link); }, 100);
     } catch (error) {
       console.error('Screenshot failed:', error);
-      openModal({ title: 'Screenshot Failed', description: 'The workspace might be too large or your device is out of memory.', type: 'alert', confirmText: 'Okay' });
+      openModal({ title: 'Screenshot Failed', description: 'The space might be too large or your device is out of memory.', type: 'alert', confirmText: 'Okay' });
     } finally { setIsCapturing(false); }
   };
 
@@ -274,8 +274,8 @@ const Toolbar: React.FC = () => {
       openModal({ 
         title: 'Space Limit Reached', 
         description: isPro 
-          ? `You’ve reached the pro limit of ${limits.MAX_SPACES} spaces. Contact us if you need higher workspace capacity.` 
-          : `You’ve reached the free limit of ${limits.MAX_SPACES} spaces. Upgrade to Cyberia Pro to create more workspaces and unlock premium features.`, 
+          ? `You’ve reached the pro limit of ${limits.MAX_SPACES} spaces. Contact us if you need higher space capacity.` 
+          : `You’ve reached the free limit of ${limits.MAX_SPACES} spaces. Upgrade to Cyberia Pro to create more spaces and unlock premium features.`, 
         type: 'limit_space', 
         confirmText: isPro ? 'Acknowledged' : 'Upgrade to Pro', 
         onConfirm: isPro ? undefined : () => window.location.href = '/pricing' 

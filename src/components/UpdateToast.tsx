@@ -32,7 +32,7 @@ const UpdateToast: React.FC = () => {
                 <h4 className="text-[10px] font-black uppercase tracking-[0.2em] text-white">System Update</h4>
               </div>
               <p className="text-[11px] font-bold text-slate-400 leading-tight uppercase tracking-wider">
-                {isUpdating ? 'Applying new version to your workspace...' : 'A new version of Cyberia is ready for your workspace.'}
+                {isUpdating ? 'Applying new version to your space...' : 'A new version of Cyberia is ready for your space.'}
               </p>
             </div>
 

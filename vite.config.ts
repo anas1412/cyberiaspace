@@ -35,9 +35,9 @@ export default defineConfig(() => {
         manifest: {
           scope: '/',
           start_url: '/home',
-          name: 'Cyberia Workspace',
+          name: 'Cyberia Space',
           short_name: 'Cyberia',
-          description: 'Kinetic Information Architecture & Spatial Thinking',
+          description: 'Spatial Thinking Space',
           theme_color: '#020408',
           background_color: '#020408',
           display: 'standalone',

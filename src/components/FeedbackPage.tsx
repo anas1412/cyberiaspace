@@ -154,7 +154,7 @@ const FeedbackPage: React.FC = () => {
               <span className="text-[10px] font-black uppercase tracking-[0.3em] text-[var(--accent-secondary)]">Feedback Portal</span>
             </div>
             <h1 className="text-3xl md:text-4xl font-bold text-white tracking-tight">System Reliability & Feedback</h1>
-            <p className="text-sm text-[var(--text-muted)] max-w-md">Help us refine the kinetic workspace. Share your thoughts, report issues, or suggest new workspace protocols.</p>
+            <p className="text-sm text-[var(--text-muted)] max-w-md">Help us refine the kinetic space. Share your thoughts, report issues, or suggest new protocols.</p>
           </div>
           
           <div className="flex items-center gap-3">

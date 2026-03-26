@@ -141,7 +141,7 @@ export const createSpaceSlice: StateCreator<CyberiaState, [], [], any> = (set, g
     if (userSpaces.length >= limits.MAX_SPACES) {
       useModalStore.getState().openModal({ 
         title: 'Space Limit Reached', 
-        description: `You've reached the free limit of ${limits.MAX_SPACES} spaces. Upgrade to Cyberia Pro to create more workspaces and unlock premium features.`, 
+        description: `You've reached the free limit of ${limits.MAX_SPACES} spaces. Upgrade to Cyberia Pro to create more spaces and unlock premium features.`, 
         type: 'limit_space', 
         confirmText: 'Upgrade to Pro', 
         onConfirm: () => window.location.href = '/pricing' 
@@ -202,7 +202,7 @@ export const createSpaceSlice: StateCreator<CyberiaState, [], [], any> = (set, g
     if (remainingSpaces.length === 0) {
       useModalStore.getState().openModal({
         title: 'Core Workspace Required',
-        description: 'You must have at least one active workspace. Create a new one before removing this dimension.',
+        description: 'You must have at least one active space. Create a new one before removing this dimension.',
         type: 'alert',
         confirmText: 'Acknowledged'
       });

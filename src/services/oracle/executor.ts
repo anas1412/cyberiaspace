@@ -86,7 +86,7 @@ export const executeOracleTool = async (toolCall: any, store: any) => {
   if (store.oracleChatMode === 'chat' && writeActions.includes(toolName)) {
     return {
       success: false,
-      error: 'Write actions are disabled in Chat mode. Switch to Action mode to modify the workspace.'
+      error: 'Write actions are disabled in Chat mode. Switch to Action mode to modify the space.'
     };
   }
 

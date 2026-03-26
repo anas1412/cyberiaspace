@@ -105,7 +105,7 @@ const LoginPage: React.FC = () => {
               Welcome <span style={{ color: 'var(--accent)' }}>Back</span>
             </h1>
             <p className="text-[10px] md:text-[12px] font-bold text-slate-500 uppercase tracking-[0.3em]">
-              Synchronize your workspace
+              Synchronize your space
             </p>
           </div>
 

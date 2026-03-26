@@ -386,7 +386,7 @@ const PricingPage: React.FC = () => {
                   {[
                     { 
                       title: 'All-in-One AI Powerhouse', 
-                      desc: 'Gain Pro-tier access to ChatGPT, Claude, Google Gemini and More—all in one place. Our agents are workspace-aware, can search, create, edit and remove right where you work.' 
+                      desc: 'Gain Pro-tier access to ChatGPT, Claude, Google Gemini and More—all in one place. Our agents are space-aware, can search, create, edit and remove right where you work.' 
                     },
                     { 
                       title: 'Expanded Agentic Workspaces', 
@@ -398,7 +398,7 @@ const PricingPage: React.FC = () => {
                     },
                     { 
                       title: 'Pro Customization & Support', 
-                      desc: 'Personalize your workspace with a custom AI personality and backgrounds, plus get 24/7 priority customer support.' 
+                      desc: 'Personalize your space with a custom AI personality and backgrounds, plus get 24/7 priority customer support.' 
                     }
                   ].map((feature, i) => (
                     <div key={i} className="flex gap-4 group">

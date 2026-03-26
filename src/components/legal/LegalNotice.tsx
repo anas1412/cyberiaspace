@@ -59,7 +59,7 @@ const LegalNotice: React.FC = () => {
       icon: <Shield className="w-5 h-5 text-blue-400" />,
       content: (
         <p className="leading-relaxed text-slate-400">
-          All content, design, code, and interfaces related to Cyberia Space are the exclusive property of <strong>Cyberia AI Studio</strong>. Unauthorized reproduction, modification, or distribution is strictly prohibited. Users retain ownership of the content they create within their workspace.
+          All content, design, code, and interfaces related to Cyberia Space are the exclusive property of <strong>Cyberia AI Studio</strong>. Unauthorized reproduction, modification, or distribution is strictly prohibited. Users retain ownership of the content they create within their space.
         </p>
       )
     },

@@ -93,7 +93,7 @@ export const AccountMenu: React.FC = () => {
   const handleClearCloudData = () => {
     openModal({
       title: 'DANGER: Wipe Cloud Backup?',
-      description: 'THIS ACTION IS IRREVERSIBLE. This will permanently delete your entire workspace backup from the cloud, including all synced files. Only proceed if you want to start with a fresh slate on all devices.',
+      description: 'THIS ACTION IS IRREVERSIBLE. This will permanently delete your entire space backup from the cloud, including all synced files. Only proceed if you want to start with a fresh slate on all devices.',
       type: 'delete_thought',
       confirmText: 'Wipe Everything',
       onConfirm: async () => {

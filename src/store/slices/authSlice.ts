@@ -556,7 +556,7 @@ export const createAuthSlice: StateCreator<AuthState, [], [], any> = (set, get, 
     
     const guestSpacesCount = await db.spaces.filter(s => s.userId === 'guest' && !s.deletedAt).count();
     if (guestSpacesCount === 0) {
-      console.log('[Auth] No guest space found after logout, generating safe-haven workspace...');
+      console.log('[Auth] No guest space found after logout, generating safe-haven space...');
       const { ulid } = await import('ulid');
       const workspaceId = ulid();
       const now = Date.now();

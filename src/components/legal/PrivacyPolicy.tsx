@@ -33,7 +33,7 @@ const PrivacyPolicy: React.FC = () => {
             By default, all thoughts, tasks, drawings, and files you create are stored <strong>locally</strong> in your browser's internal database (IndexedDB). 
           </p>
           <p className="leading-relaxed text-white font-medium mt-2">
-            When you authenticate your account, your workspace is automatically synced to the cloud for backup and cross-device access.
+            When you authenticate your account, your space is automatically synced to the cloud for backup and cross-device access.
           </p>
         </>
       )
@@ -63,7 +63,7 @@ const PrivacyPolicy: React.FC = () => {
       content: (
         <>
           <p className="leading-relaxed text-slate-300">
-            When you authenticate your account, your workspace metadata and research assets are stored securely in <strong className="text-white">Supabase</strong> (PostgreSQL database and Cloud Storage). 
+            When you authenticate your account, your space metadata and research assets are stored securely in <strong className="text-white">Supabase</strong> (PostgreSQL database and Cloud Storage). 
           </p>
           <p className="leading-relaxed text-sm text-slate-400 mt-2">
             This allows for persistent storage across multiple devices and ensures data continuity if your browser cache is cleared.
@@ -81,8 +81,8 @@ const PrivacyPolicy: React.FC = () => {
             Interactions with "The Oracle" involve real-time inference via high-speed models (hosted via <strong className="text-white">OpenRouter</strong>, utilizing models from OpenAI, Google, Anthropic, etc.).
           </p>
           <ul className="list-disc list-inside space-y-3 mt-4 ml-2 text-slate-400 italic">
-            <li>Relevant workspace snippets are processed temporarily to generate responses.</li>
-            <li>Your workspace data is <strong>never used for model training</strong>.</li>
+            <li>Relevant space snippets are processed temporarily to generate responses.</li>
+            <li>Your space data is <strong>never used for model training</strong>.</li>
             <li>AI chat history is stored locally on your device for maximum privacy.</li>
           </ul>
         </>
@@ -108,7 +108,7 @@ const PrivacyPolicy: React.FC = () => {
             In accordance with Tunisian and international data protection regulations, you have the right to access, correct, or delete your personal data.
           </p>
           <ul className="list-disc list-inside space-y-3 mt-4 ml-2 text-slate-400">
-            <li><strong className="text-white font-bold">Portability:</strong> You can export your entire workspace as a JSON file at any time.</li>
+            <li><strong className="text-white font-bold">Portability:</strong> You can export your entire space as a JSON file at any time.</li>
             <li><strong className="text-white font-bold">Erasure:</strong> You can request the deletion of your account and associated cloud data directly from the application settings.</li>
           </ul>
         </>

@@ -90,7 +90,7 @@ ${personality || `You are Oracle (${modelName}), a casual young assistant. Be he
 [/PERSONALITY]
 
 [WORKSPACE CONTEXT]
-${context || 'No workspace data provided.'}
+${context || 'No space data provided.'}
 [/WORKSPACE CONTEXT]
 
 [TIER ACCESS]
@@ -105,7 +105,7 @@ ${isPro ? 'PRO PLAN: You have full access to analyze images and documents.' : 'F
 - If in CHAT and user asks to create/update/delete: Say "I'm in Chat Mode. Switch to Action Mode to enable writing."
 - If you can help with a request using a tool, just use the tool. Don't ask permission first. Just do it.
 - Always use the most specific tool available for the task. For example, use 'search_youtube' for YouTube queries instead of 'web_search'.
-- The workspace context is the only source of truth. If a user mentions something, find it in the context. Don't ask "which one?" - just find it yourself be decisive and the bigger person, take action and use it. 
+- The space context is the only source of truth. If a user mentions something, find it in the context. Don't ask "which one?" - just find it yourself be decisive and the bigger person, take action and use it. 
 
 [ID PROTOCOL]
 - Never mention IDs to users. Users don't know IDs.
@@ -184,7 +184,7 @@ const allTools: any[] = [
     type: "function",
     function: {
       name: "create_thoughts",
-      description: "Adds one or more nodes to the workspace. Use this for all creation tasks, even for a single item.",
+      description: "Adds one or more nodes to the space. Use this for all creation tasks, even for a single item.",
       parameters: {
         type: "object",
         properties: {

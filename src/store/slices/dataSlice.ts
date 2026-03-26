@@ -95,9 +95,9 @@ export const createDataSlice: StateCreator<CyberiaState, [], [], any> = (set, ge
       const savedTheme = localStorage.getItem('cyberia-theme') || 'cyberia';
       document.body.setAttribute('data-theme', savedTheme);
 
-      // Early exit: Let handleAuthCode finish the workspace initialization if handling a redirect
+      // Early exit: Let handleAuthCode finish the space initialization if handling a redirect
       if (hasAuthCode) {
-        console.log('[Store] OAuth code detected in URL, suspending workspace creation until auth completes.');
+        console.log('[Store] OAuth code detected in URL, suspending space creation until auth completes.');
         return; 
       }
 
@@ -119,7 +119,7 @@ export const createDataSlice: StateCreator<CyberiaState, [], [], any> = (set, ge
           auth.getState().downloadMissingBlobs();
         }
       } catch (err) {
-        console.error('Failed to load data, resetting to initial workspace:', err);
+        console.error('Failed to load data, resetting to initial space:', err);
         await get().createInitialWorkspace();
         return;
       }
@@ -147,18 +147,18 @@ export const createDataSlice: StateCreator<CyberiaState, [], [], any> = (set, ge
     isCreatingInitialWorkspace = true;
     
     try {
-      console.log('[Store] Checking if initial workspace needed...');
+      console.log('[Store] Checking if initial space needed...');
       const currentUserId = (useAuthStore.getState().user?.id) ?? 'guest';
       const existingCount = await db.spaces.filter(s => s.userId === currentUserId && !s.deletedAt).count();
       if (existingCount > 0) {
-        console.log('[Store] Initial workspace already exists for current user, skipping creation.');
+        console.log('[Store] Initial space already exists for current user, skipping creation.');
         await get().refreshSpaces();
         return;
       }
 
       const anySpacesCount = await db.spaces.filter((s: any) => !s.deletedAt).count();
       if (anySpacesCount > 0) {
-        console.log('[Store] Found existing spaces in DB, skipping initial workspace creation');
+        console.log('[Store] Found existing spaces in DB, skipping initial space creation');
         await get().refreshSpaces();
         return;
       }
@@ -183,7 +183,7 @@ export const createDataSlice: StateCreator<CyberiaState, [], [], any> = (set, ge
       await get().refreshSpaces();
       await get().setActiveSpace(workspaceId);
     } catch (err) {
-      console.error('Failed to create initial workspace:', err);
+        console.error('Failed to create initial space:', err);
     } finally {
       isCreatingInitialWorkspace = false;
     }
@@ -197,7 +197,7 @@ export const createDataSlice: StateCreator<CyberiaState, [], [], any> = (set, ge
       const isAuthenticated = authStore.status === 'authenticated';
       const currentUserId = authStore.user?.id ?? 'guest';
       
-      console.log('[Store] Initiating GLOBAL workspace clear...');
+      console.log('[Store] Initiating GLOBAL space clear...');
       await syncOrchestrator.setSyncBlocked(true);
 
       const workspaceId = ulid();
@@ -431,7 +431,7 @@ export const createDataSlice: StateCreator<CyberiaState, [], [], any> = (set, ge
     const deletedSpacesCount = await db.spaces.filter((s: any) => Boolean(s.deletedAt) && s.userId === currentUserId).count();
     
     if (deletedThoughtsCount > 0 || deletedSpacesCount > 0) {
-      console.log(`[Store] Found pending deletions - workspace is NOT empty`);
+      console.log(`[Store] Found pending deletions - space is NOT empty`);
       return false;
     }
 
@@ -557,10 +557,10 @@ export const createDataSlice: StateCreator<CyberiaState, [], [], any> = (set, ge
     const spaces = await db.spaces.filter((s: any) => s.userId === currentUserId && !s.deletedAt).toArray();
     console.log('[Store] ensureWorkspace: found', spaces.length, 'existing spaces for user', currentUserId);
     if (spaces.length === 0) {
-      console.log('[ensureWorkspaceForCurrentUser] No spaces found, creating new workspace');
+      console.log('[ensureWorkspaceForCurrentUser] No spaces found, creating new space');
       const workspaceId = ulid();
       const now = Date.now();
-      await db.spaces.add({ id: workspaceId, userId: currentUserId, name: 'Workspace', mode: 'spatial', physics: true, order: 0, updatedAt: now, syncStatus: 'local' });
+      await db.spaces.add({ id: workspaceId, userId: currentUserId, name: 'My Space', mode: 'spatial', physics: true, order: 0, updatedAt: now, syncStatus: 'local' });
       localStorage.setItem('cyberia-active-space-id', workspaceId);
       await get().refreshSpaces();
       await get().setActiveSpace(workspaceId);

@@ -494,7 +494,7 @@ function App() {
   // Main Workspace logic for /home
   const isWorkspacePath = path.startsWith('/home');
   if (isWorkspacePath) {
-    // Guard: Mobile/Tablet access to workspace
+    // Guard: Mobile/Tablet access to space
     if (!isBrowser) {
       return (
         <Suspense fallback={<LoadingOverlay force />}>

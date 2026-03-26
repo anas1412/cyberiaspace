@@ -2,6 +2,14 @@ import React, { useEffect, useRef, useState } from 'react';
 import { useStore } from '../store/useStore';
 import { useAuthStore } from '../store/useAuthStore';
 import { serializeWorkspace } from '../utils/contextBuilder';
+import { 
+  resolveAllReferences, 
+  getReferenceDisplayText,
+  filterThoughts, 
+  filterStacks, 
+  type SuggestionItem 
+} from '../utils/referenceParser';
+import SuggestionDropdown from './SuggestionDropdown';
 import { X, Send, MessageSquare, Loader2, History, Square, ChevronDown, Check } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import ReactMarkdown from 'react-markdown';
@@ -163,6 +171,16 @@ const ChatOverlay: React.FC = () => {
   );
   const [showModelDropdown, setShowModelDropdown] = useState(false);
   const [modelSearch, setModelSearch] = useState('');
+
+  // Suggestion dropdown state for @thought and #stack references
+  const [suggestions, setSuggestions] = useState<{
+    isOpen: boolean;
+    type: 'thought' | 'stack';
+    query: string;
+    position: { top: number; left: number };
+    items: SuggestionItem[];
+    selectedIndex: number;
+  } | null>(null);
 
   const scrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
@@ -377,6 +395,99 @@ useEffect(() => {
     }
   };
 
+  // Handle input changes and show suggestion dropdown for @thought/#stack references
+  const handleInputChange = (value: string, textarea: HTMLTextAreaElement) => {
+    const cursorPos = textarea.selectionStart;
+    const textBeforeCursor = value.substring(0, cursorPos);
+    
+    // Check for @ or # trigger at cursor position
+    const atMatch = textBeforeCursor.match(/@(\S*)$/);
+    const hashMatch = textBeforeCursor.match(/#(\S*)$/);
+    
+    if (atMatch) {
+      const query = atMatch[1];
+      const filtered = filterThoughts(store.thoughts, query, 5);
+      
+      if (filtered.length > 0) {
+        setSuggestions({
+          isOpen: true,
+          type: 'thought',
+          query,
+          position: { top: 0, left: 0 }, // Not used anymore - CSS positioning handles it
+          items: filtered,
+          selectedIndex: 0
+        });
+        return;
+      }
+    }
+    
+    if (hashMatch) {
+      const query = hashMatch[1];
+      const filtered = filterStacks(store.stacks, store.thoughts, query, 5);
+      
+      if (filtered.length > 0) {
+        setSuggestions({
+          isOpen: true,
+          type: 'stack',
+          query,
+          position: { top: 0, left: 0 },
+          items: filtered,
+          selectedIndex: 0
+        });
+        return;
+      }
+    }
+    
+    // No trigger found, close dropdown
+    setSuggestions(null);
+  };
+
+  // Insert selected suggestion into input
+  const insertSuggestion = (item: SuggestionItem) => {
+    if (!inputRef.current) return;
+    
+    const cursorPos = inputRef.current.selectionStart;
+    const textBeforeCursor = input.substring(0, cursorPos);
+    const textAfterCursor = input.substring(cursorPos);
+    
+    // Find what trigger was used (@ or #)
+    const triggerMatch = textBeforeCursor.match(/([@#])\S*$/);
+    const trigger = triggerMatch ? triggerMatch[1] : (item.type === 'thought' ? '@' : '#');
+    
+    // Replace @query or #query with trigger + name + trailing space
+    const newTextBefore = textBeforeCursor.replace(/[@#]\S*$/, `${trigger}${item.name} `);
+    
+    setInput(newTextBefore + textAfterCursor);
+    setSuggestions(null);
+    
+    // Refocus and set cursor after the space
+    setTimeout(() => {
+      inputRef.current?.focus();
+      const newPos = newTextBefore.length;
+      inputRef.current?.setSelectionRange(newPos, newPos);
+    }, 0);
+  };
+
+  // Handle keyboard navigation in suggestions
+  const handleSuggestionKeyDown = (e: React.KeyboardEvent) => {
+    if (!suggestions) return;
+    
+    if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      setSuggestions(s => s ? { ...s, selectedIndex: Math.max(0, s.selectedIndex - 1) } : s);
+    } else if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      setSuggestions(s => s ? { ...s, selectedIndex: Math.min(s.items.length - 1, s.selectedIndex + 1) } : s);
+    } else if (e.key === 'Enter') {
+      e.preventDefault();
+      const item = suggestions.items[suggestions.selectedIndex];
+      insertSuggestion(item);
+    } else if (e.key === 'Escape') {
+      e.preventDefault();
+      setSuggestions(null);
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!input.trim() || isLoading || !store.activeSpaceId) return;
@@ -405,14 +516,55 @@ useEffect(() => {
       return;
     }
 
+    // Close suggestions if open
+    setSuggestions(null);
+
+    // Resolve references to content (async)
+    let messageContent: string | unknown[];
+    let resolvedReferences: { references: { type: string; name: string; data: unknown[] }[]; userMessage: string };
+    
+    try {
+      resolvedReferences = await resolveAllReferences(input, store.thoughts, store.stacks);
+    } catch (err) {
+      console.error("[Oracle] Failed to resolve references:", err);
+      resolvedReferences = { references: [], userMessage: input };
+    }
+    
+    if (resolvedReferences.references.length === 0) {
+      // No references, simple text
+      messageContent = input;
+    } else {
+      // Build multimodal content array for API (raw data)
+      const contentBlocks: unknown[] = [];
+      
+      // Add reference content first
+      for (const ref of resolvedReferences.references) {
+        contentBlocks.push(...ref.data);
+      }
+      
+      // Add user message
+      contentBlocks.push({ type: 'text', text: `User question: ${resolvedReferences.userMessage}` });
+      
+      messageContent = contentBlocks;
+    }
+
+    // Get clean display text for UI (not raw JSON)
+    const displayText = getReferenceDisplayText(resolvedReferences.references as any);
+    const contentForUI = displayText 
+      ? `${displayText}\n\n${resolvedReferences.userMessage}`
+      : input;
+
     const userMessage: Message = { 
       id: ulid(), 
       spaceId: store.activeSpaceId, 
       role: 'user', 
-      content: input,
+      content: contentForUI,  // Clean text for UI display
       timestamp: Date.now(),
       msgType: 'chat'
     };
+    
+    // Build content for API - use raw multimodal data if references exist
+    const apiContent = typeof messageContent === 'string' ? messageContent : messageContent;
     
     setMessages(prev => [...prev, userMessage]);
     saveMessage(userMessage);
@@ -447,19 +599,23 @@ useEffect(() => {
           body: JSON.stringify({
             messages: [...messages.filter(m => m.msgType !== 'system').slice(-ORACLE_CONFIG.HISTORY_WINDOW_SIZE), userMessage].map(m => ({
               role: m.role,
-              content: m.content
+              // Use raw multimodal content for API, or clean text for simple messages
+              content: resolvedReferences.references.length > 0 ? apiContent : m.content
             })),
             model: selectedModel,
             plan: plan,
             mode: store.oracleChatMode,
-            context: serializeWorkspace(
-              store.activeSpaceId, 
-              store.thoughts, 
-              store.spaces, 
-              store.stacks,
-              store.selectedThoughtIds,
-              user
-            )
+            // Only send workspace context when no references are tagged
+            context: resolvedReferences.references.length === 0 
+              ? serializeWorkspace(
+                  store.activeSpaceId, 
+                  store.thoughts, 
+                  store.spaces, 
+                  store.stacks,
+                  store.selectedThoughtIds,
+                  user
+                )
+              : null
           }),
         });
 
@@ -989,8 +1145,16 @@ if (data.tier && data.autoSwitch) {
               <textarea
                 ref={inputRef}
                 value={input}
-                onChange={(e) => setInput(e.target.value)}
+                onChange={(e) => {
+                  setInput(e.target.value);
+                  handleInputChange(e.target.value, e.target);
+                }}
                 onKeyDown={(e) => {
+                  // Handle suggestion keyboard navigation when dropdown is open
+                  if (suggestions?.isOpen) {
+                    handleSuggestionKeyDown(e);
+                    return;
+                  }
                   if (e.key === 'Enter' && !e.shiftKey) {
                     e.preventDefault();
                     if (!isLoading) e.currentTarget.form?.requestSubmit();
@@ -1016,6 +1180,19 @@ if (data.tier && data.autoSwitch) {
                 >
                   <Send className="w-3.5 h-3.5" />
                 </button>
+              )}
+
+              {/* Suggestion Dropdown for @thought and #stack references - anchored to input */}
+              {suggestions?.isOpen && (
+                <SuggestionDropdown
+                  query={suggestions.query}
+                  type={suggestions.type}
+                  items={suggestions.items}
+                  selectedIndex={suggestions.selectedIndex}
+                  onSelect={(item) => insertSuggestion(item)}
+                  onClose={() => setSuggestions(null)}
+                  onKeyDown={handleSuggestionKeyDown}
+                />
               )}
             </form>
 
