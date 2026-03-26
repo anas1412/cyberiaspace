@@ -97,7 +97,15 @@ ${isPro ? 'PRO PLAN: You have full access to analyze images and documents.' : 'F
 1. STYLE: Casual and punchy. Maintain personality through slang and choice of words, not through length.
 2. TOOLS: Use READ tools proactively to analyze data without narrated delay.
 3. SEARCH: Use 'web_search' or 'search_youtube' before creating thoughts from external info.
-4. THOUGHTS: Use 'label' for headers, 'text' for notes, 'embed' for links, 'file' for documents.
+4. THOUGHTS: 
+   - 'label' for headers and categories.
+   - 'text' for notes and summaries.
+   - 'tasks' for ANY list of actionable items or checklists. DO NOT use bullet points in 'text' for this.
+   - 'table' for comparisons or structured data.
+   - 'embed' for videos and links.
+   - 'file' for documents and images.
+5. GROUPS: Use 'stackName' inside 'create_thought' to link new thoughts to a stack. Do NOT use 'create_stack' or 'link_thoughts' for new items as you won't have their IDs yet.
+6. CONVERSION: If you change a thought's 'type', you MUST provide the corresponding data (e.g., if changing to 'tasks', provide the 'tasks' array). Existing data in the old type's field is NOT automatically migrated and will be hidden from the user. Extract and re-format data yourself when converting.
 [/RULES]
 `;
 };
@@ -153,68 +161,8 @@ const allTools: any[] = [
   {
     type: "function",
     function: {
-      name: "read_file_content",
-      description: "Reads the text or data content of a 'file' or 'image' type thought. Use this to analyze PDFs, read logs, or extract data from documents.",
-      parameters: {
-        type: "object",
-        properties: {
-          id: { type: "string", description: "The ID of the thought containing the file." }
-        },
-        required: ["id"]
-      }
-    }
-  },
-  {
-    type: "function",
-    function: {
-      name: "create_thought",
-      description: "Adds a node to the workspace. Choose the type carefully based on the content (e.g., 'embed' for YouTube).",
-      parameters: {
-        type: "object",
-        properties: {
-          text: { type: "string", description: "The Title/Label." },
-          type: { type: "string", enum: ["label", "text", "tasks", "paint", "table", "image", "embed", "file"] },
-          content: { type: "string", description: "The main content. For 'embed', this MUST be the URL. For 'text', this is the Markdown body." },
-          description: { type: "string", description: "A very short summary (optional)." },
-          stackName: { anyOf: [{ type: "string" }, { type: "null" }], description: "Name of a stack to add this to." },
-          priority: { type: "string", enum: ["none", "low", "medium", "high", "urgent"] },
-          status: { type: "string", enum: ["none", "todo", "doing", "done"] },
-          startTime: { type: "number", description: "Start time in milliseconds (epoch)." },
-          endTime: { type: "number", description: "End time in milliseconds (epoch)." },
-          isAllDay: { type: "boolean", description: "Whether the event lasts all day." },
-          location: { type: "string", description: "Location of the event." },
-          recurrenceRule: { type: "string", description: "Recurrence rule (RRULE) for repeating events." },
-          reminders: { type: "array", items: { type: "object", properties: { time: { type: "number" }, type: { type: "string" } } } },
-          tasks: {
-            type: "array",
-            items: {
-              type: "object",
-              properties: {
-                text: { type: "string" },
-                done: { type: "boolean" }
-              }
-            }
-          },
-          table: {
-            type: "array",
-            items: {
-              type: "array",
-              items: { type: "string" }
-            }
-          },
-          drawing: { type: "string", description: "SVG string for 'paint' type thoughts." },
-          x: { anyOf: [{ type: "number" }, { type: "null" }] },
-          y: { anyOf: [{ type: "number" }, { type: "null" }] }
-        },
-        required: ["text", "type"]
-      }
-    }
-  },
-  {
-    type: "function",
-    function: {
       name: "create_thoughts",
-      description: "Adds multiple nodes to the workspace at once. Use this for complex research summaries.",
+      description: "Adds one or more nodes to the workspace. Use this for all creation tasks, even for a single item.",
       parameters: {
         type: "object",
         properties: {
@@ -224,10 +172,10 @@ const allTools: any[] = [
               type: "object",
               properties: {
                 text: { type: "string", description: "The Title/Label." },
-                type: { type: "string", enum: ["label", "text", "tasks", "paint", "table", "image", "embed", "file"] },
-                content: { type: "string", description: "The main content (URL or Markdown)." },
+                type: { type: "string", enum: ["label", "text", "tasks", "paint", "table", "image", "embed", "file"], description: "The type determines how the node renders. MUST be 'tasks' for lists or 'table' for rows/cols." },
+                content: { type: "string", description: "REQUIRED for 'text' and 'embed'. Leave empty for 'tasks' or 'table'." },
                 description: { type: "string", description: "Short summary." },
-                stackName: { anyOf: [{ type: "string" }, { type: "null" }], description: "Name of a stack to add this to." },
+                stackName: { anyOf: [{ type: "string" }, { type: "null" }], description: "Preferred way to link. Joins stack if it exists; creates one if it doesn't." },
                 priority: { type: "string", enum: ["none", "low", "medium", "high", "urgent"] },
                 status: { type: "string", enum: ["none", "todo", "doing", "done"] },
                 startTime: { type: "number", description: "Start time in milliseconds (epoch)." },
@@ -238,6 +186,7 @@ const allTools: any[] = [
                 reminders: { type: "array", items: { type: "object", properties: { time: { type: "number" }, type: { type: "string" } } } },
                 tasks: {
                   type: "array",
+                  description: "REQUIRED if type is 'tasks'. DO NOT use 'content' for lists.",
                   items: {
                     type: "object",
                     properties: {
@@ -248,6 +197,7 @@ const allTools: any[] = [
                 },
                 table: {
                   type: "array",
+                  description: "REQUIRED if type is 'table'. A 2D array. DO NOT use 'content' for tables.",
                   items: {
                     type: "array",
                     items: { type: "string" }
@@ -266,60 +216,16 @@ const allTools: any[] = [
   {
     type: "function",
     function: {
-      name: "update_thought",
-      description: "Updates an existing thought.",
-      parameters: {
-        type: "object",
-        properties: {
-          id: { type: "string" },
-          type: { type: "string", enum: ["label", "text", "tasks", "paint", "table", "image", "embed", "file"] },
-          text: { type: "string" },
-          content: { type: "string" },
-          status: { type: "string", enum: ["none", "todo", "doing", "done"] },
-          priority: { type: "string", enum: ["none", "low", "medium", "high", "urgent"] },
-          startTime: { type: "number", description: "Start time in milliseconds (epoch)." },
-          endTime: { type: "number", description: "End time in milliseconds (epoch)." },
-          isAllDay: { type: "boolean", description: "Whether the event lasts all day." },
-          location: { type: "string", description: "Location of the event." },
-          recurrenceRule: { type: "string", description: "Recurrence rule (RRULE) for repeating events." },
-          reminders: { type: "array", items: { type: "object", properties: { time: { type: "number" }, type: { type: "string" } } } },
-          tasks: {
-            type: "array",
-            items: {
-              type: "object",
-              properties: {
-                text: { type: "string" },
-                done: { type: "boolean" }
-              }
-            }
-          },
-          table: {
-            type: "array",
-            items: {
-              type: "array",
-              items: { type: "string" }
-            }
-          },
-          drawing: { type: "string", description: "SVG string for 'paint' type thoughts." },
-          stackName: { anyOf: [{ type: "string" }, { type: "null" }], description: "Name of a stack to move this thought into." }
-        },
-        required: ["id"]
-      }
-    }
-  },
-  {
-    type: "function",
-    function: {
       name: "update_thoughts",
-      description: "Updates multiple existing thoughts with the same set of changes (e.g., move all to a date, change status, or shift position).",
+      description: "Updates one or more existing thoughts with the same set of changes. IMPORTANT: When changing 'type', you MUST provide the new data field (e.g. 'tasks', 'table', or 'content') to avoid data loss.",
       parameters: {
         type: "object",
         properties: {
-          ids: { type: "array", items: { type: "string" }, description: "Array of thought IDs." },
+          ids: { type: "array", items: { type: "string" }, description: "Array of thought IDs to update." },
           text: { type: "string", description: "Bulk rename thoughts." },
-          content: { type: "string", description: "Bulk update content." },
+          content: { type: "string", description: "Updated Markdown or URL." },
           description: { type: "string", description: "Bulk update description." },
-          type: { type: "string", enum: ["label", "text", "tasks", "paint", "table", "image", "embed", "file"] },
+          type: { type: "string", enum: ["label", "text", "tasks", "paint", "table", "image", "embed", "file"], description: "Bulk convert thought types." },
           status: { type: "string", enum: ["none", "todo", "doing", "done"] },
           priority: { type: "string", enum: ["none", "low", "medium", "high", "urgent"] },
           startTime: { type: "number", description: "Start time in milliseconds (epoch)." },
@@ -330,6 +236,7 @@ const allTools: any[] = [
           reminders: { type: "array", items: { type: "object", properties: { time: { type: "number" }, type: { type: "string" } } } },
           tasks: {
             type: "array",
+            description: "Bulk update tasks. Required if type changed to 'tasks'.",
             items: {
               type: "object",
               properties: {
@@ -340,13 +247,14 @@ const allTools: any[] = [
           },
           table: {
             type: "array",
+            description: "Bulk update tables. Required if type changed to 'table'.",
             items: {
               type: "array",
               items: { type: "string" }
             }
           },
           drawing: { type: "string", description: "SVG string for 'paint' type thoughts." },
-          stackName: { anyOf: [{ type: "string" }, { type: "null" }], description: "Name of a stack to move these thoughts into." },
+          stackName: { anyOf: [{ type: "string" }, { type: "null" }], description: "Move these thoughts into a different stack (by name)." },
           x: { anyOf: [{ type: "number" }, { type: "null" }] },
           y: { anyOf: [{ type: "number" }, { type: "null" }] }
         },
@@ -358,11 +266,11 @@ const allTools: any[] = [
     type: "function",
     function: {
       name: "delete_thoughts",
-      description: "Deletes thoughts by ID.",
+      description: "Deletes one or more thoughts by their IDs. Use this for all deletion tasks.",
       parameters: {
         type: "object",
         properties: {
-          ids: { type: "array", items: { type: "string" } }
+          ids: { type: "array", items: { type: "string" }, description: "Array of thought IDs to delete." }
         },
         required: ["ids"]
       }
@@ -372,12 +280,12 @@ const allTools: any[] = [
     type: "function",
     function: {
       name: "create_stack",
-      description: "Creates a new stack with a name and a list of thoughts.",
+      description: "Creates a new stack (collection) with a name and an array of thought IDs. Use this to group existing thoughts.",
       parameters: {
         type: "object",
         properties: {
           name: { type: "string", description: "The name of the stack." },
-          ids: { type: "array", items: { type: "string" }, description: "IDs of thoughts to include in the stack." }
+          ids: { type: "array", items: { type: "string" }, description: "IDs of existing thoughts to include in the stack." }
         },
         required: ["name", "ids"]
       }
@@ -387,7 +295,7 @@ const allTools: any[] = [
     type: "function",
     function: {
       name: "link_thoughts",
-      description: "Links multiple thoughts together into a new or existing stack.",
+      description: "Links one or more thoughts together into a new or existing stack (collection).",
       parameters: {
         type: "object",
         properties: {
@@ -402,7 +310,7 @@ const allTools: any[] = [
     type: "function",
     function: {
       name: "unlink_thoughts",
-      description: "Removes thoughts from their current stacks.",
+      description: "Removes one or more thoughts from their current stacks.",
       parameters: {
         type: "object",
         properties: {
@@ -415,23 +323,8 @@ const allTools: any[] = [
   {
     type: "function",
     function: {
-      name: "update_stack",
-      description: "Updates a stack's properties, like its name.",
-      parameters: {
-        type: "object",
-        properties: {
-          id: { type: "string", description: "The stack ID (e.g. 'st-123')." },
-          name: { type: "string", description: "The new name for the stack." }
-        },
-        required: ["id", "name"]
-      }
-    }
-  },
-  {
-    type: "function",
-    function: {
       name: "update_stacks",
-      description: "Updates multiple stacks at once. Use this to rename several stacks in a single operation.",
+      description: "Updates one or more stacks at once. Use this to rename stacks by their ID.",
       parameters: {
         type: "object",
         properties: {
@@ -456,7 +349,7 @@ const allTools: any[] = [
     type: "function",
     function: {
       name: "delete_stacks",
-      description: "Deletes multiple stacks at once. This unlinks all thoughts in the stacks but does NOT delete the thoughts themselves.",
+      description: "Deletes one or more stacks at once. This unlinks all thoughts in the stacks but does NOT delete the thoughts themselves.",
       parameters: {
         type: "object",
         properties: {
@@ -470,7 +363,7 @@ const allTools: any[] = [
     type: "function",
     function: {
       name: "read_files_content",
-      description: "Reads the text or data content of multiple 'file' or 'image' type thoughts at once.",
+      description: "Reads the text or data content of one or more 'file' or 'image' type thoughts at once. Use this to analyze documents.",
       parameters: {
         type: "object",
         properties: {
@@ -479,24 +372,10 @@ const allTools: any[] = [
         required: ["ids"]
       }
     }
-  },
-  {
-    type: "function",
-    function: {
-      name: "delete_stack",
-      description: "Deletes a stack by ID. This unlinks all thoughts in the stack but does NOT delete the thoughts themselves.",
-      parameters: {
-        type: "object",
-        properties: {
-          id: { type: "string", description: "The stack ID." }
-        },
-        required: ["id"]
-      }
-    }
   }
 ];
 
-const READ_ONLY_TOOLS = ['get_thought_details', 'read_file_content', 'read_files_content', 'web_search', 'search_youtube'];
+const READ_ONLY_TOOLS = ['get_thought_details', 'read_files_content', 'web_search', 'search_youtube'];
 
 function getFilteredTools(plan: string, mode: string = 'chat'): any[] {
   if (plan === 'free') {
