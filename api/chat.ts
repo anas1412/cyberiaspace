@@ -158,7 +158,7 @@ const allTools: any[] = [
       parameters: {
         type: "object",
         properties: {
-          id: { type: "number", description: "The ID of the thought containing the file." }
+          id: { type: "string", description: "The ID of the thought containing the file." }
         },
         required: ["id"]
       }
@@ -271,7 +271,7 @@ const allTools: any[] = [
       parameters: {
         type: "object",
         properties: {
-          id: { type: "number" },
+          id: { type: "string" },
           type: { type: "string", enum: ["label", "text", "tasks", "paint", "table", "image", "embed", "file"] },
           text: { type: "string" },
           content: { type: "string" },
