@@ -79,7 +79,9 @@ export const syncOrchestrator = {
         const { useStore } = await import('../../store/useStore');
         const authStore = useAuthStore.getState();
         
-        const { data } = await supabase.from('users').select('settings, theme, avatar, name').eq('id', id).single();
+        const { data } = await supabase.from('users')
+          .select('settings, theme, avatar, name, plan, subscription_status, expiry_date')
+          .eq('id', id).single();
         if (data) {
           const camelData = toCamelCase(data);
           const newSettings = camelData.settings || {};

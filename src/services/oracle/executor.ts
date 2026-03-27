@@ -157,6 +157,18 @@ export const executeOracleTool = async (toolCall: any, store: any) => {
           delete thoughtArgs.content;
         }
 
+        // Transform table to data.rows for table type
+        if (thoughtArgs.type === 'table' && thoughtArgs.table) {
+          thoughtArgs.data = { type: 'table', rows: thoughtArgs.table };
+          delete thoughtArgs.table;
+        }
+
+        // Transform tasks to data.tasks for tasks type
+        if (thoughtArgs.type === 'tasks' && thoughtArgs.tasks) {
+          thoughtArgs.data = { type: 'tasks', tasks: thoughtArgs.tasks };
+          delete thoughtArgs.tasks;
+        }
+
         // Use bulk addThoughts for consistency (handles jitter, limits, single sync)
         const ids = await store.addThoughts([{ ...thoughtArgs }]);
         if (ids.length === 0) {
@@ -189,6 +201,18 @@ export const executeOracleTool = async (toolCall: any, store: any) => {
           if (thoughtArgs.type === 'embed' && thoughtArgs.content) {
             thoughtArgs.data = { type: 'embed', url: thoughtArgs.content };
             delete thoughtArgs.content;
+          }
+
+          // Transform table to data.rows for table type
+          if (thoughtArgs.type === 'table' && thoughtArgs.table) {
+            thoughtArgs.data = { type: 'table', rows: thoughtArgs.table };
+            delete thoughtArgs.table;
+          }
+
+          // Transform tasks to data.tasks for tasks type
+          if (thoughtArgs.type === 'tasks' && thoughtArgs.tasks) {
+            thoughtArgs.data = { type: 'tasks', tasks: thoughtArgs.tasks };
+            delete thoughtArgs.tasks;
           }
 
           if (thoughtArgs.type === ('image' as any)) thoughtArgs.type = 'file';
@@ -271,6 +295,18 @@ export const executeOracleTool = async (toolCall: any, store: any) => {
           if (updates.status) sanitizedUpdates.status = sanitizeStatus(updates.status);
           if (updates.priority) sanitizedUpdates.priority = sanitizePriority(updates.priority);
 
+          // Transform table to data.rows for table type
+          if (updates.type === 'table' && updates.table) {
+            sanitizedUpdates.data = { type: 'table', rows: updates.table };
+            delete sanitizedUpdates.table;
+          }
+
+          // Transform tasks to data.tasks for tasks type
+          if (updates.type === 'tasks' && updates.tasks) {
+            sanitizedUpdates.data = { type: 'tasks', tasks: updates.tasks };
+            delete sanitizedUpdates.tasks;
+          }
+
           await store.updateThought(String(id), sanitizedUpdates);
           if (stackName) await store.createStack(stackName, String(id));
           return { success: true };
@@ -290,6 +326,18 @@ export const executeOracleTool = async (toolCall: any, store: any) => {
 
           if (updates.status) sanitizedUpdates.status = sanitizeStatus(updates.status);
           if (updates.priority) sanitizedUpdates.priority = sanitizePriority(updates.priority);
+
+          // Transform table to data.rows for table type
+          if (updates.type === 'table' && updates.table) {
+            sanitizedUpdates.data = { type: 'table', rows: updates.table };
+            delete sanitizedUpdates.table;
+          }
+
+          // Transform tasks to data.tasks for tasks type
+          if (updates.type === 'tasks' && updates.tasks) {
+            sanitizedUpdates.data = { type: 'tasks', tasks: updates.tasks };
+            delete sanitizedUpdates.tasks;
+          }
 
           for (const id of ids) {
             await store.updateThought(String(id), sanitizedUpdates);

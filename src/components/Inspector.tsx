@@ -90,7 +90,7 @@ const Inspector: React.FC = () => {
   const selectedThoughtId = useStore((state) => state.selectedThoughtId);
   const thoughts = useStore((state) => state.thoughts);
   const stacks = useStore((state) => state.stacks);
-  const patchThought = useStore((state) => state.patchThought);
+  const updateThought = useStore((state) => state.updateThought);
   const createStack = useStore((state) => state.createStack);
   const deleteThought = useStore((state) => state.deleteThought);
   const setActiveFocus = useStore((state) => state.setActiveFocus);
@@ -162,12 +162,12 @@ const Inspector: React.FC = () => {
     if (isReadOnly || !thought) return;
     const config = getThoughtConfig(type);
     const payload = config?.createPayload();
-    patchThought(thought.id, { type, data: payload });
+    updateThought(thought.id, { type, data: payload });
   };
 
   const handlePriorityChange = (priority: 'none' | 'low' | 'medium' | 'high' | 'urgent') => {
     if (isReadOnly || !thought) return;
-    patchThought(thought.id, { priority });
+    updateThought(thought.id, { priority });
   };
 
   const handleDateTimeChange = (updates: { startTime?: number | null; endTime?: number | null; isAllDay?: boolean }) => {
@@ -185,25 +185,25 @@ const Inspector: React.FC = () => {
       setLocalIsAllDay(updates.isAllDay);
       newUpdates.isAllDay = updates.isAllDay;
     }
-    patchThought(thought.id, newUpdates);
+    updateThought(thought.id, newUpdates);
   };
 
   const handleReminderChange = (reminders: any[]) => {
     if (!thought) return;
     setLocalReminders(reminders);
-    patchThought(thought.id, { reminders });
+    updateThought(thought.id, { reminders });
   };
 
   const handleRecurrenceChange = (recurrenceRule: string | null) => {
     if (!thought) return;
     setLocalRecurrenceRule(recurrenceRule);
-    patchThought(thought.id, { recurrenceRule });
+    updateThought(thought.id, { recurrenceRule });
   };
 
   const handleLocationChange = (location: string) => {
     if (!thought) return;
     setLocalLocation(location);
-    patchThought(thought.id, { location });
+    updateThought(thought.id, { location });
   };
 
   const config = thought ? getThoughtConfig(thought.type) : null;
@@ -295,17 +295,7 @@ const Inspector: React.FC = () => {
                           onChange={(e) => {
                             setLocalText(e.target.value);
                             if (!isReadOnly && thought) {
-                              patchThought(thought.id, { text: e.target.value });
-                              const timerKey = `inspector-title-${thought.id}`;
-                              if ((window as any)[timerKey]) clearTimeout((window as any)[timerKey]);
-                              (window as any)[timerKey] = setTimeout(async () => {
-                                await db.thoughts.update(thought.id, { 
-                                  text: e.target.value,
-                                  updatedAt: Date.now(),
-                                  syncStatus: 'local'
-                                });
-                                delete (window as any)[timerKey];
-                              }, 1000);
+                              updateThought(thought.id, { text: e.target.value });
                             }
                           }}
                           maxLength={100}
@@ -325,17 +315,7 @@ const Inspector: React.FC = () => {
                           onChange={(e) => {
                             setLocalDesc(e.target.value);
                             if (!isReadOnly && thought) {
-                              patchThought(thought.id, { description: e.target.value });
-                              const timerKey = `inspector-desc-${thought.id}`;
-                              if ((window as any)[timerKey]) clearTimeout((window as any)[timerKey]);
-                              (window as any)[timerKey] = setTimeout(async () => {
-                                await db.thoughts.update(thought.id, { 
-                                  description: e.target.value,
-                                  updatedAt: Date.now(),
-                                  syncStatus: 'local'
-                                });
-                                delete (window as any)[timerKey];
-                              }, 1000);
+                              updateThought(thought.id, { description: e.target.value });
                             }
                           }}
                           rows={4}
@@ -435,7 +415,7 @@ const Inspector: React.FC = () => {
                           <button
                             key={s}
                             disabled={isReadOnly}
-                            onClick={() => !isReadOnly && patchThought(thought.id, { status: s })}
+                            onClick={() => !isReadOnly && updateThought(thought.id, { status: s })}
                             className={cn(
                               "border rounded-xl py-2.5 text-[9px] font-bold uppercase tracking-[0.2em] transition-all",
                               thought.status === s
@@ -560,7 +540,7 @@ const Inspector: React.FC = () => {
                                   const name = e.currentTarget.value.trim();
                                   const existingStack = stacks.find(s => s.name.toLowerCase() === name.toLowerCase());
                                   if (existingStack) {
-                                    patchThought(thought.id, { stackId: existingStack.id });
+                                    updateThought(thought.id, { stackId: existingStack.id });
                                   } else {
                                     createStack(name, thought.id);
                                   }
@@ -578,7 +558,7 @@ const Inspector: React.FC = () => {
                                 {stacks.map(s => (
                                   <div key={s.id} className="relative group/s">
                                     <button
-                                      onClick={() => patchThought(thought.id, { stackId: s.id })}
+                                      onClick={() => updateThought(thought.id, { stackId: s.id })}
                                       className="w-full flex items-center gap-3 p-3 rounded-xl bg-white/[0.02] hover:bg-white/[0.06] border border-transparent hover:border-[var(--glass-border)] transition-all"
                                     >
                                       <div className="w-2 h-2 rounded-full" style={{ backgroundColor: s.color, boxShadow: `0 0 8px ${s.color}44` }} />
@@ -626,7 +606,7 @@ const Inspector: React.FC = () => {
                         step="0.1"
                         value={thought.size || 1.0}
                         disabled={isReadOnly}
-                        onChange={(e) => patchThought(thought.id, { size: parseFloat(e.target.value) })}
+                        onChange={(e) => updateThought(thought.id, { size: parseFloat(e.target.value) })}
                         className={cn(
                           "w-full h-1.5 bg-white/10 rounded-lg appearance-none cursor-pointer accent-[var(--accent)]",
                           isReadOnly && "opacity-30 pointer-events-none"

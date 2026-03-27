@@ -6,7 +6,6 @@ import { supabaseSync } from '../../services/supabaseSync';
 import { type AuthState } from '../types';
 import { supabaseStorage, isStorageUrl } from '../../services/supabaseStorage';
 
-let refreshProfilePromise: Promise<void> | null = null;
 let refreshInterval: ReturnType<typeof setInterval> | null = null;
 
 const getHasRegressedToFree = (): boolean => {
@@ -609,111 +608,103 @@ export const createAuthSlice: StateCreator<AuthState, [], [], any> = (set, get, 
       return;
     }
 
-    if (refreshProfilePromise) return refreshProfilePromise;
+    try {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 20000);
 
-    refreshProfilePromise = (async () => {
+      // 1. First, always try to refresh the profile data from Supabase to ensure we have the latest plan
       try {
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 20000);
+        const supabaseProfile = await supabaseSync.getProfile(user.id);
+        if (supabaseProfile?.user) {
+          const supabaseUser = supabaseProfile.user;
+          const now = new Date();
+          const isPro = supabaseUser.plan === 'pro' && supabaseUser.expiryDate && new Date(supabaseUser.expiryDate) > now;
+          
+          const updatedUser = { 
+            ...user, 
+            ...supabaseUser,
+            settings: {
+              ...user.settings,
+              ...supabaseUser.settings,
+              autoSync: supabaseUser.settings?.autoSync ?? user.settings?.autoSync ?? true
+            }
+          };
+          
+          if (!isPro) {
+            updatedUser.plan = 'free';
+            updatedUser.settings.personality = '';
+            
+            if (user.plan === 'pro') {
+              console.log('[Auth] Plan regression (pro -> free) detected remotely.');
+              get().handlePlanRegression();
+            }
+            setHasRegressedToFree(true);
+          } else {
+            if (getHasRegressedToFree()) {
+              console.log('[Auth] Plan renewed, lifting capability restrictions.');
+            }
+            setHasRegressedToFree(false);
+          }
 
-        // 1. First, always try to refresh the profile data from Supabase to ensure we have the latest plan
+          // Save refreshSecret if present in profile
+          const profileAny = supabaseUser as any;
+          if (profileAny.refreshSecret) {
+            localStorage.setItem('cyberia-refresh-secret', profileAny.refreshSecret);
+            set({ refreshSecret: profileAny.refreshSecret });
+          }
+
+          set({ user: updatedUser });
+          localStorage.setItem('cyberia-user', JSON.stringify(updatedUser));
+          console.log('[Auth] Profile refreshed from Supabase. Plan:', updatedUser.plan);
+        }
+      } catch (err: any) {
+        console.warn('[Auth] Profile sync failed:', err.message);
+      }
+
+      // 2. Then, try to refresh the Google OAuth token if we have a refreshSecret
+      if (refreshSecret) {
         try {
-          const supabaseProfile = await supabaseSync.getProfile(user.id);
-          if (supabaseProfile?.user) {
-            const supabaseUser = supabaseProfile.user;
-            const now = new Date();
-            const isPro = supabaseUser.plan === 'pro' && supabaseUser.expiryDate && new Date(supabaseUser.expiryDate) > now;
+          const refreshRes = await fetch('/api/google-auth?action=refresh', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ userId: user.id, refreshSecret }),
+            signal: controller.signal
+          });
+          
+          if (refreshRes.ok) {
+            const refreshData = await refreshRes.json();
+            const currentToken = refreshData.access_token;
+            const expiresIn = refreshData.expires_in || 3600;
+            const expiryTime = Date.now() + (expiresIn * 1000);
             
-            const updatedUser = { 
-              ...user, 
-              ...supabaseUser,
-              settings: {
-                ...user.settings,
-                ...supabaseUser.settings,
-                autoSync: supabaseUser.settings?.autoSync ?? user.settings?.autoSync ?? true
-              }
-            };
-            
-            if (!isPro) {
-              updatedUser.plan = 'free';
-              updatedUser.settings.personality = '';
-              
-              if (user.plan === 'pro') {
-                console.log('[Auth] Plan regression (pro -> free) detected remotely.');
-                get().handlePlanRegression();
-              }
-              setHasRegressedToFree(true);
-            } else {
-              if (getHasRegressedToFree()) {
-                console.log('[Auth] Plan renewed, lifting capability restrictions.');
-              }
-              setHasRegressedToFree(false);
-            }
-
-            // Save refreshSecret if present in profile
-            const profileAny = supabaseUser as any;
-            if (profileAny.refreshSecret) {
-              localStorage.setItem('cyberia-refresh-secret', profileAny.refreshSecret);
-              set({ refreshSecret: profileAny.refreshSecret });
-            }
-
-            set({ user: updatedUser });
-            localStorage.setItem('cyberia-user', JSON.stringify(updatedUser));
-            console.log('[Auth] Profile refreshed from Supabase. Plan:', updatedUser.plan);
+            set({ 
+              accessToken: currentToken,
+              accessTokenExpiresAt: expiryTime
+            });
+            localStorage.setItem('cyberia-token', currentToken);
+            localStorage.setItem('cyberia-token-expiry', expiryTime.toString());
+          } else if (refreshRes.status === 401) {
+            console.warn('[Auth] Session expired (401), signing out');
+            clearTimeout(timeoutId);
+            get().signOut();
+            return;
           }
         } catch (err: any) {
-          console.warn('[Auth] Profile sync failed:', err.message);
-        }
-
-        // 2. Then, try to refresh the Google OAuth token if we have a refreshSecret
-        if (refreshSecret) {
-          try {
-            const refreshRes = await fetch('/api/google-auth?action=refresh', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ userId: user.id, refreshSecret }),
-              signal: controller.signal
-            });
-            
-            if (refreshRes.ok) {
-              const refreshData = await refreshRes.json();
-              const currentToken = refreshData.access_token;
-              const expiresIn = refreshData.expires_in || 3600;
-              const expiryTime = Date.now() + (expiresIn * 1000);
-              
-              set({ 
-                accessToken: currentToken,
-                accessTokenExpiresAt: expiryTime
-              });
-              localStorage.setItem('cyberia-token', currentToken);
-              localStorage.setItem('cyberia-token-expiry', expiryTime.toString());
-            } else if (refreshRes.status === 401) {
-              console.warn('[Auth] Session expired (401), signing out');
-              clearTimeout(timeoutId);
-              get().signOut();
-              return;
-            }
-          } catch (err: any) {
-            if (err.name === 'AbortError') {
-              console.log('[Auth] Token refresh heartbeat timed out.');
-            } else {
-              console.warn('[Auth] Token refresh error:', err.message);
-            }
+          if (err.name === 'AbortError') {
+            console.log('[Auth] Token refresh heartbeat timed out.');
+          } else {
+            console.warn('[Auth] Token refresh error:', err.message);
           }
-        } else {
-          // Legacy/missing refreshSecret fallback
-          console.warn('[Auth] No refreshSecret, skipping OAuth token refresh');
         }
-
-        clearTimeout(timeoutId);
-      } catch (e) {
-        console.warn('[Auth] Refresh profile hard failure:', e);
-      } finally {
-        refreshProfilePromise = null;
+      } else {
+        // Legacy/missing refreshSecret fallback
+        console.warn('[Auth] No refreshSecret, skipping OAuth token refresh');
       }
-    })();
 
-    return refreshProfilePromise;
+      clearTimeout(timeoutId);
+    } catch (e) {
+      console.warn('[Auth] Refresh profile hard failure:', e);
+    }
   },
 
   getOrRefreshToken: async () => {

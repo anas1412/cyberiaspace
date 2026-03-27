@@ -142,4 +142,18 @@ CREATE INDEX IF NOT EXISTS idx_thoughts_type ON thoughts(type);
 CREATE INDEX IF NOT EXISTS idx_thoughts_status ON thoughts(status);
 CREATE INDEX IF NOT EXISTS idx_users_polar_customer ON users(polar_customer_id);
 
-SELECT 'Schema v4 (ULID Unified) created successfully!' as result;
+-- Enable Realtime for all core tables
+-- This ensures that cross-device and post-payment updates work instantly.
+BEGIN;
+  -- Remove existing if any to avoid errors
+  DROP PUBLICATION IF EXISTS supabase_realtime;
+  CREATE PUBLICATION supabase_realtime FOR TABLE users, spaces, stacks, thoughts;
+COMMIT;
+
+-- Ensure replication is enabled for the tables
+ALTER TABLE users REPLICA IDENTITY FULL;
+ALTER TABLE spaces REPLICA IDENTITY FULL;
+ALTER TABLE stacks REPLICA IDENTITY FULL;
+ALTER TABLE thoughts REPLICA IDENTITY FULL;
+
+SELECT 'Schema v4 (Realtime Enabled) created successfully!' as result;
