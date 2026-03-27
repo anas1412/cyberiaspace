@@ -260,15 +260,11 @@ export const createAuthSlice: StateCreator<AuthState, [], [], any> = (set, get, 
   initAuth: async () => {
     window.addEventListener('online', async () => { 
       set({ isOnline: true });
-      const { accessTokenExpiresAt, refreshSecret, status } = get();
-      const now = Date.now();
-      const BUFFER_MS = 60 * 1000; // 1 minute - only refresh when truly needed
+      const { status } = get();
       
-      if (status === 'authenticated' && accessTokenExpiresAt && (accessTokenExpiresAt - now) < BUFFER_MS) {
-        console.log('[Auth] Back online with expired/near expiry token, refreshing...');
-        if (refreshSecret) {
-          await get().refreshProfile();
-        }
+      if (status === 'authenticated') {
+        console.log('[Auth] Back online, refreshing profile...');
+        await get().refreshProfile();
       }
       
       if (typeof get().processOfflineChanges === 'function') {
@@ -289,24 +285,8 @@ export const createAuthSlice: StateCreator<AuthState, [], [], any> = (set, get, 
         
         // Debounce by 2 seconds to prevent rapid refreshes
         visibilityDebounceTimer = setTimeout(() => {
-          const { accessTokenExpiresAt, refreshSecret } = get();
-          const now = Date.now();
-          const BUFFER_MS = 60 * 1000; // 1 minute
-          
-          // Only refresh if token is near expiry or every 30 minutes
-          const timeSinceLastExpiry = accessTokenExpiresAt ? accessTokenExpiresAt - now : Infinity;
-          const shouldRefresh = timeSinceLastExpiry < BUFFER_MS;
-          
-          if (shouldRefresh) {
-            console.log('[Auth] Token near expiry when tab became visible, refreshing...');
-            if (refreshSecret) {
-              get().refreshProfile();
-            } else {
-              get().refreshProfile();
-            }
-          } else {
-            console.log('[Auth] Token still valid, skipping profile refresh on visibility');
-          }
+          console.log('[Auth] Tab became visible, refreshing profile...');
+          get().refreshProfile();
         }, 2000);
       }
     });
