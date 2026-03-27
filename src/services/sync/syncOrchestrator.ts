@@ -71,40 +71,36 @@ export const syncOrchestrator = {
     const handleRemoteChange = async (payload: any, table: string) => {
       // Profile/Settings update - handle immediately without full delta sync
       if (table === 'users') {
-        const id = payload.new?.id;
-        if (!id) return;
+        const userData = payload.new;
+        if (!userData?.id) return;
 
         console.log('[Sync] Remote user settings change detected, updating local profile...');
         const { useAuthStore } = await import('../../store/useAuthStore');
         const { useStore } = await import('../../store/useStore');
         const authStore = useAuthStore.getState();
         
-        const { data } = await supabase.from('users')
-          .select('settings, theme, avatar, name, plan, subscription_status, expiry_date')
-          .eq('id', id).single();
-        if (data) {
-          const camelData = toCamelCase(data);
-          const newSettings = camelData.settings || {};
-          
-          // Sync theme and customBg to global store (Silent update to avoid sync loops)
-          if (newSettings.theme) {
-            useStore.setState({ theme: newSettings.theme });
-            document.body.setAttribute('data-theme', newSettings.theme);
-            localStorage.setItem('cyberia-theme', newSettings.theme);
-          }
-          if (newSettings.customBg !== undefined) {
-            useStore.setState({ customBg: newSettings.customBg });
-          }
-
-          // Update user object in auth store
-          const updatedUser = { 
-            ...authStore.user, 
-            ...camelData,
-            settings: { ...authStore.user?.settings, ...newSettings }
-          };
-          useAuthStore.setState({ user: updatedUser as any });
-          localStorage.setItem('cyberia-user', JSON.stringify(updatedUser));
+        // Use payload.new directly — no extra Supabase query needed with REPLICA IDENTITY FULL
+        const camelData = toCamelCase(userData);
+        const newSettings = camelData.settings || {};
+        
+        // Sync theme and customBg to global store (Silent update to avoid sync loops)
+        if (newSettings.theme) {
+          useStore.setState({ theme: newSettings.theme });
+          document.body.setAttribute('data-theme', newSettings.theme);
+          localStorage.setItem('cyberia-theme', newSettings.theme);
         }
+        if (newSettings.customBg !== undefined) {
+          useStore.setState({ customBg: newSettings.customBg });
+        }
+
+        // Update user object in auth store
+        const updatedUser = { 
+          ...authStore.user, 
+          ...camelData,
+          settings: { ...authStore.user?.settings, ...newSettings }
+        };
+        useAuthStore.setState({ user: updatedUser as any });
+        localStorage.setItem('cyberia-user', JSON.stringify(updatedUser));
         return;
       }
 

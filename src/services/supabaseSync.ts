@@ -110,9 +110,9 @@ export function toCamelCase(obj: any): any {
   const type = result.type;
   if (type) {
     if (type === 'text') result.data = { type: 'text', content: result.content || '' };
-    else if (type === 'tasks') result.data = { type: 'tasks', tasks: result.tasks || [] };
-    else if (type === 'table') result.data = { type: 'table', rows: result.table || [] };
-    else if (type === 'paint') result.data = { type: 'paint', drawing: result.drawing || '' };
+    else if (type === 'tasks') result.data = { type: 'tasks', tasks: obj.tasks || [] };
+    else if (type === 'table') result.data = { type: 'table', rows: obj.table || [] };
+    else if (type === 'paint') result.data = { type: 'paint', drawing: obj.drawing || '' };
     else if (type === 'embed') result.data = { type: 'embed', url: result.content || '' };
     else if (type === 'file') result.data = { type: 'file', url: result.storageUrl || '', name: result.text || '', size: result.meta?.size || 0, meta: result.meta };
     else if (type === 'label') result.data = { type: 'label' };

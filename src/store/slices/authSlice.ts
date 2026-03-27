@@ -7,6 +7,7 @@ import { type AuthState } from '../types';
 import { supabaseStorage, isStorageUrl } from '../../services/supabaseStorage';
 
 let refreshInterval: ReturnType<typeof setInterval> | null = null;
+let planHealthCheckInterval: ReturnType<typeof setInterval> | null = null;
 
 const getHasRegressedToFree = (): boolean => {
   try {
@@ -259,33 +260,30 @@ export const createAuthSlice: StateCreator<AuthState, [], [], any> = (set, get, 
   initAuth: async () => {
     window.addEventListener('online', async () => { 
       set({ isOnline: true });
-      const { status } = get();
-      
-      if (status === 'authenticated') {
-        console.log('[Auth] Back online, refreshing profile...');
-        await get().refreshProfile();
-      }
-      
+      // Push any offline changes, then let realtime handle plan updates
       if (typeof get().processOfflineChanges === 'function') {
         await get().processOfflineChanges();
       }
     });
     window.addEventListener('offline', () => set({ isOnline: false, syncStatus: 'offline' }));
     
-    // Debounce timer for visibility changes
+    // Debounce timer for visibility changes - only for token maintenance
     let visibilityDebounceTimer: NodeJS.Timeout | null = null;
     
     document.addEventListener('visibilitychange', () => {
       if (document.visibilityState === 'visible' && get().status === 'authenticated') {
-        // Clear any pending debounce
-        if (visibilityDebounceTimer) {
-          clearTimeout(visibilityDebounceTimer);
-        }
+        if (visibilityDebounceTimer) clearTimeout(visibilityDebounceTimer);
         
-        // Debounce by 2 seconds to prevent rapid refreshes
+        // Token check on visibility - only if near expiry (realtime handles plan)
         visibilityDebounceTimer = setTimeout(() => {
-          console.log('[Auth] Tab became visible, refreshing profile...');
-          get().refreshProfile();
+          const { accessTokenExpiresAt, refreshSecret } = get();
+          const now = Date.now();
+          const BUFFER_MS = 60 * 1000;
+          
+          if (accessTokenExpiresAt && (accessTokenExpiresAt - now) < BUFFER_MS && refreshSecret) {
+            console.log('[Auth] Token near expiry on visibility, refreshing...');
+            get().refreshProfile();
+          }
         }, 2000);
       }
     });
@@ -495,6 +493,10 @@ export const createAuthSlice: StateCreator<AuthState, [], [], any> = (set, get, 
       clearInterval(refreshInterval);
       refreshInterval = null;
     }
+    if (planHealthCheckInterval) {
+      clearInterval(planHealthCheckInterval);
+      planHealthCheckInterval = null;
+    }
     
     localStorage.removeItem('cyberia-user');
     localStorage.removeItem('cyberia-token');
@@ -617,12 +619,12 @@ export const createAuthSlice: StateCreator<AuthState, [], [], any> = (set, get, 
         const supabaseProfile = await supabaseSync.getProfile(user.id);
         if (supabaseProfile?.user) {
           const supabaseUser = supabaseProfile.user;
-          const now = new Date();
-          const isPro = supabaseUser.plan === 'pro' && supabaseUser.expiryDate && new Date(supabaseUser.expiryDate) > now;
           
+          // Trust the database for plan - don't recalculate from expiryDate
           const updatedUser = { 
             ...user, 
             ...supabaseUser,
+            plan: supabaseUser.plan || 'free', // Database is source of truth
             settings: {
               ...user.settings,
               ...supabaseUser.settings,
@@ -630,19 +632,19 @@ export const createAuthSlice: StateCreator<AuthState, [], [], any> = (set, get, 
             }
           };
           
-          if (!isPro) {
-            updatedUser.plan = 'free';
-            updatedUser.settings.personality = '';
-            
-            if (user.plan === 'pro') {
-              console.log('[Auth] Plan regression (pro -> free) detected remotely.');
-              get().handlePlanRegression();
-            }
+          // Only log regression for debugging - don't override plan from database
+          const wasPro = user.plan === 'pro';
+          const isProNow = updatedUser.plan === 'pro';
+          
+          if (wasPro && !isProNow) {
+            console.log('[Auth] Plan regression (pro -> free) detected remotely.');
+            get().handlePlanRegression();
             setHasRegressedToFree(true);
-          } else {
-            if (getHasRegressedToFree()) {
-              console.log('[Auth] Plan renewed, lifting capability restrictions.');
-            }
+          } else if (!wasPro && isProNow) {
+            console.log('[Auth] Plan renewed (free -> pro), lifting capability restrictions.');
+            setHasRegressedToFree(false);
+          } else if (isProNow && getHasRegressedToFree()) {
+            console.log('[Auth] Plan renewed, lifting capability restrictions.');
             setHasRegressedToFree(false);
           }
 
@@ -725,15 +727,25 @@ export const createAuthSlice: StateCreator<AuthState, [], [], any> = (set, get, 
   },
 
   setupRefreshInterval: () => {
-    if (refreshInterval) clearInterval(refreshInterval);
-    
-    refreshInterval = setInterval(() => {
+    // 1. Plan health check - 5 minute fallback if realtime disconnects
+    if (planHealthCheckInterval) clearInterval(planHealthCheckInterval);
+    planHealthCheckInterval = setInterval(() => {
       const { status, isOnline } = get();
       if (status === 'authenticated' && isOnline) {
-        console.log('[Auth] Core Loop: Processing token/profile maintenance.');
+        console.log('[Auth] Plan health check (realtime fallback)...');
         get().refreshProfile();
       }
-    }, 55 * 60 * 1000); // 55 minutes - tokens expire at 60 min
+    }, 5 * 60 * 1000); // 5 minutes
+
+    // 2. Token refresh - 55 minutes (tokens expire at 60 min)
+    if (refreshInterval) clearInterval(refreshInterval);
+    refreshInterval = setInterval(() => {
+      const { status, isOnline, refreshSecret } = get();
+      if (status === 'authenticated' && isOnline && refreshSecret) {
+        console.log('[Auth] Token maintenance (OAuth refresh)...');
+        get().refreshProfile();
+      }
+    }, 55 * 60 * 1000);
   },
 
   updateSettings: async (settings: Partial<User['settings']>) => {
