@@ -13,7 +13,7 @@ export const MODEL_TIERS = {
   top: {
     name: 'Premium',
     quota: 10,           // Pro users get 10 requests/day
-    weeklyQuota: 70,     // 10 * 7
+    weeklyQuota: 40,     // 10 * 4
     monthlyQuota: 200,   // 10 * 20
     description: 'Premium models for complex reasoning',
     models: [
@@ -28,7 +28,7 @@ export const MODEL_TIERS = {
   medium: {
     name: 'Normal',
     quota: 40,           // Pro users get 40 requests/day
-    weeklyQuota: 280,    // 40 * 7
+    weeklyQuota: 200,    // 40 * 5
     monthlyQuota: 800,   // 40 * 20
     description: 'Balanced models for everyday tasks',
     models: [
