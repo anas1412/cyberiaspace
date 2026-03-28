@@ -8,7 +8,7 @@ import {
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 import { motion, AnimatePresence } from 'framer-motion';
-import { APP_VERSION, PLAN_CONFIG } from '../../constants';
+import { APP_VERSION, PLAN_CONFIG, SHOW_QUOTA_TAB } from '../../constants';
 import { useStore } from '../../store/useStore';
 import { useAuthStore } from '../../store/useAuthStore';
 import { useModalStore } from '../../store/useModalStore';
@@ -219,7 +219,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
           {[
             { id: 'general', label: 'General', icon: Info },
             { id: 'custom', label: 'Customization', icon: Palette },
-            ...(user?.plan === 'pro' ? [{ id: 'quota', label: 'Quota Usage', icon: Zap }] : []),
+            ...(user?.plan === 'pro' && SHOW_QUOTA_TAB ? [{ id: 'quota', label: 'Quota Usage', icon: Zap }] : []),
             { id: 'storage', label: 'Storage', icon: Database }
           ].map((tab) => (
             <button 

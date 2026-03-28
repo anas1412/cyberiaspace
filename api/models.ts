@@ -7,6 +7,14 @@ export const config = {
   runtime: 'nodejs',
 };
 
+// Model type definition
+interface Model {
+  id: string;
+  name: string;
+  desc: string;
+  enabled?: boolean;
+}
+
 // Model tiers with quotas - THE ONLY PLACE for model config
 export const MODEL_TIERS = {
   // Est. Monthly Cost: ~$3-6 | Est. Margin: ~$4-7
@@ -17,11 +25,11 @@ export const MODEL_TIERS = {
     monthlyQuota: 200,   // 10 * 20
     description: 'Premium models for complex reasoning',
     models: [
-      { id: 'deepseek/deepseek-r1', name: 'DeepSeek: R1', desc: '' },
-      { id: 'openai/gpt-5.4', name: 'OpenAI: GPT-5.4', desc: '' },
-      { id: 'google/gemini-3.1-pro-preview', name: 'Google: Gemini 3.1 Pro', desc: '' },
-      { id: 'anthropic/claude-sonnet-4.6', name: 'Anthropic: Claude Sonnet 4.6', desc: '' },
-      { id: 'anthropic/claude-opus-4.6', name: 'Anthropic: Claude Opus 4.6', desc: '' },
+      { id: 'deepseek/deepseek-r1', name: 'DeepSeek: R1', desc: 'Fast' },
+      { id: 'openai/gpt-5.4', name: 'OpenAI: GPT-5.4', desc: 'Still in testing', enabled: false },
+      { id: 'google/gemini-3.1-pro-preview', name: 'Google: Gemini 3.1 Pro', desc: 'Still in testing', enabled: false },
+      { id: 'anthropic/claude-sonnet-4.6', name: 'Anthropic: Claude Sonnet 4.6', desc: 'Still in testing', enabled: false },
+      { id: 'anthropic/claude-opus-4.6', name: 'Anthropic: Claude Opus 4.6', desc: 'Still in testing', enabled: false },
     ]
   },
   // Est. Monthly Cost: ~$1.50 | Est. Margin: ~$8.50
@@ -32,12 +40,12 @@ export const MODEL_TIERS = {
     monthlyQuota: 800,   // 40 * 20
     description: 'Balanced models for everyday tasks',
     models: [
-      { id: 'deepseek/deepseek-v3.2', name: 'DeepSeek: V3.2', desc: '' },
-      { id: 'openai/gpt-5.4-mini', name: 'OpenAI: GPT-5.4 Mini', desc: '' },
-      { id: 'openai/o4-mini', name: 'OpenAI: o4 Mini', desc: '' },
-      { id: 'google/gemini-3-flash-preview', name: 'Google: Gemini 3 Flash', desc: '' },
-      { id: 'google/gemini-3.1-flash-lite-preview', name: 'Google: Gemini 3.1 Flash Lite', desc: '' },
-      { id: 'anthropic/claude-haiku-4.5', name: 'Anthropic: Claude Haiku 4.5', desc: '' },
+      { id: 'deepseek/deepseek-v3.2', name: 'DeepSeek: V3.2', desc: 'Recommended, fast and accurate' },
+      { id: 'openai/gpt-5.4-mini', name: 'OpenAI: GPT-5.4 Mini', desc: 'Smart but slower' },
+      { id: 'openai/o4-mini', name: 'OpenAI: o4 Mini', desc: 'Smart but slower' },
+      { id: 'google/gemini-3-flash-preview', name: 'Google: Gemini 3 Flash', desc: 'Balanced' },
+      { id: 'google/gemini-3.1-flash-lite-preview', name: 'Google: Gemini 3.1 Flash Lite', desc: 'Faster but less accurate' },
+      { id: 'anthropic/claude-haiku-4.5', name: 'Anthropic: Claude Haiku 4.5', desc: 'Still in testing', enabled: false },
     ]
   },
   // Est. Monthly Cost: ~$2.00 | Est. Margin: ~$8.00
@@ -48,11 +56,9 @@ export const MODEL_TIERS = {
     monthlyQuota: 6000,  // 200 * 30
     description: 'Ultra-fast budget AI for everyday tasks',
     models: [
-      { id: 'openai/gpt-5-nano', name: 'OpenAI: GPT-5 Nano', desc: '' },
-      { id: 'google/gemini-2.5-flash-lite', name: 'Google: Gemini 2.5 Flash Lite', desc: '' },
-      { id: 'meta/llama-4-scout', name: 'Meta: Llama 4 Scout', desc: '' },
-      { id: 'mistral/mistral-small-2603', name: 'Mistral: Small 4', desc: '' },
-      { id: 'deepseek/deepseek-chat-v3.1', name: 'DeepSeek: V3.1', desc: '' },
+      { id: 'deepseek/deepseek-chat-v3.1', name: 'DeepSeek: V3.1', desc: 'Recommended, fast for simple tasks' },
+      { id: 'google/gemini-2.5-flash-lite', name: 'Google: Gemini 2.5 Flash Lite', desc: 'Recommended, fast for simple tasks' },
+      { id: 'openai/gpt-5-nano', name: 'OpenAI: GPT-5 Nano', desc: 'Still in testing', enabled: false },
     ]
   },
   free: {
@@ -62,21 +68,21 @@ export const MODEL_TIERS = {
     monthlyQuota: null,
     description: 'Free models with unlimited access',
     models: [
-      { id: 'openrouter/free', name: 'Random Free Model', desc: '' },
-      { id: 'minimax/minimax-m2.5:free', name: 'MiniMax M2.5', desc: '' },
-      { id: 'arcee-ai/trinity-mini:free', name: 'Arcee AI: Trinity Mini', desc: '' },
+      { id: 'openrouter/free', name: 'Free Models Router', desc: 'Randomly assigned model' },
       { id: 'nvidia/nemotron-3-super-120b-a12b:free', name: 'NVIDIA: Nemotron 3 Super', desc: '' },
+      { id: 'arcee-ai/trinity-mini:free', name: 'Arcee AI: Trinity Mini', desc: '' },
       { id: 'stepfun/step-3.5-flash:free', name: 'StepFun: Step 3.5 Flash', desc: '' },
+      { id: 'minimax/minimax-m2.5:free', name: 'MiniMax M2.5', desc: '' },
       { id: 'z-ai/glm-4.5-air:free', name: 'Z.ai: GLM 4.5 Air', desc: '' },
 
     ]
   }
 };
 
-// Helper to get all models as flat arrays (for backend logic)
-export const TOP_MODELS = MODEL_TIERS.top.models.map(m => m.id);
-export const MEDIUM_MODELS = MODEL_TIERS.medium.models.map(m => m.id);
-export const SMALL_MODELS = MODEL_TIERS.small.models.map(m => m.id);
+// Helper to get all ENABLED models as flat arrays (for backend validation)
+export const TOP_MODELS = (MODEL_TIERS.top.models as Model[]).filter(m => m.enabled !== false).map(m => m.id);
+export const MEDIUM_MODELS = (MODEL_TIERS.medium.models as Model[]).filter(m => m.enabled !== false).map(m => m.id);
+export const SMALL_MODELS = (MODEL_TIERS.small.models as Model[]).filter(m => m.enabled !== false).map(m => m.id);
 export const FREE_MODELS = MODEL_TIERS.free.models.map(m => m.id);
 
 // Free tier limit for non-pro users

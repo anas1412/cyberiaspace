@@ -132,6 +132,9 @@ export const ORACLE_CONFIG = {
 
 export const APP_VERSION = '1.0.5';
 
+// Feature Flags
+export const SHOW_QUOTA_TAB = false; // Set to true to show quota usage tab in settings
+
 // Use process.env for server-side (Vercel), import.meta.env for client-side
 const getDefaultModel = () => {
   if (typeof process !== 'undefined' && process.env?.VITE_OPENROUTER_MODEL) {

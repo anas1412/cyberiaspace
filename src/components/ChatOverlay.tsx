@@ -31,20 +31,22 @@ type Message = ChatMessage;
 
 // Helper component for model options in dropdown
 const ModelItem: React.FC<{
-  model: { id: string; name: string; desc: string };
+  model: { id: string; name: string; desc: string; enabled?: boolean };
   selected: boolean;
   onClick: () => void;
   disabled?: boolean;
-}> = ({ model, selected, onClick, disabled }) => (
+}> = ({ model, selected, onClick, disabled }) => {
+  const isModelDisabled = model.enabled === false;
+  return (
   <button
     onClick={onClick}
-    disabled={disabled}
+    disabled={disabled || isModelDisabled}
     className={cn(
       "w-full flex items-center justify-between px-3 py-2 rounded-lg transition-all border text-left",
       selected 
         ? "bg-white/10 border-white/20" 
         : "hover:bg-white/[0.05] border-transparent",
-      disabled && "opacity-50 cursor-not-allowed grayscale"
+      (disabled || isModelDisabled) && "opacity-40 cursor-not-allowed grayscale"
     )}
   >
     <div className="flex flex-col gap-0.5">
@@ -60,7 +62,8 @@ const ModelItem: React.FC<{
     </div>
     {selected && <Check className="w-3 h-3 text-white ml-2 flex-shrink-0" />}
   </button>
-);
+  );
+};
 
 // Build message content for follow-up - handle multimodal for images/PDFs
 function getFollowUpMessageContent(toolName: string, result: any) {
@@ -976,7 +979,7 @@ if (data.tier && data.autoSwitch) {
                             </div>
                             <div className="space-y-1">
                               {mediumModels.filter((m: any) => m.name.toLowerCase().includes(modelSearch.toLowerCase())).map((model: any) => (
-                                <ModelItem key={model.id} model={model} selected={selectedModel === model.id} onClick={() => { setSelectedModel(model.id); setActiveTier('medium'); setShowModelDropdown(false); userHasSelectedModelRef.current = true; }} disabled={plan !== 'pro' || getTierStatus(mediumUsage, weeklyMediumUsage, monthlyMediumUsage, limits.AI_MEDIUM_LIMIT || 60, limits.AI_MEDIUM_WEEKLY || 420, limits.AI_MEDIUM_MONTHLY || 1800).exhausted} />
+                                <ModelItem key={model.id} model={model} selected={selectedModel === model.id} onClick={() => { setSelectedModel(model.id); setActiveTier('medium'); setShowModelDropdown(false); userHasSelectedModelRef.current = true; }} disabled={plan !== 'pro' || getTierStatus(mediumUsage, weeklyMediumUsage, monthlyMediumUsage, limits.AI_MEDIUM_LIMIT || 60, limits.AI_MEDIUM_WEEKLY || 420, limits.AI_MEDIUM_MONTHLY || 1800).exhausted || model.enabled === false} />
                               ))}
                             </div>
                           </div>
@@ -991,9 +994,9 @@ if (data.tier && data.autoSwitch) {
                                 </span>
                               </div>
                               <div className="space-y-1">
-                                {smallModels.filter((m: any) => m.name.toLowerCase().includes(modelSearch.toLowerCase())).map((model: any) => (
-                                  <ModelItem key={model.id} model={model} selected={selectedModel === model.id} onClick={() => { setSelectedModel(model.id); setActiveTier('small'); setShowModelDropdown(false); userHasSelectedModelRef.current = true; }} disabled={plan !== 'pro' || getTierStatus(smallUsage, weeklySmallUsage, monthlySmallUsage, limits.AI_SMALL_LIMIT || 500, limits.AI_SMALL_WEEKLY || 3500, limits.AI_SMALL_MONTHLY || 15000).exhausted} />
-                                ))}
+                              {smallModels.filter((m: any) => m.name.toLowerCase().includes(modelSearch.toLowerCase())).map((model: any) => (
+                                <ModelItem key={model.id} model={model} selected={selectedModel === model.id} onClick={() => { setSelectedModel(model.id); setActiveTier('small'); setShowModelDropdown(false); userHasSelectedModelRef.current = true; }} disabled={plan !== 'pro' || getTierStatus(smallUsage, weeklySmallUsage, monthlySmallUsage, limits.AI_SMALL_LIMIT || 500, limits.AI_SMALL_WEEKLY || 3500, limits.AI_SMALL_MONTHLY || 15000).exhausted || model.enabled === false} />
+                              ))}
                               </div>
                             </div>
                           )}
@@ -1008,7 +1011,7 @@ if (data.tier && data.autoSwitch) {
                             </div>
                             <div className="space-y-1">
                               {topModels.filter((m: any) => m.name.toLowerCase().includes(modelSearch.toLowerCase())).map((model: any) => (
-                                <ModelItem key={model.id} model={model} selected={selectedModel === model.id} onClick={() => { setSelectedModel(model.id); setActiveTier('top'); setShowModelDropdown(false); userHasSelectedModelRef.current = true; }} disabled={plan !== 'pro' || getTierStatus(topUsage, weeklyTopUsage, monthlyTopUsage, limits.AI_TOP_LIMIT || 15, limits.AI_TOP_WEEKLY || 100, limits.AI_TOP_MONTHLY || 400).exhausted} />
+                                <ModelItem key={model.id} model={model} selected={selectedModel === model.id} onClick={() => { setSelectedModel(model.id); setActiveTier('top'); setShowModelDropdown(false); userHasSelectedModelRef.current = true; }} disabled={plan !== 'pro' || getTierStatus(topUsage, weeklyTopUsage, monthlyTopUsage, limits.AI_TOP_LIMIT || 15, limits.AI_TOP_WEEKLY || 100, limits.AI_TOP_MONTHLY || 400).exhausted || model.enabled === false} />
                               ))}
                             </div>
                           </div>
