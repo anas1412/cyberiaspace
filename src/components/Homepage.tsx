@@ -291,7 +291,7 @@ const Homepage: React.FC = () => {
         >
           <div className="w-full h-auto glass rounded-2xl border border-white/10 overflow-hidden shadow-2xl">
             <img 
-              src="/Screenshot.png" 
+              src="/Screenshot2.png" 
               alt="Cyberia Space - Your thinking space in action" 
               className="w-full h-auto"
             />
