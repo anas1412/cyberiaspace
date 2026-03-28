@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { MousePointer2, Layout, Database, ArrowRight, Cpu, Rocket, Send, Loader2, CheckCircle, ChevronDown, MessageCircle } from 'lucide-react';
+import { MousePointer2, Layout, Database, ArrowRight, Cpu, Rocket, Send, Loader2, CheckCircle, ChevronDown, MessageCircle, X } from 'lucide-react';
 
 import SpatialThinkingVisual from './demo/SpatialThinkingVisual';
 import DynamicViewsVisual from './demo/DynamicViewsVisual';
@@ -183,6 +183,7 @@ const Homepage: React.FC = () => {
   const [activeFeature, setActiveFeature] = useState(0);
   const [activeFAQIndex, setActiveFAQIndex] = useState<number | null>(null);
   const [discordData, setDiscordData] = useState<{ member_count: number; presence_count: number; instant_invite: string } | null>(null);
+  const [isImageZoomed, setIsImageZoomed] = useState(false);
   
   const [contactName, setContactName] = useState('');
   const [contactEmail, setContactEmail] = useState('');
@@ -289,11 +290,14 @@ const Homepage: React.FC = () => {
           viewport={{ once: true }}
           className="block max-w-6xl mx-auto mt-16 md:mt-24 px-4 md:px-0 relative"
         >
-          <div className="w-full h-auto glass rounded-2xl border border-white/10 overflow-hidden shadow-2xl">
+          <div 
+            onClick={() => setIsImageZoomed(true)}
+            className="w-full h-auto glass rounded-2xl border border-white/10 overflow-hidden shadow-2xl cursor-zoom-in group"
+          >
             <img 
               src="/Screenshot2.png" 
               alt="Cyberia Space - Your thinking space in action" 
-              className="w-full h-auto"
+              className="w-full h-auto group-hover:scale-[1.02] transition-transform duration-500"
             />
           </div>
           
@@ -301,6 +305,32 @@ const Homepage: React.FC = () => {
           <div className="absolute -bottom-10 -left-10 w-40 h-40 bg-[var(--accent)]/10 blur-[100px] rounded-full pointer-events-none" />
         </motion.div>
       </section>
+
+      {/* Image Lightbox */}
+      <AnimatePresence>
+        {isImageZoomed && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[9999] bg-black/95 flex items-center justify-center p-4"
+            onClick={() => setIsImageZoomed(false)}
+          >
+            <button
+              onClick={() => setIsImageZoomed(false)}
+              className="absolute top-4 right-4 p-2 glass rounded-lg border border-white/10 text-white hover:bg-white/10 transition-all"
+            >
+              <X className="w-4 h-4" />
+            </button>
+            <img 
+              src="/Screenshot2.png" 
+              alt="Cyberia Space" 
+              className="max-w-full max-h-full object-contain rounded-xl shadow-2xl"
+              onClick={(e) => e.stopPropagation()}
+            />
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       <section id="features" className="py-32 px-6 relative z-10">
         <div className="max-w-7xl mx-auto">
