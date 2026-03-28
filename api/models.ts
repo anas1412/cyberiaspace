@@ -28,7 +28,7 @@ export const MODEL_TIERS = {
       { id: 'deepseek/deepseek-r1', name: 'DeepSeek: R1', desc: 'Fast' },
       { id: 'openai/gpt-5.4', name: 'OpenAI: GPT-5.4', desc: 'Still in testing', enabled: false },
       { id: 'google/gemini-3.1-pro-preview', name: 'Google: Gemini 3.1 Pro', desc: 'Still in testing', enabled: false },
-      { id: 'anthropic/claude-sonnet-4.6', name: 'Anthropic: Claude Sonnet 4.6', desc: 'Still in testing', enabled: false },
+      { id: 'anthropic/claude-sonnet-4.6', name: 'Anthropic: Claude Sonnet 4.6', desc: 'Still in testing', enabled: false},
       { id: 'anthropic/claude-opus-4.6', name: 'Anthropic: Claude Opus 4.6', desc: 'Still in testing', enabled: false },
     ]
   },

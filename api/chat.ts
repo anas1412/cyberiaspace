@@ -1098,6 +1098,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           const nextMessages = [...currentMessages];
           nextMessages.push({ role: 'assistant', content: fullContent || null, tool_calls: filteredToolCalls });
 
+          // Map to track results for EVERY tool call ID (Required for strict models like Claude)
+          const toolResultsMap = new Map<string, any>();
+
           const serverToolCalls = filteredToolCalls.filter(tc => 
             tc.function.name === 'web_search' || tc.function.name === 'search_youtube'
           );
@@ -1118,12 +1121,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             );
 
             serverToolCalls.forEach((tc, i) => {
-              nextMessages.push({
-                role: 'tool',
-                tool_call_id: tc.id,
-                name: tc.function.name,
-                content: JSON.stringify(serverResults[i])
-              });
+              toolResultsMap.set(tc.id, serverResults[i]);
             });
           }
 
@@ -1139,10 +1137,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
               args = safeParseJSON(tc.function.arguments, { _parseError: true, raw: tc.function.arguments });
               
               if (args._parseError) {
-                res.write(`data: ${JSON.stringify({ 
-                  type: 'error', 
-                  message: `Failed to parse arguments for ${tc.function.name}. Please try again.`
-                })}\n\n`);
+                const errorResult = { 
+                  success: false, 
+                  error: `Failed to parse arguments for ${tc.function.name}. Please ensure you send valid JSON.`,
+                  raw: tc.function.arguments
+                };
+                toolResultsMap.set(tc.id, errorResult);
                 continue;
               }
             } else {
@@ -1163,22 +1163,15 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                   const errorMsg = `Validation failed for ${toolName}: ` + validation.error.issues.map(e => e.path.join('.') + ': ' + e.message).join('; ');
                   console.warn(`[Oracle Validation Failure] ${toolName}`, errorMsg);
                   
-                  // Inform the AI about the mistake so it can fix it (silent correction)
+                  // Populate map for ALL IDs in the failed batch so AI can self-correct
                   batch.forEach(tc => {
-                    nextMessages.push({
-                      role: 'tool',
-                      tool_call_id: tc.id,
-                      name: tc.function.name,
-                      content: JSON.stringify({ 
-                        success: false, 
-                        error: errorMsg,
-                        suggestion: "Please correct the parameters and try again. Ensure required fields for the chosen type are provided."
-                      })
+                    toolResultsMap.set(tc.id, { 
+                      success: false, 
+                      error: errorMsg,
+                      suggestion: "Please correct the parameters and try again. Ensure required fields for the chosen type are provided."
                     });
                   });
-
-                  // Silent re-generation: AI self-corrects without user seeing the internal fix
-                  return await runChat(nextMessages, currentModel, currentTools, mode, personality, isRetry);
+                  continue;
                 }
                 
                 // Use validated data
@@ -1193,14 +1186,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                   toolCall: { id: tc.id, toolName: tc.function.name, args } 
                 })}\n\n`);
 
-                if (tc.function.name !== 'get_thought_details') {
-                  nextMessages.push({
-                    role: 'tool',
-                    tool_call_id: tc.id,
-                    name: tc.function.name,
-                    content: JSON.stringify({ success: true, observed: false, message: "Action queued for client execution." })
-                  });
-                }
+                toolResultsMap.set(tc.id, { 
+                  success: true, 
+                  observed: false, 
+                  message: tc.function.name === 'get_thought_details' ? "Workspace data retrieved." : "Action queued for client execution." 
+                });
               } else {
                 res.write(`data: ${JSON.stringify({ 
                   type: 'tool_call', 
@@ -1213,15 +1203,29 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                   batchCount: batch.length
                 })}\n\n`);
 
-                nextMessages.push({
-                  role: 'tool',
-                  tool_call_id: batch[0].id,
-                  name: toolName,
-                  content: JSON.stringify({ success: true, observed: false, message: `Batch action queued for ${batch.length} items.` })
+                // Mark EVERY ID in the batch as handled
+                batch.forEach(tc => {
+                  toolResultsMap.set(tc.id, { 
+                    success: true, 
+                    observed: false, 
+                    message: `Batch action (${toolName}) queued for execution.` 
+                  });
                 });
               }
             }
           }
+
+          // FINAL FLUSH: Append all results to message history
+          // This ensures 100% ID coverage, satisfying strict models like Claude
+          filteredToolCalls.forEach(tc => {
+            const result = toolResultsMap.get(tc.id) || { success: true, message: "Acknowledged." };
+            nextMessages.push({
+              role: 'tool',
+              tool_call_id: tc.id,
+              name: tc.function.name,
+              content: JSON.stringify(result)
+            });
+          });
 
           return await runChat(nextMessages, currentModel, currentTools, mode, personality, isRetry);
         }
