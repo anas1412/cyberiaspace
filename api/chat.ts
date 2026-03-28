@@ -1,6 +1,7 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { createClient } from '@supabase/supabase-js';
 import { z } from 'zod';
+import { checkAndHealSubscription } from './subscription-helper.js';
 import { 
   CreateThoughtsSchema, 
   UpdateThoughtsSchema, 
@@ -721,6 +722,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
     
     profile = profileData;
+    
+    // Lazy healing check
+    const healedProfile = await checkAndHealSubscription(profile, supabase!);
+    if (healedProfile.plan !== profile.plan) {
+      profile = healedProfile;
+    }
+    
     setCachedProfile(userId, profile);
   }
 

@@ -2,11 +2,13 @@ import React, { useState, useEffect } from 'react';
 import { useAuthStore } from '../store/useAuthStore';
 import { PLAN_CONFIG, type AccessPeriod } from '../constants';
 import { resolvePricingLocation } from '../utils/pricing';
-import { Zap, Check, Star, Shield, Loader2, CreditCard, ExternalLink, Rocket, Layout, ArrowRight, AlertCircle, RefreshCw } from 'lucide-react';
+import { Zap, Check, Star, Shield, Loader2, CreditCard, ExternalLink, Rocket, Layout, AlertCircle, RefreshCw } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 import BackgroundEngine from './background/BackgroundEngine';
+import Navigation from './Navigation';
+import Footer from './Footer';
 
 function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -24,7 +26,7 @@ const ComparisonRow: React.FC<{ label: string; free: string | React.ReactNode; p
     highlight ? "bg-blue-500/[0.03] hover:bg-blue-500/[0.05]" : "hover:bg-white/[0.02]"
   )}>
     <div className="text-left">
-      <span className="text-sm font-semibold text-slate-300">{label}</span>
+      <span className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-300">{label}</span>
     </div>
     <div className="text-center">
       {typeof free === 'string' ? (
@@ -55,7 +57,6 @@ const PricingPage: React.FC = () => {
   const [paymentMessage, setPaymentMessage] = useState<string>('');
   const [acceptedTerms, setAcceptedTerms] = useState(false);
   const [showFeatures, setShowFeatures] = useState(false);
-  const [isScrolled, setIsScrolled] = useState(false);
 
   // Check if user is already Pro
   const isProUser = user?.plan === 'pro';
@@ -64,14 +65,6 @@ const PricingPage: React.FC = () => {
   const currentPrice = billingCycle === 'monthly' ? proPrice.monthly : proPrice.yearly;
   const savings = Math.round((proPrice.monthly.usd * 12 - proPrice.yearly.usd));
   const savingsTnd = Math.round((proPrice.monthly.tnd * 12 - proPrice.yearly.tnd));
-
-  useEffect(() => {
-    const handleScroll = () => {
-      setIsScrolled(window.scrollY > 20);
-    };
-    window.addEventListener('scroll', handleScroll);
-    return () => window.removeEventListener('scroll', handleScroll);
-  }, []);
 
   useEffect(() => {
     setAcceptedTerms(false);
@@ -277,14 +270,14 @@ const PricingPage: React.FC = () => {
                   setPaymentStatus('idle');
                   setPaymentMessage('');
                 }}
-                className="w-full h-14 rounded-2xl text-sm font-bold transition-all flex items-center justify-center gap-2 bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-500 hover:to-orange-500 text-white shadow-lg shadow-amber-500/25 active:scale-95"
+                className="w-full h-14 rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] transition-all flex items-center justify-center gap-2 bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-500 hover:to-orange-500 text-white shadow-lg shadow-amber-500/25 active:scale-95"
               >
                 <RefreshCw className="w-4 h-4" />
                 Try Another Method
               </button>
               <button
                 onClick={() => window.location.href = '/home'}
-                className="w-full h-12 rounded-2xl text-xs font-bold text-slate-500 hover:text-white hover:bg-white/5 transition-all"
+                className="w-full h-12 rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] text-slate-500 hover:text-white hover:bg-white/5 transition-all"
               >
                 Return to Workspace
               </button>
@@ -313,7 +306,7 @@ const PricingPage: React.FC = () => {
             <p className="text-base text-green-400 font-medium leading-relaxed mb-8">{paymentMessage}</p>
             <button
               onClick={() => window.location.href = '/home'}
-              className="w-full h-14 rounded-2xl text-sm font-bold transition-all flex items-center justify-center gap-2 bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-500 hover:to-emerald-500 text-white shadow-lg shadow-green-500/25 active:scale-95"
+              className="w-full h-14 rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] transition-all flex items-center justify-center gap-2 bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-500 hover:to-emerald-500 text-white shadow-lg shadow-green-500/25 active:scale-95"
             >
               Enter Cyberia
             </button>
@@ -327,28 +320,9 @@ const PricingPage: React.FC = () => {
     <div className="min-h-screen relative overflow-hidden bg-[#0B0F19]">
       <BackgroundEngine />
       
-      {/* Header / Nav */}
-      <nav className={`fixed top-0 left-0 right-0 z-[100] transition-all duration-500 ${
-        isScrolled 
-          ? 'bg-[#05060a]/40 backdrop-blur-3xl shadow-sm shadow-white/5 py-3' 
-          : 'bg-transparent py-4'
-      }`}>
-        <div className="max-w-7xl mx-auto px-6 flex items-center justify-between">
-          <a href="/" className="text-2xl font-black tracking-tighter uppercase cursor-pointer text-white">
-            Cyberia <span style={{ color: 'var(--accent)' }}>Space</span>
-          </a>
+      <Navigation />
 
-          <a 
-            href="/home"
-            className="h-10 px-6 bg-[var(--accent)] hover:bg-[var(--accent-secondary)] text-white rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] transition-all shadow-lg shadow-[var(--accent)]/20 hover:shadow-[var(--accent)]/40 flex items-center justify-center border border-white/10 gap-2 group"
-          >
-            Access Space
-            <ArrowRight className="w-3 h-3 group-hover:translate-x-1 transition-transform" />
-          </a>
-        </div>
-      </nav>
-
-      <div className="relative z-10 max-w-5xl mx-auto px-4 pt-32 pb-12 md:pt-40 md:pb-16">
+      <div className="relative z-10 max-w-5xl mx-auto px-4 pt-32 pb-24 md:pt-40 md:pb-32">
         
         {/* Title */}
         <motion.div 
@@ -356,7 +330,7 @@ const PricingPage: React.FC = () => {
           animate={{ opacity: 1, y: 0 }}
           className="text-center mb-10"
         >
-          <h1 className="text-4xl md:text-5xl font-extrabold tracking-tight text-white mb-4">
+          <h1 className="text-4xl md:text-6xl font-black tracking-tighter uppercase text-white mb-4">
             {isProUser ? 'You\'re Already Pro' : 'Unlock Your Potential'}
           </h1>
           <p className="text-slate-400 font-medium text-base max-w-2xl mx-auto">
@@ -384,16 +358,16 @@ const PricingPage: React.FC = () => {
               
               <div className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-green-500/10 border border-green-500/20 mb-6">
                 <Check className="w-5 h-5 text-green-400" />
-                <span className="text-sm font-bold uppercase tracking-wider text-green-400">Active Pro Member</span>
+                <span className="text-[10px] font-black uppercase tracking-[0.2em] text-green-400">Active Pro Member</span>
               </div>
-              <h2 className="text-2xl md:text-3xl font-bold text-white tracking-tight mb-4">Everything is unlocked.</h2>
+              <h2 className="text-3xl md:text-4xl font-black uppercase tracking-tighter text-white mb-4">Everything is unlocked.</h2>
               <p className="text-slate-400 mb-8 max-w-lg mx-auto">You have full access to all Pro features including unlimited AI models, file intelligence, agentic capabilities, and expanded spaces.</p>
               
               <div className="flex flex-col sm:flex-row justify-center gap-4 w-full max-w-md">
                 {user?.paymentProvider === 'polar' && (
                   <button
                     onClick={handleManageSubscription}
-                    className="flex-1 h-12 rounded-xl text-sm font-semibold bg-white/5 hover:bg-white/10 text-white border border-white/10 transition-all flex items-center justify-center gap-2 active:scale-95"
+                    className="flex-1 h-12 rounded-xl text-[10px] font-black uppercase tracking-[0.2em] bg-white/5 hover:bg-white/10 text-white border border-white/10 transition-all flex items-center justify-center gap-2 active:scale-95"
                   >
                     <CreditCard className="w-4 h-4 text-slate-400" />
                     Manage Billing
@@ -402,7 +376,7 @@ const PricingPage: React.FC = () => {
                 )}
                 <button
                   onClick={() => window.location.href = '/home'}
-                  className="flex-1 h-12 rounded-xl text-sm font-bold bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-500 hover:to-emerald-500 text-white transition-all shadow-lg shadow-green-500/25 flex items-center justify-center gap-2 active:scale-95"
+                  className="flex-1 h-12 rounded-xl text-[10px] font-black uppercase tracking-[0.2em] bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-500 hover:to-emerald-500 text-white transition-all shadow-lg shadow-green-500/25 flex items-center justify-center gap-2 active:scale-95"
                 >
                   <Layout className="w-4 h-4" />
                   Access My Space
@@ -420,8 +394,8 @@ const PricingPage: React.FC = () => {
                     <Zap className="w-7 h-7" />
                   </div>
                   <div>
-                    <h2 className="text-2xl font-bold text-white tracking-tight">Do more with Pro</h2>
-                    <p className="text-sm font-medium text-blue-400">Get unlimited AI usage and more storage so you never have to think about limits.</p>
+                    <h2 className="text-3xl md:text-4xl font-black uppercase tracking-tighter text-white">Do more with Pro</h2>
+                    <p className="text-[10px] font-black uppercase tracking-[0.2em] text-blue-400">Get unlimited AI usage and more storage so you never have to think about limits.</p>
                   </div>
                 </div>
 
@@ -449,8 +423,8 @@ const PricingPage: React.FC = () => {
                         <Check className="w-3.5 h-3.5" />
                       </div>
                       <div>
-                        <h4 className="text-base font-semibold text-white mb-1">{feature.title}</h4>
-                        <p className="text-sm text-slate-400 leading-relaxed">{feature.desc}</p>
+                        <h4 className="text-[11px] font-black uppercase tracking-[0.2em] text-white mb-1">{feature.title}</h4>
+                        <p className="text-xs text-slate-400 leading-relaxed font-medium">{feature.desc}</p>
                       </div>
                     </div>
                   ))}
@@ -464,12 +438,12 @@ const PricingPage: React.FC = () => {
                   </div>
                   <div className="z-10">
                     <div className="flex items-center gap-3 mb-1.5">
-                      <h4 className="text-sm font-bold text-white">Teams & Mobile App</h4>
-                      <span className="text-[9px] font-bold uppercase tracking-wider bg-indigo-500/20 text-indigo-300 px-2 py-0.5 rounded-full border border-indigo-500/20">
+                      <h4 className="text-[10px] font-black uppercase tracking-[0.2em] text-white">Teams & Mobile App</h4>
+                      <span className="text-[8px] font-black uppercase tracking-widest bg-indigo-500/20 text-indigo-300 px-2 py-0.5 rounded-full border border-indigo-500/20">
                         Coming Soon
                       </span>
                     </div>
-                    <p className="text-xs text-slate-400 leading-relaxed">
+                    <p className="text-[11px] text-slate-400 leading-relaxed font-medium uppercase tracking-widest">
                       Invite friends to shared spaces, work together in real-time, and take your thoughts anywhere with our upcoming iOS & Android apps.
                     </p>
                   </div>
@@ -482,31 +456,40 @@ const PricingPage: React.FC = () => {
                 <div className="flex flex-col items-center text-center mb-8">
                   {/* Billing Toggle */}
                   <div className="relative flex p-1 bg-black/40 border border-white/5 rounded-xl mb-8 w-full">
-                    <motion.div 
-                      layoutId="pageBillingCycleToggle"
-                      className="absolute top-1 bottom-1 w-[calc(50%-4px)] rounded-lg bg-white/15 shadow-sm"
-                      initial={false}
-                      transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
-                      animate={{ x: billingCycle === 'monthly' ? '0%' : '100%' }}
-                    />
                     <button
                       onClick={() => setBillingCycle('monthly')}
                       className={cn(
-                        "relative z-10 flex-1 py-2.5 rounded-lg text-xs font-bold uppercase tracking-wide transition-colors",
+                        "relative z-10 flex-1 py-2.5 rounded-lg text-[10px] font-black uppercase tracking-[0.15em] transition-colors flex items-center justify-center gap-2",
                         billingCycle === 'monthly' ? "text-white" : "text-slate-400 hover:text-slate-200"
                       )}
                     >
-                      Monthly
+                      {billingCycle === 'monthly' && (
+                        <motion.div 
+                          layoutId="pageBillingCycleToggle"
+                          className="absolute inset-0 rounded-lg bg-white/15 shadow-sm"
+                          initial={false}
+                          transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
+                        />
+                      )}
+                      <span className="relative z-20">Monthly</span>
                     </button>
                     <button
                       onClick={() => setBillingCycle('yearly')}
                       className={cn(
-                        "relative z-10 flex-1 py-2.5 rounded-lg text-xs font-bold uppercase tracking-wide transition-colors flex items-center justify-center gap-2",
+                        "relative z-10 flex-1 py-2.5 rounded-lg text-[10px] font-black uppercase tracking-[0.15em] transition-colors flex items-center justify-center gap-2",
                         billingCycle === 'yearly' ? "text-white" : "text-slate-400 hover:text-slate-200"
                       )}
                     >
-                      Yearly
-                      <span className="bg-emerald-500/15 text-emerald-400 border border-emerald-500/20 text-[10px] font-bold px-2 py-0.5 rounded-lg uppercase tracking-tight shadow-sm whitespace-nowrap">
+                      {billingCycle === 'yearly' && (
+                        <motion.div 
+                          layoutId="pageBillingCycleToggle"
+                          className="absolute inset-0 rounded-lg bg-white/15 shadow-sm"
+                          initial={false}
+                          transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
+                        />
+                      )}
+                      <span className="relative z-20">Yearly</span>
+                      <span className="bg-emerald-500/15 text-emerald-400 border border-emerald-500/20 text-[9px] font-black px-2 py-0.5 rounded-lg uppercase tracking-tight shadow-sm whitespace-nowrap relative z-20">
                         Save {location?.isLocalPricing ? `${savingsTnd}DT` : `$${savings}`}
                       </span>
                     </button>
@@ -516,14 +499,14 @@ const PricingPage: React.FC = () => {
                   <div className="mb-4">
                     {location?.isLocalPricing ? (
                       <div className="flex flex-col items-center gap-3">
-                        <span className="text-[10px] font-bold uppercase tracking-widest bg-blue-500/10 text-blue-400 px-3 py-1 rounded-full border border-blue-500/20">
+                        <span className="text-[9px] font-black uppercase tracking-[0.2em] bg-blue-500/10 text-blue-400 px-3 py-1 rounded-full border border-blue-500/20">
                           Local Pricing Active
                         </span>
                         <div className="flex items-baseline justify-center">
                           <span className="text-5xl md:text-6xl font-extrabold tracking-tight text-white">{currentPrice.tnd}</span>
                           <span className="text-xl text-slate-400 ml-2 font-semibold">DT</span>
                         </div>
-                        <span className="text-xs font-medium text-slate-500 bg-black/20 px-3 py-1 rounded-full">
+                        <span className="text-[9px] font-black uppercase tracking-widest text-slate-500 bg-black/20 px-3 py-1 rounded-full">
                           Global Price: ${currentPrice.usd} USD
                         </span>
                       </div>
@@ -533,11 +516,11 @@ const PricingPage: React.FC = () => {
                       </div>
                     )}
                     
-                    <span className="text-slate-400 font-medium text-sm block mt-4">
+                    <span className="text-slate-400 font-black uppercase tracking-widest text-[10px] block mt-4">
                       {billingCycle === 'monthly' ? 'Per Month' : 'Per Year'}
                     </span>
                   </div>
-                  <p className="text-xs text-slate-500 leading-relaxed px-4">
+                  <p className="text-[10px] text-slate-500 leading-relaxed px-4 font-black uppercase tracking-widest">
                     {location?.isLocalPricing 
                       ? (billingCycle === 'yearly' ? `One-time payment of ${currentPrice.tnd} DT per year.` : 'Manual renewal via Flouci. No auto-charges.')
                       : (billingCycle === 'yearly' ? `Recurring payment of $${proPrice.yearly.usd} per year via Polar.sh. Cancel anytime.` : `Recurring monthly subscription via Polar.sh. Cancel anytime.`)
@@ -600,7 +583,7 @@ const PricingPage: React.FC = () => {
                       {acceptedTerms && <Check className="w-3 h-3 text-white" />}
                     </div>
                   </div>
-                  <span className="text-xs text-slate-400 leading-relaxed">
+                  <span className="text-[10px] text-slate-400 leading-relaxed font-black uppercase tracking-widest">
                     I agree to the{' '}
                     <a href="/terms" target="_blank" rel="noreferrer" className="text-blue-400 hover:text-blue-300 underline underline-offset-2 transition-colors">
                       Terms of Service
@@ -617,7 +600,7 @@ const PricingPage: React.FC = () => {
                   onClick={handleUpgrade}
                   disabled={isLoading || !acceptedTerms}
                   className={cn(
-                    "w-full h-14 rounded-2xl text-sm font-bold transition-all flex items-center justify-center gap-3 mb-4",
+                    "w-full h-14 rounded-2xl text-xs font-black uppercase tracking-[0.3em] transition-all flex items-center justify-center gap-3 mb-4",
                     isLoading || !acceptedTerms
                       ? "bg-slate-800 text-slate-400 cursor-not-allowed border border-white/5"
                       : "bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white shadow-lg shadow-blue-500/25 active:scale-95"
@@ -633,12 +616,12 @@ const PricingPage: React.FC = () => {
 
                 {!user && (
                   <div className="text-center mb-6">
-                    <p className="text-[11px] text-slate-500 mb-3">
+                    <p className="text-[9px] text-slate-500 mb-3 font-black uppercase tracking-widest">
                       Please sign in to your account before upgrading.
                     </p>
                     <button
                       onClick={() => window.location.href = '/login'}
-                      className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-white/5 hover:bg-white/10 text-white text-xs font-semibold border border-white/10 transition-all active:scale-95"
+                      className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-white/5 hover:bg-white/10 text-white text-[9px] font-black uppercase tracking-[0.2em] border border-white/10 transition-all active:scale-95"
                     >
                       Sign In with Google
                     </button>
@@ -650,8 +633,8 @@ const PricingPage: React.FC = () => {
                   <div className="w-8 h-8 rounded-full bg-blue-500/10 flex items-center justify-center shrink-0">
                     <Shield className="w-4 h-4 text-blue-400" />
                   </div>
-                  <p className="text-xs text-slate-400 font-medium">
-                    Secure local & global payments via <span className="text-white font-semibold">{location?.isLocalPricing ? 'Flouci' : 'Polar.sh'}</span>.
+                  <p className="text-[10px] text-slate-400 font-black uppercase tracking-widest">
+                    Secure local & global payments via <span className="text-white font-black">{location?.isLocalPricing ? 'Flouci' : 'Polar.sh'}</span>.
                   </p>
                 </div>
               </div>
@@ -664,7 +647,7 @@ const PricingPage: React.FC = () => {
           <div className="text-center mb-8">
             <button
               onClick={() => setShowFeatures(!showFeatures)}
-              className="px-6 py-2 rounded-full border border-white/10 bg-white/5 hover:bg-white/10 text-sm font-semibold text-white transition-colors flex items-center gap-2 mx-auto"
+              className="px-6 py-2 rounded-full border border-white/10 bg-white/5 hover:bg-white/10 text-[10px] font-black uppercase tracking-[0.2em] text-white transition-colors flex items-center gap-2 mx-auto"
             >
               
               {showFeatures ? 'Hide' : 'View'} Full Comparison
@@ -695,13 +678,13 @@ const PricingPage: React.FC = () => {
               {/* Table Header */}
               <div className="grid grid-cols-[1.5fr_1fr_1fr] gap-4 py-6 px-6 bg-white/[0.03] border-b border-white/10 items-center">
                 <div className="text-left">
-                  <span className="text-sm font-bold uppercase tracking-wider text-slate-400">Features Comparison</span>
+                  <span className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">Features Comparison</span>
                 </div>
                 <div className="text-center">
-                  <span className="text-lg font-bold text-white">Free</span>
+                  <span className="text-lg font-black uppercase tracking-tight text-white">Free</span>
                 </div>
                 <div className="text-center relative">
-                  <span className="text-lg font-bold text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-indigo-400">Pro</span>
+                  <span className="text-lg font-black uppercase tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-indigo-400">Pro</span>
                 </div>
               </div>
 
@@ -766,14 +749,9 @@ const PricingPage: React.FC = () => {
           </motion.div>
         
 
-        {/* Footer Links */}
-        <div className="flex flex-wrap items-center justify-center gap-6 mt-16 text-[13px]">
-          <a href="/privacy" className="text-slate-500 hover:text-slate-300 transition-colors font-medium">Privacy Policy</a>
-          <a href="/terms" className="text-slate-500 hover:text-slate-300 transition-colors font-medium">Terms of Sale</a>
-          <a href="/legal" className="text-slate-500 hover:text-slate-300 transition-colors font-medium">Legal Notice</a>
-          <a href="/contact" className="text-slate-500 hover:text-slate-300 transition-colors font-medium">Contact</a>
         </div>
-      </div>
+        
+        <Footer />
     </div>
   );
 };

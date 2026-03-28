@@ -2,6 +2,7 @@ import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { OAuth2Client } from 'google-auth-library';
 import { createClient } from '@supabase/supabase-js';
 import crypto from 'crypto';
+import { checkAndHealSubscription } from './subscription-helper.js';
 
 const CLIENT_ID = process.env.VITE_GOOGLE_CLIENT_ID || process.env.GOOGLE_CLIENT_ID;
 const CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET;
@@ -103,7 +104,9 @@ async function handleExchange(req: VercelRequest, res: VercelResponse) {
             const { data: updatedUser, error: updateError } = await supabase.from('users').update(updatePayload).eq('id', userId).select().single();
 
             if (updateError) throw updateError;
-            profile = updatedUser;
+            
+            // Lazy healing check
+            profile = await checkAndHealSubscription(updatedUser, supabase);
         } else {
             // Create the new profile with defaults
             const insertData: any = {

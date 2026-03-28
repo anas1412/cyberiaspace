@@ -7,7 +7,7 @@ export interface User {
   email: string;
   avatar: string;
   plan: SubscriptionPlan;
-  subscriptionStatus: 'active' | 'trialing' | 'past_due' | 'unpaid' | 'canceled' | 'none';
+  subscriptionStatus: 'active' | 'trialing' | 'past_due' | 'unpaid' | 'canceled' | 'expired' | 'none';
   expiryDate: string | null;
   polarCustomerId?: string | null;
   paymentProvider?: 'polar' | 'flouci';

@@ -4,6 +4,7 @@ import { createClient } from '@supabase/supabase-js';
 import { Polar } from "@polar-sh/sdk";
 import { validateEvent, WebhookVerificationError } from "@polar-sh/sdk/webhooks";
 import { OAuth2Client } from 'google-auth-library';
+import { mapPolarStatus } from './subscription-helper.js';
 
 const CLIENT_ID = process.env.VITE_GOOGLE_CLIENT_ID || process.env.GOOGLE_CLIENT_ID;
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.VITE_SUPABASE_URL || process.env.VITE_PUBLIC_SUPABASE_URL;
@@ -685,19 +686,13 @@ async function handlePolarWebhook(req: VercelRequest, res: VercelResponse, rawBo
                 });
             }
 
-            await updateUserPlan(userId, billingCycle, paymentRef, 'polar', additionalData, data.status || 'active');
+            await updateUserPlan(userId, billingCycle, paymentRef, 'polar', additionalData, data.status || 'active', data.currentPeriodEnd);
         } else if (['subscription.updated', 'subscription.deleted', 'subscription.revoked'].includes(eventType)) {
-            const status = data.status;
+            const status = mapPolarStatus(data.status);
             const cancelAtPeriodEnd = data.cancelAtPeriodEnd;
-            console.log(`[Polar Webhook] [${eventType}] User: ${userId}, Status: ${status}, CancelAtPeriodEnd: ${cancelAtPeriodEnd}`);
+            const expiryDate = data.currentPeriodEnd;
 
-            // Downgrade rules:
-            // 1. If cancelAtPeriodEnd is true, keep Pro but mark as canceled.
-            // 2. If subscription.deleted or subscription.revoked, we always downgrade.
-            // 3. If subscription.updated, ONLY downgrade if status is explicitly canceled, revoked, or incomplete_expired.
-            // IMPORTANT: If status is 'incomplete', we do NOT downgrade (often sent before first payment).
-            const isExplicitDowngradeStatus = ['canceled', 'revoked', 'incomplete_expired'].includes(status);
-            const isDeletionEvent = eventType === 'subscription.deleted' || eventType === 'subscription.revoked';
+            console.log(`[Polar Webhook] [${eventType}] User: ${userId}, Status: ${status} (from Polar: ${data.status}), CancelAtPeriodEnd: ${cancelAtPeriodEnd}`);
 
             if (cancelAtPeriodEnd) {
                 console.log(`[Polar Webhook] Marking user ${userId} as Canceled but keeping Pro (Status: ${status})`);
@@ -705,21 +700,22 @@ async function handlePolarWebhook(req: VercelRequest, res: VercelResponse, rawBo
                     .from('users')
                     .update({
                         subscription_status: 'canceled',
+                        expiry_date: expiryDate ? new Date(expiryDate).toISOString() : undefined,
                         updated_at: new Date().toISOString()
                     })
                     .eq('id', userId);
-            } else if (isDeletionEvent || isExplicitDowngradeStatus) {
+            } else if (eventType === 'subscription.deleted' || eventType === 'subscription.revoked' || status === 'expired') {
                 console.log(`[Polar Webhook] Downgrading user ${userId} to Free (Status: ${status}, Event: ${eventType})`);
                 await supabase
                     .from('users')
                     .update({
                         plan: 'free',
-                        subscription_status: 'canceled',
+                        subscription_status: status === 'expired' ? 'expired' : 'canceled',
                         polar_subscription_id: null,
                         updated_at: new Date().toISOString()
                     })
                     .eq('id', userId);
-            } else if (['active', 'trialing'].includes(status)) {
+            } else if (status === 'active') {
                 console.log(`[Polar Webhook] [${eventType}] Ensuring user ${userId} is Pro (Status: ${status})`);
                 await supabase
                     .from('users')
@@ -727,6 +723,16 @@ async function handlePolarWebhook(req: VercelRequest, res: VercelResponse, rawBo
                         plan: 'pro',
                         subscription_status: 'active',
                         payment_provider: 'polar',
+                        expiry_date: expiryDate ? new Date(expiryDate).toISOString() : undefined,
+                        updated_at: new Date().toISOString()
+                    })
+                    .eq('id', userId);
+            } else if (status === 'past_due') {
+                console.log(`[Polar Webhook] Marking user ${userId} as Past Due (Status: ${status})`);
+                await supabase
+                    .from('users')
+                    .update({
+                        subscription_status: 'past_due',
                         updated_at: new Date().toISOString()
                     })
                     .eq('id', userId);
@@ -770,47 +776,57 @@ async function updateUserPlan(
     paymentRef?: string,
     provider?: string,
     additionalData: any = {},
-    status: string = 'active'
+    status: string = 'active',
+    currentPeriodEnd?: string | number | Date
 ) {
     const now = new Date();
-    let baseDate = now;
+    let expiry: Date;
 
-    // FOR MANUAL PAYMENTS (FLOUCI): Check if we should stack the time
-    if (provider === 'flouci') {
-        try {
-            const { data: currentUser } = await supabase
-                .from('users')
-                .select('plan, expiry_date')
-                .eq('id', userId)
-                .maybeSingle();
+    if (currentPeriodEnd) {
+        expiry = new Date(currentPeriodEnd);
+        console.log(`[updateUserPlan] Using provider-provided expiry: ${expiry.toISOString()}`);
+    } else {
+        let baseDate = now;
 
-            if (currentUser?.plan === 'pro' && currentUser.expiry_date) {
-                const currentExpiry = new Date(currentUser.expiry_date);
-                // Only stack if the existing expiry is in the future
-                if (currentExpiry > now) {
-                    baseDate = currentExpiry;
-                    console.log(`[updateUserPlan] Flouci: Stacking on existing expiry: ${baseDate.toISOString()}`);
+        // FOR MANUAL PAYMENTS (FLOUCI): Check if we should stack the time
+        if (provider === 'flouci') {
+            try {
+                const { data: currentUser } = await supabase
+                    .from('users')
+                    .select('plan, expiry_date')
+                    .eq('id', userId)
+                    .maybeSingle();
+
+                if (currentUser?.plan === 'pro' && currentUser.expiry_date) {
+                    const currentExpiry = new Date(currentUser.expiry_date);
+                    // Only stack if the existing expiry is in the future
+                    if (currentExpiry > now) {
+                        baseDate = currentExpiry;
+                        console.log(`[updateUserPlan] Flouci: Stacking on existing expiry: ${baseDate.toISOString()}`);
+                    }
                 }
+            } catch (err) {
+                console.error('[updateUserPlan] Error fetching current user for stacking:', err);
+                // Fallback to 'now' as baseDate if query fails
             }
-        } catch (err) {
-            console.error('[updateUserPlan] Error fetching current user for stacking:', err);
-            // Fallback to 'now' as baseDate if query fails
+        }
+
+        expiry = new Date(baseDate);
+        if (billingCycle === 'yearly') {
+            expiry.setFullYear(baseDate.getFullYear() + 1);
+        } else {
+            expiry.setMonth(baseDate.getMonth() + 1);
         }
     }
 
-    const expiry = new Date(baseDate);
-    if (billingCycle === 'yearly') {
-        expiry.setFullYear(baseDate.getFullYear() + 1);
-    } else {
-        expiry.setMonth(baseDate.getMonth() + 1);
-    }
-
-    console.log(`[updateUserPlan] Upgrading user ${userId} (${billingCycle}) via ${provider}. Base Date: ${baseDate.toISOString()}, New Expiry: ${expiry.toISOString()}`);
+    console.log(`[updateUserPlan] Upgrading user ${userId} (${billingCycle}) via ${provider}. New Expiry: ${expiry.toISOString()}`);
     console.log(`[updateUserPlan] Target userId: ${userId}`);
+
+    const mappedStatus = provider === 'polar' ? mapPolarStatus(status) : 'active';
 
     const updatePayload: any = {
         plan: 'pro',
-        subscription_status: status,
+        subscription_status: mappedStatus,
         expiry_date: expiry.toISOString(),
         payment_provider: provider,
         updated_at: now.toISOString(),

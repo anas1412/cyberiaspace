@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { MousePointer2, Layout, Database, ArrowRight, Menu, X, Cpu, Rocket, Send, Loader2, CheckCircle, ChevronDown, MessageCircle } from 'lucide-react';
+import { MousePointer2, Layout, Database, ArrowRight, Cpu, Rocket, Send, Loader2, CheckCircle, ChevronDown, MessageCircle } from 'lucide-react';
 import { useAuthStore } from '../store/useAuthStore';
 
 import SpatialThinkingVisual from './demo/SpatialThinkingVisual';
@@ -9,6 +9,8 @@ import CloudSyncVisual from './demo/CloudSyncVisual';
 import AgenticWorkspaceVisual from './demo/AgenticWorkspaceVisual';
 
 import BackgroundEngine from './background/BackgroundEngine';
+import Navigation from './Navigation';
+import Footer from './Footer';
 
 const FEATURES = [
   {
@@ -182,8 +184,6 @@ const Homepage: React.FC = () => {
   const { user } = useAuthStore();
   const [activeFeature, setActiveFeature] = useState(0);
   const [activeFAQIndex, setActiveFAQIndex] = useState<number | null>(null);
-  const [isScrolled, setIsScrolled] = useState(false);
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [discordData, setDiscordData] = useState<{ member_count: number; presence_count: number; instant_invite: string } | null>(null);
   
   const [contactName, setContactName] = useState('');
@@ -214,14 +214,6 @@ const Homepage: React.FC = () => {
   };
 
   useEffect(() => {
-    const handleScroll = () => {
-      setIsScrolled(window.scrollY > 20);
-    };
-    window.addEventListener('scroll', handleScroll);
-    return () => window.removeEventListener('scroll', handleScroll);
-  }, []);
-
-  useEffect(() => {
     const INVITE_CODE = '6DRsnY3ajE'; 
     fetch(`https://discord.com/api/v10/invites/${INVITE_CODE}?with_counts=true`)
       .then(res => res.json())
@@ -240,116 +232,13 @@ const Homepage: React.FC = () => {
   const scrollToSection = (id: string) => {
     const element = document.getElementById(id);
     element?.scrollIntoView({ behavior: 'smooth' });
-    setIsMobileMenuOpen(false);
   };
 
   return (
     <div className="min-h-screen text-[#e2e8f0] selection:bg-[var(--accent)]/30 relative">
       <BackgroundEngine />
 
-      <nav className={`fixed top-0 left-0 right-0 z-[100] transition-all duration-500 ${
-        isScrolled 
-          ? 'bg-[#05060a]/40 backdrop-blur-3xl shadow-sm shadow-white/5 py-3' 
-          : 'bg-transparent py-4'
-      }`}>
-        <div className="max-w-7xl mx-auto px-6 flex items-center justify-between">
-          <button className="text-2xl font-black tracking-tighter uppercase cursor-pointer" onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}>
-            Cyberia <span style={{ color: 'var(--accent)' }}>Space</span>
-          </button>
-
-          {/* Desktop Nav - ViewSwitcher Style */}
-          <div className="hidden md:flex items-center gap-3"> {/* Increased gap slightly to 3 */}
-  {/* The Nav Container */}
-  <div className="flex items-center h-10 p-1 rounded-2xl">
-                {['features', 'about', 'faq', 'contact'].map((item) => (
-      <button 
-        key={item}
-        onClick={() => scrollToSection(item)} 
-        className="px-3 h-full rounded-xl transition-all duration-300 flex items-center group/nav"
-      >
-        <span className="text-[10px] font-black uppercase tracking-[0.15em] text-slate-400 group-hover/nav:text-white transition-colors">
-          {item}
-        </span>
-      </button>
-    ))}
-    <a 
-      href="/pricing"
-      className="px-3 h-full rounded-xl transition-all duration-300 flex items-center group/nav"
-    >
-      <span className="text-[10px] font-black uppercase tracking-[0.15em] text-slate-400 group-hover/nav:text-white transition-colors">
-        pricing
-      </span>
-    </a>
-  </div>
-
-  {/* The CTA Button - Now height matched and radius matched */}
-  {user ? (
-    <a 
-      href="/home" 
-      className="h-10 px-6 bg-[var(--accent)] hover:bg-[var(--accent-secondary)] text-white rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] transition-all shadow-lg shadow-[var(--accent)]/20 hover:shadow-[var(--accent)]/40 flex items-center justify-center border border-white/10 gap-2 group"
-    >
-      Access My Space
-    </a>
-  ) : (
-    <a 
-      href="/login" 
-      className="h-10 px-6 bg-[var(--accent)] hover:bg-[var(--accent-secondary)] text-white rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] transition-all shadow-lg shadow-[var(--accent)]/20 hover:shadow-[var(--accent)]/40 flex items-center justify-center border border-white/10 gap-2 group"
-    >
-      Log In
-    </a>
-  )}
-</div>
-
-          {/* Mobile Toggle */}
-          <button 
-            className="md:hidden p-2 text-slate-400 hover:text-white transition-colors"
-            onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-          >
-            {isMobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
-          </button>
-        </div>
-
-        {/* Mobile Menu */}
-        <AnimatePresence>
-          {isMobileMenuOpen && (
-            <motion.div
-              initial={{ opacity: 0, height: 0 }}
-              animate={{ opacity: 1, height: 'auto' }}
-              exit={{ opacity: 0, height: 0 }}
-              className="md:hidden glass border-t border-white/5 overflow-hidden"
-            >
-              <div className="flex flex-col p-6 gap-6">
-    {['features', 'about', 'faq', 'contact'].map((item) => (
-                  <button 
-                    key={item}
-                    onClick={() => scrollToSection(item)} 
-                    className="text-left text-[12px] font-black uppercase tracking-[0.3em] text-slate-400 hover:text-[var(--accent-secondary)] transition-colors"
-                  >
-                    {item}
-                  </button>
-                ))}
-                <a 
-                  href="/pricing"
-                  className="text-left text-[12px] font-black uppercase tracking-[0.3em] text-[var(--accent)] hover:text-[var(--accent-secondary)] transition-colors"
-                >
-                  pricing
-                </a>
-                {user ? (
-                  <a href="/home" className="w-full py-3 bg-[var(--accent)] text-white rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] transition-all text-center flex items-center justify-center gap-2 group">
-                    Access My Space
-                    <ArrowRight className="w-3 h-3 group-hover:translate-x-1 transition-transform" />
-                  </a>
-                ) : (
-                  <a href="/home" className="w-full py-3 bg-[var(--accent)] text-white rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] transition-all text-center flex items-center justify-center gap-2 group">
-                    Log In
-                    <ArrowRight className="w-3 h-3 group-hover:translate-x-1 transition-transform" />
-                  </a>
-                )}
-              </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
-      </nav>
+      <Navigation isHomepage />
 
       <section className="pt-40 pb-24 px-6 relative z-10">
        <div className="max-w-5xl mx-auto text-center">
@@ -757,23 +646,7 @@ const Homepage: React.FC = () => {
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-lg h-64 bg-[var(--accent)]/10 blur-[120px] rounded-full z-0" />
       </section>
 
-      <footer className="py-20 px-6 border-t border-white/5 relative z-10">
-        <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-10">
-          <div className="flex items-center gap-3">
-            <img src="/logo.png" alt="Cyberia AI Studio" className="w-8 h-8 opacity-50" />
-            <span className="font-black uppercase tracking-widest text-[var(--text-muted)]">Cyberia AI Studio</span>
-          </div>
-          <div className="flex flex-wrap items-center justify-center gap-x-8 gap-y-4 text-[10px] font-black uppercase tracking-[0.2em] text-[var(--text-muted)]">
-            <a href="/privacy" className="hover:text-white transition-colors">Privacy Policy</a>
-            <a href="/terms" className="hover:text-white transition-colors">Terms of Sale (CGV)</a>
-            <a href="/legal" className="hover:text-white transition-colors">Legal Notice</a>
-            <a href="/contact" className="hover:text-white transition-colors">Contact</a>
-          </div>
-          <div className="text-[10px] font-black uppercase tracking-widest text-[var(--text-muted)]">
-            © {new Date().getFullYear()} CYBERIA AI STUDIO
-          </div>
-        </div>
-      </footer>
+      <Footer />
     </div>
   );
 };

@@ -595,6 +595,7 @@ export const createAuthSlice: StateCreator<AuthState, [], [], any> = (set, get, 
       const updatedUser: User = { 
         ...user, 
         plan: 'free',
+        subscriptionStatus: 'expired',
         settings: {
           ...user.settings,
           personality: '',

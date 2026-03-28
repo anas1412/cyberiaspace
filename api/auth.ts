@@ -3,6 +3,7 @@ import fs from 'fs';
 import path from 'path';
 import { OAuth2Client } from 'google-auth-library';
 import { createClient } from '@supabase/supabase-js';
+import { checkAndHealSubscription } from './subscription-helper.js';
 
 const CLIENT_ID = process.env.VITE_GOOGLE_CLIENT_ID || process.env.GOOGLE_CLIENT_ID;
 const CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET;
@@ -91,7 +92,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
                 const { data: updatedUser, error: updateError } = await supabase.from('users').update(updatePayload).eq('id', userId).select().single();
                 if (updateError) throw updateError;
-                dbProfile = updatedUser;
+                
+                // Lazy healing check
+                dbProfile = await checkAndHealSubscription(updatedUser, supabase);
             } else {
                 const insertData: any = {
                     id: userId,
