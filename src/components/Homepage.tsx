@@ -358,7 +358,7 @@ const Homepage: React.FC = () => {
             >
               <iframe 
                 className="w-full h-full"
-                src="https://www.youtube.com/embed/qUgjqynJVjA?autoplay=1"
+                src="https://www.youtube.com/embed/hP92Obd9hFA?autoplay=1"
                 title="Cyberia Space Demo"
                 allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                 allowFullScreen
@@ -537,7 +537,7 @@ const Homepage: React.FC = () => {
           >
             <iframe 
               className="w-full h-full"
-              src="https://www.youtube.com/embed/qUgjqynJVjA"
+              src="https://www.youtube.com/embed/hP92Obd9hFA"
               title="Cyberia Space Demo"
               allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
               allowFullScreen
