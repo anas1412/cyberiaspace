@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { MousePointer2, Layout, Database, ArrowRight, Cpu, Rocket, Send, Loader2, CheckCircle, ChevronDown, MessageCircle, X } from 'lucide-react';
+import { MousePointer2, Layout, Database, ArrowRight, Cpu, Rocket, Send, Loader2, CheckCircle, ChevronDown, MessageCircle, X, Play } from 'lucide-react';
 
 import SpatialThinkingVisual from './demo/SpatialThinkingVisual';
 import DynamicViewsVisual from './demo/DynamicViewsVisual';
@@ -184,6 +184,7 @@ const Homepage: React.FC = () => {
   const [activeFAQIndex, setActiveFAQIndex] = useState<number | null>(null);
   const [discordData, setDiscordData] = useState<{ member_count: number; presence_count: number; instant_invite: string } | null>(null);
   const [isImageZoomed, setIsImageZoomed] = useState(false);
+  const [isVideoOpen, setIsVideoOpen] = useState(false);
   
   const [contactName, setContactName] = useState('');
   const [contactEmail, setContactEmail] = useState('');
@@ -265,10 +266,11 @@ const Homepage: React.FC = () => {
 
             <div className="flex flex-col sm:flex-row items-center justify-center gap-5">
               <button 
-                onClick={() => scrollToSection('features')}
-                className="w-full sm:w-auto px-10 py-5 glass hover:bg-white/10 rounded-2xl text-xs font-black uppercase tracking-[0.3em] transition-all flex items-center justify-center gap-3"
+                onClick={() => setIsVideoOpen(true)}
+                className="w-full sm:w-auto px-10 py-5 glass hover:bg-white/10 rounded-2xl text-xs font-black uppercase tracking-[0.3em] transition-all flex items-center justify-center gap-3 group"
               >
-                Explore Features
+                <Play className="w-4 h-4 fill-white group-hover:scale-110 transition-transform" />
+                Watch Demo
               </button>
               <a 
               href="/home"
@@ -295,7 +297,7 @@ const Homepage: React.FC = () => {
             className="w-full h-auto glass rounded-2xl border border-white/10 overflow-hidden shadow-2xl cursor-zoom-in group"
           >
             <img 
-              src="/Screenshot2.png" 
+              src="/Screenshot3.png" 
               alt="Cyberia Space - Your thinking space in action" 
               className="w-full h-auto group-hover:scale-[1.02] transition-transform duration-500"
             />
@@ -328,6 +330,40 @@ const Homepage: React.FC = () => {
               className="max-w-full max-h-full object-contain rounded-xl shadow-2xl"
               onClick={(e) => e.stopPropagation()}
             />
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {isVideoOpen && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[9999] bg-[#05060a]/95 backdrop-blur-2xl flex items-center justify-center p-4 md:p-10"
+            onClick={() => setIsVideoOpen(false)}
+          >
+            <button
+              onClick={() => setIsVideoOpen(false)}
+              className="absolute top-6 right-6 p-3 glass rounded-xl border border-white/10 text-white hover:bg-white/10 transition-all z-20"
+            >
+              <X className="w-5 h-5" />
+            </button>
+            
+            <motion.div 
+              initial={{ scale: 0.9, y: 20 }}
+              animate={{ scale: 1, y: 0 }}
+              className="w-full max-w-6xl aspect-video glass rounded-3xl border-white/10 overflow-hidden shadow-2xl relative"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <iframe 
+                className="w-full h-full"
+                src="https://www.youtube.com/embed/qUgjqynJVjA?autoplay=1"
+                title="Cyberia Space Demo"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                allowFullScreen
+              />
+            </motion.div>
           </motion.div>
         )}
       </AnimatePresence>
@@ -478,6 +514,35 @@ const Homepage: React.FC = () => {
               </p>
             </motion.div>
           </div>
+        </div>
+      </section>
+
+      {/* Oracle in Action / Video Section */}
+      <section className="py-32 px-6 relative z-10 bg-black/20">
+        <div className="max-w-5xl mx-auto">
+          <div className="text-center mb-16">
+            <h2 className="text-4xl md:text-6xl font-black tracking-tighter uppercase mb-6">
+              Oracle AI <span style={{ color: 'var(--accent)' }}>In Action</span>
+            </h2>
+            <p className="text-slate-400 font-medium max-w-2xl mx-auto leading-relaxed">
+              Watch Oracle AI build a complex research space about World War II, organizing documents, images, and maps in real-time.
+            </p>
+          </div>
+
+          <motion.div 
+            initial={{ opacity: 0, y: 40 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            className="relative group glass rounded-3xl border-white/10 overflow-hidden shadow-2xl aspect-video"
+          >
+            <iframe 
+              className="w-full h-full"
+              src="https://www.youtube.com/embed/qUgjqynJVjA"
+              title="Cyberia Space Demo"
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+              allowFullScreen
+            />
+          </motion.div>
         </div>
       </section>
 

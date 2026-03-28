@@ -3,6 +3,7 @@ import { FileText, Image as ImageIcon, File, Table } from 'lucide-react';
 
 interface DemoThoughtProps {
   title: string;
+  subtitle?: string;
   type?: 'text' | 'image' | 'file' | 'doc' | 'table';
   color?: string;
   className?: string;
@@ -12,6 +13,7 @@ interface DemoThoughtProps {
 
 const DemoThought: React.FC<DemoThoughtProps> = ({ 
   title, 
+  subtitle,
   type = 'text',
   color, 
   className = '', 
@@ -23,14 +25,21 @@ const DemoThought: React.FC<DemoThoughtProps> = ({
     style={style}
     onPointerDown={onPointerDown}
   >
-    <div className="flex items-center justify-between gap-4">
-      <span className="text-[9px] font-black uppercase tracking-[0.15em] text-white/40 truncate">
-        {title}
-      </span>
-      <div 
-        className="w-1.5 h-1.5 rounded-full shadow-[0_0_8px_currentColor]" 
-        style={{ color: color || 'rgba(255,255,255,0.1)', backgroundColor: 'currentColor' }} 
-      />
+    <div className="flex flex-col gap-0.5">
+      <div className="flex items-center justify-between gap-4">
+        <span className="text-[9px] font-black uppercase tracking-[0.15em] text-white/40 truncate">
+          {title}
+        </span>
+        <div 
+          className="w-1.5 h-1.5 rounded-full shadow-[0_0_8px_currentColor]" 
+          style={{ color: color || 'rgba(255,255,255,0.1)', backgroundColor: 'currentColor' }} 
+        />
+      </div>
+      {subtitle && (
+        <span className="text-[8px] font-bold uppercase tracking-wider text-white/20 truncate">
+          {subtitle}
+        </span>
+      )}
     </div>
 
     {/* Content Area Based on Type */}

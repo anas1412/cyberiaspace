@@ -102,8 +102,8 @@ export const PLAN_CONFIG: Record<SubscriptionPlan, PlanLimits> = {
     AI_SMALL_MONTHLY: 0,   // Legacy - now fetched from /api/models
     THEMES_ENABLED: ['cyberia', 'sea', 'forest', 'rain', 'sakura'],
     PRICE: {
-      monthly: { usd: 8, tnd: 19 },
-      yearly: { usd: 80, tnd: 190 },
+      monthly: { usd: 10, tnd: 19 },
+      yearly: { usd: 100, tnd: 190 },
     },
   },
 };
