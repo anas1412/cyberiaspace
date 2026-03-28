@@ -150,3 +150,7 @@ export const VERIFICATION_MODEL = [
 /*   'gemma-3-27b-it', */
   'gemma-3-12b-it',
 ];
+
+// Homepage assets
+export const HOMEPAGE_SCREENSHOT = '/Screenshot4.png';
+export const YOUTUBE_VIDEO_ID = 'hP92Obd9hFA';

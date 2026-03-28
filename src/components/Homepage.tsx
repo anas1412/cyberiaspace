@@ -2,6 +2,8 @@ import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { MousePointer2, Layout, Database, ArrowRight, Cpu, Rocket, Send, Loader2, CheckCircle, ChevronDown, MessageCircle, X, Play } from 'lucide-react';
 
+import { HOMEPAGE_SCREENSHOT, YOUTUBE_VIDEO_ID } from '../constants';
+
 import SpatialThinkingVisual from './demo/SpatialThinkingVisual';
 import DynamicViewsVisual from './demo/DynamicViewsVisual';
 import CloudSyncVisual from './demo/CloudSyncVisual';
@@ -297,7 +299,7 @@ const Homepage: React.FC = () => {
             className="w-full h-auto glass rounded-2xl border border-white/10 overflow-hidden shadow-2xl cursor-zoom-in group"
           >
             <img 
-              src="/Screenshot4.png" 
+              src={HOMEPAGE_SCREENSHOT}
               alt="Cyberia Space - Your thinking space in action" 
               className="w-full h-auto group-hover:scale-[1.02] transition-transform duration-500"
             />
@@ -325,7 +327,7 @@ const Homepage: React.FC = () => {
               <X className="w-4 h-4" />
             </button>
             <img 
-              src="/Screenshot2.png" 
+              src={HOMEPAGE_SCREENSHOT}
               alt="Cyberia Space" 
               className="max-w-full max-h-full object-contain rounded-xl shadow-2xl"
               onClick={(e) => e.stopPropagation()}
@@ -358,7 +360,7 @@ const Homepage: React.FC = () => {
             >
               <iframe 
                 className="w-full h-full"
-                src="https://www.youtube.com/embed/hP92Obd9hFA?autoplay=1"
+                src={`https://www.youtube.com/embed/${YOUTUBE_VIDEO_ID}?autoplay=1`}
                 title="Cyberia Space Demo"
                 allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                 allowFullScreen
@@ -537,7 +539,7 @@ const Homepage: React.FC = () => {
           >
             <iframe 
               className="w-full h-full"
-              src="https://www.youtube.com/embed/hP92Obd9hFA"
+              src={`https://www.youtube.com/embed/${YOUTUBE_VIDEO_ID}`}
               title="Cyberia Space Demo"
               allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
               allowFullScreen
