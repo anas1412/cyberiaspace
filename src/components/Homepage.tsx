@@ -297,7 +297,7 @@ const Homepage: React.FC = () => {
             className="w-full h-auto glass rounded-2xl border border-white/10 overflow-hidden shadow-2xl cursor-zoom-in group"
           >
             <img 
-              src="/Screenshot3.png" 
+              src="/Screenshot4.png" 
               alt="Cyberia Space - Your thinking space in action" 
               className="w-full h-auto group-hover:scale-[1.02] transition-transform duration-500"
             />
