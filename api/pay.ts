@@ -363,12 +363,21 @@ async function handleVerify(req: VercelRequest, res: VercelResponse) {
                     message: 'Payment already processed.'
                 });
             }
+        } else if (status !== 'PENDING') {
+            // Mark payment as failed in our DB if it's a terminal failure state from Flouci
+            await supabase
+                .from('payments')
+                .update({ 
+                    status: 'failed',
+                    updated_at: new Date().toISOString()
+                })
+                .eq('payment_ref', paymentId);
         }
 
         return res.status(200).json({
             success: true,
             status,
-            message: status === 'PENDING' ? 'Payment is pending. Please complete payment.' : 'Payment failed.'
+            message: status === 'PENDING' ? 'Payment is pending. Please complete payment.' : 'Payment failed. Please try again or contact support.'
         });
 
     } catch (error) {

@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useAuthStore } from '../store/useAuthStore';
 import { PLAN_CONFIG, type AccessPeriod } from '../constants';
 import { resolvePricingLocation } from '../utils/pricing';
-import { Zap, Check, Star, Shield, Loader2, CreditCard, ExternalLink, Rocket, Layout, ArrowRight } from 'lucide-react';
+import { Zap, Check, Star, Shield, Loader2, CreditCard, ExternalLink, Rocket, Layout, ArrowRight, AlertCircle, RefreshCw } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
@@ -96,7 +96,12 @@ const PricingPage: React.FC = () => {
     let pollInterval: any;
 
     if (success !== null || fail !== null || checkoutId !== null) {
-      if (paymentId) {
+      if (fail !== null) {
+        setPaymentStatus('failed');
+        setPaymentMessage('Payment was cancelled or failed. Your account was not charged.');
+        // Clean up URL
+        window.history.replaceState({}, '', window.location.pathname);
+      } else if (paymentId) {
         setPaymentStatus('verifying');
         fetch(`/api/pay?action=verify&payment_id=${paymentId}`)
           .then(res => res.json())
@@ -115,12 +120,12 @@ const PricingPage: React.FC = () => {
               window.history.replaceState({}, '', window.location.pathname);
             } else {
               setPaymentStatus('failed');
-              setPaymentMessage(data.message || 'Payment failed. Please try again.');
+              setPaymentMessage(data.message || 'Payment failed. Please try again or use a different card.');
             }
           })
           .catch(() => {
             setPaymentStatus('failed');
-            setPaymentMessage('Failed to verify payment. Please try again.');
+            setPaymentMessage('Unable to confirm payment status. Please try refreshing the page.');
           });
       } else if (checkoutId || success !== null) {
         setPaymentStatus('verifying');
@@ -163,9 +168,6 @@ const PricingPage: React.FC = () => {
             window.history.replaceState({}, '', window.location.pathname);
           }
         }, 2000);
-      } else if (fail !== null) {
-        setPaymentStatus('failed');
-        setPaymentMessage('Payment failed. Please try again.');
       }
     }
 
@@ -251,6 +253,47 @@ const PricingPage: React.FC = () => {
       console.error('Failed to open portal:', err);
     }
   };
+
+  // Failure state (Full Page)
+  if (paymentStatus === 'failed') {
+    return (
+      <div className="min-h-screen relative overflow-hidden bg-[#0B0F19]">
+        <BackgroundEngine />
+        <div className="relative z-10 min-h-screen flex items-center justify-center p-6">
+          <motion.div 
+            initial={{ opacity: 0, scale: 0.9, y: 10 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            className="glass bg-[#0B0F19]/90 p-12 rounded-2xl border border-amber-500/30 text-center max-w-lg shadow-2xl shadow-amber-500/10"
+          >
+            <div className="w-20 h-20 bg-gradient-to-br from-amber-500/20 to-orange-500/20 rounded-full flex items-center justify-center mx-auto mb-6 border border-amber-500/30">
+              <AlertCircle className="w-10 h-10 text-amber-400" />
+            </div>
+            <h2 className="text-3xl font-bold tracking-tight text-white mb-3">Payment Failed</h2>
+            <p className="text-base text-slate-400 font-medium leading-relaxed mb-8">{paymentMessage}</p>
+            
+            <div className="flex flex-col gap-3">
+              <button
+                onClick={() => {
+                  setPaymentStatus('idle');
+                  setPaymentMessage('');
+                }}
+                className="w-full h-14 rounded-2xl text-sm font-bold transition-all flex items-center justify-center gap-2 bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-500 hover:to-orange-500 text-white shadow-lg shadow-amber-500/25 active:scale-95"
+              >
+                <RefreshCw className="w-4 h-4" />
+                Try Another Method
+              </button>
+              <button
+                onClick={() => window.location.href = '/home'}
+                className="w-full h-12 rounded-2xl text-xs font-bold text-slate-500 hover:text-white hover:bg-white/5 transition-all"
+              >
+                Return to Workspace
+              </button>
+            </div>
+          </motion.div>
+        </div>
+      </div>
+    );
+  }
 
   // Success state (Full Page)
   if (paymentStatus === 'success') {

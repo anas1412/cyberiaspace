@@ -343,6 +343,11 @@ export const createAuthSlice: StateCreator<AuthState, [], [], any> = (set, get, 
       syncOrchestrator.setupRealtimeListener(currentUser.id);
       
       console.log('[AUTH] initAuth: Running sync flow for returning authenticated user');
+      
+      // Always fetch fresh profile from database - this ensures plan updates
+      // are picked up on every app load (like logout/login does)
+      await get().refreshProfile();
+      
       // Pass false for isFreshLogin -> prevents re-downloading/overwriting offline work
       await runAuthenticationFlow(currentUser, get, false);
     }
