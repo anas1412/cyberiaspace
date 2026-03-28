@@ -57,7 +57,7 @@ export function toSnakeCase(obj: any): any {
   // Map 'data' properties to flat database columns
   if (obj.data && typeof obj.data === 'object' && !Array.isArray(obj.data)) {
     const d = obj.data;
-    if (d.type === 'text') result.content = d.content;
+    if (d.type === 'text' && d.content) result.content = d.content;
     else if (d.type === 'tasks') result.tasks = toSnakeCase(d.tasks);
     else if (d.type === 'table') result.table = toSnakeCase(d.rows);
     else if (d.type === 'paint') result.drawing = d.drawing;
