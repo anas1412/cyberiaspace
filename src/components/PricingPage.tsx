@@ -395,7 +395,7 @@ const PricingPage: React.FC = () => {
                   </div>
                   <div>
                     <h2 className="text-3xl md:text-4xl font-black uppercase tracking-tighter text-white">Do more with Pro</h2>
-                    <p className="text-[10px] font-black uppercase tracking-[0.2em] text-blue-400">Get unlimited AI usage and more storage so you never have to think about limits.</p>
+                    <p className="text-[10px] font-black uppercase tracking-[0.2em] text-blue-400">Get unlimited AI usage and more storage.</p>
                   </div>
                 </div>
 
@@ -411,7 +411,7 @@ const PricingPage: React.FC = () => {
                     },
                     { 
                       title: 'File Intelligence & More Storage', 
-                      desc: `Upload and analyze images & PDFs. Includes ${PLAN_CONFIG.pro.MAX_STORAGE_MB}MB of secure cloud storage with unlimited upload sizes.` 
+                      desc: `Upload and analyze images & PDFs. Includes ${PLAN_CONFIG.pro.MAX_STORAGE_MB}MB of secure cloud storage.` 
                     },
                     { 
                       title: 'Pro Customization & Support', 
