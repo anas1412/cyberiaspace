@@ -1,6 +1,6 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { FileText, ArrowLeft, ShieldCheck, CreditCard, RefreshCw, AlertCircle, Scale, Building2, User } from 'lucide-react';
+import { FileText, ArrowLeft, ShieldCheck, CreditCard, RefreshCw, AlertCircle, Scale, Building2, User, Ban } from 'lucide-react';
 
 const CGV: React.FC = () => {
   const handleBack = () => {
@@ -116,7 +116,52 @@ const CGV: React.FC = () => {
     },
     {
       id: 7,
-      title: "Article 7: Governing Law",
+      title: "Article 7: Acceptable Use Policy",
+      icon: <ShieldCheck className="w-5 h-5 text-blue-400" />,
+      content: (
+        <>
+          <p className="leading-relaxed text-slate-400">
+            Cyberia Space is an AI-powered spatial thinking and knowledge management tool. It is designed for personal productivity, research, and AI-assisted analysis of private documents.
+          </p>
+          <p className="leading-relaxed text-slate-400 mt-3">
+            <strong className="text-white">Acceptable Uses:</strong>
+          </p>
+          <ul className="list-disc list-inside space-y-2 mt-2 ml-2 text-slate-400">
+            <li>Personal knowledge management and note organization</li>
+            <li>AI-assisted analysis of privately uploaded research documents and PDFs</li>
+            <li>Team collaboration within private, authenticated workspaces</li>
+            <li>Storing files as contextual attachments to thoughts and projects</li>
+          </ul>
+        </>
+      )
+    },
+    {
+      id: 8,
+      title: "Article 8: Prohibited Uses",
+      icon: <Ban className="w-5 h-5 text-red-400" />,
+      error: true,
+      content: (
+        <>
+          <p className="leading-relaxed text-slate-400">
+            The following uses of Cyberia Space are strictly prohibited:
+          </p>
+          <ul className="list-disc list-inside space-y-2 mt-3 ml-2 text-slate-400">
+            <li>Uploading or sharing files for the purpose of distributing content to the public or third parties</li>
+            <li>Using the storage layer as a direct file distribution or "cyberlocker" mechanism</li>
+            <li>Attempting to bypass access controls or extract files for unauthorized sharing</li>
+            <li>Hosting content that infringes on intellectual property rights</li>
+            <li>Uploading content that violates applicable laws or our Terms of Service</li>
+            <li>Using the platform as a CDN or public file hosting service</li>
+          </ul>
+          <p className="leading-relaxed mt-4 text-sm text-slate-400">
+            Violations may result in <strong className="text-white">immediate account suspension</strong>, <strong className="text-white">permanent deletion of content</strong>, and <strong className="text-white">referral to appropriate authorities</strong>.
+          </p>
+        </>
+      )
+    },
+    {
+      id: 9,
+      title: "Article 9: Governing Law",
       icon: <Scale className="w-5 h-5 text-blue-400" />,
       content: (
         <p className="leading-relaxed text-slate-300">
@@ -148,7 +193,7 @@ const CGV: React.FC = () => {
             </div>
             <h1 className="text-4xl md:text-6xl font-black text-white uppercase tracking-tighter leading-none">Terms of Sale (CGV)</h1>
           </div>
-          <p className="text-slate-500 font-mono text-sm uppercase tracking-widest">Last Updated: March 12, 2026</p>
+          <p className="text-slate-500 font-mono text-sm uppercase tracking-widest">Last Updated: March 29, 2026</p>
         </header>
 
         <section className="space-y-8 pb-20">
