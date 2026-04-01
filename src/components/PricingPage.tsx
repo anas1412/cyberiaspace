@@ -673,7 +673,7 @@ const PricingPage: React.FC = () => {
                   <p className="text-sm text-[var(--text-muted)] font-medium">
                     {isFlouciComingSoon ? (
                       <>
-                        Flouci payments launching soon for Tunisia. <span className="text-amber-600 dark:text-amber-400 font-semibold">Sandbox testing only.</span>
+                        Flouci payments launching soon for Tunisia.
                       </>
                     ) : (
                       <>
