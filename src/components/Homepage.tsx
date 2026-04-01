@@ -43,19 +43,19 @@ const FEATURES = [
 
 const TESTIMONIALS = [
   {
-    quote: "Cyberia changed how I architect complex systems. Seeing my thoughts as physical entities helped me spot connections I never saw in a linear list.",
+    quote: "Cyberia changed how I interact with my tasks. Seeing my notes as floating entities helped me stay productive all day.",
     author: "Nidhal G.",
     role: "Senior Software Developper",
     avatar: "NG"
   },
   {
-    quote: "The spatial engine is a game-changer for research. I can finally map out my entire thesis visually without feeling constrained by a grid.",
+    quote: "The spatial engine is a game-changer for researching. I can finally map out my entire thesis visually with the AI being aware of everything.",
     author: "Mohamed C.",
     role: "University Student",
     avatar: "MD"
   },
   {
-    quote: "Finally, a tool that matches the way my brain actually works. The transition between freeform canvas and boards is seamless.",
+    quote: "The transition between freeform canvas and calendar is seamless. Adding AI-awareness helped me optimize my workflow ",
     author: "Nadia D.",
     role: "UI/UX Designer",
     avatar: "ND"
