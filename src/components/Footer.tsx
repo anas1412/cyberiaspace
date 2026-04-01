@@ -13,6 +13,7 @@ const Footer: React.FC = () => {
           <a href="/terms" className="hover:text-[var(--text-primary)] transition-colors">Terms of Sale (CGV)</a>
           <a href="/legal" className="hover:text-[var(--text-primary)] transition-colors">Legal Notice</a>
           <a href="/contact" className="hover:text-[var(--text-primary)] transition-colors">Contact</a>
+          <a href="/feedback" className="hover:text-[var(--text-primary)] transition-colors">Feedback</a>
         </div>
         <div className="text-sm font-semibold tracking-wide text-[var(--text-muted)]">
           © {new Date().getFullYear()} Cyberia AI Studio
