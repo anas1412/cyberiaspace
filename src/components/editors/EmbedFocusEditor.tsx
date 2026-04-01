@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useStore } from '../../store/useStore';
 import { useThoughtPayload } from '../thought/hooks/useThoughtPayload';
+import { syncOrchestrator } from '../../services/sync/syncOrchestrator';
 import { Youtube, ExternalLink, Music, MessageCircle, Share2, Link as LinkIcon, ChevronDown, ChevronUp, Palette, ChevronLeft, ChevronRight } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { getEmbedInfo } from '../../utils/embeds';
@@ -40,8 +41,8 @@ const ColorPicker: React.FC<{ value: string; onChange: (val: string) => void; di
         )}
         style={{ backgroundColor: value, boxShadow: `0 0 10px ${value}88` }}
       >
-        <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-          <Palette className="w-1.5 h-1.5 text-white" />
+        <div className="absolute inset-0 bg-[var(--glass-bg)] opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+          <Palette className="w-1.5 h-1.5 text-[var(--text-primary)]" />
         </div>
       </button>
 
@@ -74,7 +75,7 @@ const ColorPicker: React.FC<{ value: string; onChange: (val: string) => void; di
                 onChange={(e) => onChange(e.target.value)}
                 className="w-full h-8 bg-transparent cursor-pointer rounded-lg overflow-hidden"
               />
-              <p className="text-[7px] font-black uppercase tracking-widest text-slate-500 mt-1 text-center">Custom Hex</p>
+              <p className="text-[7px] font-semibold tracking-widest text-[var(--text-muted)] mt-1 text-center">Custom Hex</p>
             </div>
           </motion.div>
         )}
@@ -92,7 +93,7 @@ const PROVIDER_CONFIG: Record<string, { icon: any, color: string, label: string,
   facebook: { icon: Share2, color: 'text-[#1877f2]', themeColor: 'bg-[#1877f2]/10', label: 'Facebook' },
   instagram: { icon: Share2, color: 'text-[#e1306c]', themeColor: 'bg-[#e1306c]/10', label: 'Instagram' },
   tiktok: { icon: Share2, color: 'text-[#ff0050]', themeColor: 'bg-[#ff0050]/10', label: 'TikTok' },
-  unknown: { icon: LinkIcon, color: 'text-slate-400', themeColor: 'bg-white/10', label: 'Link' }
+  unknown: { icon: LinkIcon, color: 'text-[var(--text-muted)]', themeColor: 'bg-white/10', label: 'Link' }
 };
 
 const StackItemThumbnail: React.FC<{ 
@@ -138,7 +139,7 @@ const StackItemThumbnail: React.FC<{
           />
         ) : (
           <div className="flex flex-col items-center gap-1 opacity-20 group-hover/item:opacity-60 transition-opacity">
-            <ItemIcon className="w-6 h-6 text-slate-400" />
+            <ItemIcon className="w-6 h-6 text-[var(--text-muted)]" />
           </div>
         )}
       </div>
@@ -152,10 +153,10 @@ const StackItemThumbnail: React.FC<{
       )}
 
       <div className={cn(
-        "absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent transition-opacity flex items-end p-2 text-left",
+        "absolute inset-0 bg-gradient-to-t from-[var(--bg-page)]/90 via-[var(--bg-page)]/20 to-transparent transition-opacity flex items-end p-2 text-left",
         isActive ? "opacity-100" : "opacity-0 group-hover/item:opacity-100"
       )}>
-        <p className="text-[7px] md:text-[8px] font-black uppercase tracking-widest text-white truncate w-full">
+        <p className="text-[7px] md:text-[8px] font-semibold tracking-widest text-[var(--text-primary)] truncate w-full">
           {item.text || "Untitled"}
         </p>
       </div>
@@ -200,7 +201,7 @@ const EditorContent: React.FC<{
   
   return (
   <div className="flex-1 flex flex-col min-h-0 relative">
-    <div className="flex-1 relative min-h-0 z-0 bg-black/60 shadow-inner group/content">
+    <div className="flex-1 relative min-h-0 z-0 bg-[var(--bg-page)] shadow-inner group/content">
       {renderPlayer()}
 
       {/* Navigation Buttons */}
@@ -209,7 +210,7 @@ const EditorContent: React.FC<{
           <div className="absolute inset-y-0 left-0 flex items-center px-4 md:px-8 pointer-events-none">
             <button
               onClick={handlePrevious}
-              className="w-12 h-12 rounded-full glass flex items-center justify-center text-slate-400 hover:text-white hover:scale-110 transition-all pointer-events-auto opacity-0 group-hover/content:opacity-100 shadow-2xl translate-x-[-20px] group-hover/content:translate-x-0"
+              className="w-12 h-12 rounded-full glass flex items-center justify-center text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:scale-110 transition-all pointer-events-auto opacity-0 group-hover/content:opacity-100 shadow-2xl translate-x-[-20px] group-hover/content:translate-x-0"
             >
               <ChevronLeft className="w-6 h-6" />
             </button>
@@ -217,7 +218,7 @@ const EditorContent: React.FC<{
           <div className="absolute inset-y-0 right-0 flex items-center px-4 md:px-8 pointer-events-none">
             <button
               onClick={handleNext}
-              className="w-12 h-12 rounded-full glass flex items-center justify-center text-slate-400 hover:text-white hover:scale-110 transition-all pointer-events-auto opacity-0 group-hover/content:opacity-100 shadow-2xl translate-x-[20px] group-hover/content:translate-x-0"
+              className="w-12 h-12 rounded-full glass flex items-center justify-center text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:scale-110 transition-all pointer-events-auto opacity-0 group-hover/content:opacity-100 shadow-2xl translate-x-[20px] group-hover/content:translate-x-0"
             >
               <ChevronRight className="w-6 h-6" />
             </button>
@@ -233,7 +234,7 @@ const EditorContent: React.FC<{
             animate={{ scale: 1, opacity: 1, y: 0 }}
             exit={{ scale: 0.95, opacity: 0, y: 20 }}
             transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-            className="glass-dark backdrop-blur-[40px] border border-white/10 rounded-2xl shadow-[0_20px_50px_rgba(0,0,0,0.5)] p-4 px-6"
+            className="glass backdrop-blur-[40px] border border-[var(--glass-border)] rounded-2xl shadow-[0_20px_50px_rgba(0,0,0,0.5)] p-4 px-6"
           >
             <div 
               className="flex items-center justify-between mb-4 px-2 select-none"
@@ -246,17 +247,17 @@ const EditorContent: React.FC<{
                       onChange={(color) => useStore.getState().updateStack(stack.id, { color })} 
                     />
                   </div>
-                  <span className="text-[10px] font-black uppercase tracking-[0.4em] text-slate-200 pt-[1px]">
+                  <span className="text-[10px] font-semibold tracking-[0.4em] text-[var(--text-secondary)] pt-[1px]">
                     {stack?.name || 'Collection'}
                   </span>
                 </div>
                 <div className="flex items-center gap-3">
-                  <span className="text-[9px] font-black text-slate-500 uppercase tracking-[0.2em]">
+                  <span className="text-[9px] font-black text-[var(--text-muted)] uppercase tracking-[0.2em]">
                     {stackItems.findIndex(i => i.id === thought.id) + 1} / {stackItems.length}
                   </span>
                   <button 
                     onClick={() => setShowPreviews(false)}
-                    className="p-1.5 hover:bg-white/5 rounded-full text-slate-500 hover:text-white transition-all"
+                    className="p-1.5 hover:bg-[var(--glass-bg)] rounded-full text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-all"
                   >
                     <ChevronDown className="w-4 h-4" />
                   </button>
@@ -290,7 +291,7 @@ const EditorContent: React.FC<{
         >
           <button 
             onClick={() => setShowPreviews(true)}
-            className="glass p-2 px-6 rounded-full flex items-center gap-2 text-[9px] font-black uppercase tracking-widest text-slate-400 hover:text-white transition-all hover:scale-105"
+            className="glass p-2 px-6 rounded-full flex items-center gap-2 text-[9px] font-semibold tracking-widest text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-all hover:scale-105"
           >
             <ChevronUp className="w-3 h-3" />
             Show Collection
@@ -322,6 +323,15 @@ const EmbedFocusEditor: React.FC = () => {
 
   const scrollerRef = useRef<HTMLDivElement>(null);
   const [isHydrated, setIsHydrated] = useState(false);
+
+  React.useEffect(() => {
+    if (thought?.id) {
+      syncOrchestrator.setFocusEditing(true, thought.id);
+    }
+    return () => {
+      syncOrchestrator.setFocusEditing(false, null);
+    };
+  }, [thought?.id]);
 
   const stackItems = useMemo(() => {
     if (!thought?.stackId) return [];
@@ -432,23 +442,23 @@ const EmbedFocusEditor: React.FC = () => {
       const html = (thought?.meta?.html || "").replace(/<script\b[^>]*>([\s\S]*?)<\/script>/gim, "");
       return (
         <div className="w-full h-full overflow-auto flex flex-col items-center justify-start p-4 md:p-12 md:pb-32 custom-scroll bg-black">
-          {!isHydrated && <div className="flex flex-col items-center gap-4 text-slate-500 my-20 animate-pulse"><div className="w-8 h-8 rounded-full border-2 border-current border-t-transparent animate-spin" /><span className="text-[10px] font-black uppercase tracking-widest">Hydrating...</span></div>}
+          {!isHydrated && <div className="flex flex-col items-center gap-4 text-[var(--text-muted)] my-20 animate-pulse"><div className="w-8 h-8 rounded-full border-2 border-current border-t-transparent animate-spin" /><span className="text-[10px] font-semibold tracking-widest">Hydrating...</span></div>}
           <div id={`embed-${thought.id}`} className={cn("w-full max-w-[550px] rounded-2xl overflow-hidden shadow-2xl transition-all duration-700", isReddit ? "bg-[#1a1a1b] p-1" : (isTikTok || isInstagram) ? "bg-black/80 backdrop-blur-xl" : "bg-white/90 backdrop-blur-xl", isHydrated ? "opacity-100 scale-100" : "opacity-60 scale-[0.98]")} style={isReddit ? { colorScheme: 'dark' } : {}} dangerouslySetInnerHTML={{ __html: html }} />
         </div>
       );
     }
 
     return (
-      <div className="absolute inset-0 flex flex-col items-center justify-center bg-black overflow-hidden">
+      <div className="absolute inset-0 flex flex-col items-center justify-center bg-[var(--bg-page)] overflow-hidden">
         {image ? (
           <div className="w-full h-full flex items-center justify-center p-4 md:p-12">
             <div className="relative w-full h-full flex items-center justify-center">
               <div className="absolute inset-0 blur-3xl opacity-20 bg-[var(--accent)]/10 scale-75 -z-10" />
-              <img src={image} alt="Content" className="max-w-[90%] max-h-[85%] object-contain rounded-2xl shadow-2xl border border-white/10" />
+              <img src={image} alt="Content" className="max-w-[90%] max-h-[85%] object-contain rounded-2xl shadow-2xl border border-[var(--glass-border)]" />
             </div>
           </div>
         ) : (
-          <div className="flex flex-col items-center justify-center text-center p-10"><div className={cn("w-24 h-24 rounded-[2.5rem] flex items-center justify-center border mb-8 shadow-2xl bg-white/5 border-white/10 group transition-all hover:scale-110", config.themeColor)}><Icon className={cn("w-10 h-10 transition-colors", config.color)} /></div><h3 className="text-xl md:text-2xl font-black uppercase tracking-[0.2em] text-white mb-3">{thought?.text || 'Untitled Link'}</h3><p className="text-[10px] font-bold text-slate-500 max-w-sm uppercase tracking-[0.2em] opacity-60 italic">"{thought?.description || 'No description available'}"</p></div>
+          <div className="flex flex-col items-center justify-center text-center p-10"><div className={cn("w-24 h-24 rounded-[2.5rem] flex items-center justify-center border mb-8 shadow-2xl bg-[var(--glass-bg)] border-[var(--glass-border)] group transition-all hover:scale-110", config.themeColor)}><Icon className={cn("w-10 h-10 transition-colors", config.color)} /></div><h3 className="text-xl md:text-2xl font-semibold tracking-[0.2em] text-[var(--text-primary)] mb-3">{thought?.text || 'Untitled Link'}</h3><p className="text-[10px] font-bold text-[var(--text-muted)] max-w-sm uppercase tracking-[0.2em] opacity-60 italic">"{thought?.description || 'No description available'}"</p></div>
         )}
       </div>
     );
@@ -479,7 +489,7 @@ const EmbedFocusEditor: React.FC = () => {
               <div className="w-px h-6 bg-white/5" />
               <div className="flex flex-col">
                 <span className="text-[7px] font-black text-[var(--text-muted)] uppercase tracking-widest mb-0.5">Author</span>
-                <span className={cn("text-[9px] font-black uppercase tracking-widest whitespace-nowrap", config.color)}>
+                <span className={cn("text-[9px] font-semibold tracking-widest whitespace-nowrap", config.color)}>
                   {thought.author}
                 </span>
               </div>

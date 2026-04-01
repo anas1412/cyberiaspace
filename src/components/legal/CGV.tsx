@@ -18,7 +18,7 @@ const CGV: React.FC = () => {
       title: "Article 1: Scope & Acceptance",
       icon: <Scale className="w-5 h-5 text-blue-400" />,
       content: (
-        <p className="leading-relaxed text-slate-400">
+        <p className="leading-relaxed text-[var(--text-muted)]">
           These General Terms of Sale (CGV) apply to all subscriptions and services purchased on Cyberia Space (cyberia.tn). By upgrading your account, you agree to be bound by these terms. Cyberia Space is a spatial platform developed by Cyberia AI Studio.
         </p>
       )
@@ -29,12 +29,12 @@ const CGV: React.FC = () => {
       icon: <Building2 className="w-5 h-5 text-blue-400" />,
       content: (
         <>
-          <p className="leading-relaxed text-slate-400">
+          <p className="leading-relaxed text-[var(--text-muted)]">
             To access Pro features, you must create an account and subscribe to a plan. Your subscription is tied to your Google identity.
           </p>
-          <ul className="list-disc list-inside space-y-3 mt-4 ml-2 text-slate-400">
-            <li><strong className="text-white font-bold">Pro Tier:</strong> Grants enhanced storage, higher Oracle AI limits, and other premium features.</li>
-            <li><strong className="text-white font-bold">Account Responsibility:</strong> You are responsible for all activity occurring under your account. We reserve the right to suspend accounts violating our policies.</li>
+          <ul className="list-disc list-inside space-y-3 mt-4 ml-2 text-[var(--text-muted)]">
+            <li><strong className="text-[var(--text-primary)] font-bold">Pro Tier:</strong> Grants enhanced storage, higher Oracle AI limits, and other premium features.</li>
+            <li><strong className="text-[var(--text-primary)] font-bold">Account Responsibility:</strong> You are responsible for all activity occurring under your account. We reserve the right to suspend accounts violating our policies.</li>
           </ul>
         </>
       )
@@ -46,23 +46,23 @@ const CGV: React.FC = () => {
       highlight: true,
       content: (
         <div className="space-y-4">
-          <div className="bg-black/40 p-6 rounded-2xl border border-white/5">
-            <h3 className="text-sm font-bold text-white uppercase tracking-widest mb-2 flex items-center gap-2">
+          <div className="bg-[var(--glass-bg)] p-6 rounded-2xl border border-[var(--glass-border)]">
+            <h3 className="text-sm font-bold text-[var(--text-primary)] uppercase tracking-widest mb-2 flex items-center gap-2">
               <span className="w-2 h-2 rounded-full bg-blue-400" />
               Local Payments (Tunisia)
             </h3>
-            <p className="leading-relaxed text-sm text-slate-400">
-              Payments via <strong className="text-white">Flouci</strong> follow a <strong>manual renewal model</strong>. We do not automatically charge your payment method. You must manually renew your subscription to maintain Pro access.
+            <p className="leading-relaxed text-sm text-[var(--text-muted)]">
+              Payments via <strong className="text-[var(--text-primary)]">Flouci</strong> follow a <strong>manual renewal model</strong>. We do not automatically charge your payment method. You must manually renew your subscription to maintain Pro access.
             </p>
           </div>
 
-          <div className="bg-black/40 p-6 rounded-2xl border border-white/5">
-            <h3 className="text-sm font-bold text-white uppercase tracking-widest mb-2 flex items-center gap-2">
+          <div className="bg-[var(--glass-bg)] p-6 rounded-2xl border border-[var(--glass-border)]">
+            <h3 className="text-sm font-bold text-[var(--text-primary)] uppercase tracking-widest mb-2 flex items-center gap-2">
               <span className="w-2 h-2 rounded-full bg-purple-400" />
               International Payments
             </h3>
-            <p className="leading-relaxed text-sm text-slate-400">
-              Subscriptions via <strong className="text-white">Polar.sh</strong> are <strong>automatic recurring subscriptions</strong>. Your payment method will be charged at the start of each billing cycle (monthly or yearly) unless you cancel your subscription through the customer portal.
+            <p className="leading-relaxed text-sm text-[var(--text-muted)]">
+              Subscriptions via <strong className="text-[var(--text-primary)]">Polar.sh</strong> are <strong>automatic recurring subscriptions</strong>. Your payment method will be charged at the start of each billing cycle (monthly or yearly) unless you cancel your subscription through the customer portal.
             </p>
           </div>
         </div>
@@ -74,13 +74,13 @@ const CGV: React.FC = () => {
       icon: <CreditCard className="w-5 h-5 text-blue-400" />,
       content: (
         <>
-          <p className="leading-relaxed text-slate-400">
+          <p className="leading-relaxed text-[var(--text-muted)]">
             Prices are indicated in the application and on the website in the local currency (TND for Tunisia) or USD for international users.
           </p>
-          <ul className="list-disc list-inside space-y-3 mt-4 ml-2 text-slate-400">
-            <li><strong className="text-white font-bold">Local Payments (Tunisia):</strong> Handled securely via <strong className="text-white">Flouci</strong>.</li>
-            <li><strong className="text-white font-bold">International Payments:</strong> Handled securely via <strong className="text-white">Polar.sh</strong>.</li>
-            <li><strong className="text-white font-bold">Security:</strong> We do not store your financial data. All transactions are encrypted and processed by our third-party payment gateways.</li>
+          <ul className="list-disc list-inside space-y-3 mt-4 ml-2 text-[var(--text-muted)]">
+            <li><strong className="text-[var(--text-primary)] font-bold">Local Payments (Tunisia):</strong> Handled securely via <strong className="text-[var(--text-primary)]">Flouci</strong>.</li>
+            <li><strong className="text-[var(--text-primary)] font-bold">International Payments:</strong> Handled securely via <strong className="text-[var(--text-primary)]">Polar.sh</strong>.</li>
+            <li><strong className="text-[var(--text-primary)] font-bold">Security:</strong> We do not store your financial data. All transactions are encrypted and processed by our third-party payment gateways.</li>
           </ul>
         </>
       )
@@ -92,13 +92,13 @@ const CGV: React.FC = () => {
       error: true,
       content: (
         <>
-          <p className="leading-relaxed font-bold text-slate-200">
+          <p className="leading-relaxed font-bold text-[var(--text-primary)]">
             Given the digital nature of the services and the instant access to Pro features and AI processing resources:
           </p>
-          <p className="text-xl font-black text-white uppercase tracking-tighter mt-4 border-l-4 border-red-500 pl-4 py-2">
+          <p className="text-xl font-black text-[var(--text-primary)] uppercase tracking-tighter mt-4 border-l-4 border-red-500 pl-4 py-2">
             All sales are final. We do not offer refunds or credits for any reason.
           </p>
-          <p className="leading-relaxed mt-4 text-sm text-slate-400 italic">
+          <p className="leading-relaxed mt-4 text-sm text-[var(--text-muted)] italic">
             Please use the Free Tier to ensure the service meets your requirements before upgrading.
           </p>
         </>
@@ -109,7 +109,7 @@ const CGV: React.FC = () => {
       title: "Article 6: Service Availability",
       icon: <ShieldCheck className="w-5 h-5 text-blue-400" />,
       content: (
-        <p className="leading-relaxed font-mono text-xs uppercase tracking-wider text-slate-500 italic">
+        <p className="leading-relaxed font-mono text-xs uppercase tracking-wider text-[var(--text-muted)] italic">
           Cyberia Space strives for high uptime but is provided "as is". We are not liable for data loss due to technical failure, browser instability, or synchronization conflicts. Users are encouraged to use the "Export Workspace" feature regularly.
         </p>
       )
@@ -120,13 +120,13 @@ const CGV: React.FC = () => {
       icon: <ShieldCheck className="w-5 h-5 text-blue-400" />,
       content: (
         <>
-          <p className="leading-relaxed text-slate-400">
+          <p className="leading-relaxed text-[var(--text-muted)]">
             Cyberia Space is an AI-powered spatial thinking and knowledge management tool. It is designed for personal productivity, research, and AI-assisted analysis of private documents.
           </p>
-          <p className="leading-relaxed text-slate-400 mt-3">
-            <strong className="text-white">Acceptable Uses:</strong>
+          <p className="leading-relaxed text-[var(--text-muted)] mt-3">
+            <strong className="text-[var(--text-primary)]">Acceptable Uses:</strong>
           </p>
-          <ul className="list-disc list-inside space-y-2 mt-2 ml-2 text-slate-400">
+          <ul className="list-disc list-inside space-y-2 mt-2 ml-2 text-[var(--text-muted)]">
             <li>Personal knowledge management and note organization</li>
             <li>AI-assisted analysis of privately uploaded research documents and PDFs</li>
             <li>Team collaboration within private, authenticated workspaces</li>
@@ -142,10 +142,10 @@ const CGV: React.FC = () => {
       error: true,
       content: (
         <>
-          <p className="leading-relaxed text-slate-400">
+          <p className="leading-relaxed text-[var(--text-muted)]">
             The following uses of Cyberia Space are strictly prohibited:
           </p>
-          <ul className="list-disc list-inside space-y-2 mt-3 ml-2 text-slate-400">
+          <ul className="list-disc list-inside space-y-2 mt-3 ml-2 text-[var(--text-muted)]">
             <li>Uploading or sharing files for the purpose of distributing content to the public or third parties</li>
             <li>Using the storage layer as a direct file distribution or "cyberlocker" mechanism</li>
             <li>Attempting to bypass access controls or extract files for unauthorized sharing</li>
@@ -153,8 +153,8 @@ const CGV: React.FC = () => {
             <li>Uploading content that violates applicable laws or our Terms of Service</li>
             <li>Using the platform as a CDN or public file hosting service</li>
           </ul>
-          <p className="leading-relaxed mt-4 text-sm text-slate-400">
-            Violations may result in <strong className="text-white">immediate account suspension</strong>, <strong className="text-white">permanent deletion of content</strong>, and <strong className="text-white">referral to appropriate authorities</strong>.
+          <p className="leading-relaxed mt-4 text-sm text-[var(--text-muted)]">
+            Violations may result in <strong className="text-[var(--text-primary)]">immediate account suspension</strong>, <strong className="text-[var(--text-primary)]">permanent deletion of content</strong>, and <strong className="text-[var(--text-primary)]">referral to appropriate authorities</strong>.
           </p>
         </>
       )
@@ -164,7 +164,7 @@ const CGV: React.FC = () => {
       title: "Article 9: Governing Law",
       icon: <Scale className="w-5 h-5 text-blue-400" />,
       content: (
-        <p className="leading-relaxed text-slate-300">
+        <p className="leading-relaxed text-[var(--text-dimmed)]">
           These Terms of Sale and any disputes arising from them shall be governed by the laws of <strong>Tunisia</strong>.
         </p>
       )
@@ -172,7 +172,7 @@ const CGV: React.FC = () => {
   ];
 
   return (
-    <div className="min-h-[100dvh] bg-black text-slate-300 p-6 md:p-20 overflow-y-auto custom-scroll selection:bg-blue-500/30">
+    <div className="min-h-[100dvh] bg-[var(--bg-page)] text-[var(--text-muted)] p-6 md:p-20 overflow-y-auto custom-scroll selection:bg-blue-500/30">
       <motion.div 
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -180,10 +180,10 @@ const CGV: React.FC = () => {
       >
         <button 
           onClick={handleBack}
-          className="flex items-center gap-2 text-blue-400 hover:text-white transition-colors mb-12 group"
+          className="flex items-center gap-2 text-blue-400 hover:text-[var(--text-primary)] transition-colors mb-12 group"
         >
           <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
-          <span className="text-xs font-black uppercase tracking-widest">Back</span>
+          <span className="text-xs font-semibold tracking-widest">Back</span>
         </button>
 
         <header className="mb-16">
@@ -191,9 +191,9 @@ const CGV: React.FC = () => {
             <div className="w-12 h-12 bg-blue-500/10 rounded-2xl flex items-center justify-center border border-blue-500/20">
               <FileText className="w-6 h-6 text-blue-400" />
             </div>
-            <h1 className="text-4xl md:text-6xl font-black text-white uppercase tracking-tighter leading-none">Terms of Sale (CGV)</h1>
+            <h1 className="text-4xl md:text-6xl font-black text-[var(--text-primary)] uppercase tracking-tighter leading-none">Terms of Sale (CGV)</h1>
           </div>
-          <p className="text-slate-500 font-mono text-sm uppercase tracking-widest">Last Updated: March 29, 2026</p>
+          <p className="text-[var(--text-muted)] font-mono text-sm uppercase tracking-widest">Last Updated: March 29, 2026</p>
         </header>
 
         <section className="space-y-8 pb-20">
@@ -205,12 +205,12 @@ const CGV: React.FC = () => {
                   ? 'bg-blue-500/5 border-blue-500/10 hover:border-blue-500/20 shadow-[0_0_40px_rgba(59,130,246,0.03)]' 
                   : article.error
                   ? 'bg-red-500/5 border-red-500/10 hover:border-red-500/20'
-                  : 'bg-white/5 border border-white/10 hover:border-white/20'
+                  : 'bg-[var(--glass-bg)] border border-[var(--glass-border)] hover:border-[var(--accent)]/30'
               }`}
             >
               <div className="flex items-center gap-3 mb-2">
                 {article.icon}
-                <h2 className="text-xl font-black text-white uppercase tracking-widest">
+                <h2 className="text-xl font-black text-[var(--text-primary)] uppercase tracking-widest">
                   {article.title}
                 </h2>
               </div>
@@ -218,13 +218,13 @@ const CGV: React.FC = () => {
             </div>
           ))}
 
-          <div className="pt-12 border-t border-white/5 flex flex-col md:flex-row justify-between items-center gap-8">
+          <div className="pt-12 border-t border-[var(--glass-border)] flex flex-col md:flex-row justify-between items-center gap-8">
             <div className="flex gap-4 opacity-30">
               <CreditCard className="w-8 h-8" />
               <ShieldCheck className="w-8 h-8" />
               <User className="w-8 h-8" />
             </div>
-            <p className="text-[10px] font-black uppercase tracking-widest text-slate-600">
+            <p className="text-[10px] font-semibold tracking-widest text-[var(--text-muted)]">
               © 2026 CYBERIA AI STUDIO
             </p>
           </div>

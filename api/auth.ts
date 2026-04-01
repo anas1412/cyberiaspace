@@ -103,7 +103,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                     avatar: payload.picture,
                     plan: 'free',
                     subscription_status: 'none',
-                    settings: { theme: 'cyberia', autoSync: true },
+                    settings: { theme: 'dark', autoSync: true },
                     usage: { ai_daily_count: 0, sync_thoughts: 0, last_ai_reset: new Date().toISOString().split('T')[0] },
                     updated_at: new Date().toISOString(),
                     refresh_secret: refreshSecret

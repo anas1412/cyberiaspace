@@ -34,14 +34,14 @@ const MobileNotSupported: React.FC = () => {
         </div>
 
         <div className="space-y-4">
-          <h1 className="text-2xl font-black uppercase tracking-[0.2em] text-white">
+          <h1 className="text-2xl font-semibold tracking-[0.2em] text-white">
             Desktop Required
           </h1>
           <div className="h-1 w-12 bg-blue-500 mx-auto rounded-full" />
-          <p className="text-slate-400 text-sm leading-relaxed font-medium">
+          <p className="text-[var(--text-muted)] text-sm leading-relaxed font-medium">
             Cyberia's kinetic space is optimized for high-precision spatial mapping. 
           </p>
-          <p className="text-blue-400/80 text-[10px] font-black uppercase tracking-widest bg-blue-500/5 py-3 px-4 rounded-2xl border border-blue-500/10 inline-block">
+          <p className="text-blue-400/80 text-[10px] font-semibold tracking-widest bg-blue-500/5 py-3 px-4 rounded-2xl border border-blue-500/10 inline-block">
             <Construction className="w-3 h-3 inline mr-2 -mt-0.5" />
             Mobile & Tablet Support Under Construction
           </p>

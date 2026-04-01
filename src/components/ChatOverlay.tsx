@@ -16,6 +16,7 @@ import remarkGfm from 'remark-gfm';
 import rehypeRaw from 'rehype-raw';
 import { ORACLE_CONFIG, type PlanLimits } from '../constants';
 import { executeOracleTool } from '../services/oracle/executor';
+import { parseAIError } from '../utils/errorParser';
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 
@@ -43,16 +44,16 @@ const ModelItem: React.FC<{
     disabled={disabled || isModelDisabled}
     className={cn(
       "w-full flex items-center justify-between px-3 py-2 rounded-lg transition-all border text-left",
-      selected 
-        ? "bg-white/10 border-white/20" 
-        : "hover:bg-white/[0.05] border-transparent",
+      selected
+        ? "bg-[var(--glass-bg)] border-[var(--glass-border)]"
+        : "hover:bg-[var(--bg-page)] border-transparent",
       (disabled || isModelDisabled) && "opacity-40 cursor-not-allowed grayscale"
     )}
   >
     <div className="flex flex-col gap-0.5">
       <span className={cn(
-        "text-[10px] font-bold uppercase tracking-widest leading-none",
-        selected ? "text-white" : "text-[var(--text-primary)]"
+        "text-[10px] font-semibold tracking-wide leading-none",
+        selected ? "text-[var(--text-primary)]" : "text-[var(--text-primary)]"
       )}>
         {model.name}
       </span>
@@ -60,7 +61,7 @@ const ModelItem: React.FC<{
         {model.desc}
       </span>
     </div>
-    {selected && <Check className="w-3 h-3 text-white ml-2 flex-shrink-0" />}
+    {selected && <Check className="w-3 h-3 text-[var(--text-primary)] ml-2 flex-shrink-0" />}
   </button>
   );
 };
@@ -620,11 +621,15 @@ useEffect(() => {
 
         if (response.status === 429) {
           const errorData = await response.json();
+          const baseMessage = 'Rate limit reached. The AI service is temporarily unavailable.';
+          const upgradeHint = plan === 'free' 
+            ? ' Upgrade to Pro for access to premium models with higher limits.'
+            : '';
           const errorMsg: Message = { 
             id: ulid(), 
             spaceId: store.activeSpaceId,
             role: 'assistant', 
-            content: `### Connection Saturated\n${errorData.message}`,
+            content: baseMessage + upgradeHint,
             timestamp: Date.now(),
             msgType: 'system'
           };
@@ -718,12 +723,21 @@ useEffect(() => {
                   ...prev.slice(0, -1),
                   { ...assistantMessage }
                 ]);
-              } else if (data.type === 'error') {
+} else if (data.type === 'error') {
+                // Check if it's a 429 rate limit error
+                const is429 = data.message?.includes('429') || data.message?.toLowerCase().includes('rate');
+                let errorMessage = parseAIError({ message: data.message });
+                
+                // Add upgrade hint for free users on rate limit errors
+                if (is429 && plan === 'free') {
+                  errorMessage += ' Upgrade to Pro for access to premium models with higher limits.';
+                }
+                
                 const errMsg: Message = { 
                   id: ulid(), 
                   spaceId: store.activeSpaceId,
                   role: 'assistant', 
-                  content: `### Logic Snag\n${data.message}`,
+                  content: errorMessage,
                   timestamp: Date.now(),
                   msgType: 'system'
                 };
@@ -910,7 +924,7 @@ if (data.tier && data.autoSwitch) {
           animate={{ x: 0, opacity: 1 }}
           exit={{ x: '-100%', opacity: 0 }}
           transition={{ type: 'spring', damping: 28, stiffness: 200 }}
-          className="fixed top-4 md:top-24 bottom-4 md:bottom-24 left-4 md:left-8 w-[calc(100%-32px)] md:w-[500px] glass rounded-2xl shadow-[0_0_80px_rgba(0,0,0,0.5)] flex flex-col overflow-hidden z-[9999] border border-[var(--glass-border)]"
+          className="fixed top-4 md:top-24 bottom-4 md:bottom-24 left-4 md:left-8 w-[calc(100%-32px)] md:w-[460px] glass rounded-2xl shadow-[0_0_80px_rgba(0,0,0,0.5)] flex flex-col overflow-hidden z-[9999] border border-[var(--glass-border)]"
         >
 
           {/* HEADER */}
@@ -926,7 +940,7 @@ if (data.tier && data.autoSwitch) {
                   <h3 className="text-[11px] font-extrabold uppercase tracking-[0.2em] text-[var(--text-primary)] leading-none">Oracle AI</h3>
                 {plan === 'pro' && (
                   <div className={cn(
-                    "px-1.5 py-0.5 rounded text-[8px] font-bold uppercase tracking-wider border",
+                    "px-1.5 py-0.5 rounded text-[8px] font-semibold tracking-wide border",
                     activeTier === 'top' ? "bg-[var(--accent)]/10 border-[var(--accent)]/30 text-[var(--accent)]" :
                     activeTier === 'medium' ? "bg-[var(--accent)]/10 border-[var(--accent)]/30 text-[var(--accent)]" :
                     activeTier === 'small' ? "bg-[var(--accent)]/10 border-[var(--accent)]/30 text-[var(--accent)]" :
@@ -940,9 +954,9 @@ if (data.tier && data.autoSwitch) {
                 <div className="pointer-events-auto relative" ref={dropdownRef}>
                   <button
                     onClick={() => { setShowModelDropdown(!showModelDropdown); if (!showModelDropdown) setModelSearch(''); }}
-                    className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white/[0.03] hover:bg-white/[0.08] border border-[var(--glass-border)] transition-all group"
+                    className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[var(--glass-bg)] hover:bg-[var(--bg-page)] border border-[var(--glass-border)] transition-all group"
                   >
-                    <span className="text-[9px] font-bold text-white uppercase tracking-widest leading-none mt-[1px]">
+                    <span className="text-[9px] font-bold text-[var(--text-primary)] uppercase tracking-widest leading-none mt-[1px]">
                       {currentModelInfo.name}
                     </span>
                     <ChevronDown className={cn("w-3 h-3 text-[var(--text-muted)] transition-transform", showModelDropdown && "rotate-180")} />
@@ -1056,16 +1070,16 @@ if (data.tier && data.autoSwitch) {
 
               {/* Right Actions */}
               <div className="flex-1 flex items-center justify-end gap-1 relative z-50">
-                <button 
+                <button
                   onClick={handleClear}
-                  className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-white/[0.08] text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-all"
+                  className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-[var(--glass-bg)] text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-all"
                   title="Clear Stream"
                 >
                   <History className="w-4 h-4" />
                 </button>
-                <button 
+                <button
                   onClick={() => setChatOpen(false)}
-                  className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-white/[0.08] text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-all"
+                  className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-[var(--glass-bg)] text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-all"
                 >
                   <X className="w-4 h-4" />
                 </button>
@@ -1080,7 +1094,7 @@ if (data.tier && data.autoSwitch) {
           >
             {messages.length === 0 && (
               <div className="h-full flex flex-col items-center justify-center text-center py-12">
-                <div className="w-14 h-14 bg-white/[0.03] rounded-2xl flex items-center justify-center mb-5 border border-[var(--glass-border)] shadow-inner">
+                <div className="w-14 h-14 bg-[var(--glass-bg)] rounded-2xl flex items-center justify-center mb-5 border border-[var(--glass-border)] shadow-inner">
                   <MessageSquare className="w-6 h-6 text-[var(--text-muted)]" />
                 </div>
                 <h4 className="text-[12px] font-extrabold uppercase tracking-[0.25em] text-[var(--text-primary)] mb-2">Welcome to Agentic Workspace</h4>
@@ -1105,7 +1119,7 @@ if (data.tier && data.autoSwitch) {
                   )}>
                     <ReactMarkdown remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeRaw]}>{m.content}</ReactMarkdown>
                   </div>
-                  <span className="text-[8px] font-bold uppercase tracking-widest text-[var(--text-muted)] px-1">
+                  <span className="text-[8px] font-semibold tracking-wide text-[var(--text-muted)] px-1">
                     {m.role === 'user' ? 'You' : 'Oracle'}
                   </span>
                 </div>
@@ -1117,7 +1131,7 @@ if (data.tier && data.autoSwitch) {
                 {activeTool ? (
                   <div className="bg-[var(--accent)]/10 border border-[var(--accent)]/20 px-4 py-2 rounded-xl flex items-center gap-3 shadow-[0_0_20px_var(--accent-glow)]">
                     <Loader2 className="w-3.5 h-3.5 text-[var(--accent)] animate-spin" />
-                    <span className="text-[10px] font-bold uppercase tracking-widest text-[var(--accent)]">
+                    <span className="text-[10px] font-semibold tracking-wide text-[var(--accent)]">
                       {getFriendlyToolName(activeTool!.name)}
                     </span>
                   </div>
@@ -1128,7 +1142,7 @@ if (data.tier && data.autoSwitch) {
                       <div className="w-1.5 h-1.5 bg-[var(--accent)]/80 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
                       <div className="w-1.5 h-1.5 bg-[var(--accent)]/80 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
                     </div>
-                    <span className="text-[10px] font-bold uppercase tracking-widest text-[var(--text-muted)] ml-1">
+                    <span className="text-[10px] font-semibold tracking-wide text-[var(--text-muted)] ml-1">
                       {status || 'Oracle is thinking...'}
                     </span>
                   </div>
@@ -1175,7 +1189,7 @@ if (data.tier && data.autoSwitch) {
                 <button
                   type="submit"
                   disabled={!input.trim()}
-                  className="w-9 h-9 flex-shrink-0 flex items-center justify-center bg-[var(--accent)]/90 hover:bg-[var(--accent)] disabled:bg-white/5 disabled:text-[var(--text-muted)] text-[var(--bg-main)] rounded-lg transition-all shadow-lg active:scale-95 mb-0.5"
+                  className="w-9 h-9 flex-shrink-0 flex items-center justify-center bg-[var(--accent)]/90 hover:bg-[var(--accent)] disabled:bg-[var(--glass-bg)] disabled:text-[var(--text-muted)] text-[var(--bg-main)] rounded-lg transition-all shadow-lg active:scale-95 mb-0.5"
                 >
                   <Send className="w-3.5 h-3.5" />
                 </button>
@@ -1196,7 +1210,7 @@ if (data.tier && data.autoSwitch) {
             </form>
 
             <div className="flex items-center justify-between gap-2 px-1 pb-1">
-              <div className="flex items-center h-8 bg-white/[0.02] rounded-lg p-1 border border-[var(--glass-border)]">
+              <div className="flex items-center h-8 bg-[var(--glass-bg)] rounded-lg p-1 border border-[var(--glass-border)]">
                 <button
                   onClick={() => store.setOracleChatMode('chat')}
                   className={cn(
@@ -1206,8 +1220,8 @@ if (data.tier && data.autoSwitch) {
                       : "text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-white/[0.03]"
                   )}
                 >
-                  <div className={cn("w-1.5 h-1.5 rounded-full transition-all", store.oracleChatMode === 'chat' ? "bg-[var(--accent)] shadow-[0_0_6px_var(--accent-glow)]" : "bg-white/10")} />
-                  <span className="text-[9px] font-bold uppercase tracking-[0.15em] mt-[1px]">Chat</span>
+                  <div className={cn("w-1.5 h-1.5 rounded-full transition-all", store.oracleChatMode === 'chat' ? "bg-[var(--accent)] shadow-[0_0_6px_var(--accent-glow)]" : "bg-[var(--glass-border)]")} />
+                  <span className="text-[9px] font-semibold tracking-wide mt-[1px]">Chat</span>
                 </button>
                 <div className="w-[1px] h-3 bg-white/10 mx-1"></div>
                 <AccessGuard user={user} mode="disable" feature="pro">
@@ -1220,8 +1234,8 @@ if (data.tier && data.autoSwitch) {
                         : "text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-white/[0.03]"
                     )}
                   >
-                    <div className={cn("w-1.5 h-1.5 rounded-full transition-all", store.oracleChatMode === 'action' ? "bg-[var(--status-doing)] shadow-[0_0_6px_rgba(234,179,8,0.6)]" : "bg-white/10")} />
-                    <span className="text-[9px] font-bold uppercase tracking-[0.15em] mt-[1px]">Action</span>
+                    <div className={cn("w-1.5 h-1.5 rounded-full transition-all", store.oracleChatMode === 'action' ? "bg-[var(--status-doing)] shadow-[0_0_6px_rgba(234,179,8,0.6)]" : "bg-[var(--glass-border)]")} />
+                    <span className="text-[9px] font-semibold tracking-wide mt-[1px]">Action</span>
                   </button>
                 </AccessGuard>
               </div>

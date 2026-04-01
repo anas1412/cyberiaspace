@@ -1,12 +1,24 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import { VitePWA } from 'vite-plugin-pwa'
+import { ViteImageOptimizer } from 'vite-plugin-image-optimizer'
 
-// https://vite.dev/config/
 export default defineConfig(() => {
   return {
     plugins: [
       react(),
+      ViteImageOptimizer({
+        // Specific targeting for your landing page screenshots
+        test: /\.(png)$/i, 
+        includePublic: true,
+        logStats: true,
+        png: {
+          // 80-90 quality provides significant compression 
+          // while remaining perceptually lossless
+          quality: 85, 
+          compressionLevel: 9,
+        },
+      }),
       VitePWA({
         registerType: 'autoUpdate',
         injectRegister: false,
@@ -15,7 +27,7 @@ export default defineConfig(() => {
           skipWaiting: true,
           clientsClaim: true,
           navigateFallbackDenylist: [/^\/api/],
-          globPatterns: ['**/*.{js,css,html,png,ico}'],
+          globPatterns: ['**/*.{js,css,html,png,ico,webp,avif}'],
           globIgnores: ['**/landing-page.*']
         },
         includeAssets: [
@@ -74,9 +86,7 @@ export default defineConfig(() => {
       rollupOptions: {
         output: {
           manualChunks(id) {
-            if (id.includes('node_modules/tailwindcss')) {
-              return 'vendor-tailwind';
-            }
+            if (id.includes('node_modules/tailwindcss')) return 'vendor-tailwind';
             if (id.includes('node_modules/framer-motion')) return 'vendor-ui';
             if (id.includes('node_modules/lucide-react')) return 'vendor-ui';
             if (id.includes('node_modules/dexie')) return 'vendor-db';

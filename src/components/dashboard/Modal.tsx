@@ -63,7 +63,7 @@ export const Modal: React.FC<ModalProps> = ({
           className="fixed inset-0 z-[11000] flex items-center justify-center p-4"
         >
           <div
-            className="absolute inset-0 bg-black/80 backdrop-blur-sm"
+            className="absolute inset-0 bg-[var(--bg-page)]/60 backdrop-blur-md"
             onClick={onClose}
           />
 

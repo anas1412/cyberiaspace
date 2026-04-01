@@ -17,7 +17,7 @@ const statusConfig = {
   todo: {
     label: 'To Do',
     bg: 'bg-slate-500/20',
-    text: 'text-slate-400',
+    text: 'text-[var(--text-muted)]',
     border: 'border-slate-500/30',
   },
   doing: {
@@ -40,7 +40,7 @@ export const StatusBadge: React.FC<StatusBadgeProps> = ({ status, size = 'sm' })
   return (
     <span
       className={cn(
-        'inline-flex items-center rounded-full border font-bold uppercase tracking-wider',
+        'inline-flex items-center rounded-full border font-medium tracking-wider',
         config.bg,
         config.text,
         config.border,

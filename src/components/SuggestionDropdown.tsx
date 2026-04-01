@@ -103,9 +103,9 @@ const SuggestionDropdown: React.FC<SuggestionDropdownProps> = ({
           {/* Header */}
           <div className="px-3 py-2 border-b border-[var(--glass-border)] flex items-center gap-2">
             <span className={cn(
-              "text-[9px] font-black uppercase tracking-wider px-1.5 py-0.5 rounded",
-              type === 'thought' 
-                ? "bg-white/10 text-[var(--text-primary)]" 
+              "text-[9px] font-semibold tracking-wider px-1.5 py-0.5 rounded",
+              type === 'thought'
+                ? "bg-[var(--glass-bg)] text-[var(--text-primary)]"
                 : "bg-[var(--accent)]/20 text-[var(--accent)]"
             )}>
               {type === 'thought' ? '@' : '#'}
@@ -135,7 +135,7 @@ const SuggestionDropdown: React.FC<SuggestionDropdownProps> = ({
                   onClick={() => onSelect(item)}
                   className={cn(
                     "w-full flex items-center gap-2 px-3 py-2 text-left transition-all",
-                    "hover:bg-white/5",
+                    "hover:bg-[var(--glass-bg)]",
                     index === selectedIndex && "bg-[var(--accent)]/15"
                   )}
                 >

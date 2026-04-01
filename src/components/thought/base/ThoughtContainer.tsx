@@ -80,7 +80,7 @@ export const ThoughtContainer = React.memo<ThoughtContainerProps>(({
             <Loader2 className="w-8 h-8 text-red-500 animate-spin" />
             <Trash2 className="w-4 h-4 text-red-500 absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2" />
           </div>
-          <span className="text-[8px] font-black uppercase tracking-[0.2em] text-red-400">Purging Data</span>
+          <span className="text-[8px] font-semibold tracking-[0.2em] text-red-400">Purging Data</span>
         </div>
       )}
 
@@ -89,8 +89,8 @@ export const ThoughtContainer = React.memo<ThoughtContainerProps>(({
           "thought-bulb-content group backdrop-blur-[20px] border rounded-2xl flex flex-col relative transition-all duration-300",
           isCalendar && !isExpanded ? "p-3 gap-0" : "p-4.5 gap-2",
           isSelected
-            ? "border-[var(--accent)]/50 shadow-[0_0_40px_var(--accent-glow)] bg-[var(--node-bg)]/80"
-            : "border-[var(--glass-border)] shadow-[0_10px_40px_rgba(0,0,0,0.5)] bg-[var(--node-bg)]/60",
+            ? "border-[var(--accent)]/50 shadow-[0_0_40px_var(--accent-glow)] bg-[var(--node-bg)]/95"
+            : "border-[var(--glass-border)] shadow-[var(--shadow-elevation-3)] bg-[var(--node-bg)]/90",
           linkingSourceId === thoughtId && "ring-2 ring-[var(--accent)] shadow-[0_0_20px_var(--accent-glow)]",
           linkingSourceId && linkingSourceId !== thoughtId && "hover:scale-105 hover:border-[var(--accent)]/50 cursor-pointer",
           isSelected && isInspectorOpen && "animate-breathe"

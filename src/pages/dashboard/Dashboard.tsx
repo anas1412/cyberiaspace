@@ -108,7 +108,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
     <div className="p-6 lg:p-8 space-y-8">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-white">Dashboard Overview</h1>
+          <h1 className="text-2xl font-bold text-[var(--text-primary)]">Dashboard Overview</h1>
           <p className="text-[var(--text-muted)] text-sm mt-1">Welcome back, Admin</p>
         </div>
         <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-[var(--text-muted)]">
@@ -148,7 +148,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
                   <card.icon className="w-5 h-5 opacity-70" />
                   <TrendingUp className="w-3 h-3 opacity-40" />
                 </div>
-                <p className="text-3xl font-black text-white mb-1">{card.value.toLocaleString()}</p>
+                <p className="text-3xl font-black text-[var(--text-primary)] mb-1">{card.value.toLocaleString()}</p>
                 <p className="text-[10px] font-black uppercase tracking-widest opacity-60">{card.label}</p>
               </motion.div>
             ))}
@@ -159,10 +159,10 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.4 }}
-              className="glass rounded-2xl p-6 border border-white/5"
+              className="glass rounded-2xl p-6 border border-[var(--glass-border)]"
             >
               <div className="flex items-center justify-between mb-6">
-                <h2 className="text-sm font-bold text-white">Recent Feedback</h2>
+                <h2 className="text-sm font-bold text-[var(--text-primary)]">Recent Feedback</h2>
                 <button
                   onClick={() => onNavigate('feedback')}
                   className="flex items-center gap-1 text-[10px] font-black uppercase tracking-widest text-[var(--accent-secondary)] hover:text-[var(--accent)] transition-colors"
@@ -176,7 +176,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
               ) : (
                 <div className="space-y-3">
                   {recentFeedback.slice(0, 5).map((item) => (
-                    <div key={item.id} className="flex items-start gap-3 p-3 rounded-xl bg-white/5 hover:bg-white/10 transition-colors">
+                    <div key={item.id} className="flex items-start gap-3 p-3 rounded-xl bg-[var(--glass-bg)] hover:bg-[var(--bg-page)] transition-colors">
                       <div className={cn(
                         "w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0",
                         item.type === 'issue' ? "bg-red-500/20 text-red-400" :
@@ -186,7 +186,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
                         <MessageSquare className="w-4 h-4" />
                       </div>
                       <div className="flex-1 min-w-0">
-                        <p className="text-xs text-white truncate">{item.content}</p>
+                        <p className="text-xs text-[var(--text-primary)] truncate">{item.content}</p>
                         <div className="flex items-center gap-2 mt-1">
                           <span className="text-[9px] font-medium text-[var(--text-muted)]">{getEmail(item)}</span>
                           <span className="text-[9px] font-medium text-[var(--text-muted)]">·</span>
@@ -206,37 +206,37 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.5 }}
-              className="glass rounded-2xl p-6 border border-white/5"
+              className="glass rounded-2xl p-6 border border-[var(--glass-border)]"
             >
-              <h2 className="text-sm font-bold text-white mb-6">Quick Actions</h2>
+              <h2 className="text-sm font-bold text-[var(--text-primary)] mb-6">Quick Actions</h2>
               <div className="grid grid-cols-2 gap-3">
                 <button
                   onClick={() => onNavigate('users')}
-                  className="flex flex-col items-center gap-3 p-5 rounded-xl bg-white/5 hover:bg-white/10 border border-white/5 hover:border-white/10 transition-all group"
+                  className="flex flex-col items-center gap-3 p-5 rounded-xl bg-[var(--glass-bg)] hover:bg-[var(--bg-page)] border border-[var(--glass-border)] hover:border-[var(--accent)]/20 transition-all group"
                 >
                   <Users className="w-6 h-6 text-blue-400 group-hover:scale-110 transition-transform" />
-                  <span className="text-[10px] font-black uppercase tracking-widest text-white">Manage Users</span>
+                  <span className="text-[10px] font-black uppercase tracking-widest text-[var(--text-primary)]">Manage Users</span>
                 </button>
                 <button
                   onClick={() => onNavigate('feedback')}
-                  className="flex flex-col items-center gap-3 p-5 rounded-xl bg-white/5 hover:bg-white/10 border border-white/5 hover:border-white/10 transition-all group"
+                  className="flex flex-col items-center gap-3 p-5 rounded-xl bg-[var(--glass-bg)] hover:bg-[var(--bg-page)] border border-[var(--glass-border)] hover:border-[var(--accent)]/20 transition-all group"
                 >
                   <MessageSquare className="w-6 h-6 text-purple-400 group-hover:scale-110 transition-transform" />
-                  <span className="text-[10px] font-black uppercase tracking-widest text-white">View Feedback</span>
+                  <span className="text-[10px] font-black uppercase tracking-widest text-[var(--text-primary)]">View Feedback</span>
                 </button>
                 <button
                   onClick={() => onNavigate('settings')}
-                  className="flex flex-col items-center gap-3 p-5 rounded-xl bg-white/5 hover:bg-white/10 border border-white/5 hover:border-white/10 transition-all group"
+                  className="flex flex-col items-center gap-3 p-5 rounded-xl bg-[var(--glass-bg)] hover:bg-[var(--bg-page)] border border-[var(--glass-border)] hover:border-[var(--accent)]/20 transition-all group"
                 >
                   <Shield className="w-6 h-6 text-green-400 group-hover:scale-110 transition-transform" />
-                  <span className="text-[10px] font-black uppercase tracking-widest text-white">Settings</span>
+                  <span className="text-[10px] font-black uppercase tracking-widest text-[var(--text-primary)]">Settings</span>
                 </button>
                 <button
                   onClick={() => window.open('https://supabase.com/dashboard', '_blank')}
-                  className="flex flex-col items-center gap-3 p-5 rounded-xl bg-white/5 hover:bg-white/10 border border-white/5 hover:border-white/10 transition-all group"
+                  className="flex flex-col items-center gap-3 p-5 rounded-xl bg-[var(--glass-bg)] hover:bg-[var(--bg-page)] border border-[var(--glass-border)] hover:border-[var(--accent)]/20 transition-all group"
                 >
                   <Layers className="w-6 h-6 text-amber-400 group-hover:scale-110 transition-transform" />
-                  <span className="text-[10px] font-black uppercase tracking-widest text-white">Supabase</span>
+                  <span className="text-[10px] font-black uppercase tracking-widest text-[var(--text-primary)]">Supabase</span>
                 </button>
               </div>
             </motion.div>

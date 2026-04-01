@@ -286,10 +286,10 @@ const SpatialThinkingVisual: React.FC = () => {
         <div className="relative">
           <button 
             onClick={() => setIsSpaceMenuOpen(!isSpaceMenuOpen)}
-            className={`flex items-center gap-3 px-4 h-[44px] glass rounded-2xl border border-white/5 transition-all shadow-2xl ${isSpaceMenuOpen ? 'bg-white/10 text-white' : 'text-white/80 hover:text-white'}`}
+            className={`flex items-center gap-3 px-4 h-[44px] glass rounded-2xl border border-[var(--glass-border)] transition-all shadow-2xl ${isSpaceMenuOpen ? 'bg-[var(--glass-bg)] text-[var(--text-primary)]' : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'}`}
           >
             <div className="w-1.5 h-1.5 rounded-full bg-blue-500 shadow-[0_0_8px_rgba(59,130,246,0.5)]" />
-            <span className="text-[10px] font-black uppercase tracking-[0.2em]">{currentSpace.name}</span>
+            <span className="text-[10px] font-semibold tracking-[0.2em]">{currentSpace.name}</span>
             <ChevronDown className={`w-3.5 h-3.5 opacity-50 transition-transform duration-300 ${isSpaceMenuOpen ? 'rotate-180 opacity-100' : ''}`} />
           </button>
           
@@ -300,18 +300,13 @@ const SpatialThinkingVisual: React.FC = () => {
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -6 }}
                 transition={{ duration: 0.2 }}
-                className="absolute top-full mt-2 left-0 w-48 overflow-hidden z-50"
+                className="absolute top-full mt-2 left-0 w-48 overflow-hidden z-50 glass rounded-xl border border-[var(--glass-border)]"
                 style={{
-                  background: 'rgba(10,12,24,0.96)',
-                  border: '1px solid rgba(100,170,255,0.25)',
-                  borderRadius: 12,
-                  backdropFilter: 'blur(20px)',
-                  boxShadow: '0 8px 32px rgba(0,0,0,0.5)',
+                  boxShadow: '0 8px 32px var(--glass-border)',
                 }}
               >
                 <div
-                  className="text-[9px] font-bold tracking-[0.3em] uppercase px-4 py-2"
-                  style={{ color: 'rgba(255,255,255,0.2)', borderBottom: '1px solid rgba(255,255,255,0.06)' }}
+                  className="text-[9px] font-bold tracking-[0.3em] uppercase px-4 py-2 text-[var(--text-muted)] border-b border-[var(--glass-border)]"
                 >
                   Spaces
                 </div>
@@ -319,7 +314,7 @@ const SpatialThinkingVisual: React.FC = () => {
                   <button 
                     key={space.name} 
                     onClick={() => { setActiveSpaceIdx(idx); setIsSpaceMenuOpen(false); }}
-                    className={`w-full px-4 py-3 text-left text-[10px] font-black uppercase tracking-widest transition-colors ${activeSpaceIdx === idx ? 'bg-[rgba(100,170,255,0.14)] text-white' : 'text-slate-500 hover:text-white hover:bg-white/5'}`}
+                    className={`w-full px-4 py-3 text-left text-[10px] font-semibold tracking-widest transition-colors ${activeSpaceIdx === idx ? 'bg-[var(--accent)]/20 text-[var(--text-primary)]' : 'text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--glass-bg)]'}`}
                   >
                     {space.name}
                   </button>
@@ -381,8 +376,8 @@ const SpatialThinkingVisual: React.FC = () => {
       </AnimatePresence>
       <motion.div className="absolute left-1/2 top-1/2 z-[100] pointer-events-none" style={{ x: cursorX, y: cursorY, scale: cursorScale, opacity: cursorOpacity }}>
         <div className="relative">
-          <MousePointer2 className="w-6 h-6 text-white fill-white/20 -translate-x-1 translate-y-1 drop-shadow-[0_0_8px_rgba(255,255,255,0.4)]" />
-          {isGrabbing && <motion.div className="absolute inset-0 w-6 h-6 bg-white/40 rounded-full blur-xl" animate={{ scale: [1, 1.5, 1], opacity: [0.5, 0.2, 0.5] }} transition={{ duration: 1.5, repeat: Infinity }} />}
+          <MousePointer2 className="w-6 h-6 text-[var(--text-primary)] fill-[var(--text-secondary)]/30 -translate-x-1 translate-y-1 drop-shadow-[0_0_8px_rgba(99,102,241,0.4)]" />
+          {isGrabbing && <motion.div className="absolute inset-0 w-6 h-6 bg-[var(--accent)]/40 rounded-full blur-xl" animate={{ scale: [1, 1.5, 1], opacity: [0.5, 0.2, 0.5] }} transition={{ duration: 1.5, repeat: Infinity }} />}
         </div>
       </motion.div>
     </div>

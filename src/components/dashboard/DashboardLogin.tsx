@@ -42,7 +42,7 @@ const DashboardLogin: React.FC = () => {
             className="mb-8 flex items-center gap-2 text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors group"
           >
             <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
-            <span className="text-[10px] font-black uppercase tracking-widest">Back to App</span>
+            <span className="text-[10px] font-semibold tracking-widest">Back to App</span>
           </button>
 
           <div className="glass p-8 rounded-2xl border border-[var(--glass-border)] shadow-2xl">
@@ -61,7 +61,7 @@ const DashboardLogin: React.FC = () => {
             <div className="space-y-3">
               <button
                 onClick={handleBack}
-                className="w-full py-3.5 text-sm font-bold uppercase tracking-widest
+                className="w-full py-3.5 text-sm font-medium tracking-widest
                          bg-white/5 rounded-xl text-[var(--text-primary)]
                          hover:bg-white/10 transition-all"
               >
@@ -98,7 +98,7 @@ const DashboardLogin: React.FC = () => {
           className="mb-8 flex items-center gap-2 text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors group"
         >
           <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
-          <span className="text-[10px] font-black uppercase tracking-widest">Back to App</span>
+          <span className="text-[10px] font-semibold tracking-widest">Back to App</span>
         </button>
 
         <div className="glass p-8 rounded-2xl border border-[var(--glass-border)] shadow-2xl">
@@ -119,7 +119,7 @@ const DashboardLogin: React.FC = () => {
 
           <button
             onClick={handleGoogleLogin}
-            className="w-full py-4 text-sm font-bold uppercase tracking-widest
+            className="w-full py-4 text-sm font-medium tracking-widest
                      bg-white text-gray-800 rounded-xl
                      hover:bg-gray-100 transition-all
                      flex items-center justify-center gap-3"

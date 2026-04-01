@@ -80,12 +80,12 @@ const CloudSyncVisual: React.FC = () => {
         <div className="relative flex items-center justify-center">
           <motion.div animate={{ rotate: 360 }} transition={{ duration: 15, repeat: Infinity, ease: "linear" }} className="absolute w-40 h-40 opacity-20">
             <svg viewBox="-50 -50 100 100" className="w-full h-full">
-              <circle cx="0" cy="0" r="48" stroke="white" strokeWidth="0.5" fill="none" strokeDasharray="4 6" />
+              <circle cx="0" cy="0" r="48" stroke="var(--text-primary)" strokeWidth="0.5" fill="none" strokeDasharray="4 6" />
             </svg>
           </motion.div>
-          <div className="w-[110px] h-[110px] rounded-full border border-white/10 glass bg-white/[0.02] flex items-center justify-center relative group shadow-2xl">
+          <div className="w-[110px] h-[110px] rounded-full border border-[var(--glass-border)] glass bg-[var(--glass-bg)] flex items-center justify-center relative group shadow-2xl">
             <div className="absolute inset-0 bg-[var(--accent)]/5 blur-3xl rounded-full" />
-            <Database className="w-10 h-10 text-white/40 group-hover:text-[var(--accent)] transition-colors duration-500" />
+            <Database className="w-10 h-10 text-[var(--text-muted)] group-hover:text-[var(--accent)] transition-colors duration-500" />
             <AnimatePresence>
               {phase === 'pulse' && (
                 <motion.div initial={{ scale: 0.8, opacity: 0 }} animate={{ scale: 2.5, opacity: [0, 1, 0] }} exit={{ opacity: 0 }} className="absolute inset-0 bg-[radial-gradient(circle,var(--accent)_0%,transparent_70%)] opacity-40 rounded-full blur-xl" transition={{ duration: 0.8, ease: "easeOut" }} />
@@ -94,7 +94,7 @@ const CloudSyncVisual: React.FC = () => {
           </div>
         </div>
         <div className="absolute top-[120%] left-1/2 -translate-x-1/2">
-          <span className="text-[8px] font-black tracking-[0.4em] text-white/30 uppercase whitespace-nowrap">Cloud Storage</span>
+          <span className="text-[8px] font-black tracking-[0.4em] text-[var(--text-muted)] uppercase whitespace-nowrap">Cloud Storage</span>
         </div>
       </div>
 
@@ -104,24 +104,24 @@ const CloudSyncVisual: React.FC = () => {
             <motion.div className="relative" animate={phase === 'success' ? { scale: [1, 1.05, 1], filter: ['drop-shadow(0 0 0px transparent)', 'drop-shadow(0 0 15px #22c55e44)', 'drop-shadow(0 0 0px transparent)'] } : {}} transition={{ duration: 0.6 }}>
               {device.type === 'monitor' && (
                 <div className="flex flex-col items-center">
-                  <div className="w-[100px] h-[75px] rounded-lg border border-white/10 glass bg-white/[0.01] p-1.5 relative shadow-xl overflow-hidden"><div className="w-full h-full rounded-md bg-black/40 border border-white/5" /></div>
-                  <div className="w-4 h-3 bg-white/5 border-x border-white/10 opacity-50" />
-                  <div className="w-10 h-0.5 bg-white/10 rounded-full opacity-50" />
+                  <div className="w-[100px] h-[75px] rounded-lg border border-[var(--glass-border)] glass bg-[var(--glass-bg)] p-1.5 relative shadow-xl overflow-hidden"><div className="w-full h-full rounded-md bg-[var(--bg-page)]/40 border border-[var(--glass-border)]" /></div>
+                  <div className="w-4 h-3 bg-[var(--glass-bg)] border-x border-[var(--glass-border)] opacity-50" />
+                  <div className="w-10 h-0.5 bg-[var(--glass-border)] rounded-full opacity-50" />
                 </div>
               )}
               {device.type === 'phone' && (
-                <div className="w-[50px] h-[90px] rounded-xl border border-white/15 glass bg-white/[0.01] p-1 relative shadow-xl overflow-hidden">
-                  <div className="absolute top-1 left-1/2 -translate-x-1/2 w-4 h-1 rounded-full bg-black/60 border border-white/5" /><div className="w-full h-full rounded-lg bg-black/40 border border-white/5" />
+                <div className="w-[50px] h-[90px] rounded-xl border border-[var(--glass-border)] glass bg-[var(--glass-bg)] p-1 relative shadow-xl overflow-hidden">
+                  <div className="absolute top-1 left-1/2 -translate-x-1/2 w-4 h-1 rounded-full bg-[var(--bg-page)]/60 border border-[var(--glass-border)]" /><div className="w-full h-full rounded-lg bg-[var(--bg-page)]/40 border border-[var(--glass-border)]" />
                 </div>
               )}
               {device.type === 'laptop' && (
                 <div className="flex flex-col items-center">
-                  <div className="w-[90px] h-[60px] rounded-t-lg border border-white/10 glass bg-white/[0.01] p-1.5 relative shadow-xl overflow-hidden"><div className="w-full h-full rounded-md bg-black/40 border border-white/5" /></div>
-                  <div className="w-[105px] h-1.5 bg-white/10 rounded-b-lg border-x border-b border-white/10" />
+                  <div className="w-[90px] h-[60px] rounded-t-lg border border-[var(--glass-border)] glass bg-[var(--glass-bg)] p-1.5 relative shadow-xl overflow-hidden"><div className="w-full h-full rounded-md bg-[var(--bg-page)]/40 border border-[var(--glass-border)]" /></div>
+                  <div className="w-[105px] h-1.5 bg-[var(--glass-border)] rounded-b-lg border-x border-b border-[var(--glass-border)]" />
                 </div>
               )}
             </motion.div>
-            <span className="text-[7px] font-black tracking-[0.3em] text-white/20 uppercase">{device.label}</span>
+            <span className="text-[7px] font-black tracking-[0.3em] text-[var(--text-muted)] uppercase">{device.label}</span>
           </div>
         </motion.div>
       ))}
@@ -131,7 +131,7 @@ const CloudSyncVisual: React.FC = () => {
           <motion.div className="absolute left-1/2 top-1/2 z-30" initial={{ x: -240, y: 0, opacity: 0, scale: 0.7 }} animate={{ x: [ -240, -240, 0, 0 ], y: [ 0, 0, 0, 0 ], opacity: [ 0, 1, 1, 0 ], scale: [ 0.7, 0.9, 0.9, 0 ] }} transition={{ duration: 2.2, times: [0, 0.15, 0.85, 1], ease: "easeInOut" }}>
             <div className="-translate-x-1/2 -translate-y-1/2 relative">
               <DemoThought title="SYNCING..." className="shadow-2xl" />
-              <motion.div className="absolute top-[15px] right-[15px] w-1 h-1 rounded-full z-10" animate={{ backgroundColor: ['rgba(255,255,255,0.2)', 'rgba(255,255,255,0.2)', 'var(--accent)', 'var(--accent)'] }} transition={{ duration: 2.2, times: [0, 0.45, 0.55, 1] }} />
+              <motion.div className="absolute top-[15px] right-[15px] w-1 h-1 rounded-full z-10" animate={{ backgroundColor: ['color-mix(in srgb, var(--text-muted) 20%, transparent)', 'color-mix(in srgb, var(--text-muted) 20%, transparent)', 'var(--accent)', 'var(--accent)'] }} transition={{ duration: 2.2, times: [0, 0.45, 0.55, 1] }} />
             </div>
           </motion.div>
         )}

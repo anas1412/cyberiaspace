@@ -14,9 +14,7 @@ export interface SyncSlice {
   syncToServices: () => Promise<void>;
   processOfflineChanges: () => Promise<void>;
   importCloudData: () => Promise<unknown | null>;
-  mediaSweep: () => Promise<void>; // Deprecated but kept for type compatibility
-  repairEmptyFileThoughts: () => Promise<number>; // Deprecated but kept for type compatibility
-  handlePostAuthSync: () => Promise<void>; // Deprecated but kept for type compatibility
+  handlePostAuthSync: () => Promise<void>; // Kept as fallback in authSlice
   setAutoSync: (enabled: boolean) => Promise<void>;
 }
 
@@ -79,15 +77,6 @@ export const createSyncSlice: StateCreator<AuthState, [], [], SyncSlice> = (set,
       set({ syncStatus: 'error' });
       return null;
     }
-  },
-
-  repairEmptyFileThoughts: async () => {
-    console.warn('[Sync] repairEmptyFileThoughts is deprecated');
-    return 0;
-  },
-
-  mediaSweep: async () => {
-    console.warn('[Sync] mediaSweep is deprecated');
   },
 
   handlePostAuthSync: async () => {

@@ -18,12 +18,16 @@ export interface CyberiaState {
   calendarStackFilter: string | null;
   kanbanSearchQuery: string;
   kanbanStackFilter: string | null;
-  theme: 'cyberia' | 'sea' | 'forest' | 'rain' | 'sakura';
+  theme: 'dark' | 'light';
   customBg: string | null;
+  customBgLoading: boolean;
   isSpaceLoading: boolean;
+  setSpaceLoading: (loading: boolean) => void;
   lastSpaceRequestId: number;
   totalThoughtCount: number;
   isInitializing: boolean;
+  setInitializing: (isInitializing: boolean) => void;
+  setInitializationState: (isInitializing: boolean, isSpaceLoading: boolean) => void;
   performanceMode: boolean;
   setPerformanceMode: (mode: boolean) => void;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -65,8 +69,9 @@ export interface CyberiaState {
   resetTransform: () => void;
   clearWorkspace: () => Promise<void>;
 
-  setTheme: (theme: 'cyberia' | 'sea' | 'forest' | 'rain' | 'sakura') => void;
+  setTheme: (theme: 'dark' | 'light') => void;
   setCustomBg: (bg: File | string | null) => Promise<void>;
+  setCustomBgValue: (bg: string | null) => void;
   setDeferredPrompt: (prompt: any) => void;
 
   toggleOracleMode: () => void;
@@ -121,6 +126,7 @@ export interface CyberiaState {
   importFullState: (data: any, merge?: boolean) => Promise<void>;
 
   clearLocalData: () => Promise<void>;
+  resetStoreState: (theme?: 'dark' | 'light') => void;
   exportData: () => Promise<void>;
   importData: (file: File) => Promise<void>;
   cleanupTrash: () => Promise<void>;
@@ -131,6 +137,7 @@ export interface CyberiaState {
   ensureWorkspaceForCurrentUser: () => Promise<void>;
   mergeGuestSpace: (sourceSpaceId: string, targetSpaceId: string) => Promise<boolean>;
   discardGuestSpace: (id: string) => Promise<boolean>;
+  clearWorkspaceData: () => void;
 }
 
 export interface AuthState {
@@ -184,8 +191,6 @@ export interface AuthState {
   initAuth: () => Promise<void>;
   handlePostAuthSync: () => Promise<void>;
   _syncPromise: Promise<void> | null;
-  mediaSweep: () => Promise<void>;
-  repairEmptyFileThoughts: () => Promise<number>;
   upgradePlan: (plan: SubscriptionPlan, period?: AccessPeriod) => void;
   checkExpiry: () => void;
   handlePlanRegression: () => Promise<void>;
@@ -194,6 +199,7 @@ export interface AuthState {
   updateSettings: (settings: Partial<User['settings']>) => Promise<void>;
   cancelSubscription: () => void;
   setupRefreshInterval: () => void;
+  mergeUserData: (userData: Partial<User>) => void;
   updateQuotaUsage: (usageData: {
     daily_anchor?: string;
     weekly_anchor?: string;

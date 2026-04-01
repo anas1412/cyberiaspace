@@ -109,7 +109,7 @@ const Lightbox: React.FC = () => {
       headerActions={
         <button 
           onClick={handleDownload}
-          className="p-3 md:p-4 hover:bg-white/5 rounded-xl md:rounded-2xl text-slate-400 hover:text-white transition-all"
+          className="p-3 md:p-4 hover:bg-[var(--glass-bg)] rounded-xl md:rounded-2xl text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-all"
           title="Download Image"
         >
           <Download className="w-5 h-5 md:w-6 md:h-6" />
@@ -121,7 +121,7 @@ const Lightbox: React.FC = () => {
         </p>
       }
     >
-      <div className="flex-1 flex flex-col min-h-0 bg-[#020408]">
+      <div className="flex-1 flex flex-col min-h-0 bg-[var(--bg-page)]">
         {/* Main Viewport */}
         <div className="flex-1 relative min-h-0 flex items-center justify-center p-4 md:p-8 overflow-hidden group/viewport">
           {/* Navigation Arrows (Floating) */}
@@ -129,26 +129,26 @@ const Lightbox: React.FC = () => {
             <>
               <button 
                 onClick={(e) => { e.stopPropagation(); navigate(-1); }}
-                className="absolute left-4 md:left-8 w-12 h-12 md:w-16 md:h-16 glass rounded-2xl border border-white/10 flex items-center justify-center text-white/20 hover:text-white hover:bg-white/10 hover:border-white/20 transition-all active:scale-90 group z-10 opacity-0 group-hover/viewport:opacity-100"
+                className="absolute left-4 md:left-8 w-12 h-12 md:w-16 md:h-16 glass rounded-2xl border border-[var(--glass-border)] flex items-center justify-center text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--glass-bg)] hover:border-[var(--accent)] transition-all active:scale-90 group z-10 opacity-0 group-hover/viewport:opacity-100"
               >
                 <ChevronLeft className="w-6 h-6 md:w-8 md:h-8 group-hover:-translate-x-1 transition-transform" />
               </button>
               <button 
                 onClick={(e) => { e.stopPropagation(); navigate(1); }}
-                className="absolute right-4 md:right-8 w-12 h-12 md:w-16 md:h-16 glass rounded-2xl border border-white/10 flex items-center justify-center text-white/20 hover:text-white hover:bg-white/10 hover:border-white/20 transition-all active:scale-90 group z-10 opacity-0 group-hover/viewport:opacity-100"
+                className="absolute right-4 md:right-8 w-12 h-12 md:w-16 md:h-16 glass rounded-2xl border border-[var(--glass-border)] flex items-center justify-center text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--glass-bg)] hover:border-[var(--accent)] transition-all active:scale-90 group z-10 opacity-0 group-hover/viewport:opacity-100"
               >
                 <ChevronRight className="w-6 h-6 md:w-8 md:h-8 group-hover:translate-x-1 transition-transform" />
               </button>
             </>
           )}
 
-          <AnimatePresence mode="wait">
+          <AnimatePresence>
             <motion.img 
               key={thought.id}
               initial={{ opacity: 0, scale: 0.98, y: 10 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 1.02, y: -10 }}
-              transition={{ duration: 0.4, ease: [0.23, 1, 0.32, 1] }}
+              exit={{ opacity: 0, scale: 0.98, y: -10 }}
+              transition={{ duration: 0.2, ease: "easeOut" }}
               src={image || undefined} 
               className="max-w-full max-h-full object-contain rounded-xl shadow-2xl" 
               alt={thought.text} 
@@ -162,10 +162,10 @@ const Lightbox: React.FC = () => {
             <motion.div
               initial={{ height: 0, opacity: 0 }}
               animate={{ height: 'auto', opacity: 1 }}
-              className="bg-black/40 backdrop-blur-md border-t border-white/5 p-4 md:p-6"
+              className="bg-[var(--glass-bg)] backdrop-blur-md border-t border-[var(--glass-border)] p-4 md:p-6"
             >
               <div className="flex items-center justify-between mb-3 px-1">
-                <span className="text-[9px] font-black uppercase tracking-[0.2em] text-[var(--text-muted)]">Stack Gallery: {stack?.name || 'Clustered'}</span>
+                <span className="text-[9px] font-semibold tracking-[0.2em] text-[var(--text-muted)]">Stack Gallery: {stack?.name || 'Clustered'}</span>
                 <span className="text-[8px] font-bold text-[var(--text-muted)] uppercase tracking-widest">{currentIndex + 1} / {stackItems.length} Images</span>
               </div>
               <div className="flex gap-3 overflow-x-auto custom-scroll pb-2 w-full snap-x px-1" ref={scrollerRef}>
@@ -176,8 +176,8 @@ const Lightbox: React.FC = () => {
                       key={item.id}
                       onClick={() => openLightbox(itemImage!, item.id)}
                       className={cn(
-                        "flex-shrink-0 w-24 md:w-32 aspect-video rounded-xl overflow-hidden border transition-all group/item snap-start relative bg-white/[0.02]",
-                        idx === currentIndex ? "border-[var(--accent)] ring-2 ring-[var(--accent)]/20 scale-95" : "border-white/5 hover:border-white/20"
+                        "flex-shrink-0 w-24 md:w-32 aspect-video rounded-xl overflow-hidden border transition-all group/item snap-start relative bg-[var(--glass-bg)]",
+                        idx === currentIndex ? "border-[var(--accent)] ring-2 ring-[var(--accent)]/20 scale-95" : "border-[var(--glass-border)] hover:border-[var(--accent)]"
                       )}
                     >
                       <img src={itemImage!} alt={item.text} className="w-full h-full object-cover opacity-40 group-hover/item:opacity-100 transition-opacity" />

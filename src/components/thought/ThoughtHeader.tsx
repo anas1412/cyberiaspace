@@ -58,7 +58,7 @@ export const ThoughtHeader: React.FC<ThoughtHeaderProps> = ({ thought, isCalenda
                 <AlertCircle className="w-3 h-3 text-red-500 animate-pulse" />
                 <div className="absolute bottom-full right-0 mb-2 hidden group-hover/sync:block z-[100] pointer-events-none">
                   <div className="bg-red-950/90 backdrop-blur-md border border-red-500/30 rounded-lg p-2 shadow-2xl min-w-[120px]">
-                    <p className="text-[7px] font-black uppercase tracking-widest text-red-400">Sync Failure</p>
+                    <p className="text-[7px] font-semibold tracking-widest text-red-400">Sync Failure</p>
                     <p className="text-[8px] font-bold text-red-200/70 mt-0.5 leading-tight">Connection interrupted or media asset too large.</p>
                   </div>
                 </div>

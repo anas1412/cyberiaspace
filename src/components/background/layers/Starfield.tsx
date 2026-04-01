@@ -112,11 +112,16 @@ class Star {
       } else if (theme === "rain") {
         ctx.moveTo(this.x + offsetX, this.y + offsetY);
         ctx.lineTo(this.x + offsetX + 1, this.y + offsetY + 15);
-        ctx.strokeStyle = `rgba(255, 255, 255, ${this.alpha * 0.8})`;
+        ctx.strokeStyle = `rgba(150, 160, 180, ${this.alpha * 0.8})`;
         ctx.lineWidth = 1;
         ctx.stroke();
+      } else if (theme === "light") {
+        // Light mode: Very subtle, barely visible particles
+        ctx.arc(this.x + offsetX, this.y + offsetY, this.baseRadius * 1.5, 0, Math.PI * 2);
+        ctx.fillStyle = `rgba(148, 163, 184, ${this.alpha * 0.2})`;
+        ctx.fill();
       } else {
-        // Standard sharp stars
+        // Dark theme: white stars
         ctx.arc(this.x + offsetX, this.y + offsetY, this.baseRadius, 0, Math.PI * 2);
         ctx.fillStyle = `rgba(255, 255, 255, ${this.alpha})`;
         ctx.fill();
@@ -236,8 +241,9 @@ const Starfield: React.FC<StarfieldProps> = ({ theme, performanceMode }) => {
       mousePos.current.x = mousePos.current.targetX;
       mousePos.current.y = mousePos.current.targetY;
 
-      // sakura density: 
-      const numStars = Math.floor((w * h) / 8000); 
+      // Particle density - reduced for light mode to avoid 'dusty' appearance
+      const density = theme === 'light' ? 20000 : 8000;
+      const numStars = Math.floor((w * h) / density);
       starsRef.current = Array.from({ length: numStars }, () => new Star(w, h));
     };
 
@@ -284,13 +290,13 @@ const Starfield: React.FC<StarfieldProps> = ({ theme, performanceMode }) => {
     };
   }, [performanceMode, theme]);
 
-  return (
-    <canvas 
-      ref={canvasRef} 
-      className="fixed inset-0 z-0 pointer-events-none transition-opacity duration-1000 w-full h-full"
-      style={{ 
-        //OPACITY / VISIBILITY TUNING:
-        opacity: theme === "rain" ? 0.4 : theme === "sakura" ? 0.5 : 1,
+    return (
+    <canvas
+      ref={canvasRef}
+      className="fixed inset-0 z-0 pointer-events-none w-full h-full"
+      style={{
+        opacity: theme === "rain" ? 0.4 : theme === "sakura" ? 0.5 : theme === "light" ? 0.3 : 1,
+        mixBlendMode: theme === "light" ? "normal" : "normal",
         left: '-10%',
         top: '-10%',
         width: '120%',

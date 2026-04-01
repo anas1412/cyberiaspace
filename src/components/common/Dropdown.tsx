@@ -53,7 +53,7 @@ export const Dropdown: React.FC<DropdownProps> = ({
       {label && (
         <div className="flex items-center gap-1.5 mb-1.5">
           {icon && <span className="text-[var(--text-muted)]">{icon}</span>}
-          <span className="text-[8px] font-black uppercase tracking-widest text-[var(--text-muted)]">{label}</span>
+          <span className="text-[8px] font-semibold tracking-widest text-[var(--text-muted)]">{label}</span>
         </div>
       )}
       <button
@@ -108,7 +108,7 @@ export const Dropdown: React.FC<DropdownProps> = ({
                   {option.icon && <span className="text-[var(--text-muted)]">{option.icon}</span>}
                   <span className={cn(
                     "text-[10px] font-medium flex-1",
-                    option.value === value ? "text-[var(--text-primary)]" : "text-slate-400"
+                    option.value === value ? "text-[var(--text-primary)]" : "text-[var(--text-muted)]"
                   )}>
                     {option.label}
                   </span>

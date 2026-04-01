@@ -13,8 +13,9 @@ import { useCamera } from '../hooks/useCamera';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Upload } from 'lucide-react';
 
-import { db } from '../db';
 import { generateThumbnail, generateVideoThumbnail } from '../utils/image';
+import { stripFileExtension } from '../utils/file';
+import { db } from '../db';
 
 function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -421,7 +422,7 @@ const Viewport: React.FC<{ isInteracting?: boolean }> = ({ isInteracting }) => {
 
           const id = await addThought({
             type: 'file', // Consolidated to 'file'
-            text: file.name,
+            text: stripFileExtension(file.name),
             syncStatus: 'local',
             x: dropX + (Math.random() * 20 - 10),
             y: dropY + (Math.random() * 20 - 10),
@@ -448,7 +449,7 @@ const Viewport: React.FC<{ isInteracting?: boolean }> = ({ isInteracting }) => {
           if (id !== '') {
             const userId = useAuthStore.getState().user?.id ?? 'guest';
             await db.blobs.put({
-              id: id, // Deterministic ID
+              id: id,
               thoughtId: id,
               blob: file,
               name: file.name,
@@ -465,7 +466,7 @@ const Viewport: React.FC<{ isInteracting?: boolean }> = ({ isInteracting }) => {
         if (isLarge || (!isImage && !isText && !isCSV)) {
           const id = await addThought({
             type: 'file',
-            text: file.name,
+            text: stripFileExtension(file.name),
             syncStatus: 'local',
             x: dropX + (Math.random() * 20 - 10),
             y: dropY + (Math.random() * 20 - 10),
@@ -488,7 +489,7 @@ const Viewport: React.FC<{ isInteracting?: boolean }> = ({ isInteracting }) => {
           if (id !== '') {
             const userId = useAuthStore.getState().user?.id ?? 'guest';
             await db.blobs.put({
-              id: `temp-${Date.now()}-${id}`,
+              id: id,
               thoughtId: id,
               blob: file,
               name: file.name,
@@ -655,8 +656,8 @@ const Viewport: React.FC<{ isInteracting?: boolean }> = ({ isInteracting }) => {
                 <Upload className="w-10 h-10 text-blue-400 animate-bounce" />
               </div>
               <div className="text-center">
-                <h2 className="text-white text-xl font-black uppercase tracking-[0.3em] mb-2">Import Files</h2>
-                <p className="text-blue-300/60 text-xs font-bold uppercase tracking-widest">Drop files, text, or CSV here</p>
+                <h2 className="text-[var(--text-primary)] text-xl font-semibold tracking-wide mb-2">Import Files</h2>
+                <p className="text-blue-300/60 text-sm font-medium">Drop files, text, or CSV here</p>
               </div>
             </motion.div>
           </motion.div>

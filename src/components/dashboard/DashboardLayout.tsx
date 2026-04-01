@@ -118,7 +118,7 @@ const DashboardLayout: React.FC = () => {
                 onClick={handleLogout}
                 className={`
                   w-full flex items-center gap-3 px-3 py-2.5 rounded-xl
-                  bg-white/5 hover:bg-white/10 text-[var(--text-muted)] hover:text-[var(--text-primary)]
+                  bg-[var(--glass-bg)] hover:bg-[var(--bg-page)] text-[var(--text-muted)] hover:text-[var(--text-primary)]
                   transition-all text-sm font-medium
                   ${isCollapsed ? 'justify-center' : ''}
                 `}
@@ -137,7 +137,7 @@ const DashboardLayout: React.FC = () => {
           fixed top-1/2 -translate-y-1/2 z-[60]
           w-6 h-12 glass rounded-r-xl border border-[var(--glass-border)]
           flex items-center justify-center
-          hover:bg-white/10 transition-colors
+          hover:bg-[var(--bg-page)] transition-colors
           text-[var(--text-muted)] hover:text-[var(--text-primary)]
           ${isCollapsed ? 'left-[72px]' : 'left-[280px]'}
         `}

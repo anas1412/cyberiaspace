@@ -32,11 +32,11 @@ export const TasksRenderer: React.FC<TasksRendererProps> = ({
     return (
       <div data-trigger="tasks" className="mt-1 flex flex-col items-center gap-2 py-4 bg-[var(--bg-main)]/20 rounded-xl border border-[var(--glass-border)] group/tasks relative cursor-pointer transition-colors hover:bg-white/[0.05]">
         <ListTodo className="w-6 h-6 text-[var(--text-muted)]" />
-        <span className="text-[10px] text-[var(--text-muted)] font-bold uppercase tracking-widest">
+        <span className="text-[10px] text-[var(--text-muted)] font-medium tracking-widest">
           {hasRemoteContent ? 'Sync Pending' : 'Create Tasks'}
         </span>
         {hasRemoteContent && (
-          <p className="text-[7px] text-amber-500/40 font-black uppercase tracking-[0.2em] text-center px-4">
+          <p className="text-[7px] text-amber-500/40 font-semibold tracking-[0.2em] text-center px-4">
             Items on other device
           </p>
         )}

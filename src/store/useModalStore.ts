@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 
-interface ModalState {
+export interface ModalState {
   isOpen: boolean;
   isPricingOpen: boolean;
   title: string;

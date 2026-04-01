@@ -1,7 +1,7 @@
 import { type StateCreator } from 'zustand';
 import { db, type Space, type Thought, type Stack } from '../../db';
 import { useModalStore } from '../useModalStore';
-import { PLAN_CONFIG, type SubscriptionPlan } from '../../constants';
+import { PLAN_CONFIG, DEFAULT_THEME, type SubscriptionPlan } from '../../constants';
 import { syncOrchestrator } from '../../services/sync/syncOrchestrator';
 import { useAuthStore } from '../useAuthStore';
 import { type CyberiaState } from '../types';
@@ -15,6 +15,10 @@ let isCreatingInitialWorkspace = false;
 
 export const createDataSlice: StateCreator<CyberiaState, [], [], any> = (set, get, _api) => ({
   isInitializing: true,
+  setInitializing: (isInitializing: boolean) => set({ isInitializing }),
+  isSpaceLoading: false,
+  setSpaceLoading: (loading: boolean) => set({ isSpaceLoading: loading }),
+  setInitializationState: (isInitializing: boolean, isSpaceLoading: boolean) => set({ isInitializing, isSpaceLoading }),
   isDemo: false,
   lastSpaceRequestId: 0,
   _savedUserState: null as { spaces: Space[]; thoughts: Thought[]; stacks: Stack[]; activeSpaceId: string | null } | null,
@@ -72,7 +76,7 @@ export const createDataSlice: StateCreator<CyberiaState, [], [], any> = (set, ge
               customBg: space.customBg || null,
               transform: { x: space.transformX || 0, y: space.transformY || 0, scale: space.transformScale || 1 }
             });
-            const theme = data.space.theme || 'cyberia';
+            const theme = data.space.theme || DEFAULT_THEME;
             document.body.setAttribute('data-theme', theme);
             set({ theme });
             return;
@@ -91,8 +95,12 @@ export const createDataSlice: StateCreator<CyberiaState, [], [], any> = (set, ge
         }
       }
 
+      if (!path.startsWith('/home/s/')) {
+        set({ isReadOnly: false });
+      }
+
       set({ isSpaceLoading: true });
-      const savedTheme = localStorage.getItem('cyberia-theme') || 'cyberia';
+      const savedTheme = localStorage.getItem('cyberia-theme') || DEFAULT_THEME;
       document.body.setAttribute('data-theme', savedTheme);
 
       // Early exit: Let handleAuthCode finish the space initialization if handling a redirect
@@ -137,7 +145,7 @@ export const createDataSlice: StateCreator<CyberiaState, [], [], any> = (set, ge
     } finally {
       // Do not clear the loading screens if we exited early to handle the OAuth redirect
       if (!new URLSearchParams(window.location.search).has('code')) {
-        set({ isInitializing: false, isSpaceLoading: false });
+        set({ isInitializing: false, isSpaceLoading: false, isReadOnly: false });
       }
     }
   },
@@ -172,7 +180,7 @@ export const createDataSlice: StateCreator<CyberiaState, [], [], any> = (set, ge
         userId: currentUserId,
         name: 'Workspace',
         mode: 'spatial',
-        physics: true,
+        physics: localStorage.getItem('cyberia-physics-enabled') !== 'false',
         order: 0,
         updatedAt: now,
         syncStatus: isGuest ? undefined : 'local'
@@ -203,7 +211,7 @@ export const createDataSlice: StateCreator<CyberiaState, [], [], any> = (set, ge
       const workspaceId = ulid();
       const now = Date.now();
       const randomSpaceName = SPACE_NAMES[Math.floor(Math.random() * SPACE_NAMES.length)];
-      const newSpace = { id: workspaceId, userId: currentUserId, name: randomSpaceName, mode: 'spatial' as const, physics: true, order: 0, updatedAt: now, syncStatus: 'local' as const };
+      const newSpace = { id: workspaceId, userId: currentUserId, name: randomSpaceName, mode: 'spatial' as const, physics: localStorage.getItem('cyberia-physics-enabled') !== 'false', order: 0, updatedAt: now, syncStatus: 'local' as const };
       
       await db.transaction('rw', [db.spaces, db.thoughts, db.stacks, db.blobs], async () => {
         await Promise.all([
@@ -565,5 +573,27 @@ export const createDataSlice: StateCreator<CyberiaState, [], [], any> = (set, ge
       await get().refreshSpaces();
       await get().setActiveSpace(workspaceId);
     }
+  },
+
+  resetStoreState: (theme?: 'dark' | 'light') => {
+    set({
+      thoughts: [],
+      spaces: [],
+      stacks: [],
+      activeSpaceId: null,
+      transform: { x: 0, y: 0, scale: 1 },
+      selectedThoughtIds: [],
+      creatorName: null,
+      customBg: null,
+      theme: theme || DEFAULT_THEME
+    });
+  },
+
+  clearWorkspaceData: () => {
+    set({
+      thoughts: [],
+      spaces: [],
+      stacks: []
+    });
   },
 });

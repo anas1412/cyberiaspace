@@ -65,7 +65,7 @@ const DynamicViewsVisual: React.FC = () => {
 
   return (
     <div className="relative w-full h-full flex items-center justify-center bg-transparent overflow-hidden pointer-events-none will-change-transform">
-      <div className="absolute top-8 left-1/2 -translate-x-1/2 z-[110] flex items-center gap-1.5 p-1.5 glass rounded-2xl border border-white/5 pointer-events-auto shadow-2xl">
+      <div className="absolute top-8 left-1/2 -translate-x-1/2 z-[110] flex items-center gap-1.5 p-1.5 glass rounded-2xl border border-[var(--glass-border)] pointer-events-auto shadow-2xl">
         {[
           { id: 'spatial', icon: Orbit },
           { id: 'kanban', icon: Columns3 },
@@ -77,11 +77,11 @@ const DynamicViewsVisual: React.FC = () => {
             <button 
               key={mode.id} 
               onClick={() => setView(mode.id as any)} 
-              className={`px-3 py-2 rounded-xl transition-all duration-300 flex items-center gap-2 ${isActive ? 'bg-white text-black shadow-lg shadow-white/10' : 'text-white/40 hover:text-white hover:bg-white/5'}`}
+              className={`px-3 py-2 rounded-xl transition-all duration-300 flex items-center gap-2 ${isActive ? 'bg-[var(--text-primary)] text-[var(--bg-page)] shadow-lg shadow-[var(--glass-border)]' : 'text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--glass-bg)]'}`}
               title={`${mode.id} View`}
             >
               <Icon className="w-4 h-4" />
-              <span className={`text-[9px] font-black uppercase tracking-widest transition-all overflow-hidden whitespace-nowrap ${isActive ? 'max-w-[60px] opacity-100' : 'max-w-0 opacity-0'}`}>
+              <span className={`text-[9px] font-semibold tracking-widest transition-all overflow-hidden whitespace-nowrap ${isActive ? 'max-w-[60px] opacity-100' : 'max-w-0 opacity-0'}`}>
                 {mode.id}
               </span>
             </button>
@@ -120,7 +120,7 @@ const DynamicViewsVisual: React.FC = () => {
             className="absolute inset-0 flex justify-around items-start pt-32 px-12 pointer-events-none"
           >
             {['TODO', 'DOING', 'DONE'].map(label => (
-              <span key={label} className="text-[10px] font-black text-white/10 tracking-[0.4em] uppercase">{label}</span>
+              <span key={label} className="text-[10px] font-black text-[var(--text-muted)] tracking-[0.4em] uppercase">{label}</span>
             ))}
           </motion.div>
         )}
@@ -152,7 +152,7 @@ const DynamicViewsVisual: React.FC = () => {
                 return (
                   <motion.div 
                     key={n}
-                    className="absolute left-1/2 top-1/2 text-[8px] font-black text-white/20 tracking-tighter"
+                    className="absolute left-1/2 top-1/2 text-[8px] font-black text-[var(--text-muted)] tracking-tighter"
                     style={{
                       x: (col - 2.5) * 85 - 10,
                       y: -160 + row * 80 + 10,
@@ -169,8 +169,8 @@ const DynamicViewsVisual: React.FC = () => {
                 const x = (i - 3.5) * 85;
                 return (
                   <React.Fragment key={`v-${i}`}>
-                    <line x1={x} y1={-160} x2={x} y2={240} stroke="white" strokeOpacity="0.1" strokeWidth="3" style={{ filter: 'blur(2px)' }} />
-                    <line x1={x} y1={-160} x2={x} y2={240} stroke="white" strokeOpacity="0.2" strokeWidth="1" />
+                    <line x1={x} y1={-160} x2={x} y2={240} stroke="var(--text-muted)" strokeOpacity="0.3" strokeWidth="3" style={{ filter: 'blur(2px)' }} />
+                    <line x1={x} y1={-160} x2={x} y2={240} stroke="var(--text-muted)" strokeOpacity="0.5" strokeWidth="1" />
                   </React.Fragment>
                 );
               })}
@@ -178,8 +178,8 @@ const DynamicViewsVisual: React.FC = () => {
                 const y = -160 + i * 80;
                 return (
                   <React.Fragment key={`h-${i}`}>
-                    <line x1={-297.5} y1={y} x2={297.5} y2={y} stroke="white" strokeOpacity="0.1" strokeWidth="3" style={{ filter: 'blur(2px)' }} />
-                    <line x1={-297.5} y1={y} x2={297.5} y2={y} stroke="white" strokeOpacity="0.2" strokeWidth="1" />
+                    <line x1={-297.5} y1={y} x2={297.5} y2={y} stroke="var(--text-muted)" strokeOpacity="0.3" strokeWidth="3" style={{ filter: 'blur(2px)' }} />
+                    <line x1={-297.5} y1={y} x2={297.5} y2={y} stroke="var(--text-muted)" strokeOpacity="0.5" strokeWidth="1" />
                   </React.Fragment>
                 );
               })}

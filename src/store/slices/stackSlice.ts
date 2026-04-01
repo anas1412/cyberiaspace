@@ -25,10 +25,9 @@ export const createStackSlice: StateCreator<CyberiaState, [], [], any> = (set, g
 
   createStack: async (name: string, thoughtId: string) => {
     if (get().isDemo) return;
-    const { activeSpaceId, stacks } = get();
+    const { activeSpaceId, stacks, thoughts } = get();
     if (!activeSpaceId) return;
     const trimmedName = name?.trim();
-    // Only search for existing stacks if a name was explicitly provided
     const existingStack = trimmedName 
       ? stacks.find((s: Stack) => s.name.toLowerCase() === trimmedName.toLowerCase() && s.spaceId === activeSpaceId)
       : null;
@@ -49,13 +48,16 @@ export const createStackSlice: StateCreator<CyberiaState, [], [], any> = (set, g
         });
         return;
       }
+      set({
+        thoughts: thoughts.map(t => 
+          t.id === thoughtId ? { ...t, stackId: existingStack.id, updatedAt: now, syncStatus: 'local' as const } : t
+        )
+      });
       await db.thoughts.update(thoughtId, { 
         stackId: existingStack.id,
         updatedAt: now,
         syncStatus: 'local'
       });
-      await get().refreshThoughts();
-      
       if (authStore.status === 'authenticated') {
         await syncOrchestrator.triggerSync();
       }
@@ -64,11 +66,9 @@ export const createStackSlice: StateCreator<CyberiaState, [], [], any> = (set, g
     
     const newStackId = ulid();
     const currentUserId = useAuthStore.getState().user?.id ?? 'guest';
-    
-    // CRITICAL: Guest data should NEVER have syncStatus: 'local'
     const isGuest = currentUserId === 'guest';
     
-    await db.stacks.add({ 
+    const newStack: Stack = { 
       id: newStackId, 
       userId: currentUserId,
       name: finalName, 
@@ -76,14 +76,21 @@ export const createStackSlice: StateCreator<CyberiaState, [], [], any> = (set, g
       spaceId: activeSpaceId,
       updatedAt: now,
       syncStatus: isGuest ? undefined : 'local'
+    };
+    
+    set({
+      thoughts: thoughts.map(t => 
+        t.id === thoughtId ? { ...t, stackId: newStackId, updatedAt: now, syncStatus: isGuest ? undefined : 'local' as const } : t
+      ),
+      stacks: [...stacks, newStack]
     });
+    
+    await db.stacks.add(newStack);
     await db.thoughts.update(thoughtId, { 
       stackId: newStackId,
       updatedAt: now,
       syncStatus: isGuest ? undefined : 'local'
     });
-    await get().refreshThoughts();
-    await get().refreshStacks();
     get().pushHistory();
     
     if (authStore.status === 'authenticated') {
@@ -118,6 +125,18 @@ export const createStackSlice: StateCreator<CyberiaState, [], [], any> = (set, g
   deleteStack: async (id: string) => {
     if (get().isReadOnly || get().isDemo) return;
     const now = Date.now();
+    const freshThoughts = get().thoughts;
+    const freshStacks = get().stacks;
+    
+    set({
+      thoughts: freshThoughts.map(t => 
+        t.stackId === id ? { ...t, stackId: null, updatedAt: now, syncStatus: 'local' as const } : t
+      ),
+      stacks: freshStacks.map(s => 
+        s.id === id ? { ...s, deletedAt: now, updatedAt: now, syncStatus: 'local' as const } : s
+      )
+    });
+    
     const currentUserId = useAuthStore.getState().user?.id ?? 'guest';
     await db.transaction('rw', db.thoughts, db.stacks, async () => {
       await db.thoughts.where('stackId').equals(id).and(t => t.userId === currentUserId).modify({ 
@@ -131,8 +150,7 @@ export const createStackSlice: StateCreator<CyberiaState, [], [], any> = (set, g
         syncStatus: 'local'
       });
     });
-    await get().refreshThoughts();
-    await get().refreshStacks();
+    
     get().pushHistory();
     
     const authStore = useAuthStore.getState();
@@ -144,38 +162,59 @@ export const createStackSlice: StateCreator<CyberiaState, [], [], any> = (set, g
   cleanupStacks: async () => {
     const { activeSpaceId } = get();
     if (!activeSpaceId) return;
+    
+    const freshThoughts = get().thoughts;
+    const freshStacks = get().stacks;
     const authStore = useAuthStore.getState();
-    const currentUserId = authStore.user?.id ?? 'guest';
-    let wasModified = false;
     const now = Date.now();
     
-    await db.transaction('rw', db.thoughts, db.stacks, async () => {
-      const allThoughts = await db.thoughts.filter(t => t.spaceId === activeSpaceId && t.userId === currentUserId && !t.deletedAt).toArray();
-      const allStacks = await db.stacks.filter(s => s.spaceId === activeSpaceId && s.userId === currentUserId && !s.deletedAt).toArray();
-      for (const stack of allStacks) {
-        if (stack.deletedAt) continue;
-        const stackThoughts = allThoughts.filter(t => t.stackId === stack.id && !t.deletedAt);
-        if (stackThoughts.length < 2) {
-          wasModified = true;
-          if (stackThoughts.length === 1) {
-            await db.thoughts.update(stackThoughts[0].id, { 
-              stackId: null,
-              updatedAt: now,
-              syncStatus: 'local'
-            });
-          }
-          await db.stacks.update(stack.id, {
-            deletedAt: now,
-            updatedAt: now,
-            syncStatus: 'local'
-          });
+    const thoughtsToUnlink: string[] = [];
+    const stacksToDelete: string[] = [];
+    
+    for (const stack of freshStacks) {
+      if (stack.deletedAt || stack.spaceId !== activeSpaceId) continue;
+      const stackThoughts = freshThoughts.filter(t => t.stackId === stack.id && !t.deletedAt);
+      if (stackThoughts.length < 2) {
+        stacksToDelete.push(stack.id);
+        if (stackThoughts.length === 1) {
+          thoughtsToUnlink.push(stackThoughts[0].id);
         }
       }
-    });
-    await get().refreshThoughts();
-    await get().refreshStacks();
+    }
     
-    if (authStore.status === 'authenticated' && wasModified) {
+    if (stacksToDelete.length === 0) return;
+    
+    set({
+      thoughts: freshThoughts.map(t => 
+        thoughtsToUnlink.includes(t.id) 
+          ? { ...t, stackId: null, updatedAt: now, syncStatus: 'local' as const }
+          : t
+      ),
+      stacks: freshStacks.map(s => 
+        stacksToDelete.includes(s.id)
+          ? { ...s, deletedAt: now, updatedAt: now, syncStatus: 'local' as const }
+          : s
+      )
+    });
+    
+    await db.transaction('rw', [db.thoughts, db.stacks], async () => {
+      if (thoughtsToUnlink.length > 0) {
+        await db.thoughts.where('id').anyOf(thoughtsToUnlink).modify({
+          stackId: null,
+          updatedAt: now,
+          syncStatus: 'local'
+        });
+      }
+      if (stacksToDelete.length > 0) {
+        await db.stacks.where('id').anyOf(stacksToDelete).modify({
+          deletedAt: now,
+          updatedAt: now,
+          syncStatus: 'local'
+        });
+      }
+    });
+    
+    if (authStore.status === 'authenticated') {
       await syncOrchestrator.triggerSync();
     }
   },

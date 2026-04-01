@@ -17,7 +17,7 @@ const ShareDialog: React.FC<ShareDialogProps> = ({ spaceId }) => {
     const publishSpace = useStore(state => state.publishSpace);
     const unpublishSpace = useStore(state => state.unpublishSpace);
     const space = useStore(state => state.spaces.find(s => s.id === spaceId));
-    const closeModal = useStore(state => (state as any).closeModal || useModalStore.getState().closeModal);
+    const closeModal = useModalStore(state => state.closeModal);
 
     const handlePublish = async () => {
         setIsPublishing(true);
@@ -67,7 +67,7 @@ const ShareDialog: React.FC<ShareDialogProps> = ({ spaceId }) => {
                 </div>
                 <button
                     onClick={closeModal}
-                    className="p-2 hover:bg-white/5 rounded-xl text-[var(--text-muted)] hover:text-white transition-all flex-shrink-0"
+                    className="p-2 hover:bg-[var(--glass-bg)] rounded-xl text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-all flex-shrink-0"
                     title="Close"
                 >
                     <X className="w-5 h-5" />
@@ -102,7 +102,7 @@ const ShareDialog: React.FC<ShareDialogProps> = ({ spaceId }) => {
                             </div>
                             <button
                                 onClick={handleCopy}
-                                className="p-2 bg-slate-800 hover:bg-slate-700 rounded-xl text-slate-300 transition-colors shrink-0"
+                                className="p-2 bg-slate-800 hover:bg-slate-700 rounded-xl text-[var(--text-dimmed)] transition-colors shrink-0"
                             >
                                 {copySuccess ? <CheckCircle2 className="w-5 h-5 text-green-400" /> : <Copy className="w-5 h-5" />}
                             </button>
@@ -119,7 +119,7 @@ const ShareDialog: React.FC<ShareDialogProps> = ({ spaceId }) => {
                         </button>
                         <button
                             onClick={() => setShowQR(!showQR)}
-                            className={`p-2.5 rounded-xl transition-all flex items-center justify-center gap-2 ${showQR ? 'bg-blue-600 text-white' : 'bg-slate-800 text-slate-300 hover:bg-slate-700'}`}
+                            className={`p-2.5 rounded-xl transition-all flex items-center justify-center gap-2 ${showQR ? 'bg-blue-600 text-white' : 'bg-slate-800 text-[var(--text-dimmed)] hover:bg-slate-700'}`}
                         >
                             <QrCode className="w-5 h-5" />
                         </button>

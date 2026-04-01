@@ -1,7 +1,8 @@
 import React from 'react';
 import { useAuthStore } from '../../store/useAuthStore';
+import { useStore } from '../../store/useStore';
 import { 
-  Keyboard, CircleHelp, Settings, Zap
+  Keyboard, CircleHelp, Settings, Zap, Sun, Moon
 } from 'lucide-react';
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
@@ -24,72 +25,98 @@ export const SystemTray: React.FC<SystemTrayProps> = ({
   isSettingsOpen, setIsSettingsOpen
 }) => {
   const user = useAuthStore((state) => state.user);
+  const theme = useStore((state) => state.theme);
+  const setTheme = useStore((state) => state.setTheme);
+
+  const toggleTheme = () => {
+    setTheme(theme === 'light' ? 'dark' : 'light');
+  };
 
   return (
     <div className="fixed bottom-4 md:bottom-8 right-4 md:right-8 z-[9999] flex flex-col items-end gap-4 pointer-events-none system-tray-container mobile-bottom-bar-adjust">
       <div className="flex items-center gap-3 pointer-events-auto">
         {/* Upgrade Cluster - visible only to Free users */}
         {user?.plan !== 'pro' && (
-          <div className="flex items-center gap-1.5 glass p-1 rounded-2xl border border-amber-500/20 h-[48px] bg-amber-500/5 shadow-[0_0_20px_rgba(245,158,11,0.1)]">
+          <div className="flex items-center gap-1.5 glass p-1 rounded-2xl border border-[var(--glass-border)] h-[44px] bg-[var(--glass-bg)] shadow-lg shadow-[var(--glass-border)]">
             <div className="relative group">
               <div className="absolute bottom-full mb-4 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-all duration-300 translate-y-2 group-hover:translate-y-0 pointer-events-none whitespace-nowrap z-[10001]">
-                <div className="glass px-3 py-1.5 rounded-xl border border-amber-500/20 flex items-center gap-2 shadow-2xl bg-[var(--bg-main)]/90 backdrop-blur-xl">
-                  <span className="text-[10px] font-black uppercase tracking-widest text-amber-400">Unlock Pro Features</span>
+                <div className="glass px-3 py-1.5 rounded-xl border border-[var(--glass-border)] flex items-center gap-2 shadow-2xl bg-[var(--glass-bg)] backdrop-blur-xl">
+                  <span className="text-[12px] font-semibold tracking-wide text-[var(--accent)]">Unlock Pro Features</span>
                 </div>
               </div>
-              <button 
+              <button
                 onClick={() => window.location.href = '/pricing'}
-                className="flex items-center gap-2.5 px-3 h-9 md:h-10 rounded-xl bg-amber-600/10 hover:bg-amber-600/20 text-amber-400 transition-all border border-amber-500/20 group/upgrade shadow-inner"
+                className="flex items-center gap-2.5 px-3 h-9 md:h-10 rounded-xl bg-[var(--accent)]/10 hover:bg-[var(--accent)]/20 text-[var(--accent)] transition-all border border-[var(--accent)]/20 group/upgrade shadow-inner"
               >
-                <Zap className="w-3.5 h-3.5 fill-amber-500/20 group-hover:scale-110 transition-transform animate-pulse" />
-                <span className="hidden md:block text-[9px] font-black uppercase tracking-[0.2em]">Upgrade</span>
+                <Zap className="w-3.5 h-3.5 fill-[var(--accent)]/20 group-hover:scale-110 transition-transform animate-pulse" />
+                <span className="hidden md:block text-[12px] font-semibold tracking-wide">Upgrade</span>
               </button>
             </div>
           </div>
         )}
 
-        {/* Interface Cluster: Shortcuts, Help, Settings */}
-        <div className="flex items-center gap-1.5 glass p-1 rounded-2xl border border-white/5 h-[48px]">
-          <button 
-            onClick={() => setIsShortcutsOpen(!isShortcutsOpen)} 
-            className={cn(
-              "group relative hidden md:flex w-9 h-9 md:w-10 md:h-10 items-center justify-center rounded-xl transition-all", 
-              isShortcutsOpen ? "bg-white/10 text-white" : "text-slate-400 hover:text-white"
-            )}
+        {/* Interface Cluster: Theme, Shortcuts, Help, Settings */}
+        <div className="flex items-center gap-1.5 glass p-1 rounded-2xl border border-[var(--glass-border)] h-[44px] shadow-lg shadow-[var(--glass-border)] bg-[var(--glass-bg)]">
+          <button
+            onClick={toggleTheme}
+            aria-label="Toggle theme"
+            className="group relative w-9 h-9 md:w-10 md:h-10 flex items-center justify-center rounded-xl transition-all text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--glass-bg)]"
           >
             <div className="absolute bottom-full mb-4 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-all duration-300 translate-y-2 group-hover:translate-y-0 pointer-events-none whitespace-nowrap z-[10001]">
-              <div className="glass px-3 py-1.5 rounded-xl border border-white/10 flex items-center gap-2 shadow-2xl bg-[var(--bg-main)]/90 backdrop-blur-xl">
-                <span className="text-[10px] font-black uppercase tracking-widest text-white/80">Command Center</span>
+              <div className="glass px-3 py-1.5 rounded-xl border border-[var(--glass-border)] flex items-center gap-2 shadow-2xl bg-[var(--glass-bg)] backdrop-blur-xl">
+                <span className="text-[12px] font-semibold tracking-wide text-[var(--text-primary)]">{theme === 'light' ? 'Dark mode' : 'Light mode'}</span>
+              </div>
+            </div>
+            {theme === 'light' ? (
+              <Moon className="w-4 h-4" />
+            ) : (
+              <Sun className="w-4 h-4" />
+            )}
+          </button>
+
+          <button
+            onClick={() => setIsShortcutsOpen(!isShortcutsOpen)}
+            aria-label="Command Center"
+className={cn(
+               "group relative hidden md:flex w-9 h-9 md:w-10 md:h-10 items-center justify-center rounded-xl transition-all",
+               isShortcutsOpen ? "bg-[var(--glass-bg)] text-[var(--text-primary)]" : "text-[var(--text-muted)] hover:text-[var(--text-primary)]"
+             )}
+          >
+            <div className="absolute bottom-full mb-4 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-all duration-300 translate-y-2 group-hover:translate-y-0 pointer-events-none whitespace-nowrap z-[10001]">
+              <div className="glass px-3 py-1.5 rounded-xl border border-[var(--glass-border)] flex items-center gap-2 shadow-2xl bg-[var(--glass-bg)] backdrop-blur-xl">
+                <span className="text-[12px] font-semibold tracking-wide text-[var(--text-primary)]">Command Center</span>
               </div>
             </div>
             <Keyboard className="w-4 h-4" />
           </button>
 
-          <button 
-            onClick={() => setIsHelpOpen(!isHelpOpen)} 
-            className={cn(
-              "group relative w-9 h-9 md:w-10 md:h-10 flex items-center justify-center rounded-xl transition-all", 
-              isHelpOpen ? "bg-white/10 text-white" : "text-slate-400 hover:text-white"
-            )}
+          <button
+            onClick={() => setIsHelpOpen(!isHelpOpen)}
+            aria-label="Help"
+className={cn(
+               "group relative w-9 h-9 md:w-10 md:h-10 flex items-center justify-center rounded-xl transition-all",
+               isHelpOpen ? "bg-[var(--glass-bg)] text-[var(--text-primary)]" : "text-[var(--text-muted)] hover:text-[var(--text-primary)]"
+             )}
           >
             <div className="absolute bottom-full mb-4 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-all duration-300 translate-y-2 group-hover:translate-y-0 pointer-events-none whitespace-nowrap z-[10001]">
-              <div className="glass px-3 py-1.5 rounded-xl border border-white/10 flex items-center gap-2 shadow-2xl bg-[var(--bg-main)]/90 backdrop-blur-xl">
-                <span className="text-[10px] font-black uppercase tracking-widest text-white/80">Help</span>
+              <div className="glass px-3 py-1.5 rounded-xl border border-[var(--glass-border)] flex items-center gap-2 shadow-2xl bg-[var(--glass-bg)] backdrop-blur-xl">
+                <span className="text-[12px] font-semibold tracking-wide text-[var(--text-primary)]">Help</span>
               </div>
             </div>
             <CircleHelp className="w-4 h-4" />
           </button>
           
-          <button 
-            onClick={() => setIsSettingsOpen(!isSettingsOpen)} 
-            className={cn(
-              "group relative w-9 h-9 md:w-10 md:h-10 flex items-center justify-center rounded-xl transition-all", 
-              isSettingsOpen ? "bg-white/10 text-white" : "text-slate-400 hover:text-white"
-            )}
+          <button
+            onClick={() => setIsSettingsOpen(!isSettingsOpen)}
+            aria-label="Settings"
+className={cn(
+               "group relative w-9 h-9 md:w-10 md:h-10 flex items-center justify-center rounded-xl transition-all",
+               isSettingsOpen ? "bg-[var(--glass-bg)] text-[var(--text-primary)]" : "text-[var(--text-muted)] hover:text-[var(--text-primary)]"
+             )}
           >
             <div className="absolute bottom-full mb-4 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-all duration-300 translate-y-2 group-hover:translate-y-0 pointer-events-none whitespace-nowrap z-[10001]">
-              <div className="glass px-3 py-1.5 rounded-xl border border-white/10 flex items-center gap-2 shadow-2xl bg-[var(--bg-main)]/90 backdrop-blur-xl">
-                <span className="text-[10px] font-black uppercase tracking-widest text-white/80">Settings</span>
+              <div className="glass px-3 py-1.5 rounded-xl border border-[var(--glass-border)] flex items-center gap-2 shadow-2xl bg-[var(--glass-bg)] backdrop-blur-xl">
+                <span className="text-[12px] font-semibold tracking-wide text-[var(--text-primary)]">Settings</span>
               </div>
             </div>
             <Settings className={cn("w-4 h-4 transition-transform duration-500", isSettingsOpen && "rotate-90")} />

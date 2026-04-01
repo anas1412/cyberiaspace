@@ -6,7 +6,7 @@ const ChalkArrow = ({ d, className }: { d: string, className?: string }) => (
   <svg width="60" height="80" viewBox="0 0 60 80" className={className}>
       <motion.path
       d={d}
-      stroke="white"
+      stroke="var(--text-muted)"
       strokeWidth="2"
       fill="none"
       strokeLinecap="round"
@@ -67,15 +67,15 @@ const EmptyState: React.FC = () => {
             className="mb-6"
           >
             <svg width="120" height="120" viewBox="0 0 120 120" className="mx-auto">
-              <circle cx="60" cy="60" r="50" stroke="white" strokeWidth="2" fill="none" opacity="0.1" />
-              <circle cx="60" cy="60" r="30" stroke="white" strokeWidth="2" fill="none" opacity="0.1" />
-              <circle cx="60" cy="60" r="10" stroke="white" strokeWidth="2" fill="none" opacity="0.1" />
+              <circle cx="60" cy="60" r="50" stroke="var(--text-muted)" strokeWidth="2" fill="none" opacity="0.1" />
+              <circle cx="60" cy="60" r="30" stroke="var(--text-muted)" strokeWidth="2" fill="none" opacity="0.1" />
+              <circle cx="60" cy="60" r="10" stroke="var(--text-muted)" strokeWidth="2" fill="none" opacity="0.1" />
             </svg>
           </motion.div>
           <motion.h2
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 0.4, y: 0 }}
-            className="font-['CyberiaBlueprint',_cursive,_sans-serif] text-white text-[32px] md:text-[48px] tracking-[4px] md:tracking-[8px] font-bold drop-shadow-[0_4px_8px_rgba(0,0,0,0.5)]"
+            className="font-['CyberiaBlueprint',_cursive,_sans-serif] text-[var(--text-muted)] text-[32px] md:text-[48px] tracking-[4px] md:tracking-[8px] font-bold"
           >
             THIS VIEW IS EMPTY
           </motion.h2>
@@ -83,7 +83,7 @@ const EmptyState: React.FC = () => {
             initial={{ opacity: 0 }}
             animate={{ opacity: 0.3 }}
             transition={{ delay: 0.3 }}
-            className="font-['CyberiaBlueprint',_cursive,_sans-serif] text-white/60 text-[14px] md:text-[16px] mt-4 tracking-[2px] uppercase drop-shadow-[0_2px_4px_rgba(0,0,0,0.5)]"
+            className="font-['CyberiaBlueprint',_cursive,_sans-serif] text-[var(--text-muted)] text-[14px] md:text-[16px] mt-4 tracking-[2px] uppercase"
           >
             No thoughts have been published yet
           </motion.p>
@@ -92,42 +92,50 @@ const EmptyState: React.FC = () => {
     );
   }
 
+  const guideTextColor = "text-[var(--text-muted)]";
+  const centerTextColor = "text-[var(--text-muted)]";
+  const kbdBg = "bg-[var(--glass-bg)]";
+  const kbdText = "text-[var(--text-muted)]";
+  const kbdBorder = "border-[var(--glass-border)]";
+  const hintBg = "bg-[var(--glass-bg)] border-[var(--glass-border)]";
+  const dividerColor = "text-[var(--glass-border)]";
+
   return (
     <div id="empty-guide" className="fixed inset-0 z-[5] pointer-events-none flex items-center justify-center">
 
       {/* 1. Switch View (Top Center) - Points to View Switcher */}
       <div className="absolute top-[80px] md:top-[95px] left-1/2 -translate-x-1/2 rotate-[1deg] text-center flex flex-col items-center">
         <ChalkArrow d="M 30 70 L 30 10 M 15 30 L 30 10 L 45 30" />
-        <p className="font-['CyberiaBlueprint',_cursive,_sans-serif] text-white/60 text-[10px] md:text-[12px] mt-2 tracking-widest uppercase drop-shadow-[0_2px_4px_rgba(0,0,0,0.5)]">Switch View</p>
+        <p className={`font-['CyberiaBlueprint',_cursive,_sans-serif] ${guideTextColor} text-[10px] md:text-[12px] mt-2 tracking-widest uppercase`}>Switch View</p>
       </div>
 
       {/* 2. Create Thought (Bottom Center - The FAB) */}
       <div className="absolute bottom-[110px] md:bottom-[130px] left-1/2 -translate-x-1/2 -rotate-[2deg] text-center flex flex-col items-center">
-        <p className="font-['CyberiaBlueprint',_cursive,_sans-serif] text-white/60 text-[12px] md:text-[14px] mb-2 font-bold tracking-widest uppercase drop-shadow-[0_2px_4px_rgba(0,0,0,0.5)]">New Thought</p>
+        <p className={`font-['CyberiaBlueprint',_cursive,_sans-serif] ${guideTextColor} text-[12px] md:text-[14px] mb-2 font-bold tracking-widest uppercase`}>New Thought</p>
         <ChalkArrow d="M 30 10 L 30 70 M 15 50 L 30 70 L 45 50" />
       </div>
 
       {/* 3. Space & Oracle (Top Left) */}
       <div className="hidden md:flex absolute top-[95px] left-[50px] -rotate-[4deg] text-center flex flex-col items-center">
         <ChalkArrow d="M 30 70 L 30 10 M 15 30 L 30 10 L 45 30" />
-        <p className="font-['CyberiaBlueprint',_cursive,_sans-serif] text-white/60 text-[12px] mt-2 tracking-widest uppercase drop-shadow-[0_2px_4px_rgba(0,0,0,0.5)]">Switch Space / Oracle AI</p>
+        <p className={`font-['CyberiaBlueprint',_cursive,_sans-serif] ${guideTextColor} text-[12px] mt-2 tracking-widest uppercase`}>Switch Space / Oracle AI</p>
       </div>
 
       {/* 4. Account Menu (Top Right) */}
       <div className="hidden md:flex absolute top-[95px] right-[50px] rotate-[4deg] text-center flex flex-col items-center">
         <ChalkArrow d="M 30 70 L 30 10 M 15 30 L 30 10 L 45 30" />
-        <p className="font-['CyberiaBlueprint',_cursive,_sans-serif] text-white/60 text-[12px] mt-2 tracking-widest uppercase drop-shadow-[0_2px_4px_rgba(0,0,0,0.5)]">Account</p>
+        <p className={`font-['CyberiaBlueprint',_cursive,_sans-serif] ${guideTextColor} text-[12px] mt-2 tracking-widest uppercase`}>Account</p>
       </div>
 
       {/* 5. System Settings (Bottom Right) */}
       <div className="hidden md:flex absolute bottom-[130px] right-[70px] -rotate-[3deg] text-center flex flex-col items-center">
-        <p className="font-['CyberiaBlueprint',_cursive,_sans-serif] text-white/60 text-[12px] mb-2 tracking-widest uppercase drop-shadow-[0_2px_4px_rgba(0,0,0,0.5)]">Settings & Customization</p>
+        <p className={`font-['CyberiaBlueprint',_cursive,_sans-serif] ${guideTextColor} text-[12px] mb-2 tracking-widest uppercase`}>Settings & Customization</p>
         <ChalkArrow d="M 30 10 L 30 70 M 15 50 L 30 70 L 45 50" />
       </div>
 
       {/* 6. Controls (Bottom Left) - Points to Status Bar */}
       <div className="hidden md:flex absolute bottom-[130px] left-[70px] rotate-[3deg] text-center flex flex-col items-center">
-        <p className="font-['CyberiaBlueprint',_cursive,_sans-serif] text-white/60 text-[12px] mb-2 tracking-widest uppercase drop-shadow-[0_2px_4px_rgba(0,0,0,0.5)]">View Controls</p>
+        <p className={`font-['CyberiaBlueprint',_cursive,_sans-serif] ${guideTextColor} text-[12px] mb-2 tracking-widest uppercase`}>View Controls</p>
         <ChalkArrow d="M 30 10 L 30 70 M 15 50 L 30 70 L 45 50" />
       </div>
 
@@ -136,7 +144,7 @@ const EmptyState: React.FC = () => {
         <motion.h2
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 0.4, y: 0 }}
-          className="font-['CyberiaBlueprint',_cursive,_sans-serif] text-white text-[32px] md:text-[48px] tracking-[4px] md:tracking-[8px] font-bold drop-shadow-[0_8px_16px_rgba(0,0,0,0.6)]"
+          className={`font-['CyberiaBlueprint',_cursive,_sans-serif] ${centerTextColor} text-[32px] md:text-[48px] tracking-[4px] md:tracking-[8px] font-bold`}
         >
           {randomPhrase}
         </motion.h2>
@@ -144,24 +152,24 @@ const EmptyState: React.FC = () => {
         {/* Unified Hint - Hidden on Mobile */}
         {!isMobile && (
           <div className="mt-10 flex items-center justify-center">
-            <div className="px-8 py-4 bg-white/[0.04] border border-white/10 rounded-2xl flex items-center gap-6 backdrop-blur-md shadow-[0_8px_32px_rgba(0,0,0,0.3)]">
+            <div className={`px-8 py-4 ${hintBg} rounded-2xl flex items-center gap-6 backdrop-blur-md shadow-[0_8px_32px_rgba(0,0,0,0.3)]`}>
               <div className="flex items-center gap-3">
-                <kbd className="bg-white/15 px-2.5 py-1 rounded-xl text-[10px] text-white/80 font-mono border border-white/10 shadow-inner">SPACE</kbd>
-                <p className="font-['CyberiaBlueprint',_cursive,_sans-serif] text-white/60 text-[12px] tracking-[1px] uppercase">New Thought</p>
+                <kbd className={`${kbdBg} px-2.5 py-1 rounded-xl text-[10px] ${kbdText} font-mono border ${kbdBorder} shadow-inner`}>SPACE</kbd>
+                <p className={`font-['CyberiaBlueprint',_cursive,_sans-serif] ${guideTextColor} text-[12px] tracking-[1px] uppercase`}>New Thought</p>
               </div>
 
-              <span className="text-[9px] font-black text-white/10 uppercase tracking-widest">•</span>
+              <span className={`text-[9px] font-black ${dividerColor} uppercase tracking-widest`}>•</span>
 
               <div className="flex items-center gap-3">
-                <kbd className="bg-white/15 px-2.5 py-1 rounded-xl text-[10px] text-white/80 font-mono border border-white/10 shadow-inner">CTRL+V</kbd>
-                <p className="font-['CyberiaBlueprint',_cursive,_sans-serif] text-white/60 text-[12px] tracking-[1px] uppercase">Images & Links</p>
+                <kbd className={`${kbdBg} px-2.5 py-1 rounded-xl text-[10px] ${kbdText} font-mono border ${kbdBorder} shadow-inner`}>CTRL+V</kbd>
+                <p className={`font-['CyberiaBlueprint',_cursive,_sans-serif] ${guideTextColor} text-[12px] tracking-[1px] uppercase`}>Images & Links</p>
               </div>
 
-              <span className="text-[9px] font-black text-white/10 uppercase tracking-widest">•</span>
+              <span className={`text-[9px] font-black ${dividerColor} uppercase tracking-widest`}>•</span>
 
               <div className="flex items-center gap-3">
-                <kbd className="bg-white/15 px-2.5 py-1 rounded-xl text-[10px] text-white/80 font-mono border border-white/10 shadow-inner">DRAG</kbd>
-                <p className="font-['CyberiaBlueprint',_cursive,_sans-serif] text-white/60 text-[12px] tracking-[1px] uppercase">Images, TXT, CSV</p>
+                <kbd className={`${kbdBg} px-2.5 py-1 rounded-xl text-[10px] ${kbdText} font-mono border ${kbdBorder} shadow-inner`}>DRAG</kbd>
+                <p className={`font-['CyberiaBlueprint',_cursive,_sans-serif] ${guideTextColor} text-[12px] tracking-[1px] uppercase`}>Images, TXT, CSV</p>
               </div>
             </div>
           </div>

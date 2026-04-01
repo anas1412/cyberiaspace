@@ -14,9 +14,20 @@ const revokeCurrentBg = (bg: string | null) => {
   }
 };
 
-export const createUiSlice: StateCreator<CyberiaState, [], [], any> = (set, get, _api) => ({
-  theme: (localStorage.getItem('cyberia-theme') as any) || 'cyberia',
+export const createUiSlice: StateCreator<CyberiaState, [], [], any> = (set, get, _api) => {
+  const getInitialTheme = (): 'dark' | 'light' => {
+    const stored = localStorage.getItem('cyberia-theme');
+    if (stored === 'dark' || stored === 'light') return stored;
+    if (typeof window !== 'undefined' && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+      return 'dark';
+    }
+    return 'light';
+  };
+  
+  return {
+    theme: getInitialTheme(),
   customBg: null,
+  customBgLoading: false,
   oracleMode: false,
   oracleChatMode: 'chat',
   isChatOpen: false,
@@ -31,13 +42,21 @@ export const createUiSlice: StateCreator<CyberiaState, [], [], any> = (set, get,
   linkingSourceId: null,
   layerActionTrigger: null,
 
-  setTheme: async (theme: 'cyberia' | 'sea' | 'forest' | 'rain' | 'sakura') => {
-    if (get().isReadOnly) return;
-    const { activeSpaceId } = get();
+  setTheme: async (theme: 'dark' | 'light') => {
+    const { activeSpaceId, isReadOnly, theme: currentTheme } = get();
+    // Prevent unnecessary updates if theme hasn't changed
+    if (theme === currentTheme) return;
+    
     set({ theme });
     localStorage.setItem('cyberia-theme', theme);
+    document.documentElement.setAttribute('data-theme', theme);
     document.body.setAttribute('data-theme', theme);
-    if (activeSpaceId && !get().isReadOnly) get().updateSpace(activeSpaceId, { theme });
+    // Clear inline styles set by index.html blocking script so CSS variables work
+    document.documentElement.style.removeProperty('--bg-page');
+    document.documentElement.style.removeProperty('--text-primary');
+    document.documentElement.style.removeProperty('--accent');
+    document.documentElement.style.removeProperty('--glass-border');
+    if (activeSpaceId && !isReadOnly) get().updateSpace(activeSpaceId, { theme });
     
     const { useAuthStore } = await import('../useAuthStore');
     const authStore = useAuthStore.getState();
@@ -64,11 +83,14 @@ export const createUiSlice: StateCreator<CyberiaState, [], [], any> = (set, get,
     try {
       // If it's a File, upload to Supabase Storage FIRST, then store the storage URL
       if (bg instanceof File) {
+        set({ customBgLoading: true }); // Start loading
+        
         const { useAuthStore } = await import('../useAuthStore');
         const authStore = useAuthStore.getState();
         
         if (authStore.status !== 'authenticated' || !authStore.user) {
           console.warn('[BG] Cannot upload background: not authenticated');
+          set({ customBgLoading: false });
           return;
         }
 
@@ -79,10 +101,13 @@ export const createUiSlice: StateCreator<CyberiaState, [], [], any> = (set, get,
         console.log('[BG] Uploading background to storage...');
         const { url } = await supabaseStorage.uploadSpaceBackground(userId, activeSpaceId, bg, bg.type);
         
-        if (isStale()) return;
+        if (isStale()) {
+          set({ customBgLoading: false });
+          return;
+        }
         
         // Store the storage URL (not blob URL)
-        set({ customBg: url });
+        set({ customBg: url, customBgLoading: false }); // Done loading
         const updated = get().spaces.map((s: any) => s.id === activeSpaceId ? { ...s, customBg: url } : s);
         set({ spaces: updated });
         // Verify space belongs to current user
@@ -123,6 +148,7 @@ export const createUiSlice: StateCreator<CyberiaState, [], [], any> = (set, get,
       if (!isStale() && useAuthStore.getState().status === 'authenticated') await syncOrchestrator.triggerSync();
     } catch (e: any) {
       if (e.name === 'AbortError') return;
+      set({ customBgLoading: false }); // Ensure loading is off on error
       console.error('[BG] Failed to process background:', e);
     }
   },
@@ -154,4 +180,7 @@ export const createUiSlice: StateCreator<CyberiaState, [], [], any> = (set, get,
   setKanbanStackFilter: (stackId: string | null) => set({ kanbanStackFilter: stackId }),
   setLinkingSourceId: (id: string | null) => set({ linkingSourceId: id }),
   setInspectorOpen: (open: boolean) => set({ isInspectorOpen: open }),
-});
+
+  setCustomBgValue: (bg: string | null) => set({ customBg: bg }),
+  };
+};

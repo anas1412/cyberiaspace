@@ -237,12 +237,12 @@ const ThoughtNode: React.FC<ThoughtNodeProps> = React.memo(({ thought, registerE
       {showPing && <div className="absolute inset-0 rounded-2xl border-2 border-[var(--accent)] animate-sonar pointer-events-none z-0" />}
       
           {isDeleting && (
-        <div className="absolute inset-0 z-[50] rounded-2xl bg-black/60 backdrop-blur-sm border border-red-500/30 flex flex-col items-center justify-center gap-3 animate-in fade-in duration-300">
+        <div className="absolute inset-0 z-[50] rounded-2xl bg-[var(--bg-page)]/60 backdrop-blur-sm border border-red-500/30 flex flex-col items-center justify-center gap-3 animate-in fade-in duration-300">
           <div className="relative">
             <Loader2 className="w-8 h-8 text-red-500 animate-spin" />
             <Trash2 className="w-4 h-4 text-red-500 absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2" />
           </div>
-          <span className="text-[8px] font-black uppercase tracking-[0.2em] text-red-400">Purging...</span>
+          <span className="text-[8px] font-semibold tracking-[0.2em] text-red-400">Purging...</span>
         </div>
       )}
 

@@ -44,7 +44,7 @@ export const FocusEditorShell: React.FC<FocusEditorShellProps> = ({
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
           transition={{ duration: 0.3 }}
-          className="fixed inset-0 z-[10001] bg-[var(--bg-main)]/70 backdrop-blur-[40px] flex items-center justify-center p-4 md:px-10 md:py-8 lg:px-20"
+          className="fixed inset-0 z-[10001] bg-[var(--bg-page)]/60 backdrop-blur-md flex items-center justify-center p-4 md:px-10 md:py-8 lg:px-20"
           onClick={onClose}
         >
           <motion.div
@@ -52,12 +52,12 @@ export const FocusEditorShell: React.FC<FocusEditorShellProps> = ({
             animate={{ scale: 1, opacity: 1, y: 0 }}
             exit={{ scale: 0.95, opacity: 0, y: 20 }}
             transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-            className="focus-box glass rounded-2xl overflow-hidden border border-white/10 shadow-2xl w-full h-full max-h-[95vh] md:max-h-[85vh] flex flex-col"
+            className="focus-box glass rounded-2xl overflow-hidden border border-[var(--glass-border)] shadow-2xl w-full h-full max-h-[95vh] md:max-h-[85vh] flex flex-col"
             style={{ maxWidth }}
             onClick={(e) => e.stopPropagation()}
           >
             {/* Header Area */}
-            <div className="flex flex-col md:flex-row justify-between items-start md:items-center p-6 md:p-8 border-b border-white/5 gap-4 md:gap-0">
+            <div className="flex flex-col md:flex-row justify-between items-start md:items-center p-6 md:p-8 border-b border-[var(--glass-border)] gap-4 md:gap-0">
               <div className="flex items-center w-full md:w-auto flex-1 min-w-0">
                 <div className="flex flex-col flex-1 min-w-0">
                   <input
@@ -81,7 +81,7 @@ export const FocusEditorShell: React.FC<FocusEditorShellProps> = ({
                 {headerActions}
                 <button
                   onClick={onClose}
-                  className="p-2 rounded-lg text-[var(--text-muted)] hover:bg-white/5 transition-all"
+                  className="p-2 rounded-lg text-[var(--text-muted)] hover:bg-[var(--text-primary)]/10 transition-all"
                 >
                   <X className="w-5 h-5 md:w-6 md:h-6" />
                 </button>
@@ -94,7 +94,7 @@ export const FocusEditorShell: React.FC<FocusEditorShellProps> = ({
             </div>
 
             {/* Footer Area */}
-            <div className="p-4 md:p-6 border-t border-white/5 flex flex-col md:flex-row justify-between items-center gap-4 md:gap-0">
+            <div className="p-4 md:p-6 border-t border-[var(--glass-border)] flex flex-col md:flex-row justify-between items-center gap-4 md:gap-0">
               <div className="flex items-center gap-6">
                 {footerStatus}
               </div>

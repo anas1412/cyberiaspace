@@ -4,6 +4,8 @@ import { MessageSquare, Send, CheckCircle, AlertCircle, Loader2, Clock, Users, L
 import { useAuthStore } from '../store/useAuthStore';
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
+import Navigation from './Navigation';
+import Footer from './Footer';
 
 function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -137,24 +139,21 @@ const FeedbackPage: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-[#020408] text-slate-200 font-['Plus_Jakarta_Sans',_sans-serif] selection:bg-[var(--accent)]/30 selection:text-white overflow-x-hidden">
+    <div className="min-h-screen bg-[var(--bg-page)] text-[var(--text-primary)] font-['Plus_Jakarta_Sans',_sans-serif] selection:bg-[var(--accent)]/30 overflow-x-hidden">
+      <Navigation />
+      
       {/* Background Aura */}
       <div className="fixed inset-0 overflow-hidden pointer-events-none">
         <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-[var(--accent)]/5 blur-[120px] rounded-full" />
         <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-purple-500/5 blur-[120px] rounded-full" />
       </div>
 
-      <div className="relative max-w-4xl mx-auto px-6 py-12 md:py-24">
+      <div className="relative max-w-4xl mx-auto px-6 pt-32 md:pt-40 pb-12 md:pb-24">
         {/* Header */}
         <header className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-12 md:mb-20">
           <div className="space-y-2">
-            <div className="flex items-center gap-3">
-              <a href="/" className="text-2xl font-black tracking-tighter text-white hover:opacity-70 transition-opacity">CYBERIA</a>
-              <div className="h-4 w-px bg-white/10" />
-              <span className="text-[10px] font-black uppercase tracking-[0.3em] text-[var(--accent-secondary)]">Feedback Portal</span>
-            </div>
-            <h1 className="text-3xl md:text-4xl font-bold text-white tracking-tight">System Reliability & Feedback</h1>
-            <p className="text-sm text-[var(--text-muted)] max-w-md">Help us refine the kinetic space. Share your thoughts, report issues, or suggest new protocols.</p>
+            <h1 className="text-2xl md:text-3xl font-bold text-[var(--text-primary)] tracking-tight">System Reliability & Feedback</h1>
+            <p className="text-[13px] text-[var(--text-muted)] max-w-md">Help us refine the kinetic space. Share your thoughts, report issues, or suggest new protocols.</p>
           </div>
           
           <div className="flex items-center gap-3">
@@ -164,8 +163,8 @@ const FeedbackPage: React.FC = () => {
               className={cn(
                 "h-11 w-34 px-4 rounded-xl border transition-all flex items-center justify-center gap-2",
                 view === 'my' 
-                  ? "bg-white/10 border-white/20 text-white" 
-                  : "bg-white/5 border-white/5 text-slate-400 hover:text-white hover:bg-white/10"
+                  ? "bg-[var(--glass-bg)] border-[var(--accent)] text-[var(--text-primary)]" 
+                  : "bg-[var(--glass-bg)] border-[var(--glass-border)] text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--glass-bg)]"
               )}
             >
               <Users className="w-4 h-4" />
@@ -178,8 +177,8 @@ const FeedbackPage: React.FC = () => {
               className={cn(
                 "h-11 w-34 px-4 rounded-xl border transition-all flex items-center justify-center gap-2",
                 view === 'all' 
-                  ? "bg-white/10 border-white/20 text-white" 
-                  : "bg-white/5 border-white/5 text-slate-400 hover:text-white hover:bg-white/10"
+                  ? "bg-[var(--glass-bg)] border-[var(--accent)] text-[var(--text-primary)]" 
+                  : "bg-[var(--glass-bg)] border-[var(--glass-border)] text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--glass-bg)]"
               )}
             >
               <List className="w-4 h-4" />
@@ -187,13 +186,13 @@ const FeedbackPage: React.FC = () => {
             </button>
             
             {/* Submit Button */}
-            <button 
+              <button 
               onClick={() => setView('submit')}
               className={cn(
                 "h-11 w-34 px-5 rounded-xl border transition-all flex items-center justify-center gap-2",
-                view === 'submit' 
-                  ? "bg-[var(--accent)] border-[var(--accent)] text-white" 
-                  : "bg-white/5 border-white/5 text-slate-400 hover:text-white hover:bg-white/10"
+                view === 'submit'
+                  ? "bg-[var(--accent)] border-[var(--accent)] text-[var(--accent-contrast)]"
+                  : "bg-[var(--glass-bg)] border-[var(--glass-border)] text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--glass-bg)]"
               )}
             >
               <MessageSquare className="w-4 h-4" />
@@ -212,33 +211,33 @@ const FeedbackPage: React.FC = () => {
                 exit={{ opacity: 0, y: -20 }}
                 className="space-y-6"
               >
-                <h2 className="text-lg font-bold text-white mb-6">My Feedback</h2>
+                <h2 className="text-lg font-bold text-[var(--text-primary)] mb-6">My Feedback</h2>
 
                 {isLoading ? (
                   <div className="flex flex-col items-center justify-center py-20 gap-4 opacity-50">
                     <Loader2 className="w-8 h-8 animate-spin text-[var(--accent)]" />
-                    <p className="text-[10px] font-black uppercase tracking-widest">Loading...</p>
+                    <p className="text-[11px] font-semibold tracking-wide">Loading...</p>
                   </div>
                 ) : !user ? (
-                  <div className="glass rounded-2xl p-12 md:p-20 text-center border border-white/5">
-                    <MessageSquare className="w-12 h-12 text-slate-800 mx-auto mb-6" />
-                    <h3 className="text-lg font-bold text-white mb-2">Sign In Required</h3>
-                    <p className="text-xs text-[var(--text-muted)] uppercase tracking-widest mb-6">Sign in to see your submitted feedback.</p>
+                  <div className="glass rounded-2xl p-12 md:p-20 text-center border border-[var(--glass-border)]">
+                    <MessageSquare className="w-12 h-12 text-[var(--text-muted)] mx-auto mb-6" />
+                    <h3 className="text-lg font-bold text-[var(--text-primary)] mb-2">Sign In Required</h3>
+                    <p className="text-[13px] text-[var(--text-muted)] tracking-wide mb-6">Sign in to see your submitted feedback.</p>
                     <button
                       onClick={() => setView('submit')}
-                      className="px-6 py-3 bg-[var(--accent)] hover:bg-[var(--accent)]/90 text-white rounded-xl text-[10px] font-black uppercase tracking-widest transition-all"
+                      className="px-6 py-3 bg-[var(--accent)] hover:bg-[var(--accent)]/90 text-[var(--accent-contrast)] rounded-xl text-[11px] font-semibold tracking-wide transition-all"
                     >
                       Submit Feedback
                     </button>
                   </div>
                 ) : feedbackList.length === 0 ? (
-                  <div className="glass rounded-2xl p-12 md:p-20 text-center border border-white/5">
-                    <MessageSquare className="w-12 h-12 text-slate-800 mx-auto mb-6" />
-                    <h3 className="text-lg font-bold text-white mb-2">No Feedback Yet</h3>
-                    <p className="text-xs text-[var(--text-muted)] uppercase tracking-widest mb-6">You haven't submitted any feedback yet.</p>
+                  <div className="glass rounded-2xl p-12 md:p-20 text-center border border-[var(--glass-border)]">
+                    <MessageSquare className="w-12 h-12 text-[var(--text-muted)] mx-auto mb-6" />
+                    <h3 className="text-lg font-bold text-[var(--text-primary)] mb-2">No Feedback Yet</h3>
+                    <p className="text-[13px] text-[var(--text-muted)] tracking-wide mb-6">You haven't submitted any feedback yet.</p>
                     <button
                       onClick={() => setView('submit')}
-                      className="px-6 py-3 bg-[var(--accent)] hover:bg-[var(--accent)]/90 text-white rounded-xl text-[10px] font-black uppercase tracking-widest transition-all"
+                      className="px-6 py-3 bg-[var(--accent)] hover:bg-[var(--accent)]/90 text-[var(--accent-contrast)] rounded-xl text-[11px] font-semibold tracking-wide transition-all"
                     >
                       Submit Feedback
                     </button>
@@ -249,11 +248,11 @@ const FeedbackPage: React.FC = () => {
                       key={item.id}
                       initial={{ opacity: 0, x: -10 }}
                       animate={{ opacity: 1, x: 0 }}
-                      className="glass rounded-2xl p-6 md:p-8 border border-white/5 hover:border-white/10 transition-all"
+                      className="glass rounded-2xl p-6 md:p-8 border border-[var(--glass-border)] hover:border-[var(--glass-border)] transition-all"
                     >
                       <div className="flex flex-wrap items-center gap-3 mb-4">
                         <span className={cn(
-                          "px-2.5 py-1 rounded-lg text-[8px] font-black uppercase tracking-widest border",
+                          "px-2.5 py-1 rounded-lg text-[10px] font-semibold tracking-wide border",
                           item.type === 'issue' ? "bg-red-500/10 text-red-400 border-red-500/20" :
                           item.type === 'feature' ? "bg-purple-500/10 text-purple-400 border-purple-500/20" :
                           "bg-blue-500/10 text-blue-400 border-blue-500/20"
@@ -263,37 +262,37 @@ const FeedbackPage: React.FC = () => {
 
                         {/* Status Badge */}
                         <span className={cn(
-                          "px-2.5 py-1 rounded-lg text-[8px] font-black uppercase tracking-widest border",
+                          "px-2.5 py-1 rounded-lg text-[10px] font-semibold tracking-wide border",
                           item.status === 'done' ? "bg-green-500/10 text-green-400 border-green-500/20" :
                           item.status === 'doing' ? "bg-blue-500/10 text-blue-400 border-blue-500/20" :
                           item.status === 'todo' ? "bg-amber-500/10 text-amber-400 border-amber-500/20" :
-                          "bg-slate-500/10 text-slate-400 border-slate-500/20"
+                          "bg-slate-500/10 text-[var(--text-muted)] border-slate-500/20"
                         )}>
                           {item.status || 'none'}
                         </span>
 
                         <div className="flex items-center gap-2 text-[var(--text-muted)]">
                           <Clock className="w-3 h-3" />
-                          <span className="text-[9px] font-bold uppercase tracking-widest">
+                          <span className="text-[11px] font-medium tracking-wide">
                             {new Date(getTimestamp(item)).toLocaleDateString()}
                           </span>
                         </div>
                       </div>
 
-                      <p className="text-sm md:text-base text-slate-300 leading-relaxed font-medium mb-6 break-words">
+                      <p className="text-[13px] text-[var(--text-secondary)] leading-relaxed font-medium mb-6 break-words">
                         {getMessage(item)}
                       </p>
 
                       {/* Admin Reply Section */}
                       {getAdminReply(item) && (
-                        <div className="mt-6 pt-6 border-t border-white/5">
+                        <div className="mt-6 pt-6 border-t border-[var(--glass-border)]">
                           <div className="flex gap-4">
                             <div className="w-8 h-8 rounded-xl bg-[var(--accent)]/10 flex items-center justify-center text-[var(--accent-secondary)] flex-shrink-0">
                               <MessageSquare className="w-4 h-4" />
                             </div>
                             <div className="flex-1">
-                              <p className="text-[8px] font-black uppercase tracking-widest text-[var(--accent-secondary)] mb-1">Cyberia Response</p>
-                              <p className="text-xs text-slate-400 leading-relaxed">{getAdminReply(item)}</p>
+                              <p className="text-[11px] font-semibold tracking-wide text-[var(--accent-secondary)] mb-1">Cyberia Response</p>
+                              <p className="text-[13px] text-[var(--text-muted)] leading-relaxed">{getAdminReply(item)}</p>
                             </div>
                           </div>
                         </div>
@@ -310,18 +309,18 @@ const FeedbackPage: React.FC = () => {
                 exit={{ opacity: 0, y: -20 }}
                 className="space-y-6"
               >
-                <h2 className="text-lg font-bold text-white mb-6">All Feedback</h2>
+                <h2 className="text-lg font-bold text-[var(--text-primary)] mb-6">All Feedback</h2>
 
                 {isLoading ? (
                   <div className="flex flex-col items-center justify-center py-20 gap-4 opacity-50">
                     <Loader2 className="w-8 h-8 animate-spin text-[var(--accent)]" />
-                    <p className="text-[10px] font-black uppercase tracking-widest">Loading...</p>
+                    <p className="text-[11px] font-semibold tracking-wide">Loading...</p>
                   </div>
                 ) : feedbackList.length === 0 ? (
-                  <div className="glass rounded-2xl p-12 md:p-20 text-center border border-white/5">
-                    <MessageSquare className="w-12 h-12 text-slate-800 mx-auto mb-6" />
-                    <h3 className="text-lg font-bold text-white mb-2">No Feedback Yet</h3>
-                    <p className="text-xs text-[var(--text-muted)] uppercase tracking-widest">Be the first to submit feedback!</p>
+                  <div className="glass rounded-2xl p-12 md:p-20 text-center border border-[var(--glass-border)]">
+                    <MessageSquare className="w-12 h-12 text-[var(--text-muted)] mx-auto mb-6" />
+                    <h3 className="text-lg font-bold text-[var(--text-primary)] mb-2">No Feedback Yet</h3>
+                    <p className="text-[13px] text-[var(--text-muted)] tracking-wide">Be the first to submit feedback!</p>
                   </div>
                 ) : (
                   feedbackList.map((item) => (
@@ -329,11 +328,11 @@ const FeedbackPage: React.FC = () => {
                       key={item.id}
                       initial={{ opacity: 0, x: -10 }}
                       animate={{ opacity: 1, x: 0 }}
-                      className="glass rounded-2xl p-6 md:p-8 border border-white/5 hover:border-white/10 transition-all"
+                      className="glass rounded-2xl p-6 md:p-8 border border-[var(--glass-border)] hover:border-[var(--glass-border)] transition-all"
                     >
                       <div className="flex flex-wrap items-center gap-3 mb-4">
                         <span className={cn(
-                          "px-2.5 py-1 rounded-lg text-[8px] font-black uppercase tracking-widest border",
+                          "px-2.5 py-1 rounded-lg text-[10px] font-semibold tracking-wide border",
                           item.type === 'issue' ? "bg-red-500/10 text-red-400 border-red-500/20" :
                           item.type === 'feature' ? "bg-purple-500/10 text-purple-400 border-purple-500/20" :
                           "bg-blue-500/10 text-blue-400 border-blue-500/20"
@@ -343,43 +342,43 @@ const FeedbackPage: React.FC = () => {
 
                         {/* Status Badge */}
                         <span className={cn(
-                          "px-2.5 py-1 rounded-lg text-[8px] font-black uppercase tracking-widest border",
+                          "px-2.5 py-1 rounded-lg text-[10px] font-semibold tracking-wide border",
                           item.status === 'done' ? "bg-green-500/10 text-green-400 border-green-500/20" :
                           item.status === 'doing' ? "bg-blue-500/10 text-blue-400 border-blue-500/20" :
                           item.status === 'todo' ? "bg-amber-500/10 text-amber-400 border-amber-500/20" :
-                          "bg-slate-500/10 text-slate-400 border-slate-500/20"
+                          "bg-slate-500/10 text-[var(--text-muted)] border-slate-500/20"
                         )}>
                           {item.status || 'none'}
                         </span>
 
                         <div className="flex items-center gap-2 text-[var(--text-muted)]">
                           <Clock className="w-3 h-3" />
-                          <span className="text-[9px] font-bold uppercase tracking-widest">
+                          <span className="text-[11px] font-medium tracking-wide">
                             {new Date(getTimestamp(item)).toLocaleDateString()}
                           </span>
                         </div>
 
                         <div className="flex items-center gap-2 text-[var(--text-muted)] ml-auto">
-                          <span className="text-[9px] font-bold uppercase tracking-widest">
+                          <span className="text-[11px] font-medium tracking-wide">
                             {getUserDisplay(item)}
                           </span>
                         </div>
                       </div>
 
-                      <p className="text-sm md:text-base text-slate-300 leading-relaxed font-medium mb-4 break-words">
+                      <p className="text-[13px] text-[var(--text-secondary)] leading-relaxed font-medium mb-4 break-words">
                         {getMessage(item)}
                       </p>
 
                       {/* Admin Reply Section */}
                       {getAdminReply(item) && (
-                        <div className="mt-4 pt-4 border-t border-white/5">
+                        <div className="mt-4 pt-4 border-t border-[var(--glass-border)]">
                           <div className="flex gap-4">
                             <div className="w-8 h-8 rounded-xl bg-[var(--accent)]/10 flex items-center justify-center text-[var(--accent-secondary)] flex-shrink-0">
                               <MessageSquare className="w-4 h-4" />
                             </div>
                             <div className="flex-1">
-                              <p className="text-[8px] font-black uppercase tracking-widest text-[var(--accent-secondary)] mb-1">Cyberia Response</p>
-                              <p className="text-xs text-slate-400 leading-relaxed">{getAdminReply(item)}</p>
+                              <p className="text-[11px] font-semibold tracking-wide text-[var(--accent-secondary)] mb-1">Cyberia Response</p>
+                              <p className="text-[13px] text-[var(--text-muted)] leading-relaxed">{getAdminReply(item)}</p>
                             </div>
                           </div>
                         </div>
@@ -394,7 +393,7 @@ const FeedbackPage: React.FC = () => {
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -20 }}
-                className="glass rounded-2xl p-8 md:p-12 border border-white/10 shadow-2xl relative overflow-hidden"
+                className="glass rounded-2xl p-8 md:p-12 border border-[var(--glass-border)] shadow-2xl relative overflow-hidden"
               >
                 {submitStatus === 'success' ? (
                   <div className="py-12 md:py-20 text-center space-y-6">
@@ -402,8 +401,8 @@ const FeedbackPage: React.FC = () => {
                       <CheckCircle className="w-10 h-10" />
                     </div>
                     <div>
-                      <h3 className="text-xl font-bold text-white mb-2">Sent!</h3>
-                      <p className="text-xs text-[var(--text-muted)] uppercase tracking-widest">Your feedback has been logged in the system.</p>
+                      <h3 className="text-xl font-bold text-[var(--text-primary)] mb-2">Sent!</h3>
+                      <p className="text-[13px] text-[var(--text-muted)] tracking-wide">Your feedback has been logged in the system.</p>
                     </div>
                     <div className="flex justify-center gap-3">
                       <button
@@ -411,7 +410,7 @@ const FeedbackPage: React.FC = () => {
                           setSubmitStatus('idle');
                           setView('my');
                         }}
-                        className="px-6 py-3 bg-white/10 hover:bg-white/20 text-white rounded-xl text-[10px] font-black uppercase tracking-widest transition-all"
+                        className="px-6 py-3 bg-[var(--glass-bg)] hover:bg-[var(--glass-bg)]/80 text-[var(--text-primary)] rounded-xl text-[11px] font-semibold tracking-wide transition-all border border-[var(--glass-border)]"
                       >
                         View My Feedback
                       </button>
@@ -419,7 +418,7 @@ const FeedbackPage: React.FC = () => {
                         onClick={() => {
                           setSubmitStatus('idle');
                         }}
-                        className="px-6 py-3 bg-[var(--accent)] hover:bg-[var(--accent)]/90 text-white rounded-xl text-[10px] font-black uppercase tracking-widest transition-all"
+className="px-6 py-3 bg-[var(--accent)] hover:bg-[var(--accent)]/90 text-[var(--accent-contrast)] rounded-xl text-[11px] font-semibold tracking-wide transition-all"
                       >
                         Submit Another
                       </button>
@@ -430,18 +429,18 @@ const FeedbackPage: React.FC = () => {
                     <div className="space-y-6">
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div className="space-y-2">
-                          <label className="text-[9px] font-black uppercase tracking-widest text-[var(--text-muted)] ml-1">Type</label>
-                          <div className="flex gap-2 p-1.5 bg-black/40 border border-white/5 rounded-xl">
+                          <label className="text-[11px] font-semibold tracking-wide text-[var(--text-muted)] ml-1">Type</label>
+                          <div className="flex gap-2 p-1.5 bg-[var(--glass-bg)] border border-[var(--glass-border)] rounded-xl">
                             {(['issue', 'feedback', 'feature'] as const).map((t) => (
                               <button
                                 key={t}
                                 type="button"
                                 onClick={() => setType(t)}
                                 className={cn(
-                                  "flex-1 py-2.5 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all",
+                                  "flex-1 py-2.5 rounded-xl text-[10px] font-semibold tracking-wide transition-all uppercase",
                                   type === t 
-                                    ? "bg-white/10 text-white shadow-lg border border-white/10" 
-                                    : "text-[var(--text-muted)] hover:text-slate-400 hover:bg-white/[0.02]"
+                                    ? "bg-[var(--accent)] text-[var(--accent-contrast)] shadow-lg border border-[var(--accent)]" 
+                                    : "text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--glass-bg)]"
                                 )}
                               >
                                 {t}
@@ -450,25 +449,25 @@ const FeedbackPage: React.FC = () => {
                           </div>
                         </div>
                         <div className="space-y-2">
-                          <label className="text-[9px] font-black uppercase tracking-widest text-[var(--text-muted)] ml-1">Email (optional)</label>
+                          <label className="text-[11px] font-semibold tracking-wide text-[var(--text-muted)] ml-1">Email (optional)</label>
                           <input 
                             type="email" 
                             placeholder="your@email.com"
                             value={email}
                             onChange={(e) => setEmail(e.target.value)}
-                            className="w-full h-14 bg-black/40 border border-white/5 rounded-xl px-6 text-sm text-white outline-none focus:border-[var(--accent)]/50 transition-all"
+                            className="w-full h-14 bg-[var(--glass-bg)] border border-[var(--glass-border)] rounded-xl px-6 text-[13px] text-[var(--text-primary)] outline-none focus:border-[var(--accent)]/50 transition-all placeholder:text-[var(--text-muted)]"
                           />
                         </div>
                       </div>
 
                       <div className="space-y-2">
-                        <label className="text-[9px] font-black uppercase tracking-widest text-[var(--text-muted)] ml-1">Your Message</label>
+                        <label className="text-[11px] font-semibold tracking-wide text-[var(--text-muted)] ml-1">Your Message</label>
                         <textarea 
                           required
                           placeholder="Describe the issue or share your thoughts..."
                           value={message}
                           onChange={(e) => setMessage(e.target.value)}
-                          className="w-full h-48 bg-black/40 border border-white/5 rounded-xl p-6 text-base text-white outline-none focus:border-[var(--accent)]/50 transition-all resize-none custom-scroll"
+                          className="w-full h-48 bg-[var(--glass-bg)] border border-[var(--glass-border)] rounded-xl p-6 text-[13px] text-[var(--text-primary)] outline-none focus:border-[var(--accent)]/50 transition-all resize-none custom-scroll placeholder:text-[var(--text-muted)]"
                         />
                       </div>
                     </div>
@@ -476,21 +475,21 @@ const FeedbackPage: React.FC = () => {
                     {submitStatus === 'error' && (
                       <div className="flex items-center gap-3 p-4 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400">
                         <AlertCircle className="w-4 h-4" />
-                        <span className="text-[10px] font-black uppercase tracking-widest">Failed to send. Please try again.</span>
+                        <span className="text-[11px] font-semibold tracking-wide">Failed to send. Please try again.</span>
                       </div>
                     )}
 
                     <button 
                       type="submit"
                       disabled={isSubmitting || !message.trim()}
-                      className="w-full h-16 bg-[var(--accent)] hover:bg-[var(--accent)]/90 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-xl shadow-xl shadow-[var(--accent-glow)] transition-all flex items-center justify-center gap-3 group"
+                      className="w-full h-16 bg-[var(--accent)] hover:bg-[var(--accent)]/90 disabled:opacity-50 disabled:cursor-not-allowed text-[var(--accent-contrast)] rounded-xl shadow-xl shadow-[var(--accent-glow)] transition-all flex items-center justify-center gap-3"
                     >
                       {isSubmitting ? (
                         <Loader2 className="w-5 h-5 animate-spin" />
                       ) : (
                         <>
-                          <Send className="w-4 h-4 group-hover:translate-x-1 group-hover:-translate-y-1 transition-transform" />
-                          <span className="text-[11px] font-black uppercase tracking-widest">Submit Feedback</span>
+                          <Send className="w-4 h-4" />
+                          <span className="text-[11px] font-semibold tracking-wide">Submit Feedback</span>
                         </>
                       )}
                     </button>
@@ -501,6 +500,8 @@ const FeedbackPage: React.FC = () => {
           </AnimatePresence>
         </main>
       </div>
+      
+      <Footer />
     </div>
   );
 };

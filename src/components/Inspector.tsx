@@ -4,7 +4,6 @@ import { getThoughtConfig } from './thought/registry';
 import { useStore } from '../store/useStore';
 import { useModalStore } from '../store/useModalStore';
 import type { ThoughtType } from '../db';
-import { db } from '../db';
 import { 
   X, ArrowUp, ArrowDown, Save, Maximize2, Trash2, Palette
 } from 'lucide-react';
@@ -13,6 +12,7 @@ import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 import { motion, AnimatePresence } from 'framer-motion';
 import { DateTimePicker } from './common/DateTimePicker';
+import { syncOrchestrator } from '../services/sync/syncOrchestrator';
 
 function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -37,13 +37,13 @@ const ColorPicker: React.FC<{ value: string; onChange: (val: string) => void; di
       <button
         onClick={() => !disabled && setIsOpen(!isOpen)}
         className={cn(
-          "w-8 h-8 rounded-full border border-white/20 transition-all flex items-center justify-center group relative overflow-hidden",
+          "w-8 h-8 rounded-full border border-[var(--glass-border)] transition-all flex items-center justify-center group relative overflow-hidden",
           disabled && "opacity-50 cursor-default"
         )}
         style={{ backgroundColor: value, boxShadow: `0 0 15px ${value}44` }}
       >
-        <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-          <Palette className="w-3.5 h-3.5 text-white" />
+        <div className="absolute inset-0 bg-[var(--glass-bg)] opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+          <Palette className="w-3.5 h-3.5 text-[var(--text-primary)]" />
         </div>
       </button>
 
@@ -60,10 +60,10 @@ const ColorPicker: React.FC<{ value: string; onChange: (val: string) => void; di
                 <button
                   key={color}
                   onClick={() => { onChange(color); setIsOpen(false); }}
-                  className={cn(
-                    "w-8 h-8 rounded-lg border-2 transition-all hover:scale-110",
-                    value === color ? "border-white" : "border-transparent"
-                  )}
+className={cn(
+                     "w-8 h-8 rounded-lg border-2 transition-all hover:scale-110",
+                     value === color ? "border-[var(--text-primary)]" : "border-transparent"
+                   )}
                   style={{ backgroundColor: color }}
                 />
               ))}
@@ -75,7 +75,7 @@ const ColorPicker: React.FC<{ value: string; onChange: (val: string) => void; di
                 onChange={(e) => onChange(e.target.value)}
                 className="w-full h-8 bg-transparent cursor-pointer rounded-lg overflow-hidden"
               />
-              <p className="text-[9px] font-bold uppercase tracking-widest text-[var(--text-muted)] mt-1 text-center">Custom Hex</p>
+              <p className="text-[9px] font-medium tracking-wide text-[var(--text-muted)] mt-1 text-center">Custom Hex</p>
             </div>
           </motion.div>
         )}
@@ -91,6 +91,7 @@ const Inspector: React.FC = () => {
   const thoughts = useStore((state) => state.thoughts);
   const stacks = useStore((state) => state.stacks);
   const updateThought = useStore((state) => state.updateThought);
+  const updateStack = useStore((state) => state.updateStack);
   const createStack = useStore((state) => state.createStack);
   const deleteThought = useStore((state) => state.deleteThought);
   const setActiveFocus = useStore((state) => state.setActiveFocus);
@@ -118,6 +119,18 @@ const Inspector: React.FC = () => {
 
   const titleInputRef = React.useRef<HTMLInputElement>(null);
 
+  React.useEffect(() => {
+    if (selectedThoughtId) {
+      syncOrchestrator.setFocusEditing(true, selectedThoughtId);
+    }
+    return () => {
+      if (selectedThoughtId) {
+        syncOrchestrator.setFocusEditing(false, selectedThoughtId);
+      }
+    };
+  }, [selectedThoughtId]);
+
+  // Reset local state when selected thought changes
   React.useEffect(() => {
     if (thought) {
       setLocalText(thought.text || '');
@@ -239,9 +252,9 @@ const Inspector: React.FC = () => {
 
               {/* Right Action */}
               <div className="flex-1 flex justify-end">
-                <button 
-                  onClick={() => setInspectorOpen(false)} 
-                  className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-white/10 text-[var(--text-muted)] hover:text-white transition-all"
+                <button
+                  onClick={() => setInspectorOpen(false)}
+                  className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-[var(--glass-bg)] text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-all"
                 >
                   <X className="w-4 h-4" />
                 </button>
@@ -255,7 +268,7 @@ const Inspector: React.FC = () => {
                   key={tab}
                   onClick={() => setActiveTab(tab)}
                   className={cn(
-                    "flex-1 py-3.5 text-[10px] font-bold uppercase tracking-[0.2em] relative transition-all duration-300",
+                    "flex-1 py-3.5 text-[10px] font-medium tracking-wide relative transition-all duration-300",
                     activeTab === tab ? "text-[var(--text-primary)]" : "text-[var(--text-muted)] hover:text-[var(--text-primary)]"
                   )}
                 >
@@ -299,10 +312,10 @@ const Inspector: React.FC = () => {
                             }
                           }}
                           maxLength={100}
-                          className={cn(
-                            "w-full bg-white/[0.03] border border-[var(--glass-border)] rounded-xl p-3 text-[13px] outline-none focus:border-[var(--accent)] focus:bg-white/[0.05] text-[var(--text-primary)] placeholder:text-[var(--text-muted)] transition-colors shadow-inner",
-                            isReadOnly && "pointer-events-none opacity-80"
-                          )}
+className={cn(
+                             "w-full bg-[var(--glass-bg)] border border-[var(--glass-border)] rounded-xl p-3 text-[13px] outline-none focus:border-[var(--accent)] focus:bg-[var(--bg-page)] text-[var(--text-primary)] placeholder:text-[var(--text-muted)] transition-colors shadow-inner",
+                             isReadOnly && "pointer-events-none opacity-80"
+                           )}
                           placeholder="Thought Name"
                         />
                       </div>
@@ -320,10 +333,10 @@ const Inspector: React.FC = () => {
                           }}
                           rows={4}
                           maxLength={150}
-                          className={cn(
-                            "w-full bg-white/[0.03] border border-[var(--glass-border)] rounded-xl p-3 text-[12px] outline-none focus:border-[var(--accent)] focus:bg-white/[0.05] text-[var(--text-primary)] placeholder:text-[var(--text-muted)] transition-colors shadow-inner resize-none",
-                            isReadOnly && "pointer-events-none opacity-80"
-                          )}
+className={cn(
+                             "w-full bg-[var(--glass-bg)] border border-[var(--glass-border)] rounded-xl p-3 text-[12px] outline-none focus:border-[var(--accent)] focus:bg-[var(--bg-page)] text-[var(--text-primary)] placeholder:text-[var(--text-muted)] transition-colors shadow-inner resize-none",
+                             isReadOnly && "pointer-events-none opacity-80"
+                           )}
                           placeholder="Add a quick note..."
                         />
                       </div>
@@ -346,18 +359,18 @@ const Inspector: React.FC = () => {
                                 <button
                                   key={type}
                                   onClick={() => setPendingType(type)}
-                                  className={cn(
-                                    "py-3 px-2 rounded-xl flex flex-col items-center justify-center transition-all border gap-1.5",
-                                    isActive
-                                      ? "bg-[var(--accent)]/10 border-[var(--accent)] text-[var(--text-primary)] shadow-[0_0_15px_var(--accent-glow)]"
-                                      : "bg-white/[0.02] border-white/[0.05] text-[var(--text-muted)] hover:bg-white/[0.06] hover:text-[var(--text-primary)] hover:border-white/10",
-                                    isReadOnly && thought.type !== type && "opacity-30 grayscale cursor-default"
-                                  )}
+className={cn(
+                                     "py-3 px-2 rounded-xl flex flex-col items-center justify-center transition-all border gap-1.5",
+                                     isActive
+                                       ? "bg-[var(--accent)]/10 border-[var(--accent)] text-[var(--text-primary)] shadow-[0_0_15px_var(--accent-glow)]"
+                                       : "bg-[var(--glass-bg)] border-[var(--border)] text-[var(--text-muted)] hover:bg-[var(--bg-page)] hover:text-[var(--text-primary)] hover:border-[var(--glass-border)]",
+                                     isReadOnly && thought.type !== type && "opacity-30 grayscale cursor-default"
+                                   )}
                                   disabled={isReadOnly}
                                   title={tConfig?.label || type}
                                 >
                                   {tConfig?.icon && <tConfig.icon className="w-4 h-4" />}
-                                  <span className="text-[9px] font-bold uppercase tracking-widest">{type === 'tasks' ? 'Task' : type}</span>
+                                  <span className="text-[9px] font-medium tracking-wide">{type === 'tasks' ? 'task' : type}</span>
                                 </button>
                               );
                             })}
@@ -379,7 +392,7 @@ const Inspector: React.FC = () => {
                           )}
                         >
                           <Save className="w-4 h-4" />
-                          <span className="text-[9px] font-bold uppercase tracking-widest">Save Change</span>
+                          <span className="text-[9px] font-medium tracking-wide">Save Change</span>
                         </button>
                       </div>
                     )}
@@ -416,18 +429,18 @@ const Inspector: React.FC = () => {
                             key={s}
                             disabled={isReadOnly}
                             onClick={() => !isReadOnly && updateThought(thought.id, { status: s })}
-                            className={cn(
-                              "border rounded-xl py-2.5 text-[9px] font-bold uppercase tracking-[0.2em] transition-all",
-                              thought.status === s
-                                ? {
-                                  'none': 'bg-white/[0.05] border-white/30 text-[var(--text-primary)] shadow-md',
-                                  'todo': 'bg-[var(--status-todo)]/10 border-[var(--status-todo)] text-[var(--status-todo)] shadow-[0_0_15px_rgba(99,102,241,0.15)]',
-                                  'doing': 'bg-[var(--status-doing)]/10 border-[var(--status-doing)] text-[var(--status-doing)] shadow-[0_0_15px_rgba(234,179,8,0.15)]',
-                                  'done': 'bg-[var(--status-done)]/10 border-[var(--status-done)] text-[var(--status-done)] shadow-[0_0_15px_rgba(34,197,94,0.15)]',
-                                }[s]
-                                : "bg-white/[0.02] border-white/5 text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-white/[0.05] hover:border-white/20",
-                              isReadOnly && thought.status !== s && "opacity-30 grayscale cursor-default"
-                            )}
+className={cn(
+                               "border rounded-xl py-2.5 text-[9px] font-medium tracking-wide transition-all",
+                               thought.status === s
+                                 ? {
+                                   'none': 'bg-[var(--glass-bg)] border-[var(--glass-border)] text-[var(--text-primary)] shadow-md',
+                                   'todo': 'bg-[var(--status-todo)]/10 border-[var(--status-todo)] text-[var(--status-todo)] shadow-[0_0_15px_rgba(99,102,241,0.15)]',
+                                   'doing': 'bg-[var(--status-doing)]/10 border-[var(--status-doing)] text-[var(--status-doing)] shadow-[0_0_15px_rgba(234,179,8,0.15)]',
+                                   'done': 'bg-[var(--status-done)]/10 border-[var(--status-done)] text-[var(--status-done)] shadow-[0_0_15px_rgba(34,197,94,0.15)]',
+                                 }[s]
+                                 : "bg-[var(--glass-bg)] border-[var(--border)] text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-page)] hover:border-[var(--glass-border)]",
+                               isReadOnly && thought.status !== s && "opacity-30 grayscale cursor-default"
+                             )}
                           >
                             {s}
                           </button>
@@ -443,19 +456,19 @@ const Inspector: React.FC = () => {
                             key={p}
                             disabled={isReadOnly}
                             onClick={() => handlePriorityChange(p)}
-                            className={cn(
-                              "border rounded-xl py-2.5 text-[9px] font-bold uppercase tracking-[0.2em] transition-all",
-                              thought.priority === p
-                                ? {
-                                  'none': 'bg-white/[0.05] border-white/30 text-[var(--text-primary)] shadow-md',
-                                  'low': 'bg-[var(--prio-low)]/10 border-[var(--prio-low)] text-[var(--prio-low)] shadow-[0_0_15px_rgba(148,163,184,0.15)]',
-                                  'medium': 'bg-[var(--prio-medium)]/10 border-[var(--prio-medium)] text-[var(--prio-medium)] shadow-[0_0_15px_rgba(168,85,247,0.15)]',
-                                  'high': 'bg-[var(--prio-high)]/10 border-[var(--prio-high)] text-[var(--prio-high)] shadow-[0_0_15px_rgba(245,158,11,0.15)]',
-                                  'urgent': 'bg-[var(--prio-urgent)]/10 border-[var(--prio-urgent)] text-[var(--prio-urgent)] shadow-[0_0_15px_rgba(239,68,68,0.15)]',
-                                }[p]
-                                : "bg-white/[0.02] border-white/5 text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-white/[0.05] hover:border-white/20",
-                              isReadOnly && thought.priority !== p && "opacity-30 grayscale cursor-default"
-                            )}
+className={cn(
+                               "border rounded-xl py-2.5 text-[9px] font-medium tracking-wide transition-all",
+                               thought.priority === p
+                                 ? {
+                                   'none': 'bg-[var(--glass-bg)] border-[var(--glass-border)] text-[var(--text-primary)] shadow-md',
+                                   'low': 'bg-[var(--prio-low)]/10 border-[var(--prio-low)] text-[var(--prio-low)] shadow-[0_0_15px_rgba(148,163,184,0.15)]',
+                                   'medium': 'bg-[var(--prio-medium)]/10 border-[var(--prio-medium)] text-[var(--prio-medium)] shadow-[0_0_15px_rgba(168,85,247,0.15)]',
+                                   'high': 'bg-[var(--prio-high)]/10 border-[var(--prio-high)] text-[var(--prio-high)] shadow-[0_0_15px_rgba(245,158,11,0.15)]',
+                                   'urgent': 'bg-[var(--prio-urgent)]/10 border-[var(--prio-urgent)] text-[var(--prio-urgent)] shadow-[0_0_15px_rgba(239,68,68,0.15)]',
+                                 }[p]
+                                 : "bg-[var(--glass-bg)] border-[var(--border)] text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-page)] hover:border-[var(--glass-border)]",
+                               isReadOnly && thought.priority !== p && "opacity-30 grayscale cursor-default"
+                             )}
                           >
                             {p === 'medium' ? 'Med' : p[0].toUpperCase() + p.slice(1, 3)}
                           </button>
@@ -466,7 +479,7 @@ const Inspector: React.FC = () => {
                     <div className="space-y-3 pt-6 border-t border-[var(--glass-border)]">
                       <label className="text-[10px] uppercase font-bold tracking-widest text-[var(--text-muted)] ml-1">Group</label>
                       {stack ? (
-                        <div className="p-4 bg-white/[0.03] border border-[var(--glass-border)] rounded-2xl space-y-4 shadow-inner">
+                        <div className="p-4 bg-[var(--glass-bg)] border border-[var(--glass-border)] rounded-2xl space-y-4 shadow-inner">
                           <div className="flex items-center gap-4">
                             <ColorPicker 
                               value={stack.color} 
@@ -480,11 +493,11 @@ const Inspector: React.FC = () => {
                                     newStacks[idx] = { ...newStacks[idx], color };
                                     useStore.setState({ stacks: newStacks } as any);
                                   }
-                                  // Debounced DB save
+                                  // Debounced store update
                                   const timerKey = `stack-color-${stack.id}`;
                                   if ((window as any)[timerKey]) clearTimeout((window as any)[timerKey]);
                                   (window as any)[timerKey] = setTimeout(async () => {
-                                    await db.stacks.update(stack.id, { color, updatedAt: Date.now(), syncStatus: 'local' });
+                                    updateStack(stack.id, { color, updatedAt: Date.now(), syncStatus: 'local' });
                                     delete (window as any)[timerKey];
                                   }, 1000);
                                 }
@@ -498,32 +511,21 @@ const Inspector: React.FC = () => {
                                 setLocalStackName(e.target.value);
                                 if (!isReadOnly) {
                                   // Instant store update
-                                  const idx = stacks.findIndex(s => s.id === stack.id);
-                                  if (idx !== -1) {
-                                    const newStacks = [...stacks];
-                                    newStacks[idx] = { ...newStacks[idx], name: e.target.value };
-                                    useStore.setState({ stacks: newStacks } as any);
-                                  }
-                                  // Debounced DB save
-                                  const timerKey = `stack-name-${stack.id}`;
-                                  if ((window as any)[timerKey]) clearTimeout((window as any)[timerKey]);
-                                  (window as any)[timerKey] = setTimeout(async () => {
-                                    await db.stacks.update(stack.id, { name: e.target.value, updatedAt: Date.now(), syncStatus: 'local' });
-                                    delete (window as any)[timerKey];
-                                  }, 1000);
+                                  // Use updateStack which handles Zustand + DB properly
+                                  updateStack(stack.id, { name: e.target.value });
                                 }
                               }}
-                              className={cn(
-                                "bg-transparent text-[11px] font-extrabold uppercase tracking-widest text-white outline-none flex-1 border-b border-transparent focus:border-white/20 pb-1 transition-colors",
-                                isReadOnly && "pointer-events-none"
-                              )}
+className={cn(
+                                 "bg-transparent text-[11px] font-extrabold uppercase tracking-widest text-[var(--text-primary)] outline-none flex-1 border-b border-transparent focus:border-[var(--glass-border)] pb-1 transition-colors",
+                                 isReadOnly && "pointer-events-none"
+                               )}
                               placeholder="Group Name"
                             />
                           </div>
                           {!isReadOnly && (
                             <button
                               onClick={() => unlinkSelectedThoughts()}
-                              className="w-full py-2.5 bg-red-500/5 hover:bg-red-500/10 text-red-400/90 hover:text-red-400 border border-red-500/10 hover:border-red-500/20 rounded-xl text-[9px] font-bold uppercase tracking-[0.2em] transition-all"
+                              className="w-full py-2.5 bg-red-500/5 hover:bg-red-500/10 text-red-400/90 hover:text-red-400 border border-red-500/10 hover:border-red-500/20 rounded-xl text-[9px] font-medium tracking-wide transition-all"
                             >
                               Remove from Group
                             </button>
@@ -547,7 +549,7 @@ const Inspector: React.FC = () => {
                                   e.currentTarget.value = '';
                                 }
                               }}
-                              className="w-full bg-white/[0.03] border border-[var(--glass-border)] rounded-xl p-3 text-[12px] outline-none focus:border-[var(--accent)] focus:bg-white/[0.05] text-[var(--text-primary)] placeholder:text-[var(--text-muted)] transition-colors shadow-inner"
+                              className="w-full bg-[var(--glass-bg)] border border-[var(--glass-border)] rounded-xl p-3 text-[12px] outline-none focus:border-[var(--accent)] focus:bg-[var(--bg-page)] text-[var(--text-primary)] placeholder:text-[var(--text-muted)] transition-colors shadow-inner"
                             />
                           </div>
 
@@ -557,12 +559,12 @@ const Inspector: React.FC = () => {
                               <div className="flex flex-col gap-1 max-h-[160px] overflow-y-auto custom-scroll pr-1">
                                 {stacks.map(s => (
                                   <div key={s.id} className="relative group/s">
-                                    <button
-                                      onClick={() => updateThought(thought.id, { stackId: s.id })}
-                                      className="w-full flex items-center gap-3 p-3 rounded-xl bg-white/[0.02] hover:bg-white/[0.06] border border-transparent hover:border-[var(--glass-border)] transition-all"
-                                    >
-                                      <div className="w-2 h-2 rounded-full" style={{ backgroundColor: s.color, boxShadow: `0 0 8px ${s.color}44` }} />
-                                      <span className="text-[10px] font-bold uppercase tracking-widest text-slate-400 group-hover/s:text-white transition-colors">{s.name}</span>
+<button
+                                       onClick={() => updateThought(thought.id, { stackId: s.id })}
+                                       className="w-full flex items-center gap-3 p-3 rounded-xl bg-[var(--glass-bg)] hover:bg-[var(--bg-page)] border border-transparent hover:border-[var(--glass-border)] transition-all"
+                                     >
+                                       <div className="w-2 h-2 rounded-full" style={{ backgroundColor: s.color, boxShadow: `0 0 8px ${s.color}44` }} />
+                                       <span className="text-[10px] font-medium tracking-wide text-[var(--text-muted)] group-hover/s:text-[var(--text-primary)] transition-colors">{s.name}</span>
                                     </button>
                                     {!isReadOnly && (
                                         <button
@@ -576,7 +578,7 @@ const Inspector: React.FC = () => {
                                               onConfirm: () => useStore.getState().deleteStack(s.id)
                                             });
                                         }}
-                                        className="absolute right-3 top-1/2 -translate-y-1/2 p-1.5 rounded-md bg-red-500/10 text-red-400 hover:bg-red-500 hover:text-white opacity-0 group-hover/s:opacity-100 transition-all shadow-lg"
+                                        className="absolute right-3 top-1/2 -translate-y-1/2 p-1.5 rounded-md bg-red-500/10 text-red-400 hover:bg-red-500 hover:text-[var(--accent-contrast)] opacity-0 group-hover/s:opacity-100 transition-all shadow-lg"
                                       >
                                         <X className="w-3 h-3" />
                                       </button>
@@ -607,10 +609,10 @@ const Inspector: React.FC = () => {
                         value={thought.size || 1.0}
                         disabled={isReadOnly}
                         onChange={(e) => updateThought(thought.id, { size: parseFloat(e.target.value) })}
-                        className={cn(
-                          "w-full h-1.5 bg-white/10 rounded-lg appearance-none cursor-pointer accent-[var(--accent)]",
-                          isReadOnly && "opacity-30 pointer-events-none"
-                        )}
+className={cn(
+                           "w-full h-1.5 bg-[var(--glass-border)] rounded-lg appearance-none cursor-pointer accent-[var(--accent)]",
+                           isReadOnly && "opacity-30 pointer-events-none"
+                         )}
                       />
                     </div>
 
@@ -621,7 +623,7 @@ const Inspector: React.FC = () => {
                           disabled={isReadOnly}
                           onClick={() => !isReadOnly && bringToFront(thought.id)}
                           className={cn(
-                            "flex items-center justify-center gap-2 py-3 bg-white/[0.03] border border-white/5 rounded-xl text-[9px] font-bold uppercase tracking-widest text-slate-400 hover:bg-white/[0.08] hover:text-white transition-all",
+                            "flex items-center justify-center gap-2 py-3 bg-[var(--glass-bg)] border border-[var(--glass-border)] rounded-xl text-[9px] font-medium tracking-wide text-[var(--text-muted)] hover:bg-[var(--bg-page)] hover:text-[var(--text-primary)] transition-all",
                             isReadOnly && "opacity-30 cursor-default"
                           )}
                         >
@@ -631,12 +633,12 @@ const Inspector: React.FC = () => {
                         <button
                           disabled={isReadOnly}
                           onClick={() => !isReadOnly && sendToBack(thought.id)}
-                          className={cn(
-                            "flex items-center justify-center gap-2 py-3 bg-white/[0.03] border border-white/5 rounded-xl text-[9px] font-bold uppercase tracking-widest text-slate-400 hover:bg-white/[0.08] hover:text-white transition-all",
-                            isReadOnly && "opacity-30 cursor-default"
-                          )}
-                        >
-                          <ArrowDown className="w-3.5 h-3.5" />
+className={cn(
+                             "flex items-center justify-center gap-2 py-3 bg-[var(--glass-bg)] border border-[var(--border)] rounded-xl text-[9px] font-medium tracking-wide text-[var(--text-muted)] hover:bg-[var(--bg-page)] hover:text-[var(--text-primary)] transition-all",
+                             isReadOnly && "opacity-30 cursor-default"
+                           )}
+                         >
+                           <ArrowDown className="w-3.5 h-3.5" />
                           Back
                         </button>
                       </div>

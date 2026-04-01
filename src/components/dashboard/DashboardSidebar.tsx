@@ -38,7 +38,7 @@ export const DashboardSidebar: React.FC<DashboardSidebarProps> = ({ isCollapsed,
                   ${
                     active
                       ? 'bg-[var(--accent)] text-white shadow-lg shadow-[var(--accent-glow)]'
-                      : 'text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-white/5'
+                      : 'text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--glass-bg)]'
                   }
                 `}
                 title={isCollapsed ? item.label : undefined}

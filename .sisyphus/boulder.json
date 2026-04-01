@@ -1,0 +1,24 @@
+{
+  "active_plan": "/home/blackbox/cyberia/.sisyphus/plans/fix-linking-unlinking.md",
+  "started_at": "2026-03-31T10:53:30.723Z",
+  "session_ids": [
+    "ses_2bff283f0ffewduxv1Ld4ePjpO",
+    "ses_2bc6caa6dffeXvDz9TMD4k5Zo8",
+    "ses_2bc6c91a1ffe0ICFifSUWQZwtD",
+    "ses_2bc55f4d7ffeQ4719JXq19L6le",
+    "ses_2bc55d385ffeNzMoWJVzsN6RHK",
+    "ses_2bc55e577ffeZOo33IWDqp2tvS",
+    "ses_2bc3f0e7fffeM0odeqIjv5geoI",
+    "ses_2bc3f320effezR81cHY5K8A9Vg",
+    "ses_2bc3eba7fffed4bgBmnBtDN783",
+    "ses_2bc3a33faffevsxl5ZPHIEBhDC",
+    "ses_2bc3ede6cffeXy7DW4NaLjiFGd",
+    "ses_2bc3f59d1ffeMQbBVri0HeCLIg",
+    "ses_2bc3854acffeXkyMZwPKAkjz1W",
+    "ses_2bc3824c6ffe2QvVEgwJOdCEkn",
+    "ses_2bc37b5f9ffeUamFPtyWeoLQrY"
+  ],
+  "plan_name": "fix-linking-unlinking",
+  "agent": "atlas",
+  "task_sessions": {}
+}

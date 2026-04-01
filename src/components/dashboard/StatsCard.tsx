@@ -58,7 +58,7 @@ export const StatsCard: React.FC<StatsCardProps> = ({
         {trend && (
           <div
             className={cn(
-              'flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider',
+              'flex items-center gap-1 text-[10px] font-medium tracking-wider',
               trend.isPositive ? 'text-emerald-400' : 'text-red-400'
             )}
           >
@@ -72,7 +72,7 @@ export const StatsCard: React.FC<StatsCardProps> = ({
         )}
       </div>
       <div>
-        <p className="text-[10px] font-black uppercase tracking-widest text-[var(--text-muted)] mb-1">
+        <p className="text-[10px] font-semibold tracking-widest text-[var(--text-muted)] mb-1">
           {label}
         </p>
         <p className="text-2xl font-bold text-[var(--text-primary)]">

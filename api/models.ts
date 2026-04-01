@@ -25,7 +25,7 @@ export const MODEL_TIERS = {
     monthlyQuota: 200,   // 10 * 20
     description: 'Premium models for complex reasoning',
     models: [
-      { id: 'deepseek/deepseek-r1', name: 'DeepSeek: R1', desc: 'Fast' },
+      { id: 'deepseek/deepseek-r1', name: 'DeepSeek: DeepSeek R1', desc: 'Fast' },
       { id: 'openai/gpt-5.4', name: 'OpenAI: GPT-5.4', desc: 'Still in testing', enabled: false },
       { id: 'google/gemini-3.1-pro-preview', name: 'Google: Gemini 3.1 Pro', desc: 'Still in testing', enabled: false },
       { id: 'anthropic/claude-sonnet-4.6', name: 'Anthropic: Claude Sonnet 4.6', desc: 'Still in testing', enabled: false},
@@ -40,11 +40,10 @@ export const MODEL_TIERS = {
     monthlyQuota: 800,   // 40 * 20
     description: 'Balanced models for everyday tasks',
     models: [
-      { id: 'deepseek/deepseek-v3.2', name: 'DeepSeek: V3.2', desc: 'Recommended, fast and accurate' },
+      { id: 'deepseek/deepseek-v3.2', name: 'DeepSeek: DeepSeek V3.2', desc: 'Recommended, fast and accurate' },
+      { id: 'google/gemini-3-flash-preview', name: 'Google: Gemini 3 Flash', desc: 'Balanced' },
       { id: 'openai/gpt-5.4-mini', name: 'OpenAI: GPT-5.4 Mini', desc: 'Smart but slower' },
       { id: 'openai/o4-mini', name: 'OpenAI: o4 Mini', desc: 'Smart but slower' },
-      { id: 'google/gemini-3-flash-preview', name: 'Google: Gemini 3 Flash', desc: 'Balanced' },
-      { id: 'google/gemini-3.1-flash-lite-preview', name: 'Google: Gemini 3.1 Flash Lite', desc: 'Faster but less accurate' },
       { id: 'anthropic/claude-haiku-4.5', name: 'Anthropic: Claude Haiku 4.5', desc: 'Still in testing', enabled: false },
     ]
   },
@@ -56,7 +55,7 @@ export const MODEL_TIERS = {
     monthlyQuota: 6000,  // 200 * 30
     description: 'Ultra-fast budget AI for everyday tasks',
     models: [
-      { id: 'deepseek/deepseek-chat-v3.1', name: 'DeepSeek: V3.1', desc: 'Recommended, fast for simple tasks' },
+      { id: 'google/gemini-3.1-flash-lite-preview', name: 'Google: Gemini 3.1 Flash Lite', desc: 'Recommended,' },
       { id: 'google/gemini-2.5-flash-lite', name: 'Google: Gemini 2.5 Flash Lite', desc: 'Recommended, fast for simple tasks' },
       { id: 'openai/gpt-5-nano', name: 'OpenAI: GPT-5 Nano', desc: 'Still in testing', enabled: false },
     ]
@@ -68,13 +67,9 @@ export const MODEL_TIERS = {
     monthlyQuota: null,
     description: 'Free models with unlimited access',
     models: [
-      { id: 'openrouter/free', name: 'Free Models Router', desc: 'Randomly assigned model' },
-      { id: 'nvidia/nemotron-3-super-120b-a12b:free', name: 'NVIDIA: Nemotron 3 Super', desc: '' },
-      { id: 'arcee-ai/trinity-mini:free', name: 'Arcee AI: Trinity Mini', desc: '' },
       { id: 'stepfun/step-3.5-flash:free', name: 'StepFun: Step 3.5 Flash', desc: '' },
       { id: 'minimax/minimax-m2.5:free', name: 'MiniMax M2.5', desc: '' },
       { id: 'z-ai/glm-4.5-air:free', name: 'Z.ai: GLM 4.5 Air', desc: '' },
-
     ]
   }
 };

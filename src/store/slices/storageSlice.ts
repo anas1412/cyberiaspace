@@ -59,33 +59,28 @@ export const createStorageSlice: StateCreator<AuthState, [], [], any> = (set, ge
     const { autoSync, user, isOnline } = get();
     
     const isBlocked = syncOrchestrator.getSyncBlocked();
-    console.log(`[Storage] uploadThoughtBlob started for thoughtId: ${thoughtId}, autoSync: ${autoSync}, force: ${force}, isBlocked: ${isBlocked}`);
 
     if (isBlocked && !force) {
-      console.log('[Storage] Sync is currently blocked, skipping individual upload');
       return;
     }
 
     if ((!autoSync && !force) || !user) {
-      console.log('[Storage] Auto-sync is OFF, keeping blob locally');
       return;
     }
 
     try {
       const { useStore } = await import('../useStore');
       const store = useStore.getState();
-      const currentUserId = user.id;
+      const currentUserId = user?.id ?? 'guest';
 
       const blobEntry = await db.blobs.filter(b => b.thoughtId === thoughtId && b.userId === currentUserId).first();
-      const thought = await db.thoughts.filter(t => t.id === thoughtId && t.userId === currentUserId).first();
+      const thought = await db.thoughts.filter(t => t.id === thoughtId).first();
 
       if (!thought || thought.userId !== currentUserId) {
-        console.warn('[Storage] Thought not found or belongs to another user:', thoughtId);
         return;
       }
 
       if (!blobEntry) {
-        console.warn('[Storage] No blob entry found for id:', thoughtId);
         return;
       }
 
@@ -195,6 +190,12 @@ export const createStorageSlice: StateCreator<AuthState, [], [], any> = (set, ge
       
       const fileName = thought.text || 'asset';
       const fileType = blob.type || 'application/octet-stream';
+      const now = Date.now();
+
+      const { useStore } = await import('../useStore');
+      const store = useStore.getState();
+
+      store.patchThought(thoughtId, { updatedAt: now });
 
       await db.blobs.put({
         id: thoughtId,
@@ -203,17 +204,10 @@ export const createStorageSlice: StateCreator<AuthState, [], [], any> = (set, ge
         name: fileName,
         type: fileType,
         userId: currentUserId,
-        updatedAt: Date.now()
+        updatedAt: now
       });
 
-      const { useStore } = await import('../useStore');
-      const store = useStore.getState();
-      const now = Date.now();
-
-      // Update locally without triggering another sync or marking as 'local'
-      // We use direct DB update + patchThought to bypass the store's debounced updateThought logic
       await db.thoughts.update(thoughtId, { updatedAt: now });
-      store.patchThought(thoughtId, { updatedAt: now });
 
       // Refresh storage usage after local update
       try {
@@ -261,7 +255,10 @@ export const createStorageSlice: StateCreator<AuthState, [], [], any> = (set, ge
           try {
             const res = await fetch(t.storageUrl!);
             const blob = await res.blob();
-            
+            const now = Date.now();
+
+            useStore.getState().patchThought(t.id, { updatedAt: now });
+
             await db.blobs.put({
               id: t.id,
               thoughtId: t.id,
@@ -269,12 +266,10 @@ export const createStorageSlice: StateCreator<AuthState, [], [], any> = (set, ge
               name: t.text || 'asset',
               type: blob.type || 'application/octet-stream',
               userId: currentUserId,
-              updatedAt: Date.now()
+              updatedAt: now
             });
 
-            const now = Date.now();
             await db.thoughts.update(t.id, { updatedAt: now });
-            useStore.getState().patchThought(t.id, { updatedAt: now });
           } catch (e) {
             console.warn(`[Storage] Background download failed for ${t.id}:`, e);
           }
@@ -376,9 +371,10 @@ export const createStorageSlice: StateCreator<AuthState, [], [], any> = (set, ge
         updates.data = { ...thought.data, url: '' };
       }
 
-      await db.thoughts.update(thoughtId, updates);
       const { useStore } = await import('../useStore');
       useStore.getState().updateThought(thoughtId, updates, { skipSync: true });
+
+      await db.thoughts.update(thoughtId, updates);
 
     } catch (err) {
       console.error('[Storage] Failed to remove cloud asset:', err);

@@ -27,14 +27,14 @@ export const PaintRenderer: React.FC<PaintRendererProps> = ({
       ) : hasRemoteContent ? (
         <div className="flex flex-col items-center gap-2 py-4 opacity-40">
           <Palette className="w-6 h-6 text-amber-500/40" />
-          <span className="text-[8px] text-amber-500/40 font-black uppercase tracking-[0.2em] text-center px-2">
+          <span className="text-[8px] text-amber-500/40 font-semibold tracking-[0.2em] text-center px-2">
             Sketch on other device
           </span>
         </div>
       ) : (
         <div className="flex flex-col items-center gap-2 py-4">
           <Palette className="w-6 h-6 text-[var(--text-muted)]" />
-          <span className="text-[10px] text-[var(--text-muted)] font-bold uppercase tracking-widest">Start Painting</span>
+          <span className="text-[10px] text-[var(--text-muted)] font-medium tracking-widest">Start Painting</span>
         </div>
       )}
 

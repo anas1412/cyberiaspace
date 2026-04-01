@@ -1,5 +1,4 @@
 import { useEffect, useRef, Suspense, lazy, useState } from 'react';
-import { Loader2 } from 'lucide-react';
 import { isBrowser } from 'react-device-detect';
 import { Analytics } from '@vercel/analytics/react';
 import { SpeedInsights } from '@vercel/speed-insights/react';
@@ -8,6 +7,7 @@ import { useModalStore } from './store/useModalStore';
 import { useAuthStore } from './store/useAuthStore';
 import { PLAN_CONFIG } from './constants';
 import { detectImageType, generateThumbnail } from './utils/image';
+import { stripFileExtension } from './utils/file';
 import Viewport from './components/Viewport';
 import Toolbar from './components/toolbar/Toolbar';
 import BackgroundEngine from './components/background/BackgroundEngine';
@@ -111,8 +111,18 @@ function App() {
     } else {
       document.body.classList.remove('app-body');
     }
-    return () => document.body.classList.remove('app-body');
+    // No return cleanup needed here as it's handled by the path dependency
   }, [path]);
+
+const theme = useStore((state) => state.theme);
+
+useEffect(() => {
+  // Sync theme to DOM for CSS variables to work
+  document.documentElement.setAttribute('data-theme', theme);
+  document.body.setAttribute('data-theme', theme);
+  // Persist for the index.html blocking script
+  localStorage.setItem('cyberia-theme', theme);
+}, [theme]);
 
   // Hook: Popstate
   useEffect(() => {
@@ -266,7 +276,7 @@ function App() {
           const id = await addThought({
             ...getPlacementProps(),
             type: 'file', // Consolidated to 'file'
-            text: fileName,
+            text: stripFileExtension(fileName),
             data: {
               type: 'file', // Consolidated to 'file'
               url: thumbnail || '',
@@ -458,25 +468,11 @@ function App() {
 
   // Dashboard check
   if (path.startsWith('/dashboard')) {
-    // Wait for admin check to complete
     if (!dashboardReady) {
-      return (
-        <div className="fixed inset-0 z-[10002] bg-[var(--bg-page)] flex items-center justify-center">
-          <Loader2 className="w-8 h-8 animate-spin text-[var(--accent)]" />
-        </div>
-      );
+      return <LoadingOverlay force />; // Uses your branded theme-aware loader
     }
     
-    // Check authentication and admin status
-    if (authStatus !== 'authenticated' || !authUser) {
-      return (
-        <Suspense fallback={<LoadingOverlay force />}>
-          <DashboardLogin />
-        </Suspense>
-      );
-    }
-    
-    if (!isAdmin) {
+    if (authStatus !== 'authenticated' || !authUser || !isAdmin) {
       return (
         <Suspense fallback={<LoadingOverlay force />}>
           <DashboardLogin />

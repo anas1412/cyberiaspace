@@ -92,7 +92,7 @@ describe('thoughtSlice', () => {
         MAX_CLOUD_THOUGHTS: 100,
         MAX_STORAGE_MB: 100,
         AI_ENABLED: true,
-        THEMES_ENABLED: ['cyberia']
+        THEMES_ENABLED: ['dark', 'light']
       })
     });
     

@@ -1,16 +1,14 @@
 import React, { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useStore } from '../store/useStore';
-import { RefreshCw } from 'lucide-react';
+import { RefreshCw, Loader2 } from 'lucide-react';
 
 const LOADING_TIPS = [
-  // Shortcuts
   "Press SPACE to create a new thought",
   "Drag to move. Scroll to zoom.",
   "CTRL+Z to undo, CTRL+Y to redo",
   "CTRL+V to paste from clipboard",
   "Drag files directly onto the canvas to import",
-  // Features
   "Switch between Spatial, Kanban, and Calendar views",
   "Group thoughts into Stacks by dragging them together",
   "Ask Oracle to find, create, or connect anything",
@@ -28,8 +26,6 @@ const LoadingOverlay: React.FC<LoadingOverlayProps> = ({ force }) => {
   const [isStabilizing, setIsStabilizing] = useState(true);
   const show = force || isInitializing || isSpaceLoading || isStabilizing;
   const [showReset, setShowReset] = useState(false);
-
-  // Pick random tip when loading shows
   const [randomTip, setRandomTip] = useState('');
 
   useEffect(() => {
@@ -40,28 +36,19 @@ const LoadingOverlay: React.FC<LoadingOverlayProps> = ({ force }) => {
 
   useEffect(() => {
     if (!isInitializing && !isSpaceLoading) {
-      // Add a small buffer for the engine to stabilize
       const timer = setTimeout(() => setIsStabilizing(false), 800);
       return () => clearTimeout(timer);
     } else {
-      setIsStabilizing((prev) => {
-        if (!prev) return true;
-        return prev;
-      });
+      setIsStabilizing(true);
     }
   }, [isInitializing, isSpaceLoading]);
 
   useEffect(() => {
     if (show) {
-      const timer = setTimeout(() => {
-        setShowReset(true);
-      }, 15000); // Show reset button after 15 seconds
+      const timer = setTimeout(() => setShowReset(true), 12000); 
       return () => clearTimeout(timer);
     } else {
-      setShowReset((prev) => {
-        if (prev) return false;
-        return prev;
-      });
+      setShowReset(false);
     }
   }, [show]);
 
@@ -75,32 +62,39 @@ const LoadingOverlay: React.FC<LoadingOverlayProps> = ({ force }) => {
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          exit={{ opacity: 0, transition: { duration: 0.5, ease: "easeInOut" } }}
-          className="fixed inset-0 z-[20000] flex flex-col items-center justify-center overflow-hidden"
-          style={{ backgroundColor: 'var(--bg-page)' }}
+          exit={{ opacity: 0, transition: { duration: 0.4 } }}
+          className="fixed inset-0 z-[20000] flex flex-col items-center justify-center overflow-hidden bg-[var(--bg-page)]"
         >
-          <div className="flex flex-col items-center gap-6">
-            <h1 className="text-2xl font-bold tracking-tighter text-[var(--text-primary)] uppercase">
+          {/* Ambient Glow background */}
+          <div className="absolute inset-0 bg-[var(--bg-ambient)] opacity-30 pointer-events-none" />
+
+          <div className="relative flex flex-col items-center gap-8">
+            <h1 className="text-xl md:text-2xl font-bold tracking-tighter text-[var(--text-primary)] uppercase select-none">
               CYBERIA<span className="text-[var(--accent)]"> SPACE</span>
             </h1>
             
-            {/* Random Loading Tip */}
-            <p className="text-[10px] text-[var(--text-muted)] font-medium uppercase tracking-widest max-w-[280px] text-center">
-              {randomTip}
-            </p>
-            
-            {/* Simple Spinner */}
-            <div className="w-5 h-5 border-2 border-white/5 border-t-[var(--accent)] rounded-full animate-spin" />
+            <div className="flex flex-col items-center gap-4">
+               {/* Professional Spinner */}
+              <div className="relative">
+                <Loader2 className="w-6 h-6 animate-spin text-[var(--accent)]" />
+                <div className="absolute inset-0 blur-lg bg-[var(--accent)]/20 animate-pulse" />
+              </div>
+
+              {/* Tip - Scaled down for better hierarchy */}
+              <p className="text-[10px] text-[var(--text-muted)] font-bold uppercase tracking-[0.25em] max-w-[300px] text-center leading-relaxed px-6">
+                {randomTip}
+              </p>
+            </div>
 
             {showReset && (
               <motion.button
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
                 onClick={handleForceReset}
-                className="mt-8 flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest text-[var(--text-muted)] hover:text-white transition-colors group whitespace-nowrap"
+                className="mt-4 flex items-center gap-2 px-4 py-2 rounded-full border border-[var(--glass-border)] bg-[var(--glass-bg)] text-[10px] font-bold tracking-widest text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:border-[var(--accent)] transition-all group"
               >
-                <RefreshCw className="w-3 h-3 group-hover:rotate-45 transition-transform" />
-                <span>Don't panic, your data is being processed</span>
+                <RefreshCw className="w-3 h-3 group-hover:rotate-180 transition-transform duration-500" />
+                <span>FORCE RECOVERY</span>
               </motion.button>
             )}
           </div>

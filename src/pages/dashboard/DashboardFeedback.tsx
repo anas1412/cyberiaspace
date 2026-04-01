@@ -191,18 +191,18 @@ const DashboardFeedback: React.FC<DashboardFeedbackProps> = ({ onBack }) => {
       <div className="flex items-center gap-4 mb-2">
         <button
           onClick={onBack}
-          className="p-2 rounded-lg bg-white/5 hover:bg-white/10 text-[var(--text-muted)] hover:text-white transition-colors"
+          className="p-2 rounded-lg bg-[var(--glass-bg)] hover:bg-[var(--bg-page)] text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors"
         >
           <ChevronLeft className="w-5 h-5" />
         </button>
         <div>
-          <h1 className="text-2xl font-bold text-white">Feedback Management</h1>
+          <h1 className="text-2xl font-bold text-[var(--text-primary)]">Feedback Management</h1>
           <p className="text-[var(--text-muted)] text-sm mt-1">{total.toLocaleString()} total entries</p>
         </div>
       </div>
 
       <div className="flex flex-col md:flex-row gap-4">
-        <div className="flex p-1 bg-white/5 rounded-xl border border-white/5">
+        <div className="flex p-1 bg-[var(--glass-bg)] rounded-xl border border-[var(--glass-border)]">
           {statusTabs.map(tab => (
             <button
               key={tab.key}
@@ -213,8 +213,8 @@ const DashboardFeedback: React.FC<DashboardFeedbackProps> = ({ onBack }) => {
               className={cn(
                 "px-4 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all",
                 statusFilter === tab.key 
-                  ? "bg-white/10 text-white" 
-                  : "text-[var(--text-muted)] hover:text-white"
+                  ? "bg-[var(--bg-page)] text-[var(--text-primary)]" 
+                  : "text-[var(--text-muted)] hover:text-[var(--text-primary)]"
               )}
             >
               {tab.label}
@@ -222,7 +222,7 @@ const DashboardFeedback: React.FC<DashboardFeedbackProps> = ({ onBack }) => {
           ))}
         </div>
         
-        <div className="flex p-1 bg-white/5 rounded-xl border border-white/5">
+        <div className="flex p-1 bg-[var(--glass-bg)] rounded-xl border border-[var(--glass-border)]">
           {typeTabs.map(tab => (
             <button
               key={tab.key}
@@ -233,8 +233,8 @@ const DashboardFeedback: React.FC<DashboardFeedbackProps> = ({ onBack }) => {
               className={cn(
                 "px-4 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all",
                 typeFilter === tab.key 
-                  ? "bg-white/10 text-white" 
-                  : "text-[var(--text-muted)] hover:text-white"
+                  ? "bg-[var(--bg-page)] text-[var(--text-primary)]" 
+                  : "text-[var(--text-muted)] hover:text-[var(--text-primary)]"
               )}
             >
               {tab.label}
@@ -252,11 +252,11 @@ const DashboardFeedback: React.FC<DashboardFeedbackProps> = ({ onBack }) => {
         </div>
       )}
 
-      <div className="glass rounded-2xl border border-white/5 overflow-hidden">
+      <div className="glass rounded-2xl border border-[var(--glass-border)] overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full">
             <thead>
-              <tr className="border-b border-white/5">
+              <tr className="border-b border-[var(--glass-border)]">
                 <th className="text-left px-4 py-4 text-[9px] font-black uppercase tracking-widest text-[var(--text-muted)]">User</th>
                 <th className="text-left px-4 py-4 text-[9px] font-black uppercase tracking-widest text-[var(--text-muted)]">Type</th>
                 <th className="text-left px-4 py-4 text-[9px] font-black uppercase tracking-widest text-[var(--text-muted)]">Content</th>
@@ -286,10 +286,10 @@ const DashboardFeedback: React.FC<DashboardFeedbackProps> = ({ onBack }) => {
                     initial={{ opacity: 0, x: -10 }}
                     animate={{ opacity: 1, x: 0 }}
                     transition={{ delay: i * 0.03 }}
-                    className="border-b border-white/5 hover:bg-white/5 transition-colors"
+                    className="border-b border-[var(--glass-border)] hover:bg-[var(--glass-bg)] transition-colors"
                   >
                     <td className="px-4 py-4">
-                      <p className="text-sm text-white flex items-center gap-1">
+                      <p className="text-sm text-[var(--text-primary)] flex items-center gap-1">
                         <User className="w-3 h-3" />
                         {getEmail(item)}
                       </p>
@@ -336,11 +336,11 @@ const DashboardFeedback: React.FC<DashboardFeedbackProps> = ({ onBack }) => {
                     </td>
                     <td className="px-4 py-4 text-right">
                       <div className="flex items-center justify-end gap-2">
-                        <button
-                          onClick={() => setSelectedFeedback(item)}
-                          className="p-2 rounded-lg bg-white/5 hover:bg-white/10 text-[var(--text-muted)] hover:text-white transition-all"
-                          title="View & Reply"
-                        >
+<button
+                           onClick={() => setSelectedFeedback(item)}
+                           className="p-2 rounded-lg bg-[var(--glass-bg)] hover:bg-[var(--bg-page)] text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-all"
+                           title="View & Reply"
+                         >
                           <Reply className="w-4 h-4" />
                         </button>
                         <button
@@ -365,7 +365,7 @@ const DashboardFeedback: React.FC<DashboardFeedbackProps> = ({ onBack }) => {
         </div>
 
         {totalPages > 1 && (
-          <div className="flex items-center justify-between px-4 py-4 border-t border-white/5">
+          <div className="flex items-center justify-between px-4 py-4 border-t border-[var(--glass-border)]">
             <p className="text-[10px] font-black uppercase tracking-widest text-[var(--text-muted)]">
               Page {page} of {totalPages}
             </p>
@@ -373,14 +373,14 @@ const DashboardFeedback: React.FC<DashboardFeedbackProps> = ({ onBack }) => {
               <button
                 disabled={page <= 1}
                 onClick={() => setPage(p => Math.max(1, p - 1))}
-                className="p-2 rounded-lg bg-white/5 hover:bg-white/10 text-[var(--text-muted)] hover:text-white disabled:opacity-30 disabled:cursor-not-allowed transition-all"
+                className="p-2 rounded-lg bg-[var(--glass-bg)] hover:bg-[var(--bg-page)] text-[var(--text-muted)] hover:text-[var(--text-primary)] disabled:opacity-30 disabled:cursor-not-allowed transition-all"
               >
                 <ChevronLeft className="w-4 h-4" />
               </button>
               <button
                 disabled={page >= totalPages}
                 onClick={() => setPage(p => Math.min(totalPages, p + 1))}
-                className="p-2 rounded-lg bg-white/5 hover:bg-white/10 text-[var(--text-muted)] hover:text-white disabled:opacity-30 disabled:cursor-not-allowed transition-all"
+                className="p-2 rounded-lg bg-[var(--glass-bg)] hover:bg-[var(--bg-page)] text-[var(--text-muted)] hover:text-[var(--text-primary)] disabled:opacity-30 disabled:cursor-not-allowed transition-all"
               >
                 <ChevronRight className="w-4 h-4" />
               </button>
@@ -391,13 +391,13 @@ const DashboardFeedback: React.FC<DashboardFeedbackProps> = ({ onBack }) => {
 
       {selectedFeedback && (
         <div 
-          className="fixed inset-0 bg-black/80 backdrop-blur-sm z-[11000] flex items-center justify-center p-4"
+          className="fixed inset-0 bg-[var(--bg-page)]/60 backdrop-blur-md z-[11000] flex items-center justify-center p-4"
           onClick={() => setSelectedFeedback(null)}
         >
           <motion.div
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
-            className="glass rounded-2xl p-6 w-full max-w-lg border border-white/10 max-h-[90vh] overflow-y-auto custom-scroll"
+            className="glass rounded-2xl p-6 w-full max-w-lg border border-[var(--glass-border)] max-h-[90vh] overflow-y-auto custom-scroll"
             onClick={e => e.stopPropagation()}
           >
             <div className="flex items-center justify-between mb-6">
@@ -411,7 +411,7 @@ const DashboardFeedback: React.FC<DashboardFeedbackProps> = ({ onBack }) => {
                   <MessageSquare className="w-5 h-5" />
                 </div>
                 <div>
-                  <h3 className="text-sm font-bold text-white uppercase tracking-widest">{selectedFeedback.type}</h3>
+                  <h3 className="text-sm font-bold text-[var(--text-primary)] uppercase tracking-widest">{selectedFeedback.type}</h3>
                   <p className="text-[10px] text-[var(--text-muted)] flex items-center gap-1">
                     <User className="w-3 h-3" />
                     {getEmail(selectedFeedback)}
@@ -420,7 +420,7 @@ const DashboardFeedback: React.FC<DashboardFeedbackProps> = ({ onBack }) => {
               </div>
               <button
                 onClick={() => setSelectedFeedback(null)}
-                className="p-2 rounded-lg bg-white/5 hover:bg-white/10 text-[var(--text-muted)] hover:text-white transition-all"
+                className="p-2 rounded-lg bg-[var(--glass-bg)] hover:bg-[var(--bg-page)] text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-all"
               >
                 <X className="w-5 h-5" />
               </button>
@@ -429,7 +429,7 @@ const DashboardFeedback: React.FC<DashboardFeedbackProps> = ({ onBack }) => {
             <div className="space-y-4 mb-6">
               <div>
                 <p className="text-[9px] font-black uppercase tracking-widest text-[var(--text-muted)] mb-2">Message</p>
-                <p className="text-sm text-white leading-relaxed bg-white/5 rounded-xl p-4">
+                <p className="text-sm text-[var(--text-primary)] leading-relaxed bg-[var(--glass-bg)] rounded-xl p-4">
                   {getMessage(selectedFeedback)}
                 </p>
               </div>
@@ -448,7 +448,7 @@ const DashboardFeedback: React.FC<DashboardFeedbackProps> = ({ onBack }) => {
                           ? s === 'done' ? "bg-green-500 text-white" : 
                             s === 'doing' ? "bg-blue-500 text-white" : 
                             "bg-slate-500 text-white"
-                          : "bg-white/5 text-[var(--text-muted)] hover:bg-white/10"
+                          : "bg-[var(--glass-bg)] text-[var(--text-muted)] hover:bg-[var(--bg-page)]"
                       )}
                     >
                       {s}
@@ -480,7 +480,7 @@ const DashboardFeedback: React.FC<DashboardFeedbackProps> = ({ onBack }) => {
                     value={replyText}
                     onChange={(e) => setReplyText(e.target.value)}
                     placeholder="Type your reply..."
-                    className="flex-1 h-11 px-4 bg-white/5 border border-white/5 rounded-xl text-sm text-white placeholder:text-[var(--text-muted)] focus:outline-none focus:border-[var(--accent)]/50 transition-colors"
+                    className="flex-1 h-11 px-4 bg-[var(--glass-bg)] border border-[var(--glass-border)] rounded-xl text-sm text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus:outline-none focus:border-[var(--accent)]/50 transition-colors"
                     onKeyDown={(e) => e.key === 'Enter' && handleReply()}
                   />
                   <button
@@ -498,7 +498,7 @@ const DashboardFeedback: React.FC<DashboardFeedbackProps> = ({ onBack }) => {
               </div>
             </div>
 
-            <div className="flex items-center justify-between pt-4 border-t border-white/5">
+            <div className="flex items-center justify-between pt-4 border-t border-[var(--glass-border)]">
               <p className="text-[9px] font-black uppercase tracking-widest text-[var(--text-muted)]">
                 {new Date(getTimestamp(selectedFeedback)).toLocaleString()}
               </p>

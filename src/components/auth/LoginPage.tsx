@@ -76,7 +76,7 @@ const LoginPage: React.FC = () => {
   };
 
   return (
-    <div className="fixed inset-0 z-[10002] bg-black flex items-center justify-center p-6 overflow-hidden select-none">
+    <div className="fixed inset-0 z-[10002] bg-[var(--bg-page)] flex items-center justify-center p-6 overflow-hidden select-none">
       {/* Background Layers matching Cyberia theme */}
       <div className="fixed inset-0 z-0">
         <div className="stars-layer stars-1" />
@@ -93,18 +93,18 @@ const LoginPage: React.FC = () => {
       >
         <button
           onClick={handleBack}
-          className="mb-8 flex items-center gap-2 text-slate-500 hover:text-white transition-colors group"
+          className="mb-8 flex items-center gap-2 text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors group"
         >
           <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
-          <span className="text-[10px] font-black uppercase tracking-widest">Back</span>
+          <span className="text-[10px] font-semibold tracking-wide">Back</span>
         </button>
 
-        <div className="glass p-8 md:p-16 rounded-2xl border border-white/10 shadow-2xl space-y-10 text-center">
+        <div className="glass p-8 md:p-16 rounded-2xl border border-[var(--glass-border)] shadow-2xl space-y-10 text-center">
           <div className="space-y-4">
-<h1 className="text-3xl md:text-5xl font-black text-white uppercase tracking-tighter leading-none">
-              Welcome <span style={{ color: 'var(--accent)' }}>Back</span>
+            <h1 className="text-3xl md:text-5xl font-bold text-[var(--text-primary)] tracking-tight leading-none whitespace-nowrap">
+              WELCOME <span style={{ color: 'var(--accent)' }}>BACK</span>
             </h1>
-            <p className="text-[10px] md:text-[12px] font-bold text-slate-500 uppercase tracking-[0.3em]">
+            <p className="text-[12px] md:text-[14px] font-medium text-[var(--text-muted)]">
               Synchronize your space
             </p>
           </div>
@@ -112,7 +112,7 @@ const LoginPage: React.FC = () => {
           {errorParam && (
             <div className="bg-red-500/10 border border-red-500/20 rounded-2xl p-4 flex items-center gap-3 animate-shake">
               <AlertCircle className="w-5 h-5 text-red-400 shrink-0" />
-              <p className="text-[10px] font-black uppercase tracking-widest text-red-400 text-left leading-tight">
+              <p className="text-[10px] font-semibold tracking-wide text-red-400 text-left leading-tight">
                 Authentication snaged. <br/>
                 <span className="opacity-60">Try signing in again.</span>
               </p>
@@ -120,7 +120,7 @@ const LoginPage: React.FC = () => {
           )}
 
           <div className="space-y-6">
-            <p className="text-[11px] md:text-[13px] text-slate-400 leading-relaxed font-medium max-w-sm mx-auto uppercase tracking-wider">
+            <p className="text-[13px] md:text-[14px] text-[var(--text-muted)] leading-relaxed font-medium max-w-sm mx-auto">
               Sign in to enable cross-device synchronization, secure cloud backups, and advanced Oracle AI features.
             </p>
 
@@ -147,48 +147,48 @@ const LoginPage: React.FC = () => {
             </div>
           </div>
 
-          <div className="pt-8 border-t border-white/5 text-center space-y-4">
-            <p className="text-[8px] font-black uppercase tracking-[0.2em] text-slate-600 italic leading-loose">
-              By signing in, you agree to our policies<br/>
+          <div className="pt-8 border-t border-[var(--glass-border)] text-center space-y-4">
+            <p className="text-[12px] font-medium text-[var(--text-muted)] italic leading-relaxed">
+              By signing in, you agree to our policies
               and the storage of your profile data.
             </p>
             <div className="flex items-center justify-center gap-4 opacity-40 flex-wrap">
-              <button 
+              <button
                 onClick={() => {
                   window.history.pushState({}, '', '/privacy');
                   window.dispatchEvent(new PopStateEvent('popstate'));
                 }}
-                className="text-[8px] font-black uppercase tracking-widest text-slate-400 hover:text-white transition-colors"
+                className="text-[10px] font-medium text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors"
               >
                 Privacy Policy
               </button>
-              <span className="w-0.5 h-0.5 rounded-full bg-white/20" />
-              <button 
+              <span className="w-0.5 h-0.5 rounded-full bg-[var(--glass-border)]" />
+              <button
                 onClick={() => {
                   window.history.pushState({}, '', '/terms');
                   window.dispatchEvent(new PopStateEvent('popstate'));
                 }}
-                className="text-[8px] font-black uppercase tracking-widest text-slate-400 hover:text-white transition-colors"
+                className="text-[10px] font-medium text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors"
               >
                 Terms of Sale (CGV)
               </button>
-              <span className="w-0.5 h-0.5 rounded-full bg-white/20" />
-              <button 
+              <span className="w-0.5 h-0.5 rounded-full bg-[var(--glass-border)]" />
+              <button
                 onClick={() => {
                   window.history.pushState({}, '', '/legal');
                   window.dispatchEvent(new PopStateEvent('popstate'));
                 }}
-                className="text-[8px] font-black uppercase tracking-widest text-slate-400 hover:text-white transition-colors"
+                className="text-[10px] font-medium text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors"
               >
                 Legal Notice
               </button>
-              <span className="w-0.5 h-0.5 rounded-full bg-white/20" />
-              <button 
+              <span className="w-0.5 h-0.5 rounded-full bg-[var(--glass-border)]" />
+              <button
                 onClick={() => {
                   window.history.pushState({}, '', '/contact');
                   window.dispatchEvent(new PopStateEvent('popstate'));
                 }}
-                className="text-[8px] font-black uppercase tracking-widest text-slate-400 hover:text-white transition-colors"
+                className="text-[10px] font-medium text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors"
               >
                 Contact
               </button>

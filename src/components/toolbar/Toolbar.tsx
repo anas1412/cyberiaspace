@@ -31,13 +31,10 @@ const Toolbar: React.FC = () => {
   const setInspectorOpen = useStore((state) => state.setInspectorOpen);
   const exportData = useStore((state) => state.exportData);
   const importData = useStore((state) => state.importData);
-  const theme = useStore((state) => state.theme);
-
-  const setTheme = useStore((state) => state.setTheme);
   const customBg = useStore((state) => state.customBg);
+  const customBgLoading = useStore((state) => state.customBgLoading);
   const setCustomBg = useStore((state) => state.setCustomBg);
   const performanceMode = useStore((state) => state.performanceMode);
-  const setPerformanceMode = useStore((state) => state.setPerformanceMode);
   const deferredPrompt = useStore((state) => state.deferredPrompt);
   const setDeferredPrompt = useStore((state) => state.setDeferredPrompt);
 
@@ -314,16 +311,16 @@ const Toolbar: React.FC = () => {
             openModal={openModal}
           />
 
-          <button 
+          <button
             onClick={handleOracleToggle}
-            className={`h-[48px] px-5 glass rounded-2xl border flex items-center gap-3 transition-all group pointer-events-auto ${
-              isChatOpen 
-                ? 'bg-white/10 text-white border-white/20 shadow-[0_0_20px_rgba(255,255,255,0.05)]' 
-                : 'border-white/5 text-slate-400 hover:text-white'
+            className={`h-[44px] px-5 glass rounded-2xl border flex items-center gap-3 transition-all group pointer-events-auto shadow-lg shadow-[var(--glass-border)] ${
+              isChatOpen
+                ? 'bg-[var(--glass-bg)] text-[var(--text-primary)] border-[var(--glass-border)]'
+                : 'border-[var(--glass-border)] text-[var(--text-muted)] hover:text-[var(--text-primary)]'
             }`}
           >
             <BotMessageSquare className="w-4 h-4" />
-            <span className="text-[10px] font-black uppercase tracking-[0.25em]">AI</span>
+            <span className="text-[12px] font-semibold tracking-wide">AI</span>
           </button>
         </div>
 
@@ -361,7 +358,6 @@ const Toolbar: React.FC = () => {
         zoomOut={zoomOut} 
         resetTransform={resetTransform}
         performanceMode={performanceMode}
-        setPerformanceMode={setPerformanceMode}
         handleTogglePhysics={handleTogglePhysics}
       />
 
@@ -393,9 +389,8 @@ const Toolbar: React.FC = () => {
       <SettingsModal
         isOpen={isSettingsOpen}
         onClose={() => setIsSettingsOpen(false)}
-        theme={theme}
-        setTheme={setTheme}
         customBg={customBg}
+        customBgLoading={customBgLoading}
         setCustomBg={setCustomBg}
         handleExport={handleExport}
         handleImport={handleImport}

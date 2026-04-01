@@ -255,7 +255,7 @@ export const DateTimePicker: React.FC<DateTimePickerProps> = ({
                 <button onClick={handlePrevMonth} className="p-1.5 hover:bg-[var(--glass-border)] rounded-lg text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors">
                   <ChevronLeft className="w-4 h-4" />
                 </button>
-                <h4 className="text-[10px] font-black uppercase tracking-widest text-[var(--text-primary)]">
+                <h4 className="text-[10px] font-semibold tracking-widest text-[var(--text-primary)]">
                   {monthNames[viewDate.getMonth()]} {viewDate.getFullYear()}
                 </h4>
                 <button onClick={handleNextMonth} className="p-1.5 hover:bg-[var(--glass-border)] rounded-lg text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors">
@@ -265,7 +265,7 @@ export const DateTimePicker: React.FC<DateTimePickerProps> = ({
 
               <div className="grid grid-cols-7 gap-1 mb-1">
                 {weekDays.map(d => (
-                  <div key={d} className="text-center text-[8px] font-black uppercase text-[var(--text-muted)] py-1">{d}</div>
+                  <div key={d} className="text-center text-[8px] font-semibold text-[var(--text-muted)] py-1">{d}</div>
                 ))}
               </div>
 
@@ -299,7 +299,7 @@ export const DateTimePicker: React.FC<DateTimePickerProps> = ({
               <div className="mt-4 pt-3 border-t border-[var(--glass-border)]">
                 <div className="flex items-center gap-2 mb-2">
                   <Clock className="w-3 h-3 text-[var(--text-muted)]" />
-                  <span className="text-[8px] font-black uppercase tracking-widest text-[var(--text-muted)]">Time</span>
+                  <span className="text-[8px] font-semibold tracking-widest text-[var(--text-muted)]">Time</span>
                 </div>
                 <div className="grid grid-cols-2 gap-2">
                   <div className="flex items-center gap-1 bg-[var(--bg-page)]/20 rounded-lg px-2 py-1.5 border border-[var(--glass-border)]">
@@ -335,14 +335,14 @@ export const DateTimePicker: React.FC<DateTimePickerProps> = ({
                 onClick={handleToggleAllDay}
                 className={cn(
                   "w-full flex items-center justify-between px-3 py-2.5 rounded-lg border transition-all",
-                  isAllDay
-                    ? "bg-[var(--accent)]/10 border-[var(--accent)]/30 text-[var(--accent-secondary)]"
-                    : "bg-[var(--bg-page)]/10 border-[var(--glass-border)] text-slate-400 hover:text-white"
+isAllDay
+                     ? "bg-[var(--accent)]/10 border-[var(--accent)]/30 text-[var(--accent-secondary)]"
+                     : "bg-[var(--bg-page)]/10 border-[var(--glass-border)] text-[var(--text-muted)] hover:text-[var(--text-primary)]"
                 )}
               >
                 <div className="flex items-center gap-2">
                   <Clock className="w-3.5 h-3.5" />
-                  <span className="text-[9px] font-bold uppercase tracking-wider">All Day</span>
+                  <span className="text-[9px] font-medium tracking-wider">All Day</span>
                 </div>
                 <div className={cn(
                   "w-8 h-4 rounded-full transition-all relative",
@@ -357,9 +357,9 @@ export const DateTimePicker: React.FC<DateTimePickerProps> = ({
 
               <button
                 onClick={() => setShowAdvanced(!showAdvanced)}
-                className="w-full flex items-center justify-between px-3 py-2 bg-[var(--bg-page)]/10 border border-[var(--glass-border)] rounded-lg text-slate-400 hover:text-white transition-all"
+                className="w-full flex items-center justify-between px-3 py-2 bg-[var(--bg-page)]/10 border border-[var(--glass-border)] rounded-lg text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-all"
               >
-                <span className="text-[9px] font-bold uppercase tracking-wider">Advanced</span>
+                <span className="text-[9px] font-medium tracking-wider">Advanced</span>
                 <ChevronRight className={cn("w-3.5 h-3.5 transition-transform", showAdvanced && "rotate-90")} />
               </button>
 
@@ -375,7 +375,7 @@ export const DateTimePicker: React.FC<DateTimePickerProps> = ({
                       <div className="space-y-1.5">
                         <div className="flex items-center gap-1.5">
                           <MapPin className="w-3 h-3 text-[var(--text-muted)]" />
-                          <span className="text-[8px] font-black uppercase tracking-widest text-[var(--text-muted)]">Location</span>
+                          <span className="text-[8px] font-semibold tracking-widest text-[var(--text-muted)]">Location</span>
                         </div>
                         <input
                           type="text"
@@ -397,19 +397,19 @@ export const DateTimePicker: React.FC<DateTimePickerProps> = ({
                 )}
               </AnimatePresence>
 
-              <button onClick={handleClear} className="w-full py-2 bg-red-500/5 hover:bg-red-500/10 border border-red-500/20 rounded-lg text-[8px] font-black uppercase tracking-widest text-red-400 hover:text-red-300 transition-all mt-3">
+              <button onClick={handleClear} className="w-full py-2 bg-red-500/5 hover:bg-red-500/10 border border-red-500/20 rounded-lg text-[8px] font-semibold tracking-widest text-red-400 hover:text-red-300 transition-all mt-3">
                 Clear Date
               </button>
             </div>
 
             <div className="mt-4 pt-3 border-t border-[var(--glass-border)] flex gap-2">
-              <button onClick={handleToday} className="flex-1 py-2 bg-[var(--accent)]/20 hover:bg-[var(--accent)]/30 text-[var(--accent-secondary)] rounded-lg text-[8px] font-black uppercase tracking-widest transition-all">
+              <button onClick={handleToday} className="flex-1 py-2 bg-[var(--accent)]/20 hover:bg-[var(--accent)]/30 text-[var(--accent-secondary)] rounded-lg text-[8px] font-semibold tracking-widest transition-all">
                 Today
               </button>
               <button
                 onClick={handleDone}
                 className={cn(
-                  "flex-1 py-2 rounded-lg text-[8px] font-black uppercase tracking-widest transition-all",
+                  "flex-1 py-2 rounded-lg text-[8px] font-semibold tracking-widest transition-all",
                   hasChanges
                     ? "bg-[var(--accent)] text-[var(--bg-main)] shadow-[0_0_15px_var(--accent-glow)]"
                     : "bg-[var(--glass-border)]/50 text-[var(--text-muted)]"

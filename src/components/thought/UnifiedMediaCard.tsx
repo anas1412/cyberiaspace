@@ -45,7 +45,7 @@ export const UnifiedMediaCard: React.FC<UnifiedMediaCardProps> = ({
         "opacity-0 group-hover:opacity-100"
       )}>
         <Maximize2 className="w-6 h-6 text-white" />
-        <span className="text-[8px] font-black uppercase tracking-widest text-white/80">View Asset</span>
+        <span className="text-[8px] font-semibold tracking-widest text-white/80">View Asset</span>
       </div>
       
       {/* Type Badge */}

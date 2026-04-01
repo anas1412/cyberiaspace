@@ -39,11 +39,11 @@ export const TextRenderer: React.FC<TextRendererProps> = ({
         className="mt-1 flex flex-col items-center gap-2 py-4 bg-[var(--bg-main)]/20 rounded-xl border border-[var(--glass-border)] group/text relative cursor-pointer transition-colors hover:bg-white/[0.05]"
       >
         <Type className="w-6 h-6 text-[var(--text-muted)]" />
-        <span className="text-[10px] text-[var(--text-muted)] font-bold uppercase tracking-widest">
+        <span className="text-[10px] text-[var(--text-muted)] font-medium tracking-widest">
           {hasRemoteContent ? 'Sync Pending' : 'Write Note'}
         </span>
         {hasRemoteContent && (
-          <p className="text-[7px] text-amber-500/40 font-black uppercase tracking-[0.2em] text-center px-4">
+          <p className="text-[7px] text-amber-500/40 font-semibold tracking-[0.2em] text-center px-4">
             Content on other device
           </p>
         )}
@@ -62,7 +62,7 @@ export const TextRenderer: React.FC<TextRendererProps> = ({
   }
 
   return (
-    <div className={cn("overflow-hidden relative", hasContent && "max-h-[140px]")}>
+    <div className={cn("overflow-hidden relative group/text", hasContent && "max-h-[140px]")}>
       <div
         className="markdown-body px-2 text-[11px] leading-relaxed text-[var(--text-dimmed)] select-none pointer-events-none break-words"
         dangerouslySetInnerHTML={{ __html: parsedContent as string }}
@@ -72,10 +72,10 @@ export const TextRenderer: React.FC<TextRendererProps> = ({
         <div className="absolute bottom-0 left-0 right-0 h-16 bg-gradient-to-t from-[var(--bg-main)] via-[var(--bg-main)]/80 to-transparent pointer-events-none" />
       )}
       {!isReadOnly && (
-        <div className="absolute inset-0 bg-[var(--accent)]/10 opacity-0 group-hover/opacity-100 transition-opacity flex items-center justify-center pointer-events-none">
+        <div className="absolute inset-0 bg-[var(--accent)]/10 opacity-0 group-hover/text:opacity-100 transition-opacity flex items-center justify-center pointer-events-none">
           <button
             onClick={(e) => { e.stopPropagation(); setActiveFocus(thought.id, 'text'); }}
-            className="pointer-events-auto bg-[var(--accent)] text-[var(--accent-contrast)] p-2 rounded-lg shadow-xl transform scale-90 group-hover:scale-100 transition-all hover:scale-110 active:scale-95"
+            className="pointer-events-auto prevent-drag bg-[var(--accent)] text-[var(--accent-contrast)] p-2 rounded-lg shadow-xl transform scale-90 group-hover/text:scale-100 transition-all hover:scale-110 active:scale-95"
           >
             <Maximize2 className="w-4 h-4" />
           </button>

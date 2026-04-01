@@ -1,12 +1,12 @@
 import React, { useState } from 'react';
 import { useStore } from '../../store/useStore';
 import { useThoughtPayload } from '../thought/hooks/useThoughtPayload';
+import { syncOrchestrator } from '../../services/sync/syncOrchestrator';
 import { Plus, Trash2, Download } from 'lucide-react';
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 import { motion } from 'framer-motion';
 import { FocusEditorShell } from './FocusEditorShell';
-import { db } from '../../db';
 
 function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -26,15 +26,15 @@ const EditorContent: React.FC<{
       <table className="w-full border-collapse">
         <thead>
           <tr>
-            {isEditMode && <th className="p-1 md:p-2 border border-[var(--glass-border)] w-8 md:w-10 bg-black/40"></th>}
+            {isEditMode && <th className="p-1 md:p-2 border border-[var(--glass-border)] w-8 md:w-10 bg-[var(--glass-bg)]"></th>}
             {table[0]?.map((cell: string, i: number) => (
-              <th key={i} className="p-0 border border-[var(--glass-border)] bg-black/40 min-w-[100px] md:min-w-[150px]">
+              <th key={i} className="p-0 border border-[var(--glass-border)] bg-[var(--glass-bg)] min-w-[100px] md:min-w-[150px]">
                 {isEditMode ? (
                   <div className="flex items-center group/h h-full">
                     <input
                       value={cell}
                       onChange={(e) => onUpdateCell(0, i, e.target.value)}
-                      className="flex-1 bg-transparent p-2 md:p-4 outline-none text-[9px] md:text-xs font-black uppercase tracking-widest text-[var(--accent-secondary)] placeholder:text-[var(--accent-secondary)]/20"
+                      className="flex-1 bg-transparent p-2 md:p-4 outline-none text-[9px] md:text-xs font-semibold tracking-widest text-[var(--accent-secondary)] placeholder:text-[var(--accent-secondary)]/20"
                       placeholder={`COL ${i + 1}`}
                     />
                     <button onClick={() => onDeleteColumn(i)} className="p-1 md:p-2 opacity-0 group-hover/h:opacity-100 text-red-400 hover:text-red-300 transition-opacity">
@@ -42,15 +42,15 @@ const EditorContent: React.FC<{
                     </button>
                   </div>
                 ) : (
-                  <div className="p-2 md:p-4 text-[9px] md:text-xs font-black uppercase tracking-widest text-[var(--accent-secondary)]">
+                  <div className="p-2 md:p-4 text-[9px] md:text-xs font-semibold tracking-widest text-[var(--accent-secondary)]">
                     {cell || `COL ${i + 1}`}
                   </div>
                 )}
               </th>
             ))}
             {isEditMode && (
-              <th className="p-1 md:p-2 border border-[var(--glass-border)] w-10 md:w-16 bg-black/40">
-                <button onClick={onAddColumn} className="w-full h-full flex items-center justify-center hover:bg-white/5 rounded-md md:rounded-lg py-1 md:py-2 transition-colors">
+              <th className="p-1 md:p-2 border border-[var(--glass-border)] w-10 md:w-16 bg-[var(--glass-bg)]">
+                <button onClick={onAddColumn} className="w-full h-full flex items-center justify-center hover:bg-[var(--glass-bg)] rounded-md md:rounded-lg py-1 md:py-2 transition-colors">
                   <Plus className="w-4 h-4 md:w-5 md:h-5 text-[var(--accent-secondary)]" />
                 </button>
               </th>
@@ -63,7 +63,7 @@ const EditorContent: React.FC<{
             return (
               <tr key={actualRow} className="hover:bg-white/[0.02] transition-colors">
                 {isEditMode && (
-                  <td className="p-1 md:p-2 border border-[var(--glass-border)] bg-black/20 text-[8px] md:text-[10px] text-[var(--text-muted)] font-mono text-center relative group w-8 md:w-10">
+                  <td className="p-1 md:p-2 border border-[var(--glass-border)] bg-[var(--glass-bg)] text-[8px] md:text-[10px] text-[var(--text-muted)] font-mono text-center relative group w-8 md:w-10">
                     {actualRow + 1}
                     <button onClick={() => onDeleteRow(actualRow)} className="absolute inset-0 flex items-center justify-center bg-red-500 text-[var(--accent-contrast)] opacity-0 group-hover:opacity-100 transition-opacity">
                       <Trash2 className="w-3.5 h-3.5 md:w-4 h-4" />
@@ -86,18 +86,18 @@ const EditorContent: React.FC<{
                     )}
                   </td>
                 ))}
-                {isEditMode && <td className="border border-[var(--glass-border)] bg-black/10"></td>}
+                {isEditMode && <td className="border border-[var(--glass-border)] bg-[var(--glass-bg)]"></td>}
               </tr>
             );
           })}
           {isEditMode && (
             <tr>
-              <td className="p-1 md:p-2 border border-[var(--glass-border)] text-center bg-black/20">
-                <button onClick={onAddRow} className="w-full h-full flex items-center justify-center hover:bg-white/5 rounded-md md:rounded-lg py-1 md:py-2 transition-colors">
+              <td className="p-1 md:p-2 border border-[var(--glass-border)] text-center bg-[var(--glass-bg)]">
+                <button onClick={onAddRow} className="w-full h-full flex items-center justify-center hover:bg-[var(--glass-bg)] rounded-md md:rounded-lg py-1 md:py-2 transition-colors">
                   <Plus className="w-4 h-4 md:w-5 md:h-5 text-[var(--accent-secondary)]" />
                 </button>
               </td>
-              <td colSpan={(table[0]?.length || 0) + (isEditMode ? 1 : 0)} className="border border-[var(--glass-border)] bg-black/10"></td>
+              <td colSpan={(table[0]?.length || 0) + (isEditMode ? 1 : 0)} className="border border-[var(--glass-border)] bg-[var(--glass-bg)]"></td>
             </tr>
           )}
         </tbody>
@@ -112,7 +112,7 @@ const TableFocusEditor: React.FC = () => {
   const setActiveFocus = useStore((state) => state.setActiveFocus);
   const thoughts = useStore((state) => state.thoughts);
   const stacks = useStore((state) => state.stacks);
-  const patchThought = useStore((state) => state.patchThought);
+  const updateThought = useStore((state) => state.updateThought);
   const isReadOnly = useStore((state) => state.isReadOnly);
 
   const [isEditMode, setIsEditMode] = useState(false);
@@ -121,22 +121,20 @@ const TableFocusEditor: React.FC = () => {
   const stack = stacks.find((s) => s.id === thought?.stackId);
   const isVisible = focusType === 'table' && !!thought;
 
+  React.useEffect(() => {
+    if (thought?.id) {
+      syncOrchestrator.setFocusEditing(true, thought.id);
+    }
+    return () => {
+      syncOrchestrator.setFocusEditing(false, null);
+    };
+  }, [thought?.id]);
+
   const saveTable = (newTable: string[][]) => {
     if (!thought) return;
-    patchThought(thought.id, { 
+    updateThought(thought.id, { 
       data: { type: 'table', rows: newTable } 
     });
-    // Debounced DB save
-    const timerKey = `table-save-${thought.id}`;
-    if ((window as any)[timerKey]) clearTimeout((window as any)[timerKey]);
-    (window as any)[timerKey] = setTimeout(async () => {
-      await db.thoughts.update(thought.id, { 
-        data: { type: 'table', rows: newTable },
-        updatedAt: Date.now(),
-        syncStatus: 'local'
-      });
-      delete (window as any)[timerKey];
-    }, 1000);
   };
 
   const handleUpdateCell = (r: number, c: number, val: string) => {
@@ -196,18 +194,7 @@ const TableFocusEditor: React.FC = () => {
       title={thought.text}
       onTitleChange={(val) => { 
         if (!isReadOnly) {
-          patchThought(thought.id, { text: val });
-          // Debounced DB save
-          const timerKey = `title-save-${thought.id}`;
-          if ((window as any)[timerKey]) clearTimeout((window as any)[timerKey]);
-          (window as any)[timerKey] = setTimeout(async () => {
-            await db.thoughts.update(thought.id, { 
-              text: val,
-              updatedAt: Date.now(),
-              syncStatus: 'local'
-            });
-            delete (window as any)[timerKey];
-          }, 1000);
+          updateThought(thought.id, { text: val });
         }
       }}
       description={thought.description}
@@ -224,7 +211,7 @@ const TableFocusEditor: React.FC = () => {
               onClick={() => setIsEditMode(mode.id)}
               disabled={mode.id === true && isReadOnly}
                 className={cn(
-                  "relative px-4 md:px-6 py-2 md:py-2.5 rounded-lg md:rounded-xl text-[9px] md:text-[10px] font-black uppercase tracking-widest transition-all duration-300 z-10",
+                  "relative px-4 md:px-6 py-2 md:py-2.5 rounded-lg md:rounded-xl text-[9px] md:text-[10px] font-semibold tracking-widest transition-all duration-300 z-10",
                   isEditMode === mode.id 
                     ? (mode.id === true ? "text-[var(--accent-contrast)]" : "text-[var(--text-primary)]")
                     : "text-[var(--text-muted)] hover:text-[var(--text-primary)]",

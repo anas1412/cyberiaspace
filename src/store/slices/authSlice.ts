@@ -50,15 +50,15 @@ const getInitialUser = (): User | null => {
         monthly_medium_count: user.usage?.monthly_medium_count ?? 0,
         monthly_small_count: user.usage?.monthly_small_count ?? 0,
       },
-      settings: {
-        theme: user.settings?.theme ?? 'cyberia',
-        autoSync: user.settings?.autoSync ?? true,
-      }
-    };
-  } catch (e) {
-    return null;
-  }
-};
+        settings: {
+          theme: (typeof window !== 'undefined' && localStorage.getItem('cyberia-theme') as 'dark' | 'light') || 'dark',
+          autoSync: user.settings?.autoSync ?? true,
+        }
+      };
+    } catch (e) {
+      return null;
+    }
+  };
 
 /**
  * Core Local-to-Account Data Flow Engine
@@ -74,7 +74,7 @@ async function runAuthenticationFlow(user: User, get: any, isFreshLogin: boolean
   get().setMigrationInProgress(true);
 
   // Keep loading states active while we set up the local environment
-  useStore.setState({ isInitializing: true, isSpaceLoading: true });
+  store.setInitializationState(true, true);
 
   try {
     // PHASE 1: Fetch Cloud Metadata
@@ -166,7 +166,7 @@ async function runAuthenticationFlow(user: User, get: any, isFreshLogin: boolean
       console.log('[AUTH] Phase 3: Conflict detected. Checking quota...');
       
       // CRITICAL: Stop the loading spinner so the user can see the modal!
-      useStore.setState({ isInitializing: false, isSpaceLoading: false });
+      store.setInitializationState(false, false);
 
       const limits = store.getLimits();
       const totalSpaces = localCount + cloudCount;
@@ -181,7 +181,7 @@ async function runAuthenticationFlow(user: User, get: any, isFreshLogin: boolean
             confirmText: 'Merge Data',
             cancelText: 'Keep Separate',
             onConfirm: async () => {
-              useStore.setState({ isInitializing: true, isSpaceLoading: true });
+              store.setInitializationState(true, true);
               if (typeof store.migrateGuestSpaces === 'function') {
                 await store.migrateGuestSpaces(user.id);
               }
@@ -189,7 +189,7 @@ async function runAuthenticationFlow(user: User, get: any, isFreshLogin: boolean
               resolve();
             },
             onCancel: async () => {
-              useStore.setState({ isInitializing: true, isSpaceLoading: true });
+              store.setInitializationState(true, true);
               localStorage.setItem('cyberia-migration-dismissed', user.id);
               await applyCloudDataIfNeeded();
               await finalizeSetup();
@@ -204,14 +204,14 @@ async function runAuthenticationFlow(user: User, get: any, isFreshLogin: boolean
             confirmText: 'Upgrade to Pro',
             cancelText: 'Keep Separate',
             onConfirm: async () => {
-              useStore.setState({ isInitializing: true, isSpaceLoading: true });
+              store.setInitializationState(true, true);
               window.location.href = '/pricing';
               await applyCloudDataIfNeeded();
               await finalizeSetup();
               resolve();
             },
             onCancel: async () => {
-              useStore.setState({ isInitializing: true, isSpaceLoading: true });
+              store.setInitializationState(true, true);
               localStorage.setItem('cyberia-migration-dismissed', user.id);
               await applyCloudDataIfNeeded();
               await finalizeSetup();
@@ -229,7 +229,7 @@ async function runAuthenticationFlow(user: User, get: any, isFreshLogin: boolean
     }
   } finally {
     get().setMigrationInProgress(false);
-    useStore.setState({ isInitializing: false, isSpaceLoading: false });
+    store.setInitializationState(false, false);
   }
 }
 
@@ -258,23 +258,21 @@ export const createAuthSlice: StateCreator<AuthState, [], [], any> = (set, get, 
   },
 
   initAuth: async () => {
-    window.addEventListener('online', async () => { 
+    // Store cleanup functions for signOut
+    const handleOnline = async () => { 
       set({ isOnline: true });
-      // Push any offline changes, then let realtime handle plan updates
       if (typeof get().processOfflineChanges === 'function') {
         await get().processOfflineChanges();
       }
-    });
-    window.addEventListener('offline', () => set({ isOnline: false, syncStatus: 'offline' }));
+    };
+    const handleOffline = () => set({ isOnline: false, syncStatus: 'offline' });
     
     // Debounce timer for visibility changes - only for token maintenance
     let visibilityDebounceTimer: NodeJS.Timeout | null = null;
-    
-    document.addEventListener('visibilitychange', () => {
+    const handleVisibilityChange = () => {
       if (document.visibilityState === 'visible' && get().status === 'authenticated') {
         if (visibilityDebounceTimer) clearTimeout(visibilityDebounceTimer);
         
-        // Token check on visibility - only if near expiry (realtime handles plan)
         visibilityDebounceTimer = setTimeout(() => {
           const { accessTokenExpiresAt, refreshSecret } = get();
           const now = Date.now();
@@ -286,7 +284,19 @@ export const createAuthSlice: StateCreator<AuthState, [], [], any> = (set, get, 
           }
         }, 2000);
       }
-    });
+    };
+    
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    
+    // Store cleanup functions on the slice for removal in signOut
+    (get() as any)._eventListenerCleanup = () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      if (visibilityDebounceTimer) clearTimeout(visibilityDebounceTimer);
+    };
     
     get().checkExpiry();
     get().setupRefreshInterval();
@@ -378,8 +388,9 @@ export const createAuthSlice: StateCreator<AuthState, [], [], any> = (set, get, 
         monthly_small_count: user.usage?.monthly_small_count ?? 0,
       },
       settings: {
-        space: user.settings?.space ?? 'cyberia',
+        theme: (typeof window !== 'undefined' && localStorage.getItem('cyberia-theme') as 'dark' | 'light') || 'dark',
         autoSync: user.settings?.autoSync ?? true,
+        space: user.settings?.space ?? 'default',
       }
     };
 
@@ -388,7 +399,7 @@ export const createAuthSlice: StateCreator<AuthState, [], [], any> = (set, get, 
       const prevUserId = get().user?.id;
       if (prevUserId && prevUserId !== userWithDefaults.id) {
         const { useStore } = await import('../useStore');
-        useStore.setState({ thoughts: [], spaces: [], stacks: [] });
+        useStore.getState().clearWorkspaceData();
       }
     } catch {
       // ignore cleanup if store isn't ready yet
@@ -435,7 +446,7 @@ export const createAuthSlice: StateCreator<AuthState, [], [], any> = (set, get, 
     try {
       // Ensure UI suspends while we process the login flow and build the user DB.
       const { useStore } = await import('../useStore');
-      useStore.setState({ isInitializing: true, isSpaceLoading: true });
+      useStore.getState().setInitializationState(true, true);
 
       const res = await fetch('/api/google-auth?action=exchange', {
         method: 'POST',
@@ -460,7 +471,7 @@ export const createAuthSlice: StateCreator<AuthState, [], [], any> = (set, get, 
       const { useStore } = await import('../useStore');
 
       // Clear the loading lock on failure
-      useStore.setState({ isInitializing: false, isSpaceLoading: false });
+      useStore.getState().setInitializationState(false, false);
 
       useModalStore.getState().openModal({
         title: 'Authentication Error',
@@ -488,11 +499,18 @@ export const createAuthSlice: StateCreator<AuthState, [], [], any> = (set, get, 
 
   signOut: async () => {
     const { useStore } = await import('../useStore');
-    useStore.setState({ isInitializing: true });
+    useStore.getState().setInitializing(true);
     
     set({ status: 'loading' });
     await new Promise(resolve => setTimeout(resolve, 500));
     syncOrchestrator.cleanupRealtimeListener();
+    
+    // Cleanup event listeners from initAuth
+    const cleanup = (get() as any)._eventListenerCleanup;
+    if (typeof cleanup === 'function') {
+      cleanup();
+      (get() as any)._eventListenerCleanup = null;
+    }
     
     if (refreshInterval) {
       clearInterval(refreshInterval);
@@ -510,7 +528,6 @@ export const createAuthSlice: StateCreator<AuthState, [], [], any> = (set, get, 
     localStorage.removeItem('cyberia-scopes');
     localStorage.removeItem('cyberia-refresh-secret');
     localStorage.removeItem('cyberia-active-space-id');
-    localStorage.removeItem('cyberia-theme');
     localStorage.removeItem('cyberia-migration-dismissed');
     
     set({ 
@@ -523,18 +540,9 @@ export const createAuthSlice: StateCreator<AuthState, [], [], any> = (set, get, 
       lastSync: null 
     });
     
-    useStore.setState({ 
-      thoughts: [], 
-      spaces: [], 
-      stacks: [], 
-      activeSpaceId: null,
-      transform: { x: 0, y: 0, scale: 1 },
-      selectedThoughtIds: [],
-      creatorName: null,
-      customBg: null,
-      theme: 'cyberia'
-    });
-    document.body.setAttribute('data-theme', 'cyberia');
+    const storedTheme = (typeof window !== 'undefined' && localStorage.getItem('cyberia-theme')) || 'dark';
+    useStore.getState().resetStoreState(storedTheme as 'dark' | 'light');
+    document.body.setAttribute('data-theme', storedTheme);
     
     if (typeof useStore.getState().createInitialWorkspace === 'function') {
       await useStore.getState().createInitialWorkspace();
@@ -551,7 +559,7 @@ export const createAuthSlice: StateCreator<AuthState, [], [], any> = (set, get, 
         userId: 'guest',
         name: 'Workspace',
         mode: 'spatial' as const,
-        physics: true,
+        physics: localStorage.getItem('cyberia-physics-enabled') !== 'false',
         order: 0,
         updatedAt: now,
       };
@@ -560,7 +568,7 @@ export const createAuthSlice: StateCreator<AuthState, [], [], any> = (set, get, 
       await useStore.getState().refreshSpaces();
     }
     
-    useStore.setState({ isInitializing: false });
+    useStore.getState().setInitializing(false);
     window.location.reload(); 
   },
 
@@ -627,14 +635,14 @@ export const createAuthSlice: StateCreator<AuthState, [], [], any> = (set, get, 
           const supabaseUser = supabaseProfile.user;
           
           // Trust the database for plan - don't recalculate from expiryDate
+          // IMPORTANT: Preserve local user settings (like theme) - only update autoSync from cloud
           const updatedUser = { 
             ...user, 
-            ...supabaseUser,
-            plan: supabaseUser.plan || 'free', // Database is source of truth
+            plan: supabaseUser.plan || 'free', // Database is source of truth for plan
             settings: {
-              ...user.settings,
-              ...supabaseUser.settings,
-              autoSync: supabaseUser.settings?.autoSync ?? user.settings?.autoSync ?? true
+              ...user.settings, // Preserve ALL local settings including theme
+              autoSync: supabaseUser.settings?.autoSync ?? user.settings?.autoSync ?? true,
+              personality: supabaseUser.settings?.personality ?? user.settings?.personality,
             }
           };
           
@@ -815,7 +823,7 @@ export const createAuthSlice: StateCreator<AuthState, [], [], any> = (set, get, 
       const updates: any = { updatedAt: now, syncStatus: 'local' };
       
       if (space.theme && !freeThemes.includes(space.theme)) {
-        updates.theme = 'cyberia';
+        updates.theme = 'dark';
         needsUpdate = true;
       }
       
@@ -845,6 +853,14 @@ export const createAuthSlice: StateCreator<AuthState, [], [], any> = (set, get, 
     if (!user) return;
     const updatedUser: User = { ...user, plan: 'free', expiryDate: null };
     set({ user: updatedUser });
+    localStorage.setItem('cyberia-user', JSON.stringify(updatedUser));
+  },
+
+  mergeUserData: (userData: Partial<User>) => {
+    const { user } = get();
+    if (!user) return;
+    const updatedUser = { ...user, ...userData };
+    set({ user: updatedUser as User });
     localStorage.setItem('cyberia-user', JSON.stringify(updatedUser));
   },
 

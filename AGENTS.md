@@ -24,6 +24,173 @@ Welcome to the Cyberia codebase! This project is a modern, high-performance spat
 ##  Core Architecture
 
 ###  Data Flow & Synchronization
+
+####  The Three-Layer Architecture
+
+The app uses a **strict hierarchical data flow** where each layer has a specific role:
+
+| Layer | Role | Access Pattern |
+|-------|------|----------------|
+| **Zustand** | Source of Truth for UI | Read: Always. Write: First. |
+| **IndexedDB** | Local Persistence (Write-Behind Cache) | Read: On load only. Write: After Zustand update. |
+| **Supabase** | Cloud Backup | Read: On sync only. Write: After IndexedDB persist. |
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                         UI / React                          │
+│                    Reads from Zustand ONLY                   │
+└─────────────────────────────────────────────────────────────┘
+                              ↑ WRITE
+                              │
+┌─────────────────────────────────────────────────────────────┐
+│                      Zustand Store                          │
+│            (Source of Truth for ALL UI State)              │
+│                                                              │
+│  Rules:                                                      │
+│  • ALWAYS update Zustand FIRST before any other operation    │
+│  • NEVER read from IndexedDB to populate UI state           │
+│  • All mutations go through store slice functions           │
+└─────────────────────────────────────────────────────────────┘
+                              ↑ PERSIST
+                              │
+┌─────────────────────────────────────────────────────────────┐
+│                       IndexedDB                             │
+│                   (Dexie Local Database)                    │
+│                                                              │
+│  Rules:                                                      │
+│  • Written to AFTER Zustand is updated                      │
+│  • Used for app load hydration                              │
+│  • NOT used for UI reads during active sessions            │
+│  • Contains tombstones for soft-delete                     │
+└─────────────────────────────────────────────────────────────┘
+                              ↑ SYNC
+                              │
+┌─────────────────────────────────────────────────────────────┐
+│                        Supabase                             │
+│                      (Cloud Backup)                         │
+│                                                              │
+│  Rules:                                                      │
+│  • Written to after IndexedDB persist                       │
+│  • Read during delta sync to reconcile                      │
+│  • Uses LWW (Last-Write-Wins) based on updatedAt          │
+└─────────────────────────────────────────────────────────────┘
+```
+
+####  Write Flow (MANDATORY)
+
+For **ANY** state mutation, follow this exact order:
+
+```
+User Action
+     ↓
+1. Update Zustand (source of truth)
+     ↓
+2. Persist to IndexedDB (local backup)
+     ↓
+3. Sync to cloud (background)
+```
+
+**Example - Correct:**
+```typescript
+// CORRECT: Zustand first, then IndexedDB, then sync
+updateThought: async (id, updates) => {
+  // 1. Zustand FIRST
+  set({ thoughts: thoughts.map(t => t.id === id ? {...t, ...updates} : t) });
+  
+  // 2. IndexedDB SECOND  
+  await db.thoughts.update(id, { ...updates, syncStatus: 'local' });
+  
+  // 3. Sync happens via triggerSync() (debounced)
+}
+```
+
+**Example - WRONG (Anti-pattern):**
+```typescript
+// WRONG: IndexedDB first, or bypassing Zustand
+updateThought: async (id, updates) => {
+  // BAD: Writing to IndexedDB first
+  await db.thoughts.update(id, updates);
+  
+  // BAD: Not updating Zustand at all
+  // The UI will not reflect this change!
+}
+```
+
+####  Read Flow
+
+- **During Active Sessions:** UI components read **ONLY from Zustand**
+- **On App Load:** Read from IndexedDB, hydrate Zustand, then render
+- **During Sync:** Merge cloud data with local using `mergeThoughts()` for thoughts, respecting editing registry
+
+####  Why This Architecture?
+
+1. **Instant Feedback:** UI updates immediately without waiting for DB
+2. **Offline-First:** All changes persist locally, sync happens in background
+3. **Conflict Resolution:** LWW via `updatedAt` timestamp prevents data loss
+4. **Edit Protection:** Editing registry prevents sync from overwriting unsaved edits
+
+For detailed data flow diagrams and timing, see [`docs/data-flow-audit.md`](./docs/data-flow-audit.md).
+
+####  Blobs/Files Stay Out of Zustand
+
+Blobs (file data) are stored directly in IndexedDB, never in Zustand. This is because:
+- Files can be large (up to 50MB)
+- Zustand is in-memory, too expensive for large files
+- IndexedDB is designed for binary data
+
+**Correct Pattern:**
+```typescript
+// CORRECT: Direct to IndexedDB, metadata to Zustand
+await db.blobs.put({ id, blob, thoughtId, userId });  // Blob to IndexedDB
+await updateThought(id, { text: file.name, data: {...} });  // Metadata to Zustand
+uploadThoughtBlob(id);  // Background upload to cloud
+```
+
+**For File Uploads:**
+1. Store blob in IndexedDB (`db.blobs.put`)
+2. Update metadata in Zustand (`updateThought`)
+3. Upload to cloud in background (`uploadThoughtBlob`)
+
+####  flushThought Does NOT Trigger Sync
+
+The `flushThought()` function persists edits to IndexedDB but does NOT trigger sync. This prevents race conditions where:
+1. File upload sets `syncStatus: 'syncing'`
+2. flushThought runs and was overwriting back to `'local'`
+3. Causing infinite sync loops
+
+Now flushThought preserves `'syncing'` status and sync is handled by:
+- `uploadThoughtBlob()` after file upload completes
+- `deltaSync()` periodically for metadata changes
+
+####  Key Anti-Patterns (BLOCKING)
+
+```typescript
+// ❌ NEVER: Direct IndexedDB write without Zustand update
+await db.thoughts.update(id, { name: 'new' });
+// UI won't update!
+
+// ❌ NEVER: Reading from IndexedDB for UI state  
+const thoughts = await db.thoughts.toArray(); // Don't do this for rendering!
+render(thoughts); // Should use useStore(state => state.thoughts)
+
+// ❌ NEVER: Calling refreshThoughts() after local mutations
+// refreshThoughts() is for SYNC, not for local operations
+// After a local update, Zustand is already correct!
+```
+
+####  When to Use `refreshThoughts()` / `refreshStacks()`
+
+| Scenario | Use refresh? |
+|----------|--------------|
+| After cloud sync (reconciliation) | ✅ YES |
+| On app load | ✅ YES |
+| After local mutation | ❌ NO - Zustand already correct |
+| After merge from cloud | ✅ YES |
+
+###  Old Documentation (Historical Reference)
+
+The sections below describe implementation details that are now governed by the Three-Layer Architecture above:
+
 1.  **Local First:** All user data (Spaces, Thoughts, Stacks) is stored in **IndexedDB** using **Dexie**. This ensures offline functionality and low latency.
 1.5 ** IndexedDB is User-Scoped (CRITICAL):** IndexedDB stores data for ALL users in a single database. Unlike cloud storage, IndexedDB does NOT automatically filter by user. You MUST always filter by `userId` when querying `db.thoughts`, `db.stacks`, or `db.spaces` directly. Always get the current user's ID from `useAuthStore.getState().user?.id ?? 'guest'` and include it in your queries. The Zustand store automatically filters by userId when using `refreshThoughts()` or `refreshStacks()`, but direct DB queries must include `userId` explicitly.
 2.  **Local-First Priority:** The UI must always prioritize local Blobs over cloud URLs. Assets should be rendered from local storage whenever available to ensure instant feedback and offline reliability.
@@ -46,6 +213,111 @@ Welcome to the Cyberia codebase! This project is a modern, high-performance spat
 11. **Echo Filter:** The realtime listener compares incoming cloud `updated_at` with local `updatedAt`. If local data is newer or equal, the change is ignored to prevent infinite self-broadcast loops.
 12. **Atomic Sync Marking:** When pushing changes to cloud, timestamps are captured before upload. Records are only marked `syncStatus: 'synced'` in the finally block if their `updatedAt` hasn't changed during the push, preventing overwriting newer local edits with older cloud data.
 13. **Absence Rule (Grace Period):** When cloud data is missing locally, a 30-second grace period is applied before permanent deletion. This prevents accidental data loss from cloud replication lag.
+
+###  Editing Session Protection (Active Editing Registry)
+
+To prevent data loss when sync operations occur during active editing, the application implements an **Editing Session Registry** pattern:
+
+####  Architecture Principles
+
+1.  **Single Source of Truth:** **Zustand store is the source of truth.** IndexedDB is a write-behind cache. Cloud is backup. The UI never reads from IndexedDB during active editing sessions.
+
+2.  **Merge-Based Sync:** `refreshThoughts()` uses `mergeThoughts()` instead of replacing all thoughts. This preserves actively edited thoughts and uses timestamp-based conflict resolution (`updatedAt`).
+
+3.  **Editing Session Registry:** All editors register their active thought IDs:
+    - **Focus Editors:** Register when opened, unregister on close
+    - **Inspector:** Registers when `selectedThoughtId` changes
+    - **MultiSelectionMenu:** Registers all `selectedThoughtIds`
+
+####  Implementation Details
+
+**Registration API (syncOrchestrator.ts):**
+```typescript
+// Start editing session
+syncOrchestrator.startEditing(thoughtId)
+
+// End editing session (flushes to IndexedDB)
+syncOrchestrator.stopEditing(thoughtId)
+
+// Check if editing
+syncOrchestrator.isEditing(thoughtId): boolean
+```
+
+**Write Flow:**
+```
+User types in editor
+        ↓
+Zustand updated immediately (source of truth)
+        ↓
+500ms debounce timer starts
+        ↓
+If typing continues → timer resets (no IndexedDB write)
+        ↓
+If paused for 500ms → write to IndexedDB
+        ↓
+If sync triggers → deltaSync() skips editing thoughts
+        ↓
+Editor closes → flushThought() saves to IndexedDB
+        ↓
+Next deltaSync() pushes to cloud (excluding editing thoughts)
+```
+
+**Key Files:**
+- `src/services/sync/syncOrchestrator.ts` - Editing registry (`editingThoughtIds` Set)
+- `src/store/slices/thoughtSlice.ts` - `mergeThoughts()` function
+- All editors in `src/components/editors/` and `src/components/Inspector.tsx`
+
+**Important:** The 500ms debounce means **IndexedDB is NOT written while actively typing** - only when the user pauses. This prevents "save storms" during rapid editing while ensuring data persists.
+
+####  CRITICAL: Always Get Fresh State
+
+When a function is called by another function that has already updated Zustand, you MUST NOT use captured state variables. Always call `get()` fresh to get the current state.
+
+**WRONG (stale state bug):**
+```typescript
+unlinkSelectedThoughts: async () => {
+  const { thoughts } = get();  // Captured at call time
+  // ...updates Zustand...
+  
+  // Later calls another function that uses stale thoughts variable!
+  await get().cleanupStacks();  
+}
+
+cleanupStacks: async () => {
+  const { thoughts } = get();  // This gets stale state if called from unlinkSelectedThoughts
+  // Bug: This won't see the updates from unlinkSelectedThoughts
+}
+```
+
+**CORRECT (fresh state):**
+```typescript
+unlinkSelectedThoughts: async () => {
+  const { thoughts } = get();
+  // ...updates Zustand...
+  
+  await get().cleanupStacks();
+}
+
+cleanupStacks: async () => {
+  // ALWAYS get fresh state - do NOT destructure at function start
+  const currentThoughts = get().thoughts;
+  // Now currentThoughts has the latest updates
+}
+```
+
+This principle applies to ALL store functions that call other store functions. If you capture state at the start of a function, and then call another function that also reads state, the inner function will see stale data.
+
+####  Known Limitations
+
+**File Upload Race Condition (`storageSlice.ts`):**
+When a file is uploading, the `uploadBlob()` function fetches `thought.data` at upload start time. If the user edits the thought's title/text during upload, those changes could be lost because the upload completion merges with the stale `currentData`.
+
+This is a low-risk edge case because:
+- File uploads are typically one-time actions, not continuous editing
+- Users rarely rename thoughts while uploads are in progress
+- The conflict only affects `text` field, not actual file content
+
+Future improvement: Check `syncOrchestrator.isEditing(thoughtId)` before upload and queue the update until editing ends.
 
 ###  Spatial Thinking Engine
 - Thoughts are not just static entries; they are physical entities with `x, y` (position) and `vx, vy` (velocity) properties.
@@ -115,6 +387,161 @@ This section serves as a definitive reference for patterns that are deprecated. 
 - **Entity Types:** The `image` thought type is deprecated. Use `type: 'file'` for all image assets to ensure consistent handling and storage.
 - **Onboarding:** Generating initial thoughts, stacks, or multiple spaces for new users is deprecated. Use `createInitialWorkspace` to provide a single, empty "Workspace" for a pure start. The `isOnboarding: true` flag is deprecated for general space use and only remains for the `Homepage` live demo.
 - **Conflict Resolution:** The "Local vs Cloud" choice screen is deprecated. All synchronization conflicts must be resolved automatically using **Last-Write-Wins (LWW)** logic based on the `updatedAt` field.
+- **Custom Themes:** Space-specific themes (storing theme in space settings) are deprecated. Only the global `dark` and `light` themes are supported. The `theme` field in Space entities should not be used.
+
+---
+
+##  Design System & UI Guidelines
+
+###  Typography Scale
+Use these standardized text sizes for consistency across the application:
+
+| Size | Usage | Class |
+|------|-------|-------|
+| **9px** | Labels, tags, badges | `text-[9px]` |
+| **10px** | Small labels, keyboard shortcuts | `text-[10px]` |
+| **11px** | Secondary metadata | `text-[11px]` |
+| **12px** | Body small, menu items, timestamps | `text-xs` or `text-[12px]` |
+| **13px** | Default body text | `text-[13px]` |
+| **14px** | Body medium, descriptions | `text-sm` |
+| **16px** | Large body, focus editor | `text-base` |
+| **20px** | Section headings | `text-xl` |
+| **24px** | Major headings | `text-2xl` |
+| **32px** | Hero text | `text-[32px]` |
+
+**Font Stack:**
+- Primary: `'Plus Jakarta Sans', system-ui, sans-serif`
+- Monospace: `'JetBrains Mono', monospace`
+- Decorative: `'CyberiaBlueprint', cursive`
+
+###  Theme System (Two-Theme Architecture)
+
+**Active Themes:** Only `dark` and `light` themes are supported. Custom/space-specific themes are deprecated.
+
+**Theme Application:**
+- Theme is stored in Zustand store and localStorage (key: `cyberia-theme`)
+- Theme persists across logout/login - user's preference is preserved
+- Applied to `document.body` via `data-theme` attribute
+- Global CSS transitions ensure smooth theme switching (0.2s duration)
+
+**CSS Variable Usage (MANDATORY):**
+
+| Variable | Dark Theme | Light Theme | Usage |
+|----------|------------|-------------|-------|
+| `--bg-page` | `#05060a` | `#f8fafc` | Page background |
+| `--bg-main` | `#0f172a` | `#ffffff` | Card/main backgrounds |
+| `--text-primary` | `#f8fafc` | `#1e293b` | Primary text |
+| `--text-secondary` | `rgba(248,250,252,0.85)` | `rgba(30,41,59,0.85)` | Secondary text |
+| `--text-muted` | `rgba(248,250,252,0.55)` | `rgba(30,41,59,0.65)` | Muted/placeholder text |
+| `--glass-bg` | `rgba(10,10,15,0.75)` | `rgba(255,255,255,0.85)` | Glass morphism backgrounds |
+| `--glass-border` | `rgba(255,255,255,0.08)` | `rgba(0,0,0,0.08)` | Borders on glass elements |
+| `--accent` | `#6366f1` | `#6366f1` | Primary accent (indigo) |
+| `--accent-secondary` | `#818cf8` | `#4f46e5` | Accent hover/active |
+
+**Theme Transitions:**
+All elements have smooth transitions when theme changes:
+```css
+*, *::before, *::after {
+  transition-property: background-color, border-color, color, fill, stroke;
+  transition-duration: 0.2s;
+  transition-timing-function: ease;
+}
+```
+
+###  Component Sizing Standards
+
+**Toolbar Components (Consistent 44px height):**
+- StatusBar: `h-[44px]`
+- ViewSwitcher: `h-[44px]`
+- SpaceSwitcher: `h-[44px]`
+- AccountMenu: `h-[44px]`
+- SystemTray: `h-[44px]`
+
+**Standard Glass Container:**
+```tsx
+<div className="glass px-3 h-[44px] rounded-2xl flex items-center gap-1 
+                border border-[var(--glass-border)] shadow-lg shadow-[var(--glass-border)]">
+```
+
+**Buttons:**
+- Height: `h-full` (fills container)
+- Padding: `px-3`
+- Border radius: `rounded-xl`
+- Active state: `bg-[var(--bg-page)] shadow-md`
+- Inactive state: `text-[var(--text-muted)] hover:text-[var(--text-primary)]`
+
+###  Background System
+
+**BackgroundEngine Layers (z-index):**
+1. **z-0:** Base background color (`--bg-page`)
+2. **z-10:** Atmosphere (nebula gradients with dynamic blend mode)
+3. **z-20:** Starfield (canvas-based particles)
+4. **z-30+:** UI layers
+
+**Theme-Aware Backgrounds:**
+- Dark: White stars, screen blend mode for nebulae
+- Light: Gray particles (40% opacity), multiply blend mode for nebulae
+
+###  Overlay Backdrop Pattern (CRITICAL)
+
+All overlay/modals should use the standardized backdrop pattern for consistency:
+
+```tsx
+// Standard overlay backdrop
+<div className="fixed inset-0 bg-[var(--bg-page)]/60 backdrop-blur-md z-[N]">
+```
+
+**Key properties:**
+- `bg-[var(--bg-page)]/60` - Uses page background with 60% opacity (adapts to light/dark themes)
+- `backdrop-blur-md` - Tailwind's 12px blur (matches Settings/Shortcuts/Help modals)
+- Never use `bg-black/80` or hardcoded colors in overlays
+
+**Examples of components using this pattern:**
+- Settings, Shortcuts, Help modals
+- FocusEditor
+- Dashboard modals (Modal.tsx, inline overlays)
+
+###  Color Usage Rules (CRITICAL)
+
+**NEVER use hardcoded colors:**
+- ❌ `text-white`, `text-slate-400`, `text-gray-600`
+- ❌ `bg-white/10`, `bg-black/20`
+- ❌ `border-white/5`
+
+**ALWAYS use CSS variables:**
+- ✅ `text-[var(--text-primary)]`
+- ✅ `text-[var(--text-muted)]`
+- ✅ `bg-[var(--glass-bg)]`
+- ✅ `border-[var(--glass-border)]`
+
+**Semantic Colors (Allowed Exceptions):**
+- Status indicators: `text-green-500`, `text-amber-500`, `text-red-500`
+- Capacity dots: Green (<80%), Amber (80-99%), Red (100%+)
+
+###  Styling Architecture
+
+**Tailwind + CSS Variables:**
+- Use Tailwind for layout, spacing, sizing
+- Use CSS variables for ALL colors
+- Glass morphism via `.glass` utility class
+
+**Common Patterns:**
+```tsx
+// Glass container
+<div className="glass p-1 rounded-2xl border border-[var(--glass-border)]">
+
+// Button
+<button className="px-3 h-full rounded-xl text-[var(--text-muted)] 
+                   hover:text-[var(--text-primary)] hover:bg-[var(--bg-page)]">
+
+// Input
+<input className="bg-[var(--glass-bg)] border border-[var(--glass-border)]
+                  text-[var(--text-primary)] placeholder:text-[var(--text-muted)]">
+
+// Card/Panel
+<div className="glass rounded-2xl border border-[var(--glass-border)] 
+                shadow-lg shadow-[var(--glass-border)]">
+```
 
 ---
 
@@ -152,25 +579,6 @@ This section serves as a definitive reference for patterns that are deprecated. 
 - **Async Operations:** Wrap with `try/catch` and use `console.error` for debugging.
 - **User Feedback:** Use `useModalStore.getState().openModal()` to display user-facing alerts or errors.
 
-###  Styling
-- **Tailwind CSS:** Primary styling method. Use utility classes directly in `className`.
-- **Themes:** Supported themes include `cyberia`, `sea`, `forest`, `rain`, and `sakura`, toggled via `data-theme` on `document.body`.
-
-###  Theme-Aware Text Colors (CRITICAL)
-When styling UI elements, NEVER use hardcoded colors like `text-white`, `text-slate-400`, `text-gray-600`, etc. These will be invisible on certain themes. Instead, ALWAYS use CSS variables defined in `src/index.css`:
-
-| Situation | Use Instead Of | Use This |
-|-----------|-----------------|----------|
-| Primary text content | `text-white`, `text-slate-300` | `text-[var(--text-primary)]` |
-| Secondary/muted text | `text-slate-400`, `text-slate-500`, `text-slate-600` | `text-[var(--text-muted)]` |
-| Text on accent/colored background | `text-white` when bg is `--accent` (pink/grey) | `text-[var(--accent-contrast)]` |
-| Text on glass background | `text-white` when bg is `--glass-border` | `text-[var(--text-primary)]` |
-| Input placeholders | `placeholder:text-slate-500` | `placeholder:text-[var(--text-muted)]` |
-
-**Why this matters:** The `rain` theme uses a grey accent (`#d6d3d1`) and `sakura` theme uses a pink accent (`#f0a8b8`). White text on these light colors is invisible. The CSS variables handle this automatically per theme.
-
-**Reference Implementation:** Always check `@src/components/Inspector.tsx` for the correct pattern - it already uses these CSS variables correctly.
-
 ---
 
 ##  Backend (Vercel & Supabase)
@@ -188,9 +596,9 @@ When styling UI elements, NEVER use hardcoded colors like `text-white`, `text-sl
 - **Delta Sync:** Always ensure `updatedAt` is updated to `Date.now()` on every mutation (create/update/delete) to support incremental Delta Sync logic.
 - **User Isolation in IndexedDB:** When querying the database directly (not through Zustand), ALWAYS include `userId` in your filter. Example: `db.thoughts.filter(t => t.userId === currentUserId && !t.deletedAt)`. This prevents data leakage between users.
 - **SignOut User Isolation:** When signing out, the `signOut()` function in `authSlice.ts` must clean up ALL user-scoped state to prevent data leakage to the next user:
-    1. Clear localStorage keys: `cyberia-user`, `cyberia-token`, `cyberia-token-expiry`, `cyberia-last-sync`, `cyberia-scopes`, `cyberia-refresh-secret`, `cyberia-active-space-id`, `cyberia-theme`.
+    1. Clear localStorage keys: `cyberia-user`, `cyberia-token`, `cyberia-token-expiry`, `cyberia-last-sync`, `cyberia-scopes`, `cyberia-refresh-secret`, `cyberia-active-space-id`. Note: Do NOT clear `cyberia-theme` - user's theme preference persists across logout/login.
     2. Clear in-memory Zustand store: `thoughts`, `spaces`, `stacks`, `activeSpaceId`, `transform`, `selectedThoughtIds`, `creatorName`, `customBg`, `theme`.
-    3. Reset `document.body` theme attribute to `cyberia`.
+    3. Apply stored theme from localStorage (not hardcoded `dark`) to `document.body` theme attribute.
     4. Call `createInitialWorkspace()` to provision a fresh guest workspace so the app isn't blank after logout.
 
 ### Communication & Language

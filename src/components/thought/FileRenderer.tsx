@@ -51,7 +51,7 @@ export const FileRenderer: React.FC<FileRendererProps> = ({ thought }) => {
         ['js', 'ts', 'tsx', 'json', 'css', 'html'].includes(extension)) {
       return <FileCode className="w-8 h-8 text-amber-400" />;
     }
-    return <FileIcon className="w-8 h-8 text-slate-400" />;
+    return <FileIcon className="w-8 h-8 text-[var(--text-muted)]" />;
   };
 
   const activeSource = localUrl || thought.storageUrl || image;
@@ -129,7 +129,7 @@ export const FileRenderer: React.FC<FileRendererProps> = ({ thought }) => {
         {getFileIcon()}
       </div>
       <div className="flex-1 overflow-hidden">
-        <h4 className="text-[11px] font-black uppercase tracking-widest text-[var(--text-primary)] truncate mb-1">
+        <h4 className="text-[11px] font-semibold tracking-widest text-[var(--text-primary)] truncate mb-1">
           {thought.text || 'Untitled File'}
         </h4>
         <div className="flex items-center gap-2">

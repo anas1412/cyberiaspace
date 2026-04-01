@@ -4,6 +4,7 @@ import { useAuthStore } from '../../store/useAuthStore';
 import { useSyncStore } from '../../store/useSyncStore';
 import { useThoughtPayload } from '../thought/hooks/useThoughtPayload';
 import { useModalStore } from '../../store/useModalStore';
+import { syncOrchestrator } from '../../services/sync/syncOrchestrator';
 import { 
   File as FileIcon, Upload, Download, Loader2, FileAudio, 
   Database, CloudOff, ExternalLink, 
@@ -18,6 +19,7 @@ import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 import { db } from '../../db';
 import { getEmbedInfo } from '../../utils/embeds';
+import { stripFileExtension } from '../../utils/file';
 
 function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -50,8 +52,8 @@ const ColorPicker: React.FC<{ value: string; onChange: (val: string) => void; di
         )}
         style={{ backgroundColor: value, boxShadow: `0 0 10px ${value}88` }}
       >
-        <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-          <Palette className="w-1.5 h-1.5 text-white" />
+        <div className="absolute inset-0 bg-[var(--glass-bg)] opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+          <Palette className="w-1.5 h-1.5 text-[var(--text-primary)]" />
         </div>
       </button>
 
@@ -84,7 +86,7 @@ const ColorPicker: React.FC<{ value: string; onChange: (val: string) => void; di
               onChange={(e) => onChange(e.target.value)}
               className="w-full h-8 bg-transparent cursor-pointer rounded-lg overflow-hidden"
             />
-            <p className="text-[7px] font-black uppercase tracking-widest text-[var(--text-muted)] mt-1 text-center">Custom Hex</p>
+            <p className="text-[7px] font-semibold tracking-widest text-[var(--text-muted)] mt-1 text-center">Custom Hex</p>
           </div>
           </motion.div>
         )}
@@ -150,7 +152,7 @@ const StackItemThumbnail: React.FC<{
                 </div>
               </div>
             ) : (
-              <FileIcon className="w-6 h-6 text-slate-400" />
+              <FileIcon className="w-6 h-6 text-[var(--text-muted)]" />
             )}
           </div>
         )}
@@ -169,7 +171,7 @@ const StackItemThumbnail: React.FC<{
         "absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent transition-opacity flex items-end p-2 text-left",
         isActive ? "opacity-100" : "opacity-0 group-hover/item:opacity-100"
       )}>
-        <p className="text-[7px] md:text-[8px] font-black uppercase tracking-widest text-white truncate w-full">
+        <p className="text-[7px] md:text-[8px] font-semibold tracking-widest text-white truncate w-full">
           {item.text || "Untitled"}
         </p>
       </div>
@@ -293,29 +295,29 @@ const EditorContent: React.FC<{
 
   return (
     <div className="flex-1 flex flex-col min-h-0 relative">
-      <div className="flex-1 relative min-h-0 z-0 bg-black/60 shadow-inner group/content">
+      <div className="flex-1 relative min-h-0 z-0 bg-[var(--bg-page)] shadow-inner group/content">
         {isFetching && !activeSource ? (
-          <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/20 gap-4 backdrop-blur-sm">
+          <div className="absolute inset-0 flex flex-col items-center justify-center bg-[var(--glass-bg)] gap-4 backdrop-blur-sm">
             <Loader2 className="w-10 h-10 text-[var(--accent)] animate-spin" />
-            <p className="text-[10px] font-black uppercase tracking-[0.3em] text-[var(--accent)] animate-pulse">Retrieving Data...</p>
+            <p className="text-[10px] font-semibold tracking-[0.3em] text-[var(--accent)] animate-pulse">Retrieving Data...</p>
           </div>
         ) : isStranded ? (
-          <div className="absolute inset-0 flex flex-col items-center justify-center bg-[#020408]/40 p-8 text-center gap-6">
+          <div className="absolute inset-0 flex flex-col items-center justify-center bg-[var(--glass-bg)] p-8 text-center gap-6">
             <div className="w-24 h-24 bg-amber-500/5 rounded-[2rem] border border-amber-500/10 flex items-center justify-center shadow-2xl relative">
               <Database className="w-10 h-10 text-amber-500 opacity-40" />
-              <div className="absolute -bottom-1 -right-1 bg-black rounded-full p-1 border border-amber-500/20">
+              <div className="absolute -bottom-1 -right-1 bg-[var(--bg-page)] rounded-full p-1 border border-amber-500/20">
                 <CloudOff className="w-4 h-4 text-amber-500" />
               </div>
             </div>
             <div className="max-w-xs">
-              <h3 className="text-xl font-black uppercase tracking-[0.2em] text-[var(--text-primary)] mb-3">Sync Pending</h3>
+              <h3 className="text-xl font-semibold tracking-[0.2em] text-[var(--text-primary)] mb-3">Sync Pending</h3>
               <p className="text-xs font-medium text-[var(--text-muted)] leading-relaxed mb-8 uppercase tracking-widest text-center">
                 This content exists only on your other device. Please sync that device to the cloud to access it here.
               </p>
             </div>
           </div>
         ) : activeSource ? (
-          <div className="absolute inset-0 flex items-center justify-center p-4 md:p-12 bg-black">
+          <div className="absolute inset-0 flex items-center justify-center p-4 md:p-12 bg-[var(--bg-page)]">
             {isPdf ? (
               <iframe 
                 src={activeSource}
@@ -333,7 +335,7 @@ const EditorContent: React.FC<{
                 />
               </div>
             ) : isVideo ? (
-              <div className="relative w-full h-full flex items-center justify-center overflow-hidden rounded-2xl bg-black/40 shadow-2xl border border-white/5">
+              <div className="relative w-full h-full flex items-center justify-center overflow-hidden rounded-2xl bg-[var(--glass-bg)] shadow-2xl border border-[var(--glass-border)]">
                 <video 
                   src={activeSource}
                   poster={image || undefined}
@@ -344,20 +346,20 @@ const EditorContent: React.FC<{
                 />
               </div>
             ) : isAudio ? (
-              <div className="relative w-full h-full flex flex-col items-center justify-center rounded-2xl bg-black/20 shadow-2xl border border-white/5">
+              <div className="relative w-full h-full flex flex-col items-center justify-center rounded-2xl bg-[var(--glass-bg)] shadow-2xl border border-[var(--glass-border)]">
                 <div className="flex-1 flex items-center justify-center">
                   <div className="relative">
                     <div className="absolute inset-0 bg-[var(--accent)]/10 rounded-full blur-3xl animate-pulse scale-150" />
-                    <div className="relative w-32 h-32 md:w-40 md:h-40 bg-white/5 rounded-full flex items-center justify-center border border-white/10">
+                    <div className="relative w-32 h-32 md:w-40 md:h-40 bg-[var(--glass-bg)] rounded-full flex items-center justify-center border border-[var(--glass-border)]">
                       <FileAudio className="w-16 h-12 md:w-20 md:h-16 text-[var(--accent)] opacity-60" />
                     </div>
                   </div>
                 </div>
-                <div className="w-full p-6 md:p-10 bg-black/40 backdrop-blur-xl border-t border-white/5">
+                <div className="w-full p-6 md:p-10 bg-[var(--glass-bg)] backdrop-blur-xl border-t border-[var(--glass-border)]">
                   <audio 
                     controls 
                     autoPlay 
-                    className="w-full h-10 invert brightness-200 hue-rotate-[240deg]"
+                    className="w-full h-10"
                     src={activeSource}
                   />
                 </div>
@@ -367,26 +369,26 @@ const EditorContent: React.FC<{
                 <div className="w-24 h-24 bg-white/5 rounded-3xl border border-[var(--glass-border)] flex items-center justify-center mb-6">
                   <FileIcon className="w-10 h-10 text-[var(--text-muted)]" />
                 </div>
-                <p className="text-[var(--text-muted)] text-[10px] font-black uppercase tracking-[0.3em] opacity-50">Preview unavailable for this format</p>
+                <p className="text-[var(--text-muted)] text-[10px] font-semibold tracking-[0.3em] opacity-50">Preview unavailable for this format</p>
               </div>
             )}
           </div>
         ) : (
-          <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/10 p-8 text-center">
-            <div className="w-24 h-24 bg-white/5 rounded-[2.5rem] border border-[var(--glass-border)] flex items-center justify-center mb-8 shadow-2xl relative group transition-all hover:scale-110 hover:border-[var(--accent)]/30">
+          <div className="absolute inset-0 flex flex-col items-center justify-center bg-[var(--glass-bg)] p-8 text-center">
+            <div className="w-24 h-24 bg-[var(--glass-bg)] rounded-[2.5rem] border border-[var(--glass-border)] flex items-center justify-center mb-8 shadow-2xl relative group transition-all hover:scale-110 hover:border-[var(--accent)]/30">
               <Upload className="w-10 h-10 text-[var(--text-muted)] group-hover:text-[var(--accent)] transition-colors" />
               {isUploading && (
-                <div className="absolute inset-0 bg-black/60 rounded-[2.5rem] flex items-center justify-center backdrop-blur-sm">
+                <div className="absolute inset-0 bg-[var(--glass-bg)] rounded-[2.5rem] flex items-center justify-center backdrop-blur-sm">
                   <Loader2 className="w-8 h-8 text-[var(--accent)] animate-spin" />
                 </div>
               )}
             </div>
-            <h3 className="text-xl font-black uppercase tracking-[0.3em] text-[var(--text-primary)] mb-3">Empty Slot</h3>
+            <h3 className="text-xl font-semibold tracking-[0.3em] text-[var(--text-primary)] mb-3">Empty Slot</h3>
             <p className="text-[10px] font-bold text-[var(--text-muted)] leading-relaxed mb-8 uppercase tracking-[0.2em] opacity-60">
               Drop a file or select one to begin
             </p>
             <label className={cn(
-              "inline-flex items-center gap-3 px-10 py-5 bg-[var(--accent)] hover:brightness-110 text-[var(--accent-contrast)] rounded-2xl text-[10px] font-black uppercase tracking-[0.3em] transition-all cursor-pointer shadow-xl shadow-[var(--accent)]/10 active:scale-95",
+              "inline-flex items-center gap-3 px-10 py-5 bg-[var(--accent)] hover:brightness-110 text-[var(--accent-contrast)] rounded-2xl text-[10px] font-semibold tracking-[0.3em] transition-all cursor-pointer shadow-xl shadow-[var(--accent)]/10 active:scale-95",
               isUploading && "opacity-50 pointer-events-none"
             )}>
               <Upload className="w-4 h-4" />
@@ -402,7 +404,7 @@ const EditorContent: React.FC<{
             <div className="absolute inset-y-0 left-0 flex items-center px-4 md:px-8 pointer-events-none z-10">
               <button
                 onClick={handlePrevious}
-                className="w-12 h-12 rounded-full glass flex items-center justify-center text-slate-400 hover:text-white hover:scale-110 transition-all pointer-events-auto opacity-0 group-hover/content:opacity-100 shadow-2xl translate-x-[-20px] group-hover/content:translate-x-0"
+                className="w-12 h-12 rounded-full glass flex items-center justify-center text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:scale-110 transition-all pointer-events-auto opacity-0 group-hover/content:opacity-100 shadow-2xl translate-x-[-20px] group-hover/content:translate-x-0"
               >
                 <ChevronLeft className="w-6 h-6" />
               </button>
@@ -410,7 +412,7 @@ const EditorContent: React.FC<{
             <div className="absolute inset-y-0 right-0 flex items-center px-4 md:px-8 pointer-events-none z-10">
               <button
                 onClick={handleNext}
-                className="w-12 h-12 rounded-full glass flex items-center justify-center text-slate-400 hover:text-white hover:scale-110 transition-all pointer-events-auto opacity-0 group-hover/content:opacity-100 shadow-2xl translate-x-[20px] group-hover/content:translate-x-0"
+                className="w-12 h-12 rounded-full glass flex items-center justify-center text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:scale-110 transition-all pointer-events-auto opacity-0 group-hover/content:opacity-100 shadow-2xl translate-x-[20px] group-hover/content:translate-x-0"
               >
                 <ChevronRight className="w-6 h-6" />
               </button>
@@ -427,7 +429,7 @@ const EditorContent: React.FC<{
               animate={{ scale: 1, opacity: 1, y: 0 }}
               exit={{ scale: 0.95, opacity: 0, y: 20 }}
               transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-              className="glass backdrop-blur-[40px] border border-white/10 rounded-2xl shadow-[0_20px_50px_rgba(0,0,0,0.5)] p-4 px-6"
+              className="glass backdrop-blur-[40px] border border-[var(--glass-border)] rounded-2xl shadow-[0_20px_50px_rgba(0,0,0,0.5)] p-4 px-6"
             >
               <div className="flex items-center justify-between mb-4 px-2 select-none">
                 <div className="flex items-center gap-4">
@@ -440,10 +442,10 @@ const EditorContent: React.FC<{
                   </div>
                   <div className="flex items-center gap-2 group/stackname">
                     {isRenamingStack ? (
-                      <div className="flex items-center gap-1 bg-white/5 rounded-lg px-2 py-1 border border-[var(--glass-border)]">
+                      <div className="flex items-center gap-1 bg-[var(--glass-bg)] rounded-lg px-2 py-1 border border-[var(--glass-border)]">
                         <input
                           autoFocus
-                          className="bg-transparent text-[10px] font-black uppercase tracking-[0.4em] text-slate-200 border-none outline-none w-24 pt-[1px]"
+                          className="bg-transparent text-[10px] font-semibold tracking-[0.4em] text-[var(--text-secondary)] border-none outline-none w-24 pt-[1px]"
                           value={tempStackName}
                           onChange={(e) => setTempStackName(e.target.value)}
                           onKeyDown={(e) => {
@@ -457,15 +459,15 @@ const EditorContent: React.FC<{
                         />
                         <button 
                           onClick={(e) => { e.stopPropagation(); handleStackRename(); }}
-                          className="p-0.5 hover:bg-white/10 rounded transition-colors"
+                          className="p-0.5 hover:bg-[var(--glass-bg)] rounded transition-colors"
                         >
-                          <Check className="w-2 h-2 text-emerald-400" />
+                          <Check className="w-2 h-2 text-emerald-500" />
                         </button>
                       </div>
                     ) : (
                       <>
                         <span 
-                          className="text-[10px] font-black uppercase tracking-[0.4em] text-slate-200 transition-colors pt-[1px]"
+                          className="text-[10px] font-semibold tracking-[0.4em] text-[var(--text-secondary)] transition-colors pt-[1px]"
                           onDoubleClick={() => { if (!isReadOnly && !isDemo) setIsRenamingStack(true); }}
                         >
                           {stack?.name || 'Collection'}
@@ -473,9 +475,9 @@ const EditorContent: React.FC<{
                         {!isReadOnly && !isDemo && (
                           <button
                             onClick={(e) => { e.stopPropagation(); setIsRenamingStack(true); }}
-                            className="p-1 opacity-0 group-hover/stackname:opacity-100 hover:bg-white/10 rounded transition-all"
+                            className="p-1 opacity-0 group-hover/stackname:opacity-100 hover:bg-[var(--glass-bg)] rounded transition-all"
                           >
-                            <Edit2 className="w-2 h-2 text-slate-400 hover:text-white" />
+                            <Edit2 className="w-2 h-2 text-[var(--text-muted)] hover:text-[var(--text-primary)]" />
                           </button>
                         )}
                       </>
@@ -483,12 +485,12 @@ const EditorContent: React.FC<{
                   </div>
                 </div>
                 <div className="flex items-center gap-3">
-                  <span className="text-[9px] font-black text-slate-500 uppercase tracking-[0.2em]">
+                  <span className="text-[9px] font-black text-[var(--text-muted)] uppercase tracking-[0.2em]">
                     {stackItems.findIndex(i => i.id === thought.id) + 1} / {stackItems.length}
                   </span>
                   <button 
                     onClick={() => setShowPreviews(false)}
-                    className="p-1.5 hover:bg-white/5 rounded-full text-slate-500 hover:text-white transition-all"
+                    className="p-1.5 hover:bg-[var(--glass-bg)] rounded-full text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-all"
                   >
                     <ChevronDown className="w-4 h-4" />
                   </button>
@@ -522,7 +524,7 @@ const EditorContent: React.FC<{
             >
               <button 
                 onClick={() => setShowPreviews(true)}
-                className="glass p-2 px-6 rounded-full flex items-center gap-2 text-[9px] font-black uppercase tracking-widest text-slate-400 hover:text-white transition-all hover:scale-105"
+                className="glass p-2 px-6 rounded-full flex items-center gap-2 text-[9px] font-semibold tracking-widest text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-all hover:scale-105"
               >
                 <ChevronUp className="w-3 h-3" />
                 Show Collection
@@ -551,7 +553,7 @@ const CloudPill: React.FC<{
     return (
       <div className="flex items-center gap-2 px-3 py-1.5 bg-blue-500/5 border border-blue-500/10 rounded-xl opacity-50 cursor-wait">
         <Loader2 className="w-3 h-3 text-blue-400 animate-spin" />
-        <span className="text-[7px] font-black uppercase tracking-[0.2em] text-blue-400">
+        <span className="text-[7px] font-semibold tracking-[0.2em] text-blue-400">
           {isSyncing ? 'Synchronizing' : 'Sync Blocked'}
         </span>
       </div>
@@ -576,7 +578,7 @@ const CloudPill: React.FC<{
           "w-1.5 h-1.5 rounded-full shadow-sm transition-colors duration-300",
           isHovered ? "bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.8)]" : "bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.8)] animate-pulse"
         )} />
-        <span className="text-[7px] font-black uppercase tracking-[0.2em] whitespace-nowrap">
+        <span className="text-[7px] font-semibold tracking-[0.2em] whitespace-nowrap">
           {isHovered ? 'Remove from Cloud' : 'Cloud Synced'}
         </span>
       </button>
@@ -593,14 +595,14 @@ const CloudPill: React.FC<{
         "flex items-center gap-2 px-3 py-1.5 rounded-xl transition-all duration-300 border select-none group/pill",
         isHovered 
           ? "bg-blue-500/10 border-blue-500/20 text-blue-400 shadow-[0_0_15px_rgba(59,130,246,0.1)]" 
-          : "bg-slate-500/5 border-white/5 text-slate-500"
+          : "bg-slate-500/5 border-white/5 text-[var(--text-muted)]"
       )}
     >
       <div className={cn(
         "w-1.5 h-1.5 rounded-full shadow-sm transition-colors duration-300",
         isHovered ? "bg-blue-500 shadow-[0_0_8px_rgba(59,130,246,0.8)]" : "bg-slate-600"
       )} />
-      <span className="text-[7px] font-black uppercase tracking-[0.2em] whitespace-nowrap">
+      <span className="text-[7px] font-semibold tracking-[0.2em] whitespace-nowrap">
         {isHovered ? 'Propagate to Cloud' : 'Local Only'}
       </span>
     </button>
@@ -632,6 +634,15 @@ const FileFocusEditor: React.FC = () => {
   const [isUploading, setIsUploading] = useState(false);
   const [isFetching, setIsFetching] = useState(true); // Start true to guard initial check
   const scrollerRef = useRef<HTMLDivElement>(null);
+
+  React.useEffect(() => {
+    if (thought?.id) {
+      syncOrchestrator.setFocusEditing(true, thought.id);
+    }
+    return () => {
+      syncOrchestrator.setFocusEditing(false, null);
+    };
+  }, [thought?.id]);
 
   // RESET LOGIC: When thought ID changes, clear state and revoke URLs
   useEffect(() => {
@@ -700,13 +711,11 @@ const FileFocusEditor: React.FC = () => {
       if (blobEntry) {
         const url = URL.createObjectURL(blobEntry.blob);
         setLocalPreviewUrl(url);
-        // Trigger a store update to notify UI that local blob is now available
         try {
           const { useStore } = await import('../../store/useStore');
           useStore.getState().updateThought(thought.id, { updatedAt: Date.now() }, { skipSync: true });
         } catch {}
       } else if (thought.storageUrl) {
-        // High priority download for focused item
         useAuthStore.getState().downloadSingleBlob(thought.id);
       }
     } catch (e) {
@@ -744,7 +753,7 @@ const FileFocusEditor: React.FC = () => {
       const meta = { ...thought.meta, file: { name: file.name, size: file.size, type: file.type } };
 
       await updateThought(thought.id, { 
-        text: file.name,
+        text: stripFileExtension(file.name),
         type: 'file',
         data: {
           type: 'file',
@@ -756,7 +765,7 @@ const FileFocusEditor: React.FC = () => {
       });
 
       await db.blobs.put({
-        id: thought.id, // Deterministic ID
+        id: thought.id,
         thoughtId: thought.id,
         blob: file,
         name: file.name,

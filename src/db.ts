@@ -24,7 +24,7 @@ export interface FileMeta {
 // Discriminated Union for modular payload
 export type ThoughtPayload =
   | { type: 'text'; content: string }
-  | { type: 'tasks'; tasks: { text: string; done: boolean }[] }
+  | { type: 'tasks'; tasks: { id?: string; text: string; done: boolean }[] }
   | { type: 'table'; rows: string[][] }
   | { type: 'paint'; drawing: string }
   | { type: 'embed'; url: string; provider?: string; providerId?: string }
@@ -50,7 +50,7 @@ interface Space {
   publishedId?: string | null;
   lastPublished?: string | null;
   updatedAt?: number | null; // Changed to number (Unix ms)
-  theme?: 'cyberia' | 'sea' | 'forest' | 'rain' | 'sakura';
+  theme?: 'dark' | 'light';
   customBg?: string | null;
   syncStatus?: 'local' | 'synced' | 'syncing' | 'error';
   retryCount?: number;

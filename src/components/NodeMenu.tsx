@@ -154,13 +154,13 @@ const NodeMenu: React.FC<NodeMenuProps> = ({ thought, isOpen, onClose, triggerRe
             initial={{ x: 20, opacity: 0 }}
             animate={{ x: 0, opacity: 1 }}
             exit={{ x: 20, opacity: 0 }}
-            className="absolute inset-0 bg-[var(--glass-bg)]/95 backdrop-blur-2xl rounded-[1.5rem] border border-white/10 p-4"
+            className="absolute inset-0 bg-[var(--glass-bg)]/95 backdrop-blur-2xl rounded-[1.5rem] border border-[var(--glass-border)] p-4"
           >
             <div className="flex items-center gap-2 mb-4">
-              <button onClick={() => setSubmenu(null)} className="p-1 hover:bg-white/10 rounded-lg">
-                <ChevronRight className="w-4 h-4 rotate-180 text-slate-400" />
+              <button onClick={() => setSubmenu(null)} className="p-1 hover:bg-[var(--text-primary)]/10 rounded-lg">
+                <ChevronRight className="w-4 h-4 rotate-180 text-[var(--text-muted)]" />
               </button>
-              <span className="text-[10px] font-black uppercase tracking-widest text-white">Set Status</span>
+              <span className="text-[10px] font-semibold tracking-wide text-[var(--text-primary)]">Set Status</span>
             </div>
             <div className="space-y-1">
               {statusOptions.map((opt) => (
@@ -172,11 +172,11 @@ const NodeMenu: React.FC<NodeMenuProps> = ({ thought, isOpen, onClose, triggerRe
                     "w-full flex items-center gap-3 p-3 rounded-xl transition-all",
                     thought.status === opt.value
                       ? "bg-[var(--accent)]/10 border border-[var(--accent)]/30"
-                      : "hover:bg-white/5 border border-transparent"
+                      : "hover:bg-[var(--text-primary)]/5 border border-transparent"
                   )}
                 >
                   <div className={cn("w-2.5 h-2.5 rounded-full", opt.color)} />
-                  <span className="text-[10px] font-bold uppercase tracking-widest text-slate-300">{opt.label}</span>
+                  <span className="text-[10px] font-semibold tracking-wide text-[var(--text-dimmed)]">{opt.label}</span>
                 </button>
               ))}
             </div>
@@ -189,13 +189,13 @@ const NodeMenu: React.FC<NodeMenuProps> = ({ thought, isOpen, onClose, triggerRe
             initial={{ x: 20, opacity: 0 }}
             animate={{ x: 0, opacity: 1 }}
             exit={{ x: 20, opacity: 0 }}
-            className="absolute inset-0 bg-[var(--glass-bg)]/95 backdrop-blur-2xl rounded-[1.5rem] border border-white/10 p-4"
+            className="absolute inset-0 bg-[var(--glass-bg)]/95 backdrop-blur-2xl rounded-[1.5rem] border border-[var(--glass-border)] p-4"
           >
             <div className="flex items-center gap-2 mb-4">
-              <button onClick={() => setSubmenu(null)} className="p-1 hover:bg-white/10 rounded-lg">
-                <ChevronRight className="w-4 h-4 rotate-180 text-slate-400" />
+              <button onClick={() => setSubmenu(null)} className="p-1 hover:bg-[var(--text-primary)]/10 rounded-lg">
+                <ChevronRight className="w-4 h-4 rotate-180 text-[var(--text-muted)]" />
               </button>
-              <span className="text-[10px] font-black uppercase tracking-widest text-white">Set Priority</span>
+              <span className="text-[10px] font-semibold tracking-wide text-[var(--text-primary)]">Set Priority</span>
             </div>
             <div className="space-y-1">
               {priorityOptions.map((opt) => (
@@ -207,11 +207,11 @@ const NodeMenu: React.FC<NodeMenuProps> = ({ thought, isOpen, onClose, triggerRe
                     "w-full flex items-center gap-3 p-3 rounded-xl transition-all",
                     thought.priority === opt.value
                       ? "bg-[var(--accent)]/10 border border-[var(--accent)]/30"
-                      : "hover:bg-white/5 border border-transparent"
+                      : "hover:bg-[var(--text-primary)]/5 border border-transparent"
                   )}
                 >
                   <div className={cn("w-2.5 h-2.5 rounded-full", opt.color)} />
-                  <span className="text-[10px] font-bold uppercase tracking-widest text-slate-300">{opt.label}</span>
+                  <span className="text-[10px] font-semibold tracking-wide text-[var(--text-dimmed)]">{opt.label}</span>
                 </button>
               ))}
             </div>
@@ -224,13 +224,13 @@ const NodeMenu: React.FC<NodeMenuProps> = ({ thought, isOpen, onClose, triggerRe
             initial={{ x: 20, opacity: 0 }}
             animate={{ x: 0, opacity: 1 }}
             exit={{ x: 20, opacity: 0 }}
-            className="absolute inset-0 bg-[var(--glass-bg)]/95 backdrop-blur-2xl rounded-[1.5rem] border border-white/10 p-4 overflow-y-auto"
+            className="absolute inset-0 bg-[var(--glass-bg)]/95 backdrop-blur-2xl rounded-[1.5rem] border border-[var(--glass-border)] p-4 overflow-y-auto"
           >
             <div className="flex items-center gap-2 mb-4">
-              <button onClick={() => setSubmenu(null)} className="p-1 hover:bg-white/10 rounded-lg">
-                <ChevronRight className="w-4 h-4 rotate-180 text-slate-400" />
+              <button onClick={() => setSubmenu(null)} className="p-1 hover:bg-[var(--text-primary)]/10 rounded-lg">
+                <ChevronRight className="w-4 h-4 rotate-180 text-[var(--text-muted)]" />
               </button>
-              <span className="text-[10px] font-black uppercase tracking-widest text-white">Change Type</span>
+              <span className="text-[10px] font-semibold tracking-wide text-[var(--text-primary)]">Change Type</span>
             </div>
             <div className="grid grid-cols-2 gap-2">
               {(Object.keys(typeIcons) as Thought['type'][]).map((type) => {
@@ -244,11 +244,11 @@ const NodeMenu: React.FC<NodeMenuProps> = ({ thought, isOpen, onClose, triggerRe
                       "flex flex-col items-center gap-2 p-4 rounded-xl transition-all",
                       thought.type === type
                         ? "bg-[var(--accent)]/10 border border-[var(--accent)]/30"
-                        : "hover:bg-white/5 border border-transparent"
+                        : "hover:bg-[var(--text-primary)]/5 border border-transparent"
                     )}
                   >
-                    <Icon className="w-5 h-5 text-slate-400" />
-                    <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">{type}</span>
+                    <Icon className="w-5 h-5 text-[var(--text-muted)]" />
+                    <span className="text-[10px] font-semibold tracking-wide text-[var(--text-muted)]">{type}</span>
                   </button>
                 );
               })}
@@ -262,22 +262,22 @@ const NodeMenu: React.FC<NodeMenuProps> = ({ thought, isOpen, onClose, triggerRe
             initial={{ x: 20, opacity: 0 }}
             animate={{ x: 0, opacity: 1 }}
             exit={{ x: 20, opacity: 0 }}
-            className="absolute inset-0 bg-[var(--glass-bg)]/95 backdrop-blur-2xl rounded-[1.5rem] border border-white/10 p-4 overflow-y-auto"
+            className="absolute inset-0 bg-[var(--glass-bg)]/95 backdrop-blur-2xl rounded-[1.5rem] border border-[var(--glass-border)] p-4 overflow-y-auto"
           >
             <div className="flex items-center gap-2 mb-4">
-              <button onClick={() => setSubmenu(null)} className="p-1 hover:bg-white/10 rounded-lg">
-                <ChevronRight className="w-4 h-4 rotate-180 text-slate-400" />
+              <button onClick={() => setSubmenu(null)} className="p-1 hover:bg-[var(--text-primary)]/10 rounded-lg">
+                <ChevronRight className="w-4 h-4 rotate-180 text-[var(--text-muted)]" />
               </button>
-              <span className="text-[10px] font-black uppercase tracking-widest text-white">Collection</span>
+              <span className="text-[10px] font-semibold tracking-wide text-[var(--text-primary)]">Collection</span>
             </div>
             
             <button
               onClick={handleCreateStack}
               disabled={isReadOnly}
-              className="w-full flex items-center gap-3 p-3 rounded-xl hover:bg-white/5 border border-dashed border-white/10 transition-all mb-3"
+              className="w-full flex items-center gap-3 p-3 rounded-xl hover:bg-[var(--text-primary)]/5 border border-dashed border-[var(--glass-border)] transition-all mb-3"
             >
-              <FolderPlus className="w-4 h-4 text-slate-400" />
-              <span className="text-[10px] font-bold uppercase tracking-widest text-slate-300">New Collection</span>
+              <FolderPlus className="w-4 h-4 text-[var(--text-muted)]" />
+              <span className="text-[10px] font-semibold tracking-wide text-[var(--text-dimmed)]">New Collection</span>
             </button>
 
             {currentStack && (
@@ -287,7 +287,7 @@ const NodeMenu: React.FC<NodeMenuProps> = ({ thought, isOpen, onClose, triggerRe
                 className="w-full flex items-center gap-3 p-3 rounded-xl hover:bg-red-500/10 border border-transparent transition-all mb-3"
               >
                 <Unlink className="w-4 h-4 text-red-400" />
-                <span className="text-[10px] font-bold uppercase tracking-widest text-red-400">Remove from Collection</span>
+                <span className="text-[10px] font-semibold tracking-wide text-red-400">Remove from Collection</span>
               </button>
             )}
 
@@ -302,11 +302,11 @@ const NodeMenu: React.FC<NodeMenuProps> = ({ thought, isOpen, onClose, triggerRe
                       "w-full flex items-center gap-3 p-3 rounded-xl transition-all",
                       thought.stackId === stack.id
                         ? "bg-[var(--accent)]/10 border border-[var(--accent)]/30"
-                        : "hover:bg-white/5 border border-transparent"
+                        : "hover:bg-[var(--text-primary)]/5 border border-transparent"
                     )}
                   >
                     <div className="w-2 h-2 rounded-full" style={{ backgroundColor: stack.color }} />
-                    <span className="text-[10px] font-bold uppercase tracking-widest text-slate-300 truncate">{stack.name}</span>
+                    <span className="text-[10px] font-semibold tracking-wide text-[var(--text-dimmed)] truncate">{stack.name}</span>
                   </button>
                 ))}
               </div>
@@ -329,7 +329,7 @@ const NodeMenu: React.FC<NodeMenuProps> = ({ thought, isOpen, onClose, triggerRe
         animate={{ opacity: 1, scale: 1, y: 0 }}
         exit={{ opacity: 0, scale: 0.95, y: -10 }}
         transition={{ type: 'spring', damping: 25, stiffness: 300 }}
-        className="absolute top-0 right-0 z-[100] w-[280px] bg-[var(--glass-bg)]/95 backdrop-blur-2xl rounded-[1.5rem] border border-white/10 shadow-2xl overflow-hidden"
+        className="absolute top-0 right-0 z-[100] w-[280px] bg-[var(--glass-bg)]/95 backdrop-blur-2xl rounded-[1.5rem] border border-[var(--glass-border)] shadow-2xl overflow-hidden"
         style={{ transformOrigin: 'top right' }}
       >
         <AnimatePresence mode="wait">
@@ -343,11 +343,11 @@ const NodeMenu: React.FC<NodeMenuProps> = ({ thought, isOpen, onClose, triggerRe
               className="p-2"
             >
               {/* Header */}
-              <div className="flex items-center justify-between p-3 border-b border-white/5 mb-2">
-                <span className="text-[9px] font-black uppercase tracking-widest text-[var(--text-muted)]">Actions</span>
+              <div className="flex items-center justify-between p-3 border-b border-[var(--glass-border)] mb-2">
+                <span className="text-[9px] font-semibold tracking-wide text-[var(--text-muted)]">Actions</span>
                 <button
                   onClick={onClose}
-                  className="p-1 hover:bg-white/10 rounded-lg transition-colors"
+                  className="p-1 hover:bg-[var(--text-primary)]/10 rounded-lg transition-colors"
                 >
                   <X className="w-3.5 h-3.5 text-[var(--text-muted)]" />
                 </button>
@@ -359,7 +359,7 @@ const NodeMenu: React.FC<NodeMenuProps> = ({ thought, isOpen, onClose, triggerRe
                 <button
                   onClick={() => setSubmenu('status')}
                   disabled={isReadOnly}
-                  className="w-full flex items-center justify-between p-3 rounded-xl hover:bg-white/5 transition-all group"
+                  className="w-full flex items-center justify-between p-3 rounded-xl hover:bg-[var(--text-primary)]/5 transition-all group"
                 >
                   <div className="flex items-center gap-3">
                     {(() => {
@@ -368,13 +368,13 @@ const NodeMenu: React.FC<NodeMenuProps> = ({ thought, isOpen, onClose, triggerRe
                       const Icon = opt.icon;
                       return <Icon className={cn("w-4 h-4", opt.iconColor)} />;
                     })()}
-                    <span className="text-[10px] font-bold uppercase tracking-widest text-slate-300">Status</span>
+                    <span className="text-[10px] font-semibold tracking-wide text-[var(--text-dimmed)]">Status</span>
                   </div>
                   <div className="flex items-center gap-2">
                     <span className="text-[9px] font-medium text-[var(--text-muted)] uppercase">
                       {statusOptions.find(s => s.value === thought.status)?.label}
                     </span>
-                    <ChevronRight className="w-3 h-3 text-[var(--text-dimmed)] group-hover:text-white transition-colors" />
+                    <ChevronRight className="w-3 h-3 text-[var(--text-dimmed)] group-hover:text-[var(--text-primary)] transition-colors" />
                   </div>
                 </button>
 
@@ -382,17 +382,17 @@ const NodeMenu: React.FC<NodeMenuProps> = ({ thought, isOpen, onClose, triggerRe
                 <button
                   onClick={() => setSubmenu('priority')}
                   disabled={isReadOnly}
-                  className="w-full flex items-center justify-between p-3 rounded-xl hover:bg-white/5 transition-all group"
+                  className="w-full flex items-center justify-between p-3 rounded-xl hover:bg-[var(--text-primary)]/5 transition-all group"
                 >
                   <div className="flex items-center gap-3">
                     <Star className={cn("w-4 h-4", thought.priority !== 'none' ? 'text-yellow-400' : 'text-[var(--text-muted)]')} />
-                    <span className="text-[10px] font-bold uppercase tracking-widest text-slate-300">Priority</span>
+                    <span className="text-[10px] font-semibold tracking-wide text-[var(--text-dimmed)]">Priority</span>
                   </div>
                   <div className="flex items-center gap-2">
                     <span className="text-[9px] font-medium text-[var(--text-muted)] uppercase">
                       {priorityOptions.find(p => p.value === thought.priority)?.label}
                     </span>
-                    <ChevronRight className="w-3 h-3 text-[var(--text-dimmed)] group-hover:text-white transition-colors" />
+                    <ChevronRight className="w-3 h-3 text-[var(--text-dimmed)] group-hover:text-[var(--text-primary)] transition-colors" />
                   </div>
                 </button>
 
@@ -400,15 +400,15 @@ const NodeMenu: React.FC<NodeMenuProps> = ({ thought, isOpen, onClose, triggerRe
                 <button
                   onClick={() => setSubmenu('type')}
                   disabled={isReadOnly}
-                  className="w-full flex items-center justify-between p-3 rounded-xl hover:bg-white/5 transition-all group"
+                  className="w-full flex items-center justify-between p-3 rounded-xl hover:bg-[var(--text-primary)]/5 transition-all group"
                 >
                   <div className="flex items-center gap-3">
-                    {React.createElement(typeIcons[thought.type], { className: "w-4 h-4 text-slate-400" })}
-                    <span className="text-[10px] font-bold uppercase tracking-widest text-slate-300">Type</span>
+                    {React.createElement(typeIcons[thought.type], { className: "w-4 h-4 text-[var(--text-muted)]" })}
+                    <span className="text-[10px] font-semibold tracking-wide text-[var(--text-dimmed)]">Type</span>
                   </div>
                   <div className="flex items-center gap-2">
                     <span className="text-[9px] font-medium text-[var(--text-muted)] uppercase">{thought.type}</span>
-                    <ChevronRight className="w-3 h-3 text-[var(--text-dimmed)] group-hover:text-white transition-colors" />
+                    <ChevronRight className="w-3 h-3 text-[var(--text-dimmed)] group-hover:text-[var(--text-primary)] transition-colors" />
                   </div>
                 </button>
 
@@ -416,7 +416,7 @@ const NodeMenu: React.FC<NodeMenuProps> = ({ thought, isOpen, onClose, triggerRe
                 <button
                   onClick={() => setSubmenu('stack')}
                   disabled={isReadOnly}
-                  className="w-full flex items-center justify-between p-3 rounded-xl hover:bg-white/5 transition-all group"
+                  className="w-full flex items-center justify-between p-3 rounded-xl hover:bg-[var(--text-primary)]/5 transition-all group"
                 >
                   <div className="flex items-center gap-3">
                     {currentStack ? (
@@ -426,56 +426,56 @@ const NodeMenu: React.FC<NodeMenuProps> = ({ thought, isOpen, onClose, triggerRe
                     ) : (
                       <Folder className="w-4 h-4 text-[var(--text-muted)]" />
                     )}
-                    <span className="text-[10px] font-bold uppercase tracking-widest text-slate-300">Collection</span>
+                    <span className="text-[10px] font-semibold tracking-wide text-[var(--text-dimmed)]">Collection</span>
                   </div>
                   <div className="flex items-center gap-2">
                     <span className="text-[9px] font-medium text-[var(--text-muted)] uppercase truncate max-w-[100px]">
                       {currentStack?.name || 'None'}
                     </span>
-                    <ChevronRight className="w-3 h-3 text-[var(--text-dimmed)] group-hover:text-white transition-colors" />
+                    <ChevronRight className="w-3 h-3 text-[var(--text-dimmed)] group-hover:text-[var(--text-primary)] transition-colors" />
                   </div>
                 </button>
               </div>
 
               {/* Divider */}
-              <div className="border-t border-white/5 my-2" />
+              <div className="border-t border-[var(--glass-border)] my-2" />
 
               {/* Layer Actions */}
               <div className="space-y-0.5">
                 <button
                   onClick={() => { bringToFront(thought.id); onClose(); }}
                   disabled={isReadOnly}
-                  className="w-full flex items-center gap-3 p-3 rounded-xl hover:bg-white/5 transition-all"
+                  className="w-full flex items-center gap-3 p-3 rounded-xl hover:bg-[var(--text-primary)]/5 transition-all"
                 >
-                  <ArrowUp className="w-4 h-4 text-slate-400" />
-                  <span className="text-[10px] font-bold uppercase tracking-widest text-slate-300">Bring to Front</span>
+                  <ArrowUp className="w-4 h-4 text-[var(--text-muted)]" />
+                  <span className="text-[10px] font-semibold tracking-wide text-[var(--text-dimmed)]">Bring to Front</span>
                 </button>
                 <button
                   onClick={() => { sendToBack(thought.id); onClose(); }}
                   disabled={isReadOnly}
-                  className="w-full flex items-center gap-3 p-3 rounded-xl hover:bg-white/5 transition-all"
+                  className="w-full flex items-center gap-3 p-3 rounded-xl hover:bg-[var(--text-primary)]/5 transition-all"
                 >
-                  <ArrowDown className="w-4 h-4 text-slate-400" />
-                  <span className="text-[10px] font-bold uppercase tracking-widest text-slate-300">Send to Back</span>
+                  <ArrowDown className="w-4 h-4 text-[var(--text-muted)]" />
+                  <span className="text-[10px] font-semibold tracking-wide text-[var(--text-dimmed)]">Send to Back</span>
                 </button>
               </div>
 
               {/* Divider */}
-              <div className="border-t border-white/5 my-2" />
+              <div className="border-t border-[var(--glass-border)] my-2" />
 
               {/* Open Editor */}
               {thought.type !== 'label' && (
                 <button
                   onClick={handleOpenEditor}
-                  className="w-full flex items-center gap-3 p-3 rounded-xl hover:bg-white/5 transition-all"
+                  className="w-full flex items-center gap-3 p-3 rounded-xl hover:bg-[var(--text-primary)]/5 transition-all"
                 >
-                  <Maximize2 className="w-4 h-4 text-slate-400" />
-                  <span className="text-[10px] font-bold uppercase tracking-widest text-slate-300">Open Full Editor</span>
+                  <Maximize2 className="w-4 h-4 text-[var(--text-muted)]" />
+                  <span className="text-[10px] font-semibold tracking-wide text-[var(--text-dimmed)]">Open Full Editor</span>
                 </button>
               )}
 
               {/* Divider */}
-              <div className="border-t border-white/5 my-2" />
+              <div className="border-t border-[var(--glass-border)] my-2" />
 
               {/* Delete */}
               <button
@@ -484,7 +484,7 @@ const NodeMenu: React.FC<NodeMenuProps> = ({ thought, isOpen, onClose, triggerRe
                 className="w-full flex items-center gap-3 p-3 rounded-xl hover:bg-red-500/10 transition-all group"
               >
                 <Trash2 className="w-4 h-4 text-[var(--text-muted)] group-hover:text-red-400 transition-colors" />
-                <span className="text-[10px] font-bold uppercase tracking-widest text-slate-400 group-hover:text-red-400 transition-colors">Delete</span>
+                <span className="text-[10px] font-semibold tracking-wide text-[var(--text-muted)] group-hover:text-red-400 transition-colors">Delete</span>
               </button>
             </motion.div>
           )}

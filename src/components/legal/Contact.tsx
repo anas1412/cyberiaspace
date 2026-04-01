@@ -32,7 +32,7 @@ const Contact: React.FC = () => {
   ];
 
   return (
-    <div className="min-h-[100dvh] bg-black text-slate-300 p-6 md:p-20 overflow-y-auto custom-scroll selection:bg-blue-500/30">
+    <div className="min-h-[100dvh] bg-[var(--bg-page)] text-[var(--text-muted)] p-6 md:p-20 overflow-y-auto custom-scroll selection:bg-blue-500/30">
       <motion.div 
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -40,10 +40,10 @@ const Contact: React.FC = () => {
       >
         <button 
           onClick={handleBack}
-          className="flex items-center gap-2 text-blue-400 hover:text-white transition-colors mb-12 group"
+          className="flex items-center gap-2 text-blue-400 hover:text-[var(--text-primary)] transition-colors mb-12 group"
         >
           <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
-          <span className="text-xs font-black uppercase tracking-widest">Back</span>
+          <span className="text-xs font-semibold tracking-widest">Back</span>
         </button>
 
         <header className="mb-16">
@@ -51,9 +51,9 @@ const Contact: React.FC = () => {
             <div className="w-12 h-12 bg-blue-500/10 rounded-2xl flex items-center justify-center border border-blue-500/20">
               <Headphones className="w-6 h-6 text-blue-400" />
             </div>
-            <h1 className="text-4xl md:text-6xl font-black text-white uppercase tracking-tighter leading-none">Contact</h1>
+            <h1 className="text-4xl md:text-6xl font-black text-[var(--text-primary)] uppercase tracking-tighter leading-none">Contact</h1>
           </div>
-          <p className="text-slate-500 font-mono text-sm uppercase tracking-widest">Get in touch with the team</p>
+          <p className="text-[var(--text-muted)] font-mono text-sm uppercase tracking-widest">Get in touch with the team</p>
         </header>
 
         <section className="space-y-6 pb-20">
@@ -61,18 +61,18 @@ const Contact: React.FC = () => {
             {channels.map((channel) => (
               <div 
                 key={channel.id}
-                className="bg-white/5 border border-white/10 p-8 rounded-[2.5rem] flex flex-col items-center text-center space-y-4 hover:border-blue-500/30 transition-all duration-500 group"
+                className="bg-[var(--glass-bg)] border border-[var(--glass-border)] p-8 rounded-[2.5rem] flex flex-col items-center text-center space-y-4 hover:border-blue-500/30 transition-all duration-500 group"
               >
                 <div className="w-14 h-14 bg-blue-500/10 rounded-2xl flex items-center justify-center group-hover:scale-110 group-hover:bg-blue-500/20 transition-all">
                   {channel.icon}
                 </div>
-                <h2 className="text-lg font-black text-white uppercase tracking-widest">{channel.title}</h2>
-                <p className="text-sm text-slate-400 leading-relaxed h-12 flex items-center">
+                <h2 className="text-lg font-black text-[var(--text-primary)] uppercase tracking-widest">{channel.title}</h2>
+                <p className="text-sm text-[var(--text-muted)] leading-relaxed h-12 flex items-center">
                   {channel.desc}
                 </p>
-                <a 
+                  <a 
                   href={channel.link} 
-                  className="text-xl font-bold text-white hover:text-blue-400 transition-colors break-all"
+                  className="text-xl font-bold text-[var(--text-primary)] hover:text-blue-400 transition-colors break-all"
                 >
                   {channel.value}
                 </a>
@@ -86,13 +86,13 @@ const Contact: React.FC = () => {
                 <Clock className="w-6 h-6 text-blue-400" />
               </div>
               <div className="text-left">
-                <h3 className="text-sm font-black text-white uppercase tracking-widest">Response Time</h3>
-                <p className="text-xs text-slate-400 mt-1 uppercase tracking-wide">Usually within 24-48 hours</p>
+                <h3 className="text-sm font-black text-[var(--text-primary)] uppercase tracking-widest">Response Time</h3>
+                <p className="text-xs text-[var(--text-muted)] mt-1 uppercase tracking-wide">Usually within 24-48 hours</p>
               </div>
             </div>
             <button 
               onClick={() => window.open('https://cyberia.tn/feedback', '_blank')}
-              className="bg-white text-black text-[10px] font-black uppercase tracking-[0.2em] px-8 py-4 rounded-full hover:bg-blue-400 transition-colors flex items-center gap-2 active:scale-95 shadow-lg shadow-white/5"
+              className="bg-[var(--text-primary)] text-[var(--bg-page)] text-[10px] font-semibold tracking-[0.2em] px-8 py-4 rounded-full hover:bg-blue-400 transition-colors flex items-center gap-2 active:scale-95 shadow-lg shadow-[var(--glass-border)]"
             >
               <MessageSquare className="w-3 h-3" />
               Give Feedback

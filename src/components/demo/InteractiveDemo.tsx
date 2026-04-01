@@ -181,14 +181,14 @@ const InteractiveDemo: React.FC = () => {
       if (!containerRef.current) return;
       const rect = containerRef.current.getBoundingClientRect();
       mouseRef.current = { x: (e.clientX - rect.left) - rect.width / 2, y: (e.clientY - rect.top) - rect.height / 2 };
-    }} onPointerUp={() => { dragTargetRef.current = null; }} className="w-full h-[400px] md:h-[600px] glass rounded-2xl overflow-hidden relative border border-white/5 shadow-2xl group pointer-events-auto bg-[#020408]/20">
+    }} onPointerUp={() => { dragTargetRef.current = null; }} className="w-full h-[400px] md:h-[600px] glass rounded-2xl overflow-hidden relative border border-[var(--glass-border)] shadow-2xl group pointer-events-auto bg-[var(--bg-page)]/20">
       
       {/* Unified Switcher Header */}
       <div className="absolute top-8 left-0 right-0 z-[110] flex items-center justify-between pointer-events-none px-8">
         <div className="flex-1 invisible lg:visible" /> {/* Placeholder for logo alignment metaphor */}
 
         {/* Center: View Modes */}
-        <div className="flex items-center gap-1.5 p-1.5 glass rounded-2xl border border-white/5 pointer-events-auto shadow-2xl">
+        <div className="flex items-center gap-1.5 p-1.5 glass rounded-2xl border border-[var(--glass-border)] pointer-events-auto shadow-2xl">
           {[
             { id: 'spatial', icon: Orbit, label: 'Spatial' },
             { id: 'kanban', icon: Columns3, label: 'Kanban' },
@@ -200,11 +200,11 @@ const InteractiveDemo: React.FC = () => {
               <button 
                 key={mode.id}
                 onClick={() => setViewMode(mode.id as ViewMode)} 
-                className={`px-3 py-2 rounded-xl transition-all duration-300 flex items-center gap-2 ${isActive ? 'bg-white text-black shadow-lg shadow-white/10' : 'text-white/40 hover:text-white hover:bg-white/5'}`} 
+                className={`px-3 py-2 rounded-xl transition-all duration-300 flex items-center gap-2 ${isActive ? 'bg-[var(--text-primary)] text-[var(--bg-page)] shadow-lg' : 'text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--glass-bg)]'}`} 
                 title={`${mode.label} View`}
               >
                 <Icon className="w-4 h-4" />
-                <span className={`text-[9px] font-black uppercase tracking-widest transition-all overflow-hidden whitespace-nowrap ${isActive ? 'max-w-[60px] opacity-100' : 'max-w-0 opacity-0'}`}>
+                <span className={`text-[9px] font-semibold tracking-widest transition-all overflow-hidden whitespace-nowrap ${isActive ? 'max-w-[60px] opacity-100' : 'max-w-0 opacity-0'}`}>
                   {mode.id}
                 </span>
               </button>
@@ -217,10 +217,10 @@ const InteractiveDemo: React.FC = () => {
           <div className="relative pointer-events-auto" ref={spaceMenuRef}>
             <button 
               onClick={() => setIsSpaceMenuOpen(!isSpaceMenuOpen)}
-              className={`flex items-center gap-3 px-4 h-[44px] glass rounded-2xl border border-white/5 transition-all shadow-2xl ${isSpaceMenuOpen ? 'bg-white/10 text-white' : 'text-white/80 hover:text-white'}`}
+              className={`flex items-center gap-3 px-4 h-[44px] glass rounded-2xl border border-[var(--glass-border)] transition-all shadow-2xl ${isSpaceMenuOpen ? 'bg-[var(--glass-bg)] text-[var(--text-primary)]' : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'}`}
             >
               <div className="w-1.5 h-1.5 rounded-full bg-blue-500 shadow-[0_0_8px_rgba(59,130,246,0.5)]" />
-              <span className="text-[10px] font-black uppercase tracking-[0.2em]">{activeSpace.name}</span>
+              <span className="text-[10px] font-semibold tracking-[0.2em]">{activeSpace.name}</span>
               <ChevronDown className={`w-3.5 h-3.5 opacity-50 transition-transform duration-300 ${isSpaceMenuOpen ? 'rotate-180 opacity-100' : ''}`} />
             </button>
             
@@ -230,7 +230,7 @@ const InteractiveDemo: React.FC = () => {
                   initial={{ opacity: 0, y: -8, scale: 0.95 }}
                   animate={{ opacity: 1, y: 0, scale: 1 }}
                   exit={{ opacity: 0, y: -8, scale: 0.95 }}
-                  className="absolute top-full mt-2 right-0 w-48 glass rounded-2xl border border-white/10 shadow-2xl overflow-hidden z-50 py-1"
+                  className="absolute top-full mt-2 right-0 w-48 glass rounded-2xl border border-[var(--glass-border)] shadow-2xl overflow-hidden z-50 py-1"
                 >
                   {SPACES.map((space, idx) => (
                     <button 
@@ -239,7 +239,7 @@ const InteractiveDemo: React.FC = () => {
                         if (activeSpaceIdx !== idx) { setIsTransitioning(true); setActiveSpaceIdx(idx); }
                         setIsSpaceMenuOpen(false);
                       }}
-                      className={`w-full px-4 py-3 text-left text-[9px] font-black uppercase tracking-widest flex items-center gap-3 transition-colors ${activeSpaceIdx === idx ? 'bg-white/10 text-white' : 'text-slate-500 hover:text-white hover:bg-white/5'}`}
+                      className={`w-full px-4 py-3 text-left text-[9px] font-semibold tracking-widest flex items-center gap-3 transition-colors ${activeSpaceIdx === idx ? 'bg-[var(--glass-bg)] text-[var(--text-primary)]' : 'text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--glass-bg)]'}`}
                     >
                       <div className={`w-1.5 h-1.5 rounded-full ${activeSpaceIdx === idx ? 'bg-blue-500 shadow-[0_0_8px_rgba(59,130,246,0.5)]' : 'bg-slate-700'}`} />
                       {space.name}
@@ -261,12 +261,12 @@ const InteractiveDemo: React.FC = () => {
                 const tx = KANBAN_COLS[i];
                 return (
                   <div key={label} className="absolute top-1/2 left-1/2" style={{ transform: `translate(calc(-50% + ${tx}px), -180px)` }}>
-                    <span className="text-[9px] font-black text-white/30 tracking-[0.3em] whitespace-nowrap">{label}</span>
+                    <span className="text-[9px] font-black text-[var(--text-muted)]/30 tracking-[0.3em] whitespace-nowrap">{label}</span>
                   </div>
                 );
               })}
               {[-220, 0, 220].map(tx => (
-                <div key={tx} className="absolute top-[20%] bottom-[20%] left-1/2 w-[1px] bg-white/5" style={{ transform: `translateX(${tx}px)` }} />
+                <div key={tx} className="absolute top-[20%] bottom-[20%] left-1/2 w-[1px] bg-[var(--glass-border)]" style={{ transform: `translateX(${tx}px)` }} />
               ))}
             </div>
           </motion.div>
@@ -279,15 +279,15 @@ const InteractiveDemo: React.FC = () => {
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="absolute inset-0 flex items-center justify-center pointer-events-none">
             <svg viewBox="-600 -300 1200 600" className="w-full h-full overflow-visible">
               {[...Array(8)].map((_, i) => (
-                <line key={`v-${i}`} x1={(i - 3.5) * CAL_COL_W} y1={-212.5} x2={(i - 3.5) * CAL_COL_W} y2={212.5} stroke="white" strokeWidth="1" opacity="0.15" />
+                <line key={`v-${i}`} x1={(i - 3.5) * CAL_COL_W} y1={-212.5} x2={(i - 3.5) * CAL_COL_W} y2={212.5} stroke="var(--text-muted)" strokeWidth="1" opacity="0.15" />
               ))}
               {[...Array(6)].map((_, i) => (
-                <line key={`h-${i}`} x1={-525} y1={(i - 2.5) * CAL_ROW_H} x2={525} y2={(i - 2.5) * CAL_ROW_H} stroke="white" strokeWidth="1" opacity="0.15" />
+                <line key={`h-${i}`} x1={-525} y1={(i - 2.5) * CAL_ROW_H} x2={525} y2={(i - 2.5) * CAL_ROW_H} stroke="var(--text-muted)" strokeWidth="1" opacity="0.15" />
               ))}
               {[...Array(30)].map((_, i) => {
                 const col = i % 7; const row = Math.floor(i / 7);
                 return (
-                  <text key={i} x={(col - 3.5) * CAL_COL_W + 10} y={(row - 2.5) * CAL_ROW_H + 20} fill="white" fontSize="11" fontWeight="900" opacity="0.4" className="font-mono">
+                  <text key={i} x={(col - 3.5) * CAL_COL_W + 10} y={(row - 2.5) * CAL_ROW_H + 20} fill="var(--text-muted)" fontSize="11" fontWeight="900" opacity="0.4" className="font-mono">
                     {(i + 1).toString().padStart(2, '0')}
                   </text>
                 );
@@ -382,8 +382,8 @@ const InteractiveDemo: React.FC = () => {
       <div className="absolute bottom-6 left-6 z-[100] flex items-center gap-3 opacity-40 group-hover:opacity-100 transition-opacity">
         
         <div className="flex flex-col">
-          <span className="text-[10px] font-black uppercase tracking-widest text-white">Interactive Workspace</span>
-          <span className="text-[8px] font-bold uppercase tracking-widest text-slate-500">
+          <span className="text-[10px] font-semibold tracking-widest text-[var(--text-primary)]">Interactive Workspace</span>
+          <span className="text-[8px] font-medium tracking-widest text-[var(--text-muted)]">
             {viewMode === 'spatial' ? 'Physics Simulation' : `${viewMode} view`}
           </span>
         </div>
@@ -392,7 +392,7 @@ const InteractiveDemo: React.FC = () => {
       <AnimatePresence>
         {viewMode === 'spatial' && (
           <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 0.6, x: 0 }} exit={{ opacity: 0, x: 20 }} whileHover={{ opacity: 1 }} className="absolute bottom-6 right-6 z-[100]">
-            <button onClick={() => setPhysicsEnabled(!physicsEnabled)} className={`p-3 rounded-2xl border transition-all flex items-center gap-2 ${physicsEnabled ? 'bg-amber-500/10 border-amber-500/30 text-amber-500 shadow-[0_0_15px_rgba(245,158,11,0.2)]' : 'bg-white/5 border-white/10 text-slate-500'}`}><Zap className={`w-4 h-4 ${physicsEnabled ? 'fill-current' : ''}`} /></button>
+            <button onClick={() => setPhysicsEnabled(!physicsEnabled)} className={`p-3 rounded-2xl border transition-all flex items-center gap-2 ${physicsEnabled ? 'bg-amber-500/10 border-amber-500/30 text-amber-500 shadow-[0_0_15px_rgba(245,158,11,0.2)]' : 'bg-[var(--glass-bg)] border-[var(--glass-border)] text-[var(--text-muted)]'}`}><Zap className={`w-4 h-4 ${physicsEnabled ? 'fill-current' : ''}`} /></button>
           </motion.div>
         )}
       </AnimatePresence>

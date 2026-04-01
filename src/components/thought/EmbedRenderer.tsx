@@ -77,7 +77,7 @@ export const EmbedRenderer: React.FC<EmbedRendererProps> = ({ thought }) => {
           <div className="w-16 h-16 rounded-full bg-[#1db954]/20 flex items-center justify-center border border-[#1db954]/40 shadow-[0_0_30px_rgba(29,185,84,0.2)] animate-pulse">
             <Music className="w-8 h-8 text-[#1db954]" />
           </div>
-          <span className="text-[10px] text-[#1db954] font-black uppercase tracking-widest">{thought.text || 'Spotify Track'}</span>
+          <span className="text-[10px] text-[#1db954] font-semibold tracking-widest">{thought.text || 'Spotify Track'}</span>
         </div>
       ) : (
         <div className="flex flex-col items-center gap-2 p-6 text-center">
@@ -91,7 +91,7 @@ export const EmbedRenderer: React.FC<EmbedRendererProps> = ({ thought }) => {
               <Icon className="w-6 h-6" style={{ color: config.color }} />
             </div>
           )}
-          <span className="text-[10px] font-black uppercase tracking-widest leading-tight" style={{ color: config.color }}>
+          <span className="text-[10px] font-semibold tracking-widest leading-tight" style={{ color: config.color }}>
             {thought.author || thought.text || `View on ${config.label}`}
           </span>
         </div>
@@ -99,7 +99,7 @@ export const EmbedRenderer: React.FC<EmbedRendererProps> = ({ thought }) => {
 
       {(thought.author || isLoading) && (
         <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent p-3 pt-10 pointer-events-none transition-opacity group-hover:opacity-100 opacity-80">
-          <p className="text-[10px] text-[var(--text-primary)] font-black uppercase tracking-widest truncate">
+          <p className="text-[10px] text-[var(--text-primary)] font-semibold tracking-widest truncate">
             {isLoading ? 'Fetching metadata...' : thought.author}
           </p>
           {thought.text && thought.text.includes(' by ') && (

@@ -52,7 +52,7 @@ export const TableInspector: React.FC<InspectorPanelProps> = ({ thought, isReadO
 
   return (
     <div className="space-y-3">
-      <div className="text-[11px] text-slate-400">
+      <div className="text-[11px] text-[var(--text-muted)]">
         {numRows} Row{numRows !== 1 ? 's' : ''} × {numCols} Column{numCols !== 1 ? 's' : ''}
       </div>
 
@@ -66,7 +66,7 @@ export const TableInspector: React.FC<InspectorPanelProps> = ({ thought, isReadO
               "flex items-center justify-center gap-1.5 py-2 px-3 rounded-xl text-[10px] uppercase font-bold border border-white/10 transition-colors",
               isReadOnly
                 ? "text-[var(--text-muted)] cursor-not-allowed"
-                : "text-slate-400 hover:text-white hover:border-white/20"
+                : "text-[var(--text-muted)] hover:text-white hover:border-white/20"
             )}
           >
             <Plus className="w-3 h-3" />
@@ -79,7 +79,7 @@ export const TableInspector: React.FC<InspectorPanelProps> = ({ thought, isReadO
               "flex items-center justify-center gap-1.5 py-2 px-3 rounded-xl text-[10px] uppercase font-bold border border-white/10 transition-colors",
               isReadOnly
                 ? "text-[var(--text-muted)] cursor-not-allowed"
-                : "text-slate-400 hover:text-white hover:border-white/20"
+                : "text-[var(--text-muted)] hover:text-white hover:border-white/20"
             )}
           >
             <Plus className="w-3 h-3" />
@@ -94,7 +94,7 @@ export const TableInspector: React.FC<InspectorPanelProps> = ({ thought, isReadO
               "flex items-center justify-center gap-1.5 py-2 px-3 rounded-xl text-[10px] uppercase font-bold border border-white/10 transition-colors",
               numRows === 0
                 ? "text-[var(--text-muted)] cursor-not-allowed"
-                : "text-slate-400 hover:text-white hover:border-white/20"
+                : "text-[var(--text-muted)] hover:text-white hover:border-white/20"
             )}
           >
             <Download className="w-3 h-3" />
@@ -107,7 +107,7 @@ export const TableInspector: React.FC<InspectorPanelProps> = ({ thought, isReadO
               "flex items-center justify-center gap-1.5 py-2 px-3 rounded-xl text-[10px] uppercase font-bold border border-white/10 transition-colors",
               isReadOnly
                 ? "text-[var(--text-muted)] cursor-not-allowed"
-                : "text-slate-400 hover:text-white hover:border-white/20"
+                : "text-[var(--text-muted)] hover:text-white hover:border-white/20"
             )}
           >
             <RotateCcw className="w-3 h-3" />

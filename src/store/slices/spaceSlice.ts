@@ -40,20 +40,14 @@ export const createSpaceSlice: StateCreator<CyberiaState, [], [], any> = (set, g
         
         set({ transform } as Partial<CyberiaState>);
         
-        if (space.theme) { 
-          // Enforce theme per user plan
+        if (space.theme) {
           const { useAuthStore: authImport } = await import('../useAuthStore');
           const authStore = authImport.getState();
           const userPlan = authStore.user?.plan || 'free';
           const allowedThemes = PLAN_CONFIG[userPlan]?.THEMES_ENABLED || PLAN_CONFIG.free.THEMES_ENABLED;
-          const enforcedTheme = allowedThemes.includes(space.theme) ? space.theme : 'cyberia';
-          
-          set({ theme: enforcedTheme });
-          document.body.setAttribute('data-theme', enforcedTheme);
-          
-          // If theme was invalid, update the space
-          if (enforcedTheme !== space.theme) {
-            await get().updateSpace(id, { theme: enforcedTheme }, { skipSync: false });
+
+          if (!allowedThemes.includes(space.theme)) {
+            await get().updateSpace(id, { theme: 'dark' }, { skipSync: false });
           }
         }
         set({ customBg: space.customBg || null });
@@ -154,7 +148,7 @@ export const createSpaceSlice: StateCreator<CyberiaState, [], [], any> = (set, g
       userId: currentUserId,
       name, 
       mode: 'spatial', 
-      physics: true, 
+      physics: localStorage.getItem('cyberia-physics-enabled') !== 'false', 
       order: userSpaces.length,
       updatedAt: Date.now(),
       syncStatus: 'local'
@@ -279,28 +273,31 @@ export const createSpaceSlice: StateCreator<CyberiaState, [], [], any> = (set, g
     const { spaces } = get();
     const space = spaces.find((s: Space) => s.id === id);
     if (!space || space.mode !== 'spatial') return;
-    
+
     const now = Date.now();
-    await db.spaces.update(id, { 
-      transformX: transform.x, 
-      transformY: transform.y, 
+
+    const index = spaces.findIndex((s: Space) => s.id === id);
+    if (index !== -1) {
+      const newSpaces = [...spaces];
+      newSpaces[index] = {
+        ...newSpaces[index],
+        transformX: transform.x,
+        transformY: transform.y,
+        transformScale: transform.scale,
+        updatedAt: now,
+        syncStatus: 'local' as const
+      };
+      set({ spaces: newSpaces });
+    }
+
+    await db.spaces.update(id, {
+      transformX: transform.x,
+      transformY: transform.y,
       transformScale: transform.scale,
       updatedAt: now,
       syncStatus: 'local'
     });
-    
-    const index = spaces.findIndex((s: Space) => s.id === id);
-    if (index !== -1) {
-      const newSpaces = [...spaces];
-      newSpaces[index] = { 
-        ...newSpaces[index], 
-        transformX: transform.x, 
-        transformY: transform.y, 
-        transformScale: transform.scale 
-      };
-      set({ spaces: newSpaces });
-    }
-    
+
     const authStore = useAuthStore.getState();
     if (authStore.status === 'authenticated') {
       await syncOrchestrator.triggerSync();

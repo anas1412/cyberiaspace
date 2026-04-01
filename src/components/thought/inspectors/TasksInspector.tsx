@@ -26,7 +26,7 @@ export const TasksInspector: React.FC<InspectorPanelProps> = ({ thought, isReadO
         {tasks.map((task, i) => (
           <div key={i} className="flex items-center gap-3">
             <div
-              className={cn("checkbox w-[18px] h-[18px] border-2 border-white/10 rounded-[6px] flex-shrink-0 cursor-pointer transition-all", task.done && "bg-[var(--status-todo)] border-[var(--status-todo)]")}
+              className={cn("checkbox w-[18px] h-[18px] border-2 border-[var(--glass-border)] rounded-[6px] flex-shrink-0 cursor-pointer transition-all", task.done && "bg-[var(--status-todo)] border-[var(--status-todo)]")}
               onClick={() => {
                 if (isReadOnly) return;
                 const newTasks = [...tasks];
@@ -34,7 +34,7 @@ export const TasksInspector: React.FC<InspectorPanelProps> = ({ thought, isReadO
                 handleUpdateTasks(newTasks);
               }}
             >
-              {task.done && <span className="text-white text-[12px] flex items-center justify-center">✓</span>}
+              {task.done && <span className="text-[var(--accent-contrast)] text-[12px] flex items-center justify-center">✓</span>}
             </div>
             <input
               type="text"
@@ -46,7 +46,7 @@ export const TasksInspector: React.FC<InspectorPanelProps> = ({ thought, isReadO
                 handleUpdateTasks(newTasks);
               }}
               className={cn(
-                "flex-1 bg-black/20 border border-white/5 rounded-xl p-2 text-xs outline-none text-white focus:border-[var(--accent)]",
+                "flex-1 bg-[var(--glass-bg)] border border-[var(--glass-border)] rounded-xl p-2 text-xs outline-none text-[var(--text-primary)] focus:border-[var(--accent)]",
                 isReadOnly && "pointer-events-none opacity-80"
               )}
             />
@@ -68,7 +68,7 @@ export const TasksInspector: React.FC<InspectorPanelProps> = ({ thought, isReadO
       {!isReadOnly && (
         <button
           onClick={() => handleUpdateTasks([...tasks, { text: 'Task', done: false }])}
-          className="w-full py-2 border border-dashed border-white/10 rounded-xl text-[10px] uppercase font-bold text-[var(--text-muted)] hover:text-white"
+          className="w-full py-2 border border-dashed border-[var(--glass-border)] rounded-xl text-[10px] uppercase font-bold text-[var(--text-muted)] hover:text-[var(--text-primary)]"
         >
           + Add Task
         </button>

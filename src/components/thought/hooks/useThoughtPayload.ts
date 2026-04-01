@@ -3,7 +3,7 @@ import { type Thought } from '../../../db';
 
 export interface UseThoughtPayloadResult {
   content: string;
-  tasks: { text: string; done: boolean }[];
+  tasks: { id?: string; text: string; done: boolean }[];
   table: string[][];
   image: string | null;
   drawing: string | null;

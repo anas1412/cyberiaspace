@@ -24,30 +24,30 @@ const KanbanOverlay: React.FC = () => {
     )}>
 
       {/* Top Section: Filters + Mask */}
-      <div className="flex-shrink-0 h-[120px] md:h-[152px] bg-[var(--bg-main)] z-[60] flex flex-col justify-end pointer-events-auto">
+      <div className="flex-shrink-0 h-[120px] md:h-[152px] bg-[var(--glass-bg)] z-[60] flex flex-col justify-end pointer-events-auto border-b border-[var(--glass-border)]">
         <KanbanFilterBar />
       </div>
-      
+
       {/* Columns Section */}
       <div className="flex-1 flex flex-col md:flex-row overflow-y-auto md:overflow-hidden">
         <div className="col-section flex-1 border-b md:border-b-0 md:border-r border-dashed border-[var(--glass-border)] min-h-[200px] md:min-h-0">
-          <div className="col-header-box h-[50px] md:h-[60px] flex items-center justify-center bg-[var(--bg-main)]/85 backdrop-blur-[12px] border-b border-[var(--glass-border)]">
-            <span className="col-label text-[10px] md:text-[11px] font-900 text-[var(--text-muted)] tracking-[0.4em] uppercase">Unplanned</span>
+          <div className="col-header-box h-[50px] md:h-[60px] flex items-center justify-center bg-[var(--glass-bg)] backdrop-blur-[12px] border-b border-[var(--glass-border)]">
+            <span className="col-label text-[10px] md:text-[11px] font-black text-[var(--text-secondary)] tracking-[0.3em] uppercase">Unplanned</span>
           </div>
         </div>
         <div className="col-section flex-1 border-b md:border-b-0 md:border-r border-dashed border-[var(--glass-border)] min-h-[200px] md:min-h-0">
-          <div className="col-header-box h-[50px] md:h-[60px] flex items-center justify-center bg-[var(--bg-main)]/85 backdrop-blur-[12px] border-b border-[var(--glass-border)]">
-            <span className="col-label text-[10px] md:text-[11px] font-900 text-[var(--accent-secondary)] tracking-[0.4em] uppercase">To Do</span>
+          <div className="col-header-box h-[50px] md:h-[60px] flex items-center justify-center bg-[var(--glass-bg)] backdrop-blur-[12px] border-b border-[var(--glass-border)]">
+            <span className="col-label text-[10px] md:text-[11px] font-black text-[var(--accent)] tracking-[0.3em] uppercase">To Do</span>
           </div>
         </div>
         <div className="col-section flex-1 border-b md:border-b-0 md:border-r border-dashed border-[var(--glass-border)] min-h-[200px] md:min-h-0">
-          <div className="col-header-box h-[50px] md:h-[60px] flex items-center justify-center bg-[var(--bg-main)]/85 backdrop-blur-[12px] border-b border-[var(--glass-border)]">
-            <span className="col-label text-[10px] md:text-[11px] font-900 text-[var(--accent-secondary)] tracking-[0.4em] uppercase">Doing</span>
+          <div className="col-header-box h-[50px] md:h-[60px] flex items-center justify-center bg-[var(--glass-bg)] backdrop-blur-[12px] border-b border-[var(--glass-border)]">
+            <span className="col-label text-[10px] md:text-[11px] font-black text-[var(--accent)] tracking-[0.3em] uppercase">Doing</span>
           </div>
         </div>
         <div className="col-section flex-1 border-none min-h-[200px] md:min-h-0">
-          <div className="col-header-box h-[50px] md:h-[60px] flex items-center justify-center bg-[var(--bg-main)]/85 backdrop-blur-[12px] border-b border-white/[0.05]">
-            <span className="col-label text-[10px] md:text-[11px] font-900 text-[var(--accent-secondary)] tracking-[0.4em] uppercase">Done</span>
+          <div className="col-header-box h-[50px] md:h-[60px] flex items-center justify-center bg-[var(--glass-bg)] backdrop-blur-[12px] border-b border-[var(--glass-border)]">
+            <span className="col-label text-[10px] md:text-[11px] font-black text-[var(--accent)] tracking-[0.3em] uppercase">Done</span>
           </div>
         </div>
       </div>

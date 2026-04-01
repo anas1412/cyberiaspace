@@ -147,13 +147,13 @@ const AgenticWorkspaceVisual: React.FC = () => {
       {/* Prompt bar */}
       <div className="absolute left-1/2 -translate-x-1/2 top-[10%] z-30">
         <motion.div
-          className="w-[400px] glass border border-white/10 rounded-[2rem] px-6 py-4 relative shadow-2xl"
+          className="w-[400px] glass border border-[var(--glass-border)] rounded-[2rem] px-6 py-4 relative shadow-2xl"
           initial={{ y: 20, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
           transition={{ duration: 0.8 }}
-          style={{ boxShadow: '0 0 40px rgba(100,160,255,0.12), inset 0 1px 0 rgba(255,255,255,0.06)' }}
+          style={{ boxShadow: '0 0 40px color-mix(in srgb, var(--accent) 12%, transparent), inset 0 1px 0 var(--glass-border)' }}
         >
-          <span className="text-[8px] font-black tracking-[0.4em] text-white/20 uppercase block mb-2">
+          <span className="text-[8px] font-black tracking-[0.4em] text-[var(--text-muted)] uppercase block mb-2">
             ORACLE AI
           </span>
 
@@ -168,9 +168,9 @@ const AgenticWorkspaceVisual: React.FC = () => {
                   key={i}
                   className="text-[11px] font-mono font-bold px-1.5 py-0.5 rounded shrink-0"
                   style={{
-                    background: 'rgba(120,200,255,0.15)',
-                    border: '1px solid rgba(120,200,255,0.4)',
-                    color: '#a8e4ff',
+                    background: 'color-mix(in srgb, var(--accent-secondary) 15%, transparent)',
+                    border: '1px solid color-mix(in srgb, var(--accent-secondary) 40%, transparent)',
+                    color: 'var(--accent-secondary)',
                   }}
                 >
                   {seg.value}
@@ -205,17 +205,17 @@ const AgenticWorkspaceVisual: React.FC = () => {
                 style={{
                   top: 'calc(100% + 10px)',
                   width: 280,
-                  background: 'rgba(10,12,24,0.96)',
-                  border: '1px solid rgba(100,170,255,0.25)',
+                  background: 'var(--glass-bg)',
+                  border: '1px solid var(--glass-border)',
                   borderRadius: 12,
                   backdropFilter: 'blur(20px)',
-                  boxShadow: '0 8px 32px rgba(0,0,0,0.5)',
+                  boxShadow: '0 8px 32px color-mix(in srgb, var(--bg-page) 50%, transparent)',
                   zIndex: 50,
                 }}
               >
                 <div
                   className="text-[9px] font-bold tracking-[0.3em] uppercase px-3 py-2"
-                  style={{ color: 'rgba(255,255,255,0.2)', borderBottom: '1px solid rgba(255,255,255,0.06)' }}
+                  style={{ color: 'var(--text-muted)', borderBottom: '1px solid var(--glass-border)' }}
                 >
                   THOUGHTS
                 </div>
@@ -223,10 +223,10 @@ const AgenticWorkspaceVisual: React.FC = () => {
                   <div
                     key={topic.id}
                     className="flex items-center gap-2.5 px-3 py-2.5"
-                    style={{ background: i === activeDropupItem ? 'rgba(100,170,255,0.14)' : 'transparent' }}
+                    style={{ background: i === activeDropupItem ? 'color-mix(in srgb, var(--accent) 14%, transparent)' : 'transparent' }}
                   >
                     <div className="flex-1 min-w-0">
-                      <div className="text-[12px] font-medium truncate uppercase tracking-widest" style={{ color: '#e8f4ff' }}>
+                      <div className="text-[12px] font-medium truncate uppercase tracking-widest text-[var(--text-primary)]">
                         {topic.label}
                       </div>
                     </div>
@@ -244,7 +244,7 @@ const AgenticWorkspaceVisual: React.FC = () => {
           <motion.div
             className="absolute left-1/2 w-[2px] z-20"
             style={{
-              background: 'linear-gradient(to bottom, var(--accent-secondary), white)',
+              background: 'linear-gradient(to bottom, var(--accent-secondary), var(--text-primary))',
               boxShadow: '0 0 20px var(--accent-secondary)',
             }}
             initial={{ top: '23%', height: 0, opacity: 1, translateX: '-50%' }}
@@ -284,7 +284,7 @@ const AgenticWorkspaceVisual: React.FC = () => {
                   x2: { type: 'spring', stiffness: 400, damping: 25 },
                   y2: { type: 'spring', stiffness: 400, damping: 25 },
                 }}
-                stroke="rgba(126,207,255,0.45)"
+                stroke="color-mix(in srgb, var(--accent-secondary) 45%, transparent)"
                 strokeWidth="1"
                 strokeDasharray="4 4"
               />

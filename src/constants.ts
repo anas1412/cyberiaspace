@@ -1,5 +1,16 @@
 export type SubscriptionPlan = 'free' | 'pro';
 export type AccessPeriod = 'monthly' | 'yearly';
+export type Theme = 'dark' | 'light';
+
+export const DEFAULT_THEME: Theme = (() => {
+  const stored = typeof window !== 'undefined' ? localStorage.getItem('cyberia-theme') : null;
+  if (stored === 'dark' || stored === 'light') return stored;
+  if (typeof window !== 'undefined' && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+    return 'dark';
+  }
+  return 'light';
+})();
+export const DEFAULT_PHYSICS = true;
 
 export interface User {
   id: string;
@@ -36,6 +47,7 @@ export interface User {
     autoSync: boolean;
     space: string;
     personality?: string;
+    theme?: 'dark' | 'light';
   };
 }
 
@@ -82,7 +94,7 @@ export const PLAN_CONFIG: Record<SubscriptionPlan, PlanLimits> = {
     AI_TOP_MONTHLY: 0,
     AI_MEDIUM_MONTHLY: 0,
     AI_SMALL_MONTHLY: 0,
-    THEMES_ENABLED: ['cyberia'],
+    THEMES_ENABLED: ['dark', 'light'],
   },
   pro: {
     MAX_SPACES: 20,
@@ -100,7 +112,7 @@ export const PLAN_CONFIG: Record<SubscriptionPlan, PlanLimits> = {
     AI_TOP_MONTHLY: 0,     // Legacy - now fetched from /api/models
     AI_MEDIUM_MONTHLY: 0,  // Legacy - now fetched from /api/models
     AI_SMALL_MONTHLY: 0,   // Legacy - now fetched from /api/models
-    THEMES_ENABLED: ['cyberia', 'sea', 'forest', 'rain', 'sakura'],
+    THEMES_ENABLED: ['dark', 'light'],
     PRICE: {
       monthly: { usd: 10, tnd: 19 },
       yearly: { usd: 100, tnd: 190 },

@@ -10,37 +10,29 @@ const BackgroundEngine: React.FC = () => {
 
   return (
     <div className="fixed inset-0 z-0 pointer-events-none overflow-hidden select-none" style={{ backgroundColor: 'var(--bg-page)' }}>
-      {/* 1. Base Background Image Layer */}
       {customBg && (
         <div 
-          className="absolute inset-0 z-0 bg-cover bg-center bg-no-repeat transition-opacity duration-1000 animate-in fade-in"
-          style={{ 
-            backgroundImage: `url(${customBg})`,
-            opacity: performanceMode ? 1.0 : 0.8 
-          }}
+          className="absolute inset-0 z-0 bg-cover bg-center bg-no-repeat"
+          style={{ backgroundImage: `url(${customBg})` }}
         />
       )}
 
-      {/* 2. Base Atmosphere (Nebulae) */}
-      <div className="relative z-10 w-full h-full">
-        <Atmosphere performanceMode={performanceMode} />
-      </div>
+      {!customBg && (
+        <div className="relative z-10 w-full h-full">
+          <Atmosphere performanceMode={performanceMode} />
+        </div>
+      )}
 
-      {/* 3. Particle System (Canvas) */}
       <div className="relative z-20 w-full h-full">
         <Starfield theme={theme} performanceMode={performanceMode} />
       </div>
 
-      {/* 4. Texture & Noise */}
-      {/* <div className="relative z-30 w-full h-full">
-        <NoiseOverlay />
-      </div> */}
-
-      {/* 5. Depth Overlay for Custom Background */}
-      {customBg && !performanceMode && (
+      {customBg && (
         <div 
-          className="absolute inset-0 z-40 mix-blend-multiply opacity-10"
-          style={{ backgroundColor: "#000" }}
+          className="absolute inset-0 z-30 pointer-events-none"
+          style={{ 
+            background: `radial-gradient(ellipse at center, transparent 0%, transparent 70%, ${theme === 'light' ? 'rgba(255,255,255,0.15)' : 'rgba(0,0,0,0.25)'} 100%)`
+          }}
         />
       )}
     </div>

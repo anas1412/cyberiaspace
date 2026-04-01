@@ -29,9 +29,9 @@ const UpdateToast: React.FC = () => {
             <div className="flex-1">
               <div className="flex items-center gap-2 mb-1">
                 <Sparkles className="w-3 h-3 text-blue-400" />
-                <h4 className="text-[10px] font-black uppercase tracking-[0.2em] text-white">System Update</h4>
+                <h4 className="text-[10px] font-semibold tracking-[0.2em] text-white">System Update</h4>
               </div>
-              <p className="text-[11px] font-bold text-slate-400 leading-tight uppercase tracking-wider">
+              <p className="text-[11px] font-bold text-[var(--text-muted)] leading-tight uppercase tracking-wider">
                 {isUpdating ? 'Applying new version to your space...' : 'A new version of Cyberia is ready for your space.'}
               </p>
             </div>
@@ -39,14 +39,14 @@ const UpdateToast: React.FC = () => {
             {!isUpdating && (
               <button
                 onClick={() => updateServiceWorker?.(true)} // Force update and reload
-                className="px-6 py-3 bg-blue-500 hover:bg-blue-600 text-white rounded-xl text-[10px] font-black uppercase tracking-widest transition-all shadow-lg shadow-blue-500/20 active:scale-95 whitespace-nowrap"
+                className="px-6 py-3 bg-blue-500 hover:bg-blue-600 text-white rounded-xl text-[10px] font-semibold tracking-widest transition-all shadow-lg shadow-blue-500/20 active:scale-95 whitespace-nowrap"
               >
                 Update Now
               </button>
             )}
           </div>
           
-          <div className="h-1 w-full bg-white/5 relative">
+          <div className="h-1 w-full bg-[var(--glass-border)] relative">
             <motion.div 
               initial={{ width: "0%" }}
               animate={{ width: "100%" }}

@@ -65,19 +65,8 @@ export const FileInspector: React.FC<InspectorPanelProps> = ({ thought, isReadOn
 
                 const meta = { ...thought.meta, file: { name: file.name, size: file.size, type: file.type } };
 
-                // 1. Put blob FIRST to avoid race condition in renderer
-                await db.blobs.put({
-                  id: thought.id, // Deterministic ID
-                  thoughtId: thought.id,
-                  blob: file,
-                  name: file.name,
-                  type: file.type,
-                  updatedAt: Date.now(),
-                  userId: useAuthStore.getState().user?.id ?? 'guest'
-                });
-
-                // 2. Then update thought to trigger re-render
-                await updateThought(thought.id, { 
+                // Three-Layer Architecture: Zustand FIRST, then IndexedDB, then cloud
+                await updateThought(thought.id, {
                   text: file.name,
                   type: 'file',
                   meta,
@@ -90,12 +79,22 @@ export const FileInspector: React.FC<InspectorPanelProps> = ({ thought, isReadOn
                   }
                 });
 
+                await db.blobs.put({
+                  id: thought.id,
+                  thoughtId: thought.id,
+                  blob: file,
+                  name: file.name,
+                  type: file.type,
+                  updatedAt: Date.now(),
+                  userId: useAuthStore.getState().user?.id ?? 'guest'
+                });
+
                 uploadThoughtBlob(thought.id);
               }
             }}
           />
           <Upload className="w-5 h-5 text-[var(--text-muted)]" />
-          <p className="text-[9px] text-slate-400 uppercase font-bold tracking-widest">Upload or Drag File</p>
+          <p className="text-[9px] text-[var(--text-muted)] uppercase font-bold tracking-widest">Upload or Drag File</p>
         </div>
       )}
     </div>

@@ -35,21 +35,21 @@ export const CalendarFilterBar: React.FC = () => {
   }, []);
 
   return (
-    <div className="flex flex-col gap-4 p-4 border-b border-[var(--glass-border)] bg-black/10">
+    <div className="flex flex-col gap-4 p-4 border-b border-[var(--glass-border)]">
       {/* Search Input */}
       <div className="relative group">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-[var(--text-muted)] group-focus-within:text-[var(--accent-secondary)] transition-colors" />
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-[var(--text-muted)] group-focus-within:text-[var(--accent)] transition-colors" />
         <input
           type="text"
           value={calendarSearchQuery}
           onChange={(e) => setCalendarSearchQuery(e.target.value)}
           placeholder="Search..."
-          className="w-full h-9 bg-white/5 border border-white/5 rounded-xl pl-9 pr-9 text-[11px] text-white outline-none focus:border-[var(--accent)]/50 focus:ring-2 focus:ring-[var(--accent)]/10 transition-all placeholder:text-[var(--text-muted)]"
+          className="w-full h-9 bg-[var(--bg-page)] border border-[var(--glass-border)] rounded-xl pl-9 pr-9 text-[11px] text-[var(--text-primary)] outline-none focus:border-[var(--accent)]/50 focus:ring-2 focus:ring-[var(--accent)]/10 transition-all placeholder:text-[var(--text-muted)]"
         />
         {calendarSearchQuery && (
           <button
             onClick={() => setCalendarSearchQuery('')}
-            className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 hover:bg-white/10 rounded-lg text-[var(--text-muted)] hover:text-white transition-all"
+            className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 hover:bg-[var(--text-primary)]/10 rounded-lg text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-all"
           >
             <X className="w-3 h-3" />
           </button>
@@ -61,12 +61,12 @@ export const CalendarFilterBar: React.FC = () => {
         <div className="flex items-center justify-between px-1">
           <div className="flex items-center gap-2">
             <Layers className="w-3 h-3 text-[var(--text-muted)]" />
-            <span className="text-[8px] font-black uppercase tracking-widest text-[var(--text-muted)]">Stacks</span>
+            <span className="text-[8px] font-semibold tracking-widest text-[var(--text-muted)]">Stacks</span>
           </div>
           {calendarStackFilter && (
             <button
               onClick={() => setCalendarStackFilter(null)}
-              className="text-[8px] font-bold uppercase tracking-widest text-[var(--accent-secondary)] hover:underline"
+              className="text-[8px] font-medium tracking-widest text-[var(--accent)] hover:underline"
             >
               Clear
             </button>
@@ -79,10 +79,10 @@ export const CalendarFilterBar: React.FC = () => {
           <button
             onClick={() => setCalendarStackFilter(null)}
             className={cn(
-              "flex-shrink-0 px-3 py-1.5 rounded-lg text-[9px] font-bold uppercase tracking-widest border transition-all",
+              "flex-shrink-0 px-3 py-1.5 rounded-lg text-[9px] font-medium tracking-widest border transition-all",
               !calendarStackFilter
-                ? "bg-[var(--accent)]/20 border-[var(--accent)] text-white shadow-[0_0_10px_var(--accent-glow)]"
-                : "bg-white/5 border-transparent text-[var(--text-muted)] hover:text-slate-300"
+                ? "bg-[var(--accent)]/20 border-[var(--accent)] text-[var(--text-primary)] shadow-[0_0_10px_var(--accent-glow)]"
+                : "bg-[var(--bg-page)] border-transparent text-[var(--text-muted)] hover:text-[var(--text-dimmed)]"
             )}
           >
             All
@@ -92,11 +92,11 @@ export const CalendarFilterBar: React.FC = () => {
               <button
                 onClick={() => setCalendarStackFilter(stack.id)}
                 className={cn(
-                  "px-3 py-1.5 rounded-lg text-[9px] font-bold uppercase tracking-widest border transition-all truncate max-w-[120px]",
+                  "px-3 py-1.5 rounded-lg text-[9px] font-medium tracking-widest border transition-all truncate max-w-[120px]",
                   !isReadOnly && "pr-6",
                   calendarStackFilter === stack.id
-                    ? "border-current text-white shadow-lg"
-                    : "bg-white/5 border-transparent text-[var(--text-muted)] hover:text-slate-300"
+                    ? "border-current text-[var(--text-primary)] shadow-lg"
+                    : "bg-[var(--bg-page)] border-transparent text-[var(--text-muted)] hover:text-[var(--text-dimmed)]"
                 )}
                 style={calendarStackFilter === stack.id ? { 
                   backgroundColor: stack.color.replace('1)', '0.3)'),
@@ -120,7 +120,7 @@ export const CalendarFilterBar: React.FC = () => {
                       }
                     });
                   }}
-                  className="absolute right-1 top-1/2 -translate-y-1/2 p-1 text-slate-600 hover:text-red-400 opacity-0 group-hover/stack:opacity-100 transition-all z-10 shadow-none"
+                  className="absolute right-1 top-1/2 -translate-y-1/2 p-1 text-[var(--text-muted)] hover:text-red-400 opacity-0 group-hover/stack:opacity-100 transition-all z-10 shadow-none"
                 >
                   <X className="w-2.5 h-2.5" />
                 </button>

@@ -9,6 +9,11 @@ let syncRequestedDuringActiveSync = false;
 let realtimeChannel: RealtimeChannel | null = null;
 let remoteSyncDebounceTimer: ReturnType<typeof setTimeout> | null = null;
 let outgoingSyncDebounceTimer: ReturnType<typeof setTimeout> | null = null;
+let isFocusEditing = false;
+let focusEditingThoughtId: string | null = null;
+
+// Editing registry for multi-thought editing support
+const editingThoughtIds = new Set<string>();
 
 export const syncOrchestrator = {
   async setSyncBlocked(blocked: boolean) {
@@ -24,6 +29,112 @@ export const syncOrchestrator = {
   getSyncBlocked() {
     return isSyncBlocked;
   },
+
+  setFocusEditing(editing: boolean, thoughtId: string | null = null) {
+    if (editing === isFocusEditing && thoughtId === focusEditingThoughtId) {
+      return;
+    }
+    console.log(`[Sync] Focus editing set to: ${editing} for thought: ${thoughtId}`);
+    isFocusEditing = editing;
+    focusEditingThoughtId = editing ? thoughtId : null;
+    if (editing && thoughtId) {
+      editingThoughtIds.add(thoughtId);
+    } else if (!editing && thoughtId) {
+      editingThoughtIds.delete(thoughtId);
+      this.flushThought(thoughtId);
+    } else if (!editing) {
+      this.flushAllEditingThoughts();
+      editingThoughtIds.clear();
+    }
+  },
+
+  getFocusEditing() {
+    return { isFocusEditing, focusEditingThoughtId };
+  },
+
+  // New editing registry methods for multi-thought editing support
+  startEditing(thoughtId: string) {
+    console.log(`[Sync] Started editing thought: ${thoughtId}`);
+    editingThoughtIds.add(thoughtId);
+    // Keep legacy focus editing in sync for backward compatibility
+    isFocusEditing = true;
+    focusEditingThoughtId = thoughtId;
+  },
+
+  stopEditing(thoughtId: string) {
+    console.log(`[Sync] Stopped editing thought: ${thoughtId}`);
+    // Flush the thought to IndexedDB before removing from registry
+    this.flushThought(thoughtId);
+    editingThoughtIds.delete(thoughtId);
+    // Update legacy focus editing if this was the focused thought
+    if (focusEditingThoughtId === thoughtId) {
+      const remainingIds = Array.from(editingThoughtIds);
+      if (remainingIds.length > 0) {
+        focusEditingThoughtId = remainingIds[remainingIds.length - 1];
+      } else {
+        isFocusEditing = false;
+        focusEditingThoughtId = null;
+      }
+    }
+  },
+
+  isEditing(thoughtId: string): boolean {
+    return editingThoughtIds.has(thoughtId);
+  },
+
+  getEditingThoughts(): Set<string> {
+    return new Set(editingThoughtIds);
+  },
+
+  async flushThought(thoughtId: string) {
+    try {
+      const { useStore } = await import('../../store/useStore');
+      const thought = useStore.getState().thoughts.find((t: any) => t.id === thoughtId);
+      if (!thought) {
+        return;
+      }
+      console.log('[Sync] Flushing thought to IndexedDB:', thoughtId);
+      const saveTimers = (window as any)._cyberia_save_timers || {};
+      if (saveTimers[thoughtId]) {
+        clearTimeout(saveTimers[thoughtId]);
+        delete saveTimers[thoughtId];
+        (window as any)._cyberia_save_timers = saveTimers;
+      }
+      const statusToWrite = thought.syncStatus === 'syncing' ? 'syncing' : 'local';
+      await db.thoughts.put({ ...thought, syncStatus: statusToWrite });
+    } catch (e) {
+      console.warn('[Sync] Failed to flush thought:', thoughtId, e);
+    }
+  },
+
+  async flushAllEditingThoughts() {
+    const ids = Array.from(editingThoughtIds);
+    if (ids.length === 0) return;
+    console.log(`[Sync] Flushing ${ids.length} editing thoughts`);
+    await Promise.all(ids.map(id => this.flushThought(id)));
+  },
+
+  async flushFocusEditingThought() {
+    if (!focusEditingThoughtId) return;
+    try {
+      const { useStore } = await import('../../store/useStore');
+      const thought = useStore.getState().thoughts.find((t: any) => t.id === focusEditingThoughtId);
+      if (thought) {
+        console.log('[Sync] Flushing focused thought to IndexedDB:', focusEditingThoughtId);
+        const saveTimers = (window as any)._cyberia_save_timers || {};
+        if (saveTimers[focusEditingThoughtId]) {
+          clearTimeout(saveTimers[focusEditingThoughtId]);
+          delete saveTimers[focusEditingThoughtId];
+          (window as any)._cyberia_save_timers = saveTimers;
+        }
+        const statusToWrite = thought.syncStatus === 'syncing' ? 'syncing' : 'local';
+        await db.thoughts.put({ ...thought, syncStatus: statusToWrite });
+      }
+    } catch (e) {
+      console.warn('[Sync] Failed to flush focus editing thought:', e);
+    }
+  },
+
 
   async triggerSync(force: boolean = false): Promise<void> {
     const { useSyncStore } = await import('../../store/useSyncStore');
@@ -83,24 +194,16 @@ export const syncOrchestrator = {
         const camelData = toCamelCase(userData);
         const newSettings = camelData.settings || {};
         
-        // Sync theme and customBg to global store (Silent update to avoid sync loops)
-        if (newSettings.theme) {
-          useStore.setState({ theme: newSettings.theme });
-          document.body.setAttribute('data-theme', newSettings.theme);
-          localStorage.setItem('cyberia-theme', newSettings.theme);
-        }
         if (newSettings.customBg !== undefined) {
-          useStore.setState({ customBg: newSettings.customBg });
+          useStore.getState().setCustomBgValue(newSettings.customBg);
         }
 
         // Update user object in auth store
         const updatedUser = { 
-          ...authStore.user, 
           ...camelData,
           settings: { ...authStore.user?.settings, ...newSettings }
         };
-        useAuthStore.setState({ user: updatedUser as any });
-        localStorage.setItem('cyberia-user', JSON.stringify(updatedUser));
+        useAuthStore.getState().mergeUserData(updatedUser);
         return;
       }
 
@@ -234,6 +337,9 @@ export const syncOrchestrator = {
           if (s.syncStatus === 'synced' && !cloudSpaceMap.has(s.id)) {
             const timeSinceUpdate = now - (s.updatedAt || 0);
             if (timeSinceUpdate > DELETION_GRACE_PERIOD_MS) {
+              // FK Safety: Clear spaceId from orphaned stacks and thoughts before deleting space
+              await db.stacks.where('spaceId').equals(s.id).and(st => st.userId === userId).modify((st: any) => { st.spaceId = null; });
+              await db.thoughts.where('spaceId').equals(s.id).and(t => t.userId === userId).modify((t: any) => { t.spaceId = null; });
               // Clean up background file from storage before deleting the space record
               if (s.customBg && isStorageUrl(s.customBg)) {
                 supabaseStorage.deleteSpaceBackground(userId, s.id)
@@ -257,8 +363,12 @@ export const syncOrchestrator = {
           if (t.syncStatus === 'synced' && !cloudThoughtMap.has(t.id)) {
             const timeSinceUpdate = now - (t.updatedAt || 0);
             if (timeSinceUpdate > DELETION_GRACE_PERIOD_MS) {
+              if (syncOrchestrator.isEditing(t.id)) {
+                console.warn(`[Sync] Skipping deletion of actively edited thought: ${t.id}`);
+                continue;
+              }
               await db.thoughts.delete(t.id);
-              await db.blobs.delete(t.id); // Optimized blob delete
+              await db.blobs.delete(t.id);
             }
           }
         }
@@ -280,15 +390,9 @@ export const syncOrchestrator = {
             const incomingSpace = toCamelCase(data);
             await db.spaces.put({ ...incomingSpace, syncStatus: 'synced' } as any);
 
-            // REAL-TIME UI SYNC: If this is the active space, update current theme/bg (Silent)
             if (id === store.activeSpaceId) {
-              if (incomingSpace.theme) {
-                useStore.setState({ theme: incomingSpace.theme });
-                document.body.setAttribute('data-theme', incomingSpace.theme);
-                localStorage.setItem('cyberia-theme', incomingSpace.theme);
-              }
               if (incomingSpace.customBg !== undefined) {
-                useStore.setState({ customBg: incomingSpace.customBg });
+                useStore.getState().setCustomBgValue(incomingSpace.customBg);
               }
             }
           }
@@ -427,7 +531,11 @@ export const syncOrchestrator = {
       // 2.2 Handle Creates/Updates (Order: Spaces -> Stacks -> Thoughts)
       const spacesToPush = localSpaces.filter(s => !s.deletedAt && !s.isOnboarding);
       const stacksToPush = localStacks.filter(s => !s.deletedAt && !s.isOnboarding);
-      const thoughtsToPush = localThoughts.filter(t => !t.deletedAt && !onboardingSpaceIds.has(t.spaceId));
+      const thoughtsToPush = localThoughts.filter(t => 
+        !t.deletedAt && 
+        !onboardingSpaceIds.has(t.spaceId) &&
+        !syncOrchestrator.isEditing(t.id)
+      );
 
       // ==========================================
       // Step 2.2.1: Upload any pending blob URLs for customBgs
@@ -487,7 +595,19 @@ export const syncOrchestrator = {
       }
 
       if (stacksToPush.length > 0) {
-        await supabaseSync.createStacks(stacksToPush.map(s => ({ ...s, user_id: userId })), userId);
+        // FK Safety: Clear invalid spaceId before pushing
+        const existingCloudSpaceIds = new Set(Array.from(cloudSpaceMap.keys()));
+        const pushingSpaceIds = new Set(spacesToPush.map(s => s.id));
+        
+        const safeStacks = stacksToPush.map(s => {
+          if (s.spaceId && !existingCloudSpaceIds.has(s.spaceId) && !pushingSpaceIds.has(s.spaceId)) {
+            console.warn(`[Sync] Clearing invalid spaceId ${s.spaceId} from stack ${s.id} to prevent FK violation`);
+            return { ...s, spaceId: null, user_id: userId };
+          }
+          return { ...s, user_id: userId };
+        });
+        
+        await supabaseSync.createStacks(safeStacks.map(s => ({ ...s, user_id: userId })), userId);
         
         // Atomic update
         await db.stacks.where('id').anyOf(stacksToPush.map(s => s.id)).modify((s: any) => {
@@ -522,16 +642,23 @@ export const syncOrchestrator = {
       }
 
       if (thoughtsToPush.length > 0) {
-        // FK Safety: If any thought still has a stackId that doesn't exist in cloud or in stacksToPush, clear it
+        const existingCloudSpaceIds = new Set(Array.from(cloudSpaceMap.keys()));
+        const pushingSpaceIds = new Set(spacesToPush.map(s => s.id));
         const existingCloudStackIds = new Set(Array.from(cloudStackMap.keys()));
         const pushingStackIds = new Set(stacksToPush.map(s => s.id));
         
         const safeThoughts = thoughtsToPush.map(t => {
-          if (t.stackId && !existingCloudStackIds.has(t.stackId) && !pushingStackIds.has(t.stackId)) {
-            console.warn(`[Sync] Clearing invalid stackId ${t.stackId} from thought ${t.id} to prevent FK violation`);
-            return { ...t, stackId: null, user_id: userId };
+          let result: any = { ...t, user_id: userId };
+          
+          if (t.spaceId && !existingCloudSpaceIds.has(t.spaceId) && !pushingSpaceIds.has(t.spaceId)) {
+            console.warn(`[Sync] Clearing invalid spaceId ${t.spaceId} from thought ${t.id}`);
+            result.spaceId = null;
           }
-          return { ...t, user_id: userId };
+          if (t.stackId && !existingCloudStackIds.has(t.stackId) && !pushingStackIds.has(t.stackId)) {
+            console.warn(`[Sync] Clearing invalid stackId ${t.stackId} from thought ${t.id}`);
+            result.stackId = null;
+          }
+          return result;
         });
 
         await supabaseSync.createThoughts(safeThoughts);
@@ -559,14 +686,17 @@ export const syncOrchestrator = {
       syncStore.setStatus('error');
       return { success: false, error: String(err) };
     } finally {
-      // CRITICAL: Final UI Refresh to ensure 'synced' statuses and any remote 
+      // CRITICAL: Final UI Refresh to ensure 'synced' statuses and any remote
       // changes are perfectly reflected after the sync cycle completes.
+      // Note: Editing thoughts merge logic is handled in thoughtSlice.refreshThoughts()
       try {
         const { useStore } = await import('../../store/useStore');
         const store = useStore.getState();
+
+        await store.refreshThoughts();
+
         await Promise.all([
           store.refreshSpaces(),
-          store.refreshThoughts(),
           store.refreshStacks()
         ]);
 
@@ -667,3 +797,14 @@ export const syncOrchestrator = {
     }
   },
 };
+
+// Crash recovery: flush all editing thoughts on browser close
+if (typeof window !== 'undefined') {
+  window.addEventListener('beforeunload', () => {
+    if (editingThoughtIds.size > 0) {
+      syncOrchestrator.flushAllEditingThoughts();
+    } else if (isFocusEditing && focusEditingThoughtId) {
+      syncOrchestrator.flushFocusEditingThought();
+    }
+  });
+}

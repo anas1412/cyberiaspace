@@ -41,7 +41,7 @@ export const QuotaResolver: React.FC<QuotaResolverProps> = ({ guestSpaces, cloud
         {isExceeded ? "Space Limit Reached" : "Guest Data Detected"}
       </h2>
       
-      <p className="text-sm text-slate-400 mb-6 max-w-xs leading-relaxed">
+      <p className="text-sm text-[var(--text-muted)] mb-6 max-w-xs leading-relaxed">
         {isExceeded 
           ? `You have ${guestSpaces} guest spaces, but adding them would exceed your limit of ${limit} spaces. Upgrade to Pro to keep everything.`
           : `We found ${guestSpaces} local guest spaces on this device. Would you like to migrate them to your account?`
@@ -69,7 +69,7 @@ export const QuotaResolver: React.FC<QuotaResolverProps> = ({ guestSpaces, cloud
             
             <button
               onClick={closeModal}
-              className="w-full py-2 text-[10px] uppercase tracking-widest text-slate-500 hover:text-slate-300 transition-colors"
+              className="w-full py-2 text-[10px] uppercase tracking-widest text-[var(--text-muted)] hover:text-[var(--text-dimmed)] transition-colors"
             >
               Close
             </button>
@@ -93,7 +93,7 @@ export const QuotaResolver: React.FC<QuotaResolverProps> = ({ guestSpaces, cloud
             
             <button
               onClick={closeModal}
-              className="w-full py-2 text-[10px] uppercase tracking-widest text-slate-500 hover:text-slate-300 transition-colors"
+              className="w-full py-2 text-[10px] uppercase tracking-widest text-[var(--text-muted)] hover:text-[var(--text-dimmed)] transition-colors"
             >
               Close (Keep Local)
             </button>

@@ -17,7 +17,7 @@ export const EmbedInspector: React.FC<InspectorPanelProps> = ({ thought, isReadO
   return (
     <div className="space-y-6">
       <div className="space-y-2">
-        <label className="text-[9px] uppercase font-bold tracking-widest text-slate-500 ml-1">URL</label>
+        <label className="text-[9px] uppercase font-bold tracking-widest text-[var(--text-muted)] ml-1">URL</label>
         <input
           type="text"
           readOnly={isReadOnly}

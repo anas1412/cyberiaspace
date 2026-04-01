@@ -22,22 +22,22 @@ const ComparisonRow: React.FC<{ label: string; free: string | React.ReactNode; p
   highlight 
 }) => (
   <div className={cn(
-    "grid grid-cols-[1.5fr_1fr_1fr] gap-4 py-4 px-6 border-b border-white/5 items-center transition-colors",
-    highlight ? "bg-blue-500/[0.03] hover:bg-blue-500/[0.05]" : "hover:bg-white/[0.02]"
+    "grid grid-cols-[1.5fr_1fr_1fr] gap-4 py-4 px-6 border-b border-[var(--border)] items-center transition-colors",
+    highlight ? "bg-blue-500/5 hover:bg-blue-500/10 dark:bg-blue-500/[0.03] dark:hover:bg-blue-500/[0.05]" : "hover:bg-[var(--glass-bg)]"
   )}>
     <div className="text-left">
-      <span className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-300">{label}</span>
+      <span className="text-sm font-semibold text-[var(--text-dimmed)]">{label}</span>
     </div>
     <div className="text-center">
       {typeof free === 'string' ? (
-        <span className="text-sm font-medium text-slate-500">{free}</span>
+        <span className="text-sm font-medium text-[var(--text-muted)]">{free}</span>
       ) : (
         free
       )}
     </div>
     <div className="text-center">
       {typeof pro === 'string' ? (
-        <span className={cn("text-sm font-bold", highlight ? "text-blue-400" : "text-white")}>
+        <span className={cn("text-sm font-bold", highlight ? "text-blue-600 dark:text-blue-400" : "text-[var(--text-primary)]")}>
           {pro}
         </span>
       ) : (
@@ -250,19 +250,19 @@ const PricingPage: React.FC = () => {
   // Failure state (Full Page)
   if (paymentStatus === 'failed') {
     return (
-      <div className="min-h-screen relative overflow-hidden bg-[#0B0F19]">
+      <div className="min-h-screen relative overflow-hidden bg-[var(--bg-page)] text-[var(--text-primary)]">
         <BackgroundEngine />
         <div className="relative z-10 min-h-screen flex items-center justify-center p-6">
           <motion.div 
             initial={{ opacity: 0, scale: 0.9, y: 10 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
-            className="glass bg-[#0B0F19]/90 p-12 rounded-2xl border border-amber-500/30 text-center max-w-lg shadow-2xl shadow-amber-500/10"
+            className="glass bg-[var(--bg-page)]/90 p-12 rounded-2xl border border-rose-500/30 text-center max-w-lg shadow-2xl shadow-rose-500/10"
           >
-            <div className="w-20 h-20 bg-gradient-to-br from-amber-500/20 to-orange-500/20 rounded-full flex items-center justify-center mx-auto mb-6 border border-amber-500/30">
-              <AlertCircle className="w-10 h-10 text-amber-400" />
+            <div className="w-20 h-20 bg-gradient-to-br from-rose-500/20 to-red-500/20 rounded-full flex items-center justify-center mx-auto mb-6 border border-rose-500/30">
+              <AlertCircle className="w-10 h-10 text-rose-500 dark:text-rose-400" />
             </div>
-            <h2 className="text-3xl font-bold tracking-tight text-white mb-3">Payment Failed</h2>
-            <p className="text-base text-slate-400 font-medium leading-relaxed mb-8">{paymentMessage}</p>
+            <h2 className="text-3xl font-bold tracking-tight text-[var(--text-primary)] mb-3">Payment Failed</h2>
+            <p className="text-base text-[var(--text-muted)] font-medium leading-relaxed mb-8">{paymentMessage}</p>
             
             <div className="flex flex-col gap-3">
               <button
@@ -270,14 +270,14 @@ const PricingPage: React.FC = () => {
                   setPaymentStatus('idle');
                   setPaymentMessage('');
                 }}
-                className="w-full h-14 rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] transition-all flex items-center justify-center gap-2 bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-500 hover:to-orange-500 text-white shadow-lg shadow-amber-500/25 active:scale-95"
+                className="w-full h-14 rounded-2xl text-sm font-semibold tracking-wide transition-all flex items-center justify-center gap-2 bg-gradient-to-r from-rose-600 to-red-600 hover:from-rose-500 hover:to-red-500 text-white shadow-lg shadow-rose-500/25 active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-500"
               >
                 <RefreshCw className="w-4 h-4" />
                 Try Another Method
               </button>
               <button
                 onClick={() => window.location.href = '/home'}
-                className="w-full h-12 rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] text-slate-500 hover:text-white hover:bg-white/5 transition-all"
+                className="w-full h-12 rounded-2xl text-sm font-semibold tracking-wide text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--glass-bg)] transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-500"
               >
                 Return to Workspace
               </button>
@@ -291,22 +291,22 @@ const PricingPage: React.FC = () => {
   // Success state (Full Page)
   if (paymentStatus === 'success') {
     return (
-      <div className="min-h-screen relative overflow-hidden bg-[#0B0F19]">
+      <div className="min-h-screen relative overflow-hidden bg-[var(--bg-page)] text-[var(--text-primary)]">
         <BackgroundEngine />
         <div className="relative z-10 min-h-screen flex items-center justify-center p-6">
           <motion.div 
             initial={{ opacity: 0, scale: 0.9, y: 10 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
-            className="glass bg-[#0B0F19]/90 p-12 rounded-2xl border border-green-500/30 text-center max-w-lg shadow-2xl shadow-green-500/10"
+            className="glass bg-[var(--bg-page)]/90 p-12 rounded-2xl border border-green-500/30 text-center max-w-lg shadow-2xl shadow-green-500/10"
           >
             <div className="w-20 h-20 bg-gradient-to-br from-green-500/20 to-emerald-500/20 rounded-full flex items-center justify-center mx-auto mb-6 border border-green-500/30">
-              <Check className="w-10 h-10 text-green-400" />
+              <Check className="w-10 h-10 text-emerald-600 dark:text-emerald-500" />
             </div>
-            <h2 className="text-3xl font-bold tracking-tight text-white mb-3">You're Pro!</h2>
-            <p className="text-base text-green-400 font-medium leading-relaxed mb-8">{paymentMessage}</p>
+            <h2 className="text-3xl font-bold tracking-tight text-[var(--text-primary)] mb-3">You're Pro!</h2>
+            <p className="text-base text-emerald-600 dark:text-emerald-500 font-medium leading-relaxed mb-8">{paymentMessage}</p>
             <button
               onClick={() => window.location.href = '/home'}
-              className="w-full h-14 rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] transition-all flex items-center justify-center gap-2 bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-500 hover:to-emerald-500 text-white shadow-lg shadow-green-500/25 active:scale-95"
+              className="w-full h-14 rounded-2xl text-sm font-semibold tracking-wide transition-all flex items-center justify-center gap-2 bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-500 hover:to-emerald-500 text-white shadow-lg shadow-green-500/25 active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-green-500"
             >
               Enter Cyberia
             </button>
@@ -317,7 +317,7 @@ const PricingPage: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen relative overflow-hidden bg-[#0B0F19]">
+    <div className="min-h-screen relative overflow-hidden bg-[var(--bg-page)] text-[var(--text-primary)]">
       <BackgroundEngine />
       
       <Navigation />
@@ -330,10 +330,25 @@ const PricingPage: React.FC = () => {
           animate={{ opacity: 1, y: 0 }}
           className="text-center mb-10"
         >
-          <h1 className="text-4xl md:text-6xl font-black tracking-tighter uppercase text-white mb-4">
-            {isProUser ? 'You\'re Already Pro' : 'Unlock Your Potential'}
+          {/* Made consistent with Homepage titles */}
+          <h1 className="text-5xl md:text-6xl font-bold tracking-tight mb-4">
+            {isProUser ? (
+              <>
+                You're Already{' '}
+                <span className="bg-clip-text text-transparent bg-gradient-to-r from-[var(--accent)] to-[var(--accent-secondary)]">
+                  Pro
+                </span>
+              </>
+            ) : (
+              <>
+                Unlock Your{' '}
+                <span className="bg-clip-text text-transparent bg-gradient-to-r from-[var(--accent)] to-[var(--accent-secondary)]">
+                  Potential
+                </span>
+              </>
+            )}
           </h1>
-          <p className="text-slate-400 font-medium text-base max-w-2xl mx-auto">
+          <p className="text-[var(--text-muted)] font-medium text-base max-w-2xl mx-auto mt-6">
             {isProUser 
               ? `Your Pro access is valid until ${user?.expiryDate ? new Date(user.expiryDate).toLocaleDateString() : 'the end of your period'}. Enjoy your unlimited access.` 
               : 'Start for free, upgrade when you\'re ready. Choose the plan that fits your workflow.'
@@ -341,14 +356,14 @@ const PricingPage: React.FC = () => {
           </p>
         </motion.div>
 
-        {/* Hero Pricing Card (Matches Modal Split Design) */}
+        {/* Hero Pricing Card */}
         <motion.div 
           initial={{ opacity: 0, y: 30 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.1 }}
           className={cn(
-            "glass bg-[#0B0F19]/90 w-full rounded-2xl border overflow-hidden shadow-2xl mb-12",
-            isProUser ? "border-green-500/30 flex-col p-10 md:p-14 text-center items-center" : "border-white/10 flex flex-col md:flex-row"
+            "glass bg-[var(--bg-page)]/90 w-full rounded-2xl border overflow-hidden shadow-2xl mb-12",
+            isProUser ? "border-green-500/30 flex-col p-10 md:p-14 text-center items-center" : "border-[var(--glass-border)] flex flex-col md:flex-row"
           )}
         >
           {isProUser ? (
@@ -356,27 +371,29 @@ const PricingPage: React.FC = () => {
               <div className="absolute top-0 right-0 w-64 h-64 bg-green-500/10 blur-[80px] rounded-full -translate-y-1/2 translate-x-1/2" />
               <div className="absolute bottom-0 left-0 w-64 h-64 bg-emerald-500/10 blur-[80px] rounded-full translate-y-1/2 -translate-x-1/2" />
               
-              <div className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-green-500/10 border border-green-500/20 mb-6">
-                <Check className="w-5 h-5 text-green-400" />
-                <span className="text-[10px] font-black uppercase tracking-[0.2em] text-green-400">Active Pro Member</span>
+              {/* Badges should be text-xs */}
+              <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-green-500/10 border border-green-500/20 mb-6">
+                <Check className="w-4 h-4 text-emerald-600 dark:text-emerald-500" />
+                <span className="text-xs font-bold tracking-wide text-emerald-600 dark:text-emerald-500 uppercase">Active Pro Member</span>
               </div>
-              <h2 className="text-3xl md:text-4xl font-black uppercase tracking-tighter text-white mb-4">Everything is unlocked.</h2>
-              <p className="text-slate-400 mb-8 max-w-lg mx-auto">You have full access to all Pro features including unlimited AI models, file intelligence, agentic capabilities, and expanded spaces.</p>
+              
+              <h2 className="text-3xl md:text-4xl font-semibold tracking-tighter text-[var(--text-primary)] mb-4">Everything is unlocked.</h2>
+              <p className="text-[var(--text-muted)] mb-8 max-w-lg mx-auto">You have full access to all Pro features including unlimited AI models, file intelligence, agentic capabilities, and expanded spaces.</p>
               
               <div className="flex flex-col sm:flex-row justify-center gap-4 w-full max-w-md">
                 {user?.paymentProvider === 'polar' && (
                   <button
                     onClick={handleManageSubscription}
-                    className="flex-1 h-12 rounded-xl text-[10px] font-black uppercase tracking-[0.2em] bg-white/5 hover:bg-white/10 text-white border border-white/10 transition-all flex items-center justify-center gap-2 active:scale-95"
+                    className="flex-1 h-12 rounded-xl text-sm font-semibold tracking-wide bg-[var(--glass-bg)] hover:bg-[var(--glass-bg)]/80 text-[var(--text-primary)] border border-[var(--glass-border)] transition-all flex items-center justify-center gap-2 active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500"
                   >
-                    <CreditCard className="w-4 h-4 text-slate-400" />
+                    <CreditCard className="w-4 h-4 text-[var(--text-muted)]" />
                     Manage Billing
-                    <ExternalLink className="w-3 h-3 text-slate-500" />
+                    <ExternalLink className="w-3 h-3 text-[var(--text-muted)]" />
                   </button>
                 )}
                 <button
                   onClick={() => window.location.href = '/home'}
-                  className="flex-1 h-12 rounded-xl text-[10px] font-black uppercase tracking-[0.2em] bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-500 hover:to-emerald-500 text-white transition-all shadow-lg shadow-green-500/25 flex items-center justify-center gap-2 active:scale-95"
+                  className="flex-1 h-12 rounded-xl text-sm font-semibold tracking-wide bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-500 hover:to-emerald-500 text-white transition-all shadow-lg shadow-green-500/25 flex items-center justify-center gap-2 active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--bg-page)]"
                 >
                   <Layout className="w-4 h-4" />
                   Access My Space
@@ -390,12 +407,12 @@ const PricingPage: React.FC = () => {
                 <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-b from-blue-500/5 to-transparent pointer-events-none" />
                 
                 <div className="flex items-center gap-4 mb-8 relative z-10">
-                  <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-blue-500/20 to-blue-600/20 border border-blue-500/20 flex items-center justify-center text-blue-400 shrink-0 shadow-lg shadow-blue-500/10">
+                  <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-blue-500/10 to-blue-600/20 border border-blue-500/20 flex items-center justify-center text-blue-600 dark:text-blue-400 shrink-0 shadow-lg shadow-blue-500/10">
                     <Zap className="w-7 h-7" />
                   </div>
                   <div>
-                    <h2 className="text-3xl md:text-4xl font-black uppercase tracking-tighter text-white">Do more with Pro</h2>
-                    <p className="text-[10px] font-black uppercase tracking-[0.2em] text-blue-400">Get unlimited AI usage and more storage.</p>
+                    <h2 className="text-3xl md:text-4xl font-semibold tracking-tighter text-[var(--text-primary)]">Do more with Pro</h2>
+                    <p className="text-base font-medium text-blue-600 dark:text-blue-400">Get unlimited AI usage and more storage.</p>
                   </div>
                 </div>
 
@@ -419,12 +436,12 @@ const PricingPage: React.FC = () => {
                     }
                   ].map((feature, i) => (
                     <div key={i} className="flex gap-4 group">
-                      <div className="w-6 h-6 rounded-full bg-blue-500/10 border border-blue-500/20 flex items-center justify-center text-blue-400 shrink-0 mt-0.5">
+                      <div className="w-6 h-6 rounded-full bg-blue-500/10 border border-blue-500/20 flex items-center justify-center text-blue-600 dark:text-blue-400 shrink-0 mt-0.5">
                         <Check className="w-3.5 h-3.5" />
                       </div>
                       <div>
-                        <h4 className="text-[11px] font-black uppercase tracking-[0.2em] text-white mb-1">{feature.title}</h4>
-                        <p className="text-xs text-slate-400 leading-relaxed font-medium">{feature.desc}</p>
+                        <h4 className="text-base font-semibold text-[var(--text-primary)] mb-1">{feature.title}</h4>
+                        <p className="text-sm text-[var(--text-muted)] leading-relaxed font-medium">{feature.desc}</p>
                       </div>
                     </div>
                   ))}
@@ -433,17 +450,17 @@ const PricingPage: React.FC = () => {
                 {/* Coming Soon Section */}
                 <div className="mt-8 p-5 rounded-2xl bg-gradient-to-br from-indigo-500/5 to-purple-500/5 border border-indigo-500/10 flex gap-4 items-start relative overflow-hidden group">
                   <div className="absolute top-0 right-0 w-32 h-32 bg-indigo-500/10 blur-3xl rounded-full -mr-16 -mt-16 transition-opacity group-hover:opacity-75" />
-                  <div className="w-10 h-10 rounded-xl bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center text-indigo-400 shrink-0 z-10 shadow-inner">
+                  <div className="w-10 h-10 rounded-xl bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center text-indigo-600 dark:text-indigo-400 shrink-0 z-10 shadow-inner">
                     <Rocket className="w-5 h-5" />
                   </div>
                   <div className="z-10">
                     <div className="flex items-center gap-3 mb-1.5">
-                      <h4 className="text-[10px] font-black uppercase tracking-[0.2em] text-white">Teams & Mobile App</h4>
-                      <span className="text-[8px] font-black uppercase tracking-widest bg-indigo-500/20 text-indigo-300 px-2 py-0.5 rounded-full border border-indigo-500/20">
+                      <h4 className="text-base font-semibold text-[var(--text-primary)]">Teams & Mobile App</h4>
+                      <span className="text-xs font-bold tracking-wide bg-indigo-500/10 text-indigo-600 dark:text-indigo-300 px-2 py-0.5 rounded-full border border-indigo-500/20 uppercase">
                         Coming Soon
                       </span>
                     </div>
-                    <p className="text-[11px] text-slate-400 leading-relaxed font-medium uppercase tracking-widest">
+                    <p className="text-sm text-[var(--text-muted)] leading-relaxed font-medium">
                       Invite friends to shared spaces, work together in real-time, and take your thoughts anywhere with our upcoming iOS & Android apps.
                     </p>
                   </div>
@@ -451,22 +468,22 @@ const PricingPage: React.FC = () => {
               </div>
 
               {/* RIGHT: Pricing Checkout */}
-              <div className="w-full md:w-[380px] lg:w-[440px] p-6 md:p-10 lg:p-14 bg-white/[0.02] border-t md:border-t-0 md:border-l border-white/5 flex flex-col justify-center">
+              <div className="w-full md:w-[380px] lg:w-[440px] p-6 md:p-10 lg:p-14 bg-[var(--glass-bg)] border-t md:border-t-0 md:border-l border-[var(--glass-border)] flex flex-col justify-center">
                 
                 <div className="flex flex-col items-center text-center mb-8">
                   {/* Billing Toggle */}
-                  <div className="relative flex p-1 bg-black/40 border border-white/5 rounded-xl mb-8 w-full">
+                  <div className="relative flex p-1 bg-[var(--bg-page)] border border-[var(--glass-border)] rounded-xl mb-8 w-full">
                     <button
                       onClick={() => setBillingCycle('monthly')}
                       className={cn(
-                        "relative z-10 flex-1 py-2.5 rounded-lg text-[10px] font-black uppercase tracking-[0.15em] transition-colors flex items-center justify-center gap-2",
-                        billingCycle === 'monthly' ? "text-white" : "text-slate-400 hover:text-slate-200"
+                        "relative z-10 flex-1 py-2.5 rounded-lg text-sm font-semibold tracking-wide transition-colors flex items-center justify-center gap-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500",
+                        billingCycle === 'monthly' ? "text-[var(--text-primary)]" : "text-[var(--text-muted)] hover:text-[var(--text-dimmed)]"
                       )}
                     >
                       {billingCycle === 'monthly' && (
                         <motion.div 
                           layoutId="pageBillingCycleToggle"
-                          className="absolute inset-0 rounded-lg bg-white/15 shadow-sm"
+                          className="absolute inset-0 rounded-lg bg-blue-500/10 dark:bg-blue-500/15 shadow-sm"
                           initial={false}
                           transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
                         />
@@ -476,20 +493,20 @@ const PricingPage: React.FC = () => {
                     <button
                       onClick={() => setBillingCycle('yearly')}
                       className={cn(
-                        "relative z-10 flex-1 py-2.5 rounded-lg text-[10px] font-black uppercase tracking-[0.15em] transition-colors flex items-center justify-center gap-2",
-                        billingCycle === 'yearly' ? "text-white" : "text-slate-400 hover:text-slate-200"
+                        "relative z-10 flex-1 py-2.5 rounded-lg text-sm font-semibold tracking-wide transition-colors flex items-center justify-center gap-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500",
+                        billingCycle === 'yearly' ? "text-[var(--text-primary)]" : "text-[var(--text-muted)] hover:text-[var(--text-dimmed)]"
                       )}
                     >
                       {billingCycle === 'yearly' && (
                         <motion.div 
                           layoutId="pageBillingCycleToggle"
-                          className="absolute inset-0 rounded-lg bg-white/15 shadow-sm"
+                          className="absolute inset-0 rounded-lg bg-blue-500/10 dark:bg-blue-500/15 shadow-sm"
                           initial={false}
                           transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
                         />
                       )}
                       <span className="relative z-20">Yearly</span>
-                      <span className="bg-emerald-500/15 text-emerald-400 border border-emerald-500/20 text-[9px] font-black px-2 py-0.5 rounded-lg uppercase tracking-tight shadow-sm whitespace-nowrap relative z-20">
+                      <span className="bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 text-[11px] uppercase font-bold px-2 py-0.5 rounded-md tracking-wide shadow-sm whitespace-nowrap relative z-20">
                         Save {location?.isLocalPricing ? `${savingsTnd}DT` : `$${savings}`}
                       </span>
                     </button>
@@ -499,30 +516,30 @@ const PricingPage: React.FC = () => {
                   <div className="mb-4">
                     {location?.isLocalPricing ? (
                       <div className="flex flex-col items-center gap-3">
-                        <span className="text-[9px] font-black uppercase tracking-[0.2em] bg-blue-500/10 text-blue-400 px-3 py-1 rounded-full border border-blue-500/20">
+                        <span className="text-xs font-bold tracking-wide uppercase bg-blue-500/10 text-blue-600 dark:text-blue-400 px-3 py-1 rounded-full border border-blue-500/20">
                           Local Pricing Active
                         </span>
                         <div className="flex items-baseline justify-center">
-                          <span className="text-5xl md:text-6xl font-extrabold tracking-tight text-white">{currentPrice.tnd}</span>
-                          <span className="text-xl text-slate-400 ml-2 font-semibold">DT</span>
+                          <span className="text-5xl md:text-6xl font-extrabold tracking-tight text-[var(--text-primary)]">{currentPrice.tnd}</span>
+                          <span className="text-xl text-[var(--text-muted)] ml-2 font-semibold">DT</span>
                         </div>
-                        <span className="text-[9px] font-black uppercase tracking-widest text-slate-500 bg-black/20 px-3 py-1 rounded-full">
+                        <span className="text-xs font-bold tracking-wide text-[var(--text-muted)] bg-[var(--glass-bg)] border border-[var(--glass-border)] px-3 py-1 rounded-full">
                           Global Price: ${currentPrice.usd} USD
                         </span>
                       </div>
                     ) : (
                       <div className="flex items-baseline justify-center">
-                        <span className="text-5xl md:text-6xl font-extrabold tracking-tight text-white">${currentPrice.usd}</span>
+                        <span className="text-5xl md:text-6xl font-extrabold tracking-tight text-[var(--text-primary)]">${currentPrice.usd}</span>
                       </div>
                     )}
                     
-                    <span className="text-slate-400 font-black uppercase tracking-widest text-[10px] block mt-4">
+                    <span className="text-[var(--text-muted)] font-semibold tracking-wide text-sm block mt-4">
                       {billingCycle === 'monthly' ? 'Per Month' : 'Per Year'}
                     </span>
                   </div>
-                  <p className="text-[10px] text-slate-500 leading-relaxed px-4 font-black uppercase tracking-widest">
+                  <p className="text-sm text-[var(--text-muted)] leading-relaxed px-4 font-medium">
                     {location?.isLocalPricing 
-                      ? (billingCycle === 'yearly' ? `One-time payment of ${currentPrice.tnd} DT per year.` : 'Manual renewal via Flouci. No auto-charges.')
+                      ? ('Manual renewal via Flouci. No auto-charges.')
                       : (billingCycle === 'yearly' ? `Recurring payment of $${proPrice.yearly.usd} per year via Polar.sh. Cancel anytime.` : `Recurring monthly subscription via Polar.sh. Cancel anytime.`)
                     }
                   </p>
@@ -534,7 +551,7 @@ const PricingPage: React.FC = () => {
                       initial={{ opacity: 0, y: -10 }}
                       animate={{ opacity: 1, y: 0 }}
                       exit={{ opacity: 0 }}
-                      className="text-sm text-red-400 font-medium text-center mb-6 bg-red-400/10 p-3 rounded-xl border border-red-400/20"
+                      className="text-sm text-rose-600 dark:text-rose-400 font-medium text-center mb-6 bg-rose-500/10 p-3 rounded-xl border border-rose-500/20"
                     >
                       {error}
                     </motion.p>
@@ -547,20 +564,20 @@ const PricingPage: React.FC = () => {
                     >
                       <div className="relative w-12 h-12 mx-auto mb-3">
                         <div className="absolute inset-0 rounded-full border-2 border-blue-500/20" />
-                        <Loader2 className="w-12 h-12 text-blue-400 animate-spin" />
+                        <Loader2 className="w-12 h-12 text-blue-600 dark:text-blue-400 animate-spin" />
                       </div>
-                      <p className="text-sm font-bold text-white mb-1">Verifying Upgrade</p>
-                      <p className="text-xs text-blue-400/80 font-medium leading-relaxed">{paymentMessage}</p>
+                      <p className="text-sm font-bold text-[var(--text-primary)] mb-1">Verifying Upgrade</p>
+                      <p className="text-sm text-blue-600 dark:text-blue-400 font-medium leading-relaxed">{paymentMessage}</p>
                     </motion.div>
                   )}
                   {paymentStatus === 'idle' && paymentMessage && (
                      <motion.div 
                       initial={{ opacity: 0, y: -10 }}
                       animate={{ opacity: 1, y: 0 }}
-                      className="text-center mb-6 bg-white/5 p-6 rounded-2xl border border-white/10"
+                      className="text-center mb-6 bg-[var(--glass-bg)] p-6 rounded-2xl border border-[var(--glass-border)]"
                     >
-                      <Loader2 className="w-8 h-8 text-slate-400 animate-spin mx-auto mb-3 opacity-50" />
-                      <p className="text-xs text-slate-300 font-medium leading-relaxed">{paymentMessage}</p>
+                      <Loader2 className="w-8 h-8 text-[var(--text-muted)] animate-spin mx-auto mb-3 opacity-50" />
+                      <p className="text-sm text-[var(--text-dimmed)] font-medium leading-relaxed">{paymentMessage}</p>
                     </motion.div>
                   )}
                 </AnimatePresence>
@@ -575,21 +592,21 @@ const PricingPage: React.FC = () => {
                       className="sr-only peer"
                     />
                     <div className={cn(
-                      "w-5 h-5 rounded-md border-2 transition-all flex items-center justify-center",
-                      acceptedTerms
-                        ? "bg-blue-600 border-blue-500"
-                        : "bg-white/5 border-white/20 group-hover:border-white/40"
-                    )}>
-                      {acceptedTerms && <Check className="w-3 h-3 text-white" />}
+                       "w-5 h-5 rounded-md border-2 transition-all flex items-center justify-center",
+                       acceptedTerms
+                         ? "bg-blue-600 border-blue-600"
+                         : "bg-[var(--glass-bg)] border-[var(--glass-border)] group-hover:border-blue-500 peer-focus-visible:ring-2 peer-focus-visible:ring-blue-500 peer-focus-visible:ring-offset-2 peer-focus-visible:ring-offset-[var(--bg-page)]"
+                     )}>
+                      {acceptedTerms && <Check className="w-3.5 h-3.5 text-white stroke-[3]" />}
                     </div>
                   </div>
-                  <span className="text-[10px] text-slate-400 leading-relaxed font-black uppercase tracking-widest">
+                  <span className="text-sm text-[var(--text-muted)] leading-relaxed font-medium">
                     I agree to the{' '}
-                    <a href="/terms" target="_blank" rel="noreferrer" className="text-blue-400 hover:text-blue-300 underline underline-offset-2 transition-colors">
+                    <a href="/terms" target="_blank" rel="noreferrer" className="text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 underline underline-offset-2 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 rounded-sm">
                       Terms of Service
                     </a>
                     {' '}and{' '}
-                    <a href="/privacy" target="_blank" rel="noreferrer" className="text-blue-400 hover:text-blue-300 underline underline-offset-2 transition-colors">
+                    <a href="/privacy" target="_blank" rel="noreferrer" className="text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 underline underline-offset-2 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 rounded-sm">
                       Privacy Policy
                     </a>
                   </span>
@@ -600,14 +617,14 @@ const PricingPage: React.FC = () => {
                   onClick={handleUpgrade}
                   disabled={isLoading || !acceptedTerms}
                   className={cn(
-                    "w-full h-14 rounded-2xl text-xs font-black uppercase tracking-[0.3em] transition-all flex items-center justify-center gap-3 mb-4",
+                    "w-full h-14 rounded-2xl text-base font-semibold tracking-wide transition-all flex items-center justify-center gap-3 mb-4 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--bg-page)]",
                     isLoading || !acceptedTerms
-                      ? "bg-slate-800 text-slate-400 cursor-not-allowed border border-white/5"
-                      : "bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white shadow-lg shadow-blue-500/25 active:scale-95"
+                       ? "bg-[var(--glass-bg)] text-[var(--text-muted)] cursor-not-allowed border border-[var(--glass-border)]"
+                       : "bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white shadow-lg shadow-blue-500/25 active:scale-95"
                   )}
                 >
                   {isLoading ? (
-                    <div className="w-5 h-5 rounded-full border-2 border-white/30 border-t-white animate-spin" />
+                    <div className="w-5 h-5 rounded-full border-2 border-[var(--glass-border)] border-t-white animate-spin" />
                   ) : (
                     <Star className="w-4 h-4 text-white" />
                   )}
@@ -616,25 +633,25 @@ const PricingPage: React.FC = () => {
 
                 {!user && (
                   <div className="text-center mb-6">
-                    <p className="text-[9px] text-slate-500 mb-3 font-black uppercase tracking-widest">
+                    <p className="text-sm text-[var(--text-muted)] mb-3 font-medium">
                       Please sign in to your account before upgrading.
                     </p>
                     <button
                       onClick={() => window.location.href = '/login'}
-                      className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-white/5 hover:bg-white/10 text-white text-[9px] font-black uppercase tracking-[0.2em] border border-white/10 transition-all active:scale-95"
+                      className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-[var(--glass-bg)] hover:bg-[var(--glass-bg)]/80 text-[var(--text-primary)] text-sm font-semibold tracking-wide border border-[var(--glass-border)] transition-all active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
                     >
-                      Sign In with Google
+                      Sign In to Continue
                     </button>
                   </div>
                 )}
 
                 {/* Security Note */}
-                <div className="p-4 rounded-2xl bg-black/20 border border-white/5 flex items-center gap-3 text-left mt-2">
+                <div className="p-4 rounded-2xl bg-[var(--glass-bg)] border border-[var(--glass-border)] flex items-center gap-3 text-left mt-2">
                   <div className="w-8 h-8 rounded-full bg-blue-500/10 flex items-center justify-center shrink-0">
-                    <Shield className="w-4 h-4 text-blue-400" />
+                    <Shield className="w-4 h-4 text-blue-600 dark:text-blue-400" />
                   </div>
-                  <p className="text-[10px] text-slate-400 font-black uppercase tracking-widest">
-                    Secure local & global payments via <span className="text-white font-black">{location?.isLocalPricing ? 'Flouci' : 'Polar.sh'}</span>.
+                  <p className="text-sm text-[var(--text-muted)] font-medium">
+                    Secure local & global payments via <span className="text-[var(--text-primary)] font-black">{location?.isLocalPricing ? 'Flouci' : 'Polar.sh'}</span>.
                   </p>
                 </div>
               </div>
@@ -643,115 +660,105 @@ const PricingPage: React.FC = () => {
         </motion.div>
 
         {/* Toggle Features Button */}
-        
-          <div className="text-center mb-8">
-            <button
-              onClick={() => setShowFeatures(!showFeatures)}
-              className="px-6 py-2 rounded-full border border-white/10 bg-white/5 hover:bg-white/10 text-[10px] font-black uppercase tracking-[0.2em] text-white transition-colors flex items-center gap-2 mx-auto"
-            >
-              
-              {showFeatures ? 'Hide' : 'View'} Full Comparison
-              <motion.div
-                animate={{ rotate: showFeatures ? 180 : 0 }}
-                transition={{ duration: 0.2 }}
-              >
-                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                </svg>
-              </motion.div>
-            </button>
-          </div>
-        
-
-        {/* 3-Column Comparison Table */}
-        
-          <motion.div
-            initial={false}
-            animate={{ 
-              height: showFeatures ? 'auto' : 0,
-              opacity: showFeatures ? 1 : 0
-            }}
-            transition={{ duration: 0.3 }}
-            className="overflow-hidden"
+        <div className="text-center mb-8">
+          <button
+            onClick={() => setShowFeatures(!showFeatures)}
+            className="px-6 py-2 rounded-full border border-[var(--glass-border)] bg-[var(--glass-bg)] hover:bg-[var(--glass-bg)]/80 text-sm font-semibold tracking-wide text-[var(--text-primary)] transition-colors flex items-center gap-2 mx-auto focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
           >
-            <div className="glass bg-[#0B0F19]/60 rounded-2xl border border-white/10 overflow-hidden shadow-2xl">
-              {/* Table Header */}
-              <div className="grid grid-cols-[1.5fr_1fr_1fr] gap-4 py-6 px-6 bg-white/[0.03] border-b border-white/10 items-center">
-                <div className="text-left">
-                  <span className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">Features Comparison</span>
-                </div>
-                <div className="text-center">
-                  <span className="text-lg font-black uppercase tracking-tight text-white">Free</span>
-                </div>
-                <div className="text-center relative">
-                  <span className="text-lg font-black uppercase tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-indigo-400">Pro</span>
-                </div>
-              </div>
-
-              {/* Table Rows */}
-              <div className="divide-y divide-white/5">
-                <ComparisonRow 
-                  label="Agentic Workspaces" 
-                  free={`${PLAN_CONFIG.free.MAX_SPACES} Spaces`} 
-                  pro={`${PLAN_CONFIG.pro.MAX_SPACES} Spaces`} 
-                  highlight 
-                />
-                <ComparisonRow 
-                  label="Thoughts per Space" 
-                  free={`${PLAN_CONFIG.free.MAX_THOUGHTS_PER_SPACE} thoughts`} 
-                  pro={`${PLAN_CONFIG.pro.MAX_THOUGHTS_PER_SPACE} thoughts`} 
-                  highlight 
-                />
-                <ComparisonRow 
-                  label="Cloud Storage" 
-                  free={`${PLAN_CONFIG.free.MAX_STORAGE_MB}MB`} 
-                  pro={`${PLAN_CONFIG.pro.MAX_STORAGE_MB}MB`} 
-                />
-                <ComparisonRow 
-                  label="AI Requests quota" 
-                  free="Rate Limited" 
-                  pro="Unlimited & Generous for premium models"
-                />
-                <ComparisonRow 
-                  label="AI Models" 
-                  free="Basic Models"
-                  pro="Latest ChatGPT, Claude, Gemini and more Models" 
-                  highlight
-                />
-                <ComparisonRow 
-                  label="Agentic Capabilities" 
-                  free="None"
-                  pro=" Web Search, Youtube Search, Generating, Editing, Organizing, Removing and More"
-                  highlight
-                />
-                <ComparisonRow 
-                  label="File Intelligence" 
-                  free="Text only" 
-                  pro="Docs, Tables, Images & PDFs"
-                />
-                <ComparisonRow 
-                  label="UI Themes" 
-                  free="Standard" 
-                  pro="All Premium Themes + Custom background" 
-                />
-                <ComparisonRow 
-                  label="Custom AI Personality" 
-                  free={<span className="text-slate-600">None</span>} 
-                  pro={<Check className="w-4 h-4 text-blue-400 mx-auto" />} 
-                />
-                <ComparisonRow 
-                  label="Customer Support" 
-                  free={<span className="text-slate-500">Standard</span>} 
-                  pro={<span className="text-blue-400 font-bold">24/7 Priority</span>} 
-                />
-              </div>
-            </div>
-          </motion.div>
-        
-
+            {showFeatures ? 'Hide' : 'View'} Full Comparison
+            <motion.div
+              animate={{ rotate: showFeatures ? 180 : 0 }}
+              transition={{ duration: 0.2 }}
+            >
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+              </svg>
+            </motion.div>
+          </button>
         </div>
         
-        <Footer />
+        {/* 3-Column Comparison Table */}
+        <motion.div
+          initial={false}
+          animate={{ 
+            height: showFeatures ? 'auto' : 0,
+            opacity: showFeatures ? 1 : 0
+          }}
+          transition={{ duration: 0.3 }}
+          className="overflow-hidden"
+        >
+          <div className="glass bg-[var(--bg-page)]/60 rounded-2xl border border-[var(--glass-border)] overflow-hidden shadow-2xl">
+            {/* Table Header */}
+            <div className="grid grid-cols-[1.5fr_1fr_1fr] gap-4 py-6 px-6 bg-[var(--glass-bg)] border-b border-[var(--glass-border)] items-center">
+              <div className="text-left">
+                <span className="text-sm font-semibold tracking-wide text-[var(--text-muted)]">Features Comparison</span>
+              </div>
+              <div className="text-center">
+                <span className="text-lg font-semibold tracking-tight text-[var(--text-primary)]">Free</span>
+              </div>
+              <div className="text-center relative">
+                <span className="text-lg font-semibold tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-indigo-600 dark:from-blue-400 dark:to-indigo-400">Pro</span>
+              </div>
+            </div>
+
+            {/* Table Rows */}
+            <div className="divide-y divide-[var(--border)]">
+              <ComparisonRow 
+                label="Agentic Workspaces" 
+                free={`${PLAN_CONFIG.free.MAX_SPACES} Spaces`} 
+                pro={`${PLAN_CONFIG.pro.MAX_SPACES} Spaces`} 
+                highlight 
+              />
+              <ComparisonRow 
+                label="Thoughts per Space" 
+                free={`${PLAN_CONFIG.free.MAX_THOUGHTS_PER_SPACE} thoughts`} 
+                pro={`${PLAN_CONFIG.pro.MAX_THOUGHTS_PER_SPACE} thoughts`} 
+                highlight 
+              />
+              <ComparisonRow 
+                label="Cloud Storage" 
+                free={`${PLAN_CONFIG.free.MAX_STORAGE_MB}MB`} 
+                pro={`${PLAN_CONFIG.pro.MAX_STORAGE_MB}MB`} 
+              />
+              <ComparisonRow 
+                label="AI Requests quota" 
+                free="Rate Limited" 
+                pro="Unlimited & Generous for premium models"
+              />
+              <ComparisonRow 
+                label="AI Models" 
+                free="Basic Models"
+                pro="Latest ChatGPT, Claude, Gemini and more Models" 
+                highlight
+              />
+              <ComparisonRow 
+                label="Agentic Capabilities" 
+                free="None"
+                pro=" Web Search, Youtube Search, Generating, Editing, Organizing, Removing and More"
+                highlight
+              />
+              <ComparisonRow 
+                label="File Intelligence" 
+                free="Text only" 
+                pro="Docs, Tables, Images & PDFs"
+              />
+              <ComparisonRow 
+                label="Custom Background & AI Personality" 
+                free={<span className="text-[var(--text-muted)]">—</span>} 
+                pro={<Check className="w-4 h-4 text-blue-600 dark:text-blue-400 mx-auto" />} 
+              />
+              <ComparisonRow 
+                label="Customer Support" 
+                free={<span className="text-[var(--text-muted)]">Standard</span>} 
+                pro={<span className="text-blue-600 dark:text-blue-400 font-bold">24/7 Priority</span>} 
+              />
+            </div>
+          </div>
+        </motion.div>
+
+      </div>
+      
+      <Footer />
     </div>
   );
 };

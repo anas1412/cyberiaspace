@@ -3,6 +3,7 @@ import { useStore } from '../store/useStore';
 import { useModalStore } from '../store/useModalStore';
 import { X, Trash2, Palette } from 'lucide-react';
 import { STACK_COLORS } from '../constants';
+import { syncOrchestrator } from '../services/sync/syncOrchestrator';
 import { motion, AnimatePresence } from 'framer-motion';
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
@@ -31,13 +32,13 @@ const ColorPicker: React.FC<{ value: string; onChange: (val: string) => void; di
       <button
         onClick={() => !disabled && setIsOpen(!isOpen)}
         className={cn(
-          "w-8 h-8 rounded-full border border-white/20 transition-all flex items-center justify-center group relative overflow-hidden",
+          "w-8 h-8 rounded-full border border-[var(--glass-border)] transition-all flex items-center justify-center group relative overflow-hidden",
           disabled && "opacity-50 cursor-default"
         )}
         style={{ backgroundColor: value, boxShadow: `0 0 15px ${value}44` }}
       >
-        <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-          <Palette className="w-3.5 h-3.5 text-white" />
+        <div className="absolute inset-0 bg-[var(--glass-bg)] opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+          <Palette className="w-3.5 h-3.5 text-[var(--text-primary)]" />
         </div>
       </button>
 
@@ -56,7 +57,7 @@ const ColorPicker: React.FC<{ value: string; onChange: (val: string) => void; di
                   onClick={() => { onChange(color); setIsOpen(false); }}
                   className={cn(
                     "w-8 h-8 rounded-lg border-2 transition-all hover:scale-110",
-                    value === color ? "border-white" : "border-transparent"
+                    value === color ? "border-[var(--text-primary)]" : "border-transparent"
                   )}
                   style={{ backgroundColor: color }}
                 />
@@ -69,7 +70,7 @@ const ColorPicker: React.FC<{ value: string; onChange: (val: string) => void; di
                 onChange={(e) => onChange(e.target.value)}
                 className="w-full h-8 bg-transparent cursor-pointer rounded-lg overflow-hidden"
               />
-              <p className="text-[9px] font-bold uppercase tracking-widest text-[var(--text-muted)] mt-1 text-center">Custom Hex</p>
+              <p className="text-[9px] font-medium tracking-widest text-[var(--text-muted)] mt-1 text-center">Custom Hex</p>
             </div>
           </motion.div>
         )}
@@ -88,6 +89,7 @@ const MultiSelectionMenu: React.FC = () => {
   const deleteSelectedThoughts = useStore((state) => state.deleteSelectedThoughts);
   const thoughts = useStore((state) => state.thoughts);
   const stacks = useStore((state) => state.stacks);
+  const updateStack = useStore((state) => state.updateStack);
   const isInspectorOpen = useStore((state) => state.isInspectorOpen);
   const isChatOpen = useStore((state) => state.isChatOpen);
 
@@ -151,6 +153,17 @@ const MultiSelectionMenu: React.FC = () => {
     setPendingLocation(sharedLocation ?? null);
   }, [selectedThoughtIds, sharedDate, sharedReminder, sharedRecurrence, sharedLocation]);
 
+  // Register all selected thoughts as being edited for sync protection
+  React.useEffect(() => {
+    // Register all selected thoughts as being edited
+    selectedThoughtIds.forEach(id => syncOrchestrator.startEditing(id));
+
+    return () => {
+      // Unregister when selection changes or component unmounts
+      selectedThoughtIds.forEach(id => syncOrchestrator.stopEditing(id));
+    };
+  }, [selectedThoughtIds]);
+
   const sharedStack = React.useMemo(() => {
     if (!selectedThoughtIds || selectedThoughtIds.length < 2) return null;
     const selectedThoughts = thoughts.filter(t => selectedThoughtIds.includes(t.id));
@@ -192,7 +205,7 @@ const MultiSelectionMenu: React.FC = () => {
                 <span className="text-[8px] font-bold text-[var(--text-muted)] uppercase tracking-widest leading-none mt-1.5">{selectedThoughtIds.length} Items Selected</span>
               </div>
               <div className="flex-1 flex justify-end">
-                <button onClick={clearSelection} className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-white/10 text-[var(--text-muted)] hover:text-white transition-all"><X className="w-4 h-4" /></button>
+                <button onClick={clearSelection} className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-[var(--text-primary)]/10 text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-all"><X className="w-4 h-4" /></button>
               </div>
             </div>
           </div>
@@ -208,15 +221,15 @@ const MultiSelectionMenu: React.FC = () => {
                     key={s}
                     onClick={() => updateThoughts(selectedThoughtIds, { status: s })}
                     className={cn(
-                      "py-2.5 rounded-xl border text-[9px] font-bold uppercase tracking-[0.2em] transition-all",
+                      "py-2.5 rounded-xl border text-[9px] font-medium tracking-[0.2em] transition-all",
                       sharedStatus === s
                         ? {
-                          'none': 'bg-white/[0.05] border-white/30 text-[var(--text-primary)] shadow-md',
+                          'none': 'bg-[var(--glass-bg)] border-[var(--glass-border)] text-[var(--text-primary)] shadow-md',
                           'todo': 'bg-[var(--status-todo)]/10 border-[var(--status-todo)] text-[var(--status-todo)] shadow-[0_0_15px_rgba(99,102,241,0.15)]',
                           'doing': 'bg-[var(--status-doing)]/10 border-[var(--status-doing)] text-[var(--status-doing)] shadow-[0_0_15px_rgba(234,179,8,0.15)]',
                           'done': 'bg-[var(--status-done)]/10 border-[var(--status-done)] text-[var(--status-done)] shadow-[0_0_15px_rgba(34,197,94,0.15)]',
                         }[s]
-                        : "bg-white/[0.02] border-white/5 text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-white/[0.05] hover:border-white/20"
+                        : "bg-[var(--bg-page)]/50 border-[var(--glass-border)] text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--glass-bg)] hover:border-[var(--glass-border)]"
                     )}
                   >
                     {s}
@@ -234,16 +247,16 @@ const MultiSelectionMenu: React.FC = () => {
                     key={p}
                     onClick={() => updateThoughts(selectedThoughtIds, { priority: p })}
                     className={cn(
-                      "py-2.5 rounded-xl border text-[9px] font-bold uppercase tracking-[0.2em] transition-all",
+                      "py-2.5 rounded-xl border text-[9px] font-medium tracking-[0.2em] transition-all",
                       sharedPriority === p
                         ? {
-                          'none': 'bg-white/[0.05] border-white/30 text-[var(--text-primary)] shadow-md',
+                          'none': 'bg-[var(--glass-bg)] border-[var(--glass-border)] text-[var(--text-primary)] shadow-md',
                           'low': 'bg-[var(--prio-low)]/10 border-[var(--prio-low)] text-[var(--prio-low)] shadow-[0_0_15px_rgba(148,163,184,0.15)]',
                           'medium': 'bg-[var(--prio-medium)]/10 border-[var(--prio-medium)] text-[var(--prio-medium)] shadow-[0_0_15px_rgba(168,85,247,0.15)]',
                           'high': 'bg-[var(--prio-high)]/10 border-[var(--prio-high)] text-[var(--prio-high)] shadow-[0_0_15px_rgba(245,158,11,0.15)]',
                           'urgent': 'bg-[var(--prio-urgent)]/10 border-[var(--prio-urgent)] text-[var(--prio-urgent)] shadow-[0_0_15px_rgba(239,68,68,0.15)]',
                         }[p]
-                        : "bg-white/[0.02] border-white/5 text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-white/[0.05] hover:border-white/20"
+                        : "bg-[var(--bg-page)]/50 border-[var(--glass-border)] text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--glass-bg)] hover:border-[var(--glass-border)]"
                     )}
                   >
                     {p === 'medium' ? 'Med' : p[0].toUpperCase() + p.slice(1, 3)}
@@ -281,12 +294,12 @@ const MultiSelectionMenu: React.FC = () => {
             {/* 4. Group Management */}
             <div className="space-y-3 pt-6 border-t border-[var(--glass-border)]">
               <label className="text-[10px] uppercase font-bold tracking-widest text-[var(--text-muted)] ml-1">Group Actions</label>
-              <div className="p-4 bg-white/[0.03] border border-[var(--glass-border)] rounded-2xl space-y-4 shadow-inner">
+              <div className="p-4 bg-[var(--glass-bg)] border border-[var(--glass-border)] rounded-2xl space-y-4 shadow-inner">
                 <div className="flex items-center gap-4">
                   {sharedStack ? (
                     <ColorPicker value={sharedStack.color} onChange={(color) => useStore.getState().updateStack(sharedStack.id, { color })} />
                   ) : (
-                    <div className="w-8 h-8 rounded-full border border-[var(--glass-border)] bg-white/5 flex items-center justify-center">
+                    <div className="w-8 h-8 rounded-full border border-[var(--glass-border)] bg-[var(--bg-page)]/50 flex items-center justify-center">
                       <Palette className="w-3.5 h-3.5 text-[var(--text-muted)]" />
                     </div>
                   )}
@@ -300,8 +313,11 @@ const MultiSelectionMenu: React.FC = () => {
                 </div>
                 <button
                   onClick={async () => {
-                    if (sharedStack && localStackName.trim() !== sharedStack.name) await linkSelectedThoughts(localStackName.trim());
-                    else if (!sharedStack) await linkSelectedThoughts(localStackName.trim());
+                    if (sharedStack && localStackName.trim() !== sharedStack.name) {
+                      await updateStack(sharedStack.id, { name: localStackName.trim() });
+                    } else if (!sharedStack) {
+                      await linkSelectedThoughts(localStackName.trim());
+                    }
                   }}
                   disabled={!!sharedStack && localStackName.trim() === sharedStack.name}
                   className="w-full py-3 bg-[var(--accent)]/10 hover:bg-[var(--accent)]/20 border border-[var(--accent)]/30 hover:border-[var(--accent)]/60 text-[var(--accent-secondary)] rounded-xl text-[10px] font-extrabold uppercase tracking-[0.2em] transition-all disabled:opacity-30 disabled:cursor-not-allowed shadow-lg shadow-[var(--accent-glow)]/10"
@@ -317,17 +333,17 @@ const MultiSelectionMenu: React.FC = () => {
                         <button
                           key={s.id}
                           onClick={() => updateThoughts(selectedThoughtIds, { stackId: s.id })}
-                          className="w-full flex items-center gap-3 p-3 rounded-xl bg-white/[0.02] hover:bg-white/[0.06] border border-transparent hover:border-[var(--glass-border)] transition-all text-left group/btn"
+                          className="w-full flex items-center gap-3 p-3 rounded-xl bg-[var(--bg-page)]/50 hover:bg-[var(--glass-bg)] border border-transparent hover:border-[var(--glass-border)] transition-all text-left group/btn"
                         >
                           <div className="w-2 h-2 rounded-full" style={{ backgroundColor: s.color, boxShadow: `0 0 8px ${s.color}44` }} />
-                          <span className="text-[10px] font-bold uppercase tracking-widest text-slate-400 group-hover/btn:text-[var(--text-primary)] transition-colors">{s.name}</span>
+                          <span className="text-[10px] font-medium tracking-widest text-[var(--text-muted)] group-hover/btn:text-[var(--text-primary)] transition-colors">{s.name}</span>
                         </button>
                       ))}
                     </div>
                   </div>
                 )}
                 {sharedStack && (
-                  <button onClick={unlinkSelectedThoughts} className="w-full py-2.5 bg-red-500/5 hover:bg-red-500/10 text-red-400/90 hover:text-red-400 border border-red-500/20 hover:border-red-500/40 rounded-xl text-[9px] font-bold uppercase tracking-[0.2em] transition-all">
+                  <button onClick={unlinkSelectedThoughts} className="w-full py-2.5 bg-red-500/5 hover:bg-red-500/10 text-red-400/90 hover:text-red-400 border border-red-500/20 hover:border-red-500/40 rounded-xl text-[9px] font-medium tracking-[0.2em] transition-all">
                     Remove from Group
                   </button>
                 )}
