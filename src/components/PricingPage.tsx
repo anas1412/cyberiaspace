@@ -60,6 +60,9 @@ const PricingPage: React.FC = () => {
 
   // Check if user is already Pro
   const isProUser = user?.plan === 'pro';
+  
+  // Flouci is in sandbox - show "Coming Soon" for local pricing in production
+  const isFlouciComingSoon = import.meta.env.PROD && location?.isLocalPricing;
 
   const proPrice = PLAN_CONFIG.pro.PRICE!;
   const currentPrice = billingCycle === 'monthly' ? proPrice.monthly : proPrice.yearly;
@@ -582,54 +585,71 @@ const PricingPage: React.FC = () => {
                   )}
                 </AnimatePresence>
 
-                {/* Terms Checkbox */}
-                <label className="flex items-start gap-3 mb-6 cursor-pointer group select-none">
-                  <div className="relative mt-0.5">
-                    <input
-                      type="checkbox"
-                      checked={acceptedTerms}
-                      onChange={(e) => setAcceptedTerms(e.target.checked)}
-                      className="sr-only peer"
-                    />
-                    <div className={cn(
-                       "w-5 h-5 rounded-md border-2 transition-all flex items-center justify-center",
-                       acceptedTerms
-                         ? "bg-blue-600 border-blue-600"
-                         : "bg-[var(--glass-bg)] border-[var(--glass-border)] group-hover:border-blue-500 peer-focus-visible:ring-2 peer-focus-visible:ring-blue-500 peer-focus-visible:ring-offset-2 peer-focus-visible:ring-offset-[var(--bg-page)]"
-                     )}>
-                      {acceptedTerms && <Check className="w-3.5 h-3.5 text-white stroke-[3]" />}
+                {/* Terms Checkbox - only show when upgrade is available */}
+                {!isFlouciComingSoon && (
+                  <label className="flex items-start gap-3 mb-6 cursor-pointer group select-none">
+                    <div className="relative mt-0.5">
+                      <input
+                        type="checkbox"
+                        checked={acceptedTerms}
+                        onChange={(e) => setAcceptedTerms(e.target.checked)}
+                        className="sr-only peer"
+                      />
+                      <div className={cn(
+                          "w-5 h-5 rounded-md border-2 transition-all flex items-center justify-center",
+                          acceptedTerms
+                            ? "bg-blue-600 border-blue-600"
+                            : "bg-[var(--glass-bg)] border-[var(--glass-border)] group-hover:border-blue-500 peer-focus-visible:ring-2 peer-focus-visible:ring-blue-500 peer-focus-visible:ring-offset-2 peer-focus-visible:ring-offset-[var(--bg-page)]"
+                       )}>
+                        {acceptedTerms && <Check className="w-3.5 h-3.5 text-white stroke-[3]" />}
+                      </div>
                     </div>
-                  </div>
-                  <span className="text-sm text-[var(--text-muted)] leading-relaxed font-medium">
-                    I agree to the{' '}
-                    <a href="/terms" target="_blank" rel="noreferrer" className="text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 underline underline-offset-2 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 rounded-sm">
-                      Terms of Service
-                    </a>
-                    {' '}and{' '}
-                    <a href="/privacy" target="_blank" rel="noreferrer" className="text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 underline underline-offset-2 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 rounded-sm">
-                      Privacy Policy
-                    </a>
-                  </span>
-                </label>
+                    <span className="text-sm text-[var(--text-muted)] leading-relaxed font-medium">
+                      I agree to the{' '}
+                      <a href="/terms" target="_blank" rel="noreferrer" className="text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 underline underline-offset-2 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 rounded-sm">
+                        Terms of Service
+                      </a>
+                      {' '}and{' '}
+                      <a href="/privacy" target="_blank" rel="noreferrer" className="text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 underline underline-offset-2 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 rounded-sm">
+                        Privacy Policy
+                      </a>
+                    </span>
+                  </label>
+                )}
 
                 {/* Upgrade Button */}
-                <button
-                  onClick={handleUpgrade}
-                  disabled={isLoading || !acceptedTerms}
-                  className={cn(
-                    "w-full h-14 rounded-2xl text-base font-semibold tracking-wide transition-all flex items-center justify-center gap-3 mb-4 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--bg-page)]",
-                    isLoading || !acceptedTerms
-                       ? "bg-[var(--glass-bg)] text-[var(--text-muted)] cursor-not-allowed border border-[var(--glass-border)]"
-                       : "bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white shadow-lg shadow-blue-500/25 active:scale-95"
-                  )}
-                >
-                  {isLoading ? (
-                    <div className="w-5 h-5 rounded-full border-2 border-[var(--glass-border)] border-t-white animate-spin" />
-                  ) : (
-                    <Star className="w-4 h-4 text-white" />
-                  )}
-                  {isLoading ? 'Processing...' : 'Upgrade Now'}
-                </button>
+                {isFlouciComingSoon && (
+                  <p className="text-sm text-[var(--text-muted)] text-center mb-4 font-medium">
+                    Want early access? <a href="/contact" className="text-blue-600 dark:text-blue-400 hover:underline">Contact us</a> or use <span className="text-[var(--text-primary)]">Polar.sh</span> for international payments.
+                  </p>
+                )}
+                {isFlouciComingSoon ? (
+                  <button
+                    disabled
+                    className="w-full h-14 rounded-2xl text-base font-semibold tracking-wide flex items-center justify-center gap-3 mb-4 bg-gradient-to-r from-amber-500/10 to-orange-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20 cursor-not-allowed"
+                  >
+                    <Rocket className="w-4 h-4" />
+                    Coming Soon
+                  </button>
+                ) : (
+                  <button
+                    onClick={handleUpgrade}
+                    disabled={isLoading || !acceptedTerms}
+                    className={cn(
+                      "w-full h-14 rounded-2xl text-base font-semibold tracking-wide transition-all flex items-center justify-center gap-3 mb-4 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--bg-page)]",
+                      isLoading || !acceptedTerms
+                         ? "bg-[var(--glass-bg)] text-[var(--text-muted)] cursor-not-allowed border border-[var(--glass-border)]"
+                         : "bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white shadow-lg shadow-blue-500/25 active:scale-95"
+                    )}
+                  >
+                    {isLoading ? (
+                      <div className="w-5 h-5 rounded-full border-2 border-[var(--glass-border)] border-t-white animate-spin" />
+                    ) : (
+                      <Star className="w-4 h-4 text-white" />
+                    )}
+                    {isLoading ? 'Processing...' : 'Upgrade Now'}
+                  </button>
+                )}
 
                 {!user && (
                   <div className="text-center mb-6">
@@ -651,7 +671,15 @@ const PricingPage: React.FC = () => {
                     <Shield className="w-4 h-4 text-blue-600 dark:text-blue-400" />
                   </div>
                   <p className="text-sm text-[var(--text-muted)] font-medium">
-                    Secure local & global payments via <span className="text-[var(--text-primary)] font-black">{location?.isLocalPricing ? 'Flouci' : 'Polar.sh'}</span>.
+                    {isFlouciComingSoon ? (
+                      <>
+                        Flouci payments launching soon for Tunisia. <span className="text-amber-600 dark:text-amber-400 font-semibold">Sandbox testing only.</span>
+                      </>
+                    ) : (
+                      <>
+                        Secure local & global payments via <span className="text-[var(--text-primary)] font-black">{location?.isLocalPricing ? 'Flouci' : 'Polar.sh'}</span>.
+                      </>
+                    )}
                   </p>
                 </div>
               </div>
