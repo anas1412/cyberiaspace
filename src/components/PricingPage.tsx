@@ -540,7 +540,7 @@ const PricingPage: React.FC = () => {
                   <p className="text-sm text-[var(--text-muted)] leading-relaxed px-4 font-medium">
                     {location?.isLocalPricing 
                       ? ('Manual renewal via Flouci. No auto-charges.')
-                      : (billingCycle === 'yearly' ? `Recurring payment of $${proPrice.yearly.usd} per year via Polar.sh. Cancel anytime.` : `Recurring monthly subscription via Polar.sh. Cancel anytime.`)
+                      : (billingCycle === 'yearly' ? `Recurring yearly subscription via Polar.sh. Cancel anytime.` : `Recurring monthly subscription via Polar.sh. Cancel anytime.`)
                     }
                   </p>
                 </div>
