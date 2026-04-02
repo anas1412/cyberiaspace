@@ -182,6 +182,7 @@ export interface AuthState {
   uploadThoughtBlob: (thoughtId: string, force?: boolean) => Promise<void>;
   downloadSingleBlob: (thoughtId: string) => Promise<void>;
   downloadMissingBlobs: () => Promise<void>;
+  uploadSpaceBackground: (spaceId: string, force?: boolean) => Promise<void>;
   healSpaceBackgrounds: () => Promise<void>;
   removeCloudAsset: (thoughtId: string) => Promise<void>;
   importCloudData: () => Promise<unknown | null>;

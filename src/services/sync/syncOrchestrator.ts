@@ -538,7 +538,7 @@ export const syncOrchestrator = {
       );
 
       // ==========================================
-      // Step 2.2.1: Upload any pending blob URLs for customBgs
+      // Step 2.2.1: Upload any pending blob backgrounds from IndexedDB
       // This ensures cloud storage has the actual image, not a blob: URL
       // ==========================================
       const spacesWithPendingBlobs = spacesToPush.filter(s => s.customBg && s.customBg.startsWith('blob:'));
@@ -546,18 +546,18 @@ export const syncOrchestrator = {
         console.log(`[Sync] Found ${spacesWithPendingBlobs.length} spaces with pending blob backgrounds to upload`);
         for (const space of spacesWithPendingBlobs) {
           try {
-            const response = await fetch(space.customBg!);
-            if (!response.ok) {
-              console.warn(`[Sync] Failed to fetch blob URL for space ${space.id}, skipping bg upload`);
+            // Get blob from IndexedDB instead of fetching from blob: URL
+            const bgEntry = await db.spaceBackgrounds.get(space.id);
+            if (!bgEntry) {
+              console.warn(`[Sync] No local background found for space ${space.id}, skipping bg upload`);
               continue;
             }
-            const blob = await response.blob();
-            const mimeType = blob.type || 'image/jpeg';
+            
             const { url: storageUrl } = await supabaseStorage.uploadSpaceBackground(
               userId,
               space.id,
-              blob,
-              mimeType
+              bgEntry.blob,
+              bgEntry.type
             );
             // Update IndexedDB with the storage URL so it syncs properly
             await db.spaces.update(space.id, {

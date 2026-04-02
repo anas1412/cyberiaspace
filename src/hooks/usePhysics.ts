@@ -46,6 +46,9 @@ export const usePhysics = (
   const mousePosRef = useRef({ x: 0, y: 0 });
   const sbHeight = useRef(0);
   const kMaxHeight = useRef(0);
+  const viewportWidthRef = useRef(window.innerWidth);
+  const viewportHeightRef = useRef(window.innerHeight);
+  const resizeObserverRef = useRef<ResizeObserver | null>(null);
   const requestRef = useRef<number | null>(null);
   const prevModeRef = useRef<string | null>(null);
   const prevSpaceIdRef = useRef<string | null>(null);
@@ -78,7 +81,7 @@ export const usePhysics = (
     let allSettled = true;
     physicsState.current.forEach((p, id) => {
       const t = thoughtMap.current.get(id); if (!t) return;
-      const h = elements.current.get(id)?.offsetHeight || 120;
+      const h = elementHeightsRef.current.get(id) || 120;
       const targetX = t.x - 140;
       const targetY = t.y - h / 2;
       const dx = targetX - p.x;
@@ -109,6 +112,38 @@ export const usePhysics = (
     };
     window.addEventListener('mousemove', handleMouseGlobal); return () => window.removeEventListener('mousemove', handleMouseGlobal);
   }, [getGlobalScale]);
+
+  // Cache viewport dimensions to avoid per-frame layout thrashing
+  useEffect(() => {
+    const handleResize = () => {
+      viewportWidthRef.current = window.innerWidth;
+      viewportHeightRef.current = window.innerHeight;
+    };
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
+  // ResizeObserver to cache element heights (avoids per-frame offsetHeight reads)
+  useEffect(() => {
+    const observer = new ResizeObserver((entries) => {
+      entries.forEach((entry) => {
+        const id = entry.target.getAttribute('data-physics-id');
+        if (id) {
+          elementHeightsRef.current.set(id, entry.contentRect.height);
+        }
+      });
+    });
+    resizeObserverRef.current = observer;
+
+    // Observe any elements already registered
+    elements.current.forEach((el) => {
+      if (el) observer.observe(el);
+    });
+
+    return () => {
+      observer.disconnect();
+    };
+  }, []);
 
   const lastThoughtIds = useRef<string>('');
   const lastInitMode = useRef<string | null>(null);
@@ -249,7 +284,7 @@ export const usePhysics = (
       const s = getGlobalScale(); const lastMouseX = rawMouseX / s; const lastMouseY = rawMouseY / s;
       const { id, startX, startY, moved, initialPositions } = dragRef.current;
       const dist = Math.sqrt(Math.pow(lastMouseX - startX, 2) + Math.pow(lastMouseY - startY, 2));
-      const logicalWidth = worldRef.current?.clientWidth || window.innerWidth;
+      const logicalWidth = worldRef.current?.clientWidth || viewportWidthRef.current;
 
       if (dist <= 10) {
         const store = useStore.getState();
@@ -356,9 +391,9 @@ export const usePhysics = (
     const ids = Array.from(physicsState.current.keys());
     const state = physicsState.current;
     
-    const logicalWidth = worldRef.current?.clientWidth || window.innerWidth;
-    const logicalHeight = worldRef.current?.clientHeight || window.innerHeight;
-    const isMobile = window.innerWidth < 768;
+    const logicalWidth = viewportWidthRef.current;
+    const logicalHeight = viewportHeightRef.current;
+    const isMobile = logicalWidth < 768;
 
     const currentSpaceId = activeSpaceId || 'default';
     const mode = activeSpace?.mode || 'spatial';
@@ -438,8 +473,6 @@ export const usePhysics = (
     }
 
     const elementHeights = elementHeightsRef.current;
-    elementHeights.clear();
-    ids.forEach(id => elementHeights.set(id, elements.current.get(id)?.offsetHeight || 120));
 
     const sbContent = document.getElementById('cal-sidebar-content');
     const sbRect = sbContent?.getBoundingClientRect();
@@ -666,7 +699,7 @@ export const usePhysics = (
 
     state.forEach((p, id) => {
       const el = elements.current.get(id); const t = thoughtMap.current.get(id); if (!el || !t) return;
-      const h = el.offsetHeight || 120;
+      const h = elementHeightsRef.current.get(id) || 120;
       const isSelected = t.id === selectedThoughtId;
       const isDraggingThis = dragRef.current?.initialPositions.has(id) && dragRef.current.moved;
       
@@ -752,7 +785,22 @@ export const usePhysics = (
   }, [getGlobalScale, activeSpace?.mode]);
 
   return { 
-    registerElement: (id: string, el: HTMLDivElement | null) => { if (el) elements.current.set(id, el); else elements.current.delete(id); }, 
+    registerElement: (id: string, el: HTMLDivElement | null) => { 
+      if (el) {
+        elements.current.set(id, el);
+        el.setAttribute('data-physics-id', id);
+        // Also cache initial height
+        elementHeightsRef.current.set(id, el.offsetHeight || 120);
+        resizeObserverRef.current?.observe(el);
+      } else {
+        const existing = elements.current.get(id);
+        if (existing && resizeObserverRef.current) {
+          resizeObserverRef.current.unobserve(existing);
+        }
+        elements.current.delete(id);
+        elementHeightsRef.current.delete(id);
+      }
+    }, 
     registerWorld: (el: HTMLDivElement | null) => { worldRef.current = el; }, 
     registerGrid: (el: HTMLDivElement | null) => { gridRef.current = el; }, 
     handleMouseDown: handleMouseDown as (id: string, e: React.MouseEvent) => void, 

@@ -129,6 +129,16 @@ interface ChatMessage {
   msgType?: 'chat' | 'system'; //区分聊天消息和系统错误消息
 }
 
+interface SpaceBackground {
+  id: string;
+  spaceId: string;
+  blob: Blob;
+  name: string;
+  type: string;
+  userId: string;
+  updatedAt: number;
+}
+
 // ============================================
 // Database Setup
 // ============================================
@@ -139,6 +149,7 @@ const db = new Dexie('CyberiaDB') as Dexie & {
   stacks: EntityTable<Stack, 'id'>;
   blobs: EntityTable<LocalBlob, 'id'>;
   chatHistory: EntityTable<ChatMessage, 'id'>;
+  spaceBackgrounds: EntityTable<SpaceBackground, 'id'>;
 };
 
 db.on('versionchange', () => {
@@ -162,6 +173,11 @@ db.version(18).stores({
 // Version 19: Added time-based fields to thoughts (startTime, endTime, etc.) and removed date
 db.version(19).stores({
   thoughts: 'id, userId, spaceId, stackId, text, type, status, startTime, endTime, priority, order, author, storageUrl, syncStatus, deletedAt, updatedAt',
+});
+
+// Version 20: Added spaceBackgrounds for local-first custom background storage
+db.version(20).stores({
+  spaceBackgrounds: 'id, spaceId, userId'
 });
 
 export type { Space, Thought, Stack, ChatMessage };

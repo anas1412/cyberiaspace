@@ -52,6 +52,41 @@ export const createSpaceSlice: StateCreator<CyberiaState, [], [], any> = (set, g
         }
         set({ customBg: space.customBg || null });
 
+        // Load background from local IndexedDB first (local-first pattern)
+        if (space.customBg) {
+          const { useAuthStore: authImport } = await import('../useAuthStore');
+          const authStore = authImport.getState();
+          const currentUserId = authStore.user?.id ?? 'guest';
+          
+          const localBg = await db.spaceBackgrounds.filter(b => b.spaceId === id && b.userId === currentUserId).first();
+          if (localBg) {
+            // Use local blob URL
+            const blobUrl = URL.createObjectURL(localBg.blob);
+            set({ customBg: blobUrl });
+            console.log('[BG] Loaded background from local IndexedDB:', id);
+          } else if (space.customBg.startsWith('http')) {
+            // No local blob but have cloud URL - download to local for offline
+            try {
+              const res = await fetch(space.customBg);
+              const blob = await res.blob();
+              await db.spaceBackgrounds.put({
+                id: space.id,
+                spaceId: space.id,
+                blob,
+                name: 'background',
+                type: blob.type || 'image/jpeg',
+                userId: currentUserId,
+                updatedAt: Date.now()
+              });
+              const blobUrl = URL.createObjectURL(blob);
+              set({ customBg: blobUrl });
+              console.log('[BG] Downloaded cloud background to local:', id);
+            } catch (e) {
+              console.warn('[BG] Failed to download cloud background:', e);
+            }
+          }
+        }
+
         // Opportunistic migration: convert Base64 backgrounds to storage URLs
         if (space.customBg && space.customBg.startsWith('data:')) {
           const authStore = useAuthStore.getState();

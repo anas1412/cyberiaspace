@@ -76,79 +76,110 @@ export const createUiSlice: StateCreator<CyberiaState, [], [], any> = (set, get,
     activeAbortController = controller;
     const isStale = () => bgOperationId !== operationId;
 
-    // 2. Revoke previous background if it's a blob
+    // 2. Revoke previous background blob URL
     revokeCurrentBg(customBg);
 
     // 3. Process new background
     try {
-      // If it's a File, upload to Supabase Storage FIRST, then store the storage URL
-      if (bg instanceof File) {
-        set({ customBgLoading: true }); // Start loading
-        
-        const { useAuthStore } = await import('../useAuthStore');
-        const authStore = useAuthStore.getState();
-        
-        if (authStore.status !== 'authenticated' || !authStore.user) {
-          console.warn('[BG] Cannot upload background: not authenticated');
-          set({ customBgLoading: false });
-          return;
-        }
-
-        const userId = authStore.user.id;
-        const { supabaseStorage } = await import('../../services/supabaseStorage');
-        
-        // Upload to Supabase Storage and get the permanent URL
-        console.log('[BG] Uploading background to storage...');
-        const { url } = await supabaseStorage.uploadSpaceBackground(userId, activeSpaceId, bg, bg.type);
-        
-        if (isStale()) {
-          set({ customBgLoading: false });
-          return;
-        }
-        
-        // Store the storage URL (not blob URL)
-        set({ customBg: url, customBgLoading: false }); // Done loading
-        const updated = get().spaces.map((s: any) => s.id === activeSpaceId ? { ...s, customBg: url } : s);
-        set({ spaces: updated });
-        // Verify space belongs to current user
-        const currentUserId = authStore.user.id;
-        const space = await db.spaces.filter(s => s.id === activeSpaceId && s.userId === currentUserId).first();
-        if (!space) {
-          console.warn('[BG] Space not found or access denied:', activeSpaceId);
-          return;
-        }
-
-        await db.spaces.update(activeSpaceId, { customBg: url, updatedAt: Date.now(), syncStatus: 'local' as const });
-        
-        if (!isStale()) await syncOrchestrator.triggerSync();
-        console.log('[BG] Background uploaded and saved:', url);
-        return;
-      }
-      
-      // If it's a string (URL or null), use it directly
-      const blobUrl = bg; // Could be null or an existing URL
-      
-      if (isStale()) return;
-
-      // Verify space belongs to current user
-      const { useAuthStore: verifyAuthStore } = await import('../useAuthStore');
-      const verifyUserId = verifyAuthStore.getState().user?.id ?? 'guest';
-      const verifySpace = await db.spaces.filter(s => s.id === activeSpaceId && s.userId === verifyUserId).first();
-      if (!verifySpace) {
-        console.warn('[BG] Space not found or access denied:', activeSpaceId);
-        return;
-      }
-
-      set({ customBg: blobUrl });
-      const updated = get().spaces.map((s: any) => s.id === activeSpaceId ? { ...s, customBg: blobUrl } : s);
-      set({ spaces: updated });
-      await db.spaces.update(activeSpaceId, { customBg: blobUrl, updatedAt: Date.now(), syncStatus: 'local' as const });
-      
+      // Get current user
       const { useAuthStore } = await import('../useAuthStore');
-      if (!isStale() && useAuthStore.getState().status === 'authenticated') await syncOrchestrator.triggerSync();
+      const authStore = useAuthStore.getState();
+      const currentUserId = authStore.user?.id ?? 'guest';
+
+      // If it's a File - store locally FIRST, upload later via sync
+      if (bg instanceof File) {
+        set({ customBgLoading: true });
+
+        // A. Store blob in IndexedDB immediately
+        const blobUrl = URL.createObjectURL(bg);
+        const now = Date.now();
+        
+        await db.spaceBackgrounds.put({
+          id: activeSpaceId,
+          spaceId: activeSpaceId,
+          blob: bg,
+          name: bg.name,
+          type: bg.type,
+          userId: currentUserId,
+          updatedAt: now
+        });
+
+        // B. Show immediately from local blob
+        set({ customBg: blobUrl, customBgLoading: false });
+        
+        const updated = get().spaces.map((s: any) => s.id === activeSpaceId ? { ...s, customBg: blobUrl } : s);
+        set({ spaces: updated });
+
+        // C. Update IndexedDB spaces with blob URL (not cloud URL)
+        await db.spaces.update(activeSpaceId, { 
+          customBg: blobUrl, 
+          updatedAt: now, 
+          syncStatus: 'local' as const 
+        });
+
+        // D. Trigger background sync (will upload blob to cloud)
+        if (authStore.status === 'authenticated' && !isStale()) {
+          await syncOrchestrator.triggerSync();
+        }
+        
+        console.log('[BG] Background saved locally, will sync to cloud:', blobUrl);
+        return;
+      }
+      
+      // If it's null (clear background)
+      if (bg === null) {
+        // Delete local blob
+        await db.spaceBackgrounds.delete(activeSpaceId);
+        
+        set({ customBg: null });
+        const updated = get().spaces.map((s: any) => s.id === activeSpaceId ? { ...s, customBg: null } : s);
+        set({ spaces: updated });
+        await db.spaces.update(activeSpaceId, { customBg: null, updatedAt: Date.now(), syncStatus: 'local' as const });
+        
+        if (authStore.status === 'authenticated') await syncOrchestrator.triggerSync();
+        return;
+      }
+      
+      // If it's a string URL (e.g., cloud URL from another device)
+      // Download to local first, then show local blob
+      if (bg.startsWith('http')) {
+        set({ customBgLoading: true });
+        
+        try {
+          // Download from cloud
+          const res = await fetch(bg);
+          const blob = await res.blob();
+          const blobUrl = URL.createObjectURL(blob);
+          const now = Date.now();
+
+          // Store locally
+          await db.spaceBackgrounds.put({
+            id: activeSpaceId,
+            spaceId: activeSpaceId,
+            blob,
+            name: 'background',
+            type: blob.type,
+            userId: currentUserId,
+            updatedAt: now
+          });
+
+          // Show local blob
+          set({ customBg: blobUrl, customBgLoading: false });
+          const updated = get().spaces.map((s: any) => s.id === activeSpaceId ? { ...s, customBg: blobUrl } : s);
+          set({ spaces: updated });
+          await db.spaces.update(activeSpaceId, { customBg: blobUrl, updatedAt: now, syncStatus: 'synced' as const });
+          
+          console.log('[BG] Downloaded cloud background to local:', blobUrl);
+        } catch (err) {
+          console.error('[BG] Failed to download cloud background:', err);
+          set({ customBgLoading: false });
+        }
+        return;
+      }
+
     } catch (e: any) {
       if (e.name === 'AbortError') return;
-      set({ customBgLoading: false }); // Ensure loading is off on error
+      set({ customBgLoading: false });
       console.error('[BG] Failed to process background:', e);
     }
   },

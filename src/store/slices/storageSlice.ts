@@ -168,6 +168,66 @@ export const createStorageSlice: StateCreator<AuthState, [], [], any> = (set, ge
     }
   },
 
+  uploadSpaceBackground: async (spaceId: string, force?: boolean) => {
+    const { user, isOnline } = get();
+    if (!user || !isOnline) return;
+
+    try {
+      // Get local blob from IndexedDB
+      const bgEntry = await db.spaceBackgrounds.get(spaceId);
+      if (!bgEntry) {
+        console.log('[Storage] No local background to upload for space:', spaceId);
+        return;
+      }
+
+      // Check if already synced (has cloud URL in space record)
+      const space = await db.spaces.get(spaceId);
+      if (space?.customBg && !space.customBg.startsWith('blob:') && !force) {
+        // Already has cloud URL, skip
+        return;
+      }
+
+      // Upload to Supabase Storage
+      const { url } = await supabaseStorage.uploadSpaceBackground(
+        user.id,
+        spaceId,
+        bgEntry.blob,
+        bgEntry.type
+      );
+
+      // Update space with cloud URL
+      const now = Date.now();
+      await db.spaces.update(spaceId, { 
+        customBg: url, 
+        updatedAt: now,
+        syncStatus: 'synced' 
+      });
+
+      // Update local state
+      const { useStore } = await import('../useStore');
+      const store = useStore.getState();
+      
+      // Revoke old blob URL and use cloud URL
+      const oldBg = store.customBg;
+      if (oldBg && oldBg.startsWith('blob:')) {
+        URL.revokeObjectURL(oldBg);
+      }
+      
+      store.setCustomBgValue(url);
+      const updated = store.spaces.map((s: any) => s.id === spaceId ? { ...s, customBg: url } : s);
+      store.spaces = updated;
+
+      // Clean up local blob (optional - keep for offline backup)
+      // await db.spaceBackgrounds.delete(spaceId);
+
+      console.log('[Storage] Background uploaded for space:', spaceId, url);
+      syncOrchestrator.triggerSync(true);
+
+    } catch (err) {
+      console.error('[Storage] Failed to upload space background:', err);
+    }
+  },
+
   downloadSingleBlob: async (thoughtId: string) => {
     const { activeDownloads, user, isOnline } = get();
     if (!user || !isOnline) return;
@@ -286,7 +346,7 @@ export const createStorageSlice: StateCreator<AuthState, [], [], any> = (set, ge
 
     try {
       const currentUserId = user!.id;
-      // Find all spaces where customBg looks like a cloud URL but the file may be gone
+      // Find all spaces with customBg (cloud URLs)
       const spacesWithBg = await db.spaces
         .filter((s: any) => !!s.customBg && isStorageUrl(s.customBg) && !s.deletedAt && s.userId === currentUserId)
         .toArray();
@@ -301,25 +361,41 @@ export const createStorageSlice: StateCreator<AuthState, [], [], any> = (set, ge
         try {
           // Check if the background file is actually accessible in cloud storage
           const res = await fetch(space.customBg!, { method: 'HEAD' });
-          if (res.ok) continue; // File exists, all good
+          if (res.ok) {
+            // Check if we have local blob, if not download it
+            let bgEntry = await db.spaceBackgrounds.get(space.id);
+            if (!bgEntry) {
+              // Download and store locally
+              const downloadRes = await fetch(space.customBg!);
+              const blob = await downloadRes.blob();
+              await db.spaceBackgrounds.put({
+                id: space.id,
+                spaceId: space.id,
+                blob,
+                name: 'background',
+                type: blob.type || 'image/jpeg',
+                userId: currentUserId,
+                updatedAt: Date.now()
+              });
+            }
+            continue; // File exists, all good
+          }
 
-          // File is gone from cloud storage — try to recover from local IndexedDB
-          // (setCustomBg stores the blob URL before uploading, so we can re-fetch it)
-          const localRes = await fetch(space.customBg!);
-          if (localRes.ok) {
-            const blob = await localRes.blob();
-            const mimeType = blob.type || 'image/jpeg';
+          // File is gone from cloud storage — check local IndexedDB
+          const localBg = await db.spaceBackgrounds.get(space.id);
+          if (localBg) {
+            // Re-upload from local blob
             const { url: newUrl } = await supabaseStorage.uploadSpaceBackground(
               user.id,
               space.id,
-              blob,
-              mimeType
+              localBg.blob,
+              localBg.type
             );
-            await db.spaces.update(space.id, { customBg: newUrl });
+            await db.spaces.update(space.id, { customBg: newUrl, syncStatus: 'synced' });
             healed.push(space.id);
             console.log(`[Heal] Background re-uploaded for space ${space.id}`);
           } else {
-            // No local copy either — clear the broken URL and mark for sync
+            // No local copy — clear the broken URL
             await db.spaces.update(space.id, {
               customBg: null,
               syncStatus: 'local',
@@ -329,7 +405,6 @@ export const createStorageSlice: StateCreator<AuthState, [], [], any> = (set, ge
             console.log(`[Heal] Background URL broken and cleared for space ${space.id}`);
           }
         } catch (e) {
-          // Network error — skip, will retry on next sync
           console.warn(`[Heal] Background check failed for space ${space.id}:`, e);
         }
       }
