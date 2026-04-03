@@ -7,8 +7,8 @@ import { type Thought } from '../db';
 import { FocusEditorShell } from './editors/FocusEditorShell';
 import { useThoughtPayload } from './thought/hooks/useThoughtPayload';
 import { syncOrchestrator } from '../services/sync/syncOrchestrator';
-import { TextEditorContent } from './editors/content/TextEditorContent';
 import { SidebarLayout } from './SidebarLayout';
+import { marked } from 'marked';
 
 function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -191,7 +191,6 @@ const DirectoryFocusEditor: React.FC<{
   return (
     <FocusEditorShell
       isVisible={true}
-      isInline={true}
       onClose={onClose}
       title={localTitle}
       onTitleChange={handleTitleChange}
@@ -261,14 +260,42 @@ const DirectoryFocusEditor: React.FC<{
         </div>
       }
     >
-      <TextEditorContent
-        editMode={editMode}
-        content={localContent}
-        onContentChange={handleContentChange}
-        isReadOnly={isReadOnly}
-        textareaRef={textareaRef}
-        onToolbarAction={() => {}}
-      />
+      {/* Inline Editor Content */}
+      <div className="flex-1 flex flex-col overflow-hidden">
+        <div className="flex-1 flex overflow-hidden">
+          {(editMode === 'edit' || editMode === 'split') && (
+            <div className={cn(
+              "h-full overflow-y-auto custom-scroll transition-all duration-300",
+              editMode === 'split' ? "w-1/2 border-r border-[var(--glass-border)]" : "w-full"
+            )}>
+              <div className="p-6 h-full max-w-4xl mx-auto">
+                <textarea
+                  ref={textareaRef}
+                  value={localContent}
+                  onChange={(e) => handleContentChange(e.target.value)}
+                  readOnly={isReadOnly}
+                  className="w-full h-full bg-transparent text-[var(--text-primary)] leading-relaxed outline-none border-none resize-none placeholder:text-[var(--text-muted)]/30 font-['Plus_Jakarta_Sans',_sans-serif]"
+                  placeholder="Dive deep into your thoughts..."
+                />
+              </div>
+            </div>
+          )}
+
+          {(editMode === 'preview' || editMode === 'split') && (
+            <div className={cn(
+              "h-full overflow-y-auto custom-scroll bg-white/[0.01] transition-all duration-300",
+              editMode === 'split' ? "w-1/2" : "w-full"
+            )}>
+              <div className="p-8 h-full max-w-4xl mx-auto">
+                <div
+                  className="prose prose-invert prose-slate max-w-none text-[var(--text-primary)] break-words"
+                  dangerouslySetInnerHTML={{ __html: marked.parse(localContent || "_No content yet. Start writing..._") as string }}
+                />
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
     </FocusEditorShell>
   );
 };
@@ -285,13 +312,8 @@ const DirectoryOverlay: React.FC = () => {
   // 2. Store hooks - always call
   const thoughts = useStore((state) => state.thoughts);
   const activeSpaceId = useStore((state) => state.activeSpaceId);
-  const spaces = useStore((state) => state.spaces);
   const stacks = useStore((state) => state.stacks);
   const isDemo = useStore((state) => state.isDemo);
-  
-  // Derived values from store - always compute
-  const activeSpace = spaces.find(s => s.id === activeSpaceId);
-  const isDirectoryMode = activeSpace?.mode === 'directory';
   
   // 3. Memo hooks - always compute (before any conditional)
   const textThoughts = useMemo(() => 
@@ -349,11 +371,6 @@ const DirectoryOverlay: React.FC = () => {
       return a.name.localeCompare(b.name);
     });
   }, [filteredThoughts, groupBy, stacks]);
-
-  // 4. Conditional return AFTER all hooks
-  if (!isDirectoryMode) {
-    return <div style={{ display: 'none' }} />;
-  }
 
   const toggleGroup = (id: string) => {
     setExpandedGroups(prev => {
