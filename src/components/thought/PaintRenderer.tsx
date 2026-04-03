@@ -2,17 +2,24 @@ import React from 'react';
 import { Palette, Maximize2 } from 'lucide-react';
 import { type Thought } from '../../db';
 import { useThoughtPayload } from './hooks/useThoughtPayload';
+import { clsx, type ClassValue } from 'clsx';
+import { twMerge } from 'tailwind-merge';
+
+function cn(...inputs: ClassValue[]) {
+  return twMerge(clsx(inputs));
+}
 
 interface PaintRendererProps {
   thought: Thought;
   isReadOnly: boolean;
+  isArchived?: boolean;
   setActiveFocus: (id: string, type: 'text' | 'tasks' | 'paint' | 'table' | 'embed' | 'file' | 'image') => void;
-
 }
 
 export const PaintRenderer: React.FC<PaintRendererProps> = ({ 
   thought, 
-  isReadOnly, 
+  isReadOnly,
+  isArchived = false,
   setActiveFocus 
 }) => {
   // Use the dual-read hook for backward compatibility
@@ -21,7 +28,10 @@ export const PaintRenderer: React.FC<PaintRendererProps> = ({
   const hasRemoteContent = thought.storageUrl && !drawing && thought.syncStatus !== 'synced';
 
   return (
-    <div data-trigger="paint" className="paint-container bg-[var(--bg-main)]/20 rounded-xl p-2 mt-1 border border-[var(--glass-border)] cursor-pointer group/paint relative overflow-hidden min-h-[60px] flex items-center justify-center">
+    <div data-trigger="paint" className={cn(
+      "paint-container bg-[var(--bg-main)]/20 rounded-xl p-2 mt-1 border border-[var(--glass-border)] cursor-pointer group/paint relative overflow-hidden min-h-[60px] flex items-center justify-center",
+      isArchived && "pointer-events-none"
+    )}>
       {drawing ? (
         <img src={drawing} draggable="false" className="w-full rounded-lg object-contain max-h-[140px] prevent-drag" alt="Drawing" />
       ) : hasRemoteContent ? (
@@ -38,7 +48,7 @@ export const PaintRenderer: React.FC<PaintRendererProps> = ({
         </div>
       )}
 
-      {!isReadOnly && (
+      {!isReadOnly && !isArchived && (
         <div className="absolute inset-0 bg-[var(--accent)]/10 opacity-0 group-hover/paint:opacity-100 transition-opacity flex items-center justify-center pointer-events-none">
           <button
             onClick={(e) => { e.stopPropagation(); setActiveFocus(thought.id, 'paint'); }}

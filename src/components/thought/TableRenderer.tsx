@@ -12,13 +12,14 @@ function cn(...inputs: ClassValue[]) {
 interface TableRendererProps {
   thought: Thought;
   isReadOnly: boolean;
+  isArchived?: boolean;
   setActiveFocus: (id: string, type: 'text' | 'tasks' | 'paint' | 'table' | 'embed' | 'file' | 'image') => void;
-
 }
 
 export const TableRenderer: React.FC<TableRendererProps> = ({ 
   thought, 
-  isReadOnly, 
+  isReadOnly,
+  isArchived = false,
   setActiveFocus 
 }) => {
   // Use the dual-read hook for backward compatibility
@@ -29,7 +30,11 @@ export const TableRenderer: React.FC<TableRendererProps> = ({
 
   if (isTableEmpty) {
     return (
-      <div data-trigger="table" className="mt-1 flex flex-col items-center gap-2 py-4 bg-[var(--bg-main)]/20 rounded-xl border border-[var(--glass-border)] group/table relative cursor-pointer transition-colors hover:bg-white/[0.05]">
+      <div data-trigger="table" className={cn(
+        "mt-1 flex flex-col items-center gap-2 py-4 bg-[var(--bg-main)]/20 rounded-xl border border-[var(--glass-border)] group/table relative cursor-pointer transition-colors",
+        !isArchived && "hover:bg-white/[0.05]",
+        isArchived && "pointer-events-none"
+      )}>
         <Table className="w-6 h-6 text-[var(--text-muted)]" />
         <span className="text-[10px] text-[var(--text-muted)] font-medium tracking-widest">
           {hasRemoteContent ? 'Sync Pending' : 'Build Table'}
@@ -39,8 +44,7 @@ export const TableRenderer: React.FC<TableRendererProps> = ({
             Data on other device
           </p>
         )}
-        {!isReadOnly && (
-
+        {!isReadOnly && !isArchived && (
           <div className="absolute inset-0 bg-[var(--accent)]/10 opacity-0 group-hover/table:opacity-100 transition-opacity rounded-xl flex items-center justify-center pointer-events-none">
             <button
               onClick={(e) => { e.stopPropagation(); setActiveFocus(thought.id, 'table'); }}
@@ -61,7 +65,10 @@ export const TableRenderer: React.FC<TableRendererProps> = ({
   const visibleRows = table.slice(0, maxRows);
 
   return (
-    <div data-trigger="table" className="relative group/table overflow-hidden rounded-xl cursor-pointer min-h-[60px] flex flex-col justify-center">
+    <div data-trigger="table" className={cn(
+      "relative group/table overflow-hidden rounded-xl cursor-pointer min-h-[60px] flex flex-col justify-center",
+      isArchived && "pointer-events-none"
+    )}>
       <div className="overflow-x-auto custom-scroll pb-1">
         <table className="thought-table mt-1 border-collapse w-full text-[10px] select-none">
           <tbody>
@@ -85,7 +92,7 @@ export const TableRenderer: React.FC<TableRendererProps> = ({
           </tbody>
         </table>
       </div>
-      {!isReadOnly && (
+      {!isReadOnly && !isArchived && (
         <div className="absolute inset-0 bg-[var(--accent)]/10 opacity-0 group-hover/table:opacity-100 transition-opacity rounded-xl flex items-center justify-center pointer-events-none">
           <button
             onClick={(e) => { e.stopPropagation(); setActiveFocus(thought.id, 'table'); }}

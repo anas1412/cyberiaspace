@@ -42,6 +42,7 @@ export interface ThoughtRendererProps {
   isReadOnly: boolean;
   isCalendar?: boolean;
   isSpatial?: boolean;
+  isArchived?: boolean;
   parsedContent?: string | Promise<string>;
   setActiveFocus: (id: string, type: any) => void;
   setSelectedThoughtId?: (id: string | null) => void;

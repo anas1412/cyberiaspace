@@ -198,6 +198,7 @@ const ThoughtNode: React.FC<ThoughtNodeProps> = React.memo(({ thought, registerE
       isReadOnly,
       isCalendar,
       isSpatial,
+      isArchived,
       parsedContent,
       setActiveFocus,
       setSelectedThoughtId,

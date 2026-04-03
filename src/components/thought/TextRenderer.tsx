@@ -14,6 +14,7 @@ interface TextRendererProps {
   isReadOnly: boolean;
   isCalendar: boolean;
   isSpatial: boolean;
+  isArchived?: boolean;
   parsedContent: string | Promise<string>;
   setActiveFocus: (id: string, type: 'text' | 'tasks' | 'paint' | 'table' | 'embed' | 'file' | 'image') => void;
 }
@@ -22,6 +23,7 @@ export const TextRenderer: React.FC<TextRendererProps> = ({
   thought, 
   isReadOnly, 
   isCalendar, 
+  isArchived = false,
   parsedContent, 
   setActiveFocus 
 }) => {
@@ -36,7 +38,11 @@ export const TextRenderer: React.FC<TextRendererProps> = ({
     return (
       <div 
         data-trigger="text" 
-        className="mt-1 flex flex-col items-center gap-2 py-4 bg-[var(--bg-main)]/20 rounded-xl border border-[var(--glass-border)] group/text relative cursor-pointer transition-colors hover:bg-white/[0.05]"
+        className={cn(
+          "mt-1 flex flex-col items-center gap-2 py-4 bg-[var(--bg-main)]/20 rounded-xl border border-[var(--glass-border)] group/text relative cursor-pointer transition-colors",
+          !isArchived && "hover:bg-white/[0.05]",
+          isArchived && "pointer-events-none"
+        )}
       >
         <Type className="w-6 h-6 text-[var(--text-muted)]" />
         <span className="text-[10px] text-[var(--text-muted)] font-medium tracking-widest">
@@ -47,7 +53,7 @@ export const TextRenderer: React.FC<TextRendererProps> = ({
             Content on other device
           </p>
         )}
-        {!isReadOnly && (
+        {!isReadOnly && !isArchived && (
           <div className="absolute inset-0 bg-[var(--accent)]/10 opacity-0 group-hover/text:opacity-100 transition-opacity rounded-xl flex items-center justify-center pointer-events-none">
             <button
               onClick={(e) => { e.stopPropagation(); setActiveFocus(thought.id, 'text'); }}
@@ -71,7 +77,7 @@ export const TextRenderer: React.FC<TextRendererProps> = ({
       {content.length > 150 && (
         <div className="absolute bottom-0 left-0 right-0 h-16 bg-gradient-to-t from-[var(--bg-main)] via-[var(--bg-main)]/80 to-transparent pointer-events-none" />
       )}
-      {!isReadOnly && (
+      {!isReadOnly && !isArchived && (
         <div className="absolute inset-0 bg-[var(--accent)]/10 opacity-0 group-hover/text:opacity-100 transition-opacity flex items-center justify-center pointer-events-none">
           <button
             onClick={(e) => { e.stopPropagation(); setActiveFocus(thought.id, 'text'); }}

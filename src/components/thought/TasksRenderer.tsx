@@ -12,12 +12,14 @@ function cn(...inputs: ClassValue[]) {
 interface TasksRendererProps {
   thought: Thought;
   isReadOnly: boolean;
+  isArchived?: boolean;
   setActiveFocus: (id: string, type: 'text' | 'tasks' | 'paint' | 'table' | 'embed' | 'file' | 'image') => void;
 }
 
 export const TasksRenderer: React.FC<TasksRendererProps> = ({ 
   thought, 
-  isReadOnly, 
+  isReadOnly,
+  isArchived = false,
   setActiveFocus 
 }) => {
   // Use the dual-read hook for backward compatibility
@@ -30,7 +32,11 @@ export const TasksRenderer: React.FC<TasksRendererProps> = ({
 
   if (tasks.length === 0) {
     return (
-      <div data-trigger="tasks" className="mt-1 flex flex-col items-center gap-2 py-4 bg-[var(--bg-main)]/20 rounded-xl border border-[var(--glass-border)] group/tasks relative cursor-pointer transition-colors hover:bg-white/[0.05]">
+      <div data-trigger="tasks" className={cn(
+        "mt-1 flex flex-col items-center gap-2 py-4 bg-[var(--bg-main)]/20 rounded-xl border border-[var(--glass-border)] group/tasks relative cursor-pointer transition-colors",
+        !isArchived && "hover:bg-white/[0.05]",
+        isArchived && "pointer-events-none"
+      )}>
         <ListTodo className="w-6 h-6 text-[var(--text-muted)]" />
         <span className="text-[10px] text-[var(--text-muted)] font-medium tracking-widest">
           {hasRemoteContent ? 'Sync Pending' : 'Create Tasks'}
@@ -40,7 +46,7 @@ export const TasksRenderer: React.FC<TasksRendererProps> = ({
             Items on other device
           </p>
         )}
-        {!isReadOnly && (
+        {!isReadOnly && !isArchived && (
           <div className="absolute inset-0 bg-[var(--accent)]/10 opacity-0 group-hover/tasks:opacity-100 transition-opacity rounded-xl flex items-center justify-center pointer-events-none">
             <button
               onClick={(e) => { e.stopPropagation(); setActiveFocus(thought.id, 'tasks'); }}
@@ -55,7 +61,10 @@ export const TasksRenderer: React.FC<TasksRendererProps> = ({
   }
 
   return (
-    <div data-trigger="tasks" className="mt-1 space-y-2 group/tasks relative cursor-pointer min-h-[60px] flex flex-col justify-center">
+    <div data-trigger="tasks" className={cn(
+      "mt-1 space-y-2 group/tasks relative cursor-pointer min-h-[60px] flex flex-col justify-center",
+      isArchived && "pointer-events-none"
+    )}>
       <div className="space-y-1.5 pr-10">
         {previewTasks.map((task, i) => (
           <div key={i} className="flex items-center gap-2 min-w-0">
@@ -83,7 +92,7 @@ export const TasksRenderer: React.FC<TasksRendererProps> = ({
           style={{ width: `${progress}%` }}
         />
       </div>
-      {!isReadOnly && (
+      {!isReadOnly && !isArchived && (
         <div className="absolute inset-0 bg-[var(--accent)]/10 opacity-0 group-hover/tasks:opacity-100 transition-opacity rounded-xl flex items-center justify-center pointer-events-none">
           <button
             onClick={(e) => { e.stopPropagation(); setActiveFocus(thought.id, 'tasks'); }}
