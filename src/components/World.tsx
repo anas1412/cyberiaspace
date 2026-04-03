@@ -16,6 +16,7 @@ interface WorldProps {
 const World: React.FC<WorldProps> = ({ canvasRef, physicsResults }) => {
   const thoughts = useStore((state) => state.thoughts);
   const showArchived = useStore((state) => state.showArchived);
+  const isOverDeleteZone = useStore((state) => state.isOverDeleteZone);
   const { registerElement, registerWorld, handleMouseDown, handleTouchStart, isDragging } = physicsResults;
 
   React.useLayoutEffect(() => {
@@ -71,6 +72,7 @@ const World: React.FC<WorldProps> = ({ canvasRef, physicsResults }) => {
               onTouchStart={handleTouchStart}
               isDragging={isDragging(thought.id)}
               isArchived={isArchived}
+              isOverDeleteZone={isOverDeleteZone}
             />
           );
         })}

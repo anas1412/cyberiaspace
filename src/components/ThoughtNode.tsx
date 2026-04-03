@@ -26,9 +26,10 @@ interface ThoughtNodeProps {
   onTouchStart: (id: string, e: React.TouchEvent) => void;
   isDragging: boolean;
   isArchived?: boolean;
+  isOverDeleteZone?: boolean;
 }
 
-const ThoughtNode: React.FC<ThoughtNodeProps> = React.memo(({ thought, registerElement, onMouseDown, onTouchStart, isDragging, isArchived = false }) => {
+const ThoughtNode: React.FC<ThoughtNodeProps> = React.memo(({ thought, registerElement, onMouseDown, onTouchStart, isDragging, isArchived = false, isOverDeleteZone = false }) => {
   const elRef = useRef<HTMLDivElement>(null);
   const isSelected = useStore((state) => state.selectedThoughtId === thought.id || state.selectedThoughtIds.includes(thought.id));
   const isInspectorOpen = useStore((state) => (state.selectedThoughtId === thought.id || state.selectedThoughtIds.includes(thought.id)) && state.isInspectorOpen);
@@ -223,7 +224,8 @@ const ThoughtNode: React.FC<ThoughtNodeProps> = React.memo(({ thought, registerE
         isArchived ? "pointer-events-none" : "pointer-events-auto",
         "w-[280px]",
         isDragging ? "z-[1000] cursor-grabbing" : "z-20 cursor-grab",
-        ((isReadOnly && !isSpatial && !isDemo) || isDeleting) && "cursor-default pointer-events-none"
+        ((isReadOnly && !isSpatial && !isDemo) || isDeleting) && "cursor-default pointer-events-none",
+        isDragging && isOverDeleteZone && "outline outline-2 outline-red-500/80 outline-offset-2"
       )}
       onMouseDown={isArchived ? noopMouseHandler : handleLocalMouseDown}
       onTouchStart={isArchived ? noopTouchHandler : handleLocalTouchStart}

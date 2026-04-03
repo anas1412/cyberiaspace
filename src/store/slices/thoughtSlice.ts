@@ -38,6 +38,10 @@ export const createThoughtSlice: StateCreator<CyberiaState, [], [], any> = (set,
   activeFocusId: null,
   focusType: null as 'text' | 'table' | 'paint' | 'tasks' | 'embed' | 'file' | null,
   deletingThoughtIds: [] as string[],
+  isDraggingThought: false,
+  setDraggingThought: (isDragging: boolean) => set({ isDraggingThought: isDragging }),
+  isOverDeleteZone: false,
+  setOverDeleteZone: (isOver: boolean) => set({ isOverDeleteZone: isOver }),
 
   addThought: async (partialThought: Partial<Thought>) => {
     const { activeSpaceId, isReadOnly, getLimits, transform } = get();

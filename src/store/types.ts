@@ -43,6 +43,10 @@ export interface CyberiaState {
   setInspectorTitleFocusId: (id: string | null) => void;
   transform: { x: number; y: number; scale: number };
   deletingThoughtIds: string[];
+  isDraggingThought: boolean;
+  setDraggingThought: (isDragging: boolean) => void;
+  isOverDeleteZone: boolean;
+  setOverDeleteZone: (isOver: boolean) => void;
   isDemo: boolean;
   _savedUserState: { spaces: Space[]; thoughts: Thought[]; stacks: Stack[]; activeSpaceId: string | null } | null;
   createInitialWorkspace: () => Promise<void>;

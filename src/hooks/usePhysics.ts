@@ -310,12 +310,23 @@ export const usePhysics = (
     const handleMove = (clientX: number, clientY: number) => {
       if (!dragRef.current) return;
       const s = getGlobalScale(); const logicalX = clientX / s; const logicalY = clientY / s;
+      dragRef.current.lastMouseX = logicalX;
+      dragRef.current.lastMouseY = logicalY;
       const { startX, startY, initialPositions } = dragRef.current;
       const dx = (logicalX - startX) / camera.scale.get(); const dy = (logicalY - startY) / camera.scale.get();
-      if (Math.abs(logicalX - startX) > 10 || Math.abs(logicalY - startY) > 10) dragRef.current.moved = true;
+      if (Math.abs(logicalX - startX) > 10 || Math.abs(logicalY - startY) > 10) {
+        if (!dragRef.current.moved) useStore.getState().setDraggingThought(true);
+        dragRef.current.moved = true;
+      }
       if (dragRef.current.moved) initialPositions.forEach((pos, id) => {
         const p = physicsState.current.get(id); if (p) { p.x = pos.x + dx; p.y = pos.y + dy; p.vx = 0; p.vy = 0; }
       });
+
+      // Check proximity to FAB (delete zone)
+      const fabCenterX = window.innerWidth / 2;
+      const fabCenterY = window.innerHeight - 72; // bottom-10 + half FAB size
+      const distToFAB = Math.sqrt(Math.pow(clientX - fabCenterX, 2) + Math.pow(clientY - fabCenterY, 2));
+      useStore.getState().setOverDeleteZone(distToFAB < 80);
     };
     const handleUp = (rawMouseX: number, rawMouseY: number, e: MouseEvent) => {
       if (!dragRef.current) return;
@@ -347,6 +358,30 @@ export const usePhysics = (
         const store = useStore.getState();
         const isReadOnly = store.isReadOnly && !store.isDemo;
         const mode = activeSpace?.mode || 'spatial';
+
+        // Check if dropped on the FAB (delete zone)
+        const viewportH = window.innerHeight;
+        const viewportW = window.innerWidth;
+        const fabSize = 64;
+        const fabBottom = 40; // bottom-10 = 40px
+        const fabLeft = viewportW / 2 - fabSize / 2;
+        const fabRight = viewportW / 2 + fabSize / 2;
+        const fabTop = viewportH - fabBottom - fabSize;
+        const fabBottomY = viewportH - fabBottom;
+
+        const droppedOnFab = rawMouseX >= fabLeft && rawMouseX <= fabRight && rawMouseY >= fabTop && rawMouseY <= fabBottomY;
+
+        if (droppedOnFab && !isReadOnly) {
+          // Delete all dragged thoughts
+          initialPositions.forEach((_, draggedId) => {
+            store.deleteThought(draggedId);
+          });
+          dragRef.current = null;
+          useStore.getState().setDraggingThought(false);
+          useStore.getState().setOverDeleteZone(false);
+          return;
+        }
+
         if (mode === 'kanban' && !isReadOnly) {
 
           const colWidth = logicalWidth / 4; let status: 'none' | 'todo' | 'doing' | 'done' = 'none';
@@ -390,6 +425,8 @@ export const usePhysics = (
         }
       }
       dragRef.current = null;
+      useStore.getState().setDraggingThought(false);
+      useStore.getState().setOverDeleteZone(false);
     };
     const onMouseMove = (e: MouseEvent) => handleMove(e.clientX, e.clientY);
     const onMouseUp = (e: MouseEvent) => handleUp(e.clientX, e.clientY, e);
@@ -895,8 +932,14 @@ export const usePhysics = (
     registerGrid: (el: HTMLDivElement | null) => { gridRef.current = el; }, 
     handleMouseDown: handleMouseDown as (id: string, e: React.MouseEvent) => void, 
     handleTouchStart: handleTouchStart as (id: string, e: React.TouchEvent) => void, 
-    isDragging: (id: string) => !!dragRef.current?.initialPositions.has(id), 
-    sidebarHeight: sbHeight, 
+    isDragging: (id: string) => !!dragRef.current?.initialPositions.has(id),
+    getDragState: () => dragRef.current ? {
+      isDragging: true,
+      draggedIds: Array.from(dragRef.current.initialPositions.keys()),
+      mouseX: dragRef.current.lastMouseX,
+      mouseY: dragRef.current.lastMouseY,
+    } : { isDragging: false, draggedIds: [] as string[], mouseX: 0, mouseY: 0 },
+    sidebarHeight: sbHeight,
     kanbanHeight: kMaxHeight,
     physicsState,
     elements,

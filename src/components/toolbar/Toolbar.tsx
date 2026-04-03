@@ -305,7 +305,12 @@ const Toolbar: React.FC = () => {
         </div>
       </div>
       
-      <ActionFAB isReadOnly={isReadOnly} handleAddThought={handleAddThought} />
+      <ActionFAB 
+        isReadOnly={isReadOnly} 
+        handleAddThought={handleAddThought} 
+        isDraggingThought={useStore((state) => state.isDraggingThought)} 
+        isOverDeleteZone={useStore((state) => state.isOverDeleteZone)} 
+      />
       
       <SystemTray 
         isShortcutsOpen={isShortcutsOpen} 
