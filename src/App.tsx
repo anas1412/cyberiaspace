@@ -10,6 +10,7 @@ import { detectImageType, generateThumbnail } from './utils/image';
 import { stripFileExtension } from './utils/file';
 import Viewport from './components/Viewport';
 import Toolbar from './components/toolbar/Toolbar';
+import AIToggleButton from './components/toolbar/AIToggleButton';
 import BackgroundEngine from './components/background/BackgroundEngine';
 import MultiSelectionMenu from './components/MultiSelectionMenu';
 import EmptyState from './components/EmptyState';
@@ -510,6 +511,7 @@ useEffect(() => {
           <KanbanOverlay />
           <CalendarOverlay />
           <Toolbar />
+          <AIToggleButton />
           <Inspector />
           <MultiSelectionMenu />
           <ChatOverlay />

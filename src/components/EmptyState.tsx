@@ -101,7 +101,7 @@ const EmptyState: React.FC = () => {
   const dividerColor = "text-[var(--glass-border)]";
 
   return (
-    <div id="empty-guide" className="fixed inset-0 z-[5] pointer-events-none flex items-center justify-center">
+    <div id="empty-guide" className="fixed inset-0 z-[10] pointer-events-none flex items-center justify-center">
 
       {/* 1. Switch View (Top Center) - Points to View Switcher */}
       <div className="absolute top-[80px] md:top-[95px] left-1/2 -translate-x-1/2 rotate-[1deg] text-center flex flex-col items-center">
@@ -115,14 +115,20 @@ const EmptyState: React.FC = () => {
         <ChalkArrow d="M 30 10 L 30 70 M 15 50 L 30 70 L 45 50" />
       </div>
 
-      {/* 3. Space & Oracle (Top Left) */}
+      {/* 3. Space Switcher (Top Left) */}
       <div className="hidden md:flex absolute top-[95px] left-[50px] -rotate-[4deg] text-center flex flex-col items-center">
         <ChalkArrow d="M 30 70 L 30 10 M 15 30 L 30 10 L 45 30" />
-        <p className={`font-['CyberiaBlueprint',_cursive,_sans-serif] ${guideTextColor} text-[12px] mt-2 tracking-widest uppercase`}>Switch Space / Oracle AI</p>
+        <p className={`font-['CyberiaBlueprint',_cursive,_sans-serif] ${guideTextColor} text-[12px] mt-2 tracking-widest uppercase`}>Switch Space</p>
+      </div>
+
+      {/* 3b. Oracle AI (Left Edge - Middle) */}
+      <div className="hidden md:flex absolute top-1/2 -translate-y-1/2 left-[80px] items-center gap-8">
+        <ChalkArrow d="M 30 70 L 30 10 M 15 30 L 30 10 L 45 30" className="-rotate-90" />
+        <p className={`font-['CyberiaBlueprint',_cursive,_sans-serif] ${guideTextColor} text-[12px] tracking-widest uppercase`}>Oracle AI</p>
       </div>
 
       {/* 4. Account Menu (Top Right) */}
-      <div className="hidden md:flex absolute top-[95px] right-[50px] rotate-[4deg] text-center flex flex-col items-center">
+      <div className="hidden md:flex absolute top-[95px] right-[90px] rotate-[4deg] text-center flex flex-col items-center">
         <ChalkArrow d="M 30 70 L 30 10 M 15 30 L 30 10 L 45 30" />
         <p className={`font-['CyberiaBlueprint',_cursive,_sans-serif] ${guideTextColor} text-[12px] mt-2 tracking-widest uppercase`}>Account</p>
       </div>
@@ -134,7 +140,7 @@ const EmptyState: React.FC = () => {
       </div>
 
       {/* 6. Controls (Bottom Left) - Points to Status Bar */}
-      <div className="hidden md:flex absolute bottom-[130px] left-[70px] rotate-[3deg] text-center flex flex-col items-center">
+      <div className="hidden md:flex absolute bottom-[130px] left-[260px] rotate-[3deg] text-center flex flex-col items-center">
         <p className={`font-['CyberiaBlueprint',_cursive,_sans-serif] ${guideTextColor} text-[12px] mb-2 tracking-widest uppercase`}>View Controls</p>
         <ChalkArrow d="M 30 10 L 30 70 M 15 50 L 30 70 L 45 50" />
       </div>

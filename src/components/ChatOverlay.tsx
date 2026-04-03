@@ -9,7 +9,7 @@ import {
   type SuggestionItem 
 } from '../utils/referenceParser';
 import SuggestionDropdown from './SuggestionDropdown';
-import { X, Send, MessageSquare, Loader2, History, Square, ChevronDown, Check } from 'lucide-react';
+import { X, Send, MessageSquare, Loader2, History, Square, ChevronDown, Check, ChevronLeft } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
@@ -194,7 +194,7 @@ const ChatOverlay: React.FC = () => {
   const userHasSelectedModelRef = useRef(false);
 
   const availableModels = plan === 'pro' ? allModels : freeOnlyModels;
-  const currentModelInfo = allModels.find((m: any) => m.id === selectedModel) || availableModels[0];
+  const currentModelInfo = allModels.find((m: any) => m.id === selectedModel) || availableModels[0] || { id: '', name: 'No Model', desc: '' };
 
   // Load history from Dexie when spaceId changes
   useEffect(() => {
@@ -919,13 +919,17 @@ if (data.tier && data.autoSwitch) {
     <AnimatePresence>
       {isChatOpen && (
         <motion.div
-          id="chat-overlay"
           initial={{ x: '-100%', opacity: 0 }}
           animate={{ x: 0, opacity: 1 }}
           exit={{ x: '-100%', opacity: 0 }}
           transition={{ type: 'spring', damping: 28, stiffness: 200 }}
-          className="fixed top-4 md:top-24 bottom-4 md:bottom-24 left-4 md:left-8 w-[calc(100%-32px)] md:w-[460px] glass rounded-2xl shadow-[0_0_80px_rgba(0,0,0,0.5)] flex flex-col overflow-hidden z-[9999] border border-[var(--glass-border)]"
+          className="fixed top-4 md:top-24 bottom-4 md:bottom-24 left-4 md:left-8 z-[9999] w-fit"
         >
+          {/* Chat Panel */}
+          <div
+            id="chat-overlay"
+            className="w-[calc(100%-32px)] md:w-[460px] h-full glass rounded-2xl shadow-[0_0_80px_rgba(0,0,0,0.5)] flex flex-col overflow-hidden border border-[var(--glass-border)]"
+          >
 
           {/* HEADER */}
           <div className="px-4 py-3 md:px-5 border-b border-[var(--glass-border)] bg-[var(--bg-main)]/60 backdrop-blur-xl sticky top-0 z-30">
@@ -1244,6 +1248,26 @@ if (data.tier && data.autoSwitch) {
               </span>
             </div>
           </div>
+          </div>
+
+          {/* Attached Toggle Button - Right Edge */}
+          <button
+            onClick={() => setChatOpen(false)}
+            className="
+              group absolute -right-[32px] top-1/2 -translate-y-1/2 h-[56px] w-[32px] rounded-r-2xl flex items-center justify-center 
+              transition-all duration-300 pointer-events-auto
+              bg-[var(--glass-bg)] border border-l-0 border-[var(--glass-border)] text-[var(--text-muted)]
+              hover:text-[var(--text-primary)]
+              shadow-lg shadow-[var(--glass-border)]
+            "
+          >
+            <ChevronLeft className="w-4 h-4 opacity-0 group-hover:opacity-100 transition-all duration-300 translate-x-1 group-hover:translate-x-0" />
+            <div className="absolute left-full ml-4 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-all duration-300 translate-x-2 group-hover:translate-x-0 pointer-events-none whitespace-nowrap z-[10001]">
+              <div className="glass px-3 py-1.5 rounded-xl border border-[var(--glass-border)] flex items-center gap-2 shadow-2xl bg-[var(--bg-main)]/90 backdrop-blur-xl">
+                <span className="text-[10px] font-semibold tracking-wide text-[var(--text-primary)]/90">Close Oracle AI</span>
+              </div>
+            </div>
+          </button>
         </motion.div>
       )}
     </AnimatePresence>
