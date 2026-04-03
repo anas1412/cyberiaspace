@@ -171,6 +171,24 @@ export const syncOrchestrator = {
     }
   },
 
+  /**
+   * Trigger sync after a delay. Use when you want to let the UI update first.
+   * 
+   * @param delayMs - Milliseconds to wait before syncing (default: 50)
+   * 
+   * @example
+   * // Sync after UI updates (e.g., after delete operations)
+   * syncOrchestrator.syncSoon();
+   * 
+   * // Sync after 100ms
+   * syncOrchestrator.syncSoon(100);
+   */
+  syncSoon(delayMs: number = 50): void {
+    setTimeout(() => {
+      this.triggerSync();
+    }, delayMs);
+  },
+
   setupRealtimeListener(userId: string) {
     if (realtimeChannel) {
       console.log('[Sync] Existing realtime listener found, cleaning up...');
@@ -709,8 +727,8 @@ export const syncOrchestrator = {
 
       if (syncRequestedDuringActiveSync) {
         syncRequestedDuringActiveSync = false;
-        // INSTANT: 500ms cooldown for follow-up sync to prevent hammering
-        setTimeout(() => syncOrchestrator.triggerSync(), 500);
+        // 500ms cooldown for follow-up sync to prevent hammering
+        this.syncSoon(500);
       }
     }
   },

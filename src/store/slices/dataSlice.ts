@@ -236,6 +236,7 @@ export const createDataSlice: StateCreator<CyberiaState, [], [], any> = (set, ge
         activeSpaceId: workspaceId,
         transform: { x: 0, y: 0, scale: 1 }
       });
+      get().pushHistory();
       
       console.log('[Store] Global clear complete.');
     } catch (err) { 

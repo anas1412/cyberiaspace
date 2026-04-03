@@ -190,6 +190,7 @@ export const createSpaceSlice: StateCreator<CyberiaState, [], [], any> = (set, g
     });
     await get().refreshSpaces();
     await get().setActiveSpace(id);
+    get().pushHistory();
     
     const authStore = useAuthStore.getState();
     if (authStore.status === 'authenticated') {
@@ -273,6 +274,7 @@ export const createSpaceSlice: StateCreator<CyberiaState, [], [], any> = (set, g
 
       // Update store immediately to reflect disappearance in UI
       await get().refreshSpaces();
+      get().pushHistory();
       
       // Switch to another space if we deleted the active one
       const freshSpaces = get().spaces;
@@ -297,6 +299,7 @@ export const createSpaceSlice: StateCreator<CyberiaState, [], [], any> = (set, g
       syncStatus: 'local' 
     })));
     await get().refreshSpaces();
+    get().pushHistory();
     
     const authStore = useAuthStore.getState();
     if (authStore.status === 'authenticated') {

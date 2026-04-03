@@ -432,7 +432,7 @@ export const createThoughtSlice: StateCreator<CyberiaState, [], [], any> = (set,
     get().pushHistory();
     
     if (authStore.status === 'authenticated') {
-      setTimeout(() => syncOrchestrator.triggerSync(), 50);
+      syncOrchestrator.syncSoon();
     }
   },
 
@@ -466,7 +466,7 @@ export const createThoughtSlice: StateCreator<CyberiaState, [], [], any> = (set,
     get().pushHistory();
     
     if (authStore.status === 'authenticated') {
-      setTimeout(() => syncOrchestrator.triggerSync(), 50);
+      syncOrchestrator.syncSoon();
     }
   },
 
