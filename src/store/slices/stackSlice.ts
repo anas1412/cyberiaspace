@@ -6,6 +6,43 @@ import { syncOrchestrator } from '../../services/sync/syncOrchestrator';
 import { type CyberiaState } from '../types';
 import { ulid } from 'ulid';
 import { MAX_THOUGHTS_PER_STACK } from '../../constants';
+export { MAX_THOUGHTS_PER_STACK };
+
+/**
+ * Check if adding thoughts to a stack would exceed the limit.
+ * @param stackId - The stack to check
+ * @param additionalCount - Number of thoughts being added (default: 1)
+ * @returns Object with allowed boolean and currentCount
+ */
+export async function checkStackLimit(
+  stackId: string,
+  additionalCount = 1
+): Promise<{ allowed: boolean; currentCount: number }> {
+  const currentUserId = useAuthStore.getState().user?.id ?? 'guest';
+  const count = await db.thoughts
+    .filter((t: any) => t.stackId === stackId && !t.deletedAt && t.userId === currentUserId)
+    .count();
+
+  return {
+    allowed: count + additionalCount <= MAX_THOUGHTS_PER_STACK,
+    currentCount: count,
+  };
+}
+
+/**
+ * Show a modal when stack limit is reached.
+ * @param stackName - Name of the stack for the error message
+ */
+export function showStackLimitModal(stackName?: string): void {
+  useModalStore.getState().openModal({
+    title: 'Collection Full',
+    description: stackName
+      ? `"${stackName}" already has the maximum of ${MAX_THOUGHTS_PER_STACK} thoughts.`
+      : `A collection can only hold ${MAX_THOUGHTS_PER_STACK} thoughts.`,
+    type: 'alert',
+    confirmText: 'OK',
+  });
+}
 
 export const createStackSlice: StateCreator<CyberiaState, [], [], any> = (set, get, _api) => ({
   stacks: [],
@@ -37,15 +74,10 @@ export const createStackSlice: StateCreator<CyberiaState, [], [], any> = (set, g
     const now = Date.now();
     
     if (existingStack) {
-      const currentUserId = useAuthStore.getState().user?.id ?? 'guest';
-      const count = await db.thoughts.filter((t: any) => t.stackId === existingStack.id && !t.deletedAt && t.userId === currentUserId).count();
-      if (count >= MAX_THOUGHTS_PER_STACK) {
-        useModalStore.getState().openModal({
-          title: 'Stack Limit Reached',
-          description: `A stack can only hold ${MAX_THOUGHTS_PER_STACK} thoughts.`,
-          type: 'alert',
-          confirmText: 'OK',
-        });
+      // Check stack limit using centralized helper
+      const { allowed } = await checkStackLimit(existingStack.id);
+      if (!allowed) {
+        showStackLimitModal(existingStack.name);
         return;
       }
       set({

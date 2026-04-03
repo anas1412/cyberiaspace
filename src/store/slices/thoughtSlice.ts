@@ -7,6 +7,7 @@ import { useModalStore } from '../useModalStore';
 import { sanitizeStatus, sanitizePriority } from '../../utils/thought';
 import { ulid } from 'ulid';
 import { getThoughtConfig } from '../../components/thought/registry';
+import { checkStackLimit, showStackLimitModal, MAX_THOUGHTS_PER_STACK } from './stackSlice';
 
 function mergeThoughts(local: Thought[], incoming: Thought[]): Thought[] {
   const editingThoughts = syncOrchestrator.getEditingThoughts();
@@ -241,6 +242,17 @@ export const createThoughtSlice: StateCreator<CyberiaState, [], [], any> = (set,
       }
     }
 
+    // Check stack limit when moving a thought to a stack
+    if (updates.stackId != null && updates.stackId !== thought.stackId) {
+      const { stacks } = get();
+      const targetStack = stacks.find((s: Stack) => s.id === updates.stackId);
+      const { allowed } = await checkStackLimit(updates.stackId);
+      if (!allowed) {
+        showStackLimitModal(targetStack?.name);
+        return;
+      }
+    }
+
     const index = thoughts.findIndex((t: Thought) => t.id === id);
     if (index !== -1) {
       const newThoughts = [...thoughts];
@@ -282,11 +294,27 @@ export const createThoughtSlice: StateCreator<CyberiaState, [], [], any> = (set,
 
   updateThoughts: async (ids: string[], updates: Partial<Thought>, options?: { skipSync?: boolean }) => {
     if (get().isReadOnly) return;
-    const { thoughts, activeSpaceId } = get();
+    const { thoughts, activeSpaceId, stacks } = get();
     if (activeSpaceId) get().updateSpace(activeSpaceId, { updatedAt: Date.now() }, options);
 
     if (updates.status) updates.status = sanitizeStatus(updates.status);
     if (updates.priority) updates.priority = sanitizePriority(updates.priority);
+
+    // Check stack limit when moving multiple thoughts to a stack
+    if (updates.stackId != null) {
+      const targetStack = stacks.find((s: Stack) => s.id === updates.stackId);
+      // Count how many of these thoughts are NOT already in the target stack
+      const additionalCount = thoughts.filter(
+        (t: Thought) => ids.includes(t.id) && t.stackId !== updates.stackId
+      ).length;
+      if (additionalCount > 0) {
+        const { allowed } = await checkStackLimit(updates.stackId, additionalCount);
+        if (!allowed) {
+          showStackLimitModal(targetStack?.name);
+          return;
+        }
+      }
+    }
 
     const finalUpdates = {
       ...updates,
@@ -578,6 +606,25 @@ export const createThoughtSlice: StateCreator<CyberiaState, [], [], any> = (set,
           updatedAt: now,
           syncStatus: 'local'
         };
+      }
+    }
+
+    // Check stack limit
+    // For new stacks: verify the number of thoughts being grouped doesn't exceed limit
+    // For existing stacks: verify adding to existing count doesn't exceed limit
+    if (newStack) {
+      // Creating a new stack - check if grouping count exceeds limit
+      if (idsToLink.length > MAX_THOUGHTS_PER_STACK) {
+        showStackLimitModal(newStack.name);
+        return;
+      }
+    } else {
+      // Adding to existing stack - check if current + new exceeds limit
+      const targetStack = stacks.find((s: Stack) => s.id === targetStackId);
+      const { allowed } = await checkStackLimit(targetStackId);
+      if (!allowed) {
+        showStackLimitModal(targetStack?.name);
+        return;
       }
     }
 
