@@ -93,7 +93,7 @@ async function runAuthenticationFlow(user: User, get: any, isFreshLogin: boolean
     let localCount = 0;
     
     for (const space of localGuestSpaces) {
-      const thoughtCount = await db.thoughts.where('spaceId').equals(space.id).filter(t => !t.deletedAt).count();
+      const thoughtCount = await db.thoughts.where('spaceId').equals(space.id).filter(t => !t.deletedAt && !t.archivedAt).count();
       if (thoughtCount > 0) localCount++;
     }
     

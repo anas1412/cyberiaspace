@@ -18,18 +18,23 @@ const PRIORITY_WEIGHT = {
 export const spatialStrategy: LayoutStrategist = {
   name: 'spatial',
   
-  calculateLayout: (thought: Thought, _allThoughts: Thought[], _context: LayoutContext, elementHeights: Map<string, number>): LayoutResult => {
+  calculateLayout: (thought: Thought, _allThoughts: Thought[], context: LayoutContext, elementHeights: Map<string, number>): LayoutResult => {
     const prioLevel = PRIORITY_WEIGHT[thought.priority] || 0;
     const targetScale = (1 + prioLevel * 0.05) * (thought.size || 1);
+    
+    // Check if thought is archived and showArchived is false
+    const isArchived = thought.archivedAt && !context.showArchived;
+    // In spatial mode, use "ghost" opacity (0.3) instead of hiding completely
+    const opacity = isArchived ? 0.3 : 1;
     
     return {
       targetX: thought.x - 140,
       targetY: thought.y - (elementHeights.get(thought.id) || 120) / 2,
       targetScale,
       zIndex: (20 + (thought.layer || 0)).toString(),
-      opacity: 1,
+      opacity,
       visibility: 'visible',
-      pointerEvents: 'auto',
+      pointerEvents: isArchived ? 'none' : 'auto',
       clipPath: 'none'
     };
   },

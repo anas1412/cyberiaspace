@@ -1,0 +1,17 @@
+{
+  "id": "archive-thoughts-feature-02",
+  "seq": "02",
+  "title": "Add Supabase column archived_at via migration",
+  "status": "pending",
+  "depends_on": ["01"],
+  "parallel": false,
+  "suggested_agent": "CoderAgent",
+  "context_files": [],
+  "reference_files": [],
+  "acceptance_criteria": [
+    "Migration adds archived_at TIMESTAMP WITH TIME ZONE column to thoughts table",
+    "Migration is successful"
+  ],
+  "deliverables": ["Database migration"],
+  "module": "@app/supabase"
+}

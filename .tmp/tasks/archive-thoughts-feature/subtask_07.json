@@ -1,0 +1,17 @@
+{
+  "id": "archive-thoughts-feature-07",
+  "seq": "07",
+  "title": "Add showArchived filter state to uiSlice",
+  "status": "pending",
+  "depends_on": [],
+  "parallel": true,
+  "suggested_agent": "CoderAgent",
+  "context_files": [],
+  "reference_files": ["src/store/slices/uiSlice.ts"],
+  "acceptance_criteria": [
+    "Add showArchived: boolean to uiSlice initial state",
+    "Add setShowArchived action"
+  ],
+  "deliverables": ["src/store/slices/uiSlice.ts"],
+  "module": "@app/store"
+}

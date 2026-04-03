@@ -25,9 +25,10 @@ interface ThoughtNodeProps {
   onMouseDown: (id: string, e: React.MouseEvent) => void;
   onTouchStart: (id: string, e: React.TouchEvent) => void;
   isDragging: boolean;
+  isArchived?: boolean;
 }
 
-const ThoughtNode: React.FC<ThoughtNodeProps> = React.memo(({ thought, registerElement, onMouseDown, onTouchStart, isDragging }) => {
+const ThoughtNode: React.FC<ThoughtNodeProps> = React.memo(({ thought, registerElement, onMouseDown, onTouchStart, isDragging, isArchived = false }) => {
   const elRef = useRef<HTMLDivElement>(null);
   const isSelected = useStore((state) => state.selectedThoughtId === thought.id || state.selectedThoughtIds.includes(thought.id));
   const isInspectorOpen = useStore((state) => (state.selectedThoughtId === thought.id || state.selectedThoughtIds.includes(thought.id)) && state.isInspectorOpen);
@@ -206,33 +207,39 @@ const ThoughtNode: React.FC<ThoughtNodeProps> = React.memo(({ thought, registerE
     return <Renderer {...rendererProps} />;
   };
 
+  // No-op handlers for archived thoughts
+  const noopHandler = () => {};
+  const noopMouseHandler = (e: React.MouseEvent) => { e.stopPropagation(); };
+  const noopTouchHandler = (e: React.TouchEvent) => { e.stopPropagation(); };
+
   return (
     <div
       ref={elRef}
       data-id={thought.id}
       data-unscheduled={!thought.startTime ? "true" : "false"}
       className={cn(
-        "thought-bulb absolute select-none touch-none will-change-transform pointer-events-auto origin-top-left",
+        "thought-bulb absolute select-none touch-none will-change-transform origin-top-left",
+        isArchived ? "pointer-events-none" : "pointer-events-auto",
         "w-[280px]",
         isDragging ? "z-[1000] cursor-grabbing" : "z-20 cursor-grab",
         ((isReadOnly && !isSpatial && !isDemo) || isDeleting) && "cursor-default pointer-events-none"
       )}
-      onMouseDown={handleLocalMouseDown}
-      onTouchStart={handleLocalTouchStart}
+      onMouseDown={isArchived ? noopMouseHandler : handleLocalMouseDown}
+      onTouchStart={isArchived ? noopTouchHandler : handleLocalTouchStart}
       onDragStart={(e) => e.preventDefault()}
-      onClick={handleClick}
-      onMouseEnter={() => {
+      onClick={isArchived ? noopMouseHandler : handleClick}
+      onMouseEnter={isArchived ? noopHandler : (() => {
         if (isCalendar) {
           if ((window as any)._calLeaveTimer) clearTimeout((window as any)._calLeaveTimer);
           setHoveredCalDate(sanitizeDate(thought.startTime));
         }
-      }}
-      onMouseLeave={() => {
+      })}
+      onMouseLeave={isArchived ? noopHandler : (() => {
         if (isCalendar) {
           if ((window as any)._calLeaveTimer) clearTimeout((window as any)._calLeaveTimer);
           (window as any)._calLeaveTimer = setTimeout(() => setHoveredCalDate(null), 150);
         }
-      }}
+      })}
     >
       {showPing && <div className="absolute inset-0 rounded-2xl border-2 border-[var(--accent)] animate-sonar pointer-events-none z-0" />}
       
@@ -249,6 +256,7 @@ const ThoughtNode: React.FC<ThoughtNodeProps> = React.memo(({ thought, registerE
       <div
         className={cn(
           "thought-bulb-content group backdrop-blur-[20px] border rounded-2xl flex flex-col relative transition-all duration-300 overflow-hidden",
+          isArchived && "pointer-events-none",
           isCalendar && !isExpanded ? "p-3 gap-0" : "p-4.5 gap-2",
           isSpatial && !isSelected && "gap-0",
           isSelected
@@ -260,15 +268,16 @@ const ThoughtNode: React.FC<ThoughtNodeProps> = React.memo(({ thought, registerE
         )}
         style={altitudeStyles}
       >
-        <ThoughtHeader thought={thought} isCalendar={isCalendar} isExpanded={isExpanded} />
+        <ThoughtHeader thought={thought} isCalendar={isCalendar} isExpanded={isExpanded} isArchived={isArchived} />
         <div
           data-trigger={thought.type === 'text' ? 'text' : undefined}
           className={cn(
             "flex flex-col relative transition-all duration-300",
             (isCalendar && !isExpanded) ? "h-0 opacity-0 pointer-events-none" : "opacity-100",
-            thought.type === 'text' && "cursor-pointer rounded-xl overflow-hidden",
+            isArchived && "pointer-events-none",
+            thought.type === 'text' && !isArchived && "cursor-pointer rounded-xl overflow-hidden",
             (thought.type === 'text' && (content || thought.description || !thought.stackId)) 
-                ? "min-h-0 justify-center gap-2 mt-0.5 pointer-events-auto" : "min-h-0 gap-0 pointer-events-auto"
+                ? "min-h-0 justify-center gap-2 mt-0.5" : "min-h-0 gap-0"
           )}
         >
           {thought.description && thought.description !== 'No description available.' && thought.description !== thought.text && (
@@ -283,7 +292,8 @@ const ThoughtNode: React.FC<ThoughtNodeProps> = React.memo(({ thought, registerE
             isSpatial={isSpatial}
             isSelected={isSelected}
             linkingSourceId={linkingSourceId} 
-            handleLinkAction={handleLinkAction} 
+            handleLinkAction={isArchived ? noopMouseHandler : handleLinkAction}
+            isArchived={isArchived}
           />
         )}
       </div>

@@ -15,6 +15,7 @@ interface WorldProps {
 
 const World: React.FC<WorldProps> = ({ canvasRef, physicsResults }) => {
   const thoughts = useStore((state) => state.thoughts);
+  const showArchived = useStore((state) => state.showArchived);
   const { registerElement, registerWorld, handleMouseDown, handleTouchStart, isDragging } = physicsResults;
 
   React.useLayoutEffect(() => {
@@ -59,16 +60,20 @@ const World: React.FC<WorldProps> = ({ canvasRef, physicsResults }) => {
         ref={registerWorld}
         className="absolute origin-top-left will-change-transform pointer-events-none w-full h-full z-10"
       >
-        {thoughts.map((thought) => (
-          <ThoughtNode
-            key={thought.id}
-            thought={thought}
-            registerElement={registerElement}
-            onMouseDown={handleMouseDown}
-            onTouchStart={handleTouchStart}
-            isDragging={isDragging(thought.id)}
-          />
-        ))}
+        {thoughts.map((thought) => {
+          const isArchived = !!thought.archivedAt && !showArchived;
+          return (
+            <ThoughtNode
+              key={thought.id}
+              thought={thought}
+              registerElement={registerElement}
+              onMouseDown={handleMouseDown}
+              onTouchStart={handleTouchStart}
+              isDragging={isDragging(thought.id)}
+              isArchived={isArchived}
+            />
+          );
+        })}
       </div>
     </>
   );

@@ -39,10 +39,14 @@ export const kanbanStrategy: LayoutStrategist = {
       (thought.data?.type === 'text' ? thought.data.content : ((thought as any).content || '')).toLowerCase().includes(kanbanSearchQuery.toLowerCase());
     
     const matchesStack = !kanbanStackFilter || thought.stackId === kanbanStackFilter;
-    const isFilteredOut = !matchesSearch || !matchesStack;
+    // Hide archived thoughts unless showArchived is true
+    const isArchived = thought.archivedAt && !context.showArchived;
+    const isFilteredOut = !matchesSearch || !matchesStack || isArchived;
 
-    const list = context.columnMap?.get(thought.status) || [];
-    const indexInCol = list.findIndex(t => t.id === thought.id);
+    // Get visible list only (for position calculation)
+    const allList = context.columnMap?.get(thought.status) || [];
+    const visibleList = allList.filter(t => !t.archivedAt || context.showArchived);
+    const indexInCol = visibleList.findIndex(t => t.id === thought.id);
     
     // Common dimensions
     const sidebarPadding = isMobile ? 16 : 40;
@@ -50,7 +54,7 @@ export const kanbanStrategy: LayoutStrategist = {
     
     if (isSidebar) {
       // === SIDEBAR: Unplanned/Unscheduled - same as Calendar unscheduled ===
-      const unscheduled = list;
+      const unscheduled = visibleList;
       const currentScale = CARD_SCALE;
       const h = elementHeights.get(thought.id) || 120;
       
@@ -91,7 +95,7 @@ export const kanbanStrategy: LayoutStrategist = {
       // Calculate Y position within column
       let yOffset = 0;
       for (let i = 0; i < indexInCol; i++) {
-        const prevT = list[i];
+        const prevT = visibleList[i];
         yOffset += ((elementHeights.get(prevT.id) || 120)) + 20; // Full height + gap
       }
       

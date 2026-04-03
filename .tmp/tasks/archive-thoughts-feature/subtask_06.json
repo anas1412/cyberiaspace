@@ -1,0 +1,17 @@
+{
+  "id": "archive-thoughts-feature-06",
+  "seq": "06",
+  "title": "Update totalThoughtCount to exclude archived",
+  "status": "pending",
+  "depends_on": ["05"],
+  "parallel": true,
+  "suggested_agent": "CoderAgent",
+  "context_files": [],
+  "reference_files": ["src/store/slices/thoughtSlice.ts"],
+  "acceptance_criteria": [
+    "refreshTotalThoughtCount excludes archived thoughts",
+    "Count updates correctly when archiving/unarchiving"
+  ],
+  "deliverables": ["src/store/slices/thoughtSlice.ts"],
+  "module": "@app/store"
+}

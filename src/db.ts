@@ -84,6 +84,7 @@ interface Thought {
   description: string;
   type: ThoughtType;
   deletedAt?: number | null;
+  archivedAt?: number | null;
   status: 'none' | 'todo' | 'doing' | 'done';
   startTime?: number | null;
   endTime?: number | null;

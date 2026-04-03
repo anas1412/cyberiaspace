@@ -1,0 +1,24 @@
+{
+  "id": "archive-thoughts-feature-11",
+  "seq": "11",
+  "title": "Update Kanban and Calendar queries to exclude archived",
+  "status": "pending",
+  "depends_on": ["04", "07"],
+  "parallel": true,
+  "suggested_agent": "CoderAgent",
+  "context_files": [],
+  "reference_files": [
+    "src/components/kanban/KanbanOverlay.tsx",
+    "src/components/calendar/CalendarOverlay.tsx"
+  ],
+  "acceptance_criteria": [
+    "Kanban view excludes archived thoughts by default",
+    "Calendar view excludes archived thoughts by default",
+    "Include archived when showArchived is true"
+  ],
+  "deliverables": [
+    "src/components/kanban/KanbanOverlay.tsx",
+    "src/components/calendar/CalendarOverlay.tsx"
+  ],
+  "module": "@app/ui"
+}

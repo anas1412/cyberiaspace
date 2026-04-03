@@ -1,7 +1,7 @@
 import React from 'react';
 import { useStore } from '../store/useStore';
 import { useModalStore } from '../store/useModalStore';
-import { X, Trash2, Palette } from 'lucide-react';
+import { X, Trash2, Palette, Archive, ArchiveRestore } from 'lucide-react';
 import { STACK_COLORS } from '../constants';
 import { syncOrchestrator } from '../services/sync/syncOrchestrator';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -87,6 +87,8 @@ const MultiSelectionMenu: React.FC = () => {
   const linkSelectedThoughts = useStore((state) => state.linkSelectedThoughts);
   const unlinkSelectedThoughts = useStore((state) => state.unlinkSelectedThoughts);
   const deleteSelectedThoughts = useStore((state) => state.deleteSelectedThoughts);
+  const archiveThoughts = useStore((state) => state.archiveThoughts);
+  const unarchiveThoughts = useStore((state) => state.unarchiveThoughts);
   const thoughts = useStore((state) => state.thoughts);
   const stacks = useStore((state) => state.stacks);
   const updateStack = useStore((state) => state.updateStack);
@@ -139,6 +141,10 @@ const MultiSelectionMenu: React.FC = () => {
     return selected.every(t => t.startTime === first) ? (first || null) : null;
   }, [selectedThoughtIds, thoughts]);
 
+  const allArchivedSelected = React.useMemo(() => {
+    const selected = thoughts.filter(t => selectedThoughtIds.includes(t.id));
+    return selected.length > 0 && selected.every(t => t.archivedAt);
+  }, [selectedThoughtIds, thoughts]);
   // --- LOCAL STATE ---
   const [localDate, setLocalDate] = React.useState<number | null>(sharedDate);
   const [pendingReminders, setPendingReminders] = React.useState<any[]>(sharedReminder);
@@ -353,6 +359,23 @@ const MultiSelectionMenu: React.FC = () => {
           
           {/* FOOTER */}
           <div className="bg-[var(--bg-main)]/60 backdrop-blur-md border-t border-[var(--glass-border)] p-4 md:p-5 flex items-center gap-3">
+            {allArchivedSelected ? (
+              <button
+                onClick={() => unarchiveThoughts(selectedThoughtIds)}
+                className="flex-1 bg-amber-500/5 hover:bg-amber-500/10 text-amber-400/90 py-3 rounded-xl text-[10px] font-extrabold uppercase tracking-[0.2em] transition-all border border-amber-500/20 hover:border-amber-500/40 flex items-center justify-center gap-2 group"
+              >
+                <ArchiveRestore className="w-4 h-4 group-hover:scale-110 transition-transform" />
+                <span>Restore Selection</span>
+              </button>
+            ) : (
+              <button
+                onClick={() => archiveThoughts(selectedThoughtIds)}
+                className="flex-1 bg-amber-500/5 hover:bg-amber-500/10 text-amber-400/90 py-3 rounded-xl text-[10px] font-extrabold uppercase tracking-[0.2em] transition-all border border-amber-500/20 hover:border-amber-500/40 flex items-center justify-center gap-2 group"
+              >
+                <Archive className="w-4 h-4 group-hover:scale-110 transition-transform" />
+                <span>Archive Selection</span>
+              </button>
+            )}
             <button
               onClick={() => openModal({ 
                 title: `Delete ${selectedThoughtIds.length} Nodes?`, 

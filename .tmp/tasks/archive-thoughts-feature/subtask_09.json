@@ -1,0 +1,18 @@
+{
+  "id": "archive-thoughts-feature-09",
+  "seq": "09",
+  "title": "Add archive/unarchive to context menu (MultiSelectionMenu)",
+  "status": "pending",
+  "depends_on": ["04"],
+  "parallel": false,
+  "suggested_agent": "OpenFrontendSpecialist",
+  "context_files": [],
+  "reference_files": [],
+  "acceptance_criteria": [
+    "Context menu shows Archive option for non-archived thoughts",
+    "Context menu shows Unarchive option for archived thoughts",
+    "Bulk archive/unarchive works for multiple selected"
+  ],
+  "deliverables": ["Context menu component updates"],
+  "module": "@app/ui"
+}

@@ -536,8 +536,8 @@ export const createSpaceSlice: StateCreator<CyberiaState, [], [], any> = (set, g
 
       // When merging guest space, also include thoughts with userId: 'guest' or undefined
       const sourceThoughtsQuery = sourceIsGuest
-        ? db.thoughts.where('spaceId').equals(sourceSpaceId).and(t => (!t.userId || t.userId === 'guest' || t.userId === currentUserId) && !t.deletedAt)
-        : db.thoughts.where('spaceId').equals(sourceSpaceId).and(t => t.userId === currentUserId && !t.deletedAt);
+        ? db.thoughts.where('spaceId').equals(sourceSpaceId).and(t => (!t.userId || t.userId === 'guest' || t.userId === currentUserId) && !t.deletedAt && !t.archivedAt)
+        : db.thoughts.where('spaceId').equals(sourceSpaceId).and(t => t.userId === currentUserId && !t.deletedAt && !t.archivedAt);
       
       await db.transaction('rw', [db.thoughts, db.stacks, db.spaces], async () => {
         const timestamp = Date.now();
@@ -637,11 +637,11 @@ export const createSpaceSlice: StateCreator<CyberiaState, [], [], any> = (set, g
 
       // When replacing with guest space, also include thoughts with userId: 'guest' or undefined
       const sourceThoughtsQuery = sourceIsGuest
-        ? db.thoughts.where('spaceId').equals(sourceSpaceId).and(t => (!t.userId || t.userId === 'guest' || t.userId === currentUserId) && !t.deletedAt)
-        : db.thoughts.where('spaceId').equals(sourceSpaceId).and(t => t.userId === currentUserId && !t.deletedAt);
+        ? db.thoughts.where('spaceId').equals(sourceSpaceId).and(t => (!t.userId || t.userId === 'guest' || t.userId === currentUserId) && !t.deletedAt && !t.archivedAt)
+        : db.thoughts.where('spaceId').equals(sourceSpaceId).and(t => t.userId === currentUserId && !t.deletedAt && !t.archivedAt);
       
       const sourceThoughtsCount = await sourceThoughtsQuery.count();
-      const targetThoughtsCount = await db.thoughts.where('spaceId').equals(targetSpaceIdToReplace).and(t => t.userId === currentUserId && !t.deletedAt).count();
+      const targetThoughtsCount = await db.thoughts.where('spaceId').equals(targetSpaceIdToReplace).and(t => t.userId === currentUserId && !t.deletedAt && !t.archivedAt).count();
       const currentCloudThoughts = authStore.user?.usage?.sync_thoughts || 0;
       
       const limits = get().getLimits();

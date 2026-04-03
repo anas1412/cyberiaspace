@@ -1,0 +1,17 @@
+{
+  "id": "archive-thoughts-feature-01",
+  "seq": "01",
+  "title": "Add archivedAt field to Thought interface in src/db.ts",
+  "status": "pending",
+  "depends_on": [],
+  "parallel": false,
+  "suggested_agent": "CoderAgent",
+  "context_files": [".opencode/context/core/standards/code-quality.md"],
+  "reference_files": ["src/db.ts"],
+  "acceptance_criteria": [
+    "Add archivedAt?: number | null to Thought interface",
+    "Add archivedAt to IndexedDB version indexes"
+  ],
+  "deliverables": ["src/db.ts"],
+  "module": "@app/db"
+}

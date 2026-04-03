@@ -1,0 +1,18 @@
+{
+  "id": "archive-thoughts-feature-03",
+  "seq": "03",
+  "title": "Update toSnakeCase/toCamelCase in supabaseSync.ts",
+  "status": "pending",
+  "depends_on": ["01"],
+  "parallel": true,
+  "suggested_agent": "CoderAgent",
+  "context_files": [".opencode/context/core/standards/code-quality.md"],
+  "reference_files": ["src/services/supabaseSync.ts"],
+  "acceptance_criteria": [
+    "toSnakeCase converts archivedAt to archived_at",
+    "toCamelCase converts archived_at to archivedAt",
+    "archivedAt included in timestampKeys for date conversion"
+  ],
+  "deliverables": ["src/services/supabaseSync.ts"],
+  "module": "@app/sync"
+}

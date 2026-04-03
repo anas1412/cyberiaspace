@@ -1,0 +1,22 @@
+{
+  "id": "archive-thoughts-feature-08",
+  "seq": "08",
+  "title": "Update filter bar to show archive toggle",
+  "status": "pending",
+  "depends_on": ["07"],
+  "parallel": false,
+  "suggested_agent": "OpenFrontendSpecialist",
+  "context_files": [".opencode/context/ui/web/ui-styling-standards.md"],
+  "reference_files": [
+    "src/components/kanban/KanbanOverlay.tsx",
+    "src/components/calendar/CalendarOverlay.tsx"
+  ],
+  "acceptance_criteria": [
+    "Filter bar shows archive toggle button",
+    "Toggle changes showArchived state",
+    "Follows 4-stage design workflow",
+    "Responsive at all breakpoints"
+  ],
+  "deliverables": ["Filter bar UI components"],
+  "module": "@app/ui"
+}

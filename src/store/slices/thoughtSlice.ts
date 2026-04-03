@@ -47,7 +47,7 @@ export const createThoughtSlice: StateCreator<CyberiaState, [], [], any> = (set,
     const limits = getLimits();
     
     // STRICT ENFORCEMENT: Check thoughts in CURRENT space directly from DB for truth
-    const count = await db.thoughts.where('spaceId').equals(activeSpaceId).and(t => !t.deletedAt).count();
+    const count = await db.thoughts.where('spaceId').equals(activeSpaceId).and(t => !t.deletedAt && !t.archivedAt).count();
     
     if (count >= limits.MAX_THOUGHTS_PER_SPACE) {
       const isPro = useAuthStore.getState().user?.plan === 'pro';
@@ -138,7 +138,7 @@ export const createThoughtSlice: StateCreator<CyberiaState, [], [], any> = (set,
     const limits = getLimits();
     
     // Bulk check limits
-    const count = await db.thoughts.where('spaceId').equals(activeSpaceId).and(t => !t.deletedAt).count();
+    const count = await db.thoughts.where('spaceId').equals(activeSpaceId).and(t => !t.deletedAt && !t.archivedAt).count();
     
     if (count + partialThoughts.length > limits.MAX_THOUGHTS_PER_SPACE) {
       const isPro = useAuthStore.getState().user?.plan === 'pro';
@@ -470,11 +470,135 @@ export const createThoughtSlice: StateCreator<CyberiaState, [], [], any> = (set,
     }
   },
 
+  archiveThought: async (id: string) => {
+    if (get().isReadOnly) return;
+    const thought = get().thoughts.find((t: Thought) => t.id === id);
+    const affectedStackId = thought?.stackId;
+    const authStore = useAuthStore.getState();
+    
+    // Update Zustand first
+    set((state: CyberiaState) => ({ 
+      thoughts: state.thoughts.map(t => t.id === id ? { ...t, archivedAt: Date.now(), updatedAt: Date.now(), syncStatus: 'local' as const } : t)
+    } as Partial<CyberiaState>));
+    
+    // Update IndexedDB
+    await db.thoughts.update(id, {
+      archivedAt: Date.now(),
+      updatedAt: Date.now(),
+      syncStatus: 'local'
+    });
+    
+    await get().refreshTotalThoughtCount();
+    if (affectedStackId) await get().cleanupStacks();
+    
+    // Clear selection if archived thought was selected
+    if (get().selectedThoughtId === id) {
+      set({ selectedThoughtId: null, isInspectorOpen: false } as Partial<CyberiaState>);
+    }
+    if (get().selectedThoughtIds.includes(id)) {
+      set((state: CyberiaState) => ({ selectedThoughtIds: state.selectedThoughtIds.filter((tid: string) => tid !== id) } as Partial<CyberiaState>));
+    }
+    
+    get().pushHistory();
+    
+    if (authStore.status === 'authenticated') {
+      syncOrchestrator.syncSoon();
+    }
+  },
+
+  archiveThoughts: async (ids: string[]) => {
+    if (get().isReadOnly || !ids.length) return;
+    const { thoughts } = get();
+    const authStore = useAuthStore.getState();
+    
+    const affectedStackIds = Array.from(new Set(thoughts.filter((t: Thought) => ids.includes(t.id)).map((t: Thought) => t.stackId).filter(Boolean))) as string[];
+    
+    // Update Zustand first
+    set((state: CyberiaState) => ({ 
+      thoughts: state.thoughts.map(t => ids.includes(t.id) ? { ...t, archivedAt: Date.now(), updatedAt: Date.now(), syncStatus: 'local' as const } : t)
+    } as Partial<CyberiaState>));
+    
+    // Update IndexedDB
+    await db.thoughts.where('id').anyOf(ids).modify({
+      archivedAt: Date.now(),
+      updatedAt: Date.now(),
+      syncStatus: 'local'
+    });
+    
+    await get().refreshTotalThoughtCount();
+    if (affectedStackIds.length > 0) await get().cleanupStacks();
+    
+    // Clear selection if any archived thoughts were selected
+    set((state: CyberiaState) => ({ 
+      selectedThoughtId: ids.includes(state.selectedThoughtId as string) ? null : state.selectedThoughtId,
+      selectedThoughtIds: state.selectedThoughtIds.filter((tid: string) => !ids.includes(tid))
+    } as Partial<CyberiaState>));
+    
+    get().pushHistory();
+    
+    if (authStore.status === 'authenticated') {
+      syncOrchestrator.syncSoon();
+    }
+  },
+
+  unarchiveThought: async (id: string) => {
+    if (get().isReadOnly) return;
+    const authStore = useAuthStore.getState();
+    
+    // Update Zustand first
+    set((state: CyberiaState) => ({ 
+      thoughts: state.thoughts.map(t => t.id === id ? { ...t, archivedAt: null, updatedAt: Date.now(), syncStatus: 'local' as const } : t)
+    } as Partial<CyberiaState>));
+    
+    // Update IndexedDB
+    await db.thoughts.update(id, {
+      archivedAt: null,
+      updatedAt: Date.now(),
+      syncStatus: 'local'
+    });
+    
+    await get().refreshThoughts();
+    await get().refreshTotalThoughtCount();
+    
+    get().pushHistory();
+    
+    if (authStore.status === 'authenticated') {
+      syncOrchestrator.syncSoon();
+    }
+  },
+
+  unarchiveThoughts: async (ids: string[]) => {
+    if (get().isReadOnly || !ids.length) return;
+    const authStore = useAuthStore.getState();
+    
+    // Update Zustand first
+    set((state: CyberiaState) => ({ 
+      thoughts: state.thoughts.map(t => ids.includes(t.id) ? { ...t, archivedAt: null, updatedAt: Date.now(), syncStatus: 'local' as const } : t)
+    } as Partial<CyberiaState>));
+    
+    // Update IndexedDB
+    await db.thoughts.where('id').anyOf(ids).modify({
+      archivedAt: null,
+      updatedAt: Date.now(),
+      syncStatus: 'local'
+    });
+    
+    await get().refreshThoughts();
+    await get().refreshTotalThoughtCount();
+    
+    get().pushHistory();
+    
+    if (authStore.status === 'authenticated') {
+      syncOrchestrator.syncSoon();
+    }
+  },
+
   refreshThoughts: async (spaceId?: string) => {
     if (get().isReadOnly || get().isDemo) return;
     const targetId = spaceId || get().activeSpaceId;
     if (!targetId) return;
     const currentUserId = useAuthStore.getState().user?.id ?? 'guest';
+    // Load ALL non-deleted thoughts (including archived) - filtering happens in views based on showArchived state
     const incomingThoughts = await db.thoughts
       .filter((t: any) => t.spaceId === targetId && t.userId === currentUserId && !t.deletedAt)
       .toArray();
@@ -488,7 +612,7 @@ export const createThoughtSlice: StateCreator<CyberiaState, [], [], any> = (set,
 
   refreshTotalThoughtCount: async () => {
     const currentUserId = useAuthStore.getState().user?.id ?? 'guest';
-    const count = await db.thoughts.filter(t => !t.deletedAt && t.userId === currentUserId).count();
+    const count = await db.thoughts.filter(t => !t.deletedAt && !t.archivedAt && t.userId === currentUserId).count();
     set({ totalThoughtCount: count } as Partial<CyberiaState>);
   },
 
@@ -708,7 +832,7 @@ export const createThoughtSlice: StateCreator<CyberiaState, [], [], any> = (set,
     
     const currentUserId = useAuthStore.getState().user?.id ?? 'guest';
     const thoughts = await db.thoughts
-      .filter((t: any) => t.spaceId === targetId && t.userId === currentUserId && !t.deletedAt)
+      .filter((t: any) => t.spaceId === targetId && t.userId === currentUserId && !t.deletedAt && !t.archivedAt)
       .toArray();
     
     if (thoughts.length < 2) return;

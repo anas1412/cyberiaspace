@@ -15,13 +15,14 @@ interface ThoughtHeaderProps {
   thought: Thought;
   isCalendar: boolean;
   isExpanded: boolean;
+  isArchived?: boolean;
 }
 
-export const ThoughtHeader: React.FC<ThoughtHeaderProps> = ({ thought, isCalendar, isExpanded }) => {
+export const ThoughtHeader: React.FC<ThoughtHeaderProps> = ({ thought, isCalendar, isExpanded, isArchived = false }) => {
   const isAuthenticated = useAuthStore(state => state.status === 'authenticated');
 
   return (
-    <div className={cn("flex items-start justify-between gap-4", isCalendar && !isExpanded ? "min-h-0" : "min-h-[24px]")}>
+    <div className={cn("flex items-start justify-between gap-4 pointer-events-none", isArchived && "pointer-events-none", isCalendar && !isExpanded ? "min-h-0" : "min-h-[24px]")}>
       <div className="flex items-start gap-2.5 flex-1 min-w-0">
         {thought.priority !== 'none' && (
           <div

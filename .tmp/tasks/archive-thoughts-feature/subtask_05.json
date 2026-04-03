@@ -1,0 +1,17 @@
+{
+  "id": "archive-thoughts-feature-05",
+  "seq": "05",
+  "title": "Update refreshThoughts to filter archived by default",
+  "status": "pending",
+  "depends_on": ["04"],
+  "parallel": true,
+  "suggested_agent": "CoderAgent",
+  "context_files": [".opencode/context/core/standards/code-quality.md"],
+  "reference_files": ["src/store/slices/thoughtSlice.ts"],
+  "acceptance_criteria": [
+    "refreshThoughts filters out archived thoughts by default",
+    "Option to include archived when showArchived is true"
+  ],
+  "deliverables": ["src/store/slices/thoughtSlice.ts"],
+  "module": "@app/store"
+}

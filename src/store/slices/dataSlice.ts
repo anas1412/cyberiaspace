@@ -424,7 +424,7 @@ export const createDataSlice: StateCreator<CyberiaState, [], [], any> = (set, ge
   isLocalWorkspaceEmpty: async () => {
     const currentUserId = (useAuthStore.getState().user?.id) ?? 'guest';
     
-    const thoughtsCount = await db.thoughts.filter((t: any) => !t.deletedAt && t.userId === currentUserId).count();
+    const thoughtsCount = await db.thoughts.filter((t: any) => !t.deletedAt && !t.archivedAt && t.userId === currentUserId).count();
     const spaces = await db.spaces.filter((s: any) => !s.deletedAt && s.userId === currentUserId).toArray();
     
     if (thoughtsCount > 0) return false;
@@ -525,7 +525,7 @@ export const createDataSlice: StateCreator<CyberiaState, [], [], any> = (set, ge
       const discardedSpaceIds: string[] = [];
 
       for (const space of guestSpaces) {
-        const thoughtCount = await db.thoughts.where('spaceId').equals(space.id).filter(t => !t.deletedAt).count();
+        const thoughtCount = await db.thoughts.where('spaceId').equals(space.id).filter(t => !t.deletedAt && !t.archivedAt).count();
         if (thoughtCount > 0) validSpaceIds.push(space.id);
         else discardedSpaceIds.push(space.id);
       }

@@ -551,6 +551,7 @@ export const syncOrchestrator = {
       const stacksToPush = localStacks.filter(s => !s.deletedAt && !s.isOnboarding);
       const thoughtsToPush = localThoughts.filter(t => 
         !t.deletedAt && 
+        !t.archivedAt &&
         !onboardingSpaceIds.has(t.spaceId) &&
         !syncOrchestrator.isEditing(t.id)
       );

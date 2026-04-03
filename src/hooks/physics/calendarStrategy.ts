@@ -16,7 +16,9 @@ export const calendarStrategy: LayoutStrategist = {
       (thought.data?.type === 'text' ? thought.data.content : ((thought as any).content || '')).toLowerCase().includes(calendarSearchQuery.toLowerCase());
     
     const matchesStack = !calendarStackFilter || thought.stackId === calendarStackFilter;
-    const isFilteredOut = !matchesSearch || !matchesStack;
+    // Hide archived thoughts unless showArchived is true
+    const isArchived = thought.archivedAt && !context.showArchived;
+    const isFilteredOut = !matchesSearch || !matchesStack || isArchived;
  
     const sidebarWidth = 260;
     const padding = isMobile ? 16 : 40;
@@ -32,10 +34,13 @@ export const calendarStrategy: LayoutStrategist = {
         const cellHeight = cell.h;
 
         const isHovered = hoveredCalDate === dateStr;
-        const dateThoughts = context.dateMap?.get(dateStr) || [];
+        // Get ALL thoughts in this date for position calculation
+        const allDateThoughts = context.dateMap?.get(dateStr) || [];
+        // Filter to visible only for index calculation
+        const visibleDateThoughts = allDateThoughts.filter(t => !t.archivedAt || context.showArchived);
         
-        const count = dateThoughts.length;
-        const index = dateThoughts.findIndex(t => t.id === thought.id);
+        const count = visibleDateThoughts.length;
+        const index = visibleDateThoughts.findIndex(t => t.id === thought.id);
         const isTopCard = index === count - 1;
 
         const currentCompactH = thought.stackId ? H_STACK : H_PLAIN;
@@ -74,8 +79,11 @@ export const calendarStrategy: LayoutStrategist = {
       }
     } else {
       // Unscheduled - Sidebar Logic
-      const unscheduled = context.dateMap?.get("") || [];
-      const index = unscheduled.findIndex(t => t.id === thought.id);
+      // Get ALL thoughts for this date (empty string for unscheduled)
+      const allUnscheduled = context.dateMap?.get("") || [];
+      // Filter to visible only for index calculation
+      const visibleUnscheduled = allUnscheduled.filter(t => !t.archivedAt || context.showArchived);
+      const index = visibleUnscheduled.findIndex(t => t.id === thought.id);
       const isSidebarHovered = true;
       
       const currentScale = 0.78;
@@ -84,10 +92,10 @@ export const calendarStrategy: LayoutStrategist = {
       const currentCompactH = thought.stackId ? H_STACK : H_PLAIN;
       const dynamicClip = 'inset(0px 0px calc(100% - ' + currentCompactH + 'px) 0px round 16px)';
       
-      // Sum previous heights in sidebar
+      // Sum previous heights in sidebar (using visible list for proper stacking)
       let yOffset = 0;
       for (let i = 0; i < index; i++) {
-        const prevT = unscheduled[i];
+        const prevT = visibleUnscheduled[i];
         const hForCalc = isSidebarHovered ? (elementHeights.get(prevT.id) || 120) : (prevT.stackId ? H_STACK : H_PLAIN);
         const gapForCalc = isSidebarHovered ? 20 : COMPACT_GAP;
         yOffset += (hForCalc * currentScale) + gapForCalc;

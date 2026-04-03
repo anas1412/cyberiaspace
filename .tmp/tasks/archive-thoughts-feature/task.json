@@ -1,0 +1,26 @@
+{
+  "id": "archive-thoughts-feature",
+  "name": "Archive Thoughts Feature",
+  "status": "active",
+  "objective": "Add archivedAt field and archive/unarchive functionality for thoughts, including UI filters and context menu integration",
+  "context_files": [
+    ".opencode/context/core/standards/code-quality.md"
+  ],
+  "reference_files": [
+    "src/db.ts",
+    "src/store/slices/thoughtSlice.ts",
+    "src/services/supabaseSync.ts",
+    "src/store/slices/uiSlice.ts",
+    "src/hooks/usePhysics.ts"
+  ],
+  "exit_criteria": [
+    "All tests pass (build succeeds)",
+    "archivedAt field synced to Supabase",
+    "Archive/unarchive works from context menu",
+    "Show archived filter toggle functions",
+    "Physics and kanban queries exclude archived by default"
+  ],
+  "subtask_count": 11,
+  "completed_count": 0,
+  "created_at": "2026-04-03T00:00:00Z"
+}

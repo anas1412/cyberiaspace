@@ -1,5 +1,5 @@
 import React from 'react';
-import { Undo2, Redo2, ZoomIn, ZoomOut, ScanEye, Magnet } from 'lucide-react';
+import { Undo2, Redo2, ZoomIn, ZoomOut, ScanEye, Magnet, Archive } from 'lucide-react';
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 
@@ -20,12 +20,14 @@ interface StatusBarProps {
   resetTransform: () => void;
   performanceMode: boolean;
   handleTogglePhysics: () => void;
+  showArchived: boolean;
+  setShowArchived: (show: boolean) => void;
 }
 
 export const StatusBar: React.FC<StatusBarProps> = ({ 
   thoughtsCount, limits, activeSpace, undo, redo, 
   historyIndex, historyLength, zoomIn, zoomOut, resetTransform,
-  performanceMode, handleTogglePhysics
+  performanceMode, handleTogglePhysics, showArchived, setShowArchived
 }) => {
   const capacity = (thoughtsCount / limits.MAX_THOUGHTS_PER_SPACE) * 100;
   
@@ -58,37 +60,67 @@ export const StatusBar: React.FC<StatusBarProps> = ({
 
 <div className="h-3 w-[1px] bg-[var(--glass-border)] mx-0.5"></div>
       
-      {/* Engine Cluster */}
-      <div className="flex items-center gap-1">
-        <div className="relative group">
-          <div className="absolute bottom-full mb-4 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-all duration-300 translate-y-2 group-hover:translate-y-0 pointer-events-none whitespace-nowrap z-[10001]">
-            <div className="glass px-3 py-1.5 rounded-xl border border-[var(--glass-border)] flex items-center gap-2 shadow-2xl bg-[var(--bg-main)]/90 backdrop-blur-xl">
-              <span className="text-[10px] font-semibold tracking-wide text-[var(--text-primary)]/90">Physics</span>
-              <div className="w-[1px] h-2 bg-[var(--glass-border)] mx-0.5" />
-              <span className={cn("text-[8px] font-semibold tracking-wide", performanceMode ? "text-amber-400" : activeSpace?.physics ? "text-green-400" : "text-[var(--text-muted)]")}>
-                {performanceMode ? "Auto-Disabled" : activeSpace?.physics ? "Enabled" : "Disabled"}
-              </span>
+      {/* Engine Cluster - Spatial Mode Only */}
+      {activeSpace?.mode === 'spatial' && (
+        <div className="flex items-center gap-1">
+          <div className="relative group">
+            <div className="absolute bottom-full mb-4 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-all duration-300 translate-y-2 group-hover:translate-y-0 pointer-events-none whitespace-nowrap z-[10001]">
+              <div className="glass px-3 py-1.5 rounded-xl border border-[var(--glass-border)] flex items-center gap-2 shadow-2xl bg-[var(--bg-main)]/90 backdrop-blur-xl">
+                <span className="text-[10px] font-semibold tracking-wide text-[var(--text-primary)]/90">Physics</span>
+                <div className="w-[1px] h-2 bg-[var(--glass-border)] mx-0.5" />
+                <span className={cn("text-[8px] font-semibold tracking-wide", performanceMode ? "text-amber-400" : activeSpace?.physics ? "text-green-400" : "text-[var(--text-muted)]")}>
+                  {performanceMode ? "Auto-Disabled" : activeSpace?.physics ? "Enabled" : "Disabled"}
+                </span>
+              </div>
             </div>
-          </div>
-          <button 
-            onClick={handleTogglePhysics} 
-            disabled={performanceMode}
-className={cn(
-               "p-1.5 md:p-2 flex items-center justify-center rounded-xl transition-all",
-               performanceMode ? "text-[var(--text-muted)] opacity-30 cursor-not-allowed" : activeSpace?.physics ? "text-amber-400" : "text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--glass-bg)]"
-             )}
-          >
-            <Magnet 
+            <button 
+              onClick={handleTogglePhysics} 
+              disabled={performanceMode}
               className={cn(
-                "w-3.5 h-3.5 md:w-4 md:h-4 transition-colors", 
-                activeSpace?.physics && !performanceMode 
-                  ? "text-[var(--accent)]"    // <--- THIS IS THE FIX
-                  : "text-[var(--text-muted)]"          // Matches the inactive color in your FAB
-              )} 
-            />
-          </button>
-        </div>
+                "p-1.5 md:p-2 flex items-center justify-center rounded-xl transition-all",
+                performanceMode ? "text-[var(--text-muted)] opacity-30 cursor-not-allowed" : activeSpace?.physics ? "text-amber-400" : "text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--glass-bg)]"
+              )}
+            >
+              <Magnet 
+                className={cn(
+                  "w-3.5 h-3.5 md:w-4 md:h-4 transition-colors", 
+                  activeSpace?.physics && !performanceMode 
+                    ? "text-[var(--accent)]"    // <--- THIS IS THE FIX
+                    : "text-[var(--text-muted)]"          // Matches the inactive color in your FAB
+                )} 
+              />
+            </button>
+          </div>
 
+        </div>
+      )}
+
+      {/* Archive Toggle - All Modes */}
+      <div className="relative group">
+        <div className="absolute bottom-full mb-4 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-all duration-300 translate-y-2 group-hover:translate-y-0 pointer-events-none whitespace-nowrap z-[10001]">
+          <div className="glass px-3 py-1.5 rounded-xl border border-[var(--glass-border)] flex items-center gap-2 shadow-2xl bg-[var(--bg-main)]/90 backdrop-blur-xl">
+            <span className="text-[10px] font-semibold tracking-wide text-[var(--text-primary)]/90">Archived</span>
+            <div className="w-[1px] h-2 bg-[var(--glass-border)] mx-0.5" />
+            <span className={cn("text-[8px] font-semibold tracking-wide", showArchived ? "text-amber-400" : "text-[var(--text-muted)]")}>
+              {showArchived ? "Visible" : "Hidden"}
+            </span>
+          </div>
+        </div>
+        <button 
+          onClick={() => setShowArchived(!showArchived)}
+          className={cn(
+            "p-1.5 md:p-2 flex items-center justify-center rounded-xl transition-all",
+            showArchived 
+              ? "text-amber-400" 
+              : "text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--glass-bg)]"
+          )}
+        >
+          <Archive 
+            className={cn(
+              "w-3.5 h-3.5 md:w-4 md:h-4 transition-colors", 
+            )} 
+          />
+        </button>
       </div>
 
       {activeSpace?.mode === 'spatial' && (

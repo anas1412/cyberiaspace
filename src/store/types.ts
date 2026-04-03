@@ -18,6 +18,7 @@ export interface CyberiaState {
   calendarStackFilter: string | null;
   kanbanSearchQuery: string;
   kanbanStackFilter: string | null;
+  showArchived: boolean;
   theme: 'dark' | 'light';
   customBg: string | null;
   customBgLoading: boolean;
@@ -94,6 +95,10 @@ export interface CyberiaState {
   bulkUpdateThoughts: (updates: { id: string; updates: Partial<Thought> }[], options?: { skipSync?: boolean }) => Promise<void>;
   deleteThought: (id: string) => Promise<void>;
   deleteThoughts: (ids: string[]) => Promise<void>;
+  archiveThought: (id: string) => Promise<void>;
+  archiveThoughts: (ids: string[]) => Promise<void>;
+  unarchiveThought: (id: string) => Promise<void>;
+  unarchiveThoughts: (ids: string[]) => Promise<void>;
   bringToFront: (id: string) => Promise<void>;
   sendToBack: (id: string) => Promise<void>;
   setSelectedThoughtId: (id: string | null) => void;
@@ -111,6 +116,7 @@ export interface CyberiaState {
   setCalendarStackFilter: (stackId: string | null) => void;
   setKanbanSearchQuery: (query: string) => void;
   setKanbanStackFilter: (stackId: string | null) => void;
+  setShowArchived: (show: boolean) => void;
   setLinkingSourceId: (id: string | null) => void;
 
   createStack: (name: string, thoughtId: string) => Promise<void>;

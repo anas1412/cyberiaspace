@@ -17,6 +17,7 @@ interface ThoughtFooterProps {
   isSelected: boolean;
   linkingSourceId: string | null;
   handleLinkAction: (e: React.MouseEvent) => void;
+  isArchived?: boolean;
 }
 
 export const ThoughtFooter: React.FC<ThoughtFooterProps> = ({ 
@@ -25,13 +26,15 @@ export const ThoughtFooter: React.FC<ThoughtFooterProps> = ({
   isSpatial,
   isSelected,
   linkingSourceId, 
-  handleLinkAction 
+  handleLinkAction,
+  isArchived = false
 }) => {
   const formattedDate = useMemo(() => formatRelativeDate(thought.startTime), [thought.startTime]);
 
   return (
     <div className={cn(
-      "grid transition-all duration-300 ease-in-out",
+      "grid transition-all duration-300 ease-in-out pointer-events-none",
+      isArchived && "pointer-events-none",
       isSelected ? "grid-rows-[1fr] opacity-100 mt-auto" : "grid-rows-[0fr] opacity-0 pointer-events-none mt-0"
     )}>
       <div className="overflow-hidden">
@@ -68,8 +71,10 @@ export const ThoughtFooter: React.FC<ThoughtFooterProps> = ({
           {!isReadOnly && isSpatial && (
             <button
               onClick={handleLinkAction}
+              disabled={isArchived}
               className={cn(
                 "p-1.5 rounded-xl transition-all relative shrink-0",
+                isArchived && "pointer-events-none opacity-50",
                 linkingSourceId === thought.id
                   ? "bg-[var(--accent)] text-white shadow-[0_0_20px_var(--accent-glow)]"
                   : "bg-[var(--glass-bg)] text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-page)] border border-[var(--glass-border)]",

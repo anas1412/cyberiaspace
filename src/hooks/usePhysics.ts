@@ -1,7 +1,7 @@
 import { useEffect, useRef, useCallback } from 'react';
 import { useStore } from '../store/useStore';
 import { type Thought } from '../db';
-import { getStrategist, type LayoutContext, type LayoutResult, type PhysicsPoint } from './physics';
+import { getStrategist, type LayoutContext, type PhysicsPoint } from './physics';
 import { type Camera } from './useCamera';
 import { sanitizeDate } from '../utils/date';
 
@@ -59,6 +59,7 @@ export const usePhysics = (
   const lastTimeRef = useRef<number>(performance.now());
 
   const thoughtMap = useRef<Map<string, Thought>>(new Map());
+  const layoutCacheRef = useRef<Map<string, any>>(new Map()); // Cache for layout results
   const kanbanColumnScrollRef = useRef(0); // Manual scroll tracking for kanban columns
   const kanbanColumnMaxScrollRef = useRef(0); // Max scroll based on content height
   const dragRef = useRef<{
@@ -236,9 +237,10 @@ export const usePhysics = (
         }
       }
       
-      // Clear all last applied styles on mode/space switch to ensure a fresh render
+      // Clear all caches on mode/space switch to ensure fresh calculations
       if (modeChanged) {
         lastAppliedStyles.current.clear();
+        layoutCacheRef.current?.clear();
       }
     }
   }, [thoughts, activeSpace?.mode]);
@@ -269,6 +271,18 @@ export const usePhysics = (
     }
     prevModeRef.current = currentMode; prevTransformRef.current = { x: targetX, y: targetY, scale: targetScale };
   }, [activeSpace?.mode, activeSpaceId, thoughts, camera]);
+
+  // Force snap when showArchived changes - clear cache so strategy recalculates
+  // Only for non-spatial modes - spatial mode keeps cached positions to avoid position resets
+  const showArchived = useStore((state) => state.showArchived);
+  const currentMode = activeSpace?.mode;
+  
+  useEffect(() => {
+    if (currentMode !== 'spatial') {
+      snapNextFrame.current = true;
+      layoutCacheRef.current?.clear();
+    }
+  }, [showArchived, currentMode]); // Re-run when showArchived changes
 
   useEffect(() => {
     const handleMove = (clientX: number, clientY: number) => {
@@ -513,6 +527,7 @@ export const usePhysics = (
       calendarStackFilter,
       kanbanSearchQuery,
       kanbanStackFilter,
+      showArchived: useStore.getState().showArchived, // Get latest value from store
       kanbanY: vT_visual.y,
       sidebarScrollTop: sbContent?.scrollTop || 0,
       sidebarTop: sbRect ? (sbRect.top / globalScale) : 320,
@@ -538,7 +553,8 @@ export const usePhysics = (
     const shouldCalculatePhysics = !performanceMode && (activeSpace?.physics ?? true);
 
     // 1. Calculate Targets & Apply Forces
-    const layoutCache = new Map<string, LayoutResult>();
+    // Ensure layout cache exists
+    if (!layoutCacheRef.current) layoutCacheRef.current = new Map();
     ids.forEach((id) => {
       const p = state.get(id)!;
       const t = thoughtMap.current.get(id);
@@ -571,7 +587,7 @@ export const usePhysics = (
         // Handled by applyHomeReturn()
       } else if (!isDragging) {
         const result = strategist.calculateLayout(t, allThoughts, context, elementHeights);
-        layoutCache.set(id, result);
+        layoutCacheRef.current.set(id, result);
         if (snapNextFrame.current) {
           p.x = result.targetX; p.y = result.targetY; p.scale = result.targetScale;
         } else {
@@ -638,9 +654,15 @@ export const usePhysics = (
       const accent = style.getPropertyValue('--accent').trim() || '#6366f1';
 
       if (mode === 'spatial') {
+        // Get visible ids for canvas drawing (exclude archived when showArchived is false)
+        const showArchived = useStore.getState().showArchived;
+        const visibleIds = ids.filter(id => {
+          const t = thoughtMap.current.get(id);
+          return !t?.archivedAt || showArchived;
+        });
+        
         const stackGroups = new Map<string, string[]>();
-        // Use fresh IDs from the current frame
-        ids.forEach(id => {
+        visibleIds.forEach(id => {
           const t = thoughtMap.current.get(id);
           if (t?.stackId) {
             if (!stackGroups.has(t.stackId)) stackGroups.set(t.stackId, []);
@@ -727,7 +749,7 @@ export const usePhysics = (
       const isSelected = t.id === selectedThoughtId;
       const isDraggingThis = dragRef.current?.initialPositions.has(id) && dragRef.current.moved;
       
-      const res = layoutCache.get(id) || strategist.calculateLayout(t, allThoughts, context, elementHeights);
+      const res = layoutCacheRef.current.get(id) || strategist.calculateLayout(t, allThoughts, context, elementHeights);
       const targetRotation = (res.rotation && !isSelected) ? res.rotation : 0;
 
       // --- PRECISION FILTER ---

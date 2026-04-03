@@ -1,0 +1,20 @@
+{
+  "id": "archive-thoughts-feature-04",
+  "seq": "04",
+  "title": "Add archive/unarchive functions to thoughtSlice",
+  "status": "pending",
+  "depends_on": ["03"],
+  "parallel": false,
+  "suggested_agent": "CoderAgent",
+  "context_files": [".opencode/context/core/standards/code-quality.md"],
+  "reference_files": ["src/store/slices/thoughtSlice.ts"],
+  "acceptance_criteria": [
+    "archiveThought function sets archivedAt to Date.now()",
+    "unarchiveThought function sets archivedAt to null",
+    "archiveThoughts batch function for multiple",
+    "unarchiveThoughts batch function for multiple",
+    "Functions follow Zustand -> IndexedDB -> Sync order"
+  ],
+  "deliverables": ["src/store/slices/thoughtSlice.ts"],
+  "module": "@app/store"
+}

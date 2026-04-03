@@ -5,7 +5,7 @@ import { useStore } from '../store/useStore';
 import { useModalStore } from '../store/useModalStore';
 import type { ThoughtType } from '../db';
 import { 
-  X, ArrowUp, ArrowDown, Save, Maximize2, Trash2, Palette
+  X, ArrowUp, ArrowDown, Save, Maximize2, Trash2, Palette, Archive, ArchiveRestore
 } from 'lucide-react';
 import { STACK_COLORS } from '../constants';
 import { clsx, type ClassValue } from 'clsx';
@@ -94,6 +94,8 @@ const Inspector: React.FC = () => {
   const updateStack = useStore((state) => state.updateStack);
   const createStack = useStore((state) => state.createStack);
   const deleteThought = useStore((state) => state.deleteThought);
+  const archiveThought = useStore((state) => state.archiveThought);
+  const unarchiveThought = useStore((state) => state.unarchiveThought);
   const setActiveFocus = useStore((state) => state.setActiveFocus);
   const unlinkSelectedThoughts = useStore((state) => state.unlinkSelectedThoughts);
   const bringToFront = useStore((state) => state.bringToFront);
@@ -169,6 +171,18 @@ const Inspector: React.FC = () => {
         setInspectorOpen(false);
       }
     });
+  };
+
+  const handleArchiveThought = () => {
+    if (!thought) return;
+    archiveThought(thought.id);
+    setInspectorOpen(false);
+  };
+
+  const handleUnarchiveThought = () => {
+    if (!thought) return;
+    unarchiveThought(thought.id);
+    setInspectorOpen(false);
   };
 
   const handleTypeChange = (type: any) => {
@@ -665,6 +679,23 @@ className={cn(
                 >
                   <Maximize2 className="w-4 h-4 group-hover:scale-110 transition-transform" />
                   <span>Open</span>
+                </button>
+              )}
+              {thought.archivedAt ? (
+                <button
+                  onClick={handleUnarchiveThought}
+                  className="flex-1 bg-amber-500/5 hover:bg-amber-500/10 text-amber-400/90 py-3 rounded-xl text-[10px] font-extrabold uppercase tracking-[0.2em] transition-all border border-amber-500/20 hover:border-amber-500/40 flex items-center justify-center gap-2 group"
+                >
+                  <ArchiveRestore className="w-4 h-4 group-hover:scale-110 transition-transform" />
+                  <span>Restore</span>
+                </button>
+              ) : (
+                <button
+                  onClick={handleArchiveThought}
+                  className="flex-1 bg-amber-500/5 hover:bg-amber-500/10 text-amber-400/90 py-3 rounded-xl text-[10px] font-extrabold uppercase tracking-[0.2em] transition-all border border-amber-500/20 hover:border-amber-500/40 flex items-center justify-center gap-2 group"
+                >
+                  <Archive className="w-4 h-4 group-hover:scale-110 transition-transform" />
+                  <span>Archive</span>
                 </button>
               )}
               <button

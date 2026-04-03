@@ -1,7 +1,7 @@
 import React, { useRef, useEffect } from 'react';
 import { useStore } from '../../store/useStore';
 import { useModalStore } from '../../store/useModalStore';
-import { Search, X, Layers } from 'lucide-react';
+import { Search, X, Layers, Archive, Eye, EyeOff } from 'lucide-react';
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 
@@ -16,6 +16,10 @@ interface ViewFilterBarProps {
   setStackFilter: (id: string | null) => void;
   /** Layout style: 'vertical' for sidebar (Calendar), 'horizontal' for top bar */
   layout?: 'vertical' | 'horizontal';
+  /** Whether to show archived thoughts */
+  showArchived?: boolean;
+  /** Toggle showing archived thoughts */
+  onToggleArchived?: () => void;
 }
 
 export const ViewFilterBar: React.FC<ViewFilterBarProps> = ({
@@ -24,6 +28,8 @@ export const ViewFilterBar: React.FC<ViewFilterBarProps> = ({
   stackFilter,
   setStackFilter,
   layout = 'vertical',
+  showArchived = false,
+  onToggleArchived,
 }) => {
   const stacks = useStore((state) => state.stacks);
   const activeSpaceId = useStore((state) => state.activeSpaceId);
@@ -168,6 +174,34 @@ export const ViewFilterBar: React.FC<ViewFilterBarProps> = ({
           </button>
         )}
       </div>
+
+      {/* Show Archived Toggle */}
+      {onToggleArchived && (
+        <div className={cn(isVertical ? "pt-2 border-t border-[var(--glass-border)]" : "ml-auto")}>
+          <button
+            onClick={onToggleArchived}
+            className={cn(
+              "flex items-center gap-2 px-3 py-1.5 rounded-lg text-[9px] font-medium tracking-widest border transition-all",
+              showArchived
+                ? "bg-amber-500/10 border-amber-500/30 text-amber-400/90 hover:bg-amber-500/20"
+                : "bg-[var(--bg-page)] border-transparent text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--glass-bg)]"
+            )}
+          >
+            <Archive className="w-3 h-3" />
+            {showArchived ? (
+              <>
+                <Eye className="w-3 h-3" />
+                <span>Showing Archived</span>
+              </>
+            ) : (
+              <>
+                <EyeOff className="w-3 h-3" />
+                <span>Hide Archived</span>
+              </>
+            )}
+          </button>
+        </div>
+      )}
     </div>
   );
 };

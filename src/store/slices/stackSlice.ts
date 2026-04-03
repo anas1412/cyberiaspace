@@ -20,7 +20,7 @@ export async function checkStackLimit(
 ): Promise<{ allowed: boolean; currentCount: number }> {
   const currentUserId = useAuthStore.getState().user?.id ?? 'guest';
   const count = await db.thoughts
-    .filter((t: any) => t.stackId === stackId && !t.deletedAt && t.userId === currentUserId)
+    .filter((t: any) => t.stackId === stackId && !t.deletedAt && !t.archivedAt && t.userId === currentUserId)
     .count();
 
   return {
@@ -205,7 +205,7 @@ export const createStackSlice: StateCreator<CyberiaState, [], [], any> = (set, g
     
     for (const stack of freshStacks) {
       if (stack.deletedAt || stack.spaceId !== activeSpaceId) continue;
-      const stackThoughts = freshThoughts.filter(t => t.stackId === stack.id && !t.deletedAt);
+      const stackThoughts = freshThoughts.filter(t => t.stackId === stack.id && !t.deletedAt && !t.archivedAt);
       if (stackThoughts.length < 2) {
         stacksToDelete.push(stack.id);
         if (stackThoughts.length === 1) {

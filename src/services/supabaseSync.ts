@@ -91,7 +91,7 @@ export function toCamelCase(obj: any): any {
   if (result.priority !== undefined) result.priority = sanitizePriority(result.priority);
   
   // Handle timestamp conversion
-  const timestampKeys = ['updatedAt', 'deletedAt', 'startTime', 'endTime'];
+  const timestampKeys = ['updatedAt', 'deletedAt', 'archivedAt', 'startTime', 'endTime'];
   timestampKeys.forEach(key => {
     if (result[key] && typeof result[key] === 'string') {
       result[key] = new Date(result[key]).getTime();

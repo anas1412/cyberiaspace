@@ -48,6 +48,8 @@ const Toolbar: React.FC = () => {
   const isReadOnly = useStore((state) => state.isReadOnly);
   const creatorName = useStore((state) => state.creatorName);
   const isSpaceLoading = useStore((state) => state.isSpaceLoading);
+  const showArchived = useStore((state) => state.showArchived);
+  const setShowArchived = useStore((state) => state.setShowArchived);
 
   const { openModal } = useModalStore();
 
@@ -359,6 +361,8 @@ const Toolbar: React.FC = () => {
         resetTransform={resetTransform}
         performanceMode={performanceMode}
         handleTogglePhysics={handleTogglePhysics}
+        showArchived={showArchived}
+        setShowArchived={setShowArchived}
       />
 
       <ShortcutsModal isOpen={isShortcutsOpen} onClose={() => setIsShortcutsOpen(false)} />

@@ -1,5 +1,5 @@
--- Cyberia Database Schema v4
--- Unified ULID string IDs for Dexie sync
+-- Cyberia Database Schema v5
+-- Added archived_at column to thoughts
 
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
@@ -83,6 +83,7 @@ CREATE TABLE IF NOT EXISTS thoughts (
     storage_url TEXT,
     storage_path TEXT,
     deleted_at TIMESTAMP WITH TIME ZONE,
+    archived_at TIMESTAMP WITH TIME ZONE,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
     start_time TIMESTAMP WITH TIME ZONE,
@@ -140,6 +141,7 @@ CREATE INDEX IF NOT EXISTS idx_thoughts_space ON thoughts(space_id);
 CREATE INDEX IF NOT EXISTS idx_thoughts_user ON thoughts(user_id);
 CREATE INDEX IF NOT EXISTS idx_thoughts_type ON thoughts(type);
 CREATE INDEX IF NOT EXISTS idx_thoughts_status ON thoughts(status);
+CREATE INDEX IF NOT EXISTS idx_thoughts_archived ON thoughts(archived_at);
 CREATE INDEX IF NOT EXISTS idx_users_polar_customer ON users(polar_customer_id);
 
 -- Enable Realtime for all core tables
@@ -156,4 +158,4 @@ ALTER TABLE spaces REPLICA IDENTITY FULL;
 ALTER TABLE stacks REPLICA IDENTITY FULL;
 ALTER TABLE thoughts REPLICA IDENTITY FULL;
 
-SELECT 'Schema v4 (Realtime Enabled) created successfully!' as result;
+SELECT 'Schema v5 (Archived thoughts support) created successfully!' as result;

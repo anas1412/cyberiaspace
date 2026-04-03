@@ -1,0 +1,17 @@
+{
+  "id": "archive-thoughts-feature-10",
+  "seq": "10",
+  "title": "Update physics queries to exclude archived thoughts",
+  "status": "pending",
+  "depends_on": ["04", "07"],
+  "parallel": true,
+  "suggested_agent": "CoderAgent",
+  "context_files": [],
+  "reference_files": ["src/hooks/usePhysics.ts"],
+  "acceptance_criteria": [
+    "Physics calculations exclude archived thoughts by default",
+    "Include archived when showArchived is true"
+  ],
+  "deliverables": ["src/hooks/usePhysics.ts"],
+  "module": "@app/physics"
+}
