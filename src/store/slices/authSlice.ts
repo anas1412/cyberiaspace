@@ -73,8 +73,11 @@ async function runAuthenticationFlow(user: User, get: any, isFreshLogin: boolean
   if (get()._migrationInProgress) return;
   get().setMigrationInProgress(true);
 
-  // Keep loading states active while we set up the local environment
-  store.setInitializationState(true, true);
+  // Only show loading if we don't have an active space yet or it's a fresh login
+  const isAlreadyInitialized = !store.isInitializing;
+  if (isFreshLogin || !isAlreadyInitialized) {
+    store.setInitializationState(true, true);
+  }
 
   try {
     // PHASE 1: Fetch Cloud Metadata
@@ -114,12 +117,17 @@ async function runAuthenticationFlow(user: User, get: any, isFreshLogin: boolean
 
     // Helper: Finalizes setup by downloading full sync data BEFORE resolving UI blocks
     const finalizeSetup = async () => {
-      if (typeof get().handlePostAuthSync === 'function') {
-        await get().handlePostAuthSync();
+      // Use the unified handshake to reconcile cloud vs local
+      if (cloudData) {
+        await syncOrchestrator.handshake(cloudData);
+      } else {
+        // Fallback if cloud fetch failed
+        if (typeof get().handlePostAuthSync === 'function') {
+          await get().handlePostAuthSync();
+        }
+        await store.refreshSpaces();
+        await store.refreshThoughts();
       }
-
-      await store.refreshSpaces();
-      await store.refreshThoughts();
 
       const currentStore = useStore.getState();
       const spaces = currentStore.spaces;

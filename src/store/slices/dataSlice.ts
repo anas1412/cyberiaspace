@@ -109,43 +109,91 @@ export const createDataSlice: StateCreator<CyberiaState, [], [], any> = (set, ge
         return; 
       }
 
-      // Block initialization until the auth handshakes and database migrations complete
-      if (authPromise) {
-        console.log('[Store] Awaiting auth/migration lock...');
-        await authPromise;
-      }
+      // Option 2: Optimistic Local-First Init
+      // Load local data immediately and show the app.
+      // Auth and Cloud Sync happen in the background.
       
       try {
+        // 1. Load local IndexedDB data (fast, local)
         await get().refreshSpaces();
         await get().refreshTotalThoughtCount();
         await get().cleanupTrash();
         
-        // Heal any orphaned space backgrounds (cloud file deleted but DB still has URL)
+        let currentSpaces = get().spaces;
+        let targetSpaceId: string | null = null;
+        
+        // Determine if user is already authenticated (has localStorage token)
+        // This check happens BEFORE authPromise resolves
+        const { useAuthStore: authCheck } = await import('../useAuthStore');
+        const isAlreadyAuthed = authCheck.getState().status === 'authenticated';
+        
+        // Ensure the current user has at least one space
+        // CRITICAL: Don't create workspace if user is authenticated - let auth flow handle it
+        // This prevents race condition where guest workspace is created before auth completes
+        // (which would ignore the user's cloud spaces on returning devices)
+        if (currentSpaces.length === 0 && !isAlreadyAuthed) {
+          console.log('[Init] No local spaces, user not authenticated - creating initial workspace');
+          await get().createInitialWorkspace();
+          currentSpaces = get().spaces;
+        } else if (currentSpaces.length === 0 && isAlreadyAuthed) {
+          console.log('[Init] No local spaces but user authenticated - waiting for auth flow to resolve');
+          // Don't create workspace - auth flow will handle it via handshake()
+        }
+
+        // Determine which space to show
+        const savedSpaceId = localStorage.getItem('cyberia-active-space-id');
+        const spaceExists = savedSpaceId ? currentSpaces.find((s: Space) => s.id === savedSpaceId) : null;
+        targetSpaceId = spaceExists?.id || (currentSpaces.length > 0 ? currentSpaces[0].id : null);
+        
+        // 2. Set space settings directly (instant)
+        const activeSpace = currentSpaces.find((s: Space) => s.id === targetSpaceId);
+        if (activeSpace) {
+          const transform = activeSpace.mode === 'spatial'
+            ? { x: activeSpace.transformX ?? 0, y: activeSpace.transformY ?? 0, scale: activeSpace.transformScale ?? 1 }
+            : { x: 0, y: 0, scale: 1 };
+          
+          set({
+            activeSpaceId: targetSpaceId,
+            transform,
+            customBg: activeSpace.customBg || null,
+            isReadOnly: false
+          });
+        }
+        
+        // 3. SHOW APP NOW (Local data is ready)
+        if (!hasAuthCode) {
+          set({ isInitializing: false, isSpaceLoading: false });
+        }
+        
+        // 4. Background: Load thoughts for the active space
+        if (targetSpaceId) {
+          get().refreshThoughts(targetSpaceId);
+          get().refreshStacks(targetSpaceId);
+        }
+        
+        // 5. Background: Auth & Handshake
+        // This will reconcile cloud data and patch the store when done.
+        if (authPromise) {
+          authPromise.catch(err => console.error('[Store] Background auth failed:', err));
+        }
+
+        // Background cleanup
         const { useAuthStore: auth } = await import('../useAuthStore');
         if (auth.getState().status === 'authenticated') {
           auth.getState().healSpaceBackgrounds();
           auth.getState().downloadMissingBlobs();
         }
       } catch (err) {
-        console.error('Failed to load data, resetting to initial space:', err);
+        console.error('Failed to load local data:', err);
         await get().createInitialWorkspace();
-        return;
+        if (!hasAuthCode) {
+          set({ isInitializing: false, isSpaceLoading: false });
+        }
       }
-      
-      const { spaces } = get();
-      if (spaces.length === 0) {
-        await get().createInitialWorkspace();
-      } else {
-        const savedSpaceId = localStorage.getItem('cyberia-active-space-id');
-        const spaceExists = savedSpaceId ? spaces.find((s: Space) => s.id === savedSpaceId) : null;
-        if (spaceExists) await get().setActiveSpace(savedSpaceId!);
-        else await get().setActiveSpace(spaces[0].id);
-      }
-
-    } finally {
-      // Do not clear the loading screens if we exited early to handle the OAuth redirect
-      if (!new URLSearchParams(window.location.search).has('code')) {
-        set({ isInitializing: false, isSpaceLoading: false, isReadOnly: false });
+    } catch (err) {
+      console.error('Init failed:', err);
+      if (!hasAuthCode) {
+        set({ isInitializing: false, isSpaceLoading: false });
       }
     }
   },
@@ -157,20 +205,17 @@ export const createDataSlice: StateCreator<CyberiaState, [], [], any> = (set, ge
     try {
       console.log('[Store] Checking if initial space needed...');
       const currentUserId = (useAuthStore.getState().user?.id) ?? 'guest';
-      const existingCount = await db.spaces.filter(s => s.userId === currentUserId && !s.deletedAt).count();
-      if (existingCount > 0) {
+      
+      // Check if the CURRENT user has any active spaces
+      const userSpacesCount = await db.spaces.filter(s => s.userId === currentUserId && !s.deletedAt).count();
+      
+      if (userSpacesCount > 0) {
         console.log('[Store] Initial space already exists for current user, skipping creation.');
         await get().refreshSpaces();
         return;
       }
 
-      const anySpacesCount = await db.spaces.filter((s: any) => !s.deletedAt).count();
-      if (anySpacesCount > 0) {
-        console.log('[Store] Found existing spaces in DB, skipping initial space creation');
-        await get().refreshSpaces();
-        return;
-      }
-
+      console.log('[Store] No spaces found for current user, creating initial workspace...');
       const workspaceId = ulid();
       const now = Date.now();
       const isGuest = currentUserId === 'guest';

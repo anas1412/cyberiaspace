@@ -298,7 +298,7 @@ export const syncOrchestrator = {
     }
   },
 
-  async deltaSync(bypassBlock: boolean = false): Promise<{ success: boolean; error?: string }> {
+  async deltaSync(bypassBlock: boolean = false, providedCloudData: SyncConflictData | null = null): Promise<{ success: boolean; error?: string }> {
     const { useSyncStore } = await import('../../store/useSyncStore');
     const { useAuthStore } = await import('../../store/useAuthStore');
     
@@ -331,11 +331,20 @@ export const syncOrchestrator = {
       // CRITICAL: We fetch cloud state BEFORE pushing so we learn about 
       // parent deletions (Stacks/Spaces) before trying to push children (Thoughts).
       console.log('[Sync] Step 1: Reconciling with cloud...');
-      const [cloudSpaces, cloudStacks, cloudThoughts] = await Promise.all([
-        supabaseSync.getSpaces(userId, 'id, updated_at, custom_bg'),
-        supabaseSync.getStacks(userId, 'id, updated_at'),
-        supabaseSync.getThoughts(userId, 'id, updated_at, space_id, type, storage_url'),
-      ]);
+      
+      let cloudSpaces, cloudStacks, cloudThoughts;
+      
+      if (providedCloudData) {
+        cloudSpaces = { spaces: providedCloudData.spaces };
+        cloudStacks = { stacks: providedCloudData.stacks };
+        cloudThoughts = { thoughts: providedCloudData.thoughts };
+      } else {
+        [cloudSpaces, cloudStacks, cloudThoughts] = await Promise.all([
+          supabaseSync.getSpaces(userId, 'id, updated_at, custom_bg'),
+          supabaseSync.getStacks(userId, 'id, updated_at'),
+          supabaseSync.getThoughts(userId, 'id, updated_at, space_id, type, storage_url'),
+        ]);
+      }
 
       const cloudSpaceMap = new Map<string, any>(cloudSpaces.spaces.map((s: any) => [s.id, s]));
       const cloudStackMap = new Map<string, any>(cloudStacks.stacks.map((s: any) => [s.id, s]));
@@ -403,9 +412,17 @@ export const syncOrchestrator = {
       for (const [id, cloudS] of cloudSpaceMap) {
         const localS = localAllSpacesBefore.find(ls => ls.id === id);
         if (!localS || (cloudS.updatedAt && new Date(cloudS.updatedAt).getTime() > (localS.updatedAt || 0))) {
-          const { data } = await supabase.from('spaces').select('*').eq('id', id).single();
-          if (data) {
-            const incomingSpace = toCamelCase(data);
+          let incomingSpace = null;
+          
+          // OPTIMIZATION: Use provided data if available to avoid extra network calls
+          if (providedCloudData) {
+            incomingSpace = toCamelCase(cloudS);
+          } else {
+            const { data } = await supabase.from('spaces').select('*').eq('id', id).single();
+            if (data) incomingSpace = toCamelCase(data);
+          }
+
+          if (incomingSpace) {
             await db.spaces.put({ ...incomingSpace, syncStatus: 'synced' } as any);
 
             if (id === store.activeSpaceId) {
@@ -423,9 +440,16 @@ export const syncOrchestrator = {
         const localTime = localStack?.updatedAt || 0;
 
         if (!localStack || cloudTime > localTime) {
-          const { data } = await supabase.from('stacks').select('*').eq('id', id).single();
-          if (data) {
-            await db.stacks.put({ ...toCamelCase(data), syncStatus: 'synced' } as any);
+          let incomingStack = null;
+          if (providedCloudData) {
+            incomingStack = toCamelCase(cloudStack);
+          } else {
+            const { data } = await supabase.from('stacks').select('*').eq('id', id).single();
+            if (data) incomingStack = toCamelCase(data);
+          }
+
+          if (incomingStack) {
+            await db.stacks.put({ ...incomingStack, syncStatus: 'synced' } as any);
           }
         } else if (localStack && localStack.syncStatus === 'local' && cloudTime === localTime) {
           await db.stacks.update(id, { syncStatus: 'synced' });
@@ -441,10 +465,15 @@ export const syncOrchestrator = {
           const localTime = localT?.updatedAt || 0;
           
           if (!localT || cloudTime > localTime || needsHealing) {
-            const { data } = await supabase.from('thoughts').select('*').eq('id', id).single();
-            if (data) {
-              const incoming = toCamelCase(data);
-              
+            let incoming = null;
+            if (providedCloudData) {
+              incoming = toCamelCase(cloudT);
+            } else {
+              const { data } = await supabase.from('thoughts').select('*').eq('id', id).single();
+              if (data) incoming = toCamelCase(data);
+            }
+
+            if (incoming) {
               // PRESERVE SPATIAL: If we already have this thought locally, 
               // keep our local x,y,vx,vy instead of resetting to defaults.
               if (localT) {
@@ -456,8 +485,8 @@ export const syncOrchestrator = {
 
               await db.thoughts.put({ ...incoming, syncStatus: 'synced' } as any);
               
-              if (data.type === 'file' && data.storage_url) {
-                if (data.space_id === currentActiveSpaceId || localT) {
+              if (incoming.type === 'file' && incoming.storageUrl) {
+                if (incoming.spaceId === currentActiveSpaceId || localT) {
                   authState.downloadSingleBlob(id);
                 }
               }
@@ -732,6 +761,33 @@ export const syncOrchestrator = {
         this.syncSoon(500);
       }
     }
+  },
+
+  async handshake(cloudData: SyncConflictData) {
+    const { useStore } = await import('../../store/useStore');
+    const { useAuthStore } = await import('../../store/useAuthStore');
+    const store = useStore.getState();
+    const authStore = useAuthStore.getState();
+    const userId = authStore.user?.id;
+    if (!userId) return;
+
+    console.log('[Sync] Handshake started with provided cloud data');
+
+    // 1. Run deltaSync with the provided data to reconcile
+    // This will update IndexedDB with any newer cloud data
+    await this.deltaSync(true, cloudData);
+
+    // 2. Final UI Refresh - Patch the store with the latest from IndexedDB
+    await store.refreshSpaces();
+    const currentActive = store.activeSpaceId;
+    if (currentActive) {
+      await Promise.all([
+        store.refreshThoughts(currentActive),
+        store.refreshStacks(currentActive)
+      ]);
+    }
+    
+    console.log('[Sync] Handshake complete');
   },
 
   async fetchCloudData(): Promise<SyncConflictData | null> {

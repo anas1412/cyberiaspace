@@ -21,9 +21,8 @@ export interface SyncSlice {
 let handshakeInProgress = false;
 
 export const createSyncSlice: StateCreator<AuthState, [], [], SyncSlice> = (set, get, _api) => ({
-  syncStatus: typeof navigator !== 'undefined' && navigator.onLine 
-    ? (localStorage.getItem('cyberia-user') ? 'synced' : 'offline') 
-    : 'offline',
+  // Show syncing when logged in - more accurate than amber/offline
+  syncStatus: localStorage.getItem('cyberia-user') ? 'syncing' : 'offline',
   lastSync: localStorage.getItem('cyberia-last-sync') ? new Date(localStorage.getItem('cyberia-last-sync')!) : null,
   autoSync: true,
   isOnline: typeof navigator !== 'undefined' ? navigator.onLine : true,
@@ -94,17 +93,6 @@ export const createSyncSlice: StateCreator<AuthState, [], [], SyncSlice> = (set,
       const authStore = useAuthStore.getState();
       const currentUserId = authStore.user?.id ?? 'guest';
       
-      // Fetch cloud data (for reference, don't import yet - let migration happen first)
-      let cloudData: any = null;
-      try {
-        cloudData = await syncOrchestrator.fetchCloudData();
-        if (cloudData) {
-          console.log('[SYNC-HANDSHAKE] Fetched cloud data, spaces:', (cloudData.spaces || []).length);
-        }
-      } catch (e) {
-        console.warn('[Sync] Cloud fetch failed:', e);
-      }
-
       // Sync local changes to cloud
       console.log('[SYNC-HANDSHAKE] Syncing local data to cloud...');
       await syncOrchestrator.deltaSync(true);

@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useStore } from '../store/useStore';
 import { RefreshCw, Loader2 } from 'lucide-react';
@@ -20,28 +20,78 @@ interface LoadingOverlayProps {
   force?: boolean;
 }
 
+const MIN_LOADING_DISPLAY_MS = 300; // Minimum time to show loading (prevents flash)
+const MIN_APP_DISPLAY_MS = 200; // Minimum time before re-showing loading (prevents blink)
+
 const LoadingOverlay: React.FC<LoadingOverlayProps> = ({ force }) => {
   const isInitializing = useStore((state) => state.isInitializing);
   const isSpaceLoading = useStore((state) => state.isSpaceLoading);
-  const [isStabilizing, setIsStabilizing] = useState(true);
-  const show = force || isInitializing || isSpaceLoading || isStabilizing;
   const [showReset, setShowReset] = useState(false);
   const [randomTip, setRandomTip] = useState('');
+  
+  // Track loading state with timestamps for minimum display time
+  const loadingStartTime = useRef<number | null>(null);
+  const appShowTime = useRef<number>(0);
+  const [shouldShow, setShouldShow] = useState(true); // Start with true to avoid flash on first render
+  
+  // Calculate if we should show based on minimum display times
+  const show = force || shouldShow;
+
+  useEffect(() => {
+    const rawShow = isInitializing || isSpaceLoading;
+    
+    if (rawShow) {
+      // Loading becoming true
+      const now = Date.now();
+      
+      // If app was shown recently, wait before showing loading again (prevents blink)
+      if (appShowTime.current > 0 && now - appShowTime.current < MIN_APP_DISPLAY_MS) {
+        // Schedule showing loading after minimum app display time
+        const delay = MIN_APP_DISPLAY_MS - (now - appShowTime.current);
+        const timer = setTimeout(() => {
+          setShouldShow(true);
+        }, delay);
+        return () => clearTimeout(timer);
+      }
+      
+      // Start tracking loading display time
+      if (loadingStartTime.current === null) {
+        loadingStartTime.current = now;
+      }
+      
+      setShouldShow(true);
+      appShowTime.current = 0; // Clear app show time
+    } else {
+      // Loading becoming false
+      const now = Date.now();
+      
+      // Record when app started showing
+      appShowTime.current = now;
+      loadingStartTime.current = null; // Clear loading start time
+      
+      // If loading showed for less than minimum, keep showing for a bit
+      if (shouldShow) {
+        const elapsed = now - (loadingStartTime.current || now);
+        if (elapsed < MIN_LOADING_DISPLAY_MS) {
+          const remaining = MIN_LOADING_DISPLAY_MS - elapsed;
+          const timer = setTimeout(() => {
+            setShouldShow(false);
+          }, remaining);
+          return () => clearTimeout(timer);
+        }
+      }
+      
+      // Wait for stabilizing delay before hiding
+      const timer = setTimeout(() => setShouldShow(false), 800);
+      return () => clearTimeout(timer);
+    }
+  }, [isInitializing, isSpaceLoading]);
 
   useEffect(() => {
     if (show) {
       setRandomTip(LOADING_TIPS[Math.floor(Math.random() * LOADING_TIPS.length)]);
     }
   }, [show]);
-
-  useEffect(() => {
-    if (!isInitializing && !isSpaceLoading) {
-      const timer = setTimeout(() => setIsStabilizing(false), 800);
-      return () => clearTimeout(timer);
-    } else {
-      setIsStabilizing(true);
-    }
-  }, [isInitializing, isSpaceLoading]);
 
   useEffect(() => {
     if (show) {
