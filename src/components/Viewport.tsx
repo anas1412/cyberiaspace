@@ -56,7 +56,7 @@ const Viewport: React.FC<{ isInteracting?: boolean }> = ({ isInteracting }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
   const camera = useCamera(activeSpace?.mode);
-  const { registerElement, registerWorld, registerGrid, handleMouseDown, handleTouchStart, isDragging, kanbanHeight, physicsState, elementHeights } = usePhysics(canvasRef, camera);
+  const { registerElement, registerWorld, registerGrid, handleMouseDown, handleTouchStart, isDragging, kanbanHeight, physicsState, elementHeights, kanbanColumnScrollRef, kanbanColumnMaxScrollRef } = usePhysics(canvasRef, camera);
 
   const getGlobalScale = useCallback(() => {
     const body = document.querySelector('.app-body') || document.body;
@@ -82,7 +82,9 @@ const Viewport: React.FC<{ isInteracting?: boolean }> = ({ isInteracting }) => {
     kanbanHeight: kanbanHeight.current,
     getGlobalScale,
     isDemo,
-    isInteracting
+    isInteracting,
+    kanbanColumnScrollRef,
+    kanbanColumnMaxScrollRef
   });
 
   useEffect(() => {

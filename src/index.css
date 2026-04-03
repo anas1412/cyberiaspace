@@ -353,6 +353,11 @@ body.low-perf .animate-breathe {
   scrollbar-color: rgba(0, 0, 0, 0.2) transparent;
 }
 
+/* Overscroll containment - prevents scroll chaining to parent containers */
+.overscroll-y-contain {
+  overscroll-behavior-y: contain;
+}
+
 /* Typography */
 .markdown-body {
   font-size: 13px;

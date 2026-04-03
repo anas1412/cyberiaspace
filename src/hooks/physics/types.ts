@@ -30,6 +30,12 @@ export interface LayoutContext {
   thoughtMap: Map<string, Thought>;
   columnMap?: Map<string, Thought[]>;
   dateMap?: Map<string, Thought[]>;
+  // Kanban-specific
+  kanbanSidebarWidth?: number;
+  kanbanGap?: number;
+  kanbanPadding?: number;
+  kanbanColumnScrollTop?: number;
+  kanbanColumnTop?: number;
 }
 
 

@@ -59,6 +59,8 @@ export const usePhysics = (
   const lastTimeRef = useRef<number>(performance.now());
 
   const thoughtMap = useRef<Map<string, Thought>>(new Map());
+  const kanbanColumnScrollRef = useRef(0); // Manual scroll tracking for kanban columns
+  const kanbanColumnMaxScrollRef = useRef(0); // Max scroll based on content height
   const dragRef = useRef<{
     id: string;
     startX: number;
@@ -476,6 +478,10 @@ export const usePhysics = (
 
     const sbContent = document.getElementById('cal-sidebar-content');
     const sbRect = sbContent?.getBoundingClientRect();
+    
+    // Kanban column content scroll/position
+    const kanbanColContent = document.getElementById('kanban-column-content');
+    const kanbanColRect = kanbanColContent?.getBoundingClientRect();
 
     const calendarCellMap = new Map<string, { x: number; y: number; w: number; h: number }>();
     if (mode === 'calendar') {
@@ -510,6 +516,8 @@ export const usePhysics = (
       kanbanY: vT_visual.y,
       sidebarScrollTop: sbContent?.scrollTop || 0,
       sidebarTop: sbRect ? (sbRect.top / globalScale) : 320,
+      kanbanColumnScrollTop: kanbanColumnScrollRef.current,
+      kanbanColumnTop: kanbanColRect ? (kanbanColRect.top / globalScale) : 320,
       isMobile,
       isReadOnly: useStore.getState().isReadOnly,
       isDemo: useStore.getState().isDemo,
@@ -523,6 +531,7 @@ export const usePhysics = (
 
 
     let maxColHeight = 0;
+    let maxKanbanColumnHeight = 0; // Track column height separately for kanban
     let sidebarHeight = 0;
 
     frameCount.current++;
@@ -574,6 +583,10 @@ export const usePhysics = (
         }
         p.vx = 0; p.vy = 0;
         if (result.columnHeight && result.columnHeight > maxColHeight) maxColHeight = result.columnHeight;
+        // Track kanban column height separately (exclude sidebar for kanban)
+        if (mode === 'kanban' && !result.isSidebar && result.columnHeight && result.columnHeight > maxKanbanColumnHeight) {
+          maxKanbanColumnHeight = result.columnHeight;
+        }
         if (result.isSidebar && result.columnHeight && result.columnHeight > sidebarHeight) sidebarHeight = result.columnHeight;
       }
     });
@@ -584,6 +597,17 @@ export const usePhysics = (
     sbHeight.current = sidebarHeight;
     const spacer = document.getElementById('cal-sidebar-spacer');
     if (spacer) spacer.style.height = `${sidebarHeight + 40}px`;
+    
+    // Kanban column spacer for scroll height
+    if (mode === 'kanban') {
+      const kanbanSpacer = document.getElementById('kanban-column-spacer');
+      if (kanbanSpacer) kanbanSpacer.style.height = `${maxKanbanColumnHeight + 40}px`;
+      
+      // Calculate max scroll based on content height vs container height
+      const kanbanColContent = document.getElementById('kanban-column-content');
+      const containerHeight = kanbanColContent?.clientHeight || logicalHeight;
+      kanbanColumnMaxScrollRef.current = Math.max(0, maxKanbanColumnHeight - containerHeight + 100);
+    }
 
     // --- Connections & Styles ---
     const ctx = canvasRef?.current?.getContext('2d');
@@ -727,8 +751,29 @@ export const usePhysics = (
       el.style.pointerEvents = res.pointerEvents ?? 'auto';
       el.style.clipPath = res.clipPath ?? 'none';
       el.style.zIndex = isSelected ? '10001' : (isDraggingThis ? '1000' : (res.zIndex || (20 + (t.layer || 0)).toString()));
-      if (mode === 'calendar' && !t.startTime && !isDraggingThis && !isSelected) {
-        const contentEl = document.getElementById('cal-sidebar-content');
+      
+      // ===== BOUNDARY CLIPPING FOR CALENDAR & KANBAN =====
+      // Prevent thoughts from visually overflowing outside their containers
+      const shouldClip = !isDraggingThis && !isSelected && (
+        (mode === 'calendar' && !t.startTime) || 
+        (mode === 'kanban')
+      );
+      
+      if (shouldClip) {
+        let contentEl: HTMLElement | null = null;
+        
+        if (mode === 'kanban') {
+          // Kanban: sidebar thoughts use sidebar, column thoughts use column content
+          if (t.status === 'none') {
+            contentEl = document.getElementById('cal-sidebar-content');
+          } else {
+            contentEl = document.getElementById('kanban-column-content');
+          }
+        } else {
+          // Calendar: unscheduled thoughts use sidebar
+          contentEl = document.getElementById('cal-sidebar-content');
+        }
+        
         const cRectRaw = contentEl?.getBoundingClientRect();
         if (cRectRaw) {
           const cRect = { top: cRectRaw.top / globalScale, bottom: cRectRaw.bottom / globalScale };
@@ -810,6 +855,8 @@ export const usePhysics = (
     kanbanHeight: kMaxHeight,
     physicsState,
     elements,
-    elementHeights: elementHeightsRef
+    elementHeights: elementHeightsRef,
+    kanbanColumnScrollRef,
+    kanbanColumnMaxScrollRef
   };
 };

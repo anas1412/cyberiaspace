@@ -8,12 +8,16 @@ interface GestureConfig {
   getGlobalScale: () => number;
   isDemo?: boolean;
   isInteracting?: boolean;
+  kanbanColumnScrollRef?: React.MutableRefObject<number>;
+  kanbanColumnMaxScrollRef?: React.MutableRefObject<number>;
 }
 
 export const useViewportGestures = (config: GestureConfig) => {
   const { 
     activeSpaceMode, camera, kanbanHeight, 
-    getGlobalScale, isDemo, isInteracting
+    getGlobalScale, isDemo, isInteracting,
+    kanbanColumnScrollRef,
+    kanbanColumnMaxScrollRef
   } = config;
 
 
@@ -64,19 +68,63 @@ export const useViewportGestures = (config: GestureConfig) => {
     // Standard exclusions
     if (target.closest('#inspector, #text-focus-overlay, #table-focus-overlay, #chat-overlay, .focus-box, #space-switcher-menu')) return;
 
-    const isUnscheduledNode = target.closest('[data-unscheduled="true"]');
     const isSidebar = target.closest('#cal-sidebar-content');
 
     // For Demo: Allow zoom/scroll if mouse is over the demo container OR the viewport
     if (isDemo && !target.closest('[data-demo-workspace="true"], #viewport')) return;
 
 
-    // Calendar Sidebar Scroll
+    // ===== KANBAN COLUMN SCROLL HANDLING (PRIORITY for Kanban) =====
+    // Check position-based for physics-positioned column thoughts FIRST
+    if (activeSpaceMode === 'kanban') {
+      const kanbanColContent = document.getElementById('kanban-column-content');
+      const kanbanColRect = kanbanColContent?.getBoundingClientRect();
+      const isOverKanbanColumns = kanbanColRect && (
+        e.clientX >= kanbanColRect.left && e.clientX <= kanbanColRect.right &&
+        e.clientY >= kanbanColRect.top && e.clientY <= kanbanColRect.bottom
+      );
 
-    if (activeSpaceMode === 'calendar' && (isUnscheduledNode || isSidebar)) {
-      const sbContent = document.getElementById('cal-sidebar-content');
+      if (isOverKanbanColumns) {
+        // Update the physics engine's scroll tracking instead of scrolling an empty container
+        if (kanbanColumnScrollRef) {
+          // Use maxScroll if set, otherwise don't scroll at all (prevents infinity)
+          const maxScroll = kanbanColumnMaxScrollRef?.current ?? 0;
+          if (maxScroll > 0) {
+            kanbanColumnScrollRef.current += e.deltaY;
+            // Clamp to valid range [0, maxScroll]
+            kanbanColumnScrollRef.current = Math.max(0, Math.min(kanbanColumnScrollRef.current, maxScroll));
+          }
+        }
+        e.preventDefault();
+        return;
+      }
+    }
+
+    // ===== SIDEBAR SCROLL HANDLING (Calendar & Kanban only) =====
+    // Only check unscheduled nodes in Calendar mode (all spatial thoughts have data-unscheduled="true")
+    const isUnscheduledNode = activeSpaceMode === 'calendar' && target.closest('[data-unscheduled="true"]');
+    
+    // Check both DOM hierarchy (for native scroll elements) and position-based (for physics-positioned thoughts)
+    const sbContent = document.getElementById('cal-sidebar-content');
+    const sbRect = sbContent?.getBoundingClientRect();
+    const isOverSidebar = sbRect && (
+      e.clientX >= sbRect.left && e.clientX <= sbRect.right &&
+      e.clientY >= sbRect.top && e.clientY <= sbRect.bottom
+    );
+
+    if (isUnscheduledNode || isSidebar || isOverSidebar) {
       if (sbContent) {
         sbContent.scrollTop += e.deltaY;
+      }
+      e.preventDefault();
+      return;
+    }
+
+    // ===== CALENDAR GRID SCROLL HANDLING =====
+    if (activeSpaceMode === 'calendar') {
+      const calGrid = target.closest('.cal-grid');
+      if (calGrid) {
+        (calGrid as HTMLElement).scrollTop += e.deltaY;
         e.preventDefault();
         return;
       }
