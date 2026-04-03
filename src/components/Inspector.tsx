@@ -675,7 +675,7 @@ className={cn(
                     const focusType = (triggers[thought.type] || 'text') as any;
                     setActiveFocus(thought.id, focusType);
                   }}
-                  className="flex-1 bg-[var(--accent)]/10 hover:bg-[var(--accent)]/20 border border-[var(--accent)]/30 hover:border-[var(--accent)]/60 text-[var(--accent-secondary)] py-3 rounded-xl text-[10px] font-extrabold uppercase tracking-[0.2em] transition-all flex items-center justify-center gap-2 shadow-lg shadow-[var(--accent-glow)]/10 group"
+                  className="flex-1 bg-[var(--accent)]/10 hover:bg-[var(--accent)]/20 border border-[var(--accent)]/30 hover:border-[var(--accent)]/60 text-[var(--accent-secondary)] py-3 rounded-xl text-[11px] font-semibold tracking-wide transition-all flex items-center justify-center gap-2 shadow-lg shadow-[var(--accent-glow)]/10 group"
                 >
                   <Maximize2 className="w-4 h-4 group-hover:scale-110 transition-transform" />
                   <span>Open</span>
@@ -684,7 +684,7 @@ className={cn(
               {thought.archivedAt ? (
                 <button
                   onClick={handleUnarchiveThought}
-                  className="flex-1 bg-amber-500/5 hover:bg-amber-500/10 text-amber-400/90 py-3 rounded-xl text-[10px] font-extrabold uppercase tracking-[0.2em] transition-all border border-amber-500/20 hover:border-amber-500/40 flex items-center justify-center gap-2 group"
+                  className="flex-1 bg-amber-500/5 hover:bg-amber-500/10 text-amber-400/90 py-3 rounded-xl text-[11px] font-semibold tracking-wide transition-all border border-amber-500/20 hover:border-amber-500/40 flex items-center justify-center gap-2 group"
                 >
                   <ArchiveRestore className="w-4 h-4 group-hover:scale-110 transition-transform" />
                   <span>Restore</span>
@@ -692,7 +692,7 @@ className={cn(
               ) : (
                 <button
                   onClick={handleArchiveThought}
-                  className="flex-1 bg-amber-500/5 hover:bg-amber-500/10 text-amber-400/90 py-3 rounded-xl text-[10px] font-extrabold uppercase tracking-[0.2em] transition-all border border-amber-500/20 hover:border-amber-500/40 flex items-center justify-center gap-2 group"
+                  className="flex-1 bg-amber-500/5 hover:bg-amber-500/10 text-amber-400/90 py-3 rounded-xl text-[11px] font-semibold tracking-wide transition-all border border-amber-500/20 hover:border-amber-500/40 flex items-center justify-center gap-2 group"
                 >
                   <Archive className="w-4 h-4 group-hover:scale-110 transition-transform" />
                   <span>Archive</span>
@@ -700,7 +700,7 @@ className={cn(
               )}
               <button
                 onClick={handleDeleteThought}
-                className="flex-1 bg-red-500/5 hover:bg-red-500/10 text-red-400/90 py-3 rounded-xl text-[10px] font-extrabold uppercase tracking-[0.2em] transition-all border border-red-500/20 hover:border-red-500/40 flex items-center justify-center gap-2 group"
+                className="flex-1 bg-red-500/5 hover:bg-red-500/10 text-red-400/90 py-3 rounded-xl text-[11px] font-semibold tracking-wide transition-all border border-red-500/20 hover:border-red-500/40 flex items-center justify-center gap-2 group"
               >
                 <Trash2 className="w-4 h-4 group-hover:scale-110 transition-transform" />
                 <span>Delete</span>
