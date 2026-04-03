@@ -33,7 +33,7 @@ export const ThoughtFooter: React.FC<ThoughtFooterProps> = ({
 
   return (
     <div className={cn(
-      "grid transition-all duration-300 ease-in-out pointer-events-none",
+      "grid transition-all duration-300 ease-in-out",
       isArchived && "pointer-events-none",
       isSelected ? "grid-rows-[1fr] opacity-100 mt-auto" : "grid-rows-[0fr] opacity-0 pointer-events-none mt-0"
     )}>

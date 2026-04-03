@@ -57,6 +57,8 @@ export const usePhysics = (
   const prevTransformRef = useRef({ x: camera.x.get(), y: camera.y.get(), scale: camera.scale.get() });
   const isReturningHome = useRef(false);
   const lastTimeRef = useRef<number>(performance.now());
+  const prevNonSpatialMode = useRef<string | null>(null); // Track previous non-spatial mode for Option A
+  const justChangedMode = useRef(false); // Flag to prevent snap during mode transition
 
   const thoughtMap = useRef<Map<string, Thought>>(new Map());
   const layoutCacheRef = useRef<Map<string, any>>(new Map()); // Cache for layout results
@@ -273,16 +275,36 @@ export const usePhysics = (
   }, [activeSpace?.mode, activeSpaceId, thoughts, camera]);
 
   // Force snap when showArchived changes - clear cache so strategy recalculates
-  // Only for non-spatial modes - spatial mode keeps cached positions to avoid position resets
+  // Option A: Only snap when toggling within same non-spatial mode
+  // When transitioning FROM spatial, let the lerp animate naturally
   const showArchived = useStore((state) => state.showArchived);
-  const currentMode = activeSpace?.mode;
+  const currentMode = activeSpace?.mode || 'spatial';
   
+  // Separate effect for mode changes
   useEffect(() => {
     if (currentMode !== 'spatial') {
-      snapNextFrame.current = true;
+      // Coming from spatial → animate (don't snap)
+      // Coming from another non-spatial mode → also animate for now (Option A)
+      prevNonSpatialMode.current = currentMode;
+      layoutCacheRef.current?.clear();
+      justChangedMode.current = true; // Prevent showArchived effect from snapping immediately
+    } else {
+      // Moving to spatial mode - reset tracking
+      prevNonSpatialMode.current = null;
+    }
+  }, [currentMode]); // Only track mode changes
+  
+  // Separate effect for showArchived toggles within same mode
+  useEffect(() => {
+    if (currentMode !== 'spatial') {
+      // Skip snap if we just changed modes - let lerp animate
+      if (!justChangedMode.current) {
+        snapNextFrame.current = true;
+      }
+      justChangedMode.current = false; // Reset after first check
       layoutCacheRef.current?.clear();
     }
-  }, [showArchived, currentMode]); // Re-run when showArchived changes
+  }, [showArchived, currentMode]);
 
   useEffect(() => {
     const handleMove = (clientX: number, clientY: number) => {
@@ -591,7 +613,8 @@ export const usePhysics = (
         if (snapNextFrame.current) {
           p.x = result.targetX; p.y = result.targetY; p.scale = result.targetScale;
         } else {
-          const speed = mode === 'calendar' ? 0.2 : 0.15;
+          // Faster lerp for mode transitions (~0.12 = ~0.8 second settle time)
+          const speed = 0.12;
           const lerpFactor = 1 - Math.pow(1 - speed, timeScale);
           p.x += (result.targetX - p.x) * lerpFactor;
           p.y += (result.targetY - p.y) * lerpFactor;
