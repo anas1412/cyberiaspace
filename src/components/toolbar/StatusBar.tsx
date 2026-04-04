@@ -1,5 +1,5 @@
 import React from 'react';
-import { Undo2, Redo2, ZoomIn, ZoomOut, ScanEye, Magnet, Archive } from 'lucide-react';
+import { Undo2, Redo2, ZoomIn, ZoomOut, ScanEye, Magnet } from 'lucide-react';
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 
@@ -20,14 +20,12 @@ interface StatusBarProps {
   resetTransform: () => void;
   performanceMode: boolean;
   handleTogglePhysics: () => void;
-  showArchived: boolean;
-  setShowArchived: (show: boolean) => void;
 }
 
 export const StatusBar: React.FC<StatusBarProps> = ({ 
   thoughtsCount, limits, activeSpace, undo, redo, 
   historyIndex, historyLength, zoomIn, zoomOut, resetTransform,
-  performanceMode, handleTogglePhysics, showArchived, setShowArchived
+  performanceMode, handleTogglePhysics
 }) => {
   const capacity = (thoughtsCount / limits.MAX_THOUGHTS_PER_SPACE) * 100;
   
@@ -94,34 +92,6 @@ export const StatusBar: React.FC<StatusBarProps> = ({
 
         </div>
       )}
-
-      {/* Archive Toggle - All Modes */}
-      <div className="relative group">
-        <div className="absolute bottom-full mb-4 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-all duration-300 translate-y-2 group-hover:translate-y-0 pointer-events-none whitespace-nowrap z-[10001]">
-          <div className="glass px-3 py-1.5 rounded-xl border border-[var(--glass-border)] flex items-center gap-2 shadow-2xl bg-[var(--bg-main)]/90 backdrop-blur-xl">
-            <span className="text-[10px] font-semibold tracking-wide text-[var(--text-primary)]/90">Archived</span>
-            <div className="w-[1px] h-2 bg-[var(--glass-border)] mx-0.5" />
-            <span className={cn("text-[8px] font-semibold tracking-wide", showArchived ? "text-amber-400" : "text-[var(--text-muted)]")}>
-              {showArchived ? "Visible" : "Hidden"}
-            </span>
-          </div>
-        </div>
-        <button 
-          onClick={() => setShowArchived(!showArchived)}
-          className={cn(
-            "p-1.5 md:p-2 flex items-center justify-center rounded-xl transition-all",
-            showArchived 
-              ? "text-amber-400" 
-              : "text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--glass-bg)]"
-          )}
-        >
-          <Archive 
-            className={cn(
-              "w-3.5 h-3.5 md:w-4 md:h-4 transition-colors", 
-            )} 
-          />
-        </button>
-      </div>
 
       {activeSpace?.mode === 'spatial' && (
         <><div className="h-3 w-[1px] bg-[var(--glass-border)] mx-0.5"></div><div className="flex items-center gap-1"><button onClick={zoomIn} className="group relative p-2 hover:bg-[var(--glass-bg)] text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors rounded-xl"><div className="absolute bottom-full mb-4 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-all duration-300 translate-y-2 group-hover:translate-y-0 pointer-events-none whitespace-nowrap z-[10001]"><div className="glass px-3 py-1.5 rounded-xl border border-[var(--glass-border)] flex items-center gap-2 shadow-2xl bg-[var(--bg-main)]/90 backdrop-blur-xl"><span className="text-[10px] font-semibold tracking-wide text-[var(--text-primary)]/90">Zoom In</span><div className="w-[1px] h-2 bg-[var(--glass-border)] mx-0.5" /><kbd className="bg-[var(--glass-bg)] border border-[var(--glass-border)] px-1.5 py-0.5 rounded text-[8px] font-semibold text-[var(--accent-secondary)]">WHEEL UP</kbd></div></div><ZoomIn className="w-4 h-4" /></button><button onClick={zoomOut} className="group relative p-2 hover:bg-[var(--glass-bg)] text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors rounded-xl"><div className="absolute bottom-full mb-4 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-all duration-300 translate-y-2 group-hover:translate-y-0 pointer-events-none whitespace-nowrap z-[10001]"><div className="glass px-3 py-1.5 rounded-xl border border-[var(--glass-border)] flex items-center gap-2 shadow-2xl bg-[var(--bg-main)]/90 backdrop-blur-xl"><span className="text-[10px] font-semibold tracking-wide text-[var(--text-primary)]/90">Zoom Out</span><div className="w-[1px] h-2 bg-[var(--glass-border)] mx-0.5" /><kbd className="bg-[var(--glass-bg)] border border-[var(--glass-border)] px-1.5 py-0.5 rounded text-[8px] font-semibold text-[var(--accent-secondary)]">WHEEL DN</kbd></div></div><ZoomOut className="w-4 h-4" /></button><button onClick={resetTransform} className="group relative p-2 hover:bg-[var(--glass-bg)] text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors rounded-xl"><div className="absolute bottom-full mb-4 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-all duration-300 translate-y-2 group-hover:translate-y-0 pointer-events-none whitespace-nowrap z-[10001]"><div className="glass px-3 py-1.5 rounded-xl border border-[var(--glass-border)] flex items-center gap-2 shadow-2xl bg-[var(--bg-main)]/90 backdrop-blur-xl"><span className="text-[10px] font-semibold tracking-wide text-[var(--text-primary)]/90">Reset View</span><div className="w-[1px] h-2 bg-[var(--glass-border)] mx-0.5" /><kbd className="bg-[var(--glass-bg)] border border-[var(--glass-border)] px-1.5 py-0.5 rounded text-[8px] font-semibold text-[var(--accent-secondary)]">CTRL+0</kbd></div></div><ScanEye className="w-4 h-4" /></button></div></>

@@ -66,7 +66,7 @@ export const useViewportGestures = (config: GestureConfig) => {
     }
 
     // Standard exclusions
-    if (target.closest('#inspector, #text-focus-overlay, #table-focus-overlay, #chat-overlay, .focus-box, #space-switcher-menu')) return;
+    if (target.closest('#inspector, #text-focus-overlay, #table-focus-overlay, #chat-overlay, .focus-box, #space-switcher-menu, .filter-panel-container')) return;
 
     const isSidebar = target.closest('#cal-sidebar-content');
 
@@ -128,6 +128,13 @@ export const useViewportGestures = (config: GestureConfig) => {
         e.preventDefault();
         return;
       }
+      // Outside sidebar and grid in calendar → do nothing
+      return;
+    }
+
+    // ===== KANBAN: Outside columns and sidebar → do nothing =====
+    if (activeSpaceMode === 'kanban') {
+      return;
     }
 
     e.preventDefault();
@@ -157,12 +164,6 @@ export const useViewportGestures = (config: GestureConfig) => {
         x: lx - wx * newScale,
         y: ly - wy * newScale,
         scale: newScale,
-      };
-    } else if (activeSpaceMode === 'kanban') {
-      // Kanban: Vertical Scroll only
-      newTransform = {
-        ...newTransform,
-        y: currentY - e.deltaY / s
       };
     }
     

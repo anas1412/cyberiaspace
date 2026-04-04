@@ -41,12 +41,16 @@ export const kanbanStrategy: LayoutStrategist = {
     const matchesStack = !kanbanStackFilter || thought.stackId === kanbanStackFilter;
     // Hide archived thoughts unless showArchived is true
     const isArchived = thought.archivedAt && !context.showArchived;
-    const isFilteredOut = !matchesSearch || !matchesStack || isArchived;
 
     // Get visible list only (for position calculation)
     const allList = context.columnMap?.get(thought.status) || [];
     const visibleList = allList.filter(t => !t.archivedAt || context.showArchived);
     const indexInCol = visibleList.findIndex(t => t.id === thought.id);
+    
+    // indexInCol === -1 means thought was excluded by a pre-processor filter
+    // (status, date, etc.) that the strategist doesn't individually check
+    const isNotInList = indexInCol === -1;
+    const isFilteredOut = !matchesSearch || !matchesStack || isArchived || isNotInList;
     
     // Common dimensions
     const sidebarPadding = isMobile ? 16 : 40;

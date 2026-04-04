@@ -16,9 +16,17 @@ export interface LayoutContext {
   hoveredCalDate: string | null;
   calendarSearchQuery: string;
   calendarStackFilter: string | null;
+  calendarStatusFilter: 'none' | 'todo' | 'doing' | 'done' | null;
   kanbanSearchQuery: string;
   kanbanStackFilter: string | null;
+  kanbanStatusFilter: 'none' | 'todo' | 'doing' | 'done' | null;
+  kanbanDateFilter: string | null;
+  spatialSearchQuery: string;
+  spatialStackFilter: string | null;
+  spatialStatusFilter: 'none' | 'todo' | 'doing' | 'done' | null;
+  spatialDateFilter: string | null;
   showArchived?: boolean;
+  visibleIds?: Set<string>;
   kanbanY: number;
   sidebarScrollTop: number;
   sidebarTop: number;

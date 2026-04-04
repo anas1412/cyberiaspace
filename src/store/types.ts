@@ -18,6 +18,13 @@ export interface CyberiaState {
   calendarStackFilter: string | null;
   kanbanSearchQuery: string;
   kanbanStackFilter: string | null;
+  kanbanStatusFilter: 'none' | 'todo' | 'doing' | 'done' | null;
+  kanbanDateFilter: string | null;
+  calendarStatusFilter: 'none' | 'todo' | 'doing' | 'done' | null;
+  spatialSearchQuery: string;
+  spatialStackFilter: string | null;
+  spatialStatusFilter: 'none' | 'todo' | 'doing' | 'done' | null;
+  spatialDateFilter: string | null;
   showArchived: boolean;
   theme: 'dark' | 'light';
   customBg: string | null;
@@ -118,8 +125,15 @@ export interface CyberiaState {
   setHoveredCalDate: (date: string | null) => void;
   setCalendarSearchQuery: (query: string) => void;
   setCalendarStackFilter: (stackId: string | null) => void;
+  setCalendarStatusFilter: (status: 'none' | 'todo' | 'doing' | 'done' | null) => void;
   setKanbanSearchQuery: (query: string) => void;
   setKanbanStackFilter: (stackId: string | null) => void;
+  setKanbanStatusFilter: (status: 'none' | 'todo' | 'doing' | 'done' | null) => void;
+  setKanbanDateFilter: (date: string | null) => void;
+  setSpatialSearchQuery: (query: string) => void;
+  setSpatialStackFilter: (stackId: string | null) => void;
+  setSpatialStatusFilter: (status: 'none' | 'todo' | 'doing' | 'done' | null) => void;
+  setSpatialDateFilter: (date: string | null) => void;
   setShowArchived: (show: boolean) => void;
   setLinkingSourceId: (id: string | null) => void;
 

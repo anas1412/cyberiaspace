@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useStore } from '../../store/useStore';
 import { useThoughtPayload } from '../thought/hooks/useThoughtPayload';
 import { syncOrchestrator } from '../../services/sync/syncOrchestrator';
-import { Plus, Trash2, GripVertical } from 'lucide-react';
+import { Plus, Trash2, GripVertical, CheckSquare, Square } from 'lucide-react';
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 import { motion, Reorder } from 'framer-motion';
@@ -172,6 +172,20 @@ const TasksFocusEditor: React.FC = () => {
     saveTasks(newTasks);
   };
 
+  const handleCheckAll = () => {
+    if (!thought || isReadOnly) return;
+    const newTasks = localTasks.map(t => ({ ...t, done: true }));
+    setLocalTasks(newTasks);
+    saveTasks(newTasks);
+  };
+
+  const handleUncheckAll = () => {
+    if (!thought || isReadOnly) return;
+    const newTasks = localTasks.map(t => ({ ...t, done: false }));
+    setLocalTasks(newTasks);
+    saveTasks(newTasks);
+  };
+
   if (!thought) return null;
 
   return (
@@ -189,7 +203,7 @@ const TasksFocusEditor: React.FC = () => {
       isReadOnly={isReadOnly}
       stack={stack}
       footerStatus={
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-3">
           <p className="text-[8px] md:text-[10px] uppercase font-black tracking-widest text-[var(--text-muted)]">
             {localTasks.filter(t => t.done).length} / {localTasks.length} Completed
           </p>
@@ -200,6 +214,26 @@ const TasksFocusEditor: React.FC = () => {
               animate={{ width: `${(localTasks.filter(t => t.done).length / (localTasks.length || 1)) * 100}%` }}
             />
           </div>
+          {!isReadOnly && localTasks.length > 0 && (
+            <>
+              <button
+                onClick={handleCheckAll}
+                className="flex items-center gap-1 text-[8px] md:text-[10px] uppercase font-bold tracking-wider text-[var(--text-muted)] hover:text-[var(--status-done)] transition-colors"
+                disabled={localTasks.every(t => t.done)}
+              >
+                <CheckSquare className="w-3 h-3" />
+                All
+              </button>
+              <button
+                onClick={handleUncheckAll}
+                className="flex items-center gap-1 text-[8px] md:text-[10px] uppercase font-bold tracking-wider text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors"
+                disabled={localTasks.every(t => !t.done)}
+              >
+                <Square className="w-3 h-3" />
+                None
+              </button>
+            </>
+          )}
         </div>
       }
     >

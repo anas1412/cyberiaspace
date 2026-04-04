@@ -1,6 +1,5 @@
 import React from 'react';
 import { useStore } from '../store/useStore';
-import { KanbanFilterBar } from './kanban/KanbanFilterBar';
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 
@@ -30,7 +29,6 @@ const KanbanOverlay: React.FC = () => {
         <div className="kanban-sidebar-header p-4 md:p-5 border-b border-[var(--glass-border)] text-[9px] md:text-[10px] font-black tracking-[0.2em] uppercase text-[var(--accent)] bg-[var(--glass-bg)] z-[40] sticky top-0 shadow-[var(--shadow-elevation-2)]">
           Unplanned
         </div>
-        <KanbanFilterBar />
         <div id="cal-sidebar-content" className="cal-sidebar-content flex-1 overflow-y-auto overflow-x-hidden relative p-4 md:p-5 custom-scroll overscroll-y-contain">
           <div id="cal-sidebar-spacer" style={{ height: '0px' }} />
         </div>

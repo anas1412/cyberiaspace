@@ -84,6 +84,9 @@ export const calendarStrategy: LayoutStrategist = {
       // Filter to visible only for index calculation
       const visibleUnscheduled = allUnscheduled.filter(t => !t.archivedAt || context.showArchived);
       const index = visibleUnscheduled.findIndex(t => t.id === thought.id);
+      // index === -1 means thought was excluded by a pre-processor filter
+      // (status, etc.) that the strategist doesn't individually check
+      const isNotInList = index === -1;
       const isSidebarHovered = true;
       
       const currentScale = 0.78;
@@ -108,11 +111,11 @@ export const calendarStrategy: LayoutStrategist = {
       return {
         targetX: padding + (sidebarWidth - 280 * 0.78) / 2,
         targetY,
-        targetScale: isFilteredOut ? 0 : currentScale,
+        targetScale: isFilteredOut || isNotInList ? 0 : currentScale,
         zIndex: '50',
-        opacity: isFilteredOut ? 0 : 1,
-        visibility: isFilteredOut ? 'hidden' : 'visible',
-        pointerEvents: isFilteredOut ? 'none' : 'auto',
+        opacity: isFilteredOut || isNotInList ? 0 : 1,
+        visibility: isFilteredOut || isNotInList ? 'hidden' : 'visible',
+        pointerEvents: isFilteredOut || isNotInList ? 'none' : 'auto',
         clipPath: isSidebarHovered ? 'none' : dynamicClip,
         isSidebar: true,
         columnHeight: yOffset + (currentVisibleH * currentScale) + finalGap

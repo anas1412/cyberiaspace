@@ -31,8 +31,15 @@ export const usePhysics = (
   const hoveredCalDate = useStore((state) => state.hoveredCalDate);
   const calendarSearchQuery = useStore((state) => state.calendarSearchQuery);
   const calendarStackFilter = useStore((state) => state.calendarStackFilter);
+  const calendarStatusFilter = useStore((state) => state.calendarStatusFilter);
   const kanbanSearchQuery = useStore((state) => state.kanbanSearchQuery);
   const kanbanStackFilter = useStore((state) => state.kanbanStackFilter);
+  const kanbanStatusFilter = useStore((state) => state.kanbanStatusFilter);
+  const kanbanDateFilter = useStore((state) => state.kanbanDateFilter);
+  const spatialSearchQuery = useStore((state) => state.spatialSearchQuery);
+  const spatialStackFilter = useStore((state) => state.spatialStackFilter);
+  const spatialStatusFilter = useStore((state) => state.spatialStatusFilter);
+  const spatialDateFilter = useStore((state) => state.spatialDateFilter);
   const linkingSourceId = useStore((state) => state.linkingSourceId);
   const performanceMode = useStore((state) => state.performanceMode);
 
@@ -306,6 +313,14 @@ export const usePhysics = (
     }
   }, [showArchived, currentMode]);
 
+  // Snap when spatial filters change
+  useEffect(() => {
+    if (currentMode === 'spatial') {
+      snapNextFrame.current = true;
+      layoutCacheRef.current?.clear();
+    }
+  }, [spatialSearchQuery, spatialStackFilter, spatialStatusFilter, spatialDateFilter, currentMode]);
+
   useEffect(() => {
     const handleMove = (clientX: number, clientY: number) => {
       if (!dragRef.current) return;
@@ -522,7 +537,9 @@ export const usePhysics = (
               t.text.toLowerCase().includes(kanbanSearchQuery.toLowerCase()) || 
               (t.data?.type === 'text' ? t.data.content : ((t as any).content || '')).toLowerCase().includes(kanbanSearchQuery.toLowerCase());
             const mStack = !kanbanStackFilter || t.stackId === kanbanStackFilter;
-            return mS && mStack;
+            const mStatus = !kanbanStatusFilter || t.status === kanbanStatusFilter;
+            const mDate = !kanbanDateFilter || (t.startTime ? new Date(t.startTime).toISOString().split('T')[0] === kanbanDateFilter : false);
+            return mS && mStack && mStatus && mDate;
           })
           .sort((a, b) => a.order - b.order);
         columnMap.set(status, list);
@@ -536,8 +553,9 @@ export const usePhysics = (
           t.text.toLowerCase().includes(calendarSearchQuery.toLowerCase()) ||
           (t.data?.type === 'text' ? t.data.content : ((t as any).content || '')).toLowerCase().includes(calendarSearchQuery.toLowerCase());
         const matchesStack = !calendarStackFilter || t.stackId === calendarStackFilter;
+        const matchesStatus = !calendarStatusFilter || t.status === calendarStatusFilter;
         
-        if (matchesSearch && matchesStack) {
+        if (matchesSearch && matchesStack && matchesStatus) {
           dateMap.get(dateKey)!.push(t);
         }
       });
@@ -576,6 +594,20 @@ export const usePhysics = (
       }
     }
 
+    // Build visibleIds set for spatial mode (used by physics forces + canvas drawing)
+    const spatialVisibleIds = mode === 'spatial' ? new Set(ids.filter(id => {
+      const t = thoughtMap.current.get(id);
+      if (!t) return false;
+      if (t.archivedAt && !useStore.getState().showArchived) return false;
+      const matchesSearch = !spatialSearchQuery || 
+        t.text.toLowerCase().includes(spatialSearchQuery.toLowerCase()) ||
+        (t.data?.type === 'text' ? t.data.content : ((t as any).content || '')).toLowerCase().includes(spatialSearchQuery.toLowerCase());
+      const matchesStack = !spatialStackFilter || t.stackId === spatialStackFilter;
+      const matchesStatus = !spatialStatusFilter || t.status === spatialStatusFilter;
+      const matchesDate = !spatialDateFilter || (t.startTime ? new Date(t.startTime).toISOString().split('T')[0] === spatialDateFilter : false);
+      return matchesSearch && matchesStack && matchesStatus && matchesDate;
+    })) : null;
+
     const context: LayoutContext = {
       logicalWidth,
       logicalHeight,
@@ -584,9 +616,17 @@ export const usePhysics = (
       hoveredCalDate,
       calendarSearchQuery,
       calendarStackFilter,
+      calendarStatusFilter,
       kanbanSearchQuery,
       kanbanStackFilter,
+      kanbanStatusFilter,
+      kanbanDateFilter,
+      spatialSearchQuery,
+      spatialStackFilter,
+      spatialStatusFilter,
+      spatialDateFilter,
       showArchived: useStore.getState().showArchived, // Get latest value from store
+      visibleIds: spatialVisibleIds ?? undefined,
       kanbanY: vT_visual.y,
       sidebarScrollTop: sbContent?.scrollTop || 0,
       sidebarTop: sbRect ? (sbRect.top / globalScale) : 320,
@@ -619,12 +659,31 @@ export const usePhysics = (
       const t = thoughtMap.current.get(id);
       if (!t) return;
 
+      // Spatial mode filtering
+      if (mode === 'spatial' && spatialVisibleIds && !spatialVisibleIds.has(id)) {
+        // Hide filtered-out thoughts
+        const el = elements.current.get(id);
+        if (el) {
+          el.style.opacity = '0';
+          el.style.pointerEvents = 'none';
+          el.style.visibility = 'hidden';
+        }
+        return;
+      }
+
       const isDragging = dragRef.current?.initialPositions.has(id) && dragRef.current.moved;
 
       if (mode === 'spatial' && !isDragging && !isReturningHome.current) {
         if (snapNextFrame.current) {
           p.x = t.x; p.y = t.y; p.vx = 0; p.vy = 0;
           p.scale = (1 + (PRIORITY_WEIGHT[t.priority] || 0) * 0.05) * (t.size || 1);
+          // Restore visibility for visible thoughts
+          const el = elements.current.get(id);
+          if (el) {
+            el.style.opacity = '1';
+            el.style.pointerEvents = 'auto';
+            el.style.visibility = 'visible';
+          }
         } else {
           if (strategist.applyForces && shouldCalculatePhysics) {
             const { vx, vy } = strategist.applyForces(id, p, state, t, allThoughts, context, elementHeights);
@@ -714,12 +773,8 @@ export const usePhysics = (
       const accent = style.getPropertyValue('--accent').trim() || '#6366f1';
 
       if (mode === 'spatial') {
-        // Get visible ids for canvas drawing (exclude archived when showArchived is false)
-        const showArchived = useStore.getState().showArchived;
-        const visibleIds = ids.filter(id => {
-          const t = thoughtMap.current.get(id);
-          return !t?.archivedAt || showArchived;
-        });
+        // Use pre-computed visibleIds set (excludes archived + filtered thoughts)
+        const visibleIds = spatialVisibleIds ? Array.from(spatialVisibleIds) : ids;
         
         const stackGroups = new Map<string, string[]>();
         visibleIds.forEach(id => {
@@ -809,7 +864,9 @@ export const usePhysics = (
       const isSelected = t.id === selectedThoughtId;
       const isDraggingThis = dragRef.current?.initialPositions.has(id) && dragRef.current.moved;
       
-      const res = layoutCacheRef.current.get(id) || strategist.calculateLayout(t, allThoughts, context, elementHeights);
+      // For spatial mode, always recalculate layout (visibleIds changes per frame)
+      const useCache = mode !== 'spatial';
+      const res = (useCache && layoutCacheRef.current.get(id)) || strategist.calculateLayout(t, allThoughts, context, elementHeights);
       const targetRotation = (res.rotation && !isSelected) ? res.rotation : 0;
 
       // --- PRECISION FILTER ---
@@ -870,7 +927,7 @@ export const usePhysics = (
       }
     });
     if (ids.length > 0) snapNextFrame.current = false;
-  }, [activeSpace, activeSpaceId, calendarViewDate, hoveredCalDate, calendarSearchQuery, calendarStackFilter, kanbanSearchQuery, kanbanStackFilter, camera, linkingSourceId, getGlobalScale, applyHomeReturn, selectedThoughtId, performanceMode, stacks, canvasRef]);
+  }, [activeSpace, activeSpaceId, calendarViewDate, hoveredCalDate, calendarSearchQuery, calendarStackFilter, calendarStatusFilter, kanbanSearchQuery, kanbanStackFilter, kanbanStatusFilter, kanbanDateFilter, spatialSearchQuery, spatialStackFilter, spatialStatusFilter, spatialDateFilter, camera, linkingSourceId, getGlobalScale, applyHomeReturn, selectedThoughtId, performanceMode, stacks, canvasRef]);
 
   useEffect(() => {
     const animate = () => { loop(); requestRef.current = requestAnimationFrame(animate); };

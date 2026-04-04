@@ -7,6 +7,7 @@ import { toCanvas } from 'html-to-image';
 
 // Modular Components
 import { SpaceSwitcher } from './SpaceSwitcher';
+import { FilterPanel } from './FilterPanel';
 import { ViewSwitcher } from './ViewSwitcher';
 import { ActionFAB } from './ActionFAB';
 import { SystemTray } from './SystemTray';
@@ -45,8 +46,6 @@ const Toolbar: React.FC = () => {
   const isReadOnly = useStore((state) => state.isReadOnly);
   const creatorName = useStore((state) => state.creatorName);
   const isSpaceLoading = useStore((state) => state.isSpaceLoading);
-  const showArchived = useStore((state) => state.showArchived);
-  const setShowArchived = useStore((state) => state.setShowArchived);
 
   const { openModal } = useModalStore();
 
@@ -273,7 +272,7 @@ const Toolbar: React.FC = () => {
   return (
     <>
       <div className="fixed top-2 md:top-6 left-4 md:left-8 right-4 md:right-8 z-[9999] flex items-center justify-between gap-2 pointer-events-none">
-        {/* Left Side: Space Switcher & Oracle */}
+        {/* Left Side: Space Switcher & Filters */}
         <div className="flex-1 flex justify-start items-center gap-3 pointer-events-auto">
           <SpaceSwitcher 
             spaces={spaces}
@@ -292,17 +291,18 @@ const Toolbar: React.FC = () => {
             handleDeleteSpace={handleDeleteSpace}
             openModal={openModal}
           />
-        </div>
-
-        {/* Center: View Modes */}
-        <div className="lg:absolute lg:left-1/2 lg:-translate-x-1/2 flex flex-col items-center pointer-events-none z-[9999]">
-          <ViewSwitcher activeSpace={activeSpace} setViewMode={setViewMode} />
+          <FilterPanel />
         </div>
 
         {/* Right Side: Account Menu */}
         <div className="flex-1 flex justify-end items-center gap-3 pointer-events-auto">
           <AccountMenu />
         </div>
+      </div>
+
+      {/* Center: View Switcher */}
+      <div className="fixed top-4 left-1/2 -translate-x-1/2 z-[10000] pointer-events-auto">
+        <ViewSwitcher activeSpace={activeSpace} setViewMode={setViewMode} />
       </div>
       
       <ActionFAB 
@@ -334,8 +334,6 @@ const Toolbar: React.FC = () => {
         resetTransform={resetTransform}
         performanceMode={performanceMode}
         handleTogglePhysics={handleTogglePhysics}
-        showArchived={showArchived}
-        setShowArchived={setShowArchived}
       />
 
       <ShortcutsModal isOpen={isShortcutsOpen} onClose={() => setIsShortcutsOpen(false)} />

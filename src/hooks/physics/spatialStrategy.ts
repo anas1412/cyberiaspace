@@ -22,19 +22,19 @@ export const spatialStrategy: LayoutStrategist = {
     const prioLevel = PRIORITY_WEIGHT[thought.priority] || 0;
     const targetScale = (1 + prioLevel * 0.05) * (thought.size || 1);
     
-    // Check if thought is archived and showArchived is false
+    // Check if thought should be hidden (archived or filtered out)
     const isArchived = thought.archivedAt && !context.showArchived;
-    // In spatial mode, use "ghost" opacity (0.3) instead of hiding completely
-    const opacity = isArchived ? 0.3 : 1;
+    const isFilteredOut = context.visibleIds ? !context.visibleIds.has(thought.id) : false;
+    const isHidden = isArchived || isFilteredOut;
     
     return {
       targetX: thought.x - 140,
       targetY: thought.y - (elementHeights.get(thought.id) || 120) / 2,
       targetScale,
       zIndex: (20 + (thought.layer || 0)).toString(),
-      opacity,
-      visibility: 'visible',
-      pointerEvents: isArchived ? 'none' : 'auto',
+      opacity: isHidden ? 0 : 1,
+      visibility: isHidden ? 'hidden' : 'visible',
+      pointerEvents: isHidden ? 'none' : 'auto',
       clipPath: 'none'
     };
   },
@@ -62,6 +62,10 @@ export const spatialStrategy: LayoutStrategist = {
       
       const otherT = context.thoughtMap.get(otherId);
       if (!otherT) return;
+
+      // Skip hidden thoughts (archived or filtered out) — they shouldn't affect physics
+      if (context.visibleIds && !context.visibleIds.has(otherId)) return;
+      if (otherT.archivedAt && !context.showArchived) return;
 
       const centerA = { x: p.x + 140, y: p.y + (elementHeights.get(id) || 120) / 2 };
       const centerB = { x: otherP.x + 140, y: otherP.y + (elementHeights.get(otherId) || 120) / 2 };
