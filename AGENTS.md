@@ -389,7 +389,7 @@ This section serves as a definitive reference for patterns that are deprecated. 
 - **Conflict Resolution:** The "Local vs Cloud" choice screen is deprecated. All synchronization conflicts must be resolved automatically using **Last-Write-Wins (LWW)** logic based on the `updatedAt` field.
 - **Custom Themes:** Space-specific themes (storing theme in space settings) are deprecated. Only the global `dark` and `light` themes are supported. The `theme` field in Space entities should not be used.
 - **Performance Mode:** The `performanceMode` flag and related optimizations are deprecated. The physics engine and rendering are now always-on at full quality. Remove all `performanceMode` checks and branches from components.
-- **Performance Mode:** The `performanceMode` flag and related optimizations are deprecated. The physics engine and rendering are now always-on at full quality. Remove all `performanceMode` checks and branches from components.
+- **Mobile Support:** The web app is **desktop-only** (mouse/trackpad + wide viewport required). `src/components/MobilePage.tsx` is a gate that redirects mobile users to the landing page. All touch/long-press/mobile-specific interaction patterns are deprecated. Remove `onTouchStart`/`onTouchEnd`/`mobile-fab-adjust`/`mobile-bottom-bar-adjust` patterns from components. The `MobilePage` component itself is kept only as a "desktop required" gate — do not add mobile-responsive layouts to the main app.
 
 ---
 

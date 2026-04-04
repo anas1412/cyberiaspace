@@ -2,7 +2,6 @@ import React, { useEffect, useRef } from "react";
 
 interface StarfieldProps {
   theme: string;
-  performanceMode: boolean;
 }
 
 class Star {
@@ -201,7 +200,7 @@ class Star {
   }
 }
 
-const Starfield: React.FC<StarfieldProps> = ({ theme, performanceMode }) => {
+const Starfield: React.FC<StarfieldProps> = ({ theme }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const starsRef = useRef<Star[]>([]);
   const mousePos = useRef({ x: 0, y: 0, targetX: 0, targetY: 0 });
@@ -273,7 +272,7 @@ const Starfield: React.FC<StarfieldProps> = ({ theme, performanceMode }) => {
       mousePos.current.y += (mousePos.current.targetY - mousePos.current.y) * 0.05;
 
       starsRef.current.forEach((star) => {
-        if (!performanceMode) star.update(theme);
+        star.update(theme);
         star.draw(ctx, mousePos.current.x, mousePos.current.y, theme);
       });
 
@@ -288,7 +287,7 @@ const Starfield: React.FC<StarfieldProps> = ({ theme, performanceMode }) => {
       window.removeEventListener("mousemove", handleMouseMove);
       if (requestRef.current) cancelAnimationFrame(requestRef.current);
     };
-  }, [performanceMode, theme]);
+  }, [theme]);
 
     return (
     <canvas

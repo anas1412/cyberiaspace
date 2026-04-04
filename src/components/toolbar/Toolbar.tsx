@@ -32,7 +32,8 @@ const Toolbar: React.FC = () => {
   const customBg = useStore((state) => state.customBg);
   const customBgLoading = useStore((state) => state.customBgLoading);
   const setCustomBg = useStore((state) => state.setCustomBg);
-  const performanceMode = useStore((state) => state.performanceMode);
+  const physicsIntensity = useStore((state) => state.physicsIntensity);
+  const setPhysicsIntensity = useStore((state) => state.setPhysicsIntensity);
   const deferredPrompt = useStore((state) => state.deferredPrompt);
   const setDeferredPrompt = useStore((state) => state.setDeferredPrompt);
 
@@ -244,7 +245,6 @@ const Toolbar: React.FC = () => {
     updateSpace(activeSpace.id, { mode });
   };
 
-  const handleTogglePhysics = () => activeSpace && updateSpace(activeSpace.id, { physics: !activeSpace.physics });
   const handleRenameSpace = () => activeSpace && (openModal({ title: 'Rename Space', type: 'rename', inputValue: activeSpace.name, confirmText: 'Rename', onConfirm: (n) => n && updateSpace(activeSpace.id, { name: (n as string).substring(0, 15) }) }), setIsSpaceMenuOpen(false));
   const handleCreateSpace = () => {
     if (spaces.length >= limits.MAX_SPACES) {
@@ -332,8 +332,8 @@ const Toolbar: React.FC = () => {
         zoomIn={zoomIn} 
         zoomOut={zoomOut} 
         resetTransform={resetTransform}
-        performanceMode={performanceMode}
-        handleTogglePhysics={handleTogglePhysics}
+        physicsIntensity={physicsIntensity}
+        setPhysicsIntensity={setPhysicsIntensity}
       />
 
       <ShortcutsModal isOpen={isShortcutsOpen} onClose={() => setIsShortcutsOpen(false)} />

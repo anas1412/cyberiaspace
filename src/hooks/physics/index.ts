@@ -4,6 +4,7 @@ import { calendarStrategy } from './calendarStrategy';
 import type { LayoutStrategist } from './types';
 
 export * from './types';
+export { getPhysicsConfig } from './spatialStrategy';
 
 export const strategists: Record<string, LayoutStrategist> = {
   spatial: spatialStrategy,

@@ -12,7 +12,7 @@ export const KanbanFilterBar: React.FC = () => {
     <ViewFilterBar
       searchQuery={kanbanSearchQuery}
       setSearchQuery={setKanbanSearchQuery}
-      stackFilter={kanbanStackFilter}
+      stackFilter={kanbanStackFilter as string[] | null}
       setStackFilter={setKanbanStackFilter}
       layout="vertical"
     />

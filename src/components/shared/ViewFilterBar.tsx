@@ -12,8 +12,8 @@ function cn(...inputs: ClassValue[]) {
 interface ViewFilterBarProps {
   searchQuery: string;
   setSearchQuery: (query: string) => void;
-  stackFilter: string | null;
-  setStackFilter: (id: string | null) => void;
+  stackFilter: string[] | null;
+  setStackFilter: (ids: string[] | null) => void;
   /** Layout style: 'vertical' for sidebar (Calendar), 'horizontal' for top bar */
   layout?: 'vertical' | 'horizontal';
   /** Whether to show archived thoughts */
@@ -87,7 +87,7 @@ export const ViewFilterBar: React.FC<ViewFilterBarProps> = ({
               <Layers className="w-3 h-3 text-[var(--text-muted)]" />
               <span className="text-[8px] font-semibold tracking-widest text-[var(--text-muted)]">Stacks</span>
             </div>
-            {stackFilter && (
+            {stackFilter && stackFilter.length > 0 && (
               <button
                 onClick={() => setStackFilter(null)}
                 className="text-[8px] font-medium tracking-widest text-[var(--accent)] hover:underline"
@@ -116,25 +116,31 @@ export const ViewFilterBar: React.FC<ViewFilterBarProps> = ({
             onClick={() => setStackFilter(null)}
             className={cn(
               "flex-shrink-0 px-3 py-1.5 rounded-lg text-[9px] font-medium tracking-widest border transition-all",
-              !stackFilter
+              !stackFilter || stackFilter.length === 0
                 ? "bg-[var(--accent)]/20 border-[var(--accent)] text-[var(--text-primary)] shadow-[0_0_10px_var(--accent-glow)]"
                 : "bg-[var(--bg-page)] border-transparent text-[var(--text-muted)] hover:text-[var(--text-dimmed)]"
             )}
           >
             All
           </button>
-          {activeStacks.map((stack) => (
+          {activeStacks.map((stack) => {
+            const isActive = stackFilter?.includes(stack.id) ?? false;
+            return (
             <div key={stack.id} className="relative group/stack flex-shrink-0">
               <button
-                onClick={() => setStackFilter(stack.id)}
+                onClick={() => {
+                  const current = stackFilter ?? [];
+                  const next = isActive ? current.filter(s => s !== stack.id) : [...current, stack.id];
+                  setStackFilter(next.length ? next : null);
+                }}
                 className={cn(
                   "px-3 py-1.5 rounded-lg text-[9px] font-medium tracking-widest border transition-all truncate max-w-[120px]",
                   !isReadOnly && "pr-6",
-                  stackFilter === stack.id
+                  isActive
                     ? "border-current text-[var(--text-primary)] shadow-lg"
                     : "bg-[var(--bg-page)] border-transparent text-[var(--text-muted)] hover:text-[var(--text-dimmed)]"
                 )}
-                style={stackFilter === stack.id ? { 
+                style={isActive ? { 
                   backgroundColor: stack.color.replace('1)', '0.3)'),
                   color: stack.color 
                 } : {}}
@@ -152,7 +158,10 @@ export const ViewFilterBar: React.FC<ViewFilterBarProps> = ({
                       confirmText: 'Dissolve',
                       onConfirm: () => {
                         useStore.getState().deleteStack(stack.id);
-                        if (stackFilter === stack.id) setStackFilter(null);
+                        if (stackFilter?.includes(stack.id)) {
+                          const next = stackFilter.filter(s => s !== stack.id);
+                          setStackFilter(next.length ? next : null);
+                        }
                       }
                     });
                   }}
@@ -162,10 +171,11 @@ export const ViewFilterBar: React.FC<ViewFilterBarProps> = ({
                 </button>
               )}
             </div>
-          ))}
+            );
+          })}
         </div>
 
-        {!isVertical && stackFilter && (
+        {!isVertical && stackFilter && stackFilter.length > 0 && (
           <button
             onClick={() => setStackFilter(null)}
             className="text-[8px] font-medium tracking-widest text-[var(--accent-secondary)] hover:underline flex-shrink-0"

@@ -5,7 +5,6 @@ import Atmosphere from "./layers/Atmosphere";
 
 const BackgroundEngine: React.FC = () => {
   const theme = useStore((state) => state.theme);
-  const performanceMode = useStore((state) => state.performanceMode);
   const customBg = useStore((state) => state.customBg);
 
   return (
@@ -19,12 +18,12 @@ const BackgroundEngine: React.FC = () => {
 
       {!customBg && (
         <div className="relative z-10 w-full h-full">
-          <Atmosphere performanceMode={performanceMode} />
+          <Atmosphere />
         </div>
       )}
 
       <div className="relative z-20 w-full h-full">
-        <Starfield theme={theme} performanceMode={performanceMode} />
+        <Starfield theme={theme} />
       </div>
 
       {customBg && (

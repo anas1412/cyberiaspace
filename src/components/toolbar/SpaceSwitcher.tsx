@@ -43,7 +43,7 @@ export const SpaceSwitcher: React.FC<SpaceSwitcherProps> = ({
 
   return (
     <div className="space-switcher-container flex flex-col items-center pointer-events-none z-[9999] w-auto relative">
-      <div className="max-w-full flex items-center h-[44px] glass rounded-2xl shadow-lg shadow-[var(--glass-border)] transition-all pointer-events-auto border border-[var(--glass-border)] p-1">
+        <div className="max-w-full flex items-center h-[44px] glass rounded-2xl shadow-lg shadow-[var(--glass-border)] transition-all duration-200 pointer-events-auto border border-[var(--glass-border)] p-1">
         {isReadOnly ? (
           <div className="px-6 flex items-center justify-center gap-3">
             {isSpaceLoading ? (
@@ -77,10 +77,10 @@ export const SpaceSwitcher: React.FC<SpaceSwitcherProps> = ({
               onClick={() => setIsSpaceMenuOpen(!isSpaceMenuOpen)}
               aria-label="Switch Space"
 className={cn(
-                 "h-full px-4 rounded-xl flex items-center gap-3 transition-all group relative overflow-hidden",
-                 isSpaceMenuOpen
-                   ? "bg-[var(--glass-bg)] text-[var(--text-primary)] shadow-[0_0_20px_rgba(255,255,255,0.05)]"
-                   : "text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--glass-bg)]"
+                  "h-full px-4 rounded-xl flex items-center gap-3 transition-all duration-200 group relative overflow-hidden",
+                  isSpaceMenuOpen
+                    ? "bg-[var(--glass-bg)] text-[var(--text-primary)] shadow-[0_0_20px_rgba(255,255,255,0.05)]"
+                    : "text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--glass-bg)] hover:border-[var(--accent)]/30"
                )}
             >
               <div className={cn(

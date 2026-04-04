@@ -19,7 +19,7 @@ vi.mock('../../store/useStore', () => ({
     isInspectorOpen: false,
     layerActionTrigger: null,
     isDemo: false,
-    performanceMode: false,
+    physicsIntensity: 0.5,
     linkingSourceId: null,
     hoveredCalDate: null,
     setSelectedThoughtId: vi.fn(),

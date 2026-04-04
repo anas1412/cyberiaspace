@@ -1,12 +1,9 @@
 import { useEffect, useRef, useCallback } from 'react';
 import { useStore } from '../store/useStore';
 import { type Thought } from '../db';
-import { getStrategist, type LayoutContext, type PhysicsPoint } from './physics';
+import { getStrategist, getPhysicsConfig, type LayoutContext, type PhysicsPoint } from './physics';
 import { type Camera } from './useCamera';
 import { sanitizeDate } from '../utils/date';
-
-const DAMPING = 0.8;
-const MAX_VELOCITY = 10;
 
 const PRIORITY_WEIGHT = {
   urgent: 4,
@@ -32,16 +29,19 @@ export const usePhysics = (
   const calendarSearchQuery = useStore((state) => state.calendarSearchQuery);
   const calendarStackFilter = useStore((state) => state.calendarStackFilter);
   const calendarStatusFilter = useStore((state) => state.calendarStatusFilter);
+  const calendarTypeFilter = useStore((state) => state.calendarTypeFilter);
   const kanbanSearchQuery = useStore((state) => state.kanbanSearchQuery);
   const kanbanStackFilter = useStore((state) => state.kanbanStackFilter);
   const kanbanStatusFilter = useStore((state) => state.kanbanStatusFilter);
   const kanbanDateFilter = useStore((state) => state.kanbanDateFilter);
+  const kanbanTypeFilter = useStore((state) => state.kanbanTypeFilter);
   const spatialSearchQuery = useStore((state) => state.spatialSearchQuery);
   const spatialStackFilter = useStore((state) => state.spatialStackFilter);
   const spatialStatusFilter = useStore((state) => state.spatialStatusFilter);
   const spatialDateFilter = useStore((state) => state.spatialDateFilter);
+  const spatialTypeFilter = useStore((state) => state.spatialTypeFilter);
   const linkingSourceId = useStore((state) => state.linkingSourceId);
-  const performanceMode = useStore((state) => state.performanceMode);
+  const physicsIntensity = useStore((state) => state.physicsIntensity);
 
   const physicsState = useRef<Map<string, PhysicsPoint>>(new Map());
   const lastAppliedStyles = useRef<Map<string, { x: number; y: number; scale: number; rotation: number }>>(new Map());
@@ -319,7 +319,7 @@ export const usePhysics = (
       snapNextFrame.current = true;
       layoutCacheRef.current?.clear();
     }
-  }, [spatialSearchQuery, spatialStackFilter, spatialStatusFilter, spatialDateFilter, currentMode]);
+  }, [spatialSearchQuery, spatialStackFilter, spatialStatusFilter, spatialDateFilter, spatialTypeFilter, currentMode]);
 
   useEffect(() => {
     const handleMove = (clientX: number, clientY: number) => {
@@ -536,10 +536,11 @@ export const usePhysics = (
             const mS = !kanbanSearchQuery || 
               t.text.toLowerCase().includes(kanbanSearchQuery.toLowerCase()) || 
               (t.data?.type === 'text' ? t.data.content : ((t as any).content || '')).toLowerCase().includes(kanbanSearchQuery.toLowerCase());
-            const mStack = !kanbanStackFilter || t.stackId === kanbanStackFilter;
-            const mStatus = !kanbanStatusFilter || t.status === kanbanStatusFilter;
+            const mStack = !kanbanStackFilter || (t.stackId ? kanbanStackFilter.includes(t.stackId) : false);
+            const mStatus = !kanbanStatusFilter || kanbanStatusFilter.includes(t.status as 'todo' | 'doing' | 'done');
             const mDate = !kanbanDateFilter || (t.startTime ? new Date(t.startTime).toISOString().split('T')[0] === kanbanDateFilter : false);
-            return mS && mStack && mStatus && mDate;
+            const mType = !kanbanTypeFilter || kanbanTypeFilter.includes(t.type as import('../db').ThoughtType);
+            return mS && mStack && mStatus && mDate && mType;
           })
           .sort((a, b) => a.order - b.order);
         columnMap.set(status, list);
@@ -552,10 +553,11 @@ export const usePhysics = (
         const matchesSearch = !calendarSearchQuery || 
           t.text.toLowerCase().includes(calendarSearchQuery.toLowerCase()) ||
           (t.data?.type === 'text' ? t.data.content : ((t as any).content || '')).toLowerCase().includes(calendarSearchQuery.toLowerCase());
-        const matchesStack = !calendarStackFilter || t.stackId === calendarStackFilter;
-        const matchesStatus = !calendarStatusFilter || t.status === calendarStatusFilter;
+        const matchesStack = !calendarStackFilter || (t.stackId ? calendarStackFilter.includes(t.stackId) : false);
+        const matchesStatus = !calendarStatusFilter || calendarStatusFilter.includes(t.status as 'todo' | 'doing' | 'done');
+        const matchesType = !calendarTypeFilter || calendarTypeFilter.includes(t.type as import('../db').ThoughtType);
         
-        if (matchesSearch && matchesStack && matchesStatus) {
+        if (matchesSearch && matchesStack && matchesStatus && matchesType) {
           dateMap.get(dateKey)!.push(t);
         }
       });
@@ -602,10 +604,11 @@ export const usePhysics = (
       const matchesSearch = !spatialSearchQuery || 
         t.text.toLowerCase().includes(spatialSearchQuery.toLowerCase()) ||
         (t.data?.type === 'text' ? t.data.content : ((t as any).content || '')).toLowerCase().includes(spatialSearchQuery.toLowerCase());
-      const matchesStack = !spatialStackFilter || t.stackId === spatialStackFilter;
-      const matchesStatus = !spatialStatusFilter || t.status === spatialStatusFilter;
+      const matchesStack = !spatialStackFilter || (t.stackId ? spatialStackFilter.includes(t.stackId) : false);
+      const matchesStatus = !spatialStatusFilter || spatialStatusFilter.includes(t.status as 'todo' | 'doing' | 'done');
       const matchesDate = !spatialDateFilter || (t.startTime ? new Date(t.startTime).toISOString().split('T')[0] === spatialDateFilter : false);
-      return matchesSearch && matchesStack && matchesStatus && matchesDate;
+      const matchesType = !spatialTypeFilter || spatialTypeFilter.includes(t.type as import('../db').ThoughtType);
+      return matchesSearch && matchesStack && matchesStatus && matchesDate && matchesType;
     })) : null;
 
     const context: LayoutContext = {
@@ -640,7 +643,8 @@ export const usePhysics = (
       calendarCellMap,
       thoughtMap: thoughtMap.current,
       columnMap,
-      dateMap
+      dateMap,
+      physicsConfig: getPhysicsConfig(physicsIntensity),
     };
 
 
@@ -649,7 +653,7 @@ export const usePhysics = (
     let sidebarHeight = 0;
 
     frameCount.current++;
-    const shouldCalculatePhysics = !performanceMode && (activeSpace?.physics ?? true);
+    const shouldCalculatePhysics = physicsIntensity > 0 && (activeSpace?.physics ?? true);
 
     // 1. Calculate Targets & Apply Forces
     // Ensure layout cache exists
@@ -689,11 +693,12 @@ export const usePhysics = (
             const { vx, vy } = strategist.applyForces(id, p, state, t, allThoughts, context, elementHeights);
             p.vx += vx * timeScale; p.vy += vy * timeScale;
           }
-          p.vx *= Math.pow(DAMPING, timeScale); 
-          p.vy *= Math.pow(DAMPING, timeScale);
+          const physConfig = context.physicsConfig!;
+          p.vx *= Math.pow(physConfig.damping, timeScale); 
+          p.vy *= Math.pow(physConfig.damping, timeScale);
           
           const speed = Math.sqrt(p.vx * p.vx + p.vy * p.vy);
-          if (speed > MAX_VELOCITY) { p.vx = (p.vx / speed) * MAX_VELOCITY; p.vy = (p.vy / speed) * MAX_VELOCITY; }
+          if (speed > physConfig.maxVelocity) { p.vx = (p.vx / speed) * physConfig.maxVelocity; p.vy = (p.vy / speed) * physConfig.maxVelocity; }
           
           p.x += p.vx * timeScale; 
           p.y += p.vy * timeScale;
@@ -939,7 +944,7 @@ export const usePhysics = (
       }
     });
     if (ids.length > 0) snapNextFrame.current = false;
-  }, [activeSpace, activeSpaceId, calendarViewDate, hoveredCalDate, calendarSearchQuery, calendarStackFilter, calendarStatusFilter, kanbanSearchQuery, kanbanStackFilter, kanbanStatusFilter, kanbanDateFilter, spatialSearchQuery, spatialStackFilter, spatialStatusFilter, spatialDateFilter, camera, linkingSourceId, getGlobalScale, applyHomeReturn, selectedThoughtId, performanceMode, stacks, canvasRef]);
+  }, [activeSpace, activeSpaceId, calendarViewDate, hoveredCalDate, calendarSearchQuery, calendarStackFilter, calendarStatusFilter, calendarTypeFilter, kanbanSearchQuery, kanbanStackFilter, kanbanStatusFilter, kanbanDateFilter, kanbanTypeFilter, spatialSearchQuery, spatialStackFilter, spatialStatusFilter, spatialDateFilter, spatialTypeFilter, camera, linkingSourceId, getGlobalScale, applyHomeReturn, selectedThoughtId, physicsIntensity, stacks, canvasRef]);
 
   useEffect(() => {
     const animate = () => { loop(); requestRef.current = requestAnimationFrame(animate); };

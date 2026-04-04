@@ -1,9 +1,11 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useStore } from '../../store/useStore';
-import { Filter, Search, Calendar, Archive, EyeOff, Eye, Circle, Clock, CheckCircle2, X, ChevronDown, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Filter, Search, Calendar, Archive, EyeOff, Eye, Circle, Clock, CheckCircle2, X, ChevronDown, ChevronLeft, ChevronRight, Tag } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
+import { ThoughtRegistry } from '../thought/registry';
+import { type ThoughtType } from '../../db';
 
 function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -186,12 +188,18 @@ export const FilterPanel: React.FC = () => {
   const setKanbanStatusFilter = useStore((state) => state.setKanbanStatusFilter);
   const calendarStatusFilter = useStore((state) => state.calendarStatusFilter);
   const setCalendarStatusFilter = useStore((state) => state.setCalendarStatusFilter);
+  const calendarTypeFilter = useStore((state) => state.calendarTypeFilter);
+  const setCalendarTypeFilter = useStore((state) => state.setCalendarTypeFilter);
 
   // Mode-specific date filter
   const spatialDateFilter = useStore((state) => state.spatialDateFilter);
   const setSpatialDateFilter = useStore((state) => state.setSpatialDateFilter);
+  const spatialTypeFilter = useStore((state) => state.spatialTypeFilter);
+  const setSpatialTypeFilter = useStore((state) => state.setSpatialTypeFilter);
   const kanbanDateFilter = useStore((state) => state.kanbanDateFilter);
   const setKanbanDateFilter = useStore((state) => state.setKanbanDateFilter);
+  const kanbanTypeFilter = useStore((state) => state.kanbanTypeFilter);
+  const setKanbanTypeFilter = useStore((state) => state.setKanbanTypeFilter);
 
   // Archive (global)
   const showArchived = useStore((state) => state.showArchived);
@@ -201,14 +209,17 @@ export const FilterPanel: React.FC = () => {
   const searchQuery = mode === 'spatial' ? spatialSearchQuery : mode === 'kanban' ? kanbanSearchQuery : calendarSearchQuery;
   const setSearchQuery = mode === 'spatial' ? setSpatialSearchQuery : mode === 'kanban' ? setKanbanSearchQuery : setCalendarSearchQuery;
 
-  const stackFilter = mode === 'spatial' ? spatialStackFilter : mode === 'kanban' ? kanbanStackFilter : calendarStackFilter;
+  const stackFilter = (mode === 'spatial' ? spatialStackFilter : mode === 'kanban' ? kanbanStackFilter : calendarStackFilter) as string[] | null;
   const setStackFilter = mode === 'spatial' ? setSpatialStackFilter : mode === 'kanban' ? setKanbanStackFilter : setCalendarStackFilter;
 
-  const statusFilter = mode === 'spatial' ? spatialStatusFilter : mode === 'kanban' ? kanbanStatusFilter : calendarStatusFilter;
+  const statusFilter = (mode === 'spatial' ? spatialStatusFilter : mode === 'kanban' ? kanbanStatusFilter : calendarStatusFilter) as Array<'todo' | 'doing' | 'done'> | null;
   const setStatusFilter = mode === 'spatial' ? setSpatialStatusFilter : mode === 'kanban' ? setKanbanStatusFilter : setCalendarStatusFilter;
 
   const dateFilter = mode === 'spatial' ? spatialDateFilter : mode === 'kanban' ? kanbanDateFilter : null;
   const setDateFilter = mode === 'spatial' ? setSpatialDateFilter : mode === 'kanban' ? setKanbanDateFilter : null;
+
+  const typeFilter = mode === 'spatial' ? spatialTypeFilter : mode === 'kanban' ? kanbanTypeFilter : calendarTypeFilter;
+  const setTypeFilter = mode === 'spatial' ? setSpatialTypeFilter : mode === 'kanban' ? setKanbanTypeFilter : setCalendarTypeFilter;
 
   // Enable horizontal scrolling with mouse wheel on stack reel
   useEffect(() => {
@@ -245,9 +256,10 @@ export const FilterPanel: React.FC = () => {
     setStackFilter(null);
     setStatusFilter(null);
     if (setDateFilter) setDateFilter(null);
+    if (setTypeFilter) setTypeFilter(null);
   };
 
-  const hasActiveFilters = searchQuery || stackFilter || statusFilter || dateFilter;
+  const hasActiveFilters = searchQuery || (stackFilter && stackFilter.length > 0) || (statusFilter && statusFilter.length > 0) || dateFilter || (typeFilter && typeFilter.length > 0);
 
   return (
     <div className="filter-panel-container relative pointer-events-auto">
@@ -255,13 +267,13 @@ export const FilterPanel: React.FC = () => {
       <div
         onClick={() => setIsOpen(!isOpen)}
         className={cn(
-          "h-[44px] glass rounded-2xl border border-[var(--glass-border)] shadow-lg shadow-[var(--glass-border)] flex items-center cursor-pointer transition-all",
-          isOpen ? "pl-4 pr-4 text-[var(--text-primary)]" : "px-4 hover:border-[var(--accent)]/30 hover:text-[var(--text-primary)]"
+          "h-[44px] glass rounded-2xl border border-[var(--glass-border)] shadow-lg shadow-[var(--glass-border)] flex items-center cursor-pointer transition-all duration-200",
+          isOpen ? "pl-4 pr-4 bg-[var(--glass-bg)] text-[var(--text-primary)]" : "px-4 text-[var(--text-muted)] hover:bg-[var(--glass-bg)] hover:border-[var(--accent)]/30 hover:text-[var(--text-primary)]"
         )}
       >
         <div className="flex items-center gap-2.5 flex-shrink-0">
           <Filter className={cn("w-3.5 h-3.5", hasActiveFilters ? "text-[var(--accent)]" : "text-[var(--text-muted)]")} />
-          <span className="text-[12px] font-semibold tracking-wide whitespace-nowrap text-[var(--text-muted)]">
+          <span className="text-[12px] font-semibold tracking-wide whitespace-nowrap">
             Filters
           </span>
           {hasActiveFilters && (
@@ -278,11 +290,11 @@ export const FilterPanel: React.FC = () => {
       <AnimatePresence>
         {isOpen && (
           <motion.div
-            initial={{ opacity: 0, y: 8, scale: 0.96 }}
+            initial={{ opacity: 0, y: -8, scale: 0.96 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: 8, scale: 0.96 }}
+            exit={{ opacity: 0, y: -8, scale: 0.96 }}
             transition={{ duration: 0.2, ease: [0.23, 1, 0.32, 1] }}
-            className="absolute top-full left-0 mt-2 w-80 glass rounded-2xl border border-[var(--glass-border)] shadow-2xl z-[10001]"
+            className="absolute top-full left-0 mt-2 w-80 glass rounded-2xl border border-[var(--glass-border)] shadow-2xl z-[10001] overflow-hidden"
           >
             {/* Header */}
             <div className="flex items-center justify-between px-4 py-3 border-b border-[var(--glass-border)] bg-[var(--bg-main)]/40">
@@ -341,6 +353,62 @@ export const FilterPanel: React.FC = () => {
               </div>
             )}
 
+            {/* Type */}
+            {setTypeFilter && (
+              <div className="px-4 py-3 border-b border-[var(--glass-border)]">
+                <div className="flex items-center justify-between mb-2">
+                  <div className="flex items-center gap-2">
+                    <Tag className="w-3 h-3 text-[var(--text-muted)]" />
+                    <span className="text-[9px] font-black tracking-widest uppercase text-[var(--text-muted)]">Type</span>
+                  </div>
+                  {typeFilter && (
+                    <button
+                      onClick={() => setTypeFilter(null)}
+                      className="text-[8px] font-medium tracking-widest text-[var(--accent)] hover:underline"
+                    >
+                      Clear
+                    </button>
+                  )}
+                </div>
+                <div className="flex flex-wrap gap-1.5">
+                  <button
+                    onClick={() => setTypeFilter(null)}
+                    className={cn(
+                      "h-7 px-2.5 rounded-lg text-[9px] font-medium tracking-wider border transition-all flex items-center gap-1.5",
+                      !typeFilter || typeFilter.length === 0
+                        ? "bg-[var(--accent)]/20 border-[var(--accent)] text-[var(--text-primary)]"
+                        : "bg-[var(--bg-page)] border-transparent text-[var(--text-muted)] hover:text-[var(--text-primary)]"
+                    )}
+                  >
+                    All
+                  </button>
+                  {(Object.entries(ThoughtRegistry) as [ThoughtType, typeof ThoughtRegistry[ThoughtType]][]).map(([type, config]) => {
+                    const Icon = config.icon;
+                    const isActive = typeFilter?.includes(type) ?? false;
+                    return (
+                      <button
+                        key={type}
+                        onClick={() => {
+                          const current = typeFilter ?? [];
+                          const next = isActive ? current.filter(t => t !== type) : [...current, type];
+                          setTypeFilter(next.length ? next : null);
+                        }}
+                        className={cn(
+                          "h-7 px-2.5 rounded-lg text-[9px] font-medium tracking-wider border transition-all flex items-center gap-1.5",
+                          isActive
+                            ? "bg-[var(--accent)]/20 border-[var(--accent)] text-[var(--text-primary)]"
+                            : "bg-[var(--bg-page)] border-transparent text-[var(--text-muted)] hover:text-[var(--text-primary)]"
+                        )}
+                      >
+                        <Icon className="w-3 h-3" />
+                        {config.label}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
             {/* Status (All modes except Kanban - status IS the column layout) */}
             {mode !== 'kanban' && (
             <div className="px-4 py-3 border-b border-[var(--glass-border)]">
@@ -351,11 +419,24 @@ export const FilterPanel: React.FC = () => {
               <div className="flex flex-wrap gap-1.5">
                 {STATUS_OPTIONS.map((status) => {
                   const Icon = status.icon;
-                  const isActive = statusFilter === status.value || (status.value === 'none' && !statusFilter);
+                  const isActive = status.value === 'none'
+                    ? (!statusFilter || statusFilter.length === 0)
+                    : statusFilter?.includes(status.value as 'todo' | 'doing' | 'done') ?? false;
                   return (
                     <button
                       key={status.value}
-                      onClick={() => setStatusFilter(status.value === 'none' ? null : status.value as 'todo' | 'doing' | 'done')}
+                      onClick={() => {
+                        if (status.value === 'none') {
+                          setStatusFilter(null);
+                        } else {
+                          const val = status.value as 'todo' | 'doing' | 'done';
+                          const current: Array<'todo' | 'doing' | 'done'> = statusFilter ?? [];
+                          const next = current.includes(val)
+                            ? current.filter(s => s !== val)
+                            : [...current, val];
+                          setStatusFilter(next.length ? next : null);
+                        }
+                      }}
                       className={cn(
                         "h-7 px-2.5 rounded-lg text-[9px] font-medium tracking-wider border transition-all flex items-center gap-1.5",
                         isActive
@@ -379,7 +460,7 @@ export const FilterPanel: React.FC = () => {
                   <ChevronDown className="w-3 h-3 text-[var(--text-muted)]" />
                   <span className="text-[9px] font-black tracking-widest uppercase text-[var(--text-muted)]">Stacks</span>
                 </div>
-                {stackFilter && (
+                {stackFilter && stackFilter.length > 0 && (
                   <button
                     onClick={() => setStackFilter(null)}
                     className="text-[8px] font-medium tracking-widest text-[var(--accent)] hover:underline"
@@ -396,31 +477,38 @@ export const FilterPanel: React.FC = () => {
                   onClick={() => setStackFilter(null)}
                   className={cn(
                     "flex-shrink-0 h-7 px-2.5 rounded-lg text-[9px] font-medium tracking-wider border transition-all",
-                    !stackFilter
+                    !stackFilter || stackFilter.length === 0
                       ? "bg-[var(--accent)]/20 border-[var(--accent)] text-[var(--text-primary)]"
                       : "bg-[var(--bg-page)] border-transparent text-[var(--text-muted)] hover:text-[var(--text-primary)]"
                   )}
                 >
                   All
                 </button>
-                {activeStacks.map((stack) => (
-                  <button
-                    key={stack.id}
-                    onClick={() => setStackFilter(stack.id)}
-                    className={cn(
-                      "flex-shrink-0 h-7 px-2.5 rounded-lg text-[9px] font-medium tracking-wider border transition-all truncate max-w-[100px]",
-                      stackFilter === stack.id
-                        ? "border-current text-[var(--text-primary)]"
-                        : "bg-[var(--bg-page)] border-transparent text-[var(--text-muted)] hover:text-[var(--text-primary)]"
-                    )}
-                    style={stackFilter === stack.id ? {
-                      backgroundColor: stack.color.replace('1)', '0.3)'),
-                      color: stack.color
-                    } : {}}
-                  >
-                    {stack.name}
-                  </button>
-                ))}
+                {activeStacks.map((stack) => {
+                  const isActive = stackFilter?.includes(stack.id) ?? false;
+                  return (
+                    <button
+                      key={stack.id}
+                      onClick={() => {
+                        const current = stackFilter ?? [];
+                        const next = isActive ? current.filter(s => s !== stack.id) : [...current, stack.id];
+                        setStackFilter(next.length ? next : null);
+                      }}
+                      className={cn(
+                        "flex-shrink-0 h-7 px-2.5 rounded-lg text-[9px] font-medium tracking-wider border transition-all truncate max-w-[100px]",
+                        isActive
+                          ? "border-current text-[var(--text-primary)]"
+                          : "bg-[var(--bg-page)] border-transparent text-[var(--text-muted)] hover:text-[var(--text-primary)]"
+                      )}
+                      style={isActive ? {
+                        backgroundColor: stack.color.replace('1)', '0.3)'),
+                        color: stack.color
+                      } : {}}
+                    >
+                      {stack.name}
+                    </button>
+                  );
+                })}
               </div>
             </div>
 

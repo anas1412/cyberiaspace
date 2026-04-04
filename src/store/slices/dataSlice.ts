@@ -27,8 +27,6 @@ export const createDataSlice: StateCreator<CyberiaState, [], [], any> = (set, ge
     const hasAuthCode = new URLSearchParams(window.location.search).has('code');
 
     try {
-      if (get().performanceMode) document.body.classList.add('low-perf');
-
       // Ensure DB is open and ready
       try {
         await db.open();

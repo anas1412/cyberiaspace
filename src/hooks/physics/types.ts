@@ -45,6 +45,17 @@ export interface LayoutContext {
   kanbanPadding?: number;
   kanbanColumnScrollTop?: number;
   kanbanColumnTop?: number;
+  // Physics configuration (dynamic, from store)
+  physicsConfig?: {
+    intensity: number;       // 0 = frozen, 0.5 = default, 1.0 = high energy
+    repulsion: number;       // base repulsion force
+    attraction: number;      // stack attraction strength
+    gravityX: number;        // horizontal gravity
+    gravityY: number;        // vertical gravity
+    comfortZone: number;     // distance before attraction kicks in
+    damping: number;         // velocity decay per frame
+    maxVelocity: number;     // velocity cap
+  };
 }
 
 

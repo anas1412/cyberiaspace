@@ -67,6 +67,7 @@ export const MODEL_TIERS = {
     monthlyQuota: null,
     description: 'Free models with unlimited access',
     models: [
+      { id: 'qwen/qwen3.6-plus:free', name: 'Qwen: Qwen3.6 Plus', desc: 'Recommended' },
       { id: 'stepfun/step-3.5-flash:free', name: 'StepFun: Step 3.5 Flash', desc: '' },
       { id: 'minimax/minimax-m2.5:free', name: 'MiniMax M2.5', desc: '' },
       { id: 'z-ai/glm-4.5-air:free', name: 'Z.ai: GLM 4.5 Air', desc: '' },

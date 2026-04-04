@@ -2,11 +2,16 @@ import { type StateCreator } from 'zustand';
 import type { CyberiaState } from '../types';
 
 export const createCanvasSlice: StateCreator<CyberiaState, [], [], any> = (set, get, _api) => ({
-  performanceMode: typeof window !== 'undefined' ? (window.innerWidth < 763) : false,
-  setPerformanceMode: (performanceMode: boolean) => {
-    set({ performanceMode });
-    if (performanceMode) document.body.classList.add('low-perf');
-    else document.body.classList.remove('low-perf');
+  // Physics intensity: 0 = frozen, 0.5 = default, 1.0 = high energy
+  physicsIntensity: typeof window !== 'undefined'
+    ? parseFloat(localStorage.getItem('cyberia-physics-intensity') ?? '0.5')
+    : 0.5,
+  setPhysicsIntensity: (physicsIntensity: number) => {
+    const clamped = Math.max(0, Math.min(1, physicsIntensity));
+    set({ physicsIntensity: clamped });
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('cyberia-physics-intensity', clamped.toString());
+    }
   },
   transform: { x: 0, y: 0, scale: 1 },
   setTransform: (transform: { x: number; y: number; scale: number }) => set({ transform }),

@@ -1,4 +1,4 @@
-import { type Space, type Thought, type Stack } from '../db';
+import { type Space, type Thought, type Stack, type ThoughtType } from '../db';
 import { type User, type SubscriptionPlan, type AccessPeriod, PLAN_CONFIG } from '../constants';
 
 export interface CyberiaState {
@@ -36,8 +36,8 @@ export interface CyberiaState {
   isInitializing: boolean;
   setInitializing: (isInitializing: boolean) => void;
   setInitializationState: (isInitializing: boolean, isSpaceLoading: boolean) => void;
-  performanceMode: boolean;
-  setPerformanceMode: (mode: boolean) => void;
+  physicsIntensity: number;
+  setPhysicsIntensity: (intensity: number) => void;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   deferredPrompt: any;
   layerActionTrigger: { id: string; time: number } | null;
@@ -124,16 +124,22 @@ export interface CyberiaState {
 
   setHoveredCalDate: (date: string | null) => void;
   setCalendarSearchQuery: (query: string) => void;
-  setCalendarStackFilter: (stackId: string | null) => void;
-  setCalendarStatusFilter: (status: 'none' | 'todo' | 'doing' | 'done' | null) => void;
+  setCalendarStackFilter: (stackIds: string[] | null) => void;
+  setCalendarStatusFilter: (statuses: Array<'todo' | 'doing' | 'done'> | null) => void;
+  calendarTypeFilter: ThoughtType[] | null;
+  setCalendarTypeFilter: (types: ThoughtType[] | null) => void;
   setKanbanSearchQuery: (query: string) => void;
-  setKanbanStackFilter: (stackId: string | null) => void;
-  setKanbanStatusFilter: (status: 'none' | 'todo' | 'doing' | 'done' | null) => void;
+  setKanbanStackFilter: (stackIds: string[] | null) => void;
+  setKanbanStatusFilter: (statuses: Array<'todo' | 'doing' | 'done'> | null) => void;
   setKanbanDateFilter: (date: string | null) => void;
+  kanbanTypeFilter: ThoughtType[] | null;
+  setKanbanTypeFilter: (types: ThoughtType[] | null) => void;
   setSpatialSearchQuery: (query: string) => void;
-  setSpatialStackFilter: (stackId: string | null) => void;
-  setSpatialStatusFilter: (status: 'none' | 'todo' | 'doing' | 'done' | null) => void;
+  setSpatialStackFilter: (stackIds: string[] | null) => void;
+  setSpatialStatusFilter: (statuses: Array<'todo' | 'doing' | 'done'> | null) => void;
   setSpatialDateFilter: (date: string | null) => void;
+  spatialTypeFilter: ThoughtType[] | null;
+  setSpatialTypeFilter: (types: ThoughtType[] | null) => void;
   setShowArchived: (show: boolean) => void;
   setLinkingSourceId: (id: string | null) => void;
 

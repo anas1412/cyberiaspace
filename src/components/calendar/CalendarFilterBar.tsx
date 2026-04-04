@@ -12,7 +12,7 @@ export const CalendarFilterBar: React.FC = () => {
     <ViewFilterBar
       searchQuery={calendarSearchQuery}
       setSearchQuery={setCalendarSearchQuery}
-      stackFilter={calendarStackFilter}
+      stackFilter={calendarStackFilter as string[] | null}
       setStackFilter={setCalendarStackFilter}
       layout="vertical"
     />
