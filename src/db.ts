@@ -6,6 +6,30 @@ import Dexie, { type EntityTable } from 'dexie';
 
 export type ThoughtType = 'label' | 'text' | 'tasks' | 'paint' | 'table' | 'embed' | 'file';
 
+/**
+ * Type-based default layer offsets for visual stacking order.
+ * Higher values render on top. Manual bringToFront/sendToBack
+ * adds/subtracts from this base value.
+ *
+ * Order rationale:
+ *   label  — Annotations must always be readable on top
+ *   tasks  — Interactive elements need visibility
+ *   text   — Primary content, needs legibility
+ *   table  — Structured data, medium priority
+ *   paint  — Creative layer, neutral
+ *   embed  — Media is often decorative/background
+ *   file   — Reference material, sits behind content
+ */
+export const TYPE_BASE_LAYERS: Record<ThoughtType, number> = {
+  label: 10,
+  tasks: 6,
+  text: 4,
+  table: 2,
+  paint: 0,
+  embed: -2,
+  file: -4,
+};
+
 export interface FileMeta {
   name?: string;
   size?: number;

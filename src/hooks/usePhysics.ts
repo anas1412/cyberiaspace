@@ -793,21 +793,33 @@ export const usePhysics = (
           ctx.lineCap = 'round';
           ctx.lineJoin = 'round';
           
-          // 1. PATH DEFINITION (Raw World Coordinates)
-          ctx.beginPath();
-          for (let i = 0; i < memberIds.length; i++) {
-            const pA = state.get(memberIds[i]); if (!pA) continue;
-            const hA = elementHeights.get(memberIds[i]) || 120;
-            const xA = pA.x + 140;
-            const yA = pA.y + hA / 2;
+          // 1. PATH DEFINITION — Star/hub topology (all members → geometric centroid)
+          // O(n): no implied sequence, just "these belong together"
+          let centroidX = 0;
+          let centroidY = 0;
+          let validCount = 0;
 
-            for (let j = i + 1; j < memberIds.length; j++) {
-              const pB = state.get(memberIds[j]); if (!pB) continue;
-              const hB = elementHeights.get(memberIds[j]) || 120;
-              ctx.moveTo(xA, yA);
-              ctx.lineTo(pB.x + 140, pB.y + hB / 2);
-            }
-          }
+          memberIds.forEach(id => {
+            const p = state.get(id);
+            if (!p) return;
+            const h = elementHeights.get(id) || 120;
+            centroidX += p.x + 140;
+            centroidY += p.y + h / 2;
+            validCount++;
+          });
+
+          if (validCount < 2) return;
+          centroidX /= validCount;
+          centroidY /= validCount;
+
+          ctx.beginPath();
+          memberIds.forEach(id => {
+            const p = state.get(id);
+            if (!p) return;
+            const h = elementHeights.get(id) || 120;
+            ctx.moveTo(p.x + 140, p.y + h / 2);
+            ctx.lineTo(centroidX, centroidY);
+          });
 
           // Enhanced glow effect for stack connections
           ctx.setLineDash([]);

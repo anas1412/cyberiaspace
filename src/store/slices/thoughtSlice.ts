@@ -1,6 +1,6 @@
 import { type StateCreator } from 'zustand';
 import { type CyberiaState } from '../types';
-import { db, type Thought, type Stack } from '../../db';
+import { db, type Thought, type Stack, TYPE_BASE_LAYERS } from '../../db';
 import { useAuthStore } from '../useAuthStore';
 import { syncOrchestrator } from '../../services/sync/syncOrchestrator';
 import { useModalStore } from '../useModalStore';
@@ -103,7 +103,7 @@ export const createThoughtSlice: StateCreator<CyberiaState, [], [], any> = (set,
       priority: sanitizePriority(partialThought.priority || 'none'),
       size: 1,
       order: Date.now(),
-      layer: 0,
+      layer: TYPE_BASE_LAYERS[thoughtType] ?? 0,
       author: '',
       syncStatus: shouldMarkLocal ? 'local' : undefined,
       updatedAt: Date.now(),
@@ -195,7 +195,7 @@ export const createThoughtSlice: StateCreator<CyberiaState, [], [], any> = (set,
         priority: sanitizePriority(partial.priority || 'none'),
         size: 1,
         order: Date.now() + i,
-        layer: 0,
+        layer: TYPE_BASE_LAYERS[thoughtType] ?? 0,
         author: '',
         syncStatus: 'local',
         updatedAt: Date.now(),
@@ -238,6 +238,11 @@ export const createThoughtSlice: StateCreator<CyberiaState, [], [], any> = (set,
     
     if (updates.status) updates.status = sanitizeStatus(updates.status);
     if (updates.priority) updates.priority = sanitizePriority(updates.priority);
+
+    // Auto-adjust layer when thought type changes to match new type's base layer
+    if (updates.type && updates.type !== thought.type) {
+      updates.layer = TYPE_BASE_LAYERS[updates.type] ?? 0;
+    }
 
     if (!(Object.keys(updates).length <= 4 && !updates.data) && !isBlobType) {
       if (JSON.stringify(updates).length > 2 * 1024 * 1024) {
@@ -303,6 +308,11 @@ export const createThoughtSlice: StateCreator<CyberiaState, [], [], any> = (set,
 
     if (updates.status) updates.status = sanitizeStatus(updates.status);
     if (updates.priority) updates.priority = sanitizePriority(updates.priority);
+
+    // Auto-adjust layer when thought type changes (bulk update)
+    if (updates.type) {
+      updates.layer = TYPE_BASE_LAYERS[updates.type] ?? 0;
+    }
 
     // Check stack limit when moving multiple thoughts to a stack
     if (updates.stackId != null) {

@@ -12,6 +12,7 @@
 | Standards | `core/standards/code-quality.md` | Critical patterns (stale state, 3-layer write, etc.) | critical |
 | Standards | `core/standards/ui-components.md` | CSS variables, typography, glass patterns | high |
 | Processes | `core/processes/state-mutations.md` | Decision trees for store operations | high |
+| Intelligence | `project-intelligence/technical-domain.md` | Tech stack, architecture, coding patterns | critical |
 
 ---
 
@@ -29,6 +30,12 @@
 | File | What It Covers |
 |------|----------------|
 | `state-mutations.md` | Stack limits, choosing update functions, sync triggers, editing registry |
+
+### Project Intelligence (`project-intelligence/`)
+
+| File | What It Covers |
+|------|----------------|
+| `technical-domain.md` | Tech stack, API patterns, component style, naming, standards, security |
 
 ---
 
@@ -59,3 +66,4 @@ When executing code tasks, load context in this order:
 | `core/standards/code-quality.md` | 1.0 | 2026-04-03 |
 | `core/standards/ui-components.md` | 1.0 | 2026-04-03 |
 | `core/processes/state-mutations.md` | 1.0 | 2026-04-03 |
+| `project-intelligence/technical-domain.md` | 1.0 | 2026-04-04 |
