@@ -388,6 +388,8 @@ This section serves as a definitive reference for patterns that are deprecated. 
 - **Onboarding:** Generating initial thoughts, stacks, or multiple spaces for new users is deprecated. Use `createInitialWorkspace` to provide a single, empty "Workspace" for a pure start. The `isOnboarding: true` flag is deprecated for general space use and only remains for the `Homepage` live demo.
 - **Conflict Resolution:** The "Local vs Cloud" choice screen is deprecated. All synchronization conflicts must be resolved automatically using **Last-Write-Wins (LWW)** logic based on the `updatedAt` field.
 - **Custom Themes:** Space-specific themes (storing theme in space settings) are deprecated. Only the global `dark` and `light` themes are supported. The `theme` field in Space entities should not be used.
+- **Performance Mode:** The `performanceMode` flag and related optimizations are deprecated. The physics engine and rendering are now always-on at full quality. Remove all `performanceMode` checks and branches from components.
+- **Performance Mode:** The `performanceMode` flag and related optimizations are deprecated. The physics engine and rendering are now always-on at full quality. Remove all `performanceMode` checks and branches from components.
 
 ---
 

@@ -36,7 +36,6 @@ const ThoughtNode: React.FC<ThoughtNodeProps> = React.memo(({ thought, registerE
   const layerActionTrigger = useStore((state) => state.layerActionTrigger?.id === thought.id ? state.layerActionTrigger : null);
   const isReadOnly = useStore((state) => state.isReadOnly);
   const isDemo = useStore((state) => state.isDemo);
-  const performanceMode = useStore((state) => state.performanceMode);
 
 
   const setSelectedThoughtId = useStore((state) => state.setSelectedThoughtId);
@@ -79,20 +78,23 @@ const ThoughtNode: React.FC<ThoughtNodeProps> = React.memo(({ thought, registerE
 
 
   const altitudeStyles = useMemo(() => {
-    if (!thought.layer) return {};
-    if (performanceMode) {
+    const shadowSize = isDragging ? 60 : Math.min(50, ((thought.layer || 0) % 100) + 10);
+    const altitudeScale = 1 + (Math.min(10, ((thought.layer || 0) % 10)) / 200);
+    
+    if (isSelected) {
       return {
-        boxShadow: isSelected ? `0 0 20px var(--accent-glow)` : `0 4px 12px rgba(0,0,0,0.4)`,
-        transform: 'scale(1)',
+        boxShadow: `0 0 12px rgba(99,102,241,0.5), 0 4px 20px var(--selection-shadow)`,
+        transform: `scale(${altitudeScale})`,
       };
     }
-    const shadowSize = isDragging ? 60 : Math.min(50, (thought.layer % 100) + 10);
-    const altitudeScale = 1 + (Math.min(10, (thought.layer % 10)) / 200);
+    
+    if (!thought.layer) return { transform: `scale(${altitudeScale})` };
+    
     return {
       boxShadow: `0 ${shadowSize / 2}px ${shadowSize}px rgba(0,0,0,0.6)`,
       transform: `scale(${altitudeScale})`,
     };
-  }, [thought.layer, isDragging, performanceMode, isSelected]);
+  }, [thought.layer, isDragging, isSelected]);
 
   const parsedContent = useMemo(() => {
     return content ? marked.parse(content) : '';
@@ -258,12 +260,12 @@ const ThoughtNode: React.FC<ThoughtNodeProps> = React.memo(({ thought, registerE
 
       <div
         className={cn(
-          "thought-bulb-content group backdrop-blur-[20px] border rounded-2xl flex flex-col relative transition-all duration-300 overflow-hidden",
+          "thought-bulb-content group backdrop-blur-[20px] border rounded-2xl flex flex-col relative transition-[border-color,background-color,transform,padding,gap,opacity] duration-300 overflow-hidden",
           isArchived && "pointer-events-none",
           isCalendar && !isExpanded ? "p-3 gap-0" : "p-4.5 gap-2",
           isSpatial && !isSelected && "gap-0",
           isSelected
-            ? "border-[var(--accent)]/50 shadow-[0_0_40px_var(--accent-glow)] bg-[var(--node-bg)]/80"
+            ? "border-2 border-[var(--accent)] bg-[var(--node-bg)]/95"
             : "border-[var(--glass-border)] shadow-[0_10px_40px_rgba(0,0,0,0.5)] bg-[var(--node-bg)]/60",
           linkingSourceId === thought.id && "ring-2 ring-[var(--accent)] shadow-[0_0_20px_var(--accent-glow)]",
           linkingSourceId && linkingSourceId !== thought.id && "hover:scale-105 hover:border-[var(--accent)]/50 cursor-pointer",

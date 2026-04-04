@@ -96,6 +96,7 @@
   --accent: #6366f1;
   --accent-secondary: #818cf8;
   --accent-glow: rgba(226, 232, 240, 0.3);
+  --selection-shadow: rgba(99, 102, 241, 0.25);
   --glow-color: rgba(226, 232, 240, 0.1);
   --nebula-1: rgba(99, 102, 241, 0.2);
   --nebula-1-soft: rgba(99, 102, 241, 0.05);
@@ -145,6 +146,7 @@
   --accent: #6366f1;
   --accent-secondary: #4f46e5;
   --accent-glow: rgba(99, 102, 241, 0.2);
+  --selection-shadow: rgba(99, 102, 241, 0.15);
   --glow-color: rgba(99, 102, 241, 0.12);
   --nebula-1: rgba(99, 102, 241, 0.15);
   --nebula-1-soft: rgba(99, 102, 241, 0.06);
