@@ -81,7 +81,7 @@ const ActiveUsersStack: React.FC = React.memo(() => {
       .then((data) => {
         if (data.users && data.users.length > 0) {
           setUsers(data.users.slice(0, 6));
-          setActiveCount(120);
+          setActiveCount(100);
           //setActiveCount(data.activeCount ?? 120);
         }
       })

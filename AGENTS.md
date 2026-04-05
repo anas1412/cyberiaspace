@@ -52,6 +52,14 @@ LoginPage.tsx
 | `cyberia-active-space-id` | Current active space | App |
 | `cyberia-last-sync` | Last sync timestamp | Sync orchestrator |
 
+### localStorage Keys (Customization)
+
+| Key | Purpose | Managed By |
+|-----|---------|------------|
+| `cyberia-node-bg` | Custom node background color | Settings → Customization |
+| `cyberia-accent` | Custom primary accent color | Settings → Customization |
+| `cyberia-secondary` | Custom secondary color | Settings → Customization |
+
 **Deprecated Keys (cleaned up on signOut):** `cyberia-token`, `cyberia-token-expiry`, `cyberia-refresh-secret`, `cyberia-scopes`
 
 ### Backend Auth Files
@@ -480,20 +488,32 @@ Use these standardized text sizes for consistency across the application:
 - Applied to `document.body` via `data-theme` attribute
 - Global CSS transitions ensure smooth theme switching (0.2s duration)
 
+**Custom Color Theme Switch Behavior:**
+- Custom colors are applied with `!important` on `document.documentElement` to override CSS defaults
+- Custom colors are theme-agnostic: they apply to BOTH dark and light modes
+- On theme switch without custom color: applies theme-appropriate default
+- On theme switch with custom color: keeps custom color for both themes
+- **Important:** `--node-bg` and `--accent` are intentionally omitted from `[data-theme='light']` CSS selector to allow JavaScript `!important` override to work correctly
+
 **CSS Variable Usage (MANDATORY):**
 
 | Variable | Dark Theme | Light Theme | Usage |
 |----------|------------|-------------|-------|
-| `--bg-page` | `#05060a` | `#f8fafc` | Page background |
+| `--bg-page` | `#05060a` | `#e2e8f0` | Page background |
 | `--bg-main` | `#18181b` | `#ffffff` | Card/main backgrounds (neutral gray) |
-| `--node-bg` | `#18181bf5` | `#fffffffa` | Thought nodes (neutral dark, not blue) |
-| `--text-primary` | `#f8fafc` | `#1e293b` | Primary text |
-| `--text-secondary` | `rgba(248,250,252,0.85)` | `rgba(30,41,59,0.85)` | Secondary text |
-| `--text-muted` | `rgba(248,250,252,0.55)` | `rgba(30,41,59,0.65)` | Muted/placeholder text |
-| `--glass-bg` | `rgba(10,10,15,0.75)` | `rgba(255,255,255,0.85)` | Glass morphism backgrounds |
-| `--glass-border` | `rgba(255,255,255,0.08)` | `rgba(0,0,0,0.08)` | Borders on glass elements |
+| `--node-bg` | `#12121af5` | `#f8fafc` | Thought nodes (deep dark in dark mode) |
+| `--node-text-primary` | `#f8fafc` | `#0f172a` | Text in thought nodes (dark mode colors) |
+| `--node-text-secondary` | `rgba(248,250,252,0.85)` | `rgba(15,23,42,0.85)` | Secondary text in nodes |
+| `--node-text-dimmed` | `rgba(248,250,252,0.7)` | `rgba(15,23,42,0.65)` | Dimmed text in nodes |
+| `--node-text-muted` | `rgba(248,250,252,0.55)` | `rgba(15,23,42,0.5)` | Muted text in nodes |
+| `--text-primary` | `#f8fafc` | `#0f172a` | Primary text |
+| `--text-secondary` | `rgba(248,250,252,0.85)` | `rgba(15,23,42,0.85)` | Secondary text |
+| `--text-muted` | `rgba(248,250,252,0.55)` | `rgba(15,23,42,0.5)` | Muted/placeholder text |
+| `--glass-bg` | `rgba(10,10,15,0.75)` | `rgba(255,255,255,0.92)` | Glass morphism backgrounds |
+| `--glass-border` | `rgba(255,255,255,0.08)` | `rgba(0,0,0,0.12)` | Borders on glass elements |
 | `--accent` | `#6366f1` | `#6366f1` | Primary accent (indigo) |
 | `--accent-secondary` | `#818cf8` | `#4f46e5` | Accent hover/active |
+| `--secondary` | `#8b5cf6` | `#8b5cf6` | Secondary color (progress bars, glows) |
 
 **Theme Transitions:**
 All elements have smooth transitions when theme changes:
@@ -583,20 +603,43 @@ All overlay/modals should use the standardized backdrop pattern for consistency:
 - Users can customize thought node background color via Settings → Customization → Node Colors
 - Color is stored in localStorage as `cyberia-node-bg`
 - Applied via CSS variable `--node-bg` on `document.documentElement` with `!important`
-- Default: `#18181bf5` (neutral dark gray)
+- **Theme-agnostic:** Custom color applies to BOTH dark and light modes
+- Default values: dark: `#12121af5`, light: `#f8fafc`
+- On reset: Applies theme-appropriate default based on current theme
+- On theme switch: If no custom color, applies new theme's default
 - Preset colors: Charcoal, Midnight, Obsidian, Plum, Navy, Teal
 
 **Primary Color Customization (Pro Feature):**
 - Users can customize the brand primary color via Settings → Customization → Primary Color
 - Color is stored in localStorage as `cyberia-accent`
 - Applied via CSS variable `--accent` on `document.documentElement` with `!important`
+- **Theme-agnostic:** Custom color applies to BOTH dark and light modes
+- On theme switch: If no custom color, removes override (lets CSS default)
 - Secondary accent (`--accent-secondary`) is auto-calculated as primary + 60% opacity
 - Default: `#6366f1` (indigo)
 - 12 preset colors: Indigo, Violet, Pink, Rose, Red, Orange, Yellow, Green, Teal, Cyan, Blue, Purple
 
+**Secondary Color Customization (Pro Feature):**
+- Users can customize the secondary color via Settings → Customization → Secondary Color
+- Color is stored in localStorage as `cyberia-secondary`
+- Applied via CSS variable `--secondary` on `document.documentElement` with `!important`
+- Controls: Progress bars, glow effects
+- **Theme-agnostic:** Custom color applies to BOTH dark and light modes
+- Default: `#8b5cf6` (violet)
+- 12 preset colors: Violet, Pink, Rose, Red, Orange, Yellow, Green, Teal, Cyan, Blue, Indigo, Purple
+
 **Semantic Colors (Allowed Exceptions):**
 - Status indicators: `text-green-500`, `text-amber-500`, `text-red-500`
 - Capacity dots: Green (<80%), Amber (80-99%), Red (100%+)
+
+**Node-Specific Colors:**
+- Thought nodes use `--node-text-*` variables for consistent text colors
+- These always use dark mode colors for readability regardless of theme
+- Applied via inline style on node container: `style={{ '--text-primary': 'var(--node-text-primary)', ... }}`
+
+**Progress Bars:**
+- Use `--secondary` for the progress fill color
+- Default: `#8b5cf6` (violet)
 
 ###  Styling Architecture
 
