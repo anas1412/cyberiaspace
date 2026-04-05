@@ -111,7 +111,6 @@ function getFollowUpMessageContent(toolName: string, result: any) {
 const ChatOverlay: React.FC = () => {
   const isChatOpen = useStore((state) => state.isChatOpen);
   const setChatOpen = useStore((state) => state.setChatOpen);
-  const oracleMode = useStore((state) => state.oracleMode);
   const store = useStore();
   const { user, modelConfig } = useAuthStore();
   const plan = user?.plan || 'free';
@@ -912,8 +911,6 @@ if (data.tier && data.autoSwitch) {
       abortControllerRef.current = null;
     }
   };
-
-  if (!oracleMode) return null;
 
   return (
     <AnimatePresence>

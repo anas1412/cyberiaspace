@@ -11,7 +11,7 @@ import {
   ChevronLeft, ChevronRight
 } from 'lucide-react';
 import { FocusEditorShell } from './FocusEditorShell';
-import { MAX_FILE_SIZE_MB, STACK_COLORS } from '../../constants';
+import { MAX_UPLOAD_SIZE, MAX_UPLOAD_SIZE_MB, STACK_COLORS } from '../../constants';
 import { generateThumbnail, generateVideoThumbnail } from '../../utils/image';
 import { AnimatePresence, motion } from 'framer-motion';
 import { clsx, type ClassValue } from 'clsx';
@@ -720,10 +720,10 @@ const FileFocusEditor: React.FC = () => {
     const file = e.target.files?.[0];
     if (!file || !thought) return;
 
-    if (file.size > MAX_FILE_SIZE_MB * 1024 * 1024) {
+    if (file.size > MAX_UPLOAD_SIZE) {
       openModal({
         title: 'Incompatible Mass',
-        description: `This asset exceeds the ${MAX_FILE_SIZE_MB}MB transmission limit.`,
+        description: `This asset exceeds the ${MAX_UPLOAD_SIZE_MB}MB transmission limit.`,
         type: 'alert',
         confirmText: 'Acknowledged'
       });

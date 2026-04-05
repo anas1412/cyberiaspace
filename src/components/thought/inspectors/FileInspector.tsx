@@ -4,7 +4,7 @@ import { useAuthStore } from '../../../store/useAuthStore';
 import { useModalStore } from '../../../store/useModalStore';
 import { db } from '../../../db';
 import { type InspectorPanelProps } from '../registry';
-import { MAX_FILE_SIZE_MB } from '../../../constants';
+import { MAX_UPLOAD_SIZE, MAX_UPLOAD_SIZE_MB } from '../../../constants';
 import { generateThumbnail, generateVideoThumbnail } from '../../../utils/image';
 import { Upload, FileText } from 'lucide-react';
 
@@ -44,10 +44,10 @@ export const FileInspector: React.FC<InspectorPanelProps> = ({ thought, isReadOn
             onChange={async (e) => {
               const file = e.target.files?.[0];
               if (file) {
-                if (file.size > MAX_FILE_SIZE_MB * 1024 * 1024) {
+                if (file.size > MAX_UPLOAD_SIZE) {
                   openModal({
                     title: 'Incompatible Mass',
-                    description: `This asset exceeds the ${MAX_FILE_SIZE_MB}MB transmission limit. Please compress your assets or use a smaller file.`,
+                    description: `This asset exceeds the ${MAX_UPLOAD_SIZE_MB}MB transmission limit. Please compress your assets or use a smaller file.`,
                     type: 'alert',
                     confirmText: 'Acknowledged'
                   });

@@ -1,9 +1,9 @@
 import { supabase } from './supabase'
+import { MAX_UPLOAD_SIZE } from '../constants'
 
 export const storageClient = supabase
 
 const BUCKET_NAME = 'user-files'
-const MAX_FILE_SIZE = 50 * 1024 * 1024 // 50 MB
 
 const getBackgroundPath = (userId: string, spaceId: string): string =>
   `${userId}/backgrounds/bg_${spaceId}`;
@@ -18,8 +18,8 @@ export const supabaseStorage = {
     fileName: string,
     thoughtId?: number | string
   ): Promise<{ url: string; path: string; size: number }> {
-    if (file.size > MAX_FILE_SIZE) {
-      throw new Error(`File too large. Maximum size is ${MAX_FILE_SIZE / 1024 / 1024} MB`)
+    if (file.size > MAX_UPLOAD_SIZE) {
+      throw new Error(`File too large. Maximum size is ${MAX_UPLOAD_SIZE / 1024 / 1024} MB`)
     }
 
     const safeName = fileName.replace(/[^a-zA-Z0-9.-]/g, '_')
@@ -131,47 +131,14 @@ export const supabaseStorage = {
 
   async getStorageUsage(userId: string): Promise<number> {
     try {
-      const { data: rootItems, error } = await storageClient
-        .storage
-        .from(BUCKET_NAME)
-        .list(userId, { limit: 1000 });
-
-      if (error || !rootItems) return 0;
-
-      let totalBytes = 0;
-      const subFolders: string[] = [];
-
-      for (const item of rootItems) {
-        if (item.id) {
-          // It's a file in the root directory (legacy style)
-          totalBytes += item.metadata?.size || 0;
-        } else {
-          // It's a folder (new style: userId/thoughtId/)
-          subFolders.push(item.name);
-        }
+      const { data, error } = await supabase.rpc('get_user_storage_size', {
+        user_id: userId
+      });
+      if (error) {
+        console.warn('[Storage] get_user_storage_size RPC failed:', error.message);
+        return 0;
       }
-
-      // If no subfolders, we are done
-      if (subFolders.length === 0) return totalBytes;
-
-      // Process subfolders to get sizes of files inside
-      // We use a small batch size to avoid overwhelming the API
-      const BATCH_SIZE = 10;
-      for (let i = 0; i < subFolders.length; i += BATCH_SIZE) {
-        const batch = subFolders.slice(i, i + BATCH_SIZE);
-        const results = await Promise.all(batch.map(async (folderName) => {
-          const { data: files } = await storageClient
-            .storage
-            .from(BUCKET_NAME)
-            .list(`${userId}/${folderName}`, { limit: 100 });
-          
-          return files?.reduce((sum, f) => sum + (f.metadata?.size || 0), 0) || 0;
-        }));
-        
-        totalBytes += results.reduce((sum, size) => sum + size, 0);
-      }
-
-      return totalBytes;
+      return (data as number) || 0;
     } catch (err) {
       console.error('[Storage] getStorageUsage failed:', err);
       return 0;
@@ -219,10 +186,10 @@ export const supabaseStorage = {
   },
 
   checkFileSize(file: File | Blob): { valid: boolean; message?: string } {
-    if (file.size > MAX_FILE_SIZE) {
+    if (file.size > MAX_UPLOAD_SIZE) {
       return {
         valid: false,
-        message: `File too large (${(file.size / 1024 / 1024).toFixed(2)} MB). Maximum is ${MAX_FILE_SIZE / 1024 / 1024} MB.`,
+        message: `File too large (${(file.size / 1024 / 1024).toFixed(2)} MB). Maximum is ${MAX_UPLOAD_SIZE / 1024 / 1024} MB.`,
       }
     }
     return { valid: true }

@@ -60,7 +60,6 @@ export interface CyberiaState {
 
   getLimits: () => typeof PLAN_CONFIG['free'];
 
-  oracleMode: boolean;
   isChatOpen: boolean;
   oracleChatMode: 'chat' | 'action';
 
@@ -86,7 +85,6 @@ export interface CyberiaState {
   setCustomBgValue: (bg: string | null) => void;
   setDeferredPrompt: (prompt: any) => void;
 
-  toggleOracleMode: () => void;
   setChatOpen: (isOpen: boolean) => void;
   setOracleChatMode: (mode: 'chat' | 'action') => void;
 
@@ -163,6 +161,7 @@ export interface CyberiaState {
   isLocalWorkspaceEmpty: () => Promise<boolean>;
   migrateLegacyData: (userId: string) => Promise<void>;
   migrateGuestSpaces: (accountUserId: string) => Promise<{ migrated: number; discarded: number }>;
+  calculatePendingUploadSize: (userId: string) => Promise<number>;
   discardGuestSpaces: () => Promise<void>;
   ensureWorkspaceForCurrentUser: () => Promise<void>;
   mergeGuestSpace: (sourceSpaceId: string, targetSpaceId: string) => Promise<boolean>;
@@ -227,10 +226,12 @@ export interface AuthState {
   handlePlanRegression: () => Promise<void>;
   refreshProfile: () => Promise<void>;
   getOrRefreshToken: () => Promise<string | null>;
+  getSessionToken: () => Promise<string | null>;
   updateSettings: (settings: Partial<User['settings']>) => Promise<void>;
   cancelSubscription: () => void;
   setupRefreshInterval: () => void;
   mergeUserData: (userData: Partial<User>) => void;
+  handleSupabaseSession: (session: any) => Promise<void>;
   updateQuotaUsage: (usageData: {
     daily_anchor?: string;
     weekly_anchor?: string;

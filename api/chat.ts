@@ -2,6 +2,7 @@ import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { createClient } from '@supabase/supabase-js';
 import { z } from 'zod';
 import { checkAndHealSubscription } from './subscription-helper.js';
+import { verifyAuth } from './utils/auth.js';
 import { 
   CreateThoughtsSchema, 
   UpdateThoughtsSchema, 
@@ -526,21 +527,8 @@ function convertToBatchFormat(batch: any[]): { toolName: string; args: any } | n
 }
 
 // === CACHE FOR PERFORMANCE ===
-const tokenCache = new Map<string, { userId: string; expiresAt: number }>();
 const profileCache = new Map<string, { profile: any; expiresAt: number }>();
 const CACHE_TTL_MS = 60 * 1000; // 60 seconds cache
-
-function getCachedUserId(token: string): string | null {
-  const cached = tokenCache.get(token);
-  if (cached && cached.expiresAt > Date.now()) {
-    return cached.userId;
-  }
-  return null;
-}
-
-function setCachedUserId(token: string, userId: string): void {
-  tokenCache.set(token, { userId, expiresAt: Date.now() + CACHE_TTL_MS });
-}
 
 function getCachedProfile(userId: string): any | null {
   const cached = profileCache.get(userId);
@@ -555,30 +543,8 @@ function setCachedProfile(userId: string, profile: any): void {
 }
 
 async function getUserIdFromAuth(authHeader: string | undefined): Promise<string | null> {
-  if (!authHeader?.startsWith('Bearer ')) return null;
-  const token = authHeader.split(' ')[1];
-  
-  // Check cache first
-  const cachedUserId = getCachedUserId(token);
-  if (cachedUserId) {
-    return cachedUserId;
-  }
-  
-  try {
-    const tokenInfo = await fetch(`https://www.googleapis.com/oauth2/v3/tokeninfo?access_token=${token}`);
-    if (!tokenInfo.ok) return null;
-    const info = await tokenInfo.json() as any;
-    const userId = info.sub || info.user_id;
-    
-    // Cache the result
-    if (userId) {
-      setCachedUserId(token, userId);
-    }
-    
-    return userId;
-  } catch (e) {
-    return null;
-  }
+  const auth = await verifyAuth(authHeader);
+  return auth?.userId ?? null;
 }
 
 async function* streamOpenRouter(

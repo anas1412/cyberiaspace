@@ -1,6 +1,7 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { createClient } from '@supabase/supabase-js';
 import { randomUUID } from 'crypto';
+import { verifyAuth } from './utils/auth.js';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.VITE_PUBLIC_SUPABASE_URL;
 const supabaseKey = process.env.VITE_SUPABASE_ANON_KEY || process.env.VITE_PUBLIC_SUPABASE_ANON_KEY;
@@ -17,7 +18,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   const authHeader = req.headers.authorization;
-  if (!authHeader?.startsWith('Bearer ')) {
+  const auth = await verifyAuth(authHeader);
+  if (!auth) {
     return res.status(401).json({ error: 'Authentication required' });
   }
 

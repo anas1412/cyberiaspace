@@ -18,20 +18,20 @@ const FEATURES = [
   {
     id: 'agentic',
     icon: Cpu,
-    title: 'AI that understands your files',
-    description: 'Upload PDFs, images, and documents. Ask questions and get instant answers based on your content. The AI reads and remembers everything.'
+    title: 'AI that takes action',
+    description: 'Oracle doesn\'t just answer questions. It creates tasks, edits content, searches your space, and keeps everything organized — while you focus on the work.'
+  },
+  {
+    id: 'views',
+    icon: Layout,
+    title: 'Your way, every way',
+    description: 'Canvas for ideas, Kanban for tasks, Calendar for deadlines. Switch between views instantly on the same data. No switching apps.'
   },
   {
     id: 'spatial',
     icon: MousePointer2,
     title: 'Everything in one place',
-    description: 'Notes, files, tables, and links in a visual space. See everything at a glance and find what you need instantly.'
-  },
-  {
-    id: 'views',
-    icon: Layout,
-    title: 'Work your way',
-    description: 'Switch between freeform canvas, organized boards, or calendar view. Same content, different perspectives to match your workflow.'
+    description: 'Notes, files, PDFs, images, and links in one workspace. See everything at a glance and find what you need instantly.'
   },
   {
     id: 'cloud',
@@ -49,7 +49,7 @@ const TESTIMONIALS = [
     avatar: "NG"
   },
   {
-    quote: "The spatial engine is a game-changer for researching. I can finally map out my entire thesis visually with the AI being aware of everything.",
+    quote: "The canvas view is a game-changer for researching. I can finally map out my entire thesis visually with the AI aware of all my notes.",
     author: "Mohamed C.",
     role: "University Student",
     avatar: "MD"
@@ -64,8 +64,8 @@ const TESTIMONIALS = [
 
 const FAQ_ITEMS = [
   {
-    question: "What is a Thinking Space?",
-    answer: "Unlike traditional apps that use static grids or lists, your space treats information as physical entities. Your thoughts have mass, velocity, and gravity, allowing you to organize visually and discover non-linear connections through interaction."
+    question: "What is Cyberia Space?",
+    answer: "Cyberia combines three views — Canvas, Kanban, and Calendar — on the same data. Switch between freeform canvases, task boards, and timeline views instantly. Oracle AI acts on your content, not just answers questions. It's the only workspace where the AI doesn't just chat — it creates, edits, and organizes."
   },
   {
     question: "Is my data private and secure?",
@@ -76,16 +76,16 @@ const FAQ_ITEMS = [
     answer: "Oracle uses advanced reasoning models to analyze your space in real-time. We never use your personal data or content to train AI models. Your history stays local on your device."
   },
   {
+    question: "What happens when I downgrade from Pro to Free?",
+    answer: "When you downgrade, nothing is deleted. All your thoughts, spaces, and files stay safe and accessible. You just won't be able to create beyond free plan limits until you upgrade again."
+  },
+  {
     question: "Do subscriptions automatically renew?",
     answer: "It depends on your provider. Local payments via Flouci are manual (no auto-charges). International subscriptions via Polar.sh are recurring and can be canceled at any time through the customer portal."
   },
   {
-    question: "What happens when I downgrade from Pro to Free?",
-    answer: "When you downgrade, your existing thoughts, spaces, and files stay safe. You keep full access to everything you created. However, premium features like advanced Oracle AI and higher limits become unavailable. You can still read and edit all your content, but won't be able to use Pro-only features until you resubscribe."
-  },
-  {
     question: "Why is there no mobile app yet?",
-    answer: "The spatial thinking engine is designed for precision and large-scale mapping, which requires a mouse and a large display. While we are working on companion apps, the full experience is currently optimized for Desktop."
+    answer: "Cyberia is built for desktop. Precision work on a canvas needs a mouse and screen space. Mobile companion apps coming soon."
   }
 ];
 
@@ -194,8 +194,8 @@ const FeatureVisual: React.FC<{ activeFeature: number }> = React.memo(({ activeF
             className="w-full h-full"
           >
             {activeFeature === 0 && <AgenticWorkspaceVisual />}
-            {activeFeature === 1 && <SpatialThinkingVisual />}
-            {activeFeature === 2 && <DynamicViewsVisual />}
+            {activeFeature === 1 && <DynamicViewsVisual />}
+            {activeFeature === 2 && <SpatialThinkingVisual />}
             {activeFeature === 3 && <CloudSyncVisual />}
           </motion.div>
         </AnimatePresence>
@@ -269,20 +269,20 @@ const Homepage: React.FC = () => {
               animate={{ opacity: 1, scale: 1, y: 0 }}
               transition={{ type: 'spring', damping: 25, stiffness: 100 }}
             >
-              <h1 className="text-5xl md:text-7xl font-bold tracking-tight leading-[1.1] mb-6">
-                The AI space for<br />
+              <h1 className="text-4xl md:text-6xl font-bold tracking-tight leading-[1.1] mb-6">
+                Canvas. Kanban. Calendar.<br />
                 <motion.span
                   initial={{ opacity: 0, x: -20 }}
                   animate={{ opacity: 1, x: 0 }}
                   transition={{ duration: 0.8, delay: 0.2, ease: "easeOut" }}
                   className="bg-clip-text text-transparent bg-gradient-to-r from-[var(--accent)] to-[var(--accent-secondary)]"
                 >
-                  your thoughts
+                  AI that actually works.
                 </motion.span>
               </h1>
               
               <p className="text-lg md:text-xl text-[var(--text-secondary)] max-w-2xl mx-auto mb-10 leading-relaxed font-medium">
-                Upload documents, chat with AI, and organize everything in one place. Your personal knowledge base that actually understands your content.
+                Switch between views on the same data. AI that search, creates and manage content, and keeps your space organized.
               </p>
 
               <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
@@ -334,10 +334,10 @@ const Homepage: React.FC = () => {
           <div className="max-w-7xl mx-auto">
             <div className="mb-16 md:mb-24 text-center lg:text-left">
               <h2 className="text-3xl md:text-5xl font-bold tracking-tight mb-4">
-                Everything you need to <span className="text-[var(--accent)]">think better</span>
+                Everything you need to <span className="text-[var(--accent)]">work better</span>
               </h2>
               <p className="text-[var(--text-muted)] text-lg md:text-xl max-w-2xl mx-auto lg:mx-0">
-                Four powerful features to capture, organize, and leverage your knowledge effortlessly.
+                Multi-view flexibility. AI that acts. All your work in one place.
               </p>
             </div>
 
@@ -417,7 +417,7 @@ const Homepage: React.FC = () => {
               {[
                 { title: 'Scattered information', desc: 'Notes, documents, and ideas everywhere. Switching between apps wastes time and breaks your flow.' },
                 { title: 'Visual organization', desc: 'See everything at a glance. Arrange documents and ideas visually, just like on a desk, but better.' },
-                { title: 'AI that understands', desc: 'Chat with your documents. Upload files and ask questions. The AI reads and connects information for you.' },
+                { title: 'AI that takes action', desc: 'Oracle reads your files, answers questions, and can create tasks or edit content — without you lifting a finger.' },
                 { title: 'You own your data', desc: 'Your work belongs to you. Export everything anytime. No vendor lock-in, no tricks.' }
               ].map((item, i) => (
                 <motion.div 
@@ -675,10 +675,10 @@ const Homepage: React.FC = () => {
             >
               <Rocket className="w-12 h-12 text-[var(--accent)] mx-auto mb-6 drop-shadow-[0_0_15px_rgba(99,102,241,0.5)]" />
               <h2 className="text-4xl md:text-6xl font-bold tracking-tight mb-6">
-                Start building <span className="text-[var(--accent)]">today</span>
+                Ready?
               </h2>
               <p className="text-[var(--text-muted)] text-lg mb-10">
-                Join a new generation of thinkers mapping the future in their digital space.
+                Canvas. Kanban. Calendar. AI that acts.
               </p>
               <a
                   href="/home"

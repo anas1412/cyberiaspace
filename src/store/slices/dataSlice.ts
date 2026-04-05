@@ -42,9 +42,6 @@ export const createDataSlice: StateCreator<CyberiaState, [], [], any> = (set, ge
       // Start auth initialization in background to avoid blocking initial render
       const authPromise = dynamicAuthStore.getState().initAuth();
       
-      const user = dynamicAuthStore.getState().user;
-      if (user) set({ oracleMode: true });
-
       const path = window.location.pathname;
       if (path.startsWith('/home/s/')) {
         const parts = path.split('/home/s/');
@@ -562,7 +559,7 @@ export const createDataSlice: StateCreator<CyberiaState, [], [], any> = (set, ge
     
     console.log('[Migration] Starting smart migration for user:', accountUserId);
 
-    await db.transaction('rw', [db.spaces, db.thoughts, db.stacks, db.blobs], async () => {
+    await db.transaction('rw', [db.spaces, db.thoughts, db.stacks, db.blobs, db.spaceBackgrounds], async () => {
       const guestSpaces = await db.spaces.filter(s => s.userId === 'guest' && !s.deletedAt).toArray();
       const validSpaceIds: string[] = [];
       const discardedSpaceIds: string[] = [];
@@ -584,23 +581,56 @@ export const createDataSlice: StateCreator<CyberiaState, [], [], any> = (set, ge
         await db.spaces.where('id').anyOf(discardedSpaceIds).modify({ deletedAt: now, updatedAt: now, syncStatus: 'local' });
       }
 
+      // Migrate all guest data to the account user
+      // Update thought userId and syncStatus
       await db.thoughts.where('userId').equals('guest').modify({ userId: accountUserId, updatedAt: now, syncStatus: 'local' });
       await db.stacks.where('userId').equals('guest').modify({ userId: accountUserId, updatedAt: now, syncStatus: 'local' });
-      await db.blobs.where('userId').equals('guest').modify({ userId: accountUserId, updatedAt: now });
+      // Update blob userId to match the migrated thoughts
+      await db.blobs.where('userId').equals('guest').modify({ userId: accountUserId });
+      // Update space background userId to match the migrated spaces
+      await db.spaceBackgrounds.where('userId').equals('guest').modify({ userId: accountUserId });
     });
     
     console.log(`[Migration] Migrated ${migratedCount} spaces, discarded ${discardedCount} empty spaces`);
     return { migrated: migratedCount, discarded: discardedCount };
   },
 
+  calculatePendingUploadSize: async (userId: string) => {
+    // Sum all blob sizes for the given user that need cloud upload
+    // (blobs for thoughts with syncStatus: 'local' or no storagePath)
+    const currentUserId = userId;
+    const userThoughtIds = new Set(
+      (await db.thoughts.filter((t: any) => t.userId === currentUserId && !t.deletedAt).toArray())
+        .filter((t: any) => t.syncStatus === 'local' || !t.storagePath)
+        .map((t: any) => t.id)
+    );
+    
+    let totalBytes = 0;
+    
+    // Count thought blobs
+    const pendingBlobs = await db.blobs.filter((b: any) => userThoughtIds.has(b.thoughtId) && b.userId === currentUserId).toArray();
+    totalBytes += pendingBlobs.reduce((sum: number, b: any) => sum + (b.blob?.size || 0), 0);
+    
+    // Count space background blobs
+    const pendingBgs = await db.spaceBackgrounds.filter((b: any) => b.userId === currentUserId).toArray();
+    totalBytes += pendingBgs.reduce((sum: number, b: any) => sum + (b.blob?.size || 0), 0);
+    
+    return totalBytes / (1024 * 1024); // Return MB
+  },
+
   discardGuestSpaces: async () => {
     const now = Date.now();
     console.log('[Migration] Discarding all guest data...');
     
-    await db.transaction('rw', [db.spaces, db.thoughts, db.stacks], async () => {
+    await db.transaction('rw', [db.spaces, db.thoughts, db.stacks, db.blobs, db.spaceBackgrounds], async () => {
       await db.spaces.where('userId').equals('guest').modify({ deletedAt: now, updatedAt: now, syncStatus: 'local' });
       await db.thoughts.where('userId').equals('guest').modify({ deletedAt: now, updatedAt: now, syncStatus: 'local' });
       await db.stacks.where('userId').equals('guest').modify({ deletedAt: now, updatedAt: now, syncStatus: 'local' });
+      
+      // Delete guest blobs (associated with discarded guest thoughts)
+      await db.blobs.where('userId').equals('guest').delete();
+      // Delete guest space backgrounds (for discarded spaces)
+      await db.spaceBackgrounds.where('userId').equals('guest').delete();
     });
   },
 

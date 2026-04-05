@@ -1,5 +1,6 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { createClient } from '@supabase/supabase-js';
+import { verifyAuth } from './utils/auth.js';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.VITE_PUBLIC_SUPABASE_URL;
 const supabaseKey = process.env.VITE_SUPABASE_ANON_KEY || process.env.VITE_PUBLIC_SUPABASE_ANON_KEY;
@@ -22,18 +23,10 @@ const isAdminToken = (token: string): boolean => {
   }
 };
 
-// Helper to extract userId from JWT token
-const getUserIdFromToken = (authHeader?: string): string | null => {
-  if (!authHeader?.startsWith('Bearer ')) return null;
-  try {
-    const token = authHeader.replace('Bearer ', '');
-    const parts = token.split('.');
-    if (parts.length !== 3) return null;
-    const payload = JSON.parse(Buffer.from(parts[1], 'base64').toString('utf8'));
-    return payload.sub || null;
-  } catch {
-    return null;
-  }
+// Helper to extract userId from auth header
+const getUserIdFromToken = async (authHeader?: string): Promise<string | null> => {
+  const auth = await verifyAuth(authHeader);
+  return auth?.userId ?? null;
 };
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {

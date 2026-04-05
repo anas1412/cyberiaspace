@@ -14,32 +14,48 @@ export const createStorageSlice: StateCreator<AuthState, [], [], any> = (set, ge
     const { user, isOnline } = get();
     const plan = (user?.plan || 'free') as SubscriptionPlan;
     
-    // 1. Calculate Local Usage (Instant & Offline friendly)
-    // This provides immediate feedback even before sync
-    // Scope blobs to current user's thoughts to prevent cross-user data leakage
+    // Cloud storage is the authoritative source of truth for what's actually in cloud.
+    // We use it directly and add local-only pending blobs on top.
     let storageMB = 0;
+    
+    // 1. Calculate local-only bytes (blobs that haven't been pushed to cloud yet)
+    // These are thoughts with syncStatus: 'local' that have blobs but no storagePath
     try {
       const currentUserId = user?.id ?? 'guest';
-      const userThoughtIds = new Set(
-        (await db.thoughts.filter((t: any) => t.userId === currentUserId).primaryKeys())
+      
+      // Get thoughts that have blobs locally but haven't been uploaded to cloud
+      const pendingThoughts = await db.thoughts
+        .filter((t: any) => t.userId === currentUserId && !t.deletedAt && t.syncStatus === 'local' && !t.storagePath)
+        .toArray();
+      const pendingThoughtIds = new Set(pendingThoughts.map((t: any) => t.id));
+      
+      const pendingBlobs = await db.blobs
+        .filter((b: any) => pendingThoughtIds.has(b.thoughtId) && b.userId === currentUserId)
+        .toArray();
+      const pendingBytes = pendingBlobs.reduce((sum: number, b: any) => sum + (b.blob?.size || 0), 0);
+      
+      // Include space backgrounds that haven't been uploaded (blob: URLs)
+      // Only count backgrounds for non-deleted spaces
+      const validSpaceIds = new Set(
+        (await db.spaces.filter((s: any) => s.userId === currentUserId && !s.deletedAt).primaryKeys())
       );
-      const userBlobs = await db.blobs.filter((b: any) => userThoughtIds.has(b.thoughtId)).toArray();
-      const localBytes = userBlobs.reduce((sum: number, b: any) => sum + (b.blob?.size || 0), 0);
-      storageMB = localBytes / (1024 * 1024);
+      const spaceBgs = await db.spaceBackgrounds
+        .filter((b: any) => b.userId === currentUserId && validSpaceIds.has(b.spaceId))
+        .toArray();
+      const pendingBgBytes = spaceBgs.reduce((sum: number, b: any) => sum + (b.blob?.size || 0), 0);
+      
+      storageMB = (pendingBytes + pendingBgBytes) / (1024 * 1024);
     } catch (e) {
-      console.warn('[Storage] Could not calculate local usage:', e);
+      console.warn('[Storage] Could not calculate local pending usage:', e);
     }
     
-    // 2. If Online, fetch Cloud Usage for definitive quota status
+    // 2. If Online, add cloud usage for definitive quota status
+    // Cloud is authoritative - it reflects what's actually stored in Supabase
     if (user?.id && isOnline) {
       try {
         const cloudBytes = await supabaseStorage.getStorageUsage(user.id);
         const cloudMB = cloudBytes / (1024 * 1024);
-        
-        // We use the MAX of local vs cloud to be safe
-        // This handles cases where local cache is cleared but cloud is full,
-        // OR when local has new files that haven't hit the cloud yet.
-        storageMB = Math.max(storageMB, cloudMB);
+        storageMB += cloudMB;
       } catch (e) {
         console.warn('[Storage] Could not fetch cloud storage usage:', e);
       }
@@ -91,6 +107,18 @@ export const createStorageSlice: StateCreator<AuthState, [], [], any> = (set, ge
       const sizeCheck = supabaseStorage.checkFileSize(blobEntry.blob);
       if (!sizeCheck.valid) {
         console.error('[Storage] File too large:', sizeCheck.message);
+        const now = Date.now();
+        await db.thoughts.update(thoughtId, { syncStatus: 'error', updatedAt: now });
+        store.patchThought(thoughtId, { syncStatus: 'error', updatedAt: now });
+        return;
+      }
+
+      // Check storage quota before uploading
+      const plan = (user.plan || 'free') as SubscriptionPlan;
+      const storageLimitMB = PLAN_CONFIG[plan].MAX_STORAGE_MB;
+      const fileMB = blobEntry.blob.size / (1024 * 1024);
+      if (get().storageUsageMB + fileMB > storageLimitMB) {
+        console.error('[Storage] Quota exceeded:', `Need ${fileMB.toFixed(1)}MB, have ${(storageLimitMB - get().storageUsageMB).toFixed(1)}MB remaining`);
         const now = Date.now();
         await db.thoughts.update(thoughtId, { syncStatus: 'error', updatedAt: now });
         store.patchThought(thoughtId, { syncStatus: 'error', updatedAt: now });
@@ -184,6 +212,15 @@ export const createStorageSlice: StateCreator<AuthState, [], [], any> = (set, ge
       const space = await db.spaces.get(spaceId);
       if (space?.customBg && !space.customBg.startsWith('blob:') && !force) {
         // Already has cloud URL, skip
+        return;
+      }
+
+      // Check storage quota before uploading background
+      const plan = (user.plan || 'free') as SubscriptionPlan;
+      const storageLimitMB = PLAN_CONFIG[plan].MAX_STORAGE_MB;
+      const bgMB = bgEntry.blob.size / (1024 * 1024);
+      if (get().storageUsageMB + bgMB > storageLimitMB) {
+        console.error('[Storage] Quota exceeded for background upload:', `Need ${bgMB.toFixed(1)}MB, have ${(storageLimitMB - get().storageUsageMB).toFixed(1)}MB remaining`);
         return;
       }
 

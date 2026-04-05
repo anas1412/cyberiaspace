@@ -372,6 +372,8 @@ export const syncOrchestrator = {
                 supabaseStorage.deleteSpaceBackground(userId, s.id)
                   .catch((e: any) => console.warn('[Sync] Absence rule bg cleanup failed:', s.id, e));
               }
+              // Clean up local IndexedDB background blob
+              await db.spaceBackgrounds.delete(s.id);
               await db.spaces.delete(s.id);
             }
           }
@@ -568,6 +570,7 @@ export const syncOrchestrator = {
         }
         try {
           await supabaseSync.deleteSpace(space.id, userId);
+          await db.spaceBackgrounds.delete(space.id);
           await db.spaces.delete(space.id);
         } catch (e: any) {
           if (e.status === 404 || e.message?.includes('not found')) await db.spaces.delete(space.id);
@@ -592,31 +595,51 @@ export const syncOrchestrator = {
       const spacesWithPendingBlobs = spacesToPush.filter(s => s.customBg && s.customBg.startsWith('blob:'));
       if (spacesWithPendingBlobs.length > 0) {
         console.log(`[Sync] Found ${spacesWithPendingBlobs.length} spaces with pending blob backgrounds to upload`);
-        for (const space of spacesWithPendingBlobs) {
-          try {
-            // Get blob from IndexedDB instead of fetching from blob: URL
-            const bgEntry = await db.spaceBackgrounds.get(space.id);
-            if (!bgEntry) {
-              console.warn(`[Sync] No local background found for space ${space.id}, skipping bg upload`);
-              continue;
+        
+        // Check storage quota before uploading backgrounds
+        const { useAuthStore } = await import('../../store/useAuthStore');
+        const { PLAN_CONFIG } = await import('../../constants');
+        const authState = useAuthStore.getState();
+        const plan = (authState.user?.plan || 'free') as keyof typeof PLAN_CONFIG;
+        const storageLimitMB = PLAN_CONFIG[plan].MAX_STORAGE_MB;
+        
+        if (authState.storageUsageMB > storageLimitMB) {
+          console.warn(`[Sync] Storage quota exceeded (${authState.storageUsageMB.toFixed(1)}MB / ${storageLimitMB}MB), skipping background uploads`);
+        } else {
+          for (const space of spacesWithPendingBlobs) {
+            try {
+              // Get blob from IndexedDB instead of fetching from blob: URL
+              const bgEntry = await db.spaceBackgrounds.get(space.id);
+              if (!bgEntry) {
+                console.warn(`[Sync] No local background found for space ${space.id}, skipping bg upload`);
+                continue;
+              }
+              
+              // Per-background quota check
+              const bgMB = bgEntry.blob.size / (1024 * 1024);
+              const currentUsage = useAuthStore.getState().storageUsageMB;
+              if (currentUsage + bgMB > storageLimitMB) {
+                console.warn(`[Sync] Background upload skipped for space ${space.id}: quota exceeded (${bgMB.toFixed(1)}MB needed)`);
+                continue;
+              }
+              
+              const { url: storageUrl } = await supabaseStorage.uploadSpaceBackground(
+                userId,
+                space.id,
+                bgEntry.blob,
+                bgEntry.type
+              );
+              // Update IndexedDB with the storage URL so it syncs properly
+              await db.spaces.update(space.id, {
+                customBg: storageUrl,
+                syncStatus: 'local',
+                updatedAt: Date.now(),
+              });
+              console.log(`[Sync] Background uploaded for space ${space.id}: ${storageUrl}`);
+            } catch (e) {
+              console.warn(`[Sync] Failed to upload background for space ${space.id}:`, e);
+              // Don't fail the whole sync — push the space without the bg, it will retry next sync
             }
-            
-            const { url: storageUrl } = await supabaseStorage.uploadSpaceBackground(
-              userId,
-              space.id,
-              bgEntry.blob,
-              bgEntry.type
-            );
-            // Update IndexedDB with the storage URL so it syncs properly
-            await db.spaces.update(space.id, {
-              customBg: storageUrl,
-              syncStatus: 'local',
-              updatedAt: Date.now(),
-            });
-            console.log(`[Sync] Background uploaded for space ${space.id}: ${storageUrl}`);
-          } catch (e) {
-            console.warn(`[Sync] Failed to upload background for space ${space.id}:`, e);
-            // Don't fail the whole sync — push the space without the bg, it will retry next sync
           }
         }
         // Re-fetch spaces with updated customBg URLs

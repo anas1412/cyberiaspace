@@ -171,6 +171,8 @@ export const ActionFAB: React.FC<ActionFABProps> = ({
         type="file"
         className="hidden"
         ref={fileInputRef}
+        multiple
+        accept="image/*,video/*,audio/*,.txt,.md,.csv,.doc,.docx,.pdf,.xls,.xlsx"
         onChange={(e) => {
           const files = e.target.files;
           if (files && files.length > 0) {

@@ -1,8 +1,9 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { useAuthStore } from '../../store/useAuthStore';
 import { useStore } from '../../store/useStore';
-import { ArrowLeft, AlertCircle } from 'lucide-react';
+import { supabase } from '../../services/supabase';
+import { ArrowLeft, AlertCircle, Loader2, Mail, Zap } from 'lucide-react';
 
 const GoogleIcon = () => (
   <svg width="18" height="18" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48">
@@ -23,52 +24,80 @@ const LoginPage: React.FC = () => {
     }
   }, [status]);
 
-  // 1. Error Handling & Loading State Management
+  // Error Handling & Loading State Management
   const searchParams = new URLSearchParams(window.location.search);
   const errorParam = searchParams.get('error');
 
   useEffect(() => {
     if (errorParam) {
       console.error('[Auth] Redirect error detected:', errorParam);
-      // Clear global loading if stuck
       useStore.setState({ isInitializing: false });
       useAuthStore.setState({ status: 'unauthenticated', syncStatus: 'offline' });
     }
   }, [errorParam]);
 
-  const handleLogin = () => {
-    const CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID;
+  // Magic Link state
+  const [isMagicLinkMode, setIsMagicLinkMode] = useState(false);
+  const [email, setEmail] = useState('');
+  const [isMagicLinkLoading, setIsMagicLinkLoading] = useState(false);
+  const [magicLinkSent, setMagicLinkSent] = useState(false);
+  const [magicLinkError, setMagicLinkError] = useState('');
+
+  const handleLogin = async () => {
+    setIsLoading(true);
     
-    const REDIRECT_URI = `${window.location.origin}/api/auth?route=callback`;
+    const currentOrigin = window.location.origin;
+    console.log('[Auth] Current origin:', currentOrigin);
     
-    console.log('[Auth] Starting flow with REDIRECT_URI:', REDIRECT_URI);
+    const { data, error } = await supabase.auth.signInWithOAuth({
+      provider: 'google',
+      options: {
+        redirectTo: `${currentOrigin}/home`,
+      },
+    });
 
-    // Generate secure random state and nonce
-    const state = crypto.randomUUID();
-    const nonce = crypto.randomUUID();
-
-    // Store in cookies for backend verification (15 min expiry)
-    const expiry = new Date(Date.now() + 15 * 60 * 1000).toUTCString();
-    document.cookie = `auth_state=${state}; path=/; expires=${expiry}; SameSite=Lax; Secure`;
-    document.cookie = `auth_nonce=${nonce}; path=/; expires=${expiry}; SameSite=Lax; Secure`;
-
-    const SCOPE = 'openid email profile';
-    const RESPONSE_TYPE = 'code';
-    const ACCESS_TYPE = 'offline';
-    const PROMPT = 'consent';
-
-    const authUrl = `https://accounts.google.com/o/oauth2/v2/auth?` + 
-      `client_id=${CLIENT_ID}&` +
-      `redirect_uri=${encodeURIComponent(REDIRECT_URI)}&` +
-      `response_type=${RESPONSE_TYPE}&` +
-      `scope=${encodeURIComponent(SCOPE)}&` +
-      `access_type=${ACCESS_TYPE}&` +
-      `state=${state}&` +
-      `nonce=${nonce}&` +
-      `prompt=${PROMPT}`;
-
-    window.location.href = authUrl;
+    if (error) {
+      console.error('[Auth] Supabase OAuth error:', error);
+      setIsLoading(false);
+      return;
+    } 
+    
+    if (data?.url) {
+      console.log('[Auth] Full OAuth URL:', data.url);
+      window.location.href = data.url;
+    }
   };
+
+  const handleMagicLink = async () => {
+    if (!email.trim()) {
+      setMagicLinkError('Please enter your email address');
+      return;
+    }
+
+    setIsMagicLinkLoading(true);
+    setMagicLinkError('');
+
+    const currentOrigin = window.location.origin;
+    
+    const { error } = await supabase.auth.signInWithOtp({
+      email: email.trim(),
+      options: {
+        emailRedirectTo: `${currentOrigin}/home`,
+      },
+    });
+
+    if (error) {
+      console.error('[Auth] Magic link error:', error);
+      setMagicLinkError(error.message);
+      setIsMagicLinkLoading(false);
+      return;
+    }
+
+    setMagicLinkSent(true);
+    setIsMagicLinkLoading(false);
+  };
+
+  const [isLoading, setIsLoading] = useState(false);
 
   const handleBack = () => {
     window.history.pushState({}, '', '/');
@@ -124,27 +153,118 @@ const LoginPage: React.FC = () => {
               Sign in to enable cross-device synchronization, secure cloud backups, and advanced Oracle AI features.
             </p>
 
+            {/* Google Button */}
             <div className="flex justify-center pt-4">
               <button
                 onClick={handleLogin}
-                disabled={status === 'loading'}
-                style={{
-                  fontFamily: "'Roboto', sans-serif",
-                  fontWeight: 500,
-                }}
-                className="h-[44px] md:h-[48px] pl-[12px] pr-[16px] bg-[#F2F2F2] text-[#1F1F1F] rounded-[4px] hover:bg-[#e5e5e5] active:bg-[#dcdcdc] flex items-center justify-center group pointer-events-auto shadow-sm hover:shadow-md transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                disabled={status === 'loading' || isLoading}
+                className="h-[44px] md:h-[48px] px-5 bg-[#F2F2F2] text-[#1F1F1F] rounded-xl hover:bg-[#e5e5e5] active:bg-[#dcdcdc] active:scale-[0.98] flex items-center justify-center gap-3 shadow-sm hover:shadow-md transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                <div className="w-[20px] h-[20px] bg-[#F2F2F2] rounded-full flex items-center justify-center mr-[12px] flex-shrink-0 overflow-hidden">
-                  <GoogleIcon />
-                </div>
-                <span 
-                  style={{ lineHeight: '20px' }}
-                  className="text-[14px] tracking-[0.25px] font-medium whitespace-nowrap"
-                >
-                  Sign in with Google
+                {isLoading ? (
+                  <Loader2 className="w-5 h-5 animate-spin" />
+                ) : (
+                  <div className="w-[20px] h-[20px] rounded-full flex items-center justify-center flex-shrink-0 overflow-hidden">
+                    <GoogleIcon />
+                  </div>
+                )}
+                <span className="text-[14px] font-medium whitespace-nowrap">
+                  {isLoading ? 'Signing in...' : 'Sign in with Google'}
                 </span>
               </button>
             </div>
+
+            {/* Divider */}
+            <div className="relative flex items-center py-2">
+              <div className="flex-grow border-t border-[var(--glass-border)]"></div>
+              <span className="flex-shrink-0 mx-4 text-[10px] font-medium text-[var(--text-muted)] uppercase tracking-widest">
+                Or
+              </span>
+              <div className="flex-grow border-t border-[var(--glass-border)]"></div>
+            </div>
+
+            {/* Magic Link Section */}
+            {!isMagicLinkMode ? (
+              <div className="flex justify-center">
+                <button
+                  onClick={() => setIsMagicLinkMode(true)}
+                  className="h-[44px] md:h-[48px] px-5 bg-[var(--glass-bg)] border border-[var(--glass-border)] text-[var(--text-primary)] rounded-xl hover:bg-[var(--bg-page)] active:scale-[0.98] flex items-center justify-center gap-2 shadow-sm hover:shadow-md transition-all duration-200"
+                >
+                  <Mail className="w-4 h-4 text-[var(--text-muted)]" />
+                  <span className="text-[14px] font-medium whitespace-nowrap">
+                    Sign in with Email
+                  </span>
+                </button>
+              </div>
+            ) : magicLinkSent ? (
+              <div className="bg-[var(--accent)]/10 border border-[var(--accent)]/20 rounded-2xl p-6 space-y-3">
+                <Zap className="w-8 h-8 text-[var(--accent)] mx-auto" />
+                <p className="text-[13px] font-medium text-[var(--accent)]">
+                  Check your email!
+                </p>
+                <p className="text-[11px] text-[var(--text-muted)] leading-relaxed">
+                  We sent a magic link to <span className="text-[var(--text-primary)]">{email}</span>
+                  <br />
+                  Click the link in the email to sign in.
+                </p>
+                <button
+                  onClick={() => {
+                    setMagicLinkSent(false);
+                    setEmail('');
+                  }}
+                  className="text-[11px] font-medium text-[var(--accent-secondary)] hover:underline"
+                >
+                  Send to a different email
+                </button>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                <input
+                  type="email"
+                  placeholder="your@email.com"
+                  value={email}
+                  onChange={(e) => {
+                    setEmail(e.target.value);
+                    setMagicLinkError('');
+                  }}
+                  onKeyDown={(e) => e.key === 'Enter' && handleMagicLink()}
+                  className="w-full h-[44px] px-4 bg-[var(--glass-bg)] border border-[var(--glass-border)] rounded-xl text-[13px] text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus:outline-none focus:ring-2 focus:ring-[var(--accent)]/30 focus:border-[var(--accent)] transition-all"
+                />
+                
+                {magicLinkError && (
+                  <p className="text-[11px] text-red-400 text-left">{magicLinkError}</p>
+                )}
+                
+                <button
+                  onClick={handleMagicLink}
+                  disabled={isMagicLinkLoading || !email.trim()}
+                  className="w-full h-[44px] bg-[var(--accent)] text-white rounded-xl font-medium text-[14px] hover:bg-[var(--accent-secondary)] active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 transition-all duration-200"
+                >
+                  {isMagicLinkLoading ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      <span>Sending...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Zap className="w-4 h-4" />
+                      <span>Send Magic Link</span>
+                    </>
+                  )}
+                </button>
+                
+                <button
+                  onClick={() => {
+                    setIsMagicLinkMode(false);
+                    setMagicLinkSent(false);
+                    setEmail('');
+                    setMagicLinkError('');
+                  }}
+                  className="text-[11px] font-medium text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors"
+                >
+                  ← Back to Google sign in
+                </button>
+              </div>
+            )}
           </div>
 
           <div className="pt-8 border-t border-[var(--glass-border)] text-center space-y-4">

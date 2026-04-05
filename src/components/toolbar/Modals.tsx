@@ -8,7 +8,7 @@ import {
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 import { motion, AnimatePresence } from 'framer-motion';
-import { APP_VERSION, PLAN_CONFIG, SHOW_QUOTA_TAB } from '../../constants';
+import { APP_VERSION, PLAN_CONFIG, SHOW_QUOTA_TAB, MAX_UPLOAD_SIZE, MAX_UPLOAD_SIZE_MB } from '../../constants';
 import { useStore } from '../../store/useStore';
 import { useAuthStore } from '../../store/useAuthStore';
 import { useModalStore } from '../../store/useModalStore';
@@ -162,10 +162,10 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
   const handleBgUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    if (file.size > 2 * 1024 * 1024) {
+    if (file.size > MAX_UPLOAD_SIZE) {
       openModal({
         title: 'Background too large',
-        description: 'Please use an image or GIF under 2MB to ensure smooth synchronization.',
+        description: `Please use an image or GIF under ${MAX_UPLOAD_SIZE_MB}MB.`,
         type: 'alert',
         confirmText: 'Okay'
       });

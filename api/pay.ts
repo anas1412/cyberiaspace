@@ -3,10 +3,9 @@ import { buffer } from 'node:stream/consumers';
 import { createClient } from '@supabase/supabase-js';
 import { Polar } from "@polar-sh/sdk";
 import { validateEvent, WebhookVerificationError } from "@polar-sh/sdk/webhooks";
-import { OAuth2Client } from 'google-auth-library';
 import { mapPolarStatus } from './subscription-helper.js';
+import { verifyAuth } from './utils/auth.js';
 
-const CLIENT_ID = process.env.VITE_GOOGLE_CLIENT_ID || process.env.GOOGLE_CLIENT_ID;
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.VITE_SUPABASE_URL || process.env.VITE_PUBLIC_SUPABASE_URL;
 // Use service_role key for backend operations to bypass RLS.
 // If you haven't already, set SUPABASE_SERVICE_ROLE_KEY in your environment.
@@ -93,37 +92,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
 
 async function getUserIdFromToken(authHeader: string | undefined) {
-    if (!authHeader || !authHeader.startsWith('Bearer ')) return null;
-    const token = authHeader.split(' ')[1];
-    
-    try {
-        // Try verifying as ID Token first (more secure if frontend starts sending it)
-        if (CLIENT_ID) {
-            try {
-                const client = new OAuth2Client(CLIENT_ID);
-                const ticket = await client.verifyIdToken({
-                    idToken: token,
-                    audience: CLIENT_ID,
-                });
-                const payload = ticket.getPayload();
-                if (payload?.sub) return payload.sub;
-            } catch (e) {
-                // Not a valid ID token, fallback to access token check
-            }
-        }
-
-        // Fallback to Access Token verification via tokeninfo
-        const res = await fetch(`https://www.googleapis.com/oauth2/v3/tokeninfo?access_token=${token}`);
-        if (!res.ok) {
-            console.error('[Token Verification] Google tokeninfo returned error:', res.status, await res.text());
-            return null;
-        }
-        const data = await res.json() as any;
-        return data.sub || data.user_id;
-    } catch (e) {
-        console.error('[Token Verification] Critical error:', e);
-        return null;
-    }
+    const auth = await verifyAuth(authHeader);
+    return auth?.userId ?? null;
 }
 
 async function handlePricing(req: VercelRequest, res: VercelResponse) {
@@ -418,7 +388,6 @@ async function handlePolarInit(req: VercelRequest, res: VercelResponse) {
         return res.status(401).json({ error: 'Unauthorized: Missing or invalid Authorization header' });
     }
 
-    const token = authHeader.split(' ')[1];
     const body = req.body || {};
     const { billingCycle = 'monthly', termsAccepted, termsVersion, privacyVersion } = body;
     console.log('[Polar Init] Consent check:', { termsAccepted, termsVersion, privacyVersion });
@@ -443,15 +412,12 @@ async function handlePolarInit(req: VercelRequest, res: VercelResponse) {
     const termsAcceptedAt = new Date().toISOString();
 
     try {
-        console.log('[Polar Init] Verifying Google token...');
-        const tokenInfoRes = await fetch(`https://www.googleapis.com/oauth2/v3/tokeninfo?access_token=${token}`);
-        if (!tokenInfoRes.ok) {
-            const errText = await tokenInfoRes.text();
-            console.error('[Polar Init] Google token verification failed:', errText);
-            return res.status(401).json({ error: 'Invalid Google token' });
+        console.log('[Polar Init] Verifying token...');
+        const auth = await verifyAuth(authHeader);
+        if (!auth) {
+            return res.status(401).json({ error: 'Invalid token' });
         }
-        const info = await tokenInfoRes.json() as any;
-        const userId = info.sub || info.user_id;
+        const userId = auth.userId;
 
         if (!userId) {
             return res.status(401).json({ error: 'User identity not found in token' });

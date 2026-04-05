@@ -2,7 +2,7 @@ import React, { useRef, useState, useEffect, useCallback } from 'react';
 import { useStore } from '../store/useStore';
 import { useAuthStore } from '../store/useAuthStore';
 import { useModalStore } from '../store/useModalStore';
-import { MAX_FILE_SIZE_MB } from '../constants';
+import { MAX_UPLOAD_SIZE, MAX_UPLOAD_SIZE_MB } from '../constants';
 import { clsx, type ClassValue } from 'clsx';
 
 import { twMerge } from 'tailwind-merge';
@@ -387,6 +387,25 @@ const Viewport: React.FC<{ isInteracting?: boolean }> = ({ isInteracting }) => {
       const files = Array.from(e.dataTransfer?.files || []);
       if (files.length === 0) return;
 
+      // Pre-check: storage quota
+      const { storageUsageMB } = useAuthStore.getState();
+      const { useAuthStore: authStoreImport } = await import('../store/useAuthStore');
+      const authState = authStoreImport.getState();
+      const { PLAN_CONFIG } = await import('../constants');
+      const plan = (authState.user?.plan || 'free') as keyof typeof PLAN_CONFIG;
+      const storageLimitMB = PLAN_CONFIG[plan].MAX_STORAGE_MB;
+      const totalFileMB = files.reduce((sum, f) => sum + f.size / (1024 * 1024), 0);
+      if (storageUsageMB + totalFileMB > storageLimitMB) {
+        const remaining = (storageLimitMB - storageUsageMB).toFixed(1);
+        openModal({
+          title: 'Storage Full',
+          description: `You have ${remaining}MB of storage remaining. These files need ${totalFileMB.toFixed(1)}MB. Upgrade your plan or remove some files first.`,
+          type: 'alert',
+          confirmText: 'Okay'
+        });
+        return;
+      }
+
       const currentScale = camera.scale.get();
       const currentX = camera.x.get();
       const currentY = camera.y.get();
@@ -395,10 +414,10 @@ const Viewport: React.FC<{ isInteracting?: boolean }> = ({ isInteracting }) => {
       const dropY = e.clientY !== 0 ? (e.clientY - currentY) / currentScale : window.innerHeight / 2;
 
       for (const file of files) {
-        if (file.size > MAX_FILE_SIZE_MB * 1024 * 1024) {
+        if (file.size > MAX_UPLOAD_SIZE) {
           openModal({
             title: 'File Too Large',
-            description: `The file "${file.name}" exceeds the ${MAX_FILE_SIZE_MB}MB transmission limit. Please compress your asset or use a smaller file.`,
+            description: `The file "${file.name}" exceeds the ${MAX_UPLOAD_SIZE_MB}MB transmission limit. Please compress your asset or use a smaller file.`,
             type: 'alert',
             confirmText: 'Acknowledged'
           });
@@ -407,6 +426,7 @@ const Viewport: React.FC<{ isInteracting?: boolean }> = ({ isInteracting }) => {
 
         const isImage = file.type.startsWith('image/') || /\.(jpg|jpeg|png|gif|webp|svg)$/i.test(file.name);
         const isVideo = file.type.startsWith('video/') || /\.(mp4|webm|mov|m4v)$/i.test(file.name);
+        const isAudio = file.type.startsWith('audio/') || /\.(mp3|wav|ogg|m4a|aac|flac)$/i.test(file.name);
         const isText = file.name.endsWith('.txt') || file.name.endsWith('.md') || file.type === 'text/plain' || file.type === 'text/markdown';
         const isCSV = file.name.endsWith('.csv') || file.type === 'text/csv';
         const isLarge = file.size > 2 * 1024 * 1024;
@@ -437,6 +457,8 @@ const Viewport: React.FC<{ isInteracting?: boolean }> = ({ isInteracting }) => {
                 name: file.name,
                 size: file.size,
                 type: file.type,
+                isImage,
+                isVideo,
               } as any
             },
             meta: {
@@ -460,6 +482,52 @@ const Viewport: React.FC<{ isInteracting?: boolean }> = ({ isInteracting }) => {
               userId
             });
             setSelectedThoughtId(id);
+            uploadThoughtBlob(id);
+          }
+          continue;
+        }
+
+        if (isAudio) {
+          const id = await addThought({
+            type: 'file',
+            text: stripFileExtension(file.name),
+            syncStatus: 'local',
+            x: dropX + (Math.random() * 20 - 10),
+            y: dropY + (Math.random() * 20 - 10),
+            data: {
+              type: 'file',
+              url: '',
+              name: file.name,
+              size: file.size,
+              meta: {
+                name: file.name,
+                size: file.size,
+                type: file.type,
+                isAudio: true,
+              } as any
+            },
+            meta: {
+              file: {
+                name: file.name,
+                size: file.size,
+                type: file.type,
+              }
+            }
+          });
+
+          if (id !== '') {
+            const userId = useAuthStore.getState().user?.id ?? 'guest';
+            await db.blobs.put({
+              id: id,
+              thoughtId: id,
+              blob: file,
+              name: file.name,
+              type: file.type,
+              updatedAt: Date.now(),
+              userId
+            });
+            setSelectedThoughtId(id);
+            setInspectorOpen(true);
             uploadThoughtBlob(id);
           }
           continue;

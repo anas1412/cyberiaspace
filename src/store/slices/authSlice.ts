@@ -5,6 +5,7 @@ import { db } from '../../db';
 import { supabaseSync } from '../../services/supabaseSync';
 import { type AuthState } from '../types';
 import { supabaseStorage, isStorageUrl } from '../../services/supabaseStorage';
+import { supabase } from '../../services/supabase';
 
 let refreshInterval: ReturnType<typeof setInterval> | null = null;
 let planHealthCheckInterval: ReturnType<typeof setInterval> | null = null;
@@ -369,6 +370,32 @@ export const createAuthSlice: StateCreator<AuthState, [], [], any> = (set, get, 
       // Pass false for isFreshLogin -> prevents re-downloading/overwriting offline work
       await runAuthenticationFlow(currentUser, get, false);
     }
+
+    // ============================================================
+    // NEW: Handle Supabase OAuth session
+    // ============================================================
+    
+    // 1. Check for existing session (from OAuth redirect)
+    const { data: { session: existingSession } } = await supabase.auth.getSession();
+    if (existingSession) {
+      console.log('[Auth] Found existing Supabase session on init, processing...');
+      await get().handleSupabaseSession(existingSession);
+      return; // handleSupabaseSession will run full auth flow
+    }
+
+    // 2. Set up auth state listener for future session changes
+    supabase.auth.onAuthStateChange((event, session) => {
+      console.log('[Auth] Auth state changed:', event, session ? 'with session' : 'no session');
+      
+      if (event === 'SIGNED_IN' && session) {
+        get().handleSupabaseSession(session);
+      } else if (event === 'SIGNED_OUT') {
+        get().signOut();
+      } else if (event === 'TOKEN_REFRESHED' && session) {
+        // Token refreshed - update the access token in state if needed
+        console.log('[Auth] Token refreshed');
+      }
+    });
   },
 
   setAuthenticatedUser: async (user: User, token: string, refreshSecret?: string, scopes?: string[], expiresIn?: number) => {
@@ -529,6 +556,14 @@ export const createAuthSlice: StateCreator<AuthState, [], [], any> = (set, get, 
       planHealthCheckInterval = null;
     }
     
+    // Sign out from Supabase first (clears session cookie)
+    try {
+      await supabase.auth.signOut();
+      console.log('[Auth] Supabase signed out');
+    } catch (err) {
+      console.warn('[Auth] Supabase sign out error:', err);
+    }
+    
     localStorage.removeItem('cyberia-user');
     localStorage.removeItem('cyberia-token');
     localStorage.removeItem('cyberia-token-expiry');
@@ -577,6 +612,7 @@ export const createAuthSlice: StateCreator<AuthState, [], [], any> = (set, get, 
     }
     
     useStore.getState().setInitializing(false);
+    
     window.location.reload(); 
   },
 
@@ -626,9 +662,9 @@ export const createAuthSlice: StateCreator<AuthState, [], [], any> = (set, get, 
   },
 
   refreshProfile: async () => {
-    const { accessToken, user, refreshSecret } = get();
-    if (!accessToken || !user) {
-      console.warn('[Auth] refreshProfile: No accessToken or user, cannot refresh');
+    const { user } = get();
+    if (!user) {
+      console.warn('[Auth] refreshProfile: No user, cannot refresh');
       return;
     }
 
@@ -636,116 +672,183 @@ export const createAuthSlice: StateCreator<AuthState, [], [], any> = (set, get, 
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 20000);
 
-      // 1. First, always try to refresh the profile data from Supabase to ensure we have the latest plan
-      try {
-        const supabaseProfile = await supabaseSync.getProfile(user.id);
-        if (supabaseProfile?.user) {
-          const supabaseUser = supabaseProfile.user;
-          
-          // Trust the database for plan - don't recalculate from expiryDate
-          // IMPORTANT: Preserve local user settings (like theme) - only update autoSync from cloud
-          const updatedUser = { 
-            ...user, 
-            plan: supabaseUser.plan || 'free', // Database is source of truth for plan
-            settings: {
-              ...user.settings, // Preserve ALL local settings including theme
-              autoSync: supabaseUser.settings?.autoSync ?? user.settings?.autoSync ?? true,
-              personality: supabaseUser.settings?.personality ?? user.settings?.personality,
-            }
-          };
-          
-          // Only log regression for debugging - don't override plan from database
-          const wasPro = user.plan === 'pro';
-          const isProNow = updatedUser.plan === 'pro';
-          
-          if (wasPro && !isProNow) {
-            console.log('[Auth] Plan regression (pro -> free) detected remotely.');
-            get().handlePlanRegression();
-            setHasRegressedToFree(true);
-          } else if (!wasPro && isProNow) {
-            console.log('[Auth] Plan renewed (free -> pro), lifting capability restrictions.');
-            setHasRegressedToFree(false);
-          } else if (isProNow && getHasRegressedToFree()) {
-            console.log('[Auth] Plan renewed, lifting capability restrictions.');
-            setHasRegressedToFree(false);
+      // Refresh profile data from Supabase
+      const supabaseProfile = await supabaseSync.getProfile(user.id);
+      if (supabaseProfile?.user) {
+        const supabaseUser = supabaseProfile.user;
+        
+        const updatedUser = { 
+          ...user, 
+          plan: supabaseUser.plan || 'free',
+          settings: {
+            ...user.settings,
+            autoSync: supabaseUser.settings?.autoSync ?? user.settings?.autoSync ?? true,
+            personality: supabaseUser.settings?.personality ?? user.settings?.personality,
           }
-
-          // Save refreshSecret if present in profile
-          const profileAny = supabaseUser as any;
-          if (profileAny.refreshSecret) {
-            localStorage.setItem('cyberia-refresh-secret', profileAny.refreshSecret);
-            set({ refreshSecret: profileAny.refreshSecret });
-          }
-
-          set({ user: updatedUser });
-          localStorage.setItem('cyberia-user', JSON.stringify(updatedUser));
-          console.log('[Auth] Profile refreshed from Supabase. Plan:', updatedUser.plan);
+        };
+        
+        const wasPro = user.plan === 'pro';
+        const isProNow = updatedUser.plan === 'pro';
+        
+        if (wasPro && !isProNow) {
+          console.log('[Auth] Plan regression detected.');
+          get().handlePlanRegression();
+          setHasRegressedToFree(true);
+        } else if (!wasPro && isProNow) {
+          console.log('[Auth] Plan renewed.');
+          setHasRegressedToFree(false);
+        } else if (isProNow && getHasRegressedToFree()) {
+          setHasRegressedToFree(false);
         }
-      } catch (err: any) {
-        console.warn('[Auth] Profile sync failed:', err.message);
-      }
 
-      // 2. Then, try to refresh the Google OAuth token if we have a refreshSecret
-      if (refreshSecret) {
-        try {
-          const refreshRes = await fetch('/api/google-auth?action=refresh', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ userId: user.id, refreshSecret }),
-            signal: controller.signal
-          });
-          
-          if (refreshRes.ok) {
-            const refreshData = await refreshRes.json();
-            const currentToken = refreshData.access_token;
-            const expiresIn = refreshData.expires_in || 3600;
-            const expiryTime = Date.now() + (expiresIn * 1000);
-            
-            set({ 
-              accessToken: currentToken,
-              accessTokenExpiresAt: expiryTime
-            });
-            localStorage.setItem('cyberia-token', currentToken);
-            localStorage.setItem('cyberia-token-expiry', expiryTime.toString());
-          } else if (refreshRes.status === 401) {
-            console.warn('[Auth] Session expired (401), signing out');
-            clearTimeout(timeoutId);
-            get().signOut();
-            return;
-          }
-        } catch (err: any) {
-          if (err.name === 'AbortError') {
-            console.log('[Auth] Token refresh heartbeat timed out.');
-          } else {
-            console.warn('[Auth] Token refresh error:', err.message);
-          }
-        }
-      } else {
-        // Legacy/missing refreshSecret fallback
-        console.warn('[Auth] No refreshSecret, skipping OAuth token refresh');
+        set({ user: updatedUser });
+        localStorage.setItem('cyberia-user', JSON.stringify(updatedUser));
+        console.log('[Auth] Profile refreshed. Plan:', updatedUser.plan);
       }
-
+      
       clearTimeout(timeoutId);
-    } catch (e) {
-      console.warn('[Auth] Refresh profile hard failure:', e);
+    } catch (err: any) {
+      console.warn('[Auth] Profile refresh failed:', err.message);
     }
   },
 
   getOrRefreshToken: async () => {
-    const { accessToken, accessTokenExpiresAt, status, isOnline } = get();
-    if (status !== 'authenticated' || !isOnline) return accessToken;
+    // Now delegates to Supabase session - no manual token refresh needed
+    return get().getSessionToken();
+  },
 
-    // Reduced buffer to 1 minute to minimize unnecessary refreshes
-    const BUFFER_MS = 60 * 1000;
-    const now = Date.now();
-    
-    if (!accessToken || !accessTokenExpiresAt || (accessTokenExpiresAt - now) < BUFFER_MS) {
-      console.log('[Auth] OIDC token near expiry, enforcing manual refresh.');
-      await get().refreshProfile();
-      return get().accessToken;
+  getSessionToken: async () => {
+    const { data, error } = await supabase.auth.getSession();
+    if (error) {
+      console.error('[Auth] Session error:', error);
+      return null;
+    }
+    return data.session?.access_token ?? null;
+  },
+
+  /**
+   * Process a Supabase OAuth session and convert it to app user
+   * Handles both new users (create record) and existing users (link via auth_user_id)
+   */
+  handleSupabaseSession: async (session: any) => {
+    if (!session?.user) {
+      console.warn('[Auth] No session user to process');
+      return;
     }
 
-    return accessToken;
+    const sbUser = session.user;
+    const authUserId = sbUser.id;
+    const accessToken = session.access_token;
+    const email = sbUser.email || '';
+    const name = sbUser.user_metadata?.full_name || sbUser.user_metadata?.name || '';
+    const avatar = sbUser.user_metadata?.avatar_url || sbUser.user_metadata?.picture || '';
+
+    console.log('[Auth] Processing Supabase session for:', email, 'auth_user_id:', authUserId);
+
+    try {
+      // Try to find existing user by auth_user_id (new users) or by email (legacy users)
+      let { data: existingUser, error: lookupError } = await supabase
+        .from('users')
+        .select('*')
+        .eq('auth_user_id', authUserId)
+        .maybeSingle();
+
+      if (lookupError) {
+        console.error('[Auth] Error looking up user:', lookupError);
+      }
+
+      // If not found by auth_user_id, try by email (for legacy users)
+      if (!existingUser && email) {
+        const { data: emailMatch, error: emailLookupError } = await supabase
+          .from('users')
+          .select('*')
+          .eq('email', email)
+          .maybeSingle();
+
+        if (emailLookupError) {
+          console.error('[Auth] Error looking up by email:', emailLookupError);
+        }
+
+        if (emailMatch) {
+          // Link existing user to new auth_user_id
+          existingUser = emailMatch;
+          await supabase
+            .from('users')
+            .update({ auth_user_id: authUserId })
+            .eq('id', emailMatch.id);
+          console.log('[Auth] Linked legacy user to Supabase auth:', emailMatch.id);
+        }
+      }
+
+      let userId: string;
+      let isNewUser = false;
+
+      if (existingUser) {
+        // Use existing user
+        userId = existingUser.id;
+        console.log('[Auth] Found existing user:', userId);
+      } else {
+        // Create new user - use the auth UUID as the ID
+        userId = authUserId;
+        isNewUser = true;
+        console.log('[Auth] Creating new user:', userId);
+      }
+
+      // Upsert user profile in public.users
+      const { error: upsertError } = await supabase
+        .from('users')
+        .upsert({
+          id: userId,
+          auth_user_id: authUserId,
+          email,
+          name,
+          avatar,
+        }, { onConflict: 'id' });
+
+      if (upsertError) {
+        console.error('[Auth] Error upserting user:', upsertError);
+      }
+
+      // Build the app User object
+      const appUser: User = {
+        id: userId,
+        email,
+        name,
+        avatar,
+        plan: 'free',
+        subscriptionStatus: 'none',
+        expiryDate: null,
+        usage: {
+          ai_daily_count: 0,
+          ai_top_count: 0,
+          ai_medium_count: 0,
+          ai_small_count: 0,
+          sync_thoughts: 0,
+          daily_anchor: new Date().toISOString().split('T')[0],
+          weekly_anchor: new Date().toISOString().split('T')[0],
+          monthly_anchor: new Date().toISOString().split('T')[0],
+          weekly_top_count: 0,
+          weekly_medium_count: 0,
+          weekly_small_count: 0,
+          monthly_top_count: 0,
+          monthly_medium_count: 0,
+          monthly_small_count: 0,
+        },
+        settings: {
+          theme: (typeof window !== 'undefined' && localStorage.getItem('cyberia-theme') as 'dark' | 'light') || 'dark',
+          autoSync: true,
+          space: 'default',
+        },
+      };
+
+      // Write to localStorage and Zustand using setAuthenticatedUser
+      await get().setAuthenticatedUser(appUser, accessToken, undefined, undefined, undefined);
+
+      console.log('[Auth] handleSupabaseSession complete. isNewUser:', isNewUser);
+
+    } catch (err) {
+      console.error('[Auth] handleSupabaseSession error:', err);
+    }
   },
 
   setupRefreshInterval: () => {
@@ -759,20 +862,12 @@ export const createAuthSlice: StateCreator<AuthState, [], [], any> = (set, get, 
       }
     }, 5 * 60 * 1000); // 5 minutes
 
-    // 2. Token refresh - 55 minutes (tokens expire at 60 min)
-    if (refreshInterval) clearInterval(refreshInterval);
-    refreshInterval = setInterval(() => {
-      const { status, isOnline, refreshSecret } = get();
-      if (status === 'authenticated' && isOnline && refreshSecret) {
-        console.log('[Auth] Token maintenance (OAuth refresh)...');
-        get().refreshProfile();
-      }
-    }, 55 * 60 * 1000);
+    // 2. Supabase handles token refresh automatically - no manual refresh needed
   },
 
   updateSettings: async (settings: Partial<User['settings']>) => {
-    const { accessToken, user } = get();
-    if (!accessToken || !user) return;
+    const { user } = get();
+    if (!user) return;
     
     const updatedUser = { ...user, settings: { ...user.settings, ...settings } };
     set({ user: updatedUser });
@@ -819,8 +914,8 @@ export const createAuthSlice: StateCreator<AuthState, [], [], any> = (set, get, 
 
   handlePlanRegression: async () => {
     console.log('[Auth] Engaging Plan Regression routines...');
-    const { user, accessToken } = get();
-    if (!user || !accessToken) return;
+    const { user } = get();
+    if (!user) return;
 
     const freeThemes = PLAN_CONFIG.free.THEMES_ENABLED;
     const spaces = await db.spaces.where('userId').equals(user.id).toArray();

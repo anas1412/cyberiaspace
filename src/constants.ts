@@ -21,6 +21,7 @@ export interface User {
   subscriptionStatus: 'active' | 'trialing' | 'past_due' | 'unpaid' | 'canceled' | 'expired' | 'none';
   expiryDate: string | null;
   polarCustomerId?: string | null;
+  polarSubscriptionId?: string | null;
   paymentProvider?: 'polar' | 'flouci';
   usage: {
     // Daily counters
@@ -135,7 +136,8 @@ export const STACK_COLORS = [
   '#a855f7', // Purple
 ];
 
-export const MAX_FILE_SIZE_MB = 10;
+export const MAX_UPLOAD_SIZE = 20 * 1024 * 1024; // 20 MB
+export const MAX_UPLOAD_SIZE_MB = 20;
 export const MAX_THOUGHTS_PER_STACK = 20;
 
 export const ORACLE_CONFIG = {

@@ -1,7 +1,6 @@
 import { type StateCreator } from 'zustand';
 import { db } from '../../db';
 import { syncOrchestrator } from '../../services/sync/syncOrchestrator';
-import { useModalStore } from '../useModalStore';
 import { type CyberiaState } from '../types';
 
 // Generation counter and abort controller to prevent concurrent setCustomBg races
@@ -28,7 +27,6 @@ export const createUiSlice: StateCreator<CyberiaState, [], [], any> = (set, get,
     theme: getInitialTheme(),
   customBg: null,
   customBgLoading: false,
-  oracleMode: false,
   oracleChatMode: 'chat',
   isChatOpen: false,
   isInspectorOpen: false,
@@ -196,21 +194,6 @@ export const createUiSlice: StateCreator<CyberiaState, [], [], any> = (set, get,
   },
 
   setDeferredPrompt: (prompt: any) => set({ deferredPrompt: prompt }),
-
-  toggleOracleMode: async () => {
-    const { useAuthStore } = await import('../useAuthStore');
-    const user = useAuthStore.getState().user;
-    if (!user) {
-      useModalStore.getState().openModal({
-        title: 'Authentication Required',
-        description: 'Oracle AI features require a connected account.',
-        type: 'alert',
-        confirmText: 'Sign In'
-      });
-      return;
-    }
-    set({ oracleMode: true });
-  },
 
   setChatOpen: (isOpen: boolean) => set({ isChatOpen: isOpen }),
   setOracleChatMode: (mode: 'chat' | 'action') => set({ oracleChatMode: mode }),
