@@ -245,7 +245,7 @@ const Inspector: React.FC = () => {
           animate={{ x: 0, opacity: 1 }}
           exit={{ x: '100%', opacity: 0 }}
           transition={{ type: 'spring', damping: 28, stiffness: 200 }}
-          className="ui-layer focus-box fixed top-4 md:top-24 bottom-4 md:bottom-24 right-4 md:right-8 w-[calc(100%-32px)] md:w-[400px] glass rounded-2xl shadow-2xl flex flex-col overflow-hidden z-[9999] border border-[var(--glass-border)]"
+          className="ui-layer focus-box fixed top-4 md:top-24 bottom-4 md:bottom-24 right-4 md:right-8 w-[calc(100%-32px)] md:w-[400px] glass backdrop-blur-xl rounded-2xl shadow-2xl flex flex-col overflow-hidden z-[9999] border border-[var(--glass-border)]"
         >
           {/* Header & Tabs Container - Single Sticky Wrapper! */}
           <div className="sticky top-0 z-30 bg-[var(--bg-main)]/60 backdrop-blur-xl border-b border-[var(--glass-border)] flex flex-col">

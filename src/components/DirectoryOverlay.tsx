@@ -37,13 +37,13 @@ const DirectoryOverlay: React.FC = () => {
     >
       {/* Left: Directory Sidebar (grouped list) */}
       <div
-        className="directory-sidebar w-full md:w-[260px] h-full glass rounded-2xl flex flex-col overflow-hidden pointer-events-auto z-[30] relative border border-[var(--glass-border)] shadow-2xl"
+        className="directory-sidebar w-full md:w-[260px] h-full glass backdrop-blur-xl rounded-2xl flex flex-col overflow-hidden pointer-events-auto z-[30] relative border border-[var(--glass-border)] shadow-2xl"
       >
         <DirectorySidebar groups={groups} />
       </div>
 
       {/* Right: Inline Focus Editor */}
-      <div className="directory-main flex-1 min-h-[400px] md:min-h-0 glass rounded-2xl overflow-hidden pointer-events-auto z-[5] relative border border-[var(--glass-border)] shadow-xl">
+      <div className="directory-main flex-1 min-h-[400px] md:min-h-0 glass backdrop-blur-xl rounded-2xl overflow-hidden pointer-events-auto z-[5] relative border border-[var(--glass-border)] shadow-xl">
         <DirectoryInlineEditor />
       </div>
     </div>

@@ -70,15 +70,13 @@ interface SettingsModalProps {
   setCustomBg: (bg: File | string | null) => Promise<void>;
   handleExport: () => void;
   handleImport: (e: any) => void;
-  handleScreenshot: () => void;
-  isCapturing: boolean;
   deferredPrompt: any;
   handleInstall: () => void;
 }
 
 export const SettingsModal: React.FC<SettingsModalProps> = ({
   isOpen, onClose, customBg, customBgLoading, setCustomBg,
-  handleExport, handleImport, handleScreenshot, isCapturing,
+  handleExport, handleImport,
   deferredPrompt, handleInstall
 }) => {
   const [activeTab, setActiveTab] = useState<'general' | 'custom' | 'storage' | 'quota'>('general');
@@ -422,13 +420,6 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                       </div>
                       <input type="file" className="hidden" accept=".json" onChange={handleImport} />
                     </label>
-                    <button onClick={handleScreenshot} disabled={isCapturing} className="flex items-center gap-3 p-4 rounded-2xl bg-[var(--glass-bg)] border border-[var(--glass-border)] hover:bg-[var(--bg-page)] transition-all text-left group">
-                      <Camera className="w-4 h-4 text-[var(--text-muted)] group-hover:text-purple-500" />
-                      <div>
-                        <p className="text-[10px] font-semibold tracking-wide text-[var(--text-dimmed)] group-hover:text-[var(--text-primary)]">{isCapturing ? 'Capturing...' : 'Capture Space'}</p>
-                        <p className="text-[8px] font-medium text-[var(--text-muted)] uppercase tracking-wide mt-0.5">High-Res Screenshot</p>
-                      </div>
-                    </button>
                     {deferredPrompt && (
                       <button onClick={handleInstall} className="flex items-center gap-3 p-4 rounded-2xl bg-[var(--accent)]/5 border border-[var(--accent)]/10 hover:bg-[var(--accent)]/10 transition-all text-left group">
                         <Smartphone className="w-4 h-4 text-[var(--accent)] group-hover:scale-110 transition-transform" />

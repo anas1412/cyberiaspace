@@ -138,7 +138,7 @@ export const ActionFAB: React.FC<ActionFABProps> = ({
           onClick={() => (window.location.href = '/')}
           className={cn(
             'group relative flex items-center gap-3 px-6 py-3',
-            'glass rounded-2xl border border-[var(--glass-border)] shadow-lg shadow-[var(--glass-border)]',
+            'glass backdrop-blur-xl rounded-2xl border border-[var(--glass-border)] shadow-lg shadow-[var(--glass-border)]',
             'hover:brightness-110 active:brightness-90'
           )}
         >
@@ -204,7 +204,7 @@ export const ActionFAB: React.FC<ActionFABProps> = ({
                 onClick={() => fileInputRef.current?.click()}
                 className={cn(
                   'absolute group flex items-center justify-center w-12 h-12',
-                  'glass rounded-xl border border-[var(--glass-border)] shadow-lg shadow-[var(--glass-border)]',
+                  'glass backdrop-blur-xl rounded-xl border border-[var(--glass-border)] shadow-lg shadow-[var(--glass-border)]',
                   'hover:bg-[var(--text-primary)]/5 active:brightness-90 pointer-events-auto focus-visible:outline-none'
                 )}
               >
@@ -227,7 +227,7 @@ export const ActionFAB: React.FC<ActionFABProps> = ({
                 onClick={handlePasteAction}
                 className={cn(
                   'absolute group flex items-center justify-center w-12 h-12',
-                  'glass rounded-xl border border-[var(--glass-border)] shadow-lg shadow-[var(--glass-border)]',
+                  'glass backdrop-blur-xl rounded-xl border border-[var(--glass-border)] shadow-lg shadow-[var(--glass-border)]',
                   'hover:bg-[var(--text-primary)]/5 active:brightness-90 pointer-events-auto focus-visible:outline-none'
                 )}
               >
@@ -258,7 +258,7 @@ export const ActionFAB: React.FC<ActionFABProps> = ({
           transition={{ duration: 0.12, ease: 'easeOut' }}
           className={cn(
             'group relative z-10 flex items-center justify-center w-16 h-16',
-            'glass rounded-2xl border shadow-lg shadow-[var(--glass-border)]',
+            'glass backdrop-blur-xl rounded-2xl border shadow-lg shadow-[var(--glass-border)]',
             'hover:brightness-110 active:brightness-90 pointer-events-auto focus-visible:outline-none',
             'transition-all duration-200',
             isDraggingThought

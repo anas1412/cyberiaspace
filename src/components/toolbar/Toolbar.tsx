@@ -3,7 +3,6 @@ import { useStore } from '../../store/useStore';
 import { useModalStore } from '../../store/useModalStore';
 import { useAuthStore } from '../../store/useAuthStore';
 import { PLAN_CONFIG, type SubscriptionPlan } from '../../constants';
-import { toCanvas } from 'html-to-image';
 
 // Modular Components
 import { SpaceSwitcher } from './SpaceSwitcher';
@@ -133,7 +132,6 @@ const Toolbar: React.FC = () => {
   };
 
   const lastUpdated = useStore((state) => state.lastUpdated);
-  const [isCapturing, setIsCapturing] = useState(false);
 
   useEffect(() => {
     const handleGlobalClick = (e: MouseEvent) => {
@@ -155,50 +153,6 @@ const Toolbar: React.FC = () => {
       });
     }
     e.target.value = '';
-  };
-
-  const handleScreenshot = async () => {
-    const worldEl = document.getElementById('world');
-    if (!worldEl || thoughts.length === 0) return;
-    setIsCapturing(true);
-    try {
-      const body = document.querySelector('.app-body') || document.body;
-      const globalScale = new DOMMatrix(window.getComputedStyle(body).transform).a || 1;
-      let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
-      const worldRectRaw = worldEl.getBoundingClientRect();
-      const worldRect = { left: worldRectRaw.left / globalScale, top: worldRectRaw.top / globalScale, width: worldRectRaw.width / globalScale, height: worldRectRaw.height / globalScale };
-      const currentZoom = new DOMMatrix(window.getComputedStyle(worldEl).transform).a || 1;
-      thoughts.forEach(t => {
-        const el = document.querySelector(`.thought-bulb[data-id="${t.id}"]`) as HTMLElement;
-        if (!el) return;
-        const rectRaw = el.getBoundingClientRect();
-        const rect = { left: rectRaw.left / globalScale, top: rectRaw.top / globalScale, width: rectRaw.width / globalScale, height: rectRaw.height / globalScale };
-        const x = (rect.left - worldRect.left) / currentZoom;
-        const y = (rect.top - worldRect.top) / currentZoom;
-        const w = rect.width / currentZoom;
-        const h = rect.height / currentZoom;
-        if (x < minX) minX = x; if (y < minY) minY = y; if (x + w > maxX) maxX = x + w; if (y + h > maxY) maxY = y + h;
-      });
-      if (minX === Infinity) return;
-      const padding = 60; const width = (maxX - minX) + (padding * 2); const height = (maxY - minY) + (padding * 2);
-      const captureX = minX - padding; const captureY = minY - padding;
-      const scaleFactor = Math.min(1, 4000 / Math.max(width, height));
-      const canvas = await toCanvas(worldEl, {
-        backgroundColor: getComputedStyle(document.body).getPropertyValue('--bg-main').trim() || '#020408',
-        cacheBust: true, pixelRatio: scaleFactor * 2, skipFonts: true,
-        style: { transform: `translate(${-captureX}px, ${-captureY}px) scale(1)`, position: 'absolute', width: `${width}px`, height: `${height}px`, margin: '0', padding: '0', left: '0', top: '0', filter: 'none', backdropFilter: 'none', boxShadow: 'none' },
-        width: Math.floor(width * scaleFactor), height: Math.floor(height * scaleFactor),
-        filter: (node: HTMLElement) => !(node.classList?.contains('ui-layer') || node.id === 'connection-canvas' || (node.tagName === 'BUTTON' && !node.closest?.('.thought-bulb')))
-      });
-      const link = document.createElement('a');
-      link.download = `cyberia_${activeSpace?.name || 'space'}.jpg`;
-      link.href = canvas.toDataURL('image/jpeg', 0.85);
-      document.body.appendChild(link); link.click();
-      setTimeout(() => { if (document.body.contains(link)) document.body.removeChild(link); }, 100);
-    } catch (error) {
-      console.error('Screenshot failed:', error);
-      openModal({ title: 'Screenshot Failed', description: 'The space might be too large or your device is out of memory.', type: 'alert', confirmText: 'Okay' });
-    } finally { setIsCapturing(false); }
   };
 
   const handleInstall = async () => {
@@ -369,8 +323,6 @@ const Toolbar: React.FC = () => {
         setCustomBg={setCustomBg}
         handleExport={handleExport}
         handleImport={handleImport}
-        handleScreenshot={handleScreenshot}
-        isCapturing={isCapturing}
         deferredPrompt={deferredPrompt}
         handleInstall={handleInstall}
       />

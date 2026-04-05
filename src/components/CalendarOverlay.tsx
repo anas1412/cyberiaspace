@@ -96,7 +96,7 @@ const CalendarOverlay: React.FC = () => {
 
       {/* Sidebar */}
       <div 
-        className="cal-sidebar w-full md:w-[260px] min-h-[200px] md:min-h-0 glass rounded-2xl flex flex-col overflow-hidden pointer-events-auto z-[30] relative border border-[var(--glass-border)] shadow-2xl"
+        className="cal-sidebar w-full md:w-[260px] min-h-[200px] md:min-h-0 glass backdrop-blur-xl rounded-2xl flex flex-col overflow-hidden pointer-events-auto z-[30] relative border border-[var(--glass-border)] shadow-2xl"
         onMouseEnter={() => handleMouseEnter('')}
         onMouseLeave={handleMouseLeave}
       >
@@ -109,7 +109,7 @@ const CalendarOverlay: React.FC = () => {
       </div>
       
       {/* Main Grid */}
-      <div className="cal-main flex-1 flex flex-col min-h-[400px] md:min-h-0 glass rounded-2xl overflow-hidden pointer-events-auto z-[5] relative border border-[var(--glass-border)] shadow-xl" onMouseEnter={handleMouseLeave}>
+      <div className="cal-main flex-1 flex flex-col min-h-[400px] md:min-h-0 glass backdrop-blur-xl rounded-2xl overflow-hidden pointer-events-auto z-[5] relative border border-[var(--glass-border)] shadow-xl" onMouseEnter={handleMouseLeave}>
         <div className="cal-header h-[50px] md:h-[60px] flex items-center justify-between px-4 md:px-[30px] border-b border-[var(--glass-border)] bg-[var(--glass-bg)]">
           <button onClick={() => changeMonth(-1)} className="p-2 hover:bg-[var(--text-primary)]/10 rounded-xl text-[var(--text-muted)] transition-colors">
             <ChevronLeft className="w-4 h-4" />

@@ -297,7 +297,7 @@ export const FilterPanel: React.FC = () => {
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: -8, scale: 0.96 }}
             transition={{ duration: 0.2, ease: [0.23, 1, 0.32, 1] }}
-            className="absolute top-full left-0 mt-2 w-80 glass rounded-2xl border border-[var(--glass-border)] shadow-2xl z-[10001] overflow-hidden"
+            className="absolute top-full left-0 mt-2 w-80 glass backdrop-blur-xl rounded-2xl border border-[var(--glass-border)] shadow-2xl z-[10001] overflow-hidden"
           >
             {/* Header */}
             <div className="flex items-center justify-between px-4 py-3 border-b border-[var(--glass-border)] bg-[var(--bg-main)]/40">

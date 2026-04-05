@@ -34,7 +34,7 @@ export const AIToggleButton: React.FC = () => {
         className="
           group relative h-[56px] w-[42px] rounded-r-2xl flex items-center justify-center 
           transition-all duration-300 pointer-events-auto
-          bg-[var(--glass-bg)] border border-[var(--glass-border)] text-[var(--text-muted)]
+          bg-[var(--glass-bg)] backdrop-blur-xl border border-[var(--glass-border)] text-[var(--text-muted)]
           hover:text-[var(--text-primary)] hover:w-[46px]
           shadow-lg shadow-[var(--glass-border)]
         "

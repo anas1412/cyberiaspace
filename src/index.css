@@ -284,6 +284,11 @@ body {
   transition: background-color 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
 }
 
+/* Subtle border in light mode for glass visibility */
+[data-theme='light'] .glass {
+  border: 1px solid rgba(0, 0, 0, 0.1);
+}
+
 body.low-perf .glass {
   backdrop-filter: none !important;
   -webkit-backdrop-filter: none !important;

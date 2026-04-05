@@ -24,7 +24,7 @@ const KanbanOverlay: React.FC = () => {
 
       {/* Sidebar - Unplanned/Unscheduled */}
       <div 
-        className="kanban-sidebar w-full md:w-[260px] min-h-[200px] md:min-h-0 glass rounded-2xl flex flex-col overflow-hidden pointer-events-auto z-[30] relative border border-[var(--glass-border)] shadow-2xl"
+        className="kanban-sidebar w-full md:w-[260px] min-h-[200px] md:min-h-0 glass backdrop-blur-xl rounded-2xl flex flex-col overflow-hidden pointer-events-auto z-[30] relative border border-[var(--glass-border)] shadow-2xl"
       >
         <div className="kanban-sidebar-header p-4 md:p-5 border-b border-[var(--glass-border)] text-[9px] md:text-[10px] font-black tracking-[0.2em] uppercase text-[var(--accent)] bg-[var(--glass-bg)] z-[40] sticky top-0 shadow-[var(--shadow-elevation-2)]">
           Unplanned
@@ -35,7 +35,7 @@ const KanbanOverlay: React.FC = () => {
       </div>
       
       {/* Main Columns */}
-      <div className="kanban-main flex-1 flex flex-col min-h-[400px] md:min-h-0 glass rounded-2xl overflow-hidden pointer-events-auto z-[5] relative border border-[var(--glass-border)] shadow-xl">
+      <div className="kanban-main flex-1 flex flex-col min-h-[400px] md:min-h-0 glass backdrop-blur-xl rounded-2xl overflow-hidden pointer-events-auto z-[5] relative border border-[var(--glass-border)] shadow-xl">
         {/* Column Headers */}
         <div className="flex flex-col md:flex-row h-[50px] md:h-[60px] border-b border-[var(--glass-border)] bg-[var(--glass-bg)]">
           <div className="flex-1 flex items-center justify-center border-b md:border-b-0 md:border-r border-dashed border-[var(--glass-border)]">

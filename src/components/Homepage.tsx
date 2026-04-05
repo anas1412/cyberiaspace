@@ -73,7 +73,7 @@ const AvatarCircle: React.FC<{ user: ActiveUser; index: number; delay: number }>
 
 const ActiveUsersStack: React.FC = React.memo(() => {
   const [users, setUsers] = useState<ActiveUser[]>(FALLBACK_USERS);
-  const [activeCount, setActiveCount] = useState(120);
+  const [activeCount, setActiveCount] = useState(100);
 
   useEffect(() => {
     fetch('/api/public-stats')

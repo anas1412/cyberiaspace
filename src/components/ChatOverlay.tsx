@@ -925,7 +925,7 @@ if (data.tier && data.autoSwitch) {
           {/* Chat Panel */}
           <div
             id="chat-overlay"
-            className="w-[calc(100%-32px)] md:w-[460px] h-full glass rounded-2xl shadow-[0_0_80px_rgba(0,0,0,0.5)] flex flex-col overflow-hidden border border-[var(--glass-border)]"
+            className="w-[calc(100%-32px)] md:w-[460px] h-full glass backdrop-blur-xl rounded-2xl shadow-[0_0_80px_rgba(0,0,0,0.5)] flex flex-col overflow-hidden border border-[var(--glass-border)]"
           >
 
           {/* HEADER */}

@@ -22,7 +22,7 @@ interface ViewSwitcherProps {
 }
 
 export const ViewSwitcher: React.FC<ViewSwitcherProps> = ({ activeSpace, setViewMode }) => (
-  <div className="flex items-center h-[48px] p-1.5 glass rounded-2xl transition-all pointer-events-auto border border-[var(--glass-border)]">
+  <div className="flex items-center h-[48px] p-1.5 glass backdrop-blur-xl rounded-2xl transition-all pointer-events-auto border border-[var(--glass-border)]">
     {VIEW_MODES.map((mode) => {
       const isActive = activeSpace?.mode === mode.id;
       const Icon = mode.icon;

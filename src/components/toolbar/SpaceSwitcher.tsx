@@ -108,7 +108,7 @@ className={cn(
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: -8, scale: 0.95 }}
             transition={{ duration: 0.2, ease: [0.23, 1, 0.32, 1] }}
-            className="absolute top-full mt-4 left-0 min-w-[300px] glass rounded-2xl border border-[var(--glass-border)] shadow-[0_0_80px_rgba(0,0,0,0.5)] overflow-hidden pointer-events-auto z-50 flex flex-col"
+            className="absolute top-full mt-4 left-0 min-w-[300px] glass backdrop-blur-xl rounded-2xl border border-[var(--glass-border)] shadow-[0_0_80px_rgba(0,0,0,0.5)] overflow-hidden pointer-events-auto z-50 flex flex-col"
           >
             {/* Header Area */}
             <div className="p-4 md:p-5 border-b border-[var(--glass-border)] flex items-center justify-between bg-[var(--bg-main)]/40 backdrop-blur-md sticky top-0 z-20">
