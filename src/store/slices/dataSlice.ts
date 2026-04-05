@@ -98,9 +98,9 @@ export const createDataSlice: StateCreator<CyberiaState, [], [], any> = (set, ge
       const savedTheme = localStorage.getItem('cyberia-theme') || DEFAULT_THEME;
       document.body.setAttribute('data-theme', savedTheme);
 
-      // Early exit: Let handleAuthCode finish the space initialization if handling a redirect
+      // Early exit: Let Supabase auth session finish the space initialization if handling a redirect
       if (hasAuthCode) {
-        console.log('[Store] OAuth code detected in URL, suspending space creation until auth completes.');
+        console.log('[Store] OAuth redirect detected, suspending space creation until auth completes.');
         return; 
       }
 

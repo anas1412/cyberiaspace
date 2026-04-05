@@ -33,11 +33,13 @@ const getAdminReply = (item: FeedbackEntry) => item.admin_reply || '';
 // Helper to get timestamp
 const getTimestamp = (item: FeedbackEntry) => item.created_at ? new Date(item.created_at).getTime() : Date.now();
 
-// Helper to get user display
+// Helper to get user display (masks email for privacy)
 const getUserDisplay = (item: FeedbackEntry) => {
-  if (item.user_email) return item.user_email;
-  if (item.metadata?.email) return item.metadata.email;
-  return 'Anonymous';
+  const email = item.user_email || item.metadata?.email;
+  if (!email) return 'Anonymous';
+  const [local, domain] = email.split('@');
+  if (!domain) return '***@***';
+  return `${local[0]}***@${domain}`;
 };
 
 const FeedbackPage: React.FC = () => {

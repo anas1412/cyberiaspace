@@ -201,9 +201,7 @@ export interface AuthState {
   } | null;
   fetchModelConfig: () => Promise<void>;
 
-  setAuthenticatedUser: (user: User, token: string, refreshSecret?: string, scopes?: string[], expiresIn?: number) => Promise<void>;
-  handleAuthCode: (code: string) => Promise<void>;
-  requestServiceAccess: (scope: string, token: string) => void;
+  setAuthenticatedUser: (user: User, token: string, _refreshSecret?: string, _scopes?: string[], _expiresIn?: number) => Promise<void>;
   signOut: () => Promise<void>;
   syncData: () => Promise<void>;
   syncToServices: () => Promise<void>;

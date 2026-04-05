@@ -1,6 +1,6 @@
 # Agent Guidelines: Cyberia Project
 
-Welcome to the Cyberia codebase! This project is a modern, high-performance spatial-thinking tool built with React 19, TypeScript, and Vite. It utilizes IndexedDB for local persistence (via Dexie) and Supabase for cloud synchronization.
+Welcome to the Cyberia codebase! This project is a modern, high-performance spatial-thinking tool built with React 19, TypeScript, and Vite. It utilizes IndexedDB for local persistence (via Dexie) and Supabase for cloud synchronization and authentication.
 
 ##  Commands
 
@@ -13,6 +13,53 @@ Welcome to the Cyberia codebase! This project is a modern, high-performance spat
 - No standard test suite (Jest/Vitest) is currently configured.
 - **Experimental Scripts:** Located in `scripts/` (e.g., `node scripts/test-tavily.cjs`).
 - When adding new functionality, it's highly recommended to add self-verifying logic or console logs since there is no automated test harness.
+
+---
+
+##  Authentication (Supabase Auth)
+
+The app uses **Supabase Auth** for all authentication. Both Google OAuth and Email Magic Link are supported.
+
+### Auth Flow
+
+```
+LoginPage.tsx
+    │
+    ├── Google OAuth: supabase.auth.signInWithOAuth({ provider: 'google' })
+    │
+    └── Email Magic Link: supabase.auth.signInWithOtp({ email })
+            │
+            ▼
+    Supabase handles session (autoRefreshToken, persistSession)
+            │
+            ▼
+    handleSupabaseSession() → setAuthenticatedUser() → runAuthenticationFlow()
+```
+
+### Key Patterns
+
+- **Token Management:** Supabase client manages tokens automatically. Use `authStore.getSessionToken()` or `authStore.getOrRefreshToken()` to get the current access token for API calls.
+- **Session Persistence:** `autoRefreshToken: true` and `persistSession: true` in `src/services/supabase.ts` ensure sessions persist across browser restarts.
+- **Auth State Changes:** Listen via `supabase.auth.onAuthStateChange()` - handled in `initAuth()`.
+- **API Calls:** All API endpoints verify Supabase JWT via `api/utils/auth.ts` → `verifyAuth()`.
+
+### localStorage Keys (Auth-Related)
+
+| Key | Purpose | Managed By |
+|-----|---------|------------|
+| `cyberia-user` | User profile (plan, usage, settings) | App (authSlice) |
+| `cyberia-theme` | Theme preference (dark/light) | App (persists across logout) |
+| `cyberia-active-space-id` | Current active space | App |
+| `cyberia-last-sync` | Last sync timestamp | Sync orchestrator |
+
+**Deprecated Keys (cleaned up on signOut):** `cyberia-token`, `cyberia-token-expiry`, `cyberia-refresh-secret`, `cyberia-scopes`
+
+### Backend Auth Files
+
+| File | Purpose |
+|------|---------|
+| `api/auth.ts` | Admin login only (POST) |
+| `api/utils/auth.ts` | Supabase JWT verification for all API endpoints |
 
 ---
 
@@ -384,6 +431,13 @@ This section serves as a definitive reference for patterns that are deprecated. 
   - **Handshake Sequence:** Prematurely setting `isInitializing: false` on fresh logins is deprecated.
   - **Smart Hydration:** Unconditional merging in `handlePostAuthSync` is deprecated in favor of `isLocalWorkspaceEmpty` logic.
 - **Backend:** Supabase Edge Functions (`supabase/functions/`) are deprecated in favor of Vercel Serverless Functions (`api/`).
+- **Authentication:** Custom Google OAuth2 flow is deprecated. Use Supabase Auth (`signInWithOAuth`, `signInWithOtp`) instead. The following are deprecated:
+  - `api/google-auth.ts` - Removed (was token exchange/refresh)
+  - `api/auth.ts` GET handler - Removed (was OAuth callback)
+  - `google-auth-library` dependency - Removed
+  - Manual token management (`cyberia-token`, `cyberia-token-expiry`, `cyberia-refresh-secret`, `cyberia-scopes`) - Removed
+  - `handleAuthCode()` - Removed (use `handleSupabaseSession()` instead)
+  - Google tokeninfo fallback in `api/utils/auth.ts` - Removed (Supabase JWT only)
 - **Entity Types:** The `image` thought type is deprecated. Use `type: 'file'` for all image assets to ensure consistent handling and storage.
 - **Onboarding:** Generating initial thoughts, stacks, or multiple spaces for new users is deprecated. Use `createInitialWorkspace` to provide a single, empty "Workspace" for a pure start. The `isOnboarding: true` flag is deprecated for general space use and only remains for the `Homepage` live demo.
 - **Conflict Resolution:** The "Local vs Cloud" choice screen is deprecated. All synchronization conflicts must be resolved automatically using **Last-Write-Wins (LWW)** logic based on the `updatedAt` field.
@@ -602,6 +656,7 @@ All overlay/modals should use the standardized backdrop pattern for consistency:
     2. Clear in-memory Zustand store: `thoughts`, `spaces`, `stacks`, `activeSpaceId`, `transform`, `selectedThoughtIds`, `creatorName`, `customBg`, `theme`.
     3. Apply stored theme from localStorage (not hardcoded `dark`) to `document.body` theme attribute.
     4. Call `createInitialWorkspace()` to provision a fresh guest workspace so the app isn't blank after logout.
+    5. Sign out from Supabase: `await supabase.auth.signOut()` (clears session cookie).
 
 ### Communication & Language
 - Use simple, user-friendly language in all UI text, alerts, and documentation.

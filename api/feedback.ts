@@ -9,19 +9,15 @@ const supabase = createClient(supabaseUrl!, supabaseKey!, {
   auth: { autoRefreshToken: false, persistSession: false }
 });
 
-const ADMIN_PASSWORD = process.env.FEEDBACK_ADMIN_PASSWORD;
-
-// Helper to verify admin token
-const isAdminToken = (token: string): boolean => {
-  if (!token || !ADMIN_PASSWORD) return false;
-  // Token is base64 encoded password - compare decoded token to password
-  try {
-    const decoded = Buffer.from(token, 'base64').toString('utf8');
-    return decoded === ADMIN_PASSWORD;
-  } catch {
-    return false;
-  }
-};
+// Helper to check if user is admin
+async function checkIsAdmin(userId: string): Promise<boolean> {
+  const { data: user } = await supabase
+    .from('users')
+    .select('is_admin')
+    .eq('id', userId)
+    .maybeSingle();
+  return user?.is_admin === true;
+}
 
 // Helper to extract userId from auth header
 const getUserIdFromToken = async (authHeader?: string): Promise<string | null> => {
@@ -36,10 +32,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(200).end();
   }
 
-  // Support both x-admin-key and Authorization Bearer token for admin
-  const adminKey = req.headers['x-admin-key'] as string || 
-                   req.headers['authorization']?.replace('Bearer ', '') as string;
-  const isAdmin = adminKey ? isAdminToken(adminKey) : false;
+  // Check admin status via Supabase JWT
+  const authHeader = req.headers.authorization;
+  const auth = await verifyAuth(authHeader);
+  const isAdmin = auth ? await checkIsAdmin(auth.userId) : false;
 
   // CREATE - Submit new feedback
   if (req.method === 'POST') {
@@ -93,8 +89,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   // LIST - Get feedback (user's own or all)
   if (req.method === 'GET') {
     const { action, userId: queryUserId, status, limit = 50, offset = 0 } = req.query;
-    const authHeader = req.headers.authorization;
-    const tokenUserId = getUserIdFromToken(authHeader);
+    const tokenUserId = await getUserIdFromToken(authHeader);
     const userId = queryUserId as string || tokenUserId;
 
     // Return all feedback (no auth required) - for public feedback page
@@ -116,7 +111,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         return res.status(500).json({ error: error.message });
       }
 
-      return res.status(200).json({ feedback: feedback || [], isAdmin: false });
+      return res.status(200).json({ feedback: feedback || [], isAdmin });
     }
 
     // Admin only: return all feedback with admin flag

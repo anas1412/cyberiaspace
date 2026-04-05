@@ -28,58 +28,43 @@ export async function verifyAuth(authHeader: string | undefined): Promise<AuthRe
   }
   
   try {
-    console.log('[Auth] Verifying token, starting with Supabase...');
+    console.log('[Auth] Verifying Supabase JWT...');
     
-    // Try Supabase JWT verification first
-    if (supabase) {
-      const { data: { user }, error } = await supabase.auth.getUser(token);
-      
-      if (user && !error) {
-        console.log('[Auth] Supabase verification succeeded for user:', user.id);
-        
-        // Look up the user in public.users by auth_user_id to get the actual userId used for data
-        const { data: publicUser, error: userError } = await supabase
-          .from('users')
-          .select('id')
-          .eq('auth_user_id', user.id)
-          .maybeSingle();
-        
-        if (userError) {
-          console.error('[Auth] Error looking up public user:', userError);
-        }
-        
-        // Use the public.users id (which may be the old numeric ID) for data operations
-        const actualUserId = publicUser?.id || user.id;
-        console.log('[Auth] Public user ID:', actualUserId);
-        
-        // Cache the result
-        tokenCache.set(token, { userId: actualUserId, expiresAt: Date.now() + CACHE_TTL_MS });
-        return { 
-          userId: actualUserId, 
-          email: user.email ?? undefined 
-        };
-      } else {
-        console.log('[Auth] Supabase verification failed:', error?.message);
-      }
-    } else {
+    if (!supabase) {
       console.log('[Auth] No Supabase client configured');
+      return null;
     }
     
-    // Fallback: Try Google tokeninfo (for backwards compatibility with legacy tokens)
-    console.log('[Auth] Trying Google tokeninfo fallback...');
-    const tokenInfo = await fetch(`https://www.googleapis.com/oauth2/v3/tokeninfo?access_token=${token}`);
-    if (tokenInfo.ok) {
-      const info = await tokenInfo.json() as any;
-      const userId = info.sub || info.user_id;
+    const { data: { user }, error } = await supabase.auth.getUser(token);
+    
+    if (user && !error) {
+      console.log('[Auth] Supabase verification succeeded for user:', user.id);
       
-      if (userId) {
-        // Cache the result
-        tokenCache.set(token, { userId, expiresAt: Date.now() + CACHE_TTL_MS });
-        return { userId, email: info.email };
+      // Look up the user in public.users by auth_user_id to get the actual userId used for data
+      const { data: publicUser, error: userError } = await supabase
+        .from('users')
+        .select('id')
+        .eq('auth_user_id', user.id)
+        .maybeSingle();
+      
+      if (userError) {
+        console.error('[Auth] Error looking up public user:', userError);
       }
+      
+      // Use the public.users id (which may be the old numeric ID) for data operations
+      const actualUserId = publicUser?.id || user.id;
+      console.log('[Auth] Public user ID:', actualUserId);
+      
+      // Cache the result
+      tokenCache.set(token, { userId: actualUserId, expiresAt: Date.now() + CACHE_TTL_MS });
+      return { 
+        userId: actualUserId, 
+        email: user.email ?? undefined 
+      };
+    } else {
+      console.log('[Auth] Supabase verification failed:', error?.message);
+      return null;
     }
-    
-    return null;
   } catch (e) {
     console.error('[Auth] Token verification failed:', e);
     return null;

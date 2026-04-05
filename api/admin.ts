@@ -1,5 +1,6 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { createClient } from '@supabase/supabase-js';
+import { verifyAuth } from './utils/auth.js';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.VITE_PUBLIC_SUPABASE_URL;
 const supabaseKey = process.env.VITE_SUPABASE_ANON_KEY || process.env.VITE_PUBLIC_SUPABASE_ANON_KEY;
@@ -8,7 +9,18 @@ const supabase = createClient(supabaseUrl!, supabaseKey!, {
   auth: { autoRefreshToken: false, persistSession: false }
 });
 
-const ADMIN_PASSWORD = process.env.FEEDBACK_ADMIN_PASSWORD;
+export const config = {
+  runtime: 'nodejs',
+};
+
+async function checkIsAdmin(userId: string): Promise<boolean> {
+  const { data: user } = await supabase
+    .from('users')
+    .select('is_admin')
+    .eq('id', userId)
+    .maybeSingle();
+  return user?.is_admin === true;
+}
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method === 'OPTIONS') {
@@ -17,10 +29,16 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(200).end();
   }
 
-  const adminKey = req.headers['x-admin-key'] as string;
-
-  if (adminKey !== ADMIN_PASSWORD) {
+  // Verify Supabase JWT
+  const auth = await verifyAuth(req.headers.authorization);
+  if (!auth) {
     return res.status(401).json({ error: 'Unauthorized' });
+  }
+
+  // Check admin role
+  const isAdmin = await checkIsAdmin(auth.userId);
+  if (!isAdmin) {
+    return res.status(403).json({ error: 'Admin access required' });
   }
 
   const { action } = req.method === 'GET' ? req.query : req.body;

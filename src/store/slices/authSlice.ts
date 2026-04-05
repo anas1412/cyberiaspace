@@ -244,10 +244,10 @@ async function runAuthenticationFlow(user: User, get: any, isFreshLogin: boolean
 
 export const createAuthSlice: StateCreator<AuthState, [], [], any> = (set, get, _api) => ({
   user: getInitialUser(),
-  accessToken: localStorage.getItem('cyberia-token'),
-  accessTokenExpiresAt: localStorage.getItem('cyberia-token-expiry') ? Number(localStorage.getItem('cyberia-token-expiry')) : null,
-  refreshSecret: localStorage.getItem('cyberia-refresh-secret'),
-  grantedScopes: JSON.parse(localStorage.getItem('cyberia-scopes') || '[]'),
+  accessToken: null,
+  accessTokenExpiresAt: null,
+  refreshSecret: null,
+  grantedScopes: [],
   status: localStorage.getItem('cyberia-user') ? 'authenticated' : 'unauthenticated' as 'idle' | 'loading' | 'authenticated' | 'unauthenticated',
   _migrationInProgress: false,
   setMigrationInProgress: (inProgress: boolean) => set({ _migrationInProgress: inProgress }),
@@ -276,86 +276,16 @@ export const createAuthSlice: StateCreator<AuthState, [], [], any> = (set, get, 
     };
     const handleOffline = () => set({ isOnline: false, syncStatus: 'offline' });
     
-    // Debounce timer for visibility changes - only for token maintenance
-    let visibilityDebounceTimer: NodeJS.Timeout | null = null;
-    const handleVisibilityChange = () => {
-      if (document.visibilityState === 'visible' && get().status === 'authenticated') {
-        if (visibilityDebounceTimer) clearTimeout(visibilityDebounceTimer);
-        
-        visibilityDebounceTimer = setTimeout(() => {
-          const { accessTokenExpiresAt, refreshSecret } = get();
-          const now = Date.now();
-          const BUFFER_MS = 60 * 1000;
-          
-          if (accessTokenExpiresAt && (accessTokenExpiresAt - now) < BUFFER_MS && refreshSecret) {
-            console.log('[Auth] Token near expiry on visibility, refreshing...');
-            get().refreshProfile();
-          }
-        }, 2000);
-      }
-    };
-    
     window.addEventListener('online', handleOnline);
     window.addEventListener('offline', handleOffline);
-    document.addEventListener('visibilitychange', handleVisibilityChange);
     
     // Store cleanup functions on the slice for removal in signOut
     (get() as any)._eventListenerCleanup = () => {
       window.removeEventListener('online', handleOnline);
       window.removeEventListener('offline', handleOffline);
-      document.removeEventListener('visibilitychange', handleVisibilityChange);
-      if (visibilityDebounceTimer) clearTimeout(visibilityDebounceTimer);
     };
     
-    get().checkExpiry();
-    get().setupRefreshInterval();
     get().fetchModelConfig();
-
-    const { accessTokenExpiresAt, refreshSecret, accessToken, user } = get();
-    const now = Date.now();
-    const BUFFER_MS = 60 * 1000; // 1 minute - only refresh when truly needed
-    
-    // Try to fetch refreshSecret from database if not in localStorage
-    if (!refreshSecret && accessToken && user) {
-      console.log('[Auth] No refreshSecret in memory, fetching from database...');
-      try {
-        const profileData = await supabaseSync.getProfile(user.id);
-        const profileAny = profileData?.user as any;
-        if (profileAny?.refreshSecret) {
-          localStorage.setItem('cyberia-refresh-secret', profileAny.refreshSecret);
-          set({ refreshSecret: profileAny.refreshSecret });
-          console.log('[Auth] Retrieved refreshSecret from database on startup');
-        }
-      } catch (e) {
-        console.warn('[Auth] Could not fetch profile on startup:', e);
-      }
-    }
-    
-    // Now check if we have refreshSecret after the fetch
-    const currentRefreshSecret = get().refreshSecret;
-    
-    if (accessTokenExpiresAt && (accessTokenExpiresAt - now) < BUFFER_MS) {
-      console.log('[Auth] Token expired/near expiry on startup, attempting refresh...');
-      if (currentRefreshSecret) {
-        await get().refreshProfile();
-      } else if (accessToken && user) {
-        // Legacy user without refreshSecret - try to verify token validity
-        console.log('[Auth] No refreshSecret (legacy user), verifying token validity...');
-        try {
-          const tokenInfoRes = await fetch(`https://www.googleapis.com/oauth2/v3/tokeninfo?access_token=${accessToken}`);
-          if (!tokenInfoRes.ok) {
-            console.warn('[Auth] Token invalid, signing out legacy user');
-            get().signOut();
-          } else {
-            console.log('[Auth] Token still valid for legacy user, proceeding');
-          }
-        } catch (e) {
-          console.warn('[Auth] Could not verify token, proceeding anyway:', e);
-        }
-      } else {
-        console.warn('[Auth] No accessToken or user, cannot refresh token');
-      }
-    }
 
     const currentUser = get().user;
     if (get().status === 'authenticated' && currentUser?.id) {
@@ -372,7 +302,7 @@ export const createAuthSlice: StateCreator<AuthState, [], [], any> = (set, get, 
     }
 
     // ============================================================
-    // NEW: Handle Supabase OAuth session
+    // Handle Supabase OAuth session
     // ============================================================
     
     // 1. Check for existing session (from OAuth redirect)
@@ -392,15 +322,14 @@ export const createAuthSlice: StateCreator<AuthState, [], [], any> = (set, get, 
       } else if (event === 'SIGNED_OUT') {
         get().signOut();
       } else if (event === 'TOKEN_REFRESHED' && session) {
-        // Token refreshed - update the access token in state if needed
-        console.log('[Auth] Token refreshed');
+        // Token refreshed - Supabase handles this automatically
+        console.log('[Auth] Token refreshed by Supabase');
       }
     });
   },
 
-  setAuthenticatedUser: async (user: User, token: string, refreshSecret?: string, scopes?: string[], expiresIn?: number) => {
+  setAuthenticatedUser: async (user: User, token: string, _refreshSecret?: string, _scopes?: string[], _expiresIn?: number) => {
     const today = new Date().toISOString().split('T')[0];
-    const expiryTime = expiresIn ? Date.now() + (expiresIn * 1000) : Date.now() + (3600 * 1000);
     
     const userWithDefaults: User = {
       ...user,
@@ -441,22 +370,16 @@ export const createAuthSlice: StateCreator<AuthState, [], [], any> = (set, get, 
     }
     
     localStorage.setItem('cyberia-user', JSON.stringify(userWithDefaults));
-    localStorage.setItem('cyberia-token', token);
-    localStorage.setItem('cyberia-token-expiry', expiryTime.toString());
     
-    if (refreshSecret) {
-      localStorage.setItem('cyberia-refresh-secret', refreshSecret);
-    }
-    if (scopes) {
-      localStorage.setItem('cyberia-scopes', JSON.stringify(scopes));
-    }
+    // Note: Token is managed by Supabase client, not stored in localStorage
+    // The `token` parameter is kept for API compatibility but not persisted
 
     set({
       user: userWithDefaults,
       accessToken: token,
-      accessTokenExpiresAt: expiryTime,
-      refreshSecret: refreshSecret || get().refreshSecret,
-      grantedScopes: scopes || get().grantedScopes,
+      accessTokenExpiresAt: null,
+      refreshSecret: null,
+      grantedScopes: [],
       status: 'authenticated',
       syncStatus: 'syncing'
     });
@@ -473,62 +396,6 @@ export const createAuthSlice: StateCreator<AuthState, [], [], any> = (set, get, 
     } catch (e) {
       console.error('Initial login sync failed', e);
       set({ syncStatus: 'error' });
-    }
-  },
-
-  handleAuthCode: async (code: string) => {
-    set({ status: 'loading' });
-    try {
-      // Ensure UI suspends while we process the login flow and build the user DB.
-      const { useStore } = await import('../useStore');
-      useStore.getState().setInitializationState(true, true);
-
-      const res = await fetch('/api/google-auth?action=exchange', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ code })
-      });
-
-      const data = await res.json();
-      if (!res.ok) {
-        console.error('[Auth] Token exchange failed:', data);
-        throw new Error(data.details?.error_description || data.error || 'Token exchange failed');
-      }
-
-      const scopes = ['openid', 'email', 'profile'];
-      await get().setAuthenticatedUser(data.user, data.access_token, data.refresh_secret, scopes, data.expires_in);
-
-      // Clean up the URL securely so a manual refresh doesn't replay the auth code
-      window.history.replaceState({}, document.title, window.location.pathname);
-    } catch (err: any) {
-      console.error('Auth code handling failed:', err);
-      const { useModalStore } = await import('../useModalStore');
-      const { useStore } = await import('../useStore');
-
-      // Clear the loading lock on failure
-      useStore.getState().setInitializationState(false, false);
-
-      useModalStore.getState().openModal({
-        title: 'Authentication Error',
-        description: err.message || 'Failed to establish a permanent session. Please check your internet and try again.',
-        type: 'alert',
-        confirmText: 'Acknowledged'
-      });
-      set({ status: 'unauthenticated' });
-    }
-  },
-
-  requestServiceAccess: (scope: string, token: string) => {
-    const currentScopes = get().grantedScopes;
-    if (!currentScopes.includes(scope)) {
-      const newScopes = [...currentScopes, scope];
-      localStorage.setItem('cyberia-scopes', JSON.stringify(newScopes));
-      localStorage.setItem('cyberia-token', token);
-      set({ grantedScopes: newScopes, accessToken: token });
-      
-      if (typeof get().syncData === 'function') {
-        get().syncData();
-      }
     }
   },
 
@@ -713,17 +580,22 @@ export const createAuthSlice: StateCreator<AuthState, [], [], any> = (set, get, 
   },
 
   getOrRefreshToken: async () => {
-    // Now delegates to Supabase session - no manual token refresh needed
+    // Delegates to Supabase session - Supabase handles token refresh automatically
     return get().getSessionToken();
   },
 
   getSessionToken: async () => {
-    const { data, error } = await supabase.auth.getSession();
-    if (error) {
-      console.error('[Auth] Session error:', error);
+    try {
+      const { data, error } = await supabase.auth.getSession();
+      if (error) {
+        console.error('[Auth] Session error:', error);
+        return null;
+      }
+      return data.session?.access_token ?? null;
+    } catch (err) {
+      console.error('[Auth] Failed to get session token:', err);
       return null;
     }
-    return data.session?.access_token ?? null;
   },
 
   /**
@@ -852,7 +724,7 @@ export const createAuthSlice: StateCreator<AuthState, [], [], any> = (set, get, 
   },
 
   setupRefreshInterval: () => {
-    // 1. Plan health check - 5 minute fallback if realtime disconnects
+    // Plan health check - 5 minute fallback if realtime disconnects
     if (planHealthCheckInterval) clearInterval(planHealthCheckInterval);
     planHealthCheckInterval = setInterval(() => {
       const { status, isOnline } = get();
@@ -862,7 +734,7 @@ export const createAuthSlice: StateCreator<AuthState, [], [], any> = (set, get, 
       }
     }, 5 * 60 * 1000); // 5 minutes
 
-    // 2. Supabase handles token refresh automatically - no manual refresh needed
+    // Supabase handles token refresh automatically - no manual refresh needed
   },
 
   updateSettings: async (settings: Partial<User['settings']>) => {
@@ -968,8 +840,8 @@ export const createAuthSlice: StateCreator<AuthState, [], [], any> = (set, get, 
   },
 
   deleteCloudData: async () => {
-    const { accessToken, isOnline, user } = get();
-    if (!accessToken || !isOnline || !user) return;
+    const { isOnline, user } = get();
+    if (!isOnline || !user) return;
 
     set({ syncStatus: 'syncing' });
     console.log('[Auth] Initiating catastrophic cloud deletion wipe...');
