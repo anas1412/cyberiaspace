@@ -5,10 +5,7 @@ export type Theme = 'dark' | 'light';
 export const DEFAULT_THEME: Theme = (() => {
   const stored = typeof window !== 'undefined' ? localStorage.getItem('cyberia-theme') : null;
   if (stored === 'dark' || stored === 'light') return stored;
-  if (typeof window !== 'undefined' && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
-    return 'dark';
-  }
-  return 'light';
+  return 'light'; // Default to light mode
 })();
 export const DEFAULT_PHYSICS = true;
 

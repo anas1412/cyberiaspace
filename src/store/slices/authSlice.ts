@@ -52,7 +52,7 @@ const getInitialUser = (): User | null => {
         monthly_small_count: user.usage?.monthly_small_count ?? 0,
       },
         settings: {
-          theme: (typeof window !== 'undefined' && localStorage.getItem('cyberia-theme') as 'dark' | 'light') || 'dark',
+          theme: (typeof window !== 'undefined' && localStorage.getItem('cyberia-theme') as 'dark' | 'light') || 'light',
           autoSync: user.settings?.autoSync ?? true,
         }
       };
@@ -352,7 +352,7 @@ export const createAuthSlice: StateCreator<AuthState, [], [], any> = (set, get, 
         monthly_small_count: user.usage?.monthly_small_count ?? 0,
       },
       settings: {
-        theme: (typeof window !== 'undefined' && localStorage.getItem('cyberia-theme') as 'dark' | 'light') || 'dark',
+        theme: (typeof window !== 'undefined' && localStorage.getItem('cyberia-theme') as 'dark' | 'light') || 'light',
         autoSync: user.settings?.autoSync ?? true,
         space: user.settings?.space ?? 'default',
       }
@@ -450,7 +450,7 @@ export const createAuthSlice: StateCreator<AuthState, [], [], any> = (set, get, 
       lastSync: null 
     });
     
-    const storedTheme = (typeof window !== 'undefined' && localStorage.getItem('cyberia-theme')) || 'dark';
+    const storedTheme = (typeof window !== 'undefined' && localStorage.getItem('cyberia-theme')) || 'light';
     useStore.getState().resetStoreState(storedTheme as 'dark' | 'light');
     document.body.setAttribute('data-theme', storedTheme);
     
@@ -707,7 +707,7 @@ export const createAuthSlice: StateCreator<AuthState, [], [], any> = (set, get, 
           monthly_small_count: 0,
         },
         settings: {
-          theme: (typeof window !== 'undefined' && localStorage.getItem('cyberia-theme') as 'dark' | 'light') || 'dark',
+          theme: (typeof window !== 'undefined' && localStorage.getItem('cyberia-theme') as 'dark' | 'light') || 'light',
           autoSync: true,
           space: 'default',
         },

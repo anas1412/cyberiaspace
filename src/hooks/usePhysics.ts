@@ -42,6 +42,7 @@ export const usePhysics = (
   const spatialTypeFilter = useStore((state) => state.spatialTypeFilter);
   const linkingSourceId = useStore((state) => state.linkingSourceId);
   const physicsIntensity = useStore((state) => state.physicsIntensity);
+  const isSpaceLoading = useStore((state) => state.isSpaceLoading);
 
   const physicsState = useRef<Map<string, PhysicsPoint>>(new Map());
   const lastAppliedStyles = useRef<Map<string, { x: number; y: number; scale: number; rotation: number }>>(new Map());
@@ -66,6 +67,8 @@ export const usePhysics = (
   const lastTimeRef = useRef<number>(performance.now());
   const prevNonSpatialMode = useRef<string | null>(null); // Track previous non-spatial mode for Option A
   const justChangedMode = useRef(false); // Flag to prevent snap during mode transition
+  const modeTransitionRef = useRef<{ active: boolean; startTime: number; enteringScale: number }>({ active: false, startTime: 0, enteringScale: 0 }); // Track mode transitions for animated lerp
+  const lastModeRef = useRef<string | null>(null); // Track previous mode for transition detection
 
   const thoughtMap = useRef<Map<string, Thought>>(new Map());
   const layoutCacheRef = useRef<Map<string, any>>(new Map()); // Cache for layout results
@@ -160,51 +163,70 @@ export const usePhysics = (
   const lastThoughtIds = useRef<string>('');
   const lastInitMode = useRef<string | null>(null);
 
-  // --- PERSISTENCE (Fixes "Save Storm") ---
+  // --- PERSISTENCE (Save positions when leaving Spatial mode) ---
+  // This effect saves positions when switching away from Spatial mode or unmounting
   useEffect(() => {
-    const mode = activeSpace?.mode || 'spatial';
-    const physics = physicsState.current;
-    const thoughtsCache = thoughtMap.current;
-    const els = elements.current;
-
+    // Capture state at the time this effect was created
+    const capturedSpaceId = activeSpaceId;
+    const capturedMode = activeSpace?.mode;
+    
     return () => {
-      // If we are leaving a spatial mode (via mode switch or space switch), save positions
-      if (mode === 'spatial') {
-        const store = useStore.getState();
+      // Get fresh state at cleanup time to see what we are switching TO
+      const store = useStore.getState();
+      const currentSpaceId = store.activeSpaceId;
+      const currentSpace = capturedSpaceId ? store.spaces.find(s => s.id === capturedSpaceId) : null;
+      const currentMode = currentSpace?.mode;
 
-        // Capture heights immediately before updates
-        const heights = new Map<string, number>();
-        physics.forEach((_, id) => {
-          heights.set(id, els.get(id)?.offsetHeight || 120);
-        });
+      console.log('[Physics] Cleanup: capturedMode=' + capturedMode + ', currentMode=' + currentMode + ', capturedSpaceId=' + capturedSpaceId + ', currentSpaceId=' + currentSpaceId);
+      
+      // We only care about saving if we were in spatial mode
+      if (capturedMode !== 'spatial') return;
 
-        const updates: { id: string; updates: Partial<Thought> }[] = [];
-        physics.forEach((p, id) => {
-          const t = thoughtsCache.get(id);
-          if (t) {
-            const h = heights.get(id) || 120;
-            const newX = p.x + 140;
-            const newY = p.y + h / 2;
-            
-            // Only update if movement is meaningful (> 0.5px) to prevent "Blue Flicker" on space switch
-            const hasMoved = Math.abs(t.x - newX) > 0.5 || Math.abs(t.y - newY) > 0.5;
-            
-            if (hasMoved) {
-              updates.push({ id, updates: { x: newX, y: newY } });
-            }
+      // If we are still in the same space and still in spatial mode, don't save yet
+      // (This happens during normal renders or when other dependencies change)
+      if (capturedSpaceId === currentSpaceId && currentMode === 'spatial') return;
+
+      const physics = physicsState.current;
+      const thoughtsCache = thoughtMap.current;
+      const els = elements.current;
+      
+      if (physics.size === 0) return;
+
+      // Capture heights and save positions
+      const heights = new Map<string, number>();
+      physics.forEach((_, id) => {
+        heights.set(id, els.get(id)?.offsetHeight || 120);
+      });
+
+      const updates: { id: string; updates: Partial<Thought> }[] = [];
+      physics.forEach((p, id) => {
+        const t = thoughtsCache.get(id);
+        if (t) {
+          const h = heights.get(id) || 120;
+          const newX = p.x + 140;
+          const newY = p.y + h / 2;
+          
+          const hasMoved = Math.abs(t.x - newX) > 0.5 || Math.abs(t.y - newY) > 0.5;
+          
+          if (hasMoved) {
+            updates.push({ id, updates: { x: newX, y: newY } });
           }
-        });
-
-        if (updates.length > 0) {
-          store.bulkUpdateThoughts(updates);
         }
+      });
+
+      if (updates.length > 0) {
+        console.log('[Physics] Saving ' + updates.length + ' drifted positions');
+        store.bulkUpdateThoughts(updates);
       }
     };
-  }, [activeSpace?.mode, activeSpaceId]);
+  }, [activeSpaceId, activeSpace?.mode]); // Trigger on mode switch too!
 
 
   // --- INITIALIZATION ---
   useEffect(() => {
+    // Guard: Don't re-initialize while space is loading
+    if (isSpaceLoading) return;
+
     const physics = physicsState.current;
     const thoughtsCache = thoughtMap.current;
     const els = elements.current;
@@ -222,10 +244,11 @@ export const usePhysics = (
       lastInitMode.current = mode;
       
       thoughts.forEach((t) => {
+        const h = els.get(t.id)?.offsetHeight || 120;
+        const initialX = mode === 'spatial' ? t.x - 140 : t.x;
+        const initialY = mode === 'spatial' ? t.y - h / 2 : t.y;
+
         if (!physics.has(t.id)) {
-          const h = els.get(t.id)?.offsetHeight || 120;
-          const initialX = mode === 'spatial' ? t.x - 140 : t.x;
-          const initialY = mode === 'spatial' ? t.y - h / 2 : t.y;
           physics.set(t.id, { 
             x: initialX, 
             y: initialY, 
@@ -233,6 +256,16 @@ export const usePhysics = (
             vy: 0, 
             scale: mode === 'spatial' ? 1 : 0.1 
           });
+        } else if (modeChanged && mode === 'spatial') {
+          // CRITICAL: If we just switched BACK to spatial mode, 
+          // we MUST reset the physics positions to the saved ones in the DB.
+          // Otherwise it keeps the Kanban/Calendar positions.
+          const p = physics.get(t.id)!;
+          p.x = initialX;
+          p.y = initialY;
+          p.vx = 0;
+          p.vy = 0;
+          p.scale = 1;
         }
       });
 
@@ -252,7 +285,7 @@ export const usePhysics = (
         layoutCacheRef.current?.clear();
       }
     }
-  }, [thoughts, activeSpace?.mode]);
+  }, [thoughts, activeSpace?.mode, isSpaceLoading]);
 
   useEffect(() => {
     const currentMode = activeSpace?.mode || 'spatial'; const currentSpaceId = activeSpaceId;
@@ -289,15 +322,61 @@ export const usePhysics = (
   
   // Separate effect for mode changes
   useEffect(() => {
+    // Detect if mode actually changed (not just re-render)
+    const didModeChange = lastModeRef.current !== null && lastModeRef.current !== currentMode;
+    lastModeRef.current = currentMode;
+    
     if (currentMode !== 'spatial') {
       // Coming from spatial → animate (don't snap)
       // Coming from another non-spatial mode → also animate for now (Option A)
       prevNonSpatialMode.current = currentMode;
       layoutCacheRef.current?.clear();
       justChangedMode.current = true; // Prevent showArchived effect from snapping immediately
+      
+      // Activate mode transition animation (500ms fast lerp)
+      modeTransitionRef.current = { active: true, startTime: performance.now(), enteringScale: 0 };
     } else {
       // Moving to spatial mode - reset tracking
       prevNonSpatialMode.current = null;
+      
+      // Calculate bounding box of all thoughts to frame the camera
+      // CRITICAL: Use thoughtMap (saved DB positions), not physicsState (current mode positions)
+      if (didModeChange && thoughtMap.current.size > 0) {
+        let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
+        thoughtMap.current.forEach((t) => {
+          // Use saved x,y from thought (these are the Spatial positions from DB)
+          const screenX = t.x;
+          const screenY = t.y;
+          if (screenX < minX) minX = screenX;
+          if (screenX > maxX) maxX = screenX;
+          if (screenY < minY) minY = screenY;
+          if (screenY > maxY) maxY = screenY;
+        });
+        
+        // Calculate center and fit scale
+        const centerX = (minX + maxX) / 2;
+        const centerY = (minY + maxY) / 2;
+        const contentWidth = maxX - minX + 200; // padding
+        const contentHeight = maxY - minY + 200;
+        const viewportW = viewportWidthRef.current;
+        const viewportH = viewportHeightRef.current;
+        
+        // Fit to viewport with padding
+        const scaleX = viewportW / contentWidth;
+        const scaleY = viewportH / contentHeight;
+        const fitScale = Math.min(scaleX, scaleY, 1.5); // Cap at 1.5x zoom
+        
+        // Animate camera to frame the thoughts
+        const targetX = viewportW / 2 - centerX * fitScale;
+        const targetY = viewportH / 2 - centerY * fitScale;
+        
+        camera.x.set(targetX);
+        camera.y.set(targetY);
+        camera.scale.set(fitScale);
+      }
+      
+      // Activate mode transition animation for entering spatial
+      modeTransitionRef.current = { active: true, startTime: performance.now(), enteringScale: 1.15 };
     }
   }, [currentMode]); // Only track mode changes
   
@@ -487,6 +566,10 @@ export const usePhysics = (
 
     const currentSpaceId = activeSpaceId || 'default';
     const mode = activeSpace?.mode || 'spatial';
+
+    // Guard: Don't run physics loop while space is loading
+    // This prevents thoughts from collapsing to center (0,0) before heights are captured
+    if (isSpaceLoading) return;
 
     // Directory mode uses React-rendered lists — no physics positioning needed
     if (mode === 'directory') return;
@@ -717,12 +800,24 @@ export const usePhysics = (
         if (snapNextFrame.current) {
           p.x = result.targetX; p.y = result.targetY; p.scale = result.targetScale;
         } else {
-          // Faster lerp for mode transitions (~0.12 = ~0.8 second settle time)
-          const speed = 0.12;
+          // Faster lerp during mode transitions (~0.25 = ~0.3 second settle time)
+          // Normal lerp is ~0.08 (~1.5 second settle time)
+          const isTransitioning = modeTransitionRef.current.active && 
+            (performance.now() - modeTransitionRef.current.startTime < 500);
+          const speed = isTransitioning ? 0.25 : 0.08;
           const lerpFactor = 1 - Math.pow(1 - speed, timeScale);
           p.x += (result.targetX - p.x) * lerpFactor;
           p.y += (result.targetY - p.y) * lerpFactor;
-          p.scale += (result.targetScale - p.scale) * (1 - Math.pow(1 - 0.1, timeScale));
+          
+          // Launch effect: scale up slightly during transition, then settle
+          const enteringScale = modeTransitionRef.current.enteringScale;
+          if (isTransitioning && enteringScale > 0) {
+            const scaleProgress = (performance.now() - modeTransitionRef.current.startTime) / 500;
+            const launchScale = 1 + (enteringScale - 1) * (1 - scaleProgress);
+            p.scale = result.targetScale * launchScale;
+          } else {
+            p.scale += (result.targetScale - p.scale) * (1 - Math.pow(1 - 0.1, timeScale));
+          }
         }
         p.vx = 0; p.vy = 0;
         if (result.columnHeight && result.columnHeight > maxColHeight) maxColHeight = result.columnHeight;
@@ -947,7 +1042,7 @@ export const usePhysics = (
       }
     });
     if (ids.length > 0) snapNextFrame.current = false;
-  }, [activeSpace, activeSpaceId, calendarViewDate, hoveredCalDate, calendarSearchQuery, calendarStackFilter, calendarStatusFilter, calendarTypeFilter, kanbanSearchQuery, kanbanStackFilter, kanbanStatusFilter, kanbanDateFilter, kanbanTypeFilter, spatialSearchQuery, spatialStackFilter, spatialStatusFilter, spatialDateFilter, spatialTypeFilter, camera, linkingSourceId, getGlobalScale, applyHomeReturn, selectedThoughtId, physicsIntensity, stacks, canvasRef]);
+  }, [activeSpace, activeSpaceId, calendarViewDate, hoveredCalDate, calendarSearchQuery, calendarStackFilter, calendarStatusFilter, calendarTypeFilter, kanbanSearchQuery, kanbanStackFilter, kanbanStatusFilter, kanbanDateFilter, kanbanTypeFilter, spatialSearchQuery, spatialStackFilter, spatialStatusFilter, spatialDateFilter, spatialTypeFilter, camera, linkingSourceId, getGlobalScale, applyHomeReturn, selectedThoughtId, physicsIntensity, stacks, canvasRef, isSpaceLoading]);
 
   useEffect(() => {
     const animate = () => { loop(); requestRef.current = requestAnimationFrame(animate); };

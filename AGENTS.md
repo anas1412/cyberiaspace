@@ -375,6 +375,7 @@ This is a low-risk edge case because:
 Future improvement: Check `syncOrchestrator.isEditing(thoughtId)` before upload and queue the update until editing ends.
 
 ###  Spatial Thinking Engine
+
 - Thoughts are not just static entries; they are physical entities with `x, y` (position) and `vx, vy` (velocity) properties.
 - The canvas uses a custom physics engine for interactions, including "stacks" where nodes orbit each other.
 - **Performance Optimization:** 
@@ -385,6 +386,51 @@ Future improvement: Check `syncOrchestrator.isEditing(thoughtId)` before upload 
 - **Smooth Camera System (`useCamera.ts`):** The spatial viewport uses a modular camera system powered by `framer-motion` springs. This decouples visual "flight" (zooming/panning) from React's render cycle, achieving 60fps performance by bypassing React reconciliation for high-frequency transforms.
 - **Direct Motion Injection:** Gesture handlers in `useViewportGestures.ts` push updates directly to the camera's motion values. The physics loop in `usePhysics.ts` reads these values to synchronize the `#world` and `.dot-grid` DOM elements directly via direct DOM manipulation.
 - **Persistence:** Camera movements are synchronized back to the Zustand store and cloud storage using an "on rest" or debounced mechanism to ensure data consistency without impacting UI responsiveness.
+
+### Physics Engine - Loading State Guard
+
+**The Problem:** When switching spaces, the app sets `isSpaceLoading: true` and fetches new thoughts. The physics engine runs immediately on these new thoughts, but they haven't been rendered yet (hidden behind the loading overlay). Without element heights, the repulsion forces fail and all thoughts collapse to the center of the screen, forming a vertical stack.
+
+**The Fix:** The physics engine (`usePhysics.ts`) now checks `isSpaceLoading` before running:
+
+1. **Loop Freeze:** The physics calculation loop completely pauses while `isSpaceLoading === true`
+2. **Initialization Lock:** The engine refuses to reset/initialize thought positions while loading
+3. **Height Sync:** By waiting until loading completes, the browser renders thoughts and measures their heights, allowing repulsion to work correctly from frame one
+
+**Implementation:**
+```typescript
+// In usePhysics.ts - loop callback
+const isSpaceLoading = useStore((state) => state.isSpaceLoading);
+
+// Guard at start of loop
+if (isSpaceLoading) return;
+
+// Guard in initialization useEffect
+useEffect(() => {
+  if (isSpaceLoading) return;
+  // ... initialize physics state
+}, [thoughts, activeSpace?.mode, isSpaceLoading]);
+```
+
+### Physics Engine - Position Persistence
+
+**How It Works:**
+
+1. **Save on Mode/Space Switch:** The persistence effect saves positions when you leave Spatial mode (switch to Kanban/Calendar/Directory) or switch to a different space
+2. **Load on Initialize:** When entering Spatial mode, the initialization effect reads saved `x, y` from IndexedDB and positions thoughts accordingly
+3. **No Auto-Scatter:** The old `scatterThoughts()` call was removed from `setActiveSpace` — it was adding random jitter (±20px) to all thoughts on every load
+
+**Key Code Flow:**
+```
+Spatial Mode → Move thoughts (physics runs, positions stored in memory) 
+  → Switch to Kanban → Cleanup effect fires → bulkUpdateThoughts() saves to IndexedDB
+  → Switch back to Spatial → Initialization effect reads saved x,y → Thoughts restored
+```
+
+**Anti-Patterns to Avoid:**
+- ❌ DON'T call `refreshThoughts()` after local mutations — Zustand is already correct
+- ❌ DON'T write directly to IndexedDB for UI state — use Zustand first
+- ❌ DON'T use `scatterThoughts()` on space load — it overwrites saved positions
 
 ###  Storage
 - **Unique Folder Protocol:** To prevent filename collisions and ensure clean user isolation, all file assets in cloud storage are organized using the path structure: `${userId}/${thoughtId}/${fileName}`.

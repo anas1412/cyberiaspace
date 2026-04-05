@@ -135,8 +135,9 @@ export const createSpaceSlice: StateCreator<CyberiaState, [], [], any> = (set, g
         get().refreshStacks(id)
       ]);
       
-      // Scatter thoughts to prevent overlap on load
-      await get().scatterThoughts(id);
+      // NOTE: scatterThoughts disabled - it was adding random jitter to all thoughts
+      // on every space load, causing positions to drift randomly
+      // await get().scatterThoughts(id);
       
     } catch (err) {
       console.error('Failed to set active space:', err);
