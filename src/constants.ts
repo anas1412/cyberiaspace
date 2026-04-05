@@ -144,7 +144,7 @@ export const ORACLE_CONFIG = {
   HISTORY_WINDOW_SIZE: 12
 };
 
-export const APP_VERSION = '1.0.5';
+export const APP_VERSION = '1.1.0';
 
 // Feature Flags
 export const SHOW_QUOTA_TAB = false; // Set to true to show quota usage tab in settings

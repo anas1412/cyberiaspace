@@ -37,7 +37,7 @@ export const FileInspector: React.FC<InspectorPanelProps> = ({ thought, isReadOn
           </div>
         </div>
       ) : !isReadOnly && (
-        <div className="border border-dashed border-white/10 rounded-xl p-6 text-center hover:bg-white/5 transition-colors cursor-pointer relative flex flex-col items-center justify-center gap-3">
+        <div className="border border-dashed border-[var(--glass-border)] rounded-xl p-6 text-center hover:bg-[var(--glass-bg)] transition-colors cursor-pointer relative flex flex-col items-center justify-center gap-3">
           <input
             type="file"
             className="absolute inset-0 opacity-0 cursor-pointer"

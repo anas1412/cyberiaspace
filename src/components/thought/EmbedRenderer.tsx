@@ -55,7 +55,7 @@ export const EmbedRenderer: React.FC<EmbedRendererProps> = ({ thought }) => {
   const previewImage = image || (provider === 'youtube' && id ? `https://img.youtube.com/vi/${id}/mqdefault.jpg` : null);
 
   return (
-    <div data-trigger="embed" className="mt-2 relative group cursor-pointer overflow-hidden rounded-xl border border-[var(--glass-border)] bg-[var(--bg-main)]/40 aspect-video flex items-center justify-center">
+    <div data-trigger="embed" className="mt-2 relative group cursor-pointer overflow-hidden rounded-xl border border-[var(--glass-border)] bg-[var(--node-bg)]/40 aspect-video flex items-center justify-center">
       {previewImage ? (
         <div className="relative w-full h-full">
           <img
@@ -111,7 +111,7 @@ export const EmbedRenderer: React.FC<EmbedRendererProps> = ({ thought }) => {
       )}
       
       {!previewImage && !isLoading && (
-        <div className="absolute top-2 right-2 p-1.5 rounded-lg bg-[var(--bg-main)]/20 border border-[var(--glass-border)] opacity-0 group-hover:opacity-100 transition-opacity">
+        <div className="absolute top-2 right-2 p-1.5 rounded-lg bg-[var(--node-bg)]/20 border border-[var(--glass-border)] opacity-0 group-hover:opacity-100 transition-opacity">
           <ExternalLink className="w-3 h-3 text-[var(--text-muted)]" />
         </div>
       )}

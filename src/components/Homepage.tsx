@@ -14,6 +14,112 @@ import Navigation from './Navigation';
 import Footer from './Footer';
 import { useStore } from '../store/useStore';
 
+interface ActiveUser {
+  name: string;
+  avatar: string | null;
+}
+
+const AVATAR_COLORS = [
+  'bg-indigo-500',
+  'bg-violet-500',
+  'bg-sky-500',
+  'bg-emerald-500',
+  'bg-amber-500',
+  'bg-rose-500',
+];
+
+const FALLBACK_USERS: ActiveUser[] = [
+  { name: 'Anas B.', avatar: null },
+  { name: 'Nydhal G.', avatar: null },
+  { name: 'Zied B.', avatar: null },
+  { name: 'Natsu D.', avatar: null },
+  { name: 'Nadia D.', avatar: null },
+  { name: 'Bessem O.', avatar: null },
+];
+
+const AvatarCircle: React.FC<{ user: ActiveUser; index: number; delay: number }> = React.memo(
+  ({ user, index, delay }) => {
+    const [loaded, setLoaded] = useState(false);
+    const [error, setError] = useState(false);
+    const initials = user.name.split(' ').map((n) => n[0]).join('').toUpperCase().slice(0, 2);
+    const hasAvatar = user.avatar && !error;
+
+    return (
+      <motion.div
+        initial={{ opacity: 0, scale: 0.5 }}
+        animate={{ opacity: 1, scale: 1 }}
+        transition={{ duration: 0.3, delay, ease: [0.34, 1.56, 0.64, 1] }}
+        className="w-6 h-6 rounded-full border-2 border-[var(--bg-page)] overflow-hidden relative -ml-2 first:ml-0"
+        title={user.name}
+      >
+        {hasAvatar && (
+          <img
+            src={user.avatar!}
+            alt=""
+            className={`w-full h-full object-cover transition-opacity duration-300 ${loaded ? 'opacity-100' : 'opacity-0'}`}
+            onLoad={() => setLoaded(true)}
+            onError={() => setError(true)}
+          />
+        )}
+        {(!hasAvatar || error) && (
+          <div className={`w-full h-full ${AVATAR_COLORS[index % AVATAR_COLORS.length]} flex items-center justify-center text-white text-[7px] font-bold`}>
+            {initials}
+          </div>
+        )}
+      </motion.div>
+    );
+  }
+);
+
+const ActiveUsersStack: React.FC = React.memo(() => {
+  const [users, setUsers] = useState<ActiveUser[]>(FALLBACK_USERS);
+  const [activeCount, setActiveCount] = useState(120);
+
+  useEffect(() => {
+    fetch('/api/public-stats')
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.users && data.users.length > 0) {
+          setUsers(data.users.slice(0, 6));
+          setActiveCount(120);
+          //setActiveCount(data.activeCount ?? 120);
+        }
+      })
+      .catch(() => {});
+  }, []);
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 8 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.5, delay: 0.4, ease: [0.16, 1, 0.3, 1] }}
+      className="flex items-center justify-center mt-8"
+    >
+      <div className="inline-flex items-center gap-2 px-2.5 py-1.5 rounded-full
+                      bg-[var(--glass-bg)] backdrop-blur-md
+                      border border-[var(--glass-border)]">
+        <div className="flex items-center">
+          {users.map((user, i) => (
+            <AvatarCircle key={user.name + i} user={user} index={i} delay={0.5 + i * 0.05} />
+          ))}
+        </div>
+
+        <div className="w-px h-3 bg-[var(--glass-border)]" />
+
+        <div className="flex items-center gap-1.5">
+          <span className="relative flex h-1.5 w-1.5 shrink-0">
+            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-60" />
+            <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-emerald-500" />
+          </span>
+          <span className="text-[11px] font-medium text-[var(--text-muted)] whitespace-nowrap">
+            {activeCount}+ active users
+          </span>
+        </div>
+      </div>
+    </motion.div>
+  );
+});
+
 const FEATURES = [
   {
     id: 'agentic',
@@ -304,7 +410,8 @@ const Homepage: React.FC = () => {
             </motion.div>
           </div>
 
-          
+          {/* Active Users Social Proof */}
+          <ActiveUsersStack />
 
           {/* Screenshot Preview */}
           <motion.div 

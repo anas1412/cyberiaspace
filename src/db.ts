@@ -63,7 +63,7 @@ interface Space {
   id: string; // ULID
   name: string;
   userId: string;
-  mode: 'spatial' | 'kanban' | 'calendar';
+  mode: 'spatial' | 'kanban' | 'calendar' | 'directory';
   physics: boolean;
   order: number;
   isOnboarding?: boolean;

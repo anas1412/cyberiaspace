@@ -26,7 +26,7 @@ export const UnifiedMediaCard: React.FC<UnifiedMediaCardProps> = ({
     <div 
       data-trigger={dataTrigger} 
       className={cn(
-        "mt-2 relative group cursor-pointer overflow-hidden rounded-xl border border-[var(--glass-border)] bg-[var(--bg-main)]/40 aspect-video flex items-center justify-center",
+        "mt-2 relative group cursor-pointer overflow-hidden rounded-xl border border-[var(--glass-border)] bg-[var(--node-bg)]/40 aspect-video flex items-center justify-center",
         className
       )}
     >

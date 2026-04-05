@@ -31,8 +31,8 @@ export const TableRenderer: React.FC<TableRendererProps> = ({
   if (isTableEmpty) {
     return (
       <div data-trigger="table" className={cn(
-        "mt-1 flex flex-col items-center gap-2 py-4 bg-[var(--bg-main)]/20 rounded-xl border border-[var(--glass-border)] group/table relative cursor-pointer transition-colors",
-        !isArchived && "hover:bg-white/[0.05]",
+        "mt-1 flex flex-col items-center gap-2 py-4 bg-[var(--node-bg)]/20 rounded-xl border border-[var(--glass-border)] group/table relative cursor-pointer transition-colors",
+        !isArchived && "hover:bg-[var(--node-bg)]/40",
         isArchived && "pointer-events-none"
       )}>
         <Table className="w-6 h-6 text-[var(--text-muted)]" />
@@ -40,7 +40,7 @@ export const TableRenderer: React.FC<TableRendererProps> = ({
           {hasRemoteContent ? 'Sync Pending' : 'Build Table'}
         </span>
         {hasRemoteContent && (
-          <p className="text-[7px] text-amber-500/40 font-semibold tracking-[0.2em] text-center px-4">
+          <p className="text-[7px] text-[var(--accent)]/40 font-semibold tracking-[0.2em] text-center px-4">
             Data on other device
           </p>
         )}

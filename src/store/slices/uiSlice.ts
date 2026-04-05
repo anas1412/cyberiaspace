@@ -51,6 +51,13 @@ export const createUiSlice: StateCreator<CyberiaState, [], [], any> = (set, get,
   linkingSourceId: null,
   layerActionTrigger: null,
 
+  // Directory mode state
+  directorySearchQuery: '',
+  directoryGroupBy: 'stack' as const,
+  directorySortBy: 'order' as const,
+  directoryCollapsedGroups: new Set<string>(),
+  directorySelectedThoughtId: null,
+
   setTheme: async (theme: 'dark' | 'light') => {
     const { activeSpaceId, isReadOnly, theme: currentTheme } = get();
     // Prevent unnecessary updates if theme hasn't changed
@@ -65,6 +72,24 @@ export const createUiSlice: StateCreator<CyberiaState, [], [], any> = (set, get,
     document.documentElement.style.removeProperty('--text-primary');
     document.documentElement.style.removeProperty('--accent');
     document.documentElement.style.removeProperty('--glass-border');
+    
+    // Update node bg based on custom vs default
+    const customNodeBg = localStorage.getItem('cyberia-node-bg');
+    if (customNodeBg) {
+      document.documentElement.style.setProperty('--node-bg', customNodeBg, 'important');
+    } else {
+      const defaultNodeBg = theme === 'dark' ? '#12121af5' : '#f8fafc';
+      document.documentElement.style.setProperty('--node-bg', defaultNodeBg, 'important');
+    }
+    
+    // Update accent based on custom vs default
+    const customAccent = localStorage.getItem('cyberia-accent');
+    if (customAccent) {
+      document.documentElement.style.setProperty('--accent', customAccent, 'important');
+    } else {
+      document.documentElement.style.removeProperty('--accent');
+    }
+    
     if (activeSpaceId && !isReadOnly) get().updateSpace(activeSpaceId, { theme });
     
     const { useAuthStore } = await import('../useAuthStore');
@@ -213,6 +238,18 @@ export const createUiSlice: StateCreator<CyberiaState, [], [], any> = (set, get,
   setSpatialStatusFilter: (statuses: Array<'todo' | 'doing' | 'done'> | null) => set({ spatialStatusFilter: statuses } as any),
   setSpatialDateFilter: (date: string | null) => set({ spatialDateFilter: date }),
   setSpatialTypeFilter: (types: import('../../db').ThoughtType[] | null) => set({ spatialTypeFilter: types }),
+  setDirectorySearchQuery: (query: string) => set({ directorySearchQuery: query }),
+  setDirectoryGroupBy: (groupBy: 'stack' | 'status' | 'date' | 'priority' | 'type') => set({ directoryGroupBy: groupBy }),
+  setDirectorySortBy: (sortBy: 'order' | 'alpha' | 'alpha-reverse' | 'date-newest' | 'date-oldest') => set({ directorySortBy: sortBy }),
+  setDirectoryCollapsedGroups: (groups: Set<string>) => set({ directoryCollapsedGroups: groups }),
+  toggleDirectoryGroupCollapse: (groupId: string) => set((state) => {
+    const next = new Set(state.directoryCollapsedGroups);
+    if (next.has(groupId)) next.delete(groupId);
+    else next.add(groupId);
+    return { directoryCollapsedGroups: next };
+  }),
+  setDirectorySelectedThoughtId: (id: string | null) => set({ directorySelectedThoughtId: id }),
+
   setShowArchived: (show: boolean) => set({ showArchived: show }),
   setLinkingSourceId: (id: string | null) => set({ linkingSourceId: id }),
   setInspectorOpen: (open: boolean) => set({ isInspectorOpen: open }),

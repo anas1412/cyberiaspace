@@ -246,6 +246,8 @@ const Viewport: React.FC<{ isInteracting?: boolean }> = ({ isInteracting }) => {
 
     const handleClick = (e: MouseEvent) => {
       if (isDemo && (!isInteracting || !(e.target as HTMLElement).closest('[data-demo-workspace="true"]'))) return;
+      // Don't handle clicks in directory mode — it has its own selection system
+      if (activeSpace?.mode === 'directory') return;
       const target = e.target as HTMLElement;
 
       const dist = Math.sqrt(Math.pow(e.clientX - selectionStartRef.current.rawX, 2) + Math.pow(e.clientY - selectionStartRef.current.rawY, 2));
@@ -293,6 +295,8 @@ const Viewport: React.FC<{ isInteracting?: boolean }> = ({ isInteracting }) => {
 
       if (e.key === ' ') {
         if (isReadOnly) return;
+        // Directory mode has its own thought creation flow
+        if (activeSpace?.mode === 'directory') return;
         e.preventDefault();
         if (e.repeat) return;
 
@@ -375,6 +379,13 @@ const Viewport: React.FC<{ isInteracting?: boolean }> = ({ isInteracting }) => {
 
     const handleDrop = async (e: DragEvent) => {
       if (isReadOnly) {
+        e.preventDefault();
+        e.stopPropagation();
+        setIsDraggingFile(false);
+        return;
+      }
+      // Directory mode doesn't support drag-to-canvas file drops
+      if (activeSpace?.mode === 'directory') {
         e.preventDefault();
         e.stopPropagation();
         setIsDraggingFile(false);
@@ -691,22 +702,26 @@ const Viewport: React.FC<{ isInteracting?: boolean }> = ({ isInteracting }) => {
         />
       )}
 
-      {/* Moving Background Grid */}
-      <div
-        ref={registerGrid}
-        className="absolute inset-0 dot-grid pointer-events-none opacity-[0.03]"
-        style={{
-          width: '5000px',
-          height: '5000px',
-          left: '-2500px',
-          top: '-2500px',
-          transformOrigin: 'center center'
-        }}
-      />
-      <World
-        canvasRef={canvasRef}
-        physicsResults={{ registerElement, registerWorld, handleMouseDown, handleTouchStart, isDragging }}
-      />
+      {/* Moving Background Grid — hidden in directory mode */}
+      {activeSpace?.mode !== 'directory' && (
+        <div
+          ref={registerGrid}
+          className="absolute inset-0 dot-grid pointer-events-none opacity-[0.03]"
+          style={{
+            width: '5000px',
+            height: '5000px',
+            left: '-2500px',
+            top: '-2500px',
+            transformOrigin: 'center center'
+          }}
+        />
+      )}
+      {activeSpace?.mode !== 'directory' && (
+        <World
+          canvasRef={canvasRef}
+          physicsResults={{ registerElement, registerWorld, handleMouseDown, handleTouchStart, isDragging }}
+        />
+      )}
 
       {/* DROP ZONE OVERLAY */}
       <AnimatePresence>

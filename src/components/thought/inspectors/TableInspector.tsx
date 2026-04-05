@@ -76,10 +76,10 @@ export const TableInspector: React.FC<InspectorPanelProps> = ({ thought, isReadO
             onClick={addCol}
             disabled={isReadOnly}
             className={cn(
-              "flex items-center justify-center gap-1.5 py-2 px-3 rounded-xl text-[10px] uppercase font-bold border border-white/10 transition-colors",
+              "flex items-center justify-center gap-1.5 py-2 px-3 rounded-xl text-[10px] uppercase font-bold border border-[var(--glass-border)] transition-colors",
               isReadOnly
                 ? "text-[var(--text-muted)] cursor-not-allowed"
-                : "text-[var(--text-muted)] hover:text-white hover:border-white/20"
+                : "text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:border-[var(--text-primary)]/20"
             )}
           >
             <Plus className="w-3 h-3" />
@@ -91,10 +91,10 @@ export const TableInspector: React.FC<InspectorPanelProps> = ({ thought, isReadO
             onClick={exportCSV}
             disabled={numRows === 0}
             className={cn(
-              "flex items-center justify-center gap-1.5 py-2 px-3 rounded-xl text-[10px] uppercase font-bold border border-white/10 transition-colors",
+              "flex items-center justify-center gap-1.5 py-2 px-3 rounded-xl text-[10px] uppercase font-bold border border-[var(--glass-border)] transition-colors",
               numRows === 0
                 ? "text-[var(--text-muted)] cursor-not-allowed"
-                : "text-[var(--text-muted)] hover:text-white hover:border-white/20"
+                : "text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:border-[var(--text-primary)]/20"
             )}
           >
             <Download className="w-3 h-3" />
@@ -104,10 +104,10 @@ export const TableInspector: React.FC<InspectorPanelProps> = ({ thought, isReadO
             onClick={resetTable}
             disabled={isReadOnly}
             className={cn(
-              "flex items-center justify-center gap-1.5 py-2 px-3 rounded-xl text-[10px] uppercase font-bold border border-white/10 transition-colors",
+              "flex items-center justify-center gap-1.5 py-2 px-3 rounded-xl text-[10px] uppercase font-bold border border-[var(--glass-border)] transition-colors",
               isReadOnly
                 ? "text-[var(--text-muted)] cursor-not-allowed"
-                : "text-[var(--text-muted)] hover:text-white hover:border-white/20"
+                : "text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:border-[var(--text-primary)]/20"
             )}
           >
             <RotateCcw className="w-3 h-3" />

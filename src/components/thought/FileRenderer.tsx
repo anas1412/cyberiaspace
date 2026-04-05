@@ -44,12 +44,12 @@ export const FileRenderer: React.FC<FileRendererProps> = ({ thought }) => {
   const isPdf = fileInfo?.isPdf ?? false;
 
   const getFileIcon = () => {
-    if (isAudio) return <FileAudio className="w-8 h-8 text-blue-400" />;
-    if (isVideo) return <FileVideo className="w-8 h-8 text-purple-400" />;
-    if (isPdf) return <FileText className="w-8 h-8 text-red-400" />;
+    if (isAudio) return <FileAudio className="w-8 h-8 text-[var(--accent)]" />;
+    if (isVideo) return <FileVideo className="w-8 h-8 text-[var(--accent)]" />;
+    if (isPdf) return <FileText className="w-8 h-8 text-[var(--accent)]" />;
     if (mimeType.includes('javascript') || mimeType.includes('typescript') || mimeType.includes('json') || mimeType.includes('code') || 
         ['js', 'ts', 'tsx', 'json', 'css', 'html'].includes(extension)) {
-      return <FileCode className="w-8 h-8 text-amber-400" />;
+      return <FileCode className="w-8 h-8 text-[var(--accent)]" />;
     }
     return <FileIcon className="w-8 h-8 text-[var(--text-muted)]" />;
   };
@@ -63,7 +63,7 @@ export const FileRenderer: React.FC<FileRendererProps> = ({ thought }) => {
   // Audio files use the list view below to ensure correct icon and prevent video overlay
   if ((isImage || isVideo) && (hasContent || hasRemoteContent)) {
     return (
-      <div data-trigger="file" className="mt-2 relative group cursor-pointer overflow-hidden rounded-xl border border-[var(--glass-border)] bg-[var(--bg-main)]/50 aspect-video flex items-center justify-center">
+      <div data-trigger="file" className="mt-2 relative group cursor-pointer overflow-hidden rounded-xl border border-[var(--glass-border)] bg-[var(--node-bg)]/50 aspect-video flex items-center justify-center">
         {activeSource ? (
           isVideo ? (
             <video
@@ -123,7 +123,7 @@ export const FileRenderer: React.FC<FileRendererProps> = ({ thought }) => {
   return (
     <div 
       data-trigger="file"
-      className="mt-2 p-4 rounded-2xl bg-[var(--bg-main)]/20 border border-[var(--glass-border)] hover:bg-white/10 transition-all cursor-pointer group flex items-center gap-4 relative overflow-hidden"
+      className="mt-2 p-4 rounded-2xl bg-[var(--node-bg)]/20 border border-[var(--glass-border)] hover:bg-[var(--node-bg)]/40 transition-all cursor-pointer group flex items-center gap-4 relative overflow-hidden"
     >
       <div className="w-14 h-14 rounded-xl bg-black/20 flex items-center justify-center border border-[var(--glass-border)] shadow-inner">
         {getFileIcon()}

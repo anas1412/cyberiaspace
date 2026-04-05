@@ -251,4 +251,6 @@ const TasksFocusEditor: React.FC = () => {
   );
 };
 
+export const TasksEditorContent = EditorContent;
+
 export default TasksFocusEditor;

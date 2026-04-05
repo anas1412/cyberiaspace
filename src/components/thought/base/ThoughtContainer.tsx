@@ -95,7 +95,13 @@ export const ThoughtContainer = React.memo<ThoughtContainerProps>(({
           linkingSourceId && linkingSourceId !== thoughtId && "hover:scale-105 hover:border-[var(--accent)]/50 cursor-pointer",
           isSelected && isInspectorOpen && "animate-breathe"
         )}
-        style={altitudeStyles}
+        style={{
+          ...altitudeStyles,
+          '--text-primary': 'var(--node-text-primary)',
+          '--text-secondary': 'var(--node-text-secondary)',
+          '--text-dimmed': 'var(--node-text-dimmed)',
+          '--text-muted': 'var(--node-text-muted)',
+        } as unknown as React.CSSProperties}
       >
         {children}
       </div>

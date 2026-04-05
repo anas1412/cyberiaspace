@@ -83,6 +83,9 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
 }) => {
   const [activeTab, setActiveTab] = useState<'general' | 'custom' | 'storage' | 'quota'>('general');
   const [quotaPeriod, setQuotaPeriod] = useState<'daily' | 'weekly' | 'monthly'>('daily');
+  const [nodeBgKey, setNodeBgKey] = useState(0); // Force re-render for node bg changes
+  const [primaryKey, setPrimaryKey] = useState(0); // Force re-render for primary changes
+  const [secondaryKey, setSecondaryKey] = useState(0); // Force re-render for secondary changes
   const { user, storageUsageMB, updateSettings, updateQuotaUsage } = useAuthStore();
   const totalThoughtCount = useStore((state) => state.totalThoughtCount);
   const clearWorkspace = useStore((state) => state.clearWorkspace);
@@ -203,6 +206,94 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
     }
     
     setCustomBg(null);
+  };
+
+  const handleNodeBgChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const color = e.target.value;
+    const alphaColor = color + 'f5'; // Add 96% opacity
+    localStorage.setItem('cyberia-node-bg', alphaColor);
+    document.documentElement.style.setProperty('--node-bg', alphaColor, 'important');
+    setNodeBgKey(prev => prev + 1);
+  };
+
+  const handleNodeBgReset = () => {
+    localStorage.removeItem('cyberia-node-bg');
+    // Remove the !important override, apply theme-appropriate default
+    const isDark = document.documentElement.getAttribute('data-theme') !== 'light';
+    const defaultColor = isDark ? '#12121af5' : '#f8fafc';
+    document.documentElement.style.setProperty('--node-bg', defaultColor, 'important');
+    setNodeBgKey(prev => prev + 1);
+  };
+
+  // Initialize node bg from localStorage on mount
+  useEffect(() => {
+    const stored = localStorage.getItem('cyberia-node-bg');
+    if (stored) {
+      // Use !important to override theme-specific values
+      document.documentElement.style.setProperty('--node-bg', stored, 'important');
+    }
+  }, []);
+
+  const getNodeBgColor = () => {
+    void nodeBgKey; // Reference to trigger re-render
+    return localStorage.getItem('cyberia-node-bg') || '#12121af5';
+  };
+
+  const handlePrimaryChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const color = e.target.value;
+    localStorage.setItem('cyberia-accent', color);
+    document.documentElement.style.setProperty('--accent', color, 'important');
+    // Also update secondary accent
+    const secondaryColor = color + '99'; // Slightly lighter
+    document.documentElement.style.setProperty('--accent-secondary', secondaryColor, 'important');
+    setPrimaryKey(prev => prev + 1);
+  };
+
+  const handlePrimaryReset = () => {
+    localStorage.removeItem('cyberia-accent');
+    document.documentElement.style.removeProperty('--accent');
+    document.documentElement.style.removeProperty('--accent-secondary');
+    setPrimaryKey(prev => prev + 1);
+  };
+
+  // Initialize accent from localStorage on mount
+  useEffect(() => {
+    const stored = localStorage.getItem('cyberia-accent');
+    if (stored) {
+      document.documentElement.style.setProperty('--accent', stored, 'important');
+      document.documentElement.style.setProperty('--accent-secondary', stored + '99', 'important');
+    }
+  }, []);
+
+  const getPrimaryColor = () => {
+    void primaryKey; // Reference to trigger re-render
+    return localStorage.getItem('cyberia-accent') || '#6366f1';
+  };
+
+  const handleSecondaryChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const color = e.target.value;
+    localStorage.setItem('cyberia-secondary', color);
+    document.documentElement.style.setProperty('--secondary', color, 'important');
+    setSecondaryKey(prev => prev + 1);
+  };
+
+  const handleSecondaryReset = () => {
+    localStorage.removeItem('cyberia-secondary');
+    document.documentElement.style.removeProperty('--secondary');
+    setSecondaryKey(prev => prev + 1);
+  };
+
+  // Initialize secondary from localStorage on mount
+  useEffect(() => {
+    const stored = localStorage.getItem('cyberia-secondary');
+    if (stored) {
+      document.documentElement.style.setProperty('--secondary', stored, 'important');
+    }
+  }, []);
+
+  const getSecondaryColor = () => {
+    void secondaryKey; // Reference to trigger re-render
+    return localStorage.getItem('cyberia-secondary') || '#8b5cf6';
   };
 
   if (!isOpen) return null;
@@ -430,6 +521,230 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                       </label>
                     </AccessGuard>
                   )}
+                </section>
+
+                {/* Node Colors */}
+                <section>
+                  <div className="flex items-center justify-between mb-4">
+                    <p className="text-[10px] font-semibold tracking-wide text-[var(--text-muted)] flex items-center gap-2">
+                      <Palette className="w-3.5 h-3.5" /> Node Colors
+                    </p>
+                    {getNodeBgColor() !== '#12121af5' && (
+                      <button 
+                        onClick={handleNodeBgReset}
+                        className="text-[9px] font-semibold tracking-wide text-red-400 hover:text-red-300 transition-colors flex items-center gap-1.5"
+                      >
+                        <Trash2 className="w-3 h-3" /> Reset
+                      </button>
+                    )}
+                  </div>
+                  
+                  <AccessGuard 
+                    user={user} 
+                    mode="disable" 
+                    feature="pro"
+                    modalTitle="Pro Feature"
+                    modalMessage="Custom node colors require Pro."
+                  >
+                    <div className="p-6 rounded-2xl bg-[var(--glass-bg)] border border-[var(--glass-border)] space-y-4">
+                      <div className="flex items-center gap-4">
+                        <div className="relative group">
+                          <div 
+                            className="w-12 h-12 rounded-xl border-2 border-[var(--glass-border)] overflow-hidden shadow-lg"
+                            style={{ backgroundColor: getNodeBgColor() }}
+                          />
+                          <input
+                            type="color"
+                            value={getNodeBgColor().slice(0, 7)}
+                            onChange={handleNodeBgChange}
+                            className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                          />
+                        </div>
+                        <div className="flex-1">
+                          <p className="text-[11px] font-semibold text-[var(--text-primary)]">Thought Nodes</p>
+                          <p className="text-[9px] text-[var(--text-muted)] mt-1">Click the swatch to customize</p>
+                        </div>
+                        <div 
+                          className="px-3 py-1.5 rounded-lg bg-[var(--bg-page)] border border-[var(--glass-border)] text-[10px] font-mono text-[var(--text-muted)]"
+                        >
+                          {getNodeBgColor().slice(0, 7)}
+                        </div>
+                      </div>
+                      
+                      {/* Preset Colors */}
+                      <div className="flex gap-2 flex-wrap">
+                        {[
+                          { color: '#12121a', name: 'Charcoal' },
+                          { color: '#0f172a', name: 'Midnight' },
+                          { color: '#1e1e2e', name: 'Obsidian' },
+                          { color: '#2d1f3d', name: 'Plum' },
+                          { color: '#1a2744', name: 'Navy' },
+                          { color: '#134e4a', name: 'Teal' },
+                        ].map((preset) => (
+                          <button
+                            key={preset.color}
+                            onClick={() => handleNodeBgChange({ target: { value: preset.color } } as any)}
+                            className={cn(
+                              "w-8 h-8 rounded-lg border-2 transition-all hover:scale-110",
+                              getNodeBgColor().slice(0, 7) === preset.color 
+                                ? "border-[var(--text-primary)] shadow-lg" 
+                                : "border-[var(--glass-border)] hover:border-[var(--accent)]/50"
+                            )}
+                            style={{ backgroundColor: preset.color }}
+                            title={preset.name}
+                          />
+                        ))}
+                      </div>
+                    </div>
+                  </AccessGuard>
+                </section>
+
+                {/* Primary Color */}
+                <section>
+                  <div className="flex items-center justify-between mb-4">
+                    <p className="text-[10px] font-semibold tracking-wide text-[var(--text-muted)] flex items-center gap-2">
+                      <Palette className="w-3.5 h-3.5" /> Primary Color
+                    </p>
+                    {getPrimaryColor() !== '#6366f1' && (
+                      <button 
+                        onClick={handlePrimaryReset}
+                        className="text-[9px] font-semibold tracking-wide text-red-400 hover:text-red-300 transition-colors flex items-center gap-1.5"
+                      >
+                        <Trash2 className="w-3 h-3" /> Reset
+                      </button>
+                    )}
+                  </div>
+                  
+                  <div className="p-6 rounded-2xl bg-[var(--glass-bg)] border border-[var(--glass-border)] space-y-4">
+                    <div className="flex items-center gap-4">
+                      <div className="relative group">
+                        <div 
+                          className="w-12 h-12 rounded-xl border-2 border-[var(--glass-border)] overflow-hidden shadow-lg"
+                          style={{ backgroundColor: getPrimaryColor() }}
+                        />
+                        <input
+                          type="color"
+                          value={getPrimaryColor()}
+                          onChange={handlePrimaryChange}
+                          className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                        />
+                      </div>
+                      <div className="flex-1">
+                        <p className="text-[11px] font-semibold text-[var(--text-primary)]">Brand Primary</p>
+                        <p className="text-[9px] text-[var(--text-muted)] mt-1">Click the swatch to customize</p>
+                      </div>
+                      <div 
+                        className="px-3 py-1.5 rounded-lg bg-[var(--bg-page)] border border-[var(--glass-border)] text-[10px] font-mono text-[var(--text-muted)]"
+                      >
+                        {getPrimaryColor()}
+                      </div>
+                    </div>
+                    
+                    {/* Preset Colors */}
+                    <div className="flex gap-2 flex-wrap">
+                      {[
+                        { color: '#6366f1', name: 'Indigo' },
+                        { color: '#8b5cf6', name: 'Violet' },
+                        { color: '#ec4899', name: 'Pink' },
+                        { color: '#f43f5e', name: 'Rose' },
+                        { color: '#ef4444', name: 'Red' },
+                        { color: '#f97316', name: 'Orange' },
+                        { color: '#eab308', name: 'Yellow' },
+                        { color: '#22c55e', name: 'Green' },
+                        { color: '#14b8a6', name: 'Teal' },
+                        { color: '#06b6d4', name: 'Cyan' },
+                        { color: '#3b82f6', name: 'Blue' },
+                        { color: '#a855f7', name: 'Purple' },
+                      ].map((preset) => (
+                        <button
+                          key={preset.color}
+                          onClick={() => handlePrimaryChange({ target: { value: preset.color } } as any)}
+                          className={cn(
+                            "w-8 h-8 rounded-lg border-2 transition-all hover:scale-110",
+                            getPrimaryColor() === preset.color 
+                              ? "border-[var(--text-primary)] shadow-lg" 
+                              : "border-[var(--glass-border)] hover:border-[var(--text-primary)]/50"
+                          )}
+                          style={{ backgroundColor: preset.color }}
+                          title={preset.name}
+                        />
+                      ))}
+                    </div>
+                  </div>
+                </section>
+
+                {/* Secondary Color */}
+                <section>
+                  <div className="flex items-center justify-between mb-4">
+                    <p className="text-[10px] font-semibold tracking-wide text-[var(--text-muted)] flex items-center gap-2">
+                      <Palette className="w-3.5 h-3.5" /> Secondary Color
+                    </p>
+                    {getSecondaryColor() !== '#8b5cf6' && (
+                      <button 
+                        onClick={handleSecondaryReset}
+                        className="text-[9px] font-semibold tracking-wide text-red-400 hover:text-red-300 transition-colors flex items-center gap-1.5"
+                      >
+                        <Trash2 className="w-3 h-3" /> Reset
+                      </button>
+                    )}
+                  </div>
+                  
+                  <div className="p-6 rounded-2xl bg-[var(--glass-bg)] border border-[var(--glass-border)] space-y-4">
+                    <div className="flex items-center gap-4">
+                      <div className="relative group">
+                        <div 
+                          className="w-12 h-12 rounded-xl border-2 border-[var(--glass-border)] overflow-hidden shadow-lg"
+                          style={{ backgroundColor: getSecondaryColor() }}
+                        />
+                        <input
+                          type="color"
+                          value={getSecondaryColor()}
+                          onChange={handleSecondaryChange}
+                          className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                        />
+                      </div>
+                      <div className="flex-1">
+                        <p className="text-[11px] font-semibold text-[var(--text-primary)]">Progress & Glow</p>
+                        <p className="text-[9px] text-[var(--text-muted)] mt-1">Click the swatch to customize</p>
+                      </div>
+                      <div 
+                        className="px-3 py-1.5 rounded-lg bg-[var(--bg-page)] border border-[var(--glass-border)] text-[10px] font-mono text-[var(--text-muted)]"
+                      >
+                        {getSecondaryColor()}
+                      </div>
+                    </div>
+                    
+                    {/* Preset Colors */}
+                    <div className="flex gap-2 flex-wrap">
+                      {[
+                        { color: '#8b5cf6', name: 'Violet' },
+                        { color: '#ec4899', name: 'Pink' },
+                        { color: '#f43f5e', name: 'Rose' },
+                        { color: '#ef4444', name: 'Red' },
+                        { color: '#f97316', name: 'Orange' },
+                        { color: '#eab308', name: 'Yellow' },
+                        { color: '#22c55e', name: 'Green' },
+                        { color: '#14b8a6', name: 'Teal' },
+                        { color: '#06b6d4', name: 'Cyan' },
+                        { color: '#3b82f6', name: 'Blue' },
+                        { color: '#6366f1', name: 'Indigo' },
+                        { color: '#a855f7', name: 'Purple' },
+                      ].map((preset) => (
+                        <button
+                          key={preset.color}
+                          onClick={() => handleSecondaryChange({ target: { value: preset.color } } as any)}
+                          className={cn(
+                            "w-8 h-8 rounded-lg border-2 transition-all hover:scale-110",
+                            getSecondaryColor() === preset.color 
+                              ? "border-[var(--text-primary)] shadow-lg" 
+                              : "border-[var(--glass-border)] hover:border-[var(--text-primary)]/50"
+                          )}
+                          style={{ backgroundColor: preset.color }}
+                          title={preset.name}
+                        />
+                      ))}
+                    </div>
+                  </div>
                 </section>
               </motion.div>
             )}

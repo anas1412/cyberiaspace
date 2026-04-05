@@ -39,8 +39,8 @@ export const TextRenderer: React.FC<TextRendererProps> = ({
       <div 
         data-trigger="text" 
         className={cn(
-          "mt-1 flex flex-col items-center gap-2 py-4 bg-[var(--bg-main)]/20 rounded-xl border border-[var(--glass-border)] group/text relative cursor-pointer transition-colors",
-          !isArchived && "hover:bg-white/[0.05]",
+          "mt-1 flex flex-col items-center gap-2 py-4 bg-[var(--node-bg)]/20 rounded-xl border border-[var(--glass-border)] group/text relative cursor-pointer transition-colors",
+          !isArchived && "hover:bg-[var(--node-bg)]/40",
           isArchived && "pointer-events-none"
         )}
       >
@@ -49,7 +49,7 @@ export const TextRenderer: React.FC<TextRendererProps> = ({
           {hasRemoteContent ? 'Sync Pending' : 'Write Note'}
         </span>
         {hasRemoteContent && (
-          <p className="text-[7px] text-amber-500/40 font-semibold tracking-[0.2em] text-center px-4">
+          <p className="text-[7px] text-[var(--accent)]/40 font-semibold tracking-[0.2em] text-center px-4">
             Content on other device
           </p>
         )}
@@ -75,7 +75,7 @@ export const TextRenderer: React.FC<TextRendererProps> = ({
         onDragStart={(e) => e.preventDefault()}
       />
       {content.length > 150 && (
-        <div className="absolute bottom-0 left-0 right-0 h-16 bg-gradient-to-t from-[var(--bg-main)] via-[var(--bg-main)]/80 to-transparent pointer-events-none" />
+        <div className="absolute bottom-0 left-0 right-0 h-16 bg-gradient-to-t from-[var(--node-bg)] via-[var(--node-bg)]/80 to-transparent pointer-events-none" />
       )}
       {!isReadOnly && !isArchived && (
         <div className="absolute inset-0 bg-[var(--accent)]/10 opacity-0 group-hover/text:opacity-100 transition-opacity flex items-center justify-center pointer-events-none">

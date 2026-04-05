@@ -25,6 +25,7 @@ import { fetchEmbedMeta } from './utils/embeds';
 // Lazy Loaded Components
 const KanbanOverlay = lazy(() => import('./components/KanbanOverlay'));
 const CalendarOverlay = lazy(() => import('./components/CalendarOverlay'));
+const DirectoryOverlay = lazy(() => import('./components/DirectoryOverlay'));
 const ChatOverlay = lazy(() => import('./components/ChatOverlay'));
 const Inspector = lazy(() => import('./components/Inspector'));
 const TextFocusEditor = lazy(() => import('./components/editors/TextFocusEditor'));
@@ -123,6 +124,15 @@ useEffect(() => {
   document.body.setAttribute('data-theme', theme);
   // Persist for the index.html blocking script
   localStorage.setItem('cyberia-theme', theme);
+  
+  // Initialize node bg based on custom vs default
+  const customNodeBg = localStorage.getItem('cyberia-node-bg');
+  if (customNodeBg) {
+    document.documentElement.style.setProperty('--node-bg', customNodeBg, 'important');
+  } else {
+    const defaultNodeBg = theme === 'dark' ? '#12121af5' : '#f8fafc';
+    document.documentElement.style.setProperty('--node-bg', defaultNodeBg, 'important');
+  }
 }, [theme]);
 
   // Hook: Popstate
@@ -510,6 +520,7 @@ useEffect(() => {
           <EmptyState />
           <KanbanOverlay />
           <CalendarOverlay />
+          <DirectoryOverlay />
           <Toolbar />
           <AIToggleButton />
           <Inspector />

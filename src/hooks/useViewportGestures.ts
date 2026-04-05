@@ -137,6 +137,11 @@ export const useViewportGestures = (config: GestureConfig) => {
       return;
     }
 
+    // ===== DIRECTORY: Let native scroll work =====
+    if (activeSpaceMode === 'directory') {
+      return;
+    }
+
     e.preventDefault();
     const s = getGlobalScale();
     const lx = e.clientX / s;

@@ -506,4 +506,6 @@ const PaintFocusEditor: React.FC = () => {
   );
 };
 
+export const PaintEditorContent = EditorContent;
+
 export default PaintFocusEditor;

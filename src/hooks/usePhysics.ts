@@ -488,6 +488,9 @@ export const usePhysics = (
     const currentSpaceId = activeSpaceId || 'default';
     const mode = activeSpace?.mode || 'spatial';
 
+    // Directory mode uses React-rendered lists — no physics positioning needed
+    if (mode === 'directory') return;
+
     if (currentSpaceId !== lastLoopSpaceId.current) {
       lastLoopSpaceId.current = currentSpaceId;
       snapNextFrame.current = true;

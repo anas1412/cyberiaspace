@@ -238,7 +238,7 @@ const Toolbar: React.FC = () => {
     if (id !== '') { setSelectedThoughtId(id); setInspectorOpen(true); useStore.getState().setInspectorTitleFocusId(id); }
   };
 
-  const setViewMode = (mode: 'spatial' | 'kanban' | 'calendar') => {
+  const setViewMode = (mode: 'spatial' | 'kanban' | 'calendar' | 'directory') => {
     if (!activeSpace) return;
     if (mode !== 'spatial') setTransform({ x: 0, y: 0, scale: 1 });
     else if (activeSpace.mode !== 'spatial') setTransform({ x: activeSpace.transformX ?? 0, y: activeSpace.transformY ?? 0, scale: activeSpace.transformScale ?? 1 });

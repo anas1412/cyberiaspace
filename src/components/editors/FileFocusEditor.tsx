@@ -909,4 +909,6 @@ const FileFocusEditor: React.FC = () => {
   );
 };
 
+export const FileEditorContent = EditorContent;
+
 export default FileFocusEditor;

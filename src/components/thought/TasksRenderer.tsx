@@ -33,8 +33,8 @@ export const TasksRenderer: React.FC<TasksRendererProps> = ({
   if (tasks.length === 0) {
     return (
       <div data-trigger="tasks" className={cn(
-        "mt-1 flex flex-col items-center gap-2 py-4 bg-[var(--bg-main)]/20 rounded-xl border border-[var(--glass-border)] group/tasks relative cursor-pointer transition-colors",
-        !isArchived && "hover:bg-white/[0.05]",
+        "mt-1 flex flex-col items-center gap-2 py-4 bg-[var(--node-bg)]/20 rounded-xl border border-[var(--glass-border)] group/tasks relative cursor-pointer transition-colors",
+        !isArchived && "hover:bg-[var(--node-bg)]/40",
         isArchived && "pointer-events-none"
       )}>
         <ListTodo className="w-6 h-6 text-[var(--text-muted)]" />
@@ -42,7 +42,7 @@ export const TasksRenderer: React.FC<TasksRendererProps> = ({
           {hasRemoteContent ? 'Sync Pending' : 'Create Tasks'}
         </span>
         {hasRemoteContent && (
-          <p className="text-[7px] text-amber-500/40 font-semibold tracking-[0.2em] text-center px-4">
+          <p className="text-[7px] text-[var(--accent)]/40 font-semibold tracking-[0.2em] text-center px-4">
             Items on other device
           </p>
         )}
@@ -70,7 +70,7 @@ export const TasksRenderer: React.FC<TasksRendererProps> = ({
           <div key={i} className="flex items-center gap-2 min-w-0">
             <div className={cn(
               "w-3 h-3 rounded-sm border-[1.5px] flex-shrink-0 transition-colors prevent-drag",
-              task.done ? "bg-[var(--status-todo)] border-[var(--status-todo)]" : "border-[var(--glass-border)]"
+              task.done ? "bg-[var(--accent)] border-[var(--accent)]" : "border-[var(--glass-border)]"
             )} />
             <span className={cn(
               "text-[10px] truncate",
@@ -86,9 +86,9 @@ export const TasksRenderer: React.FC<TasksRendererProps> = ({
           </div>
         )}
       </div>
-      <div className="h-1.5 w-full bg-[var(--bg-main)]/40 rounded-full overflow-hidden mt-3">
+      <div className="h-1.5 w-full bg-[var(--node-bg)]/40 rounded-full overflow-hidden mt-3">
         <div
-          className="h-full bg-[var(--accent)] transition-all duration-500 shadow-[0_0_10px_var(--accent-glow)]"
+          className="h-full bg-[var(--secondary)] transition-all duration-500"
           style={{ width: `${progress}%` }}
         />
       </div>

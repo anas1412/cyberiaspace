@@ -1,5 +1,5 @@
 import React from 'react';
-import { Orbit, Columns3, CalendarDays } from 'lucide-react';
+import { Orbit, Columns3, CalendarDays, FolderTree } from 'lucide-react';
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 
@@ -9,8 +9,9 @@ function cn(...inputs: ClassValue[]) {
 
 const VIEW_MODES = [
   { id: 'spatial' as const, label: 'Spatial', icon: Orbit, accentClass: 'bg-[var(--accent)]' },
-  { id: 'kanban' as const, label: 'Kanban', icon: Columns3, accentClass: 'bg-purple-500' },
-  { id: 'calendar' as const, label: 'Calendar', icon: CalendarDays, accentClass: 'bg-amber-500' }
+  { id: 'directory' as const, label: 'Directory', icon: FolderTree, accentClass: 'bg-[var(--accent)]' },
+  { id: 'kanban' as const, label: 'Kanban', icon: Columns3, accentClass: 'bg-[var(--accent)]' },
+  { id: 'calendar' as const, label: 'Calendar', icon: CalendarDays, accentClass: 'bg-[var(--accent)]' },
 ];
 
 type ViewModeId = typeof VIEW_MODES[number]['id'];

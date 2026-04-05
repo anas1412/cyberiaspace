@@ -254,4 +254,6 @@ const TableFocusEditor: React.FC = () => {
   );
 };
 
+export const TableEditorContent = EditorContent;
+
 export default TableFocusEditor;

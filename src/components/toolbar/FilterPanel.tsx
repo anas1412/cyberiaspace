@@ -160,6 +160,7 @@ export const FilterPanel: React.FC = () => {
 
   const activeSpace = useStore((state) => state.spaces.find((s) => s.id === state.activeSpaceId));
   const mode = activeSpace?.mode ?? 'spatial';
+  const isDirectoryMode = mode === 'directory';
   const stacks = useStore((state) => state.stacks);
   const activeSpaceId = useStore((state) => state.activeSpaceId);
   const isReadOnly = useStore((state) => state.isReadOnly);
@@ -172,6 +173,8 @@ export const FilterPanel: React.FC = () => {
   const setKanbanSearchQuery = useStore((state) => state.setKanbanSearchQuery);
   const calendarSearchQuery = useStore((state) => state.calendarSearchQuery);
   const setCalendarSearchQuery = useStore((state) => state.setCalendarSearchQuery);
+  const directorySearchQuery = useStore((state) => state.directorySearchQuery);
+  const setDirectorySearchQuery = useStore((state) => state.setDirectorySearchQuery);
 
   // Mode-specific stack filter
   const spatialStackFilter = useStore((state) => state.spatialStackFilter);
@@ -206,8 +209,8 @@ export const FilterPanel: React.FC = () => {
   const setShowArchived = useStore((state) => state.setShowArchived);
 
   // Resolve current values based on mode
-  const searchQuery = mode === 'spatial' ? spatialSearchQuery : mode === 'kanban' ? kanbanSearchQuery : calendarSearchQuery;
-  const setSearchQuery = mode === 'spatial' ? setSpatialSearchQuery : mode === 'kanban' ? setKanbanSearchQuery : setCalendarSearchQuery;
+  const searchQuery = mode === 'spatial' ? spatialSearchQuery : mode === 'kanban' ? kanbanSearchQuery : mode === 'calendar' ? calendarSearchQuery : directorySearchQuery;
+  const setSearchQuery = mode === 'spatial' ? setSpatialSearchQuery : mode === 'kanban' ? setKanbanSearchQuery : mode === 'calendar' ? setCalendarSearchQuery : setDirectorySearchQuery;
 
   const stackFilter = (mode === 'spatial' ? spatialStackFilter : mode === 'kanban' ? kanbanStackFilter : calendarStackFilter) as string[] | null;
   const setStackFilter = mode === 'spatial' ? setSpatialStackFilter : mode === 'kanban' ? setKanbanStackFilter : setCalendarStackFilter;
@@ -339,8 +342,8 @@ export const FilterPanel: React.FC = () => {
               </div>
             </div>
 
-            {/* Date (Spatial & Kanban modes) */}
-            {mode !== 'calendar' && setDateFilter && (
+            {/* Date (Spatial & Kanban modes only) */}
+            {!isDirectoryMode && mode !== 'calendar' && setDateFilter && (
               <div className="px-4 py-3 border-b border-[var(--glass-border)]">
                 <div className="flex items-center gap-2 mb-2">
                   <Calendar className="w-3 h-3 text-[var(--text-muted)]" />
@@ -353,8 +356,8 @@ export const FilterPanel: React.FC = () => {
               </div>
             )}
 
-            {/* Type */}
-            {setTypeFilter && (
+            {/* Type (non-directory modes) */}
+            {!isDirectoryMode && setTypeFilter && (
               <div className="px-4 py-3 border-b border-[var(--glass-border)]">
                 <div className="flex items-center justify-between mb-2">
                   <div className="flex items-center gap-2">
@@ -409,8 +412,8 @@ export const FilterPanel: React.FC = () => {
               </div>
             )}
 
-            {/* Status (All modes except Kanban - status IS the column layout) */}
-            {mode !== 'kanban' && (
+            {/* Status (non-directory modes; Kanban excluded since status IS the column layout) */}
+            {!isDirectoryMode && mode !== 'kanban' && (
             <div className="px-4 py-3 border-b border-[var(--glass-border)]">
               <div className="flex items-center gap-2 mb-2">
                 <Circle className="w-3 h-3 text-[var(--text-muted)]" />
@@ -453,7 +456,8 @@ export const FilterPanel: React.FC = () => {
             </div>
             )}
 
-            {/* Stacks */}
+            {/* Stacks (non-directory modes) */}
+            {!isDirectoryMode && (
             <div className="px-4 py-3 border-b border-[var(--glass-border)]">
               <div className="flex items-center justify-between mb-2">
                 <div className="flex items-center gap-2">
@@ -511,6 +515,7 @@ export const FilterPanel: React.FC = () => {
                 })}
               </div>
             </div>
+            )}
 
             {/* Archive */}
             <div className="px-4 py-3">

@@ -279,6 +279,8 @@ const TextFocusEditor: React.FC = () => {
   );
 };
 
+export const TextEditorContent = EditorContent;
+
 export default TextFocusEditor;
 
 

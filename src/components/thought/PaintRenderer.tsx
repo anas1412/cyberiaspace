@@ -29,15 +29,15 @@ export const PaintRenderer: React.FC<PaintRendererProps> = ({
 
   return (
     <div data-trigger="paint" className={cn(
-      "paint-container bg-[var(--bg-main)]/20 rounded-xl p-2 mt-1 border border-[var(--glass-border)] cursor-pointer group/paint relative overflow-hidden min-h-[60px] flex items-center justify-center",
+      "paint-container bg-[var(--node-bg)]/20 rounded-xl p-2 mt-1 border border-[var(--glass-border)] cursor-pointer group/paint relative overflow-hidden min-h-[60px] flex items-center justify-center",
       isArchived && "pointer-events-none"
     )}>
       {drawing ? (
         <img src={drawing} draggable="false" className="w-full rounded-lg object-contain max-h-[140px] prevent-drag" alt="Drawing" />
       ) : hasRemoteContent ? (
         <div className="flex flex-col items-center gap-2 py-4 opacity-40">
-          <Palette className="w-6 h-6 text-amber-500/40" />
-          <span className="text-[8px] text-amber-500/40 font-semibold tracking-[0.2em] text-center px-2">
+          <Palette className="w-6 h-6 text-[var(--accent)]/40" />
+          <span className="text-[8px] text-[var(--accent)]/40 font-semibold tracking-[0.2em] text-center px-2">
             Sketch on other device
           </span>
         </div>

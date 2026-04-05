@@ -524,4 +524,6 @@ const EmbedFocusEditor: React.FC = () => {
   );
 };
 
+export const EmbedEditorContent = EditorContent;
+
 export default EmbedFocusEditor;

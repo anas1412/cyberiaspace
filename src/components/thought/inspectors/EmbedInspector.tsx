@@ -47,7 +47,7 @@ export const EmbedInspector: React.FC<InspectorPanelProps> = ({ thought, isReadO
           }}
           placeholder="Paste Spotify, YouTube, X, or Reddit link..."
           className={cn(
-            "w-full bg-black/40 border border-white/10 rounded-xl p-3 text-xs outline-none focus:border-[var(--accent)] text-white",
+            "w-full bg-[var(--bg-page)]/40 border border-[var(--glass-border)] rounded-xl p-3 text-xs outline-none focus:border-[var(--accent)] text-[var(--text-primary)]",
             isReadOnly && "opacity-50 pointer-events-none"
           )}
         />

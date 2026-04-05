@@ -138,6 +138,20 @@ export interface CyberiaState {
   setSpatialDateFilter: (date: string | null) => void;
   spatialTypeFilter: ThoughtType[] | null;
   setSpatialTypeFilter: (types: ThoughtType[] | null) => void;
+
+  // Directory mode state
+  directorySearchQuery: string;
+  directoryGroupBy: 'stack' | 'status' | 'date' | 'priority' | 'type';
+  directorySortBy: 'order' | 'alpha' | 'alpha-reverse' | 'date-newest' | 'date-oldest';
+  directoryCollapsedGroups: Set<string>;
+  directorySelectedThoughtId: string | null;
+  setDirectorySearchQuery: (query: string) => void;
+  setDirectoryGroupBy: (groupBy: 'stack' | 'status' | 'date' | 'priority' | 'type') => void;
+  setDirectorySortBy: (sortBy: 'order' | 'alpha' | 'alpha-reverse' | 'date-newest' | 'date-oldest') => void;
+  setDirectoryCollapsedGroups: (groups: Set<string>) => void;
+  toggleDirectoryGroupCollapse: (groupId: string) => void;
+  setDirectorySelectedThoughtId: (id: string | null) => void;
+
   setShowArchived: (show: boolean) => void;
   setLinkingSourceId: (id: string | null) => void;
 

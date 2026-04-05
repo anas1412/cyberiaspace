@@ -21,8 +21,8 @@
    BACKGROUND COLORS
    -----------------------------------------------------------------------------
    --bg-page      | Dark: #05060a      | Light: #e2e8f0    | Page background
-   --bg-main      | Dark: #0f172a      | Light: #ffffff    | Card/panel background
-   --node-bg      | Dark: rgba(15,23,42,0.96) | Light: rgba(255,255,255,0.98) | Thought nodes
+    --bg-main      | Dark: #18181b      | Light: #ffffff    | Card/panel background
+    --node-bg      | Dark: #12121af5 | Light: #f8fafc | Thought nodes (deep dark)
    
    -----------------------------------------------------------------------------
    GLASS MORPHISM
@@ -45,6 +45,7 @@
    --accent-secondary | Dark: #818cf8 | Light: #4f46e5 | Accent hover/active
    --accent-glow   | Dark: rgba(226,232,240,0.3) | Light: rgba(99,102,241,0.2) | Glow effects
    --accent-contrast| Dark/Light: #ffffff | Text on accent buttons
+   --secondary      | Dark/Light: #8b5cf6 | Secondary color (progress bars, glows)
    
    -----------------------------------------------------------------------------
    SHADOWS & ELEVATION
@@ -91,10 +92,11 @@
   --bg-zoom: 0;
   
   /* Dark Theme (Default) */
-  --bg-main: #0f172a; 
+  --bg-main: #18181b; 
   --bg-page: #05060a; 
   --accent: #6366f1;
   --accent-secondary: #818cf8;
+  --secondary: #8b5cf6;
   --accent-glow: rgba(226, 232, 240, 0.3);
   --selection-shadow: rgba(99, 102, 241, 0.25);
   --glow-color: rgba(226, 232, 240, 0.1);
@@ -102,7 +104,11 @@
   --nebula-1-soft: rgba(99, 102, 241, 0.05);
   --nebula-2: rgba(129, 140, 248, 0.15);
   --nebula-2-soft: rgba(129, 140, 248, 0.04);
-  --node-bg: rgba(15, 23, 42, 0.96);
+  --node-bg: #12121af5;
+  --node-text-primary: #f8fafc;
+  --node-text-secondary: rgba(248, 250, 252, 0.85);
+  --node-text-dimmed: rgba(248, 250, 252, 0.7);
+  --node-text-muted: rgba(248, 250, 252, 0.55);
   --glass-bg: rgba(10, 10, 15, 0.75);
   --glass-border: rgba(255, 255, 255, 0.08); 
   --text-primary: #f8fafc;
@@ -127,7 +133,7 @@
   --prio-urgent: #ef4444;
 
   /* Status */
-  --status-todo: #6366f1;
+  --status-todo: var(--accent);
   --status-doing: #eab308;
   --status-done: #22c55e;
 
@@ -143,7 +149,7 @@
 [data-theme='light'] {
   --bg-main: #ffffff;
   --bg-page: #e2e8f0;
-  --accent: #6366f1;
+  /* --accent: intentionally omitted - let custom color JS override work */
   --accent-secondary: #4f46e5;
   --accent-glow: rgba(99, 102, 241, 0.2);
   --selection-shadow: rgba(99, 102, 241, 0.15);
@@ -152,9 +158,14 @@
   --nebula-1-soft: rgba(99, 102, 241, 0.06);
   --nebula-2: rgba(79, 70, 229, 0.12);
   --nebula-2-soft: rgba(79, 70, 229, 0.05);
-  --node-bg: rgba(255, 255, 255, 0.98);
+
   --glass-bg: rgba(255, 255, 255, 0.92);
   --glass-border: rgba(0, 0, 0, 0.12);
+  /* --node-bg: intentionally omitted - let custom color JS override work */
+  --node-text-primary: #0f172a;
+  --node-text-secondary: rgba(15, 23, 42, 0.85);
+  --node-text-dimmed: rgba(15, 23, 42, 0.65);
+  --node-text-muted: rgba(15, 23, 42, 0.5);
   --text-primary: #0f172a;
   --text-secondary: rgba(15, 23, 42, 0.85);
   --text-dimmed: rgba(15, 23, 42, 0.65);

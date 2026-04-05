@@ -23,7 +23,8 @@
 | Variable | Dark | Light | Usage |
 |----------|------|-------|-------|
 | `--bg-page` | `#05060a` | `#f8fafc` | Page background |
-| `--bg-main` | `#0f172a` | `#ffffff` | Cards/main areas |
+| `--bg-main` | `#18181b` | `#ffffff` | Cards/main areas (neutral gray) |
+| `--node-bg` | `#18181bf5` | `#fffffffa` | Thought nodes (neutral dark, NOT blue) |
 | `--text-primary` | `#f8fafc` | `#1e293b` | Primary text |
 | `--text-secondary` | `rgba(248,250,252,0.85)` | `rgba(30,41,59,0.85)` | Secondary text |
 | `--text-muted` | `rgba(248,250,252,0.55)` | `rgba(30,41,59,0.65)` | Muted/placeholder |
@@ -125,6 +126,31 @@
   transition-duration: 0.2s;
   transition-timing-function: ease;
 }
+```
+
+---
+
+## 7. Dropdown & Menu Patterns
+
+**Custom dropdowns must use `bg-[var(--glass-bg)]` - NEVER `bg-[var(--bg-main)]`:**
+- Button: `bg-[var(--glass-bg)] border border-[var(--glass-border)] rounded-xl`
+- Hover: `hover:border-[var(--accent)]/50`
+- Menu dropdown: `bg-[var(--glass-bg)] border border-[var(--glass-border)] rounded-xl shadow-[0_10px_40px_rgba(0,0,0,0.3)]`
+- Active item: `bg-[var(--accent)]/10 text-[var(--accent)]`
+- Hover item: `hover:bg-[var(--glass-bg)]`
+
+**⚠️ WARNING:** Do NOT use `bg-[var(--bg-main)]` for dropdowns - it has a blue tint in dark mode (`#0f172a`). Always use `bg-[var(--glass-bg)]` for consistent glass-morphism effect.
+
+```tsx
+// Button
+<button className="bg-[var(--glass-bg)] border border-[var(--glass-border)] rounded-xl px-3 py-2 text-[11px] hover:border-[var(--accent)]/50">
+
+// Dropdown menu
+<div className="absolute top-full mt-1 bg-[var(--glass-bg)] border border-[var(--glass-border)] rounded-xl shadow-[0_10px_40px_rgba(0,0,0,0.3)]">
+  <button className="w-full px-3 py-2 text-left hover:bg-[var(--glass-bg)]">
+    Option
+  </button>
+</div>
 ```
 
 ---

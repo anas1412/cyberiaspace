@@ -485,7 +485,8 @@ Use these standardized text sizes for consistency across the application:
 | Variable | Dark Theme | Light Theme | Usage |
 |----------|------------|-------------|-------|
 | `--bg-page` | `#05060a` | `#f8fafc` | Page background |
-| `--bg-main` | `#0f172a` | `#ffffff` | Card/main backgrounds |
+| `--bg-main` | `#18181b` | `#ffffff` | Card/main backgrounds (neutral gray) |
+| `--node-bg` | `#18181bf5` | `#fffffffa` | Thought nodes (neutral dark, not blue) |
 | `--text-primary` | `#f8fafc` | `#1e293b` | Primary text |
 | `--text-secondary` | `rgba(248,250,252,0.85)` | `rgba(30,41,59,0.85)` | Secondary text |
 | `--text-muted` | `rgba(248,250,252,0.55)` | `rgba(30,41,59,0.65)` | Muted/placeholder text |
@@ -569,6 +570,29 @@ All overlay/modals should use the standardized backdrop pattern for consistency:
 - ✅ `text-[var(--text-muted)]`
 - ✅ `bg-[var(--glass-bg)]`
 - ✅ `border-[var(--glass-border)]`
+
+**Dropdown/Menu Patterns (MANDATORY for custom dropdowns):**
+- Button: `bg-[var(--glass-bg)] border border-[var(--glass-border)] rounded-xl px-3 py-2`
+- Button hover: `hover:border-[var(--accent)]/50`
+- Menu dropdown: `bg-[var(--glass-bg)] border border-[var(--glass-border)] rounded-xl shadow-[0_10px_40px_rgba(0,0,0,0.3)]`
+- Active item: `bg-[var(--accent)]/10 text-[var(--accent)]`
+- Hover item: `hover:bg-[var(--glass-bg)]`
+- **NEVER use `bg-[var(--bg-main)]`** - it has a blue tint in dark mode. Always use `bg-[var(--glass-bg)]` for dropdowns.
+
+**Node Customization (Pro Feature):**
+- Users can customize thought node background color via Settings → Customization → Node Colors
+- Color is stored in localStorage as `cyberia-node-bg`
+- Applied via CSS variable `--node-bg` on `document.documentElement` with `!important`
+- Default: `#18181bf5` (neutral dark gray)
+- Preset colors: Charcoal, Midnight, Obsidian, Plum, Navy, Teal
+
+**Primary Color Customization (Pro Feature):**
+- Users can customize the brand primary color via Settings → Customization → Primary Color
+- Color is stored in localStorage as `cyberia-accent`
+- Applied via CSS variable `--accent` on `document.documentElement` with `!important`
+- Secondary accent (`--accent-secondary`) is auto-calculated as primary + 60% opacity
+- Default: `#6366f1` (indigo)
+- 12 preset colors: Indigo, Violet, Pink, Rose, Red, Orange, Yellow, Green, Teal, Cyan, Blue, Purple
 
 **Semantic Colors (Allowed Exceptions):**
 - Status indicators: `text-green-500`, `text-amber-500`, `text-red-500`
