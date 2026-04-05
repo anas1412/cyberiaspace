@@ -45,7 +45,7 @@ export const StatusBar: React.FC<StatusBarProps> = ({
 
   return (
   <div className="fixed bottom-4 md:bottom-8 left-4 md:left-8 z-[9999] flex items-center gap-2 pointer-events-none mobile-bottom-bar-adjust">
-    <div className="glass px-3 md:px-4 h-[44px] rounded-2xl flex items-center gap-2 md:gap-4 border border-[var(--glass-border)] shadow-lg shadow-[var(--glass-border)] pointer-events-auto">
+    <div className="glass backdrop-blur-xl px-3 md:px-4 h-[44px] rounded-2xl flex items-center gap-2 md:gap-4 border border-[var(--glass-border)] shadow-lg shadow-[var(--glass-border)] pointer-events-auto">
 
       {/* Capacity */}
       <div className="group relative flex items-center justify-center gap-2 md:gap-3 cursor-default">

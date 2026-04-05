@@ -112,7 +112,7 @@ export const AccountMenu: React.FC = () => {
     return (
       <button
         onClick={handleNavigateToLogin}
-        className="h-[44px] px-5 glass rounded-2xl border border-[var(--glass-border)] shadow-lg shadow-[var(--glass-border)] text-[var(--text-dimmed)] hover:text-[var(--text-primary)] hover:bg-[var(--glass-bg)] transition-all flex items-center gap-3 group pointer-events-auto"
+        className="h-[44px] px-5 glass backdrop-blur-xl rounded-2xl border border-[var(--glass-border)] shadow-lg shadow-[var(--glass-border)] text-[var(--text-dimmed)] hover:text-[var(--text-primary)] hover:bg-[var(--glass-bg)] transition-all flex items-center gap-3 group pointer-events-auto"
       >
         <User className="w-4 h-4 group-hover:scale-110 transition-transform" />
         <span className="text-[12px] font-semibold tracking-wide">Account</span>
@@ -169,7 +169,7 @@ className={cn(
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 10, scale: 0.95 }}
             transition={{ duration: 0.2, ease: [0.23, 1, 0.32, 1] }}
-            className="absolute top-full right-0 mt-2 w-72 glass rounded-2xl border border-[var(--glass-border)] shadow-2xl overflow-hidden z-[10002]"
+            className="absolute top-full right-0 mt-2 w-72 glass backdrop-blur-xl rounded-2xl border border-[var(--glass-border)] shadow-2xl overflow-hidden z-[10002]"
           >
             <div className="p-5">
               {/* Profile Section */}

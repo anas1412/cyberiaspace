@@ -94,7 +94,7 @@ const DateFilterPicker: React.FC<{
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 4, scale: 0.98 }}
             transition={{ duration: 0.15, ease: [0.23, 1, 0.32, 1] }}
-            className="absolute top-full mt-2 left-0 right-0 z-[10002] glass border border-[var(--glass-border)] rounded-2xl p-3 shadow-2xl"
+            className="absolute top-full mt-2 left-0 right-0 z-[10002] glass backdrop-blur-xl border border-[var(--glass-border)] rounded-2xl p-3 shadow-2xl"
           >
             <div className="flex justify-between items-center mb-3">
               <button onClick={handlePrevMonth} className="p-1.5 hover:bg-[var(--glass-border)] rounded-lg text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors">

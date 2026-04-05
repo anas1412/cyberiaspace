@@ -43,7 +43,7 @@ export const SpaceSwitcher: React.FC<SpaceSwitcherProps> = ({
 
   return (
     <div className="space-switcher-container flex flex-col items-center pointer-events-none z-[9999] w-auto relative">
-        <div className="max-w-full flex items-center h-[44px] glass rounded-2xl shadow-lg shadow-[var(--glass-border)] transition-all duration-200 pointer-events-auto border border-[var(--glass-border)] p-1">
+        <div className="max-w-full flex items-center h-[44px] glass backdrop-blur-xl rounded-2xl shadow-lg shadow-[var(--glass-border)] transition-all duration-200 pointer-events-auto border border-[var(--glass-border)] p-1">
         {isReadOnly ? (
           <div className="px-6 flex items-center justify-center gap-3">
             {isSpaceLoading ? (
