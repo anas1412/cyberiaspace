@@ -37,7 +37,7 @@ export const SystemTray: React.FC<SystemTrayProps> = ({
       <div className="flex items-center gap-3 pointer-events-auto">
         {/* Upgrade Cluster - visible only to Free users */}
         {user?.plan !== 'pro' && (
-          <div className="flex items-center gap-1.5 glass p-1 rounded-2xl border border-[var(--glass-border)] h-[44px] bg-[var(--glass-bg)] shadow-lg shadow-[var(--glass-border)]">
+          <div className="flex items-center gap-1.5 glass backdrop-blur-xl p-1 rounded-2xl border border-[var(--glass-border)] h-[44px] bg-[var(--glass-bg)] shadow-lg shadow-[var(--glass-border)]">
             <div className="relative group">
               <div className="absolute bottom-full mb-4 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-all duration-300 translate-y-2 group-hover:translate-y-0 pointer-events-none whitespace-nowrap z-[10001]">
                 <div className="glass px-3 py-1.5 rounded-xl border border-[var(--glass-border)] flex items-center gap-2 shadow-2xl bg-[var(--glass-bg)] backdrop-blur-xl">
@@ -56,7 +56,7 @@ export const SystemTray: React.FC<SystemTrayProps> = ({
         )}
 
         {/* Interface Cluster: Theme, Shortcuts, Help, Settings */}
-        <div className="flex items-center gap-1.5 glass p-1 rounded-2xl border border-[var(--glass-border)] h-[44px] shadow-lg shadow-[var(--glass-border)] bg-[var(--glass-bg)]">
+        <div className="flex items-center gap-1.5 glass backdrop-blur-xl p-1 rounded-2xl border border-[var(--glass-border)] h-[44px] shadow-lg shadow-[var(--glass-border)] bg-[var(--glass-bg)]">
           <button
             onClick={toggleTheme}
             aria-label="Toggle theme"

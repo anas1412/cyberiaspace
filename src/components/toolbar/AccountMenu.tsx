@@ -126,7 +126,7 @@ export const AccountMenu: React.FC = () => {
 <button
         onClick={() => setIsOpen(!isOpen)}
 className={cn(
-            "h-[44px] px-4 glass rounded-2xl border flex items-center gap-3 transition-all group shadow-lg shadow-[var(--glass-border)]",
+            "h-[44px] px-4 glass backdrop-blur-xl rounded-2xl border flex items-center gap-3 transition-all group shadow-lg shadow-[var(--glass-border)]",
             isOpen ? "bg-[var(--glass-bg)] border-[var(--glass-border)]" : "border-[var(--glass-border)] hover:border-[var(--accent)]/30"
           )}
       >

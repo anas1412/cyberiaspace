@@ -270,7 +270,7 @@ export const FilterPanel: React.FC = () => {
       <div
         onClick={() => setIsOpen(!isOpen)}
         className={cn(
-          "h-[44px] glass rounded-2xl border border-[var(--glass-border)] shadow-lg shadow-[var(--glass-border)] flex items-center cursor-pointer transition-all duration-200",
+          "h-[44px] glass backdrop-blur-xl rounded-2xl border border-[var(--glass-border)] shadow-lg shadow-[var(--glass-border)] flex items-center cursor-pointer transition-all duration-200",
           isOpen ? "pl-4 pr-4 bg-[var(--glass-bg)] text-[var(--text-primary)]" : "px-4 text-[var(--text-muted)] hover:bg-[var(--glass-bg)] hover:border-[var(--accent)]/30 hover:text-[var(--text-primary)]"
         )}
       >
