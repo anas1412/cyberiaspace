@@ -1,4 +1,4 @@
-export type SubscriptionPlan = 'free' | 'pro';
+export type SubscriptionPlan = 'free' | 'pro' | 'enterprise';
 export type AccessPeriod = 'monthly' | 'yearly';
 export type Theme = 'dark' | 'light';
 
@@ -73,6 +73,8 @@ export interface PlanLimits {
     monthly: { usd: number; tnd: number };
     yearly: { usd: number; tnd: number };
   };
+  // Enterprise specific
+  MIN_SEATS?: number;
 }
 
 export const PLAN_CONFIG: Record<SubscriptionPlan, PlanLimits> = {
@@ -115,6 +117,29 @@ export const PLAN_CONFIG: Record<SubscriptionPlan, PlanLimits> = {
       monthly: { usd: 10, tnd: 19 },
       yearly: { usd: 100, tnd: 190 },
     },
+  },
+  enterprise: {
+    MAX_SPACES: 100,
+    MAX_THOUGHTS_PER_SPACE: 500,
+    MAX_CLOUD_THOUGHTS: 10000,
+    MAX_STORAGE_MB: 5000, // 5GB - generous but not "unlimited"
+    AI_ENABLED: true,
+    AI_DAILY_LIMIT: 50000,
+    AI_TOP_LIMIT: 1000,
+    AI_MEDIUM_LIMIT: 5000,
+    AI_SMALL_LIMIT: 10000,
+    AI_TOP_WEEKLY: 5000,
+    AI_MEDIUM_WEEKLY: 20000,
+    AI_SMALL_WEEKLY: 50000,
+    AI_TOP_MONTHLY: 20000,
+    AI_MEDIUM_MONTHLY: 80000,
+    AI_SMALL_MONTHLY: 200000,
+    THEMES_ENABLED: ['dark', 'light'],
+    PRICE: {
+      monthly: { usd: 25, tnd: 75 }, // per seat, min 5 seats
+      yearly: { usd: 250, tnd: 750 },
+    },
+    MIN_SEATS: 5,
   },
 };
 
@@ -165,3 +190,12 @@ export const VERIFICATION_MODEL = [
 // Homepage assets
 export const HOMEPAGE_SCREENSHOT = '/Screenshot4.png';
 export const YOUTUBE_VIDEO_ID = 'hP92Obd9hFA';
+
+// Enterprise features for pricing page
+export const ENTERPRISE_FEATURES = [
+  'All Pro features',
+  '5+ team members',
+  '5GB storage per user',
+  'Realtime team collaboration across shared spaces',
+  'Priority support with SLA',
+];

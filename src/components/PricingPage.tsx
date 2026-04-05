@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useAuthStore } from '../store/useAuthStore';
 import { PLAN_CONFIG, type AccessPeriod } from '../constants';
 import { resolvePricingLocation } from '../utils/pricing';
-import { Zap, Check, Star, Shield, Loader2, CreditCard, ExternalLink, Rocket, Layout, AlertCircle, RefreshCw } from 'lucide-react';
+import { Sparkles, Check, Star, Shield, Loader2, CreditCard, ExternalLink, Smartphone, Layout, AlertCircle, RefreshCw, Users } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
@@ -15,14 +15,15 @@ function cn(...inputs: ClassValue[]) {
 }
 
 // 3-Column Comparison Row component
-const ComparisonRow: React.FC<{ label: string; free: string | React.ReactNode; pro: string | React.ReactNode; highlight?: boolean }> = ({ 
+const ComparisonRow: React.FC<{ label: string; free: string | React.ReactNode; pro: string | React.ReactNode; enterprise?: string | React.ReactNode; highlight?: boolean }> = ({ 
   label,
   free, 
-  pro, 
+  pro,
+  enterprise,
   highlight 
 }) => (
   <div className={cn(
-    "grid grid-cols-[1.5fr_1fr_1fr] gap-4 py-4 px-6 border-b border-[var(--border)] items-center transition-colors",
+    "grid grid-cols-[1.5fr_1fr_1fr_1fr] gap-4 py-4 px-6 border-b border-[var(--border)] items-center transition-colors",
     highlight ? "bg-blue-500/5 hover:bg-blue-500/10 dark:bg-blue-500/[0.03] dark:hover:bg-blue-500/[0.05]" : "hover:bg-[var(--glass-bg)]"
   )}>
     <div className="text-left">
@@ -42,6 +43,17 @@ const ComparisonRow: React.FC<{ label: string; free: string | React.ReactNode; p
         </span>
       ) : (
         pro
+      )}
+    </div>
+    <div className="text-center">
+      {typeof enterprise === 'string' ? (
+        <span className={cn("text-sm font-bold", highlight ? "text-[var(--accent)] dark:text-[var(--accent)]" : "text-[var(--text-primary)]")}>
+          {enterprise}
+        </span>
+      ) : enterprise ? (
+        enterprise
+      ) : (
+        <span className="text-[var(--text-muted)]">—</span>
       )}
     </div>
   </div>
@@ -408,11 +420,11 @@ const PricingPage: React.FC = () => {
                 
                 <div className="flex items-center gap-4 mb-8 relative z-10">
                   <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-blue-500/10 to-blue-600/20 border border-blue-500/20 flex items-center justify-center text-blue-600 dark:text-blue-400 shrink-0 shadow-lg shadow-blue-500/10">
-                    <Zap className="w-7 h-7" />
+                    <Sparkles className="w-7 h-7" />
                   </div>
                   <div>
-                    <h2 className="text-3xl md:text-4xl font-semibold tracking-tighter text-[var(--text-primary)]">Do more with Pro</h2>
-                    <p className="text-base font-medium text-blue-600 dark:text-blue-400">Get unlimited AI usage and more storage.</p>
+                    <h2 className="text-3xl md:text-4xl font-semibold tracking-tighter text-[var(--text-primary)]">Unlock Pro</h2>
+                    <p className="text-base font-medium text-blue-600 dark:text-blue-400">Agentic AI + 1GB cloud storage.</p>
                   </div>
                 </div>
 
@@ -428,12 +440,8 @@ const PricingPage: React.FC = () => {
                     },
                     { 
                       title: 'File Intelligence & More Storage', 
-                      desc: `Upload and analyze images & PDFs. Includes ${PLAN_CONFIG.pro.MAX_STORAGE_MB}MB of secure cloud storage.` 
+                      desc: `Upload and analyze docs, images & PDFs. Includes 1GB of secure cloud storage.` 
                     },
-                    { 
-                      title: 'Pro Customization & Support', 
-                      desc: 'Personalize your space with a custom AI personality and backgrounds, plus get 24/7 priority customer support.' 
-                    }
                   ].map((feature, i) => (
                     <div key={i} className="flex gap-4 group">
                       <div className="w-6 h-6 rounded-full bg-blue-500/10 border border-blue-500/20 flex items-center justify-center text-blue-600 dark:text-blue-400 shrink-0 mt-0.5">
@@ -451,17 +459,17 @@ const PricingPage: React.FC = () => {
                 <div className="mt-8 p-5 rounded-2xl bg-gradient-to-br from-indigo-500/5 to-purple-500/5 border border-indigo-500/10 flex gap-4 items-start relative overflow-hidden group">
                   <div className="absolute top-0 right-0 w-32 h-32 bg-indigo-500/10 blur-3xl rounded-full -mr-16 -mt-16 transition-opacity group-hover:opacity-75" />
                   <div className="w-10 h-10 rounded-xl bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center text-indigo-600 dark:text-indigo-400 shrink-0 z-10 shadow-inner">
-                    <Rocket className="w-5 h-5" />
+                    <Smartphone className="w-5 h-5" />
                   </div>
-                  <div className="z-10">
-                    <div className="flex items-center gap-3 mb-1.5">
-                      <h4 className="text-base font-semibold text-[var(--text-primary)]">Teams & Mobile App</h4>
-                      <span className="text-xs font-bold tracking-wide bg-indigo-500/10 text-indigo-600 dark:text-indigo-300 px-2 py-0.5 rounded-full border border-indigo-500/20 uppercase">
+                  <div className="z-10 flex-1">
+                    <div className="flex items-center gap-3 mb-1.5 whitespace-nowrap">
+                      <h4 className="text-base font-semibold text-[var(--text-primary)]">Mobile Companion App</h4>
+                      <span className="text-[10px] font-bold tracking-wide bg-gradient-to-r from-indigo-500 to-purple-500 text-white px-2.5 py-0.5 rounded-full uppercase shadow-lg shadow-indigo-500/25">
                         Coming Soon
                       </span>
                     </div>
                     <p className="text-sm text-[var(--text-muted)] leading-relaxed font-medium">
-                      Invite friends to shared spaces, work together in real-time, and take your thoughts anywhere with our upcoming iOS & Android apps.
+                      Take your thoughts anywhere. Access and sync your spaces instantly on iOS and Android.
                     </p>
                   </div>
                 </div>
@@ -506,7 +514,7 @@ const PricingPage: React.FC = () => {
                         />
                       )}
                       <span className="relative z-20">Yearly</span>
-                      <span className="bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 text-[11px] uppercase font-bold px-2 py-0.5 rounded-md tracking-wide shadow-sm whitespace-nowrap relative z-20">
+                      <span className="bg-gradient-to-r from-emerald-500 to-green-500 text-white border-0 text-[10px] uppercase font-bold px-2 py-0.5 rounded-md tracking-wide shadow-md shadow-emerald-500/25 whitespace-nowrap relative z-20">
                         Save {location?.isLocalPricing ? `${savingsTnd}DT` : `$${savings}`}
                       </span>
                     </button>
@@ -659,6 +667,76 @@ const PricingPage: React.FC = () => {
           )}
         </motion.div>
 
+        {/* Enterprise Card - Contact Sales */}
+        <motion.div 
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.2 }}
+          className="glass bg-gradient-to-br from-[var(--accent)]/5 to-[var(--accent-secondary)]/5 w-full rounded-2xl border border-[var(--accent)]/20 overflow-hidden shadow-xl mb-8"
+        >
+          <div className="flex flex-col md:flex-row">
+            {/* LEFT: Enterprise Benefits */}
+            <div className="flex-1 p-6 md:p-8 flex flex-col relative overflow-hidden">
+              <div className="absolute top-0 right-0 w-48 h-48 bg-[var(--accent)]/10 blur-[60px] rounded-full -translate-y-1/4 translate-x-1/4" />
+              
+              <div className="flex items-center gap-4 mb-6 relative z-10">
+                <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-[var(--accent)]/10 to-[var(--accent-secondary)]/20 border border-[var(--accent)]/20 flex items-center justify-center text-[var(--accent)] shrink-0 shadow-lg shadow-[var(--accent)]/10">
+                  <Users className="w-6 h-6" />
+                </div>
+                <div>
+                  <h2 className="text-2xl md:text-3xl font-semibold tracking-tighter text-[var(--text-primary)]">Enterprise</h2>
+                  <p className="text-sm font-medium text-[var(--accent)]">The Only Workspace Your Team Will Ever Need</p>
+                </div>
+              </div>
+
+              <div className="space-y-4 flex-1 relative z-10">
+                {[
+                  '5+ team members',
+                  '5GB storage per user',
+                  'Realtime team collaboration across shared spaces',
+                  'Priority support',
+                  'Higher AI usage limits',
+                ].map((feature, i) => (
+                  <div key={i} className="flex items-center gap-3">
+                    <div className="w-5 h-5 rounded-full bg-[var(--accent)]/10 border border-[var(--accent)]/20 flex items-center justify-center text-[var(--accent)] shrink-0">
+                      <Check className="w-3 h-3" />
+                    </div>
+                    <span className="text-sm text-[var(--text-primary)] font-medium">{feature}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* RIGHT: Enterprise CTA */}
+            <div className="w-full md:w-72 p-6 md:p-8 bg-[var(--glass-bg)] border-t md:border-t-0 md:border-l border-[var(--accent)]/20 flex flex-col justify-center">
+              <div className="text-center mb-6">
+                <div className="mb-3">
+                  <span className="text-[10px] font-bold tracking-wide bg-gradient-to-r from-[var(--accent)] to-[var(--accent-secondary)] text-white px-3 py-1.5 rounded-full uppercase shadow-lg shadow-[var(--accent)]/25">
+                    Contact Sales
+                  </span>
+                </div>
+                <div className="flex items-baseline justify-center gap-1">
+                  <span className="text-4xl font-extrabold text-[var(--text-primary)]">$25</span>
+                  <span className="text-lg text-[var(--text-muted)] font-semibold">/seat</span>
+                </div>
+                <span className="text-xs text-[var(--text-muted)] font-medium block mt-1">Starting at 5 seats</span>
+              </div>
+
+              <button
+                onClick={() => window.location.href = 'mailto:support@cyberiaspace.app?subject=Enterprise%20Plan%20Inquiry'}
+                className="w-full h-12 rounded-xl text-sm font-semibold tracking-wide bg-[var(--accent)] hover:bg-[var(--accent)]/90 text-white transition-all flex items-center justify-center gap-2 active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--bg-page)]"
+              >
+                <Users className="w-4 h-4" />
+                Contact Sales
+              </button>
+              
+              <p className="text-xs text-[var(--text-muted)] text-center mt-4 font-medium">
+                Volume discounts available
+              </p>
+            </div>
+          </div>
+        </motion.div>
+
         {/* Toggle Features Button */}
         <div className="text-center mb-8">
           <button
@@ -689,7 +767,7 @@ const PricingPage: React.FC = () => {
         >
           <div className="glass bg-[var(--bg-page)]/60 rounded-2xl border border-[var(--glass-border)] overflow-hidden shadow-2xl">
             {/* Table Header */}
-            <div className="grid grid-cols-[1.5fr_1fr_1fr] gap-4 py-6 px-6 bg-[var(--glass-bg)] border-b border-[var(--glass-border)] items-center">
+            <div className="grid grid-cols-[1.5fr_1fr_1fr_1fr] gap-4 py-6 px-6 bg-[var(--glass-bg)] border-b border-[var(--glass-border)] items-center">
               <div className="text-left">
                 <span className="text-sm font-semibold tracking-wide text-[var(--text-muted)]">Features Comparison</span>
               </div>
@@ -699,6 +777,9 @@ const PricingPage: React.FC = () => {
               <div className="text-center relative">
                 <span className="text-lg font-semibold tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-indigo-600 dark:from-blue-400 dark:to-indigo-400">Pro</span>
               </div>
+              <div className="text-center relative">
+                <span className="text-lg font-semibold tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-[var(--accent)] to-[var(--accent-secondary)]">Enterprise</span>
+              </div>
             </div>
 
             {/* Table Rows */}
@@ -706,51 +787,69 @@ const PricingPage: React.FC = () => {
               <ComparisonRow 
                 label="Agentic Workspaces" 
                 free={`${PLAN_CONFIG.free.MAX_SPACES} Spaces`} 
-                pro={`${PLAN_CONFIG.pro.MAX_SPACES} Spaces`} 
+                pro={`${PLAN_CONFIG.pro.MAX_SPACES} Spaces`}
+                enterprise={`${PLAN_CONFIG.enterprise.MAX_SPACES}+`}
                 highlight 
               />
               <ComparisonRow 
                 label="Thoughts per Space" 
-                free={`${PLAN_CONFIG.free.MAX_THOUGHTS_PER_SPACE} thoughts`} 
-                pro={`${PLAN_CONFIG.pro.MAX_THOUGHTS_PER_SPACE} thoughts`} 
+                free={`${PLAN_CONFIG.free.MAX_THOUGHTS_PER_SPACE}`} 
+                pro={`${PLAN_CONFIG.pro.MAX_THOUGHTS_PER_SPACE}`}
+                enterprise={`${PLAN_CONFIG.enterprise.MAX_THOUGHTS_PER_SPACE}+`}
                 highlight 
               />
               <ComparisonRow 
                 label="Cloud Storage" 
                 free={`${PLAN_CONFIG.free.MAX_STORAGE_MB}MB`} 
-                pro={`${PLAN_CONFIG.pro.MAX_STORAGE_MB}MB`} 
+                pro="1GB"
+                enterprise={`${PLAN_CONFIG.enterprise.MAX_STORAGE_MB / 1000}GB / user`}
+              />
+              <ComparisonRow 
+                label="Team Members" 
+                free="1" 
+                pro="1"
+                enterprise="5+"
+                highlight
               />
               <ComparisonRow 
                 label="AI Requests quota" 
-                free="Rate Limited" 
-                pro="Unlimited & Generous for premium models"
+                free={<span className="text-[var(--text-muted)]">—</span>} 
+                pro="Generous quota"
+                enterprise="Higher quota"
               />
               <ComparisonRow 
                 label="AI Models" 
-                free="Basic Models"
-                pro="Latest ChatGPT, Claude, Gemini and more Models" 
+                free={<span className="text-[var(--text-muted)]">—</span>}
+                pro="All Models" 
+                enterprise="All Models"
                 highlight
               />
               <ComparisonRow 
                 label="Agentic Capabilities" 
-                free="None"
-                pro=" Web Search, Youtube Search, Generating, Editing, Organizing, Removing and More"
+                free={<span className="text-[var(--text-muted)]">—</span>}
+                pro="Full access"
+                enterprise="Full access"
                 highlight
               />
               <ComparisonRow 
                 label="File Intelligence" 
-                free="Text only" 
-                pro="Docs, Tables, Images & PDFs"
+                free={<span className="text-[var(--text-muted)]">—</span>}
+                pro="All file types"
+                enterprise="All file types"
               />
               <ComparisonRow 
-                label="Custom Background & AI Personality" 
+                label="Team Collaboration" 
                 free={<span className="text-[var(--text-muted)]">—</span>} 
-                pro={<Check className="w-4 h-4 text-blue-600 dark:text-blue-400 mx-auto" />} 
+                pro={<span className="text-[var(--text-muted)]">—</span>}
+                enterprise={<Check className="w-4 h-4 text-emerald-500 mx-auto" />}
+                highlight
               />
               <ComparisonRow 
-                label="Customer Support" 
-                free={<span className="text-[var(--text-muted)]">Standard</span>} 
-                pro={<span className="text-blue-600 dark:text-blue-400 font-bold">24/7 Priority</span>} 
+                label="Support" 
+                free={<span className="text-[var(--text-muted)]">—</span>} 
+                pro={<Check className="w-4 h-4 text-blue-600 dark:text-blue-400 mx-auto" />}
+                enterprise={<span className="text-emerald-500 font-bold">Dedicated</span>}
+                highlight
               />
             </div>
           </div>

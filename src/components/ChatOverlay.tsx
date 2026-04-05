@@ -116,21 +116,35 @@ const ChatOverlay: React.FC = () => {
   const plan = user?.plan || 'free';
   
   // Use modelConfig from store (fetched from backend) or plan-specific fallbacks
-  const limits = modelConfig?.config?.[plan] || 
-    (plan === 'pro' 
+  const config = modelConfig?.config as Record<string, PlanLimits> | undefined;
+  const limits = config?.[plan] || 
+    (plan === 'enterprise' 
       ? { 
-          AI_DAILY_LIMIT: 10000, 
-          AI_TOP_LIMIT: 15, 
-          AI_MEDIUM_LIMIT: 60, 
-          AI_SMALL_LIMIT: 500,
-          AI_TOP_WEEKLY: 100,
-          AI_MEDIUM_WEEKLY: 420,
-          AI_SMALL_WEEKLY: 3500,
-          AI_TOP_MONTHLY: 400,
-          AI_MEDIUM_MONTHLY: 1800,
-          AI_SMALL_MONTHLY: 15000
+          AI_DAILY_LIMIT: 50000, 
+          AI_TOP_LIMIT: 1000, 
+          AI_MEDIUM_LIMIT: 5000, 
+          AI_SMALL_LIMIT: 10000,
+          AI_TOP_WEEKLY: 5000,
+          AI_MEDIUM_WEEKLY: 20000,
+          AI_SMALL_WEEKLY: 50000,
+          AI_TOP_MONTHLY: 20000,
+          AI_MEDIUM_MONTHLY: 80000,
+          AI_SMALL_MONTHLY: 200000
         } as PlanLimits
-      : { AI_DAILY_LIMIT: 15, AI_TOP_LIMIT: 0, AI_MEDIUM_LIMIT: 0, AI_SMALL_LIMIT: 0, AI_TOP_WEEKLY: 0, AI_MEDIUM_WEEKLY: 0, AI_SMALL_WEEKLY: 0, AI_TOP_MONTHLY: 0, AI_MEDIUM_MONTHLY: 0, AI_SMALL_MONTHLY: 0 } as PlanLimits
+      : plan === 'pro' 
+        ? { 
+            AI_DAILY_LIMIT: 10000, 
+            AI_TOP_LIMIT: 15, 
+            AI_MEDIUM_LIMIT: 60, 
+            AI_SMALL_LIMIT: 500,
+            AI_TOP_WEEKLY: 100,
+            AI_MEDIUM_WEEKLY: 420,
+            AI_SMALL_WEEKLY: 3500,
+            AI_TOP_MONTHLY: 400,
+            AI_MEDIUM_MONTHLY: 1800,
+            AI_SMALL_MONTHLY: 15000
+          } as PlanLimits
+        : { AI_DAILY_LIMIT: 15, AI_TOP_LIMIT: 0, AI_MEDIUM_LIMIT: 0, AI_SMALL_LIMIT: 0, AI_TOP_WEEKLY: 0, AI_MEDIUM_WEEKLY: 0, AI_SMALL_WEEKLY: 0, AI_TOP_MONTHLY: 0, AI_MEDIUM_MONTHLY: 0, AI_SMALL_MONTHLY: 0 } as PlanLimits
     );
   const tiers = modelConfig?.tiers;
   

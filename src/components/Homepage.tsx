@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { MousePointer2, Layout, Database, ArrowRight, Cpu, Rocket, Send, Loader2, CheckCircle, ChevronDown, MessageCircle, X, Play, Quote } from 'lucide-react';
+import { Layout, Database, ArrowRight, Cpu, Rocket, Send, Loader2, CheckCircle, ChevronDown, MessageCircle, X, Play, Quote } from 'lucide-react';
 
 import { YOUTUBE_VIDEO_ID } from '../constants';
 
@@ -122,28 +122,28 @@ const ActiveUsersStack: React.FC = React.memo(() => {
 
 const FEATURES = [
   {
+    id: 'unified',
+    icon: Layout,
+    title: 'One space. Four views.',
+    description: 'Canvas for brainstorming, Kanban for tasks, Calendar for deadlines, Directory for organization. Switch instantly on the same data—no export, no import.'
+  },
+  {
     id: 'agentic',
     icon: Cpu,
     title: 'AI that takes action',
-    description: 'Oracle doesn\'t just answer questions. It creates tasks, edits content, searches your space, and keeps everything organized — while you focus on the work.'
+    description: 'Oracle doesn\'t just chat. It reads your files, answers questions, creates tasks, edits content, and keeps your space organized—autonomously.'
   },
   {
-    id: 'views',
-    icon: Layout,
-    title: 'Your way, every way',
-    description: 'Canvas for ideas, Kanban for tasks, Calendar for deadlines. Switch between views instantly on the same data. No switching apps.'
-  },
-  {
-    id: 'spatial',
-    icon: MousePointer2,
-    title: 'Everything in one place',
-    description: 'Notes, files, PDFs, images, and links in one workspace. See everything at a glance and find what you need instantly.'
-  },
-  {
-    id: 'cloud',
+    id: 'storage',
     icon: Database,
-    title: 'Access anywhere',
-    description: 'Your space syncs across all devices automatically. Work offline on the plane, pick up seamlessly on your desktop.'
+    title: 'All your files, in one place',
+    description: 'Store PDFs, images, documents, and links alongside your thoughts. Everything indexed and searchable. Your complete knowledge base.'
+  },
+  {
+    id: 'sync',
+    icon: Database,
+    title: 'Works everywhere',
+    description: 'Start on desktop, continue on mobile. Offline-first with automatic cloud sync. Your workspace follows you.'
   }
 ];
 
@@ -299,8 +299,8 @@ const FeatureVisual: React.FC<{ activeFeature: number }> = React.memo(({ activeF
             transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
             className="w-full h-full"
           >
-            {activeFeature === 0 && <AgenticWorkspaceVisual />}
-            {activeFeature === 1 && <DynamicViewsVisual />}
+            {activeFeature === 0 && <DynamicViewsVisual />}
+            {activeFeature === 1 && <AgenticWorkspaceVisual />}
             {activeFeature === 2 && <SpatialThinkingVisual />}
             {activeFeature === 3 && <CloudSyncVisual />}
           </motion.div>
@@ -376,19 +376,19 @@ const Homepage: React.FC = () => {
               transition={{ type: 'spring', damping: 25, stiffness: 100 }}
             >
               <h1 className="text-4xl md:text-6xl font-bold tracking-tight leading-[1.1] mb-6">
-                Canvas. Kanban. Calendar.<br />
+                The Only Workspace<br />
                 <motion.span
                   initial={{ opacity: 0, x: -20 }}
                   animate={{ opacity: 1, x: 0 }}
                   transition={{ duration: 0.8, delay: 0.2, ease: "easeOut" }}
                   className="bg-clip-text text-transparent bg-gradient-to-r from-[var(--accent)] to-[var(--accent-secondary)]"
                 >
-                  AI that actually works.
+                  You'll Ever Need
                 </motion.span>
               </h1>
               
               <p className="text-lg md:text-xl text-[var(--text-secondary)] max-w-2xl mx-auto mb-10 leading-relaxed font-medium">
-                Switch between views on the same data. AI that search, creates and manage content, and keeps your space organized.
+                Visual thinking. Task management. Calendar planning. AI that takes action. File storage. All connected. All in one place.
               </p>
 
               <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
@@ -524,7 +524,7 @@ const Homepage: React.FC = () => {
               {[
                 { title: 'Scattered information', desc: 'Notes, documents, and ideas everywhere. Switching between apps wastes time and breaks your flow.' },
                 { title: 'Visual organization', desc: 'See everything at a glance. Arrange documents and ideas visually, just like on a desk, but better.' },
-                { title: 'AI that takes action', desc: 'Oracle reads your files, answers questions, and can create tasks or edit content — without you lifting a finger.' },
+                { title: 'AI that takes action', desc: 'Oracle AI reads your files, answers questions, and can create tasks or edit content — without you lifting a finger.' },
                 { title: 'You own your data', desc: 'Your work belongs to you. Export everything anytime. No vendor lock-in, no tricks.' }
               ].map((item, i) => (
                 <motion.div 
@@ -785,7 +785,7 @@ const Homepage: React.FC = () => {
                 Ready?
               </h2>
               <p className="text-[var(--text-muted)] text-lg mb-10">
-                Canvas. Kanban. Calendar. AI that acts.
+                The only workspace with Canvas, Kanban, Calendar, AI that acts, and file storage — all in one.
               </p>
               <a
                   href="/home"
