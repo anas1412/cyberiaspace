@@ -13,11 +13,12 @@ export function toSnakeCase(obj: any): any {
   for (const key in obj) {
     // Skip local-only synchronization metadata and spatial properties
     if (
-      key === 'syncStatus' || 
-      key === 'retryCount' || 
-      key === 'isOnboarding' || 
+      key === 'syncStatus' ||
+      key === 'retryCount' ||
+      key === 'isOnboarding' ||
       key === 'data' ||
       key === 'date' ||
+      key === 'publishedId' ||
       key === 'x' || key === 'y' || key === 'vx' || key === 'vy'
     ) {
       continue
@@ -205,6 +206,7 @@ export const supabaseSync = {
   async createSpace(userId: string, space: Record<string, unknown>) {
     const clean = toSnakeCase({ ...space, user_id: userId })
     delete clean.last_published
+    delete clean.published_id
     const { data, error } = await supabase
       .from('spaces')
       .upsert(clean, { onConflict: 'id' })
@@ -221,6 +223,7 @@ export const supabaseSync = {
     const records = spaces.map(s => {
       const clean = toSnakeCase({ ...s, user_id: userId })
       delete clean.last_published
+      delete clean.published_id
       return clean
     })
     const { data, error } = await supabase
