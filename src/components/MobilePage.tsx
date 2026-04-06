@@ -54,7 +54,7 @@ const MobilePage: React.FC = () => {
               Desktop <span style={{ color: 'var(--accent)' }}>Required</span>
             </h1>
             <p className="text-[10px] md:text-[12px] font-bold text-[var(--text-muted)] uppercase tracking-[0.3em]">
-              Spatial Thinking Needs Space
+              Cyberia Needs a Desktop
             </p>
           </div>
 

@@ -121,7 +121,7 @@ const CGV: React.FC = () => {
       content: (
         <>
           <p className="leading-relaxed text-[var(--text-muted)]">
-            Cyberia Space is an AI-powered spatial thinking and knowledge management tool. It is designed for personal productivity, research, and AI-assisted analysis of private documents.
+            Cyberia Space is an AI-powered workspace and knowledge management platform. It is designed for personal productivity, research, and AI-assisted analysis of private documents.
           </p>
           <p className="leading-relaxed text-[var(--text-muted)] mt-3">
             <strong className="text-[var(--text-primary)]">Acceptable Uses:</strong>

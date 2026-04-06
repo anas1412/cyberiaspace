@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { motion, AnimatePresence, motionValue, animate } from 'framer-motion';
-import { MousePointer2, ChevronDown } from 'lucide-react';
+import { motion, AnimatePresence, motionValue } from 'framer-motion';
+import { ChevronDown } from 'lucide-react';
 import DemoThought from './DemoThought';
 
 const SPACES_DATA = [
@@ -11,6 +11,7 @@ const SPACES_DATA = [
       { title: 'RENAISSANCE', type: 'image' as const }, 
       { title: 'QUANTUM', type: 'doc' as const }
     ],
+    clusterColor: '#6366f1',
     free: [
       { title: 'AI_BASICS', type: 'doc' as const }, 
       { title: 'ROME_MAP', type: 'image' as const }, 
@@ -26,6 +27,7 @@ const SPACES_DATA = [
       { title: 'Q4_STRATEGY', type: 'doc' as const },
       { title: 'API_REF', type: 'file' as const }
     ],
+    clusterColor: '#8b5cf6',
     free: [
       { title: 'PLANNING', type: 'text' as const }, 
       { title: 'TRENDS', type: 'table' as const },
@@ -44,6 +46,7 @@ const SPACES_DATA = [
       { title: 'DESIGN_INSPO', type: 'image' as const },
       { title: 'CODING_TIPS', type: 'text' as const }
     ],
+    clusterColor: '#06b6d4',
     free: [
       { title: 'COOKING', type: 'image' as const }, 
       { title: 'BUSINESS', type: 'text' as const }, 
@@ -62,14 +65,17 @@ interface NodeState {
   y: any;
   vx: number;
   vy: number;
+  phase: number; // Per-node phase offset for organic drift
 }
 
 const SpatialThinkingVisual: React.FC = () => {
   const [activeSpaceIdx, setActiveSpaceIdx] = useState(0);
   const currentSpace = SPACES_DATA[activeSpaceIdx];
-  const [isGrabbing, setIsGrabbing] = useState(false);
   const [isSpaceMenuOpen, setIsSpaceMenuOpen] = useState(false);
   const spaceMenuRef = useRef<HTMLDivElement>(null);
+  const [nodes, setNodes] = useState<NodeState[]>([]);
+  const centroidX = useRef(motionValue(0)).current;
+  const centroidY = useRef(motionValue(0)).current;
 
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
@@ -82,14 +88,14 @@ const SpatialThinkingVisual: React.FC = () => {
     }
     return () => window.removeEventListener('mousedown', handleClickOutside);
   }, [isSpaceMenuOpen]);
-  
-  const cursorX = useRef(motionValue(-300)).current;
-  const cursorY = useRef(motionValue(-200)).current;
-  const cursorScale = useRef(motionValue(1)).current;
-  const cursorOpacity = useRef(motionValue(0)).current;
-  
-  const [nodes, setNodes] = useState<NodeState[]>([]);
-  const grabTargetRef = useRef<string | null>(null);
+
+  // Auto-rotate spaces
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setActiveSpaceIdx(prev => (prev + 1) % SPACES_DATA.length);
+    }, 4000);
+    return () => clearInterval(timer);
+  }, []);
 
   // Initialize nodes with fresh motionValues for fade-out support
   useEffect(() => {
@@ -111,6 +117,7 @@ const SpatialThinkingVisual: React.FC = () => {
         y: motionValue(Math.sin(angle) * radius),
         vx: 0,
         vy: 0,
+        phase: Math.random() * Math.PI * 2,
         nodeType: 'cluster'
       });
     });
@@ -126,8 +133,9 @@ const SpatialThinkingVisual: React.FC = () => {
         type: thought.type,
         x: motionValue(Math.cos(angle) * radius),
         y: motionValue(Math.sin(angle) * radius),
-        vx: (Math.random() - 0.5) * 0.5,
-        vy: (Math.random() - 0.5) * 0.5,
+        vx: 0,
+        vy: 0,
+        phase: Math.random() * Math.PI * 2,
         nodeType: 'free'
       });
     });
@@ -149,136 +157,55 @@ const SpatialThinkingVisual: React.FC = () => {
           let ax = 0; let ay = 0;
           const nx = n.x.get(); const ny = n.y.get();
 
-          // 1. Attraction to cursor (if grabbed)
-          if (n.id === grabTargetRef.current) {
-            ax += (cursorX.get() - nx) * 0.1;
-            ay += (cursorY.get() - ny) * 0.1;
+          // 1. Gravity to center (cluster nodes only) — very gentle
+          if (n.nodeType === 'cluster') {
+            ax += (0 - nx) * 0.001;
+            ay += (0 - ny) * 0.001;
           }
 
-          // 2. Gravity to center (cluster nodes only)
-          if (n.nodeType === 'cluster' && n.id !== grabTargetRef.current) {
-            ax += (0 - nx) * 0.003;
-            ay += (0 - ny) * 0.003;
-          }
+          // 2. Organic drift — per-node phase, slower frequencies
+          ax += Math.sin(time * 0.25 + n.phase) * 0.004;
+          ay += Math.cos(time * 0.2 + n.phase * 1.3) * 0.004;
 
-          // 3. Subtle Drift
-          ax += Math.sin(time * 0.4 + i) * 0.008;
-          ay += Math.cos(time * 0.3 + i) * 0.008;
-
-          // 4. Repulsion (Softened)
+          // 3. Repulsion — much softer, wider radius
           nodes.forEach((other, j) => {
             if (i === j) return;
             const ox = other.x.get(); const oy = other.y.get();
             const dx = nx - ox; const dy = ny - oy;
             const distSq = dx * dx + dy * dy || 1;
-            if (distSq < 50000) {
-              const strength = n.nodeType === 'cluster' && other.nodeType === 'cluster' ? 60 : 30;
-              const force = strength / (distSq + 3000); // Softened
+            if (distSq < 80000) {
+              const strength = n.nodeType === 'cluster' && other.nodeType === 'cluster' ? 40 : 20;
+              const force = strength / (distSq + 5000);
               ax += dx * force; ay += dy * force;
             }
           });
 
-          // 5. Boundary drift for free nodes
+          // 4. Boundary drift for free nodes — very soft
           if (n.nodeType === 'free') {
-            if (Math.abs(nx) > 300) ax -= nx * 0.0005;
-            if (Math.abs(ny) > 300) ay -= ny * 0.0005;
+            if (Math.abs(nx) > 280) ax -= nx * 0.0002;
+            if (Math.abs(ny) > 280) ay -= ny * 0.0002;
           }
 
-          n.vx = (n.vx + ax) * 0.95; // High damping
-          n.vy = (n.vy + ay) * 0.95;
+          n.vx = (n.vx + ax) * 0.96;
+          n.vy = (n.vy + ay) * 0.96;
           n.x.set(nx + n.vx);
           n.y.set(ny + n.vy);
         });
+
+        // Update centroid for star/hub connections
+        const clusterNodes = nodes.filter(n => n.nodeType === 'cluster');
+        if (clusterNodes.length >= 2) {
+          let cx = 0, cy = 0;
+          clusterNodes.forEach(n => { cx += n.x.get(); cy += n.y.get(); });
+          centroidX.set(cx / clusterNodes.length);
+          centroidY.set(cy / clusterNodes.length);
+        }
       }
       raf = requestAnimationFrame(loop);
     };
     raf = requestAnimationFrame(loop);
     return () => cancelAnimationFrame(raf);
-  }, [nodes, cursorX, cursorY]);
-
-  // Animation Sequence
-  useEffect(() => {
-    let mounted = true;
-    const animations: any[] = [];
-    
-    const runAnimation = async () => {
-      // 1. Reset Position and State
-      grabTargetRef.current = null; 
-      setIsGrabbing(false);
-      cursorOpacity.set(0); 
-      cursorX.set(-300); 
-      cursorY.set(-200);
-      cursorScale.set(1);
-      
-      // Wait for nodes to be cleared and re-initialized for the NEW space
-      // This ensures we don't start the animation using old node positions
-      if (nodes.length === 0 || nodes[0].title !== currentSpace.cluster[0].title) {
-        await new Promise(r => setTimeout(r, 50));
-        if (mounted) runAnimation();
-        return;
-      }
-
-      await new Promise(r => setTimeout(r, 800));
-      if (!mounted) return;
-
-      // 2. Fade in Cursor
-      animations.push(animate(cursorOpacity, 1, { duration: 0.8 }));
-      
-      // 3. Move to target node
-      const lead = nodes.find(n => n.id === 'cluster-0');
-      if (lead) {
-        await Promise.all([
-          animate(cursorX, lead.x.get(), { duration: 1.5, ease: "circOut" }),
-          animate(cursorY, lead.y.get(), { duration: 1.5, ease: "circOut" })
-        ]);
-      }
-
-      if (!mounted) return;
-
-      // 4. Grab
-      animations.push(animate(cursorScale, 1.2, { duration: 0.3, type: "spring" }));
-      grabTargetRef.current = 'cluster-0'; 
-      setIsGrabbing(true);
-      
-      const startX = lead?.x.get() || 0;
-      const startY = lead?.y.get() || 0;
-      
-      await new Promise(r => setTimeout(r, 400));
-      
-      // 5. Smooth Drag
-      await Promise.all([
-        animate(cursorX, startX + 160, { duration: 2.5, ease: "easeInOut" }),
-        animate(cursorY, startY + 60, { duration: 2.5, ease: "easeInOut" })
-      ]);
-
-      if (!mounted) return;
-      await new Promise(r => setTimeout(r, 800));
-
-      // 6. Release
-      setIsGrabbing(false); 
-      grabTargetRef.current = null;
-      animations.push(animate(cursorScale, 1, { duration: 0.4 }));
-
-      // 7. Exit Cursor
-      await Promise.all([
-        animate(cursorX, 400, { duration: 1.5, ease: "easeIn" }),
-        animate(cursorY, -300, { duration: 1.5, ease: "easeIn" }),
-        animate(cursorOpacity, 0, { duration: 1.2 })
-      ]);
-
-      if (!mounted) return;
-      await new Promise(r => setTimeout(r, 1000));
-      
-      // 8. Switch Space
-      setActiveSpaceIdx(prev => (prev + 1) % SPACES_DATA.length);
-    };
-
-    runAnimation();
-    return () => { 
-      mounted = false; 
-      animations.forEach(a => a.stop && a.stop()); 
-    };
-  }, [activeSpaceIdx, nodes.length === 0]); // Depend on nodes length being zero to catch initial load
+  }, [nodes]);
 
   return (
     <div className="relative w-full h-full flex items-center justify-center overflow-hidden bg-transparent pointer-events-none">
@@ -327,41 +254,24 @@ const SpatialThinkingVisual: React.FC = () => {
       <AnimatePresence mode="wait">
         <motion.div key={activeSpaceIdx} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0, scale: 0.95, transition: { duration: 0.5 } }} transition={{ duration: 0.5 }} className="absolute inset-0">
           <svg viewBox="-300 -300 600 600" className="absolute inset-0 w-full h-full overflow-visible">
+            {/* Star/Hub topology: each member → geometric centroid */}
             {currentSpace.cluster.map((_, i) => {
-              const nodeA = nodes.find(n => n.id === `cluster-${i}`);
-              // Connect to next node in circle
-              const nodeB = nodes.find(n => n.id === `cluster-${(i + 1) % currentSpace.cluster.length}`);
-              
-              if (!nodeA || !nodeB) return null;
-              
+              const node = nodes.find(n => n.id === `cluster-${i}`);
+              if (!node) return null;
               return (
-                <React.Fragment key={`line-${i}`}>
-                  <motion.line 
-                    initial={{ pathLength: 0, opacity: 0 }}
-                    animate={{ pathLength: 1, opacity: 1 }}
-                    x1={nodeA.x} y1={nodeA.y} x2={nodeB.x} y2={nodeB.y} 
-                    stroke="rgba(126,207,255,0.45)" 
-                    strokeWidth="1" 
-                    strokeDasharray="4 4" 
-                    transition={{ pathLength: { duration: 1.5, ease: "easeInOut" } }}
-                  />
-                  {/* Add some cross-links for larger clusters */}
-                  {currentSpace.cluster.length > 4 && i % 2 === 0 && (() => {
-                    const nodeC = nodes.find(n => n.id === `cluster-${(i + 2) % currentSpace.cluster.length}`);
-                    if (!nodeC) return null;
-                    return (
-                      <motion.line 
-                        initial={{ pathLength: 0, opacity: 0 }}
-                        animate={{ pathLength: 1, opacity: 0.6 }}
-                        x1={nodeA.x} y1={nodeA.y} x2={nodeC.x} y2={nodeC.y} 
-                        stroke="rgba(126,207,255,0.25)" 
-                        strokeWidth="0.8" 
-                        strokeDasharray="2 6" 
-                        transition={{ pathLength: { duration: 2, ease: "easeInOut" }, delay: 0.5 }}
-                      />
-                    );
-                  })()}
-                </React.Fragment>
+                <motion.line
+                  key={`hub-${i}`}
+                  x1={node.x}
+                  y1={node.y}
+                  x2={centroidX}
+                  y2={centroidY}
+                  stroke={currentSpace.clusterColor}
+                  strokeWidth="1"
+                  opacity="0.5"
+                  style={{
+                    filter: `drop-shadow(0 0 6px ${currentSpace.clusterColor}80)`,
+                  }}
+                />
               );
             })}
           </svg>
@@ -374,12 +284,6 @@ const SpatialThinkingVisual: React.FC = () => {
           ))}
         </motion.div>
       </AnimatePresence>
-      <motion.div className="absolute left-1/2 top-1/2 z-[100] pointer-events-none" style={{ x: cursorX, y: cursorY, scale: cursorScale, opacity: cursorOpacity }}>
-        <div className="relative">
-          <MousePointer2 className="w-6 h-6 text-[var(--text-primary)] fill-[var(--text-secondary)]/30 -translate-x-1 translate-y-1 drop-shadow-[0_0_8px_rgba(99,102,241,0.4)]" />
-          {isGrabbing && <motion.div className="absolute inset-0 w-6 h-6 bg-[var(--accent)]/40 rounded-full blur-xl" animate={{ scale: [1, 1.5, 1], opacity: [0.5, 0.2, 0.5] }} transition={{ duration: 1.5, repeat: Infinity }} />}
-        </div>
-      </motion.div>
     </div>
   );
 };

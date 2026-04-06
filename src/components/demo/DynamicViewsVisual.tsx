@@ -1,16 +1,17 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Orbit, Columns3, CalendarDays } from 'lucide-react';
+import { Orbit, Columns3, CalendarDays, FolderTree } from 'lucide-react';
 import DemoThought from './DemoThought';
 
 const DynamicViewsVisual: React.FC = () => {
-  const [view, setView] = useState<'spatial' | 'kanban' | 'calendar'>('spatial');
+  const [view, setView] = useState<'spatial' | 'kanban' | 'calendar' | 'directory'>('spatial');
 
   useEffect(() => {
     if (typeof window !== 'undefined' && window.innerWidth < 1024) return;
     const timer = setInterval(() => {
       setView(prev => {
-        if (prev === 'spatial') return 'kanban';
+        if (prev === 'spatial') return 'directory';
+        if (prev === 'directory') return 'kanban';
         if (prev === 'kanban') return 'calendar';
         return 'spatial';
       });
@@ -60,6 +61,17 @@ const DynamicViewsVisual: React.FC = () => {
       const { col, row } = grid[index % grid.length];
       return { x: (col - 3) * 85, y: -120 + row * 80 };
     }
+    if (currentView === 'directory') {
+      // Directory uses vertical list layout - sidebar items on left, main panel content on right
+      const positions = [
+        { x: -160, y: -100 }, // Sidebar group header
+        { x: -160, y: -60 },  // Sidebar item 1
+        { x: -160, y: -20 },  // Sidebar item 2
+        { x: -160, y: 20 },   // Sidebar item 3
+        { x: 80, y: -60 },    // Main panel content area
+      ];
+      return positions[index] || { x: 0, y: 0 };
+    }
     return { x: 0, y: 0 };
   };
 
@@ -68,6 +80,7 @@ const DynamicViewsVisual: React.FC = () => {
       <div className="absolute top-8 left-1/2 -translate-x-1/2 z-[110] flex items-center gap-1.5 p-1.5 glass rounded-2xl border border-[var(--glass-border)] pointer-events-auto shadow-2xl">
         {[
           { id: 'spatial', icon: Orbit },
+          { id: 'directory', icon: FolderTree },
           { id: 'kanban', icon: Columns3 },
           { id: 'calendar', icon: CalendarDays }
         ].map((mode) => {
@@ -188,8 +201,119 @@ const DynamicViewsVisual: React.FC = () => {
         )}
       </AnimatePresence>
 
+      <AnimatePresence>
+        {view === 'directory' && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="absolute inset-0 flex items-center justify-center pointer-events-none"
+          >
+            {/* Directory Container */}
+            <div className="relative w-[500px] h-[400px] glass rounded-2xl border border-[var(--glass-border)] overflow-hidden shadow-2xl">
+              {/* Sidebar */}
+              <div className="absolute left-0 top-0 bottom-0 w-[160px] bg-[var(--glass-bg)] border-r border-[var(--glass-border)] flex flex-col">
+                {/* Sidebar Header */}
+                <div className="px-3 py-3 border-b border-[var(--glass-border)]">
+                  <span className="text-[9px] font-black tracking-[0.2em] uppercase text-[var(--accent)]">Directory</span>
+                </div>
+                {/* Group By Controls */}
+                <div className="p-2 border-b border-[var(--glass-border)] space-y-1.5">
+                  <div className="h-6 rounded-lg bg-[var(--bg-page)]/50 px-2 flex items-center">
+                    <span className="text-[8px] text-[var(--text-muted)]">Stacks</span>
+                  </div>
+                  <div className="h-6 rounded-lg bg-[var(--bg-page)]/50 px-2 flex items-center">
+                    <span className="text-[8px] text-[var(--text-muted)]">A → Z</span>
+                  </div>
+                </div>
+                {/* Group List */}
+                <div className="flex-1 p-2 space-y-1">
+                  {/* Stack Groups */}
+                  <div className="px-1.5 py-1">
+                    <span className="text-[8px] font-semibold text-[var(--text-dimmed)]">STACKS</span>
+                  </div>
+                  <div className="space-y-0.5">
+                    <div className="h-7 rounded-lg px-2 flex items-center gap-1.5 bg-[var(--accent)]/10 border border-[var(--accent)]/20">
+                      <div className="w-1.5 h-1.5 rounded-full bg-[var(--accent)]" />
+                      <span className="text-[10px] text-[var(--text-primary)] truncate">Research</span>
+                    </div>
+                    <div className="h-6 rounded-lg px-2 flex items-center gap-1.5 ml-3 hover:bg-[var(--glass-bg)]">
+                      <span className="text-[9px] text-[var(--text-muted)] truncate">ESSAY_01</span>
+                    </div>
+                    <div className="h-6 rounded-lg px-2 flex items-center gap-1.5 ml-3 hover:bg-[var(--glass-bg)]">
+                      <span className="text-[9px] text-[var(--text-muted)] truncate">LECTURE</span>
+                    </div>
+                    <div className="h-6 rounded-lg px-2 flex items-center gap-1.5 ml-3 hover:bg-[var(--glass-bg)]">
+                      <span className="text-[9px] text-[var(--text-muted)] truncate">RESEARCH</span>
+                    </div>
+                    <div className="h-7 rounded-lg px-2 flex items-center gap-1.5 mt-2 bg-[var(--accent-secondary)]/10 border border-[var(--accent-secondary)]/20">
+                      <div className="w-1.5 h-1.5 rounded-full bg-[var(--accent-secondary)]" />
+                      <span className="text-[10px] text-[var(--text-primary)] truncate">Notes</span>
+                    </div>
+                    <div className="h-6 rounded-lg px-2 flex items-center gap-1.5 ml-3 hover:bg-[var(--glass-bg)]">
+                      <span className="text-[9px] text-[var(--text-muted)] truncate">NOTES</span>
+                    </div>
+                  </div>
+                  {/* Status Groups */}
+                  <div className="px-1.5 py-2 mt-2">
+                    <span className="text-[8px] font-semibold text-[var(--text-dimmed)]">STATUS</span>
+                  </div>
+                  <div className="space-y-0.5">
+                    <div className="h-6 rounded-lg px-2 flex items-center gap-1.5">
+                      <div className="w-1.5 h-1.5 rounded-full bg-blue-400" />
+                      <span className="text-[9px] text-[var(--text-muted)]">Todo (2)</span>
+                    </div>
+                    <div className="h-6 rounded-lg px-2 flex items-center gap-1.5">
+                      <div className="w-1.5 h-1.5 rounded-full bg-amber-400" />
+                      <span className="text-[9px] text-[var(--text-muted)]">Doing (3)</span>
+                    </div>
+                    <div className="h-6 rounded-lg px-2 flex items-center gap-1.5">
+                      <div className="w-1.5 h-1.5 rounded-full bg-green-400" />
+                      <span className="text-[9px] text-[var(--text-muted)]">Done (1)</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              {/* Main Panel */}
+              <div className="absolute left-[160px] right-0 top-0 bottom-0 flex flex-col">
+                {/* Content Header */}
+                <div className="px-4 py-3 border-b border-[var(--glass-border)] flex items-center gap-2">
+                  <div className="w-4 h-4 rounded bg-[var(--accent)]/20 flex items-center justify-center">
+                    <div className="w-2 h-2 rounded-sm bg-[var(--accent)]" />
+                  </div>
+                  <span className="text-[11px] font-semibold text-[var(--text-primary)]">ESSAY_01</span>
+                  <span className="text-[9px] text-[var(--text-muted)] ml-auto">doc</span>
+                </div>
+                {/* Content Body */}
+                <div className="flex-1 p-4">
+                  <div className="space-y-2">
+                    <div className="h-1.5 rounded-full bg-[var(--glass-border)] w-full" />
+                    <div className="h-1.5 rounded-full bg-[var(--glass-border)] w-[90%]" />
+                    <div className="h-1.5 rounded-full bg-[var(--glass-border)] w-[85%]" />
+                  </div>
+                  <div className="mt-4 space-y-1.5">
+                    <div className="h-1 rounded-full bg-[var(--glass-border)]/50 w-[70%]" />
+                    <div className="h-1 rounded-full bg-[var(--glass-border)]/50 w-[60%]" />
+                    <div className="h-1 rounded-full bg-[var(--glass-border)]/50 w-[75%]" />
+                  </div>
+                  <div className="mt-4 p-3 rounded-xl bg-[var(--bg-page)]/30 border border-[var(--glass-border)]">
+                    <div className="h-1 rounded-full bg-[var(--accent)]/30 w-16 mb-2" />
+                    <div className="space-y-1">
+                      <div className="h-1 rounded-full bg-[var(--glass-border)]/50 w-full" />
+                      <div className="h-1 rounded-full bg-[var(--glass-border)]/50 w-[90%]" />
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {thoughts.map((t, i) => {
         const pos = getPosition(i, view);
+        // In directory view, thoughts are hidden (visual is handled by the directory overlay)
+        const isHidden = view === 'directory';
         return (
           <motion.div
             key={t.id}
@@ -197,8 +321,9 @@ const DynamicViewsVisual: React.FC = () => {
             animate={{ 
               x: pos.x, 
               y: pos.y,
-              scale: view === 'calendar' ? 0.75 : 0.9,
-              rotate: view === 'spatial' ? (i * 5 - 10) : 0
+              scale: isHidden ? 0 : (view === 'calendar' ? 0.75 : 0.9),
+              rotate: view === 'spatial' ? (i * 5 - 10) : 0,
+              opacity: isHidden ? 0 : 1
             }}
             transition={{ type: "spring", damping: 25, stiffness: 80, mass: 1.2 }}
           >

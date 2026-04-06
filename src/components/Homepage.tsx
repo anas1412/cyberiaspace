@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Layout, Database, ArrowRight, Cpu, Rocket, Send, Loader2, CheckCircle, ChevronDown, MessageCircle, X, Play, Quote } from 'lucide-react';
+import { Layout, Database, ArrowRight, Cpu, Rocket, Send, Loader2, CheckCircle, ChevronDown, MessageCircle, X, Play, Quote, Cloud } from 'lucide-react';
 
-import { YOUTUBE_VIDEO_ID } from '../constants';
+import { YOUTUBE_VIDEO_ID, DISCORD_INVITE_URL } from '../constants';
 
 import SpatialThinkingVisual from './demo/SpatialThinkingVisual';
 import DynamicViewsVisual from './demo/DynamicViewsVisual';
@@ -73,7 +73,7 @@ const AvatarCircle: React.FC<{ user: ActiveUser; index: number; delay: number }>
 
 const ActiveUsersStack: React.FC = React.memo(() => {
   const [users, setUsers] = useState<ActiveUser[]>(FALLBACK_USERS);
-  const [activeCount, setActiveCount] = useState(100);
+  
 
   useEffect(() => {
     fetch('/api/public-stats')
@@ -81,8 +81,6 @@ const ActiveUsersStack: React.FC = React.memo(() => {
       .then((data) => {
         if (data.users && data.users.length > 0) {
           setUsers(data.users.slice(0, 6));
-          setActiveCount(100);
-          //setActiveCount(data.activeCount ?? 120);
         }
       })
       .catch(() => {});
@@ -112,7 +110,8 @@ const ActiveUsersStack: React.FC = React.memo(() => {
             <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-emerald-500" />
           </span>
           <span className="text-[11px] font-medium text-[var(--text-muted)] whitespace-nowrap">
-            {activeCount}+ active users
+            {/* {activeCount} */}
+            50+ early adopters
           </span>
         </div>
       </div>
@@ -141,7 +140,7 @@ const FEATURES = [
   },
   {
     id: 'sync',
-    icon: Database,
+    icon: Cloud,
     title: 'Works everywhere',
     description: 'Start on desktop, continue on mobile. Offline-first with automatic cloud sync. Your workspace follows you.'
   }
@@ -171,7 +170,7 @@ const TESTIMONIALS = [
 const FAQ_ITEMS = [
   {
     question: "What is Cyberia Space?",
-    answer: "Cyberia combines three views — Canvas, Kanban, and Calendar — on the same data. Switch between freeform canvases, task boards, and timeline views instantly. Oracle AI acts on your content, not just answers questions. It's the only workspace where the AI doesn't just chat — it creates, edits, and organizes."
+    answer: "Cyberia combines four views — Canvas, Directory, Kanban, and Calendar — on the same data. Switch between freeform canvases, list views, task boards, and timeline views instantly. Oracle AI acts on your content, not just answers questions. It's the only workspace where the AI doesn't just chat — it creates, edits, and organizes."
   },
   {
     question: "Is my data private and secure?",
@@ -314,7 +313,6 @@ const Homepage: React.FC = () => {
   const { theme } = useStore();
   const [activeFeature, setActiveFeature] = useState(0);
   const [activeFAQIndex, setActiveFAQIndex] = useState<number | null>(null);
-  const [discordData, setDiscordData] = useState<{ member_count: number; presence_count: number; instant_invite: string } | null>(null);
   const [isImageZoomed, setIsImageZoomed] = useState(false);
   const [isVideoOpen, setIsVideoOpen] = useState(false);
   
@@ -344,22 +342,6 @@ const Homepage: React.FC = () => {
       } else setContactSubmitStatus('error');
     } catch { setContactSubmitStatus('error'); } finally { setIsContactSubmitting(false); }
   };
-
-  useEffect(() => {
-    const INVITE_CODE = '6DRsnY3ajE'; 
-    fetch(`https://discord.com/api/v10/invites/${INVITE_CODE}?with_counts=true`)
-      .then(res => res.json())
-      .then(data => {
-        if (data.approximate_member_count) {
-          setDiscordData({
-            member_count: data.approximate_member_count,
-            presence_count: data.approximate_presence_count,
-            instant_invite: `https://discord.gg/${data.code}`
-          });
-        }
-      })
-      .catch(() => {});
-  }, []);
 
   return (
     <div className="min-h-screen text-[var(--text-primary)] selection:bg-[var(--accent)]/30 relative flex flex-col">
@@ -444,7 +426,7 @@ const Homepage: React.FC = () => {
                 Everything you need to <span className="text-[var(--accent)]">work better</span>
               </h2>
               <p className="text-[var(--text-muted)] text-lg md:text-xl max-w-2xl mx-auto lg:mx-0">
-                Multi-view flexibility. AI that acts. All your work in one place.
+                Four views. AI that acts. All your files. Works everywhere.
               </p>
             </div>
 
@@ -634,23 +616,9 @@ const Homepage: React.FC = () => {
               <p className="text-[var(--text-muted)] text-lg mb-10 max-w-lg mx-auto">
                 Help shape the platform. Share feedback, report bugs, and connect with other thinkers.
               </p>
-
-              {/*{discordData && (
-                <div className="flex items-center justify-center gap-10 mb-10">
-                  <div className="text-center">
-                    <p className="text-3xl font-bold text-[var(--text-primary)]">{discordData.member_count.toLocaleString()}</p>
-                    <p className="text-sm text-[var(--text-muted)] font-medium mt-1">Members</p>
-                  </div>
-                  <div className="w-px h-12 bg-[var(--glass-border)]" />
-                  <div className="text-center">
-                    <p className="text-3xl font-bold text-emerald-500">{discordData.presence_count.toLocaleString()}</p>
-                    <p className="text-sm text-[var(--text-muted)] font-medium mt-1">Online now</p>
-                  </div>
-                </div>
-              )}*/}
               
               <a 
-                href={discordData?.instant_invite || "https://discord.gg/YOUR_INVITE_CODE"} 
+                href={DISCORD_INVITE_URL}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="inline-flex items-center gap-2 px-8 py-4 bg-[#5865F2] hover:bg-[#4752C4] text-[#ffffff] rounded-xl text-base font-semibold transition-all shadow-lg hover:shadow-xl active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#5865F2] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--bg-page)]"
@@ -785,7 +753,7 @@ const Homepage: React.FC = () => {
                 Ready?
               </h2>
               <p className="text-[var(--text-muted)] text-lg mb-10">
-                The only workspace with Canvas, Kanban, Calendar, AI that acts, and file storage — all in one.
+                The only workspace with Canvas, Directory, Kanban, Calendar, AI that acts, and file storage — all in one.
               </p>
               <a
                   href="/home"

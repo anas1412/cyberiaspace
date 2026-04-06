@@ -191,6 +191,9 @@ export const VERIFICATION_MODEL = [
 export const HOMEPAGE_SCREENSHOT = '/Screenshot4.png';
 export const YOUTUBE_VIDEO_ID = 'hP92Obd9hFA';
 
+// Discord
+export const DISCORD_INVITE_URL = 'https://discord.gg/wjHTsaGpc4';
+
 // Enterprise features for pricing page
 export const ENTERPRISE_FEATURES = [
   'All Pro features',

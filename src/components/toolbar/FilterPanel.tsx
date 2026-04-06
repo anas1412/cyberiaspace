@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useStore } from '../../store/useStore';
+import { useModalStore } from '../../store/useModalStore';
 import { Filter, Search, Calendar, Archive, EyeOff, Eye, Circle, Clock, CheckCircle2, X, ChevronDown, ChevronLeft, ChevronRight, Tag } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { clsx, type ClassValue } from 'clsx';
@@ -462,7 +463,7 @@ export const FilterPanel: React.FC = () => {
               <div className="flex items-center justify-between mb-2">
                 <div className="flex items-center gap-2">
                   <ChevronDown className="w-3 h-3 text-[var(--text-muted)]" />
-                  <span className="text-[9px] font-black tracking-widest uppercase text-[var(--text-muted)]">Stacks</span>
+                  <span className="text-[9px] font-black tracking-widest uppercase text-[var(--text-muted)]">Collection</span>
                 </div>
                 {stackFilter && stackFilter.length > 0 && (
                   <button
@@ -491,26 +492,44 @@ export const FilterPanel: React.FC = () => {
                 {activeStacks.map((stack) => {
                   const isActive = stackFilter?.includes(stack.id) ?? false;
                   return (
-                    <button
-                      key={stack.id}
-                      onClick={() => {
-                        const current = stackFilter ?? [];
-                        const next = isActive ? current.filter(s => s !== stack.id) : [...current, stack.id];
-                        setStackFilter(next.length ? next : null);
-                      }}
-                      className={cn(
-                        "flex-shrink-0 h-7 px-2.5 rounded-lg text-[9px] font-medium tracking-wider border transition-all truncate max-w-[100px]",
-                        isActive
-                          ? "border-current text-[var(--text-primary)]"
-                          : "bg-[var(--bg-page)] border-transparent text-[var(--text-muted)] hover:text-[var(--text-primary)]"
-                      )}
-                      style={isActive ? {
-                        backgroundColor: stack.color.replace('1)', '0.3)'),
-                        color: stack.color
-                      } : {}}
-                    >
-                      {stack.name}
-                    </button>
+                    <div key={stack.id} className="relative group/s flex-shrink-0">
+                      <button
+                        onClick={() => {
+                          const current = stackFilter ?? [];
+                          const next = isActive ? current.filter(s => s !== stack.id) : [...current, stack.id];
+                          setStackFilter(next.length ? next : null);
+                        }}
+                        className={cn(
+                          "flex-shrink-0 h-7 px-2.5 rounded-lg text-[9px] font-medium tracking-wider border transition-all truncate max-w-[100px] flex items-center gap-1",
+                          isActive
+                            ? "border-current text-[var(--text-primary)]"
+                            : "bg-[var(--bg-page)] border-transparent text-[var(--text-muted)] hover:text-[var(--text-primary)]"
+                        )}
+                        style={isActive ? {
+                          backgroundColor: stack.color.replace('1)', '0.3)'),
+                          color: stack.color
+                        } : {}}
+                      >
+                        <span className="truncate">{stack.name}</span>
+                        {!isReadOnly && (
+                          <span
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              useModalStore.getState().openModal({
+                                title: 'Dissolve Group?',
+                                description: `This will unlink all thoughts from "${stack.name}".`,
+                                type: 'delete_stack',
+                                confirmText: 'Dissolve',
+                                onConfirm: () => useStore.getState().deleteStack(stack.id)
+                              });
+                            }}
+                            className="flex-shrink-0 p-0.5 rounded-full bg-red-500/20 text-red-400 hover:bg-red-500 hover:text-white opacity-40 group-hover/s:opacity-100 transition-all"
+                          >
+                            <X className="w-2.5 h-2.5" />
+                          </span>
+                        )}
+                      </button>
+                    </div>
                   );
                 })}
               </div>

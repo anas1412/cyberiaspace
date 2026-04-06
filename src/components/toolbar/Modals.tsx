@@ -530,64 +530,56 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                     )}
                   </div>
                   
-                  <AccessGuard 
-                    user={user} 
-                    mode="disable" 
-                    feature="pro"
-                    modalTitle="Pro Feature"
-                    modalMessage="Custom node colors require Pro."
-                  >
-                    <div className="p-6 rounded-2xl bg-[var(--glass-bg)] border border-[var(--glass-border)] space-y-4">
-                      <div className="flex items-center gap-4">
-                        <div className="relative group">
-                          <div 
-                            className="w-12 h-12 rounded-xl border-2 border-[var(--glass-border)] overflow-hidden shadow-lg"
-                            style={{ backgroundColor: getNodeBgColor() }}
-                          />
-                          <input
-                            type="color"
-                            value={getNodeBgColor().slice(0, 7)}
-                            onChange={handleNodeBgChange}
-                            className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-                          />
-                        </div>
-                        <div className="flex-1">
-                          <p className="text-[11px] font-semibold text-[var(--text-primary)]">Thought Nodes</p>
-                          <p className="text-[9px] text-[var(--text-muted)] mt-1">Click the swatch to customize</p>
-                        </div>
+                  <div className="p-6 rounded-2xl bg-[var(--glass-bg)] border border-[var(--glass-border)] space-y-4">
+                    <div className="flex items-center gap-4">
+                      <div className="relative group">
                         <div 
-                          className="px-3 py-1.5 rounded-lg bg-[var(--bg-page)] border border-[var(--glass-border)] text-[10px] font-mono text-[var(--text-muted)]"
-                        >
-                          {getNodeBgColor().slice(0, 7)}
-                        </div>
+                          className="w-12 h-12 rounded-xl border-2 border-[var(--glass-border)] overflow-hidden shadow-lg"
+                          style={{ backgroundColor: getNodeBgColor() }}
+                        />
+                        <input
+                          type="color"
+                          value={getNodeBgColor().slice(0, 7)}
+                          onChange={handleNodeBgChange}
+                          className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                        />
                       </div>
-                      
-                      {/* Preset Colors */}
-                      <div className="flex gap-2 flex-wrap">
-                        {[
-                          { color: '#12121a', name: 'Charcoal' },
-                          { color: '#0f172a', name: 'Midnight' },
-                          { color: '#1e1e2e', name: 'Obsidian' },
-                          { color: '#2d1f3d', name: 'Plum' },
-                          { color: '#1a2744', name: 'Navy' },
-                          { color: '#134e4a', name: 'Teal' },
-                        ].map((preset) => (
-                          <button
-                            key={preset.color}
-                            onClick={() => handleNodeBgChange({ target: { value: preset.color } } as any)}
-                            className={cn(
-                              "w-8 h-8 rounded-lg border-2 transition-all hover:scale-110",
-                              getNodeBgColor().slice(0, 7) === preset.color 
-                                ? "border-[var(--text-primary)] shadow-lg" 
-                                : "border-[var(--glass-border)] hover:border-[var(--accent)]/50"
-                            )}
-                            style={{ backgroundColor: preset.color }}
-                            title={preset.name}
-                          />
-                        ))}
+                      <div className="flex-1">
+                        <p className="text-[11px] font-semibold text-[var(--text-primary)]">Thought Nodes</p>
+                        <p className="text-[9px] text-[var(--text-muted)] mt-1">Click the swatch to customize</p>
+                      </div>
+                      <div 
+                        className="px-3 py-1.5 rounded-lg bg-[var(--bg-page)] border border-[var(--glass-border)] text-[10px] font-mono text-[var(--text-muted)]"
+                      >
+                        {getNodeBgColor().slice(0, 7)}
                       </div>
                     </div>
-                  </AccessGuard>
+                    
+                    {/* Preset Colors */}
+                    <div className="flex gap-2 flex-wrap">
+                      {[
+                        { color: '#12121a', name: 'Charcoal' },
+                        { color: '#0f172a', name: 'Midnight' },
+                        { color: '#1e1e2e', name: 'Obsidian' },
+                        { color: '#2d1f3d', name: 'Plum' },
+                        { color: '#1a2744', name: 'Navy' },
+                        { color: '#134e4a', name: 'Teal' },
+                      ].map((preset) => (
+                        <button
+                          key={preset.color}
+                          onClick={() => handleNodeBgChange({ target: { value: preset.color } } as any)}
+                          className={cn(
+                            "w-8 h-8 rounded-lg border-2 transition-all hover:scale-110",
+                            getNodeBgColor().slice(0, 7) === preset.color 
+                              ? "border-[var(--text-primary)] shadow-lg" 
+                              : "border-[var(--glass-border)] hover:border-[var(--accent)]/50"
+                          )}
+                          style={{ backgroundColor: preset.color }}
+                          title={preset.name}
+                        />
+                      ))}
+                    </div>
+                  </div>
                 </section>
 
                 {/* Primary Color */}
@@ -987,7 +979,7 @@ export const HelpModal: React.FC<HelpModalProps> = ({
                 className="space-y-5"
               >
                 <h4 className="text-[11px] font-black text-[var(--text-primary)] uppercase tracking-wide">About Cyberia</h4>
-                <p className="text-xs text-[var(--text-muted)] leading-relaxed italic">Cyberia Space is a spatial thinking space designed for fluid information management. We treat data as physical objects to help you visualize connections and organize your thoughts naturally.</p>
+                <p className="text-xs text-[var(--text-muted)] leading-relaxed italic">Cyberia Space is an all-in-one workspace designed for fluid information management. We treat data as physical objects to help you visualize connections and organize your thoughts naturally.</p>
                 <p className="text-xs text-[var(--text-muted)] leading-relaxed">Designed for non-linear thinkers, visionaries, and digital architects. We believe productivity shouldn't feel like a spreadsheet. It should feel like a world.</p>
               </motion.div>
             )}

@@ -49,7 +49,7 @@ export default defineConfig(() => {
           start_url: '/home',
           name: 'Cyberia Space',
           short_name: 'Cyberia',
-          description: 'Spatial Thinking Space',
+          description: 'All-in-one workspace with Canvas, Kanban, Calendar & AI',
           theme_color: '#020408',
           background_color: '#020408',
           display: 'standalone',
