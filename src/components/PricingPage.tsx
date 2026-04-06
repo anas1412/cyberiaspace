@@ -638,7 +638,7 @@ const PricingPage: React.FC = () => {
                   ) : (
                     <Star className="w-4 h-4 text-white" />
                   )}
-                  {isLoading ? t('pricing.checkout.processing') : t('pricing.checkout.upgrade_now')}
+                  {isLoading ? t('pricing.checkout.processing') : "Upgrade" }
                 </button>
 
                 {!user && (
