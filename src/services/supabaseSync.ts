@@ -428,39 +428,6 @@ export const supabaseSync = {
     return { success: true }
   },
 
-  async publishSpace(spaceId: string, userId: string, snapshot: Record<string, unknown>, expiresIn?: number) {
-    const expiresAt = expiresIn ? new Date(Date.now() + expiresIn * 1000).toISOString() : new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString()
-    const { data, error } = await supabase
-      .from('published_spaces')
-      .insert({ space_id: spaceId, user_id: userId, snapshot, expires_at: expiresAt })
-      .select('id')
-      .maybeSingle()
-    if (error) {
-      console.error('[Supabase] publishSpace error:', error.message)
-      throw new Error(error.message)
-    }
-    return { publishedId: data?.id, published: toCamelCase(data) }
-  },
-
-  async getPublishedSpace(publishedId: string) {
-    const { data, error } = await supabase
-      .from('published_spaces')
-      .select('snapshot')
-      .eq('id', publishedId)
-      .maybeSingle()
-    if (error || !data) throw new Error('Not found')
-    return { snapshot: data.snapshot }
-  },
-
-  async unpublishSpace(publishedId: string) {
-    const { error } = await supabase.from('published_spaces').delete().eq('id', publishedId)
-    if (error) {
-      console.error('[Supabase] unpublishSpace error:', error.message)
-      throw new Error(error.message)
-    }
-    return { success: true }
-  },
-
   async submitFeedback(userId: string, type: string, content: string, metadata?: Record<string, unknown>) {
     const { data, error } = await supabase
       .from('feedback')

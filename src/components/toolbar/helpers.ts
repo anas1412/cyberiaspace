@@ -1,15 +1,5 @@
-export const getStatusColor = (space: any, isReadOnly: boolean) => {
-  if (isReadOnly) return 'bg-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.5)]';
-  if (!space?.publishedId) return 'bg-blue-500 shadow-[0_0_10px_rgba(59,130,246,0.5)]';
-
-  const lastPub = space.lastPublished ? new Date(space.lastPublished).getTime() : 0;
-  const updatedAt = space.updatedAt ? new Date(space.updatedAt).getTime() : 0;
-
-  if (lastPub >= updatedAt - 1000) { // 1s tolerance
-    return 'bg-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.5)]';
-  } else {
-    return 'bg-amber-500 shadow-[0_0_10px_rgba(245,158,11,0.5)]';
-  }
+export const getStatusColor = (_space: any, _isReadOnly: boolean) => {
+  return 'bg-blue-500 shadow-[0_0_10px_rgba(59,130,246,0.5)]';
 };
 
 export const formatLastUpdated = (isoString: string | null) => {

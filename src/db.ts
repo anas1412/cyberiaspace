@@ -71,8 +71,6 @@ interface Space {
   transformX?: number;
   transformY?: number;
   transformScale?: number;
-  publishedId?: string | null;
-  lastPublished?: string | null;
   updatedAt?: number | null; // Changed to number (Unix ms)
   theme?: 'dark' | 'light';
   customBg?: string | null;

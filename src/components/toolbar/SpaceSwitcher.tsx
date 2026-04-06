@@ -1,16 +1,14 @@
 import React from 'react';
 import { 
-  Edit3, Share2, 
+  Edit3, 
   Trash2, Plus, ChevronDown, Check, Layers
 } from 'lucide-react';
-import ShareDialog from '../ShareDialog';
 import { getStatusColor, formatLastUpdated } from './helpers';
 import { motion, AnimatePresence } from 'framer-motion';
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 import type { Space } from '../../db';
 import type { PlanLimits } from '../../constants';
-import type { ModalState } from '../../store/useModalStore';
 
 function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -31,13 +29,12 @@ interface SpaceSwitcherProps {
   handleCreateSpace: () => void;
   handleRenameSpace: () => void;
   handleDeleteSpace: () => void;
-  openModal: ModalState['openModal'];
 }
 
 export const SpaceSwitcher: React.FC<SpaceSwitcherProps> = ({ 
   spaces, activeSpaceId, setActiveSpace, isReadOnly, isSpaceLoading, 
   creatorName, lastUpdated, activeSpace, isSpaceMenuOpen, setIsSpaceMenuOpen, 
-  limits, handleCreateSpace, handleRenameSpace, handleDeleteSpace, openModal
+  limits, handleCreateSpace, handleRenameSpace, handleDeleteSpace
 }) => {
   const isActive = (id: string) => id === activeSpaceId;
 
@@ -156,14 +153,6 @@ className={cn(
                           aria-label="Rename Space"
                         >
                           <Edit3 className="w-3 h-3" />
-                        </button>
-<button
-                           onClick={(e) => { e.stopPropagation(); openModal({ title: 'Share Space', type: 'custom', content: <ShareDialog spaceId={space.id} /> }); setIsSpaceMenuOpen(false); }}
-                           className="p-1.5 rounded-lg hover:bg-[var(--accent)]/10 text-[var(--accent)]/60 hover:text-[var(--accent)] transition-all"
-                           title="Share"
-                           aria-label="Share Space"
-                         >
-                          <Share2 className="w-3 h-3" />
                         </button>
                         <div className="w-px h-3 bg-[var(--glass-border)] mx-0.5" />
                         <button

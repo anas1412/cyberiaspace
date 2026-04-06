@@ -243,7 +243,6 @@ const Toolbar: React.FC = () => {
             handleCreateSpace={handleCreateSpace}
             handleRenameSpace={handleRenameSpace}
             handleDeleteSpace={handleDeleteSpace}
-            openModal={openModal}
           />
           <FilterPanel />
         </div>

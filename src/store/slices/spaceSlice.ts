@@ -243,10 +243,6 @@ export const createSpaceSlice: StateCreator<CyberiaState, [], [], any> = (set, g
     const space = spaces.find((s: Space) => s.id === id);
     if (!space) return;
     
-    if (space.publishedId) {
-      try { await get().unpublishSpace(id); } catch (err) { console.warn('Unpublish failed', err); }
-    }
-    
     const authStore = useAuthStore.getState();
     const currentUserId = authStore.user?.id ?? 'guest';
     
@@ -340,91 +336,6 @@ export const createSpaceSlice: StateCreator<CyberiaState, [], [], any> = (set, g
     const authStore = useAuthStore.getState();
     if (authStore.status === 'authenticated') {
       await syncOrchestrator.triggerSync();
-    }
-  },
-
-  publishSpace: async (spaceId: string) => {
-    const { spaces, thoughts, stacks } = get();
-    const space = spaces.find((s: Space) => s.id === spaceId);
-    if (!space) return;
-
-    const authStore = useAuthStore.getState();
-    const user = authStore.user;
-    if (authStore.status !== 'authenticated' || !user) {
-      useModalStore.getState().openModal({
-        title: 'Authentication Required',
-        description: 'You must be signed in to publish a space.',
-        type: 'alert',
-        confirmText: 'Okay'
-      });
-      return;
-    }
-
-    const creatorName = user.name.split(' ')[0];
-
-    try {
-      const spaceThoughts = thoughts.filter((t: any) => t.spaceId === spaceId);
-      const spaceStacks = stacks.filter((s: any) => s.spaceId === spaceId);
-      const currentTheme = get().theme;
-      const currentCustomBg = get().customBg;
-
-      const res = await fetch('/api/publish', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${authStore.accessToken}`
-        },
-        body: JSON.stringify({
-          space: { ...space, theme: currentTheme, customBg: currentCustomBg },
-          thoughts: spaceThoughts,
-          stacks: spaceStacks,
-          publishedId: space.publishedId,
-          creatorName
-        })
-      });
-
-      if (!res.ok) throw new Error('Publish failed');
-      const data = await res.json();
-
-      const now = Date.now();
-      await get().updateSpace(spaceId, {
-        publishedId: data.publishedId,
-        lastPublished: new Date().toISOString(),
-        updatedAt: now
-      });
-
-      return data.publishedId;
-    } catch (err) {
-      console.error('Publish error:', err);
-      throw err;
-    }
-  },
-
-  unpublishSpace: async (spaceId: string) => {
-    const { spaces } = get();
-    const space = spaces.find((s: Space) => s.id === spaceId);
-    if (!space || !space.publishedId) return;
-
-    const authStore = useAuthStore.getState();
-
-    try {
-      const res = await fetch(`/api/publish?id=${space.publishedId}`, {
-        method: 'DELETE',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${authStore.accessToken}`
-        }
-      });
-
-      if (!res.ok) throw new Error('Unpublish failed');
-
-      await get().updateSpace(spaceId, {
-        publishedId: null,
-        lastPublished: null
-      });
-    } catch (err) {
-      console.error('Unpublish error:', err);
-      throw err;
     }
   },
 

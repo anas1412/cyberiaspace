@@ -42,58 +42,6 @@ export const createDataSlice: StateCreator<CyberiaState, [], [], any> = (set, ge
       // Start auth initialization in background to avoid blocking initial render
       const authPromise = dynamicAuthStore.getState().initAuth();
       
-      const path = window.location.pathname;
-      if (path.startsWith('/home/s/')) {
-        const parts = path.split('/home/s/');
-        const sharedId = parts[1]?.split('/')[0];
-        if (sharedId) {
-          set({ isSpaceLoading: true, isReadOnly: true });
-          try {
-            const controller = new AbortController();
-            const timeoutId = setTimeout(() => controller.abort(), 10000); // 10s timeout
-
-            const res = await fetch(`/api/publish?id=${sharedId}`, { signal: controller.signal });
-            clearTimeout(timeoutId);
-            
-            if (!res.ok) throw new Error('Snapshot not found');
-            const data = await res.json();
-            const creatorName = data.creatorName || 'Anonymous';
-            const space = { ...data.space, id: data.id };
-            set({
-              activeSpaceId: data.id,
-              spaces: [space],
-              thoughts: data.thoughts,
-              stacks: data.stacks,
-              isSpaceLoading: false,
-              creatorName,
-              lastUpdated: data.lastUpdated || null,
-              isInitializing: false,
-              customBg: space.customBg || null,
-              transform: { x: space.transformX || 0, y: space.transformY || 0, scale: space.transformScale || 1 }
-            });
-            const theme = data.space.theme || DEFAULT_THEME;
-            document.body.setAttribute('data-theme', theme);
-            set({ theme });
-            return;
-          } catch (err: any) {
-            console.error('Shared init failed:', err);
-            useModalStore.getState().openModal({
-              title: err.name === 'AbortError' ? 'Connection Timeout' : 'Space Not Found',
-              description: err.name === 'AbortError' ? 'The request took too long. Please check your connection.' : 'Link invalid or expired.',
-              type: 'alert',
-              confirmText: 'Go to Cyberia',
-              onConfirm: () => { window.location.href = '/'; }
-            });
-            set({ isSpaceLoading: false, isInitializing: false });
-            return;
-          }
-        }
-      }
-
-      if (!path.startsWith('/home/s/')) {
-        set({ isReadOnly: false });
-      }
-
       set({ isSpaceLoading: true });
       const savedTheme = localStorage.getItem('cyberia-theme') || DEFAULT_THEME;
       document.body.setAttribute('data-theme', savedTheme);

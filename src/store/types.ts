@@ -163,8 +163,6 @@ export interface CyberiaState {
   isReadOnly: boolean;
   creatorName: string | null;
   lastUpdated: string | null;
-  publishSpace: (id: string) => Promise<string | void>;
-  unpublishSpace: (id: string) => Promise<void>;
   importFullState: (data: any, merge?: boolean) => Promise<void>;
 
   clearLocalData: () => Promise<void>;
