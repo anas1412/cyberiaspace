@@ -984,7 +984,7 @@ if (data.tier && data.autoSwitch) {
                         animate={{ opacity: 1, y: 0, scale: 1 }}
                         exit={{ opacity: 0, y: -8, scale: 0.95 }}
                         transition={{ duration: 0.15 }}
-                        className="absolute top-full left-1/2 -translate-x-1/2 mt-2 w-64 bg-[var(--glass-bg)] rounded-xl border border-[var(--glass-border)] shadow-[0_10px_40px_rgba(0,0,0,0.3)] overflow-hidden z-[100]"
+                        className="absolute top-full left-1/2 -translate-x-1/2 mt-2 w-64 backdrop-blur-xl bg-[var(--bg-main)] rounded-xl border border-[var(--glass-border)] shadow-[0_10px_40px_rgba(0,0,0,0.3)] overflow-hidden z-[100]"
                       >
                         <div className="p-2 border-b border-[var(--glass-border)]/50">
                           <input
