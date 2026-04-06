@@ -424,7 +424,7 @@ const PricingPage: React.FC = () => {
                   </div>
                   <div>
                     <h2 className="text-3xl md:text-4xl font-semibold tracking-tighter text-[var(--text-primary)]">Unlock Pro</h2>
-                    <p className="text-base font-medium text-blue-600 dark:text-blue-400">Agentic AI + 1GB cloud storage.</p>
+                    <p className="text-base font-medium text-blue-600 dark:text-blue-400">Agentic AI + 200MB cloud storage.</p>
                   </div>
                 </div>
 
@@ -440,7 +440,7 @@ const PricingPage: React.FC = () => {
                     },
                     { 
                       title: 'File Intelligence & More Storage', 
-                      desc: `Upload and analyze docs, images & PDFs. Includes 1GB of secure cloud storage.` 
+                      desc: `Upload and analyze docs, images & PDFs. Includes 200MB of secure cloud storage.` 
                     },
                   ].map((feature, i) => (
                     <div key={i} className="flex gap-4 group">
@@ -801,7 +801,7 @@ const PricingPage: React.FC = () => {
               <ComparisonRow 
                 label="Cloud Storage" 
                 free={`${PLAN_CONFIG.free.MAX_STORAGE_MB}MB`} 
-                pro="1GB"
+                pro="200MB"
                 enterprise={`${PLAN_CONFIG.enterprise.MAX_STORAGE_MB / 1000}GB / user`}
               />
               <ComparisonRow 
