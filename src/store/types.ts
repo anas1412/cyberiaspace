@@ -27,6 +27,7 @@ export interface CyberiaState {
   spatialDateFilter: string | null;
   showArchived: boolean;
   theme: 'dark' | 'light';
+  language: 'en' | 'fr';
   customBg: string | null;
   customBgLoading: boolean;
   isSpaceLoading: boolean;
@@ -81,6 +82,7 @@ export interface CyberiaState {
   clearWorkspace: () => Promise<void>;
 
   setTheme: (theme: 'dark' | 'light') => void;
+  setLanguage: (lang: 'en' | 'fr') => void;
   setCustomBg: (bg: File | string | null) => Promise<void>;
   setCustomBgValue: (bg: string | null) => void;
   setDeferredPrompt: (prompt: any) => void;

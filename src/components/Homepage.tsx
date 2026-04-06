@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useTranslation } from 'react-i18next';
 import { Layout, Database, ArrowRight, Cpu, Rocket, Send, Loader2, CheckCircle, ChevronDown, MessageCircle, X, Play, Quote, Cloud } from 'lucide-react';
 
 import { YOUTUBE_VIDEO_ID, DISCORD_INVITE_URL } from '../constants';
@@ -72,6 +73,7 @@ const AvatarCircle: React.FC<{ user: ActiveUser; index: number; delay: number }>
 );
 
 const ActiveUsersStack: React.FC = React.memo(() => {
+  const { t } = useTranslation();
   const [users, setUsers] = useState<ActiveUser[]>(FALLBACK_USERS);
   
 
@@ -111,7 +113,7 @@ const ActiveUsersStack: React.FC = React.memo(() => {
           </span>
           <span className="text-[11px] font-medium text-[var(--text-muted)] whitespace-nowrap">
             {/* {activeCount} */}
-            50+ early adopters
+            {t('homepage.social_proof.adopters')}
           </span>
         </div>
       </div>
@@ -123,26 +125,26 @@ const FEATURES = [
   {
     id: 'unified',
     icon: Layout,
-    title: 'One space. Four views.',
-    description: 'Canvas for brainstorming, Kanban for tasks, Calendar for deadlines, Directory for organization. Switch instantly on the same data—no export, no import.'
+    titleKey: 'homepage.features.unified.title',
+    descriptionKey: 'homepage.features.unified.description'
   },
   {
     id: 'agentic',
     icon: Cpu,
-    title: 'AI that takes action',
-    description: 'Oracle doesn\'t just chat. It reads your files, answers questions, creates tasks, edits content, and keeps your space organized—autonomously.'
+    titleKey: 'homepage.features.agentic.title',
+    descriptionKey: 'homepage.features.agentic.description'
   },
   {
     id: 'storage',
     icon: Database,
-    title: 'All your files, in one place',
-    description: 'Store PDFs, images, documents, and links alongside your thoughts. Everything indexed and searchable. Your complete knowledge base.'
+    titleKey: 'homepage.features.storage.title',
+    descriptionKey: 'homepage.features.storage.description'
   },
   {
     id: 'sync',
     icon: Cloud,
-    title: 'Works everywhere',
-    description: 'Start on desktop, continue on mobile. Offline-first with automatic cloud sync. Your workspace follows you.'
+    titleKey: 'homepage.features.sync.title',
+    descriptionKey: 'homepage.features.sync.description'
   }
 ];
 
@@ -169,28 +171,28 @@ const TESTIMONIALS = [
 
 const FAQ_ITEMS = [
   {
-    question: "What is Cyberia Space?",
-    answer: "Cyberia combines four views — Canvas, Directory, Kanban, and Calendar — on the same data. Switch between freeform canvases, list views, task boards, and timeline views instantly. Oracle AI acts on your content, not just answers questions. It's the only workspace where the AI doesn't just chat — it creates, edits, and organizes."
+    questionKey: 'homepage.faq.items.0.question',
+    answerKey: 'homepage.faq.items.0.answer'
   },
   {
-    question: "Is my data private and secure?",
-    answer: "Yes. Your space follows a Local-First philosophy. By default, all your work is stored locally in your browser's IndexedDB. When you authenticate, data is synced securely via HTTPS/TLS encryption in transit and stored securely in the cloud."
+    questionKey: 'homepage.faq.items.1.question',
+    answerKey: 'homepage.faq.items.1.answer'
   },
   {
-    question: "How does the 'Oracle' AI handle my data?",
-    answer: "Oracle uses advanced reasoning models to analyze your space in real-time. We never use your personal data or content to train AI models. Your history stays local on your device."
+    questionKey: 'homepage.faq.items.2.question',
+    answerKey: 'homepage.faq.items.2.answer'
   },
   {
-    question: "What happens when I downgrade from Pro to Free?",
-    answer: "When you downgrade, nothing is deleted. All your thoughts, spaces, and files stay safe and accessible. You just won't be able to create beyond free plan limits until you upgrade again."
+    questionKey: 'homepage.faq.items.3.question',
+    answerKey: 'homepage.faq.items.3.answer'
   },
   {
-    question: "Do subscriptions automatically renew?",
-    answer: "It depends on your provider. Local payments via Flouci are manual (no auto-charges). International subscriptions via Polar.sh are recurring and can be canceled at any time through the customer portal."
+    questionKey: 'homepage.faq.items.4.question',
+    answerKey: 'homepage.faq.items.4.answer'
   },
   {
-    question: "Why is there no mobile app yet?",
-    answer: "Cyberia is built for desktop. Precision work on a canvas needs a mouse and screen space. Mobile companion apps coming soon."
+    questionKey: 'homepage.faq.items.5.question',
+    answerKey: 'homepage.faq.items.5.answer'
   }
 ];
 
@@ -310,6 +312,7 @@ const FeatureVisual: React.FC<{ activeFeature: number }> = React.memo(({ activeF
 });
 
 const Homepage: React.FC = () => {
+  const { t } = useTranslation();
   const { theme } = useStore();
   const [activeFeature, setActiveFeature] = useState(0);
   const [activeFAQIndex, setActiveFAQIndex] = useState<number | null>(null);
@@ -358,19 +361,19 @@ const Homepage: React.FC = () => {
               transition={{ type: 'spring', damping: 25, stiffness: 100 }}
             >
               <h1 className="text-4xl md:text-6xl font-bold tracking-tight leading-[1.1] mb-6">
-                The Only Workspace<br />
+                {t('homepage.hero.title')}<br />
                 <motion.span
                   initial={{ opacity: 0, x: -20 }}
                   animate={{ opacity: 1, x: 0 }}
                   transition={{ duration: 0.8, delay: 0.2, ease: "easeOut" }}
                   className="bg-clip-text text-transparent bg-gradient-to-r from-[var(--accent)] to-[var(--accent-secondary)]"
                 >
-                  You'll Ever Need
+                  {t('homepage.hero.subtitle')}
                 </motion.span>
               </h1>
               
               <p className="text-lg md:text-xl text-[var(--text-secondary)] max-w-2xl mx-auto mb-10 leading-relaxed font-medium">
-                Visual thinking. Task management. Calendar planning. AI that takes action. File storage. All connected. All in one place.
+                {t('homepage.hero.description')}
               </p>
 
               <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
@@ -378,7 +381,7 @@ const Homepage: React.FC = () => {
                   href="/home"
                   className="w-full sm:w-auto px-10 py-5 bg-[var(--accent)] hover:bg-[var(--accent-hover)] text-[var(--accent-contrast)] rounded-xl text-base font-semibold transition-all shadow-lg shadow-[var(--accent)]/25 active:scale-95 flex items-center justify-center gap-2 group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--bg-page)] focus-visible:ring-[var(--accent)]"
                 >
-                  Try it for Free
+                  {t('homepage.hero.cta_free')}
                   <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
                 </a>
                 <button
@@ -386,7 +389,7 @@ const Homepage: React.FC = () => {
                   className="w-full sm:w-auto px-8 py-4 bg-[var(--glass-bg)] hover:bg-[var(--glass-border)] text-[var(--text-primary)] rounded-xl text-base font-semibold transition-all flex items-center justify-center gap-2 group border border-[var(--glass-border)] active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)]"
                 >
                   <Play className="w-5 h-5 text-[var(--text-muted)] group-hover:text-[var(--text-primary)] transition-colors" />
-                  Watch Demo
+                  {t('homepage.hero.cta_demo')}
                 </button>
               </div>
             </motion.div>
@@ -423,10 +426,10 @@ const Homepage: React.FC = () => {
           <div className="max-w-7xl mx-auto">
             <div className="mb-16 md:mb-24 text-center lg:text-left">
               <h2 className="text-3xl md:text-5xl font-bold tracking-tight mb-4">
-                Everything you need to <span className="text-[var(--accent)]">work better</span>
+                {t('homepage.features.title_start')}<span className="text-[var(--accent)]">{t('homepage.features.title_accent')}</span>
               </h2>
               <p className="text-[var(--text-muted)] text-lg md:text-xl max-w-2xl mx-auto lg:mx-0">
-                Four views. AI that acts. All your files. Works everywhere.
+                {t('homepage.features.subtitle')}
               </p>
             </div>
 
@@ -460,7 +463,7 @@ const Homepage: React.FC = () => {
                         <h3 className={`text-lg font-semibold mb-2 transition-colors duration-300 ${
                           activeFeature === index ? 'text-[var(--text-primary)]' : 'text-[var(--text-dimmed)] group-hover:text-[var(--text-primary)]'
                         }`}>
-                          {feature.title}
+                          {t(feature.titleKey)}
                         </h3>
                         <motion.div
                           initial={false}
@@ -472,7 +475,7 @@ const Homepage: React.FC = () => {
                           className="overflow-hidden"
                         >
                           <p className="text-[15px] leading-relaxed text-[var(--text-secondary)]">
-                            {feature.description}
+                            {t(feature.descriptionKey)}
                           </p>
                         </motion.div>
                       </div>
@@ -497,17 +500,17 @@ const Homepage: React.FC = () => {
           <div className="max-w-5xl mx-auto">
             <div className="text-center mb-16">
               <h2 className="text-3xl md:text-5xl font-bold tracking-tight mb-4">
-                Why it <span className="text-[var(--accent)]">works</span>
+                {t('homepage.about.title_start')}<span className="text-[var(--accent)]">{t('homepage.about.title_accent')}</span>
               </h2>
-              <p className="text-[var(--text-muted)] text-lg">Your brain isn't a spreadsheet. Your space shouldn't be either.</p>
+              <p className="text-[var(--text-muted)] text-lg">{t('homepage.about.subtitle')}</p>
             </div>
             
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {[
-                { title: 'Scattered information', desc: 'Notes, documents, and ideas everywhere. Switching between apps wastes time and breaks your flow.' },
-                { title: 'Visual organization', desc: 'See everything at a glance. Arrange documents and ideas visually, just like on a desk, but better.' },
-                { title: 'AI that takes action', desc: 'Oracle AI reads your files, answers questions, and can create tasks or edit content — without you lifting a finger.' },
-                { title: 'You own your data', desc: 'Your work belongs to you. Export everything anytime. No vendor lock-in, no tricks.' }
+                { title: t('homepage.about.scattered.title'), desc: t('homepage.about.scattered.description') },
+                { title: t('homepage.about.visual.title'), desc: t('homepage.about.visual.description') },
+                { title: t('homepage.about.agentic_action.title'), desc: t('homepage.about.agentic_action.description') },
+                { title: t('homepage.about.ownership.title'), desc: t('homepage.about.ownership.description') }
               ].map((item, i) => (
                 <motion.div 
                   key={i}
@@ -532,10 +535,10 @@ const Homepage: React.FC = () => {
           <div className="max-w-5xl mx-auto">
             <div className="text-center mb-12">
               <h2 className="text-3xl md:text-5xl font-bold tracking-tight mb-4">
-                See it in <span className="text-[var(--accent)]">action</span>
+                {t('homepage.demo.title_start')}<span className="text-[var(--accent)]">{t('homepage.demo.title_accent')}</span>
               </h2>
               <p className="text-[var(--text-muted)] text-lg max-w-2xl mx-auto">
-                Watch Oracle AI build a complex research space organizing documents, images, and maps in real-time.
+                {t('homepage.demo.description')}
               </p>
             </div>
 
@@ -561,10 +564,10 @@ const Homepage: React.FC = () => {
           <div className="max-w-7xl mx-auto">
             <div className="text-center mb-16">
               <h2 className="text-3xl md:text-5xl font-bold tracking-tight mb-4">
-                Loved by <span className="text-[var(--accent)]">thinkers</span>
+                {t('homepage.testimonials.title_start')}<span className="text-[var(--accent)]">{t('homepage.testimonials.title_accent')}</span>
               </h2>
               <p className="text-[var(--text-muted)] text-lg max-w-2xl mx-auto">
-                Join other researchers, designers, and engineers who have upgraded their mental space.
+                {t('homepage.testimonials.description')}
               </p>
             </div>
 
@@ -610,11 +613,11 @@ const Homepage: React.FC = () => {
               </div>
               
               <h2 className="text-3xl md:text-4xl font-bold tracking-tight mb-4">
-                Join the community
+                {t('homepage.community.title')}
               </h2>
               
               <p className="text-[var(--text-muted)] text-lg mb-10 max-w-lg mx-auto">
-                Help shape the platform. Share feedback, report bugs, and connect with other thinkers.
+                {t('homepage.community.description')}
               </p>
               
               <a 
@@ -623,7 +626,7 @@ const Homepage: React.FC = () => {
                 rel="noopener noreferrer"
                 className="inline-flex items-center gap-2 px-8 py-4 bg-[#5865F2] hover:bg-[#4752C4] text-[#ffffff] rounded-xl text-base font-semibold transition-all shadow-lg hover:shadow-xl active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#5865F2] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--bg-page)]"
               >
-                Join Discord
+                {t('homepage.community.cta')}
                 <ArrowRight className="w-4 h-4" />
               </a>
             </div>
@@ -635,16 +638,17 @@ const Homepage: React.FC = () => {
           <div className="max-w-3xl mx-auto">
             <div className="text-center mb-16">
               <h2 className="text-3xl md:text-5xl font-bold tracking-tight mb-4">
-                Questions & <span className="text-[var(--accent)]">Answers</span>
+                {t('homepage.faq.title_start')}<span className="text-[var(--accent)]">{t('homepage.faq.title_accent')}</span>
               </h2>
-              <p className="text-[var(--text-muted)] text-lg">Everything you need to know about the platform.</p>
+              <p className="text-[var(--text-muted)] text-lg">{t('homepage.faq.subtitle')}</p>
             </div>
 
             <div className="glass rounded-2xl border border-[var(--border)] overflow-hidden shadow-xl">
               {FAQ_ITEMS.map((item, index) => (
                 <FAQItem 
                   key={index} 
-                  {...item} 
+                  question={t(item.questionKey)}
+                  answer={t(item.answerKey)}
                   isOpen={activeFAQIndex === index}
                   onToggle={() => setActiveFAQIndex(activeFAQIndex === index ? null : index)}
                 />
@@ -658,9 +662,9 @@ const Homepage: React.FC = () => {
           <div className="max-w-2xl mx-auto">
             <div className="text-center mb-12">
               <h2 className="text-3xl md:text-5xl font-bold tracking-tight mb-4">
-                Get in <span className="text-[var(--accent)]">touch</span>
+                {t('homepage.contact.title_start')}<span className="text-[var(--accent)]">{t('homepage.contact.title_accent')}</span>
               </h2>
-              <p className="text-[var(--text-muted)] text-lg">Have questions or feedback? We'd love to hear from you.</p>
+              <p className="text-[var(--text-muted)] text-lg">{t('homepage.contact.subtitle')}</p>
             </div>
 
             <motion.div 
@@ -673,31 +677,31 @@ const Homepage: React.FC = () => {
                 <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="py-16 text-center space-y-4">
                   <CheckCircle className="w-16 h-16 text-emerald-500 mx-auto" />
                   <div>
-                    <p className="text-xl font-bold text-emerald-500">Message sent successfully</p>
-                    <p className="text-[var(--text-muted)] mt-2">We'll get back to you shortly.</p>
+                    <p className="text-xl font-bold text-emerald-500">{t('homepage.contact.form.success')}</p>
+                    <p className="text-[var(--text-muted)] mt-2">{t('homepage.contact.form.success_desc')}</p>
                   </div>
                 </motion.div>
               ) : (
                 <form onSubmit={handleContactSubmit} className="space-y-5">
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
                     <div className="space-y-2">
-                      <label htmlFor="name" className="text-sm font-medium text-[var(--text-dimmed)]">Name</label>
+                      <label htmlFor="name" className="text-sm font-medium text-[var(--text-dimmed)]">{t('homepage.contact.form.name')}</label>
                       <input 
                         id="name"
                         type="text" 
-                        placeholder="Jane Doe" 
+                        placeholder={t('homepage.contact.form.placeholder_name')} 
                         value={contactName} 
                         onChange={(e) => setContactName(e.target.value)} 
                         className="w-full h-12 bg-[var(--bg-main)] border border-[var(--glass-border)] rounded-xl px-4 text-[15px] text-[var(--text-primary)] placeholder:text-[var(--text-muted)] outline-none focus:border-[var(--accent)]/50 focus:bg-[var(--glass-bg)] focus:ring-2 focus:ring-[var(--accent)]/20 transition-all" 
                       />
                     </div>
                     <div className="space-y-2">
-                      <label htmlFor="email" className="text-sm font-medium text-[var(--text-dimmed)]">Email <span className="text-rose-400">*</span></label>
+                      <label htmlFor="email" className="text-sm font-medium text-[var(--text-dimmed)]">{t('homepage.contact.form.email')} <span className="text-rose-400">*</span></label>
                       <input 
                         id="email"
                         type="email" 
                         required 
-                        placeholder="jane@example.com" 
+                        placeholder={t('homepage.contact.form.placeholder_email')} 
                         value={contactEmail} 
                         onChange={(e) => setContactEmail(e.target.value)} 
                         className="w-full h-12 bg-[var(--bg-main)] border border-[var(--glass-border)] rounded-xl px-4 text-[15px] text-[var(--text-primary)] placeholder:text-[var(--text-muted)] outline-none focus:border-[var(--accent)]/50 focus:bg-[var(--glass-bg)] focus:ring-2 focus:ring-[var(--accent)]/20 transition-all" 
@@ -705,19 +709,19 @@ const Homepage: React.FC = () => {
                     </div>
                   </div>
                   <div className="space-y-2">
-                    <label htmlFor="message" className="text-sm font-medium text-[var(--text-dimmed)]">Message <span className="text-rose-400">*</span></label>
+                    <label htmlFor="message" className="text-sm font-medium text-[var(--text-dimmed)]">{t('homepage.contact.form.message')} <span className="text-rose-400">*</span></label>
                     <textarea 
                       id="message"
                       required 
                       value={contactMessage} 
                       onChange={(e) => setContactMessage(e.target.value)} 
-                      placeholder="How can we help?" 
+                      placeholder={t('homepage.contact.form.placeholder_message')} 
                       className="w-full h-32 bg-[var(--bg-main)] border border-[var(--glass-border)] rounded-xl p-4 text-[15px] text-[var(--text-primary)] placeholder:text-[var(--text-muted)] outline-none focus:border-[var(--accent)]/50 focus:bg-[var(--glass-bg)] focus:ring-2 focus:ring-[var(--accent)]/20 transition-all resize-none" 
                     />
                   </div>
                   {contactSubmitStatus === 'error' && (
                     <div className="p-4 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-500 text-sm font-medium text-center">
-                      Failed to send message. Please try again.
+                      {t('homepage.contact.form.error')}
                     </div>
                   )}
                   <button 
@@ -729,7 +733,7 @@ const Homepage: React.FC = () => {
                       <Loader2 className="w-5 h-5 animate-spin" />
                     ) : (
                       <>
-                        Send Message
+                        {t('homepage.contact.form.submit')}
                         <Send className="w-4 h-4" />
                       </>
                     )}
@@ -750,16 +754,16 @@ const Homepage: React.FC = () => {
             >
               <Rocket className="w-12 h-12 text-[var(--accent)] mx-auto mb-6 drop-shadow-[0_0_15px_rgba(99,102,241,0.5)]" />
               <h2 className="text-4xl md:text-6xl font-bold tracking-tight mb-6">
-                Ready?
+                {t('homepage.cta_section.title')}
               </h2>
               <p className="text-[var(--text-muted)] text-lg mb-10">
-                The only workspace with Canvas, Directory, Kanban, Calendar, AI that acts, and file storage — all in one.
+                {t('homepage.cta_section.description')}
               </p>
               <a
                   href="/home"
                   className="inline-flex items-center gap-3 px-10 py-5  bg-[var(--accent)] hover:bg-[var(--accent-hover)] text-[var(--accent-contrast)] rounded-xl text-base font-semibold transition-all shadow-lg shadow-[var(--accent)]/25 active:scale-95 flex items-center justify-center gap-2 group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--bg-page)] focus-visible:ring-[var(--accent)]"
                 >
-                  Try it for Free
+                  {t('homepage.cta_section.cta')}
                   <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
                 </a>
               

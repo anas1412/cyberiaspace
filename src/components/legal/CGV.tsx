@@ -1,8 +1,11 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import { FileText, ArrowLeft, ShieldCheck, CreditCard, RefreshCw, AlertCircle, Scale, Building2, User, Ban } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
 const CGV: React.FC = () => {
+  const { t } = useTranslation();
+
   const handleBack = () => {
     if (window.history.length > 1) {
       window.history.back();
@@ -15,33 +18,33 @@ const CGV: React.FC = () => {
   const articles = [
     {
       id: 1,
-      title: "Article 1: Scope & Acceptance",
+      title: t('legal.cgv.articles.article_1.title'),
       icon: <Scale className="w-5 h-5 text-blue-400" />,
       content: (
         <p className="leading-relaxed text-[var(--text-muted)]">
-          These General Terms of Sale (CGV) apply to all subscriptions and services purchased on Cyberia Space (cyberia.tn). By upgrading your account, you agree to be bound by these terms. Cyberia Space is a spatial platform developed by Cyberia AI Studio.
+          {t('legal.cgv.articles.article_1.content')}
         </p>
       )
     },
     {
       id: 2,
-      title: "Article 2: Subscription & Account",
+      title: t('legal.cgv.articles.article_2.title'),
       icon: <Building2 className="w-5 h-5 text-blue-400" />,
       content: (
         <>
           <p className="leading-relaxed text-[var(--text-muted)]">
-            To access Pro features, you must create an account and subscribe to a plan. Your subscription is tied to your Google identity.
+            {t('legal.cgv.articles.article_2.content')}
           </p>
           <ul className="list-disc list-inside space-y-3 mt-4 ml-2 text-[var(--text-muted)]">
-            <li><strong className="text-[var(--text-primary)] font-bold">Pro Tier:</strong> Grants enhanced storage, higher Oracle AI limits, and other premium features.</li>
-            <li><strong className="text-[var(--text-primary)] font-bold">Account Responsibility:</strong> You are responsible for all activity occurring under your account. We reserve the right to suspend accounts violating our policies.</li>
+            <li><strong className="text-[var(--text-primary)] font-bold">{t('legal.cgv.articles.article_2.pro_tier')}</strong> {t('legal.cgv.articles.article_2.pro_tier_desc')}</li>
+            <li><strong className="text-[var(--text-primary)] font-bold">{t('legal.cgv.articles.article_2.account_responsibility')}</strong> {t('legal.cgv.articles.article_2.account_responsibility_desc')}</li>
           </ul>
         </>
       )
     },
     {
       id: 3,
-      title: "Article 3: Billing & Renewals",
+      title: t('legal.cgv.articles.article_3.title'),
       icon: <RefreshCw className="w-5 h-5 text-blue-400" />,
       highlight: true,
       content: (
@@ -49,20 +52,20 @@ const CGV: React.FC = () => {
           <div className="bg-[var(--glass-bg)] p-6 rounded-2xl border border-[var(--glass-border)]">
             <h3 className="text-sm font-bold text-[var(--text-primary)] uppercase tracking-widest mb-2 flex items-center gap-2">
               <span className="w-2 h-2 rounded-full bg-blue-400" />
-              Local Payments (Tunisia)
+              {t('legal.cgv.articles.article_3.local_payments')}
             </h3>
             <p className="leading-relaxed text-sm text-[var(--text-muted)]">
-              Payments via <strong className="text-[var(--text-primary)]">Flouci</strong> follow a <strong>manual renewal model</strong>. We do not automatically charge your payment method. You must manually renew your subscription to maintain Pro access.
+              {t('legal.cgv.articles.article_3.local_payments_desc')}
             </p>
           </div>
 
           <div className="bg-[var(--glass-bg)] p-6 rounded-2xl border border-[var(--glass-border)]">
             <h3 className="text-sm font-bold text-[var(--text-primary)] uppercase tracking-widest mb-2 flex items-center gap-2">
               <span className="w-2 h-2 rounded-full bg-purple-400" />
-              International Payments
+              {t('legal.cgv.articles.article_3.international_payments')}
             </h3>
             <p className="leading-relaxed text-sm text-[var(--text-muted)]">
-              Subscriptions via <strong className="text-[var(--text-primary)]">Polar.sh</strong> are <strong>automatic recurring subscriptions</strong>. Your payment method will be charged at the start of each billing cycle (monthly or yearly) unless you cancel your subscription through the customer portal.
+              {t('legal.cgv.articles.article_3.international_payments_desc')}
             </p>
           </div>
         </div>
@@ -70,102 +73,102 @@ const CGV: React.FC = () => {
     },
     {
       id: 4,
-      title: "Article 4: Pricing & Payment",
+      title: t('legal.cgv.articles.article_4.title'),
       icon: <CreditCard className="w-5 h-5 text-blue-400" />,
       content: (
         <>
           <p className="leading-relaxed text-[var(--text-muted)]">
-            Prices are indicated in the application and on the website in the local currency (TND for Tunisia) or USD for international users.
+            {t('legal.cgv.articles.article_4.content')}
           </p>
           <ul className="list-disc list-inside space-y-3 mt-4 ml-2 text-[var(--text-muted)]">
-            <li><strong className="text-[var(--text-primary)] font-bold">Local Payments (Tunisia):</strong> Handled securely via <strong className="text-[var(--text-primary)]">Flouci</strong>.</li>
-            <li><strong className="text-[var(--text-primary)] font-bold">International Payments:</strong> Handled securely via <strong className="text-[var(--text-primary)]">Polar.sh</strong>.</li>
-            <li><strong className="text-[var(--text-primary)] font-bold">Security:</strong> We do not store your financial data. All transactions are encrypted and processed by our third-party payment gateways.</li>
+            <li><strong className="text-[var(--text-primary)] font-bold">{t('legal.cgv.articles.article_4.local_payments')}</strong> {t('legal.cgv.articles.article_4.local_payments_desc')}</li>
+            <li><strong className="text-[var(--text-primary)] font-bold">{t('legal.cgv.articles.article_4.international_payments')}</strong> {t('legal.cgv.articles.article_4.international_payments_desc')}</li>
+            <li><strong className="text-[var(--text-primary)] font-bold">{t('legal.cgv.articles.article_4.security')}</strong> {t('legal.cgv.articles.article_4.security_desc')}</li>
           </ul>
         </>
       )
     },
     {
       id: 5,
-      title: "Article 5: Refund Policy",
+      title: t('legal.cgv.articles.article_5.title'),
       icon: <AlertCircle className="w-5 h-5 text-red-400" />,
       error: true,
       content: (
         <>
           <p className="leading-relaxed font-bold text-[var(--text-primary)]">
-            Given the digital nature of the services and the instant access to Pro features and AI processing resources:
+            {t('legal.cgv.articles.article_5.content')}
           </p>
           <p className="text-xl font-black text-[var(--text-primary)] uppercase tracking-tighter mt-4 border-l-4 border-red-500 pl-4 py-2">
-            All sales are final. We do not offer refunds or credits for any reason.
+            {t('legal.cgv.articles.article_5.final_sale')}
           </p>
           <p className="leading-relaxed mt-4 text-sm text-[var(--text-muted)] italic">
-            Please use the Free Tier to ensure the service meets your requirements before upgrading.
+            {t('legal.cgv.articles.article_5.free_tier_note')}
           </p>
         </>
       )
     },
     {
       id: 6,
-      title: "Article 6: Service Availability",
+      title: t('legal.cgv.articles.article_6.title'),
       icon: <ShieldCheck className="w-5 h-5 text-blue-400" />,
       content: (
         <p className="leading-relaxed font-mono text-xs uppercase tracking-wider text-[var(--text-muted)] italic">
-          Cyberia Space strives for high uptime but is provided "as is". We are not liable for data loss due to technical failure, browser instability, or synchronization conflicts. Users are encouraged to use the "Export Workspace" feature regularly.
+          {t('legal.cgv.articles.article_6.content')}
         </p>
       )
     },
     {
       id: 7,
-      title: "Article 7: Acceptable Use Policy",
+      title: t('legal.cgv.articles.article_7.title'),
       icon: <ShieldCheck className="w-5 h-5 text-blue-400" />,
       content: (
         <>
           <p className="leading-relaxed text-[var(--text-muted)]">
-            Cyberia Space is an AI-powered workspace and knowledge management platform. It is designed for personal productivity, research, and AI-assisted analysis of private documents.
+            {t('legal.cgv.articles.article_7.content_1')}
           </p>
           <p className="leading-relaxed text-[var(--text-muted)] mt-3">
-            <strong className="text-[var(--text-primary)]">Acceptable Uses:</strong>
+            <strong className="text-[var(--text-primary)]">{t('legal.cgv.articles.article_7.content_2')}</strong>
           </p>
           <ul className="list-disc list-inside space-y-2 mt-2 ml-2 text-[var(--text-muted)]">
-            <li>Personal knowledge management and note organization</li>
-            <li>AI-assisted analysis of privately uploaded research documents and PDFs</li>
-            <li>Team collaboration within private, authenticated workspaces</li>
-            <li>Storing files as contextual attachments to thoughts and projects</li>
+            <li>{t('legal.cgv.articles.article_7.bullet_1')}</li>
+            <li>{t('legal.cgv.articles.article_7.bullet_2')}</li>
+            <li>{t('legal.cgv.articles.article_7.bullet_3')}</li>
+            <li>{t('legal.cgv.articles.article_7.bullet_4')}</li>
           </ul>
         </>
       )
     },
     {
       id: 8,
-      title: "Article 8: Prohibited Uses",
+      title: t('legal.cgv.articles.article_8.title'),
       icon: <Ban className="w-5 h-5 text-red-400" />,
       error: true,
       content: (
         <>
           <p className="leading-relaxed text-[var(--text-muted)]">
-            The following uses of Cyberia Space are strictly prohibited:
+            {t('legal.cgv.articles.article_8.content')}
           </p>
           <ul className="list-disc list-inside space-y-2 mt-3 ml-2 text-[var(--text-muted)]">
-            <li>Uploading or sharing files for the purpose of distributing content to the public or third parties</li>
-            <li>Using the storage layer as a direct file distribution or "cyberlocker" mechanism</li>
-            <li>Attempting to bypass access controls or extract files for unauthorized sharing</li>
-            <li>Hosting content that infringes on intellectual property rights</li>
-            <li>Uploading content that violates applicable laws or our Terms of Service</li>
-            <li>Using the platform as a CDN or public file hosting service</li>
+            <li>{t('legal.cgv.articles.article_8.bullet_1')}</li>
+            <li>{t('legal.cgv.articles.article_8.bullet_2')}</li>
+            <li>{t('legal.cgv.articles.article_8.bullet_3')}</li>
+            <li>{t('legal.cgv.articles.article_8.bullet_4')}</li>
+            <li>{t('legal.cgv.articles.article_8.bullet_5')}</li>
+            <li>{t('legal.cgv.articles.article_8.bullet_6')}</li>
           </ul>
           <p className="leading-relaxed mt-4 text-sm text-[var(--text-muted)]">
-            Violations may result in <strong className="text-[var(--text-primary)]">immediate account suspension</strong>, <strong className="text-[var(--text-primary)]">permanent deletion of content</strong>, and <strong className="text-[var(--text-primary)]">referral to appropriate authorities</strong>.
+            {t('legal.cgv.articles.article_8.violation_note')}
           </p>
         </>
       )
     },
     {
       id: 9,
-      title: "Article 9: Governing Law",
+      title: t('legal.cgv.articles.article_9.title'),
       icon: <Scale className="w-5 h-5 text-blue-400" />,
       content: (
         <p className="leading-relaxed text-[var(--text-dimmed)]">
-          These Terms of Sale and any disputes arising from them shall be governed by the laws of <strong>Tunisia</strong>.
+          {t('legal.cgv.articles.article_9.content')}
         </p>
       )
     }
@@ -183,7 +186,7 @@ const CGV: React.FC = () => {
           className="flex items-center gap-2 text-blue-400 hover:text-[var(--text-primary)] transition-colors mb-12 group"
         >
           <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
-          <span className="text-xs font-semibold tracking-widest">Back</span>
+          <span className="text-xs font-semibold tracking-widest">{t('legal.back')}</span>
         </button>
 
         <header className="mb-16">
@@ -191,9 +194,9 @@ const CGV: React.FC = () => {
             <div className="w-12 h-12 bg-blue-500/10 rounded-2xl flex items-center justify-center border border-blue-500/20">
               <FileText className="w-6 h-6 text-blue-400" />
             </div>
-            <h1 className="text-4xl md:text-6xl font-black text-[var(--text-primary)] uppercase tracking-tighter leading-none">Terms of Sale (CGV)</h1>
+            <h1 className="text-4xl md:text-6xl font-black text-[var(--text-primary)] uppercase tracking-tighter leading-none">{t('legal.cgv.title')}</h1>
           </div>
-          <p className="text-[var(--text-muted)] font-mono text-sm uppercase tracking-widest">Last Updated: March 29, 2026</p>
+          <p className="text-[var(--text-muted)] font-mono text-sm uppercase tracking-widest">{t('legal.cgv.last_updated')}</p>
         </header>
 
         <section className="space-y-8 pb-20">
@@ -225,7 +228,7 @@ const CGV: React.FC = () => {
               <User className="w-8 h-8" />
             </div>
             <p className="text-[10px] font-semibold tracking-widest text-[var(--text-muted)]">
-              © 2026 CYBERIA AI STUDIO
+              {t('legal.cgv.copyright')}
             </p>
           </div>
         </section>

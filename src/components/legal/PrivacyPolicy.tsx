@@ -1,8 +1,11 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import { Shield, ArrowLeft, Database, Globe, Brain, UserCheck, Lock, Mail } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
 const PrivacyPolicy: React.FC = () => {
+  const { t } = useTranslation();
+
   const handleBack = () => {
     if (window.history.length > 1) {
       window.history.back();
@@ -15,112 +18,112 @@ const PrivacyPolicy: React.FC = () => {
   const articles = [
     {
       id: 1,
-      title: "Article 1: Overview",
+      title: t('legal.privacy.articles.article_1.title'),
       icon: <Shield className="w-5 h-5 text-blue-400" />,
       content: (
         <p className="leading-relaxed text-[var(--text-muted)]">
-          Cyberia Space ("we," "us," or "our") is a spatial productivity tool designed with a Local-First philosophy. We attach the greatest importance to the protection of your personal data and wish to ensure the best level of protection in compliance with applicable regulations.
+          {t('legal.privacy.articles.article_1.content')}
         </p>
       )
     },
     {
       id: 2,
-      title: "Article 2: Local-First Data Storage",
+      title: t('legal.privacy.articles.article_2.title'),
       icon: <Database className="w-5 h-5 text-blue-400" />,
       content: (
         <>
           <p className="leading-relaxed text-[var(--text-muted)]">
-            By default, all thoughts, tasks, drawings, and files you create are stored <strong>locally</strong> in your browser's internal database (IndexedDB). 
+            {t('legal.privacy.articles.article_2.content_1')}
           </p>
           <p className="leading-relaxed text-[var(--text-primary)] font-medium mt-2">
-            When you authenticate your account, your space is automatically synced to the cloud for backup and cross-device access.
+            {t('legal.privacy.articles.article_2.content_2')}
           </p>
         </>
       )
     },
     {
       id: 3,
-      title: "Article 3: Data We Collect",
+      title: t('legal.privacy.articles.article_3.title'),
       icon: <UserCheck className="w-5 h-5 text-blue-400" />,
       content: (
         <>
           <p className="leading-relaxed text-[var(--text-muted)]">
-            We collect minimal personal data to provide and improve our services:
+            {t('legal.privacy.articles.article_3.content')}
           </p>
           <ul className="list-disc list-inside space-y-3 mt-4 ml-2 text-[var(--text-muted)]">
-            <li><strong className="text-[var(--text-primary)] font-bold">Identity Info:</strong> Email address and profile name via Google OAuth for account management and identity verification.</li>
-            <li><strong className="text-[var(--text-primary)] font-bold">Usage Data:</strong> Basic technical logs to detect errors and optimize application performance.</li>
-            <li><strong className="text-[var(--text-primary)] font-bold">Payment Data:</strong> We receive transaction confirmation tokens from our providers (<strong className="text-[var(--text-primary)]">Flouci</strong> and <strong className="text-[var(--text-primary)]">Polar.sh</strong>). We do not store your credit card numbers or sensitive financial details.</li>
+            <li><strong className="text-[var(--text-primary)] font-bold">{t('legal.privacy.articles.article_3.identity_info')}</strong> {t('legal.privacy.articles.article_3.identity_info_desc')}</li>
+            <li><strong className="text-[var(--text-primary)] font-bold">{t('legal.privacy.articles.article_3.usage_data')}</strong> {t('legal.privacy.articles.article_3.usage_data_desc')}</li>
+            <li><strong className="text-[var(--text-primary)] font-bold">{t('legal.privacy.articles.article_3.payment_data')}</strong> {t('legal.privacy.articles.article_3.payment_data_desc')}</li>
           </ul>
         </>
       )
     },
     {
       id: 4,
-      title: "Article 4: Cloud Synchronization",
+      title: t('legal.privacy.articles.article_4.title'),
       icon: <Globe className="w-5 h-5 text-blue-400" />,
       highlight: true,
       content: (
         <>
           <p className="leading-relaxed text-[var(--text-dimmed)]">
-            When you authenticate your account, your space metadata and research assets are stored securely in <strong className="text-[var(--text-primary)]">Supabase</strong> (PostgreSQL database and Cloud Storage). 
+            {t('legal.privacy.articles.article_4.content_1')}
           </p>
           <p className="leading-relaxed text-sm text-[var(--text-muted)] mt-2">
-            This allows for persistent storage across multiple devices and ensures data continuity if your browser cache is cleared.
+            {t('legal.privacy.articles.article_4.content_2')}
           </p>
         </>
       )
     },
     {
       id: 5,
-      title: "Article 5: AI Data Protocol (The Oracle)",
+      title: t('legal.privacy.articles.article_5.title'),
       icon: <Brain className="w-5 h-5 text-blue-400" />,
       content: (
         <>
           <p className="leading-relaxed text-[var(--text-muted)]">
-            Interactions with "The Oracle" involve real-time inference via high-speed models (hosted via <strong className="text-[var(--text-primary)]">OpenRouter</strong>, utilizing models from OpenAI, Google, Anthropic, etc.).
+            {t('legal.privacy.articles.article_5.content')}
           </p>
           <ul className="list-disc list-inside space-y-3 mt-4 ml-2 text-[var(--text-muted)] italic">
-            <li>Relevant space snippets are processed temporarily to generate responses.</li>
-            <li>Your space data is <strong className="text-[var(--text-primary)]">never used for model training</strong>.</li>
-            <li>AI chat history is stored locally on your device for maximum privacy.</li>
+            <li>{t('legal.privacy.articles.article_5.bullet_1')}</li>
+            <li>{t('legal.privacy.articles.article_5.bullet_2')}</li>
+            <li>{t('legal.privacy.articles.article_5.bullet_3')}</li>
           </ul>
         </>
       )
     },
     {
       id: 6,
-      title: "Article 6: Security Measures",
+      title: t('legal.privacy.articles.article_6.title'),
       icon: <Lock className="w-5 h-5 text-blue-400" />,
       content: (
         <p className="leading-relaxed text-[var(--text-muted)]">
-          We have implemented robust security measures to prevent your personal data from being accidentally lost, used, or accessed in an unauthorized way. Access to your data is strictly limited to processes necessary for providing the service.
+          {t('legal.privacy.articles.article_6.content')}
         </p>
       )
     },
     {
       id: 7,
-      title: "Article 7: Your Legal Rights",
+      title: t('legal.privacy.articles.article_7.title'),
       icon: <Shield className="w-5 h-5 text-blue-400" />,
       content: (
         <>
           <p className="leading-relaxed text-[var(--text-muted)]">
-            In accordance with Tunisian and international data protection regulations, you have the right to access, correct, or delete your personal data.
+            {t('legal.privacy.articles.article_7.content')}
           </p>
           <ul className="list-disc list-inside space-y-3 mt-4 ml-2 text-[var(--text-muted)]">
-            <li><strong className="text-[var(--text-primary)] font-bold">Portability:</strong> You can export your entire space as a JSON file at any time.</li>
-            <li><strong className="text-[var(--text-primary)] font-bold">Erasure:</strong> You can request the deletion of your account and associated cloud data directly from the application settings.</li>
+            <li><strong className="text-[var(--text-primary)] font-bold">{t('legal.privacy.articles.article_7.portability')}</strong> {t('legal.privacy.articles.article_7.portability_desc')}</li>
+            <li><strong className="text-[var(--text-primary)] font-bold">{t('legal.privacy.articles.article_7.erasure')}</strong> {t('legal.privacy.articles.article_7.erasure_desc')}</li>
           </ul>
         </>
       )
     },
     {
       id: 8,
-      title: "Article 8: Contact",
+      title: t('legal.privacy.articles.article_8.title'),
       icon: <Mail className="w-5 h-5 text-blue-400" />,
       content: (
         <p className="leading-relaxed text-[var(--text-muted)]">
-          For any questions regarding this policy or to exercise your rights, please contact us at: 
+          {t('legal.privacy.articles.article_8.content')}
           <br />
           <a href="mailto:support@cyberiaspace.app" className="text-blue-400 font-bold hover:text-[var(--text-primary)] transition-colors">support@cyberiaspace.app</a>
         </p>
@@ -140,7 +143,7 @@ const PrivacyPolicy: React.FC = () => {
           className="flex items-center gap-2 text-blue-400 hover:text-[var(--text-primary)] transition-colors mb-12 group"
         >
           <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
-          <span className="text-xs font-semibold tracking-widest">Back</span>
+          <span className="text-xs font-semibold tracking-widest">{t('legal.back')}</span>
         </button>
 
         <header className="mb-16">
@@ -148,9 +151,9 @@ const PrivacyPolicy: React.FC = () => {
             <div className="w-12 h-12 bg-blue-500/10 rounded-2xl flex items-center justify-center border border-blue-500/20">
               <Shield className="w-6 h-6 text-blue-400" />
             </div>
-            <h1 className="text-4xl md:text-6xl font-black text-[var(--text-primary)] uppercase tracking-tighter leading-none">Privacy Policy</h1>
+            <h1 className="text-4xl md:text-6xl font-black text-[var(--text-primary)] uppercase tracking-tighter leading-none">{t('legal.privacy.title')}</h1>
           </div>
-          <p className="text-[var(--text-muted)] font-mono text-sm uppercase tracking-widest">Effective Date: March 12, 2026</p>
+          <p className="text-[var(--text-muted)] font-mono text-sm uppercase tracking-widest">{t('legal.privacy.effective_date')}</p>
         </header>
 
         <section className="space-y-8 pb-20">

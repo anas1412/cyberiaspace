@@ -2,6 +2,7 @@ import { type StateCreator } from 'zustand';
 import { db } from '../../db';
 import { syncOrchestrator } from '../../services/sync/syncOrchestrator';
 import { type CyberiaState } from '../types';
+import i18n from '../../i18n';
 
 // Generation counter and abort controller to prevent concurrent setCustomBg races
 let bgOperationId = 0;
@@ -22,9 +23,16 @@ export const createUiSlice: StateCreator<CyberiaState, [], [], any> = (set, get,
     }
     return 'light';
   };
+
+  const getInitialLanguage = (): 'en' | 'fr' => {
+    const stored = localStorage.getItem('cyberia-lang');
+    if (stored === 'en' || stored === 'fr') return stored;
+    return 'en';
+  };
   
   return {
     theme: getInitialTheme(),
+    language: getInitialLanguage(),
   customBg: null,
   customBgLoading: false,
   oracleChatMode: 'chat',
@@ -95,6 +103,12 @@ export const createUiSlice: StateCreator<CyberiaState, [], [], any> = (set, get,
     const { useAuthStore } = await import('../useAuthStore');
     const authStore = useAuthStore.getState();
     if (authStore.status === 'authenticated') authStore.updateSettings({ theme } as any);
+  },
+
+  setLanguage: (language: 'en' | 'fr') => {
+    set({ language });
+    localStorage.setItem('cyberia-lang', language);
+    i18n.changeLanguage(language);
   },
 
   setCustomBg: async (bg: File | string | null) => {

@@ -2,8 +2,10 @@ import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { Mail, MessageSquare, ArrowLeft, Headphones, Send, Loader2, CheckCircle, ArrowRight, Copy, Check } from 'lucide-react';
 import { DISCORD_INVITE_URL } from '../../constants';
+import { useTranslation } from 'react-i18next';
 
 const Contact: React.FC = () => {
+  const { t } = useTranslation();
   const [contactName, setContactName] = useState('');
   const [contactEmail, setContactEmail] = useState('');
   const [contactMessage, setContactMessage] = useState('');
@@ -61,9 +63,6 @@ const Contact: React.FC = () => {
     } catch { setContactSubmitStatus('error'); } finally { setIsContactSubmitting(false); }
   };
 
-
-  
-
   return (
     <div className="min-h-[100dvh] bg-[var(--bg-page)] text-[var(--text-muted)] p-6 md:p-20 overflow-y-auto custom-scroll selection:bg-blue-500/30">
       <motion.div 
@@ -76,7 +75,7 @@ const Contact: React.FC = () => {
           className="flex items-center gap-2 text-blue-400 hover:text-[var(--text-primary)] transition-colors mb-12 group"
         >
           <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
-          <span className="text-xs font-semibold tracking-widest">Back</span>
+          <span className="text-xs font-semibold tracking-widest">{t('legal.back')}</span>
         </button>
 
         <header className="mb-16">
@@ -84,44 +83,44 @@ const Contact: React.FC = () => {
             <div className="w-12 h-12 bg-blue-500/10 rounded-2xl flex items-center justify-center border border-blue-500/20">
               <Headphones className="w-6 h-6 text-blue-400" />
             </div>
-            <h1 className="text-4xl md:text-6xl font-black text-[var(--text-primary)] uppercase tracking-tighter leading-none">Contact</h1>
+            <h1 className="text-4xl md:text-6xl font-black text-[var(--text-primary)] uppercase tracking-tighter leading-none">{t('legal.contact.title')}</h1>
           </div>
-          <p className="text-[var(--text-muted)] font-mono text-sm uppercase tracking-widest">Get in touch with the team</p>
+          <p className="text-[var(--text-muted)] font-mono text-sm uppercase tracking-widest">{t('legal.contact.subtitle')}</p>
         </header>
 
       {/* Contact Form */}
         <section className="pb-20">
-          <h2 className="text-xl font-black text-[var(--text-primary)] uppercase tracking-widest mb-6">Send a Message</h2>
+          <h2 className="text-xl font-black text-[var(--text-primary)] uppercase tracking-widest mb-6">{t('legal.contact.send_message')}</h2>
           
           {contactSubmitStatus === 'success' ? (
             <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="bg-emerald-500/10 border border-emerald-500/20 p-12 rounded-[2.5rem] text-center space-y-4">
               <CheckCircle className="w-16 h-16 text-emerald-500 mx-auto" />
               <div>
-                <p className="text-xl font-bold text-emerald-500">Message sent successfully</p>
-                <p className="text-sm text-[var(--text-muted)] mt-2">We'll get back to you shortly.</p>
+                <p className="text-xl font-bold text-emerald-500">{t('homepage.contact.form.success')}</p>
+                <p className="text-sm text-[var(--text-muted)] mt-2">{t('homepage.contact.form.success_desc')}</p>
               </div>
             </motion.div>
           ) : (
             <form onSubmit={handleContactSubmit} className="bg-[var(--glass-bg)] border border-[var(--glass-border)] p-8 md:p-12 rounded-[2.5rem] space-y-5">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
                 <div className="space-y-2">
-                  <label htmlFor="contact-name" className="text-sm font-semibold text-[var(--text-dimmed)] uppercase tracking-wider">Name</label>
+                  <label htmlFor="contact-name" className="text-sm font-semibold text-[var(--text-dimmed)] uppercase tracking-wider">{t('homepage.contact.form.name')}</label>
                   <input 
                     id="contact-name"
                     type="text" 
-                    placeholder="Jane Doe" 
+                    placeholder={t('homepage.contact.form.placeholder_name')} 
                     value={contactName} 
                     onChange={(e) => setContactName(e.target.value)} 
                     className="w-full h-14 bg-[var(--bg-page)] border border-[var(--glass-border)] rounded-2xl px-5 text-[15px] text-[var(--text-primary)] placeholder:text-[var(--text-muted)] outline-none focus:border-blue-500/50 focus:ring-2 focus:ring-blue-500/20 transition-all" 
                   />
                 </div>
                 <div className="space-y-2">
-                  <label htmlFor="contact-email" className="text-sm font-semibold text-[var(--text-dimmed)] uppercase tracking-wider">Email <span className="text-rose-400">*</span></label>
+                  <label htmlFor="contact-email" className="text-sm font-semibold text-[var(--text-dimmed)] uppercase tracking-wider">{t('homepage.contact.form.email')} <span className="text-rose-400">*</span></label>
                   <input 
                     id="contact-email"
                     type="email" 
                     required 
-                    placeholder="jane@example.com" 
+                    placeholder={t('homepage.contact.form.placeholder_email')} 
                     value={contactEmail} 
                     onChange={(e) => setContactEmail(e.target.value)} 
                     className="w-full h-14 bg-[var(--bg-page)] border border-[var(--glass-border)] rounded-2xl px-5 text-[15px] text-[var(--text-primary)] placeholder:text-[var(--text-muted)] outline-none focus:border-blue-500/50 focus:ring-2 focus:ring-blue-500/20 transition-all" 
@@ -129,19 +128,19 @@ const Contact: React.FC = () => {
                 </div>
               </div>
               <div className="space-y-2">
-                <label htmlFor="contact-message" className="text-sm font-semibold text-[var(--text-dimmed)] uppercase tracking-wider">Message <span className="text-rose-400">*</span></label>
+                <label htmlFor="contact-message" className="text-sm font-semibold text-[var(--text-dimmed)] uppercase tracking-wider">{t('homepage.contact.form.message')} <span className="text-rose-400">*</span></label>
                 <textarea 
                   id="contact-message"
                   required 
                   value={contactMessage} 
                   onChange={(e) => setContactMessage(e.target.value)} 
-                  placeholder="How can we help?" 
+                  placeholder={t('homepage.contact.form.placeholder_message')} 
                   className="w-full h-40 bg-[var(--bg-page)] border border-[var(--glass-border)] rounded-2xl p-5 text-[15px] text-[var(--text-primary)] placeholder:text-[var(--text-muted)] outline-none focus:border-blue-500/50 focus:ring-2 focus:ring-blue-500/20 transition-all resize-none" 
                 />
               </div>
               {contactSubmitStatus === 'error' && (
                 <div className="p-4 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-500 text-sm font-semibold text-center">
-                  Failed to send message. Please try again.
+                  {t('homepage.contact.form.error')}
                 </div>
               )}
               <button 
@@ -153,7 +152,7 @@ const Contact: React.FC = () => {
                   <Loader2 className="w-5 h-5 animate-spin" />
                 ) : (
                   <>
-                    Send Message
+                    {t('homepage.contact.form.submit')}
                     <Send className="w-4 h-4" />
                   </>
                 )}
@@ -170,8 +169,8 @@ const Contact: React.FC = () => {
                 <Mail className="w-7 h-7 text-blue-400" />
               </div>
               <div className="text-left">
-                <h3 className="text-lg font-black text-[var(--text-primary)] uppercase tracking-widest">Email Support</h3>
-                <p className="text-sm text-[var(--text-muted)] mt-1">Prefer email? Send us a message directly.</p>
+                <h3 className="text-lg font-black text-[var(--text-primary)] uppercase tracking-widest">{t('legal.contact.email_support')}</h3>
+                <p className="text-sm text-[var(--text-muted)] mt-1">{t('legal.contact.email_support_desc')}</p>
               </div>
             </div>
             <button 
@@ -181,7 +180,7 @@ const Contact: React.FC = () => {
               {emailCopied ? (
                 <>
                   <Check className="w-4 h-4" />
-                  Copied!
+                  {t('legal.contact.copied')}
                 </>
               ) : (
                 <>
@@ -201,8 +200,8 @@ const Contact: React.FC = () => {
                 <MessageSquare className="w-7 h-7 text-blue-400" />
               </div>
               <div className="text-left">
-                <h3 className="text-lg font-black text-[var(--text-primary)] uppercase tracking-widest">Join the Community</h3>
-                <p className="text-sm text-[var(--text-muted)] mt-1">Connect with other thinkers. Share feedback and bugs.</p>
+                <h3 className="text-lg font-black text-[var(--text-primary)] uppercase tracking-widest">{t('legal.contact.join_community')}</h3>
+                <p className="text-sm text-[var(--text-muted)] mt-1">{t('legal.contact.join_community_desc')}</p>
               </div>
             </div>
             <a 
@@ -211,7 +210,7 @@ const Contact: React.FC = () => {
               rel="noopener noreferrer"
               className="inline-flex items-center gap-2 px-8 py-4 bg-[#5865F2] hover:bg-[#4752C4] text-[#ffffff] rounded-2xl text-sm font-bold transition-all shadow-lg hover:shadow-xl active:scale-[0.98] whitespace-nowrap"
             >
-              Join Discord
+              {t('legal.contact.join_discord')}
               <ArrowRight className="w-4 h-4" />
             </a>
           </div>

@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useAuthStore } from '../store/useAuthStore';
 import { PLAN_CONFIG, type AccessPeriod } from '../constants';
 import { resolvePricingLocation } from '../utils/pricing';
@@ -60,6 +61,7 @@ const ComparisonRow: React.FC<{ label: string; free: string | React.ReactNode; p
 );
 
 const PricingPage: React.FC = () => {
+  const { t } = useTranslation();
   const { user, accessToken } = useAuthStore();
   const [billingCycle, setBillingCycle] = useState<AccessPeriod>('monthly');
   const [location, setLocation] = useState<{ country: string; currency: string; isLocalPricing: boolean } | null>(null);
@@ -273,8 +275,8 @@ const PricingPage: React.FC = () => {
             <div className="w-20 h-20 bg-gradient-to-br from-rose-500/20 to-red-500/20 rounded-full flex items-center justify-center mx-auto mb-6 border border-rose-500/30">
               <AlertCircle className="w-10 h-10 text-rose-500 dark:text-rose-400" />
             </div>
-            <h2 className="text-3xl font-bold tracking-tight text-[var(--text-primary)] mb-3">Payment Failed</h2>
-            <p className="text-base text-[var(--text-muted)] font-medium leading-relaxed mb-8">{paymentMessage}</p>
+            <h2 className="text-3xl font-bold tracking-tight text-[var(--text-primary)] mb-3">{t('pricing.status.failed')}</h2>
+            <p className="text-base text-[var(--text-muted)] font-medium leading-relaxed mb-8">{paymentMessage || t('pricing.status.failed_desc')}</p>
             
             <div className="flex flex-col gap-3">
               <button
@@ -285,13 +287,13 @@ const PricingPage: React.FC = () => {
                 className="w-full h-14 rounded-2xl text-sm font-semibold tracking-wide transition-all flex items-center justify-center gap-2 bg-gradient-to-r from-rose-600 to-red-600 hover:from-rose-500 hover:to-red-500 text-white shadow-lg shadow-rose-500/25 active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-500"
               >
                 <RefreshCw className="w-4 h-4" />
-                Try Another Method
+                {t('pricing.status.try_another')}
               </button>
               <button
                 onClick={() => window.location.href = '/home'}
                 className="w-full h-12 rounded-2xl text-sm font-semibold tracking-wide text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--glass-bg)] transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-500"
               >
-                Return to Workspace
+                {t('pricing.status.return')}
               </button>
             </div>
           </motion.div>
@@ -314,7 +316,7 @@ const PricingPage: React.FC = () => {
             <div className="w-20 h-20 bg-gradient-to-br from-green-500/20 to-emerald-500/20 rounded-full flex items-center justify-center mx-auto mb-6 border border-green-500/30">
               <Check className="w-10 h-10 text-emerald-600 dark:text-emerald-500" />
             </div>
-            <h2 className="text-3xl font-bold tracking-tight text-[var(--text-primary)] mb-3">You're Pro!</h2>
+            <h2 className="text-3xl font-bold tracking-tight text-[var(--text-primary)] mb-3">{t('pricing.status.success')}</h2>
             <p className="text-base text-emerald-600 dark:text-emerald-500 font-medium leading-relaxed mb-8">{paymentMessage}</p>
             <button
               onClick={() => window.location.href = '/home'}
@@ -346,24 +348,24 @@ const PricingPage: React.FC = () => {
           <h1 className="text-5xl md:text-6xl font-bold tracking-tight mb-4">
             {isProUser ? (
               <>
-                You're Already{' '}
+                {t('pricing.hero.title_pro')}
                 <span className="bg-clip-text text-transparent bg-gradient-to-r from-[var(--accent)] to-[var(--accent-secondary)]">
                   Pro
                 </span>
               </>
             ) : (
               <>
-                Unlock Your{' '}
+                {t('pricing.hero.title_unlock')}
                 <span className="bg-clip-text text-transparent bg-gradient-to-r from-[var(--accent)] to-[var(--accent-secondary)]">
-                  Potential
+                  {t('pricing.hero.title_accent')}
                 </span>
               </>
             )}
           </h1>
           <p className="text-[var(--text-muted)] font-medium text-base max-w-2xl mx-auto mt-6">
             {isProUser 
-              ? `Your Pro access is valid until ${user?.expiryDate ? new Date(user.expiryDate).toLocaleDateString() : 'the end of your period'}. Enjoy your unlimited access.` 
-              : 'Start for free, upgrade when you\'re ready. Choose the plan that fits your workflow.'
+              ? t('pricing.hero.subtitle_pro', { date: user?.expiryDate ? new Date(user.expiryDate).toLocaleDateString() : 'the end of your period' })
+              : t('pricing.hero.subtitle_unlock')
             }
           </p>
         </motion.div>
@@ -386,11 +388,11 @@ const PricingPage: React.FC = () => {
               {/* Badges should be text-xs */}
               <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-green-500/10 border border-green-500/20 mb-6">
                 <Check className="w-4 h-4 text-emerald-600 dark:text-emerald-500" />
-                <span className="text-xs font-bold tracking-wide text-emerald-600 dark:text-emerald-500 uppercase">Active Pro Member</span>
+                <span className="text-xs font-bold tracking-wide text-emerald-600 dark:text-emerald-500 uppercase">{t('pricing.pro_card.active_badge')}</span>
               </div>
               
-              <h2 className="text-3xl md:text-4xl font-semibold tracking-tighter text-[var(--text-primary)] mb-4">Everything is unlocked.</h2>
-              <p className="text-[var(--text-muted)] mb-8 max-w-lg mx-auto">You have full access to all Pro features including unlimited AI models, file intelligence, agentic capabilities, and expanded spaces.</p>
+              <h2 className="text-3xl md:text-4xl font-semibold tracking-tighter text-[var(--text-primary)] mb-4">{t('pricing.pro_card.unlocked_title')}</h2>
+              <p className="text-[var(--text-muted)] mb-8 max-w-lg mx-auto">{t('pricing.pro_card.unlocked_desc')}</p>
               
               <div className="flex flex-col sm:flex-row justify-center gap-4 w-full max-w-md">
                 {user?.paymentProvider === 'polar' && (
@@ -399,7 +401,7 @@ const PricingPage: React.FC = () => {
                     className="flex-1 h-12 rounded-xl text-sm font-semibold tracking-wide bg-[var(--glass-bg)] hover:bg-[var(--glass-bg)]/80 text-[var(--text-primary)] border border-[var(--glass-border)] transition-all flex items-center justify-center gap-2 active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500"
                   >
                     <CreditCard className="w-4 h-4 text-[var(--text-muted)]" />
-                    Manage Billing
+                    {t('pricing.pro_card.manage_billing')}
                     <ExternalLink className="w-3 h-3 text-[var(--text-muted)]" />
                   </button>
                 )}
@@ -408,7 +410,7 @@ const PricingPage: React.FC = () => {
                   className="flex-1 h-12 rounded-xl text-sm font-semibold tracking-wide bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-500 hover:to-emerald-500 text-white transition-all shadow-lg shadow-green-500/25 flex items-center justify-center gap-2 active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--bg-page)]"
                 >
                   <Layout className="w-4 h-4" />
-                  Access My Space
+                  {t('pricing.pro_card.access_space')}
                 </button>
               </div>
             </div>
@@ -423,24 +425,24 @@ const PricingPage: React.FC = () => {
                     <Sparkles className="w-7 h-7" />
                   </div>
                   <div>
-                    <h2 className="text-3xl md:text-4xl font-semibold tracking-tighter text-[var(--text-primary)]">Unlock Pro</h2>
-                    <p className="text-base font-medium text-blue-600 dark:text-blue-400">Agentic AI + 200MB cloud storage.</p>
+                    <h2 className="text-3xl md:text-4xl font-semibold tracking-tighter text-[var(--text-primary)]">{t('pricing.pro_card.unlock_pro')}</h2>
+                    <p className="text-base font-medium text-blue-600 dark:text-blue-400">{t('pricing.pro_card.pro_desc', { storage: PLAN_CONFIG.pro.MAX_STORAGE_MB })}</p>
                   </div>
                 </div>
 
                 <div className="space-y-6 flex-1 relative z-10">
                   {[
                     { 
-                      title: 'All-in-One AI Powerhouse', 
-                      desc: 'Gain Pro-tier access to ChatGPT, Claude, Google Gemini and More—all in one place. Our agents are space-aware, can search, create, edit and remove right where you work.' 
+                      title: t('pricing.pro_card.feature_ai.title'), 
+                      desc: t('pricing.pro_card.feature_ai.desc')
                     },
                     { 
-                      title: 'Expanded Agentic Workspaces', 
-                      desc: `Create up to ${PLAN_CONFIG.pro.MAX_SPACES} spaces with ${PLAN_CONFIG.pro.MAX_THOUGHTS_PER_SPACE} thoughts each (Free tier limits to ${PLAN_CONFIG.free.MAX_SPACES} spaces).` 
+                      title: t('pricing.pro_card.feature_spaces.title'), 
+                      desc: t('pricing.pro_card.feature_spaces.desc', { maxSpaces: PLAN_CONFIG.pro.MAX_SPACES, maxThoughts: PLAN_CONFIG.pro.MAX_THOUGHTS_PER_SPACE, freeSpaces: PLAN_CONFIG.free.MAX_SPACES })
                     },
                     { 
-                      title: 'File Intelligence & More Storage', 
-                      desc: `Upload and analyze docs, images & PDFs. Includes 200MB of secure cloud storage.` 
+                      title: t('pricing.pro_card.feature_files.title'), 
+                      desc: t('pricing.pro_card.feature_files.desc', { storage: PLAN_CONFIG.pro.MAX_STORAGE_MB })
                     },
                   ].map((feature, i) => (
                     <div key={i} className="flex gap-4 group">
@@ -463,13 +465,13 @@ const PricingPage: React.FC = () => {
                   </div>
                   <div className="z-10 flex-1">
                     <div className="flex items-center gap-3 mb-1.5 whitespace-nowrap">
-                      <h4 className="text-base font-semibold text-[var(--text-primary)]">Mobile Companion App</h4>
+                      <h4 className="text-base font-semibold text-[var(--text-primary)]">{t('pricing.pro_card.mobile_app.title')}</h4>
                       <span className="text-[10px] font-bold tracking-wide bg-gradient-to-r from-indigo-500 to-purple-500 text-white px-2.5 py-0.5 rounded-full uppercase shadow-lg shadow-indigo-500/25">
-                        Coming Soon
+                        {t('pricing.pro_card.mobile_app.badge')}
                       </span>
                     </div>
                     <p className="text-sm text-[var(--text-muted)] leading-relaxed font-medium">
-                      Take your thoughts anywhere. Access and sync your spaces instantly on iOS and Android.
+                      {t('pricing.pro_card.mobile_app.desc')}
                     </p>
                   </div>
                 </div>
@@ -496,7 +498,7 @@ const PricingPage: React.FC = () => {
                           transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
                         />
                       )}
-                      <span className="relative z-20">Monthly</span>
+                      <span className="relative z-20">{t('pricing.checkout.monthly')}</span>
                     </button>
                     <button
                       onClick={() => setBillingCycle('yearly')}
@@ -513,9 +515,9 @@ const PricingPage: React.FC = () => {
                           transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
                         />
                       )}
-                      <span className="relative z-20">Yearly</span>
+                      <span className="relative z-20">{t('pricing.checkout.yearly')}</span>
                       <span className="bg-gradient-to-r from-emerald-500 to-green-500 text-white border-0 text-[10px] uppercase font-bold px-2 py-0.5 rounded-md tracking-wide shadow-md shadow-emerald-500/25 whitespace-nowrap relative z-20">
-                        Save {location?.isLocalPricing ? `${savingsTnd}DT` : `$${savings}`}
+                        {t('pricing.checkout.save', { amount: location?.isLocalPricing ? `${savingsTnd}DT` : `$${savings}` })}
                       </span>
                     </button>
                   </div>
@@ -525,14 +527,14 @@ const PricingPage: React.FC = () => {
                     {location?.isLocalPricing ? (
                       <div className="flex flex-col items-center gap-3">
                         <span className="text-xs font-bold tracking-wide uppercase bg-blue-500/10 text-blue-600 dark:text-blue-400 px-3 py-1 rounded-full border border-blue-500/20">
-                          Local Pricing Active
+                          {t('pricing.checkout.local_pricing')}
                         </span>
                         <div className="flex items-baseline justify-center">
                           <span className="text-5xl md:text-6xl font-extrabold tracking-tight text-[var(--text-primary)]">{currentPrice.tnd}</span>
                           <span className="text-xl text-[var(--text-muted)] ml-2 font-semibold">DT</span>
                         </div>
                         <span className="text-xs font-bold tracking-wide text-[var(--text-muted)] bg-[var(--glass-bg)] border border-[var(--glass-border)] px-3 py-1 rounded-full">
-                          Global Price: ${currentPrice.usd} USD
+                          {t('pricing.checkout.global_price', { price: currentPrice.usd })}
                         </span>
                       </div>
                     ) : (
@@ -542,13 +544,13 @@ const PricingPage: React.FC = () => {
                     )}
                     
                     <span className="text-[var(--text-muted)] font-semibold tracking-wide text-sm block mt-4">
-                      {billingCycle === 'monthly' ? 'Per Month' : 'Per Year'}
+                      {billingCycle === 'monthly' ? t('pricing.checkout.per_month') : t('pricing.checkout.per_year')}
                     </span>
                   </div>
                   <p className="text-sm text-[var(--text-muted)] leading-relaxed px-4 font-medium">
                     {location?.isLocalPricing 
-                      ? ('Manual renewal via Flouci. No auto-charges.')
-                      : (billingCycle === 'yearly' ? `Recurring yearly subscription via Polar.sh. Cancel anytime.` : `Recurring monthly subscription via Polar.sh. Cancel anytime.`)
+                      ? (t('pricing.checkout.manual_renewal'))
+                      : (billingCycle === 'yearly' ? t('pricing.checkout.recurring_yearly') : t('pricing.checkout.recurring_monthly'))
                     }
                   </p>
                 </div>
@@ -609,13 +611,13 @@ const PricingPage: React.FC = () => {
                     </div>
                   </div>
                   <span className="text-sm text-[var(--text-muted)] leading-relaxed font-medium">
-                    I agree to the{' '}
+                    {t('pricing.checkout.agree_terms')}
                     <a href="/terms" target="_blank" rel="noreferrer" className="text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 underline underline-offset-2 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 rounded-sm">
-                      Terms of Service
+                      {t('pricing.checkout.terms')}
                     </a>
-                    {' '}and{' '}
+                    {' '}{t('pricing.checkout.and')}{' '}
                     <a href="/privacy" target="_blank" rel="noreferrer" className="text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 underline underline-offset-2 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 rounded-sm">
-                      Privacy Policy
+                      {t('pricing.checkout.privacy')}
                     </a>
                   </span>
                 </label>
@@ -636,19 +638,19 @@ const PricingPage: React.FC = () => {
                   ) : (
                     <Star className="w-4 h-4 text-white" />
                   )}
-                  {isLoading ? 'Processing...' : 'Upgrade Now'}
+                  {isLoading ? t('pricing.checkout.processing') : t('pricing.checkout.upgrade_now')}
                 </button>
 
                 {!user && (
                   <div className="text-center mb-6">
                     <p className="text-sm text-[var(--text-muted)] mb-3 font-medium">
-                      Please sign in to your account before upgrading.
+                      {t('pricing.checkout.signin_note')}
                     </p>
                     <button
                       onClick={() => window.location.href = '/login'}
                       className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-[var(--glass-bg)] hover:bg-[var(--glass-bg)]/80 text-[var(--text-primary)] text-sm font-semibold tracking-wide border border-[var(--glass-border)] transition-all active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
                     >
-                      Sign In to Continue
+                      {t('pricing.checkout.signin_cta')}
                     </button>
                   </div>
                 )}
@@ -659,7 +661,7 @@ const PricingPage: React.FC = () => {
                     <Shield className="w-4 h-4 text-blue-600 dark:text-blue-400" />
                   </div>
                   <p className="text-sm text-[var(--text-muted)] font-medium">
-                    Secure local & global payments via <span className="text-[var(--text-primary)] font-black">{location?.isLocalPricing ? 'Flouci' : 'Polar.sh'}</span>.
+                    {t('pricing.checkout.security_note', { provider: location?.isLocalPricing ? 'Flouci' : 'Polar.sh' })}
                   </p>
                 </div>
               </div>
@@ -684,18 +686,18 @@ const PricingPage: React.FC = () => {
                   <Users className="w-6 h-6" />
                 </div>
                 <div>
-                  <h2 className="text-2xl md:text-3xl font-semibold tracking-tighter text-[var(--text-primary)]">Enterprise</h2>
-                  <p className="text-sm font-medium text-[var(--accent)]">The Only Workspace Your Team Will Ever Need</p>
+                  <h2 className="text-2xl md:text-3xl font-semibold tracking-tighter text-[var(--text-primary)]">{t('pricing.enterprise.title')}</h2>
+                  <p className="text-sm font-medium text-[var(--accent)]">{t('pricing.enterprise.subtitle')}</p>
                 </div>
               </div>
 
               <div className="space-y-4 flex-1 relative z-10">
                 {[
-                  '5+ team members',
-                  '5GB storage per user',
-                  'Realtime team collaboration across shared spaces',
-                  'Priority support',
-                  'Higher AI usage limits',
+                  t('pricing.enterprise.features.members'),
+                  t('pricing.enterprise.features.storage', { storage: PLAN_CONFIG.enterprise.MAX_STORAGE_MB / 1000 }),
+                  t('pricing.enterprise.features.collaboration'),
+                  t('pricing.enterprise.features.support'),
+                  t('pricing.enterprise.features.ai_limits'),
                 ].map((feature, i) => (
                   <div key={i} className="flex items-center gap-3">
                     <div className="w-5 h-5 rounded-full bg-[var(--accent)]/10 border border-[var(--accent)]/20 flex items-center justify-center text-[var(--accent)] shrink-0">
@@ -710,16 +712,11 @@ const PricingPage: React.FC = () => {
             {/* RIGHT: Enterprise CTA */}
             <div className="w-full md:w-72 p-6 md:p-8 bg-[var(--glass-bg)] border-t md:border-t-0 md:border-l border-[var(--accent)]/20 flex flex-col justify-center">
               <div className="text-center mb-6">
-                <div className="mb-3">
-                  <span className="text-[10px] font-bold tracking-wide bg-gradient-to-r from-[var(--accent)] to-[var(--accent-secondary)] text-white px-3 py-1.5 rounded-full uppercase shadow-lg shadow-[var(--accent)]/25">
-                    Contact Sales
-                  </span>
-                </div>
                 <div className="flex items-baseline justify-center gap-1">
-                  <span className="text-4xl font-extrabold text-[var(--text-primary)]">$25</span>
-                  <span className="text-lg text-[var(--text-muted)] font-semibold">/seat</span>
+                  <span className="text-4xl font-extrabold text-[var(--text-primary)]">{t('pricing.enterprise.price')}</span>
+                  <span className="text-lg text-[var(--text-muted)] font-semibold">{t('pricing.enterprise.per_seat')}</span>
                 </div>
-                <span className="text-xs text-[var(--text-muted)] font-medium block mt-1">Starting at 5 seats</span>
+                <span className="text-xs text-[var(--text-muted)] font-medium block mt-1">{t('pricing.enterprise.starting_at')}</span>
               </div>
 
               <button
@@ -727,11 +724,11 @@ const PricingPage: React.FC = () => {
                 className="w-full h-12 rounded-xl text-sm font-semibold tracking-wide bg-[var(--accent)] hover:bg-[var(--accent)]/90 text-white transition-all flex items-center justify-center gap-2 active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--bg-page)]"
               >
                 <Users className="w-4 h-4" />
-                Contact Sales
+                {t('pricing.enterprise.cta')}
               </button>
               
               <p className="text-xs text-[var(--text-muted)] text-center mt-4 font-medium">
-                Volume discounts available
+                {t('pricing.enterprise.discounts')}
               </p>
             </div>
           </div>
@@ -743,7 +740,7 @@ const PricingPage: React.FC = () => {
             onClick={() => setShowFeatures(!showFeatures)}
             className="px-6 py-2 rounded-full border border-[var(--glass-border)] bg-[var(--glass-bg)] hover:bg-[var(--glass-bg)]/80 text-sm font-semibold tracking-wide text-[var(--text-primary)] transition-colors flex items-center gap-2 mx-auto focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
           >
-            {showFeatures ? 'Hide' : 'View'} Full Comparison
+            {showFeatures ? t('pricing.comparison.cta_hide') : t('pricing.comparison.cta_show')}
             <motion.div
               animate={{ rotate: showFeatures ? 180 : 0 }}
               transition={{ duration: 0.2 }}
@@ -769,86 +766,86 @@ const PricingPage: React.FC = () => {
             {/* Table Header */}
             <div className="grid grid-cols-[1.5fr_1fr_1fr_1fr] gap-4 py-6 px-6 bg-[var(--glass-bg)] border-b border-[var(--glass-border)] items-center">
               <div className="text-left">
-                <span className="text-sm font-semibold tracking-wide text-[var(--text-muted)]">Features Comparison</span>
+                <span className="text-sm font-semibold tracking-wide text-[var(--text-muted)]">{t('pricing.comparison.header')}</span>
               </div>
               <div className="text-center">
-                <span className="text-lg font-semibold tracking-tight text-[var(--text-primary)]">Free</span>
+                <span className="text-lg font-semibold tracking-tight text-[var(--text-primary)]">{t('pricing.comparison.free')}</span>
               </div>
               <div className="text-center relative">
-                <span className="text-lg font-semibold tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-indigo-600 dark:from-blue-400 dark:to-indigo-400">Pro</span>
+                <span className="text-lg font-semibold tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-indigo-600 dark:from-blue-400 dark:to-indigo-400">{t('pricing.comparison.pro')}</span>
               </div>
               <div className="text-center relative">
-                <span className="text-lg font-semibold tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-[var(--accent)] to-[var(--accent-secondary)]">Enterprise</span>
+                <span className="text-lg font-semibold tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-[var(--accent)] to-[var(--accent-secondary)]">{t('pricing.comparison.enterprise')}</span>
               </div>
             </div>
 
             {/* Table Rows */}
             <div className="divide-y divide-[var(--border)]">
               <ComparisonRow 
-                label="Agentic Workspaces" 
-                free={`${PLAN_CONFIG.free.MAX_SPACES} Spaces`} 
-                pro={`${PLAN_CONFIG.pro.MAX_SPACES} Spaces`}
+                label={t('pricing.comparison.rows.workspaces')} 
+                free={`${PLAN_CONFIG.free.MAX_SPACES} ${t('pricing.comparison.spaces')}`} 
+                pro={`${PLAN_CONFIG.pro.MAX_SPACES} ${t('pricing.comparison.spaces')}`}
                 enterprise={`${PLAN_CONFIG.enterprise.MAX_SPACES}+`}
                 highlight 
               />
               <ComparisonRow 
-                label="Thoughts per Space" 
+                label={t('pricing.comparison.rows.thoughts')} 
                 free={`${PLAN_CONFIG.free.MAX_THOUGHTS_PER_SPACE}`} 
                 pro={`${PLAN_CONFIG.pro.MAX_THOUGHTS_PER_SPACE}`}
                 enterprise={`${PLAN_CONFIG.enterprise.MAX_THOUGHTS_PER_SPACE}+`}
                 highlight 
               />
               <ComparisonRow 
-                label="Cloud Storage" 
+                label={t('pricing.comparison.rows.storage')} 
                 free={`${PLAN_CONFIG.free.MAX_STORAGE_MB}MB`} 
-                pro="200MB"
+                pro={`${PLAN_CONFIG.pro.MAX_STORAGE_MB}MB`}
                 enterprise={`${PLAN_CONFIG.enterprise.MAX_STORAGE_MB / 1000}GB / user`}
               />
               <ComparisonRow 
-                label="Team Members" 
+                label={t('pricing.comparison.rows.members')} 
                 free="1" 
                 pro="1"
                 enterprise="5+"
                 highlight
               />
               <ComparisonRow 
-                label="AI Requests quota" 
+                label={t('pricing.comparison.rows.ai_quota')} 
                 free={<span className="text-[var(--text-muted)]">—</span>} 
-                pro="Generous quota"
-                enterprise="Higher quota"
+                pro={t('pricing.comparison.rows.generous')}
+                enterprise={t('pricing.comparison.rows.higher')}
               />
               <ComparisonRow 
-                label="AI Models" 
+                label={t('pricing.comparison.rows.ai_models')} 
                 free={<span className="text-[var(--text-muted)]">—</span>}
-                pro="All Models" 
-                enterprise="All Models"
+                pro={t('pricing.comparison.rows.all_models')} 
+                enterprise={t('pricing.comparison.rows.all_models')}
                 highlight
               />
               <ComparisonRow 
-                label="Agentic Capabilities" 
+                label={t('pricing.comparison.rows.agentic')} 
                 free={<span className="text-[var(--text-muted)]">—</span>}
-                pro="Full access"
-                enterprise="Full access"
+                pro={t('pricing.comparison.rows.full_access')}
+                enterprise={t('pricing.comparison.rows.full_access')}
                 highlight
               />
               <ComparisonRow 
-                label="File Intelligence" 
+                label={t('pricing.comparison.rows.file_intel')} 
                 free={<span className="text-[var(--text-muted)]">—</span>}
-                pro="All file types"
-                enterprise="All file types"
+                pro={t('pricing.comparison.rows.all_files')}
+                enterprise={t('pricing.comparison.rows.all_files')}
               />
               <ComparisonRow 
-                label="Team Collaboration" 
+                label={t('pricing.comparison.rows.collaboration')} 
                 free={<span className="text-[var(--text-muted)]">—</span>} 
                 pro={<span className="text-[var(--text-muted)]">—</span>}
                 enterprise={<Check className="w-4 h-4 text-emerald-500 mx-auto" />}
                 highlight
               />
               <ComparisonRow 
-                label="Support" 
+                label={t('pricing.comparison.rows.support')} 
                 free={<span className="text-[var(--text-muted)]">—</span>} 
                 pro={<Check className="w-4 h-4 text-blue-600 dark:text-blue-400 mx-auto" />}
-                enterprise={<span className="text-emerald-500 font-bold">Dedicated</span>}
+                enterprise={<span className="text-emerald-500 font-bold">{t('pricing.comparison.rows.dedicated')}</span>}
                 highlight
               />
             </div>

@@ -6,6 +6,7 @@ import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 import Navigation from './Navigation';
 import Footer from './Footer';
+import { useTranslation } from 'react-i18next';
 
 function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -43,6 +44,7 @@ const getUserDisplay = (item: FeedbackEntry) => {
 };
 
 const FeedbackPage: React.FC = () => {
+  const { t } = useTranslation();
   const [view, setView] = useState<'submit' | 'my' | 'all'>('submit');
   const [feedbackList, setFeedbackList] = useState<FeedbackEntry[]>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -154,8 +156,8 @@ const FeedbackPage: React.FC = () => {
         {/* Header */}
         <header className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-12 md:mb-20">
           <div className="space-y-2">
-            <h1 className="text-2xl md:text-3xl font-bold text-[var(--text-primary)] tracking-tight">System Reliability & Feedback</h1>
-            <p className="text-[13px] text-[var(--text-muted)] max-w-md">Help us refine the kinetic space. Share your thoughts, report issues, or suggest new protocols.</p>
+            <h1 className="text-2xl md:text-3xl font-bold text-[var(--text-primary)] tracking-tight">{t('feedback.title')}</h1>
+            <p className="text-[13px] text-[var(--text-muted)] max-w-md">{t('feedback.description')}</p>
           </div>
           
           <div className="flex items-center gap-3">
@@ -170,7 +172,7 @@ const FeedbackPage: React.FC = () => {
               )}
             >
               <Users className="w-4 h-4" />
-              <span className="text-[10px] font-bold">My Feedback</span>
+              <span className="text-[10px] font-bold">{t('feedback.my_feedback')}</span>
             </button>
             
             {/* All Feedback Button */}
@@ -184,7 +186,7 @@ const FeedbackPage: React.FC = () => {
               )}
             >
               <List className="w-4 h-4" />
-              <span className="text-[10px] font-bold">All Feedback</span>
+              <span className="text-[10px] font-bold">{t('feedback.all_feedback')}</span>
             </button>
             
             {/* Submit Button */}
@@ -198,7 +200,7 @@ const FeedbackPage: React.FC = () => {
               )}
             >
               <MessageSquare className="w-4 h-4" />
-              <span className="text-[10px] font-bold">Submit</span>
+              <span className="text-[10px] font-bold">{t('feedback.submit')}</span>
             </button>
           </div>
         </header>
@@ -213,35 +215,35 @@ const FeedbackPage: React.FC = () => {
                 exit={{ opacity: 0, y: -20 }}
                 className="space-y-6"
               >
-                <h2 className="text-lg font-bold text-[var(--text-primary)] mb-6">My Feedback</h2>
+                <h2 className="text-lg font-bold text-[var(--text-primary)] mb-6">{t('feedback.my_view.title')}</h2>
 
                 {isLoading ? (
                   <div className="flex flex-col items-center justify-center py-20 gap-4 opacity-50">
                     <Loader2 className="w-8 h-8 animate-spin text-[var(--accent)]" />
-                    <p className="text-[11px] font-semibold tracking-wide">Loading...</p>
+                    <p className="text-[11px] font-semibold tracking-wide">{t('feedback.my_view.loading')}</p>
                   </div>
                 ) : !user ? (
                   <div className="glass rounded-2xl p-12 md:p-20 text-center border border-[var(--glass-border)]">
                     <MessageSquare className="w-12 h-12 text-[var(--text-muted)] mx-auto mb-6" />
-                    <h3 className="text-lg font-bold text-[var(--text-primary)] mb-2">Sign In Required</h3>
-                    <p className="text-[13px] text-[var(--text-muted)] tracking-wide mb-6">Sign in to see your submitted feedback.</p>
+                    <h3 className="text-lg font-bold text-[var(--text-primary)] mb-2">{t('feedback.my_view.sign_in_required.title')}</h3>
+                    <p className="text-[13px] text-[var(--text-muted)] tracking-wide mb-6">{t('feedback.my_view.sign_in_required.description')}</p>
                     <button
                       onClick={() => setView('submit')}
                       className="px-6 py-3 bg-[var(--accent)] hover:bg-[var(--accent)]/90 text-[var(--accent-contrast)] rounded-xl text-[11px] font-semibold tracking-wide transition-all"
                     >
-                      Submit Feedback
+                      {t('feedback.my_view.sign_in_required.cta')}
                     </button>
                   </div>
                 ) : feedbackList.length === 0 ? (
                   <div className="glass rounded-2xl p-12 md:p-20 text-center border border-[var(--glass-border)]">
                     <MessageSquare className="w-12 h-12 text-[var(--text-muted)] mx-auto mb-6" />
-                    <h3 className="text-lg font-bold text-[var(--text-primary)] mb-2">No Feedback Yet</h3>
-                    <p className="text-[13px] text-[var(--text-muted)] tracking-wide mb-6">You haven't submitted any feedback yet.</p>
+                    <h3 className="text-lg font-bold text-[var(--text-primary)] mb-2">{t('feedback.my_view.no_feedback.title')}</h3>
+                    <p className="text-[13px] text-[var(--text-muted)] tracking-wide mb-6">{t('feedback.my_view.no_feedback.description')}</p>
                     <button
                       onClick={() => setView('submit')}
                       className="px-6 py-3 bg-[var(--accent)] hover:bg-[var(--accent)]/90 text-[var(--accent-contrast)] rounded-xl text-[11px] font-semibold tracking-wide transition-all"
                     >
-                      Submit Feedback
+                      {t('feedback.my_view.no_feedback.cta')}
                     </button>
                   </div>
                 ) : (
@@ -293,7 +295,7 @@ const FeedbackPage: React.FC = () => {
                               <MessageSquare className="w-4 h-4" />
                             </div>
                             <div className="flex-1">
-                              <p className="text-[11px] font-semibold tracking-wide text-[var(--accent-secondary)] mb-1">Cyberia Response</p>
+                              <p className="text-[11px] font-semibold tracking-wide text-[var(--accent-secondary)] mb-1">{t('feedback.my_view.cyberia_response')}</p>
                               <p className="text-[13px] text-[var(--text-muted)] leading-relaxed">{getAdminReply(item)}</p>
                             </div>
                           </div>
@@ -311,18 +313,18 @@ const FeedbackPage: React.FC = () => {
                 exit={{ opacity: 0, y: -20 }}
                 className="space-y-6"
               >
-                <h2 className="text-lg font-bold text-[var(--text-primary)] mb-6">All Feedback</h2>
+                <h2 className="text-lg font-bold text-[var(--text-primary)] mb-6">{t('feedback.all_view.title')}</h2>
 
                 {isLoading ? (
                   <div className="flex flex-col items-center justify-center py-20 gap-4 opacity-50">
                     <Loader2 className="w-8 h-8 animate-spin text-[var(--accent)]" />
-                    <p className="text-[11px] font-semibold tracking-wide">Loading...</p>
+                    <p className="text-[11px] font-semibold tracking-wide">{t('feedback.all_view.loading')}</p>
                   </div>
                 ) : feedbackList.length === 0 ? (
                   <div className="glass rounded-2xl p-12 md:p-20 text-center border border-[var(--glass-border)]">
                     <MessageSquare className="w-12 h-12 text-[var(--text-muted)] mx-auto mb-6" />
-                    <h3 className="text-lg font-bold text-[var(--text-primary)] mb-2">No Feedback Yet</h3>
-                    <p className="text-[13px] text-[var(--text-muted)] tracking-wide">Be the first to submit feedback!</p>
+                    <h3 className="text-lg font-bold text-[var(--text-primary)] mb-2">{t('feedback.all_view.no_feedback.title')}</h3>
+                    <p className="text-[13px] text-[var(--text-muted)] tracking-wide">{t('feedback.all_view.no_feedback.description')}</p>
                   </div>
                 ) : (
                   feedbackList.map((item) => (
@@ -379,7 +381,7 @@ const FeedbackPage: React.FC = () => {
                               <MessageSquare className="w-4 h-4" />
                             </div>
                             <div className="flex-1">
-                              <p className="text-[11px] font-semibold tracking-wide text-[var(--accent-secondary)] mb-1">Cyberia Response</p>
+                              <p className="text-[11px] font-semibold tracking-wide text-[var(--accent-secondary)] mb-1">{t('feedback.my_view.cyberia_response')}</p>
                               <p className="text-[13px] text-[var(--text-muted)] leading-relaxed">{getAdminReply(item)}</p>
                             </div>
                           </div>
@@ -403,8 +405,8 @@ const FeedbackPage: React.FC = () => {
                       <CheckCircle className="w-10 h-10" />
                     </div>
                     <div>
-                      <h3 className="text-xl font-bold text-[var(--text-primary)] mb-2">Sent!</h3>
-                      <p className="text-[13px] text-[var(--text-muted)] tracking-wide">Your feedback has been logged in the system.</p>
+                      <h3 className="text-xl font-bold text-[var(--text-primary)] mb-2">{t('feedback.submit_view.success.title')}</h3>
+                      <p className="text-[13px] text-[var(--text-muted)] tracking-wide">{t('feedback.submit_view.success.description')}</p>
                     </div>
                     <div className="flex justify-center gap-3">
                       <button
@@ -414,7 +416,7 @@ const FeedbackPage: React.FC = () => {
                         }}
                         className="px-6 py-3 bg-[var(--glass-bg)] hover:bg-[var(--glass-bg)]/80 text-[var(--text-primary)] rounded-xl text-[11px] font-semibold tracking-wide transition-all border border-[var(--glass-border)]"
                       >
-                        View My Feedback
+                        {t('feedback.submit_view.success.view_my')}
                       </button>
                       <button
                         onClick={() => {
@@ -422,7 +424,7 @@ const FeedbackPage: React.FC = () => {
                         }}
 className="px-6 py-3 bg-[var(--accent)] hover:bg-[var(--accent)]/90 text-[var(--accent-contrast)] rounded-xl text-[11px] font-semibold tracking-wide transition-all"
                       >
-                        Submit Another
+                        {t('feedback.submit_view.success.submit_another')}
                       </button>
                     </div>
                   </div>
@@ -431,27 +433,27 @@ className="px-6 py-3 bg-[var(--accent)] hover:bg-[var(--accent)]/90 text-[var(--
                     <div className="space-y-6">
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div className="space-y-2">
-                          <label className="text-[11px] font-semibold tracking-wide text-[var(--text-muted)] ml-1">Type</label>
+                          <label className="text-[11px] font-semibold tracking-wide text-[var(--text-muted)] ml-1">{t('feedback.submit_view.type')}</label>
                           <div className="flex gap-2 p-1.5 bg-[var(--glass-bg)] border border-[var(--glass-border)] rounded-xl">
-                            {(['issue', 'feedback', 'feature'] as const).map((t) => (
+                            {(['issue', 'feedback', 'feature'] as const).map((t_type) => (
                               <button
-                                key={t}
+                                key={t_type}
                                 type="button"
-                                onClick={() => setType(t)}
+                                onClick={() => setType(t_type)}
                                 className={cn(
                                   "flex-1 py-2.5 rounded-xl text-[10px] font-semibold tracking-wide transition-all uppercase",
-                                  type === t 
+                                  type === t_type 
                                     ? "bg-[var(--accent)] text-[var(--accent-contrast)] shadow-lg border border-[var(--accent)]" 
                                     : "text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--glass-bg)]"
                                 )}
                               >
-                                {t}
+                                {t(`feedback.submit_view.types.${t_type}`)}
                               </button>
                             ))}
                           </div>
                         </div>
                         <div className="space-y-2">
-                          <label className="text-[11px] font-semibold tracking-wide text-[var(--text-muted)] ml-1">Email (optional)</label>
+                          <label className="text-[11px] font-semibold tracking-wide text-[var(--text-muted)] ml-1">{t('feedback.submit_view.email_optional')}</label>
                           <input 
                             type="email" 
                             placeholder="your@email.com"
@@ -463,10 +465,10 @@ className="px-6 py-3 bg-[var(--accent)] hover:bg-[var(--accent)]/90 text-[var(--
                       </div>
 
                       <div className="space-y-2">
-                        <label className="text-[11px] font-semibold tracking-wide text-[var(--text-muted)] ml-1">Your Message</label>
+                        <label className="text-[11px] font-semibold tracking-wide text-[var(--text-muted)] ml-1">{t('feedback.submit_view.your_message')}</label>
                         <textarea 
                           required
-                          placeholder="Describe the issue or share your thoughts..."
+                          placeholder={t('feedback.submit_view.message_placeholder')}
                           value={message}
                           onChange={(e) => setMessage(e.target.value)}
                           className="w-full h-48 bg-[var(--glass-bg)] border border-[var(--glass-border)] rounded-xl p-6 text-[13px] text-[var(--text-primary)] outline-none focus:border-[var(--accent)]/50 transition-all resize-none custom-scroll placeholder:text-[var(--text-muted)]"
@@ -477,7 +479,7 @@ className="px-6 py-3 bg-[var(--accent)] hover:bg-[var(--accent)]/90 text-[var(--
                     {submitStatus === 'error' && (
                       <div className="flex items-center gap-3 p-4 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400">
                         <AlertCircle className="w-4 h-4" />
-                        <span className="text-[11px] font-semibold tracking-wide">Failed to send. Please try again.</span>
+                        <span className="text-[11px] font-semibold tracking-wide">{t('feedback.submit_view.error')}</span>
                       </div>
                     )}
 
@@ -491,7 +493,7 @@ className="px-6 py-3 bg-[var(--accent)] hover:bg-[var(--accent)]/90 text-[var(--
                       ) : (
                         <>
                           <Send className="w-4 h-4" />
-                          <span className="text-[11px] font-semibold tracking-wide">Submit Feedback</span>
+                          <span className="text-[11px] font-semibold tracking-wide">{t('feedback.submit_view.submit_button')}</span>
                         </>
                       )}
                     </button>

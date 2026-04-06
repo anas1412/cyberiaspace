@@ -57,6 +57,7 @@ export const SystemTray: React.FC<SystemTrayProps> = ({
 
         {/* Interface Cluster: Theme, Shortcuts, Help, Settings */}
         <div className="flex items-center gap-1.5 glass backdrop-blur-xl p-1 rounded-2xl border border-[var(--glass-border)] h-[44px] shadow-lg shadow-[var(--glass-border)] bg-[var(--glass-bg)]">
+          {/* Theme Toggle */}
           <button
             onClick={toggleTheme}
             aria-label="Toggle theme"

@@ -1,0 +1,477 @@
+{
+  "nav": {
+    "features": "Fonctionnalités",
+    "about": "À propos",
+    "faq": "FAQ",
+    "contact": "Contact",
+    "pricing": "Tarifs",
+    "launch": "Lancer",
+    "login": "Connexion",
+    "dark_mode": "Mode sombre",
+    "light_mode": "Mode clair"
+  },
+  "homepage": {
+    "hero": {
+      "title": "Le Seul Espace de Travail",
+      "subtitle": "Dont Vous Aurez Jamais Besoin",
+      "description": "Pensée visuelle. Gestion des tâches. Planification de calendrier. IA qui passe à l'action. Stockage de fichiers. Tout est connecté. Tout au même endroit.",
+      "cta_free": "Essayer Gratuitement",
+      "cta_demo": "Voir la Démo"
+    },
+    "social_proof": {
+      "adopters": "Plus de 50 adoptants précoces"
+    },
+    "features": {
+      "title_start": "Tout ce dont vous avez besoin pour ",
+      "title_accent": "mieux travailler",
+      "subtitle": "Quatre vues. Une IA qui agit. Tous vos fichiers. Fonctionne partout.",
+      "unified": {
+        "title": "Un espace. Quatre vues.",
+        "description": "Canevas pour le brainstorming, Kanban pour les tâches, Calendrier pour les échéances, Répertoire pour l'organisation. Basculez instantanément sur les mêmes données—pas d'export, pas d'import."
+      },
+      "agentic": {
+        "title": "Une IA qui passe à l'action",
+        "description": "Oracle ne se contente pas de discuter. Il lit vos fichiers, répond aux questions, crée des tâches, modifie le contenu et garde votre espace organisé—de manière autonome."
+      },
+      "storage": {
+        "title": "Tous vos fichiers, au même endroit",
+        "description": "Stockez des PDF, des images, des documents et des liens à côté de vos pensées. Tout est indexé et consultable. Votre base de connaissances complète."
+      },
+      "sync": {
+        "title": "Fonctionne partout",
+        "description": "Commencez sur ordinateur, continuez sur mobile. Priorité au local avec synchronisation automatique dans le cloud. Votre espace de travail vous suit."
+      }
+    },
+    "about": {
+      "title_start": "Pourquoi ça ",
+      "title_accent": "marche",
+      "subtitle": "Votre cerveau n'est pas un tableur. Votre espace ne devrait pas l'être non plus.",
+      "scattered": {
+        "title": "Informations dispersées",
+        "description": "Notes, documents et idées partout. Passer d'une application à l'autre fait perdre du temps et brise votre flux."
+      },
+      "visual": {
+        "title": "Organisation visuelle",
+        "description": "Visualisez tout d'un coup d'œil. Organisez vos documents et vos idées visuellement, comme sur un bureau, mais en mieux."
+      },
+      "agentic_action": {
+        "title": "Une IA qui passe à l'action",
+        "description": "L'IA Oracle lit vos fichiers, répond aux questions et peut créer des tâches ou modifier du contenu — sans que vous ayez à lever le petit doigt."
+      },
+      "ownership": {
+        "title": "Vos données vous appartiennent",
+        "description": "Votre travail vous appartient. Exportez tout à tout moment. Pas de verrouillage propriétaire, pas de ruses."
+      }
+    },
+    "demo": {
+      "title_start": "Voyez-le en ",
+      "title_accent": "action",
+      "description": "Regardez l'IA Oracle construire un espace de recherche complexe en organisant des documents, des images et des cartes en temps réel."
+    },
+    "testimonials": {
+      "title_start": "Aimé par les ",
+      "title_accent": "penseurs",
+      "description": "Rejoignez d'autres chercheurs, designers et ingénieurs qui ont amélioré leur espace mental."
+    },
+    "community": {
+      "title": "Rejoignez la communauté",
+      "description": "Aidez à façonner la plateforme. Partagez vos commentaires, signalez des bugs et connectez-vous avec d'autres penseurs.",
+      "cta": "Rejoindre Discord"
+    },
+    "faq": {
+      "title_start": "Questions & ",
+      "title_accent": "Réponses",
+      "subtitle": "Tout ce que vous devez savoir sur la plateforme.",
+      "items": [
+        {
+          "question": "Qu'est-ce que Cyberia Space ?",
+          "answer": "Cyberia combine quatre vues — Canevas, Répertoire, Kanban et Calendrier — sur les mêmes données. Basculez instantanément entre les canevas libres, les vues en liste, les tableaux de tâches et les vues chronologiques. L'IA Oracle agit sur votre contenu, ne se contente pas de répondre aux questions. C'est le seul espace de travail où l'IA ne fait pas que discuter — elle crée, modifie et organise."
+        },
+        {
+          "question": "Mes données sont-elles privées et sécurisées ?",
+          "answer": "Oui. Votre espace suit une philosophie 'Local-First'. Par défaut, tout votre travail est stocké localement dans l'IndexedDB de votre navigateur. Lorsque vous vous authentifiez, les données sont synchronisées en toute sécurité via un cryptage HTTPS/TLS en transit et stockées en toute sécurité dans le cloud."
+        },
+        {
+          "question": "Comment l'IA 'Oracle' gère-t-elle mes données ?",
+          "answer": "Oracle utilise des modèles de raisonnement avancés pour analyser votre espace en temps réel. Nous n'utilisons jamais vos données personnelles ou votre contenu pour entraîner des modèles d'IA. Votre historique reste local sur votre appareil."
+        },
+        {
+          "question": "Que se passe-t-il si je passe du forfait Pro au forfait Gratuit ?",
+          "answer": "Lorsque vous passez à un forfait inférieur, rien n'est supprimé. Toutes vos pensées, espaces et fichiers restent en sécurité et accessibles. Vous ne pourrez simplement plus créer au-delà des limites du forfait gratuit jusqu'à ce que vous repassiez au forfait supérieur."
+        },
+        {
+          "question": "Les abonnements se renouvellent-ils automatiquement ?",
+          "answer": "Cela dépend de votre fournisseur. Les paiements locaux via Flouci sont manuels (pas de prélèvements automatiques). Les abonnements internationaux via Polar.sh sont récurrents et peuvent être annulés à tout moment via le portail client."
+        },
+        {
+          "question": "Pourquoi n'y a-t-il pas encore d'application mobile ?",
+          "answer": "Cyberia est conçu pour les ordinateurs. Le travail de précision sur un canevas nécessite une souris et de l'espace à l'écran. Des applications mobiles compagnons arrivent bientôt."
+        }
+      ]
+    },
+    "contact": {
+      "title_start": "Contactez-",
+      "title_accent": "nous",
+      "subtitle": "Vous avez des questions ou des commentaires ? Nous aimerions avoir de vos nouvelles.",
+      "form": {
+        "name": "Nom",
+        "email": "E-mail",
+        "message": "Message",
+        "placeholder_name": "Jeanne Dupont",
+        "placeholder_email": "jeanne@exemple.com",
+        "placeholder_message": "Comment pouvons-nous vous aider ?",
+        "submit": "Envoyer le Message",
+        "submitting": "Envoi en cours...",
+        "success": "Message envoyé avec succès",
+        "success_desc": "Nous vous répondrons sous peu.",
+        "error": "Échec de l'envoi du message. Veuillez réessayer."
+      }
+    },
+    "cta_section": {
+      "title": "Prêt ?",
+      "description": "Le seul espace de travail avec Canevas, Répertoire, Kanban, Calendrier, une IA qui agit et un stockage de fichiers — tout-en-un.",
+      "cta": "Essayer Gratuitement"
+    }
+  },
+  "footer": {
+    "privacy": "Politique de Confidentialité",
+    "terms": "Conditions de Vente (CGV)",
+    "legal": "Mentions Légales",
+    "contact": "Contact",
+    "feedback": "Commentaires"
+  },
+  "pricing": {
+    "hero": {
+      "title_pro": "Vous Êtes Déjà ",
+      "title_unlock": "Libérez Votre ",
+      "title_accent": "Potentiel",
+      "subtitle_pro": "Votre accès Pro est valide jusqu'au {{date}}. Profitez de votre accès illimité.",
+      "subtitle_unlock": "Commencez gratuitement, passez au forfait supérieur quand vous êtes prêt. Choisissez le forfait qui convient à votre flux de travail."
+    },
+    "status": {
+      "failed": "Échec du Paiement",
+      "failed_desc": "Le paiement a été annulé ou a échoué. Votre compte n'a pas été débité.",
+      "try_another": "Essayer une Autre Méthode",
+      "return": "Retourner à l'Espace de Travail",
+      "success": "Vous Êtes Pro !",
+      "verifying": "Vérification de la Mise à Niveau"
+    },
+    "pro_card": {
+      "active_badge": "Membre Pro Actif",
+      "unlocked_title": "Tout est déverrouillé.",
+      "unlocked_desc": "Vous avez un accès complet à toutes les fonctionnalités Pro, y compris les modèles d'IA illimités, l'intelligence des fichiers, les capacités agentiques et les espaces étendus.",
+      "manage_billing": "Gérer la Facturation",
+      "access_space": "Accéder à Mon Espace",
+      "unlock_pro": "Débloquer Pro",
+      "pro_desc": "IA Agentique + {{storage}} Mo de stockage cloud.",
+      "feature_ai": {
+        "title": "Centrale d'IA Tout-en-Un",
+        "desc": "Obtenez un accès de niveau Pro à ChatGPT, Claude, Google Gemini et plus encore, le tout au même endroit. Nos agents sont conscients de l'espace, peuvent rechercher, créer, modifier et supprimer directement là où vous travaillez."
+      },
+      "feature_spaces": {
+        "title": "Espaces de Travail Agentiques Étendus",
+        "desc": "Créez jusqu'à {{maxSpaces}} espaces avec {{maxThoughts}} pensées chacun (le forfait Gratuit limite à {{freeSpaces}} espaces)."
+      },
+      "feature_files": {
+        "title": "Intelligence des Fichiers & Plus de Stockage",
+        "desc": "Téléchargez et analysez des documents, des images et des PDF. Comprend {{storage}} Mo de stockage cloud sécurisé."
+      },
+      "mobile_app": {
+        "title": "App Mobile Compagnon",
+        "badge": "Bientôt Disponible",
+        "desc": "Emmenez vos pensées partout. Accédez et synchronisez vos espaces instantanément sur iOS and Android."
+      }
+    },
+    "checkout": {
+      "monthly": "Mensuel",
+      "yearly": "Annuel",
+      "save": "-{{amount}}",
+      "local_pricing": "Tarification Locale Active",
+      "global_price": "Prix Global : {{price}} $ USD",
+      "per_month": "Par Mois",
+      "per_year": "Par An",
+      "manual_renewal": "Renouvellement manuel via Flouci. Pas de prélèvements automatiques.",
+      "recurring_yearly": "Abonnement annuel récurrent via Polar.sh. Annulez à tout moment.",
+      "recurring_monthly": "Abonnement mensuel récurrent via Polar.sh. Annulez à tout moment.",
+      "agree_terms": "J'accepte les Conditions d'Utilisation et la Politique de Confidentialité",
+      "upgrade_now": "Passer au Forfait Supérieur",
+      "processing": "Traitement en cours...",
+      "signin_note": "Veuillez vous connecter à votre compte avant de passer au forfait supérieur.",
+      "signin_cta": "Se Connecter pour Continuer",
+      "security_note": "Paiements locaux et mondiaux sécurisés via {{provider}}."
+    },
+    "enterprise": {
+      "title": "Entreprise",
+      "subtitle": "Le Seul Espace de Travail Dont Votre Équipe Aura Jamais Besoin",
+      "features": {
+        "members": "5+ membres d'équipe",
+        "storage": "{{storage}} Go de stockage par utilisateur",
+        "collaboration": "Collaboration d'équipe en temps réel dans les espaces partagés",
+        "support": "Support prioritaire",
+        "ai_limits": "Limites d'utilisation de l'IA plus élevées"
+      },
+      "price": "25 $",
+      "per_seat": "/siège",
+      "starting_at": "À partir de 5 sièges",
+      "cta": "Contacter Nous",
+      "discounts": "Remises sur volume disponibles"
+    },
+    "comparison": {
+      "cta_show": "Voir la Comparaison Complète",
+      "cta_hide": "Masquer la Comparaison Complète",
+      "header": "Comparaison des Fonctionnalités",
+      "free": "Gratuit",
+      "pro": "Pro",
+      "enterprise": "Entreprise",
+      "spaces": "espaces",
+      "rows": {
+        "workspaces": "Espaces de Travail Agentiques",
+        "thoughts": "Pensées par Espace",
+        "storage": "Stockage Cloud",
+        "members": "Membres de l'Équipe",
+        "ai_quota": "Quota de requêtes IA",
+        "ai_models": "Modèles d'IA",
+        "agentic": "Capacités Agentiques",
+        "file_intel": "Intelligence des Fichiers",
+        "collaboration": "Collaboration d'Équipe",
+        "support": "Support",
+        "dedicated": "Dédié",
+        "full_access": "Accès complet",
+        "generous": "Quota généreux",
+        "higher": "Quota plus élevé",
+        "all_models": "Tous les modèles",
+        "all_files": "Tous les types de fichiers"
+      }
+    },
+    "status": {
+      "failed": "Échec du Paiement",
+      "failed_desc": "Le paiement a été annulé ou a échoué. Votre compte n'a pas été débité.",
+      "try_another": "Essayer une Autre Méthode",
+      "return": "Retourner à l'Espace de Travail",
+      "success": "Vous Êtes Pro !",
+      "verifying": "Vérification de la Mise à Niveau"
+    }
+  },
+  "legal": {
+    "back": "Retour",
+    "privacy": {
+      "title": "Politique de Confidentialité",
+      "effective_date": "Date d'effet : 12 mars 2026",
+      "articles": {
+        "article_1": {
+          "title": "Article 1 : Aperçu",
+          "content": "Cyberia Space (« nous », « notre » ou « nos ») est un outil de productivité spatiale conçu avec une philosophie Local-First. Nous attachons la plus grande importance à la protection de vos données personnelles et souhaitons assurer le meilleur niveau de protection conformément aux réglementations applicables."
+        },
+        "article_2": {
+          "title": "Article 2 : Stockage des données Local-First",
+          "content_1": "Par défaut, toutes les pensées, tâches, dessins et fichiers que vous créez sont stockés localement dans la base de données interne de votre navigateur (IndexedDB).",
+          "content_2": "Lorsque vous authentifiez votre compte, votre espace est automatiquement synchronisé avec le cloud pour la sauvegarde et l'accès multi-appareils."
+        },
+        "article_3": {
+          "title": "Article 3 : Données que nous collectons",
+          "content": "Nous collectons un minimum de données personnelles pour fournir et améliorer nos services :",
+          "identity_info": "Informations d'identité :",
+          "identity_info_desc": "Adresse e-mail et nom de profil via Google OAuth pour la gestion du compte et la vérification de l'identité.",
+          "usage_data": "Données d'utilisation :",
+          "usage_data_desc": "Journaux techniques de base pour détecter les erreurs et optimiser les performances de l'application.",
+          "payment_data": "Données de paiement :",
+          "payment_data_desc": "Nous recevons des jetons de confirmation de transaction de nos fournisseurs (Flouci et Polar.sh). Nous ne stockons pas vos numéros de carte de crédit ou vos détails financiers sensibles."
+        },
+        "article_4": {
+          "title": "Article 4 : Synchronisation Cloud",
+          "content_1": "Lorsque vous authentifiez votre compte, les métadonnées de votre espace et vos ressources de recherche sont stockées en toute sécurité dans Supabase (base de données PostgreSQL et Cloud Storage).",
+          "content_2": "Cela permet un stockage persistant sur plusieurs appareils et assure la continuité des données si le cache de votre navigateur est vidé."
+        },
+        "article_5": {
+          "title": "Article 5 : Protocole de données IA (L'Oracle)",
+          "content": "Les interactions avec « L'Oracle » impliquent une inférence en temps réel via des modèles à haute vitesse (hébergés via OpenRouter, utilisant des modèles d'OpenAI, Google, Anthropic, etc.).",
+          "bullet_1": "Les extraits d'espace pertinents sont traités temporairement pour générer des réponses.",
+          "bullet_2": "Vos données d'espace ne sont jamais utilisées pour l'entraînement de modèles.",
+          "bullet_3": "L'historique des discussions de l'IA est stocké localement sur votre appareil pour une confidentialité maximale."
+        },
+        "article_6": {
+          "title": "Article 6 : Mesures de sécurité",
+          "content": "Nous avons mis en œuvre des mesures de sécurité robustes pour éviter que vos données personnelles ne soient accidentellement perdues, utilisées ou consultées de manière non autorisée. L'accès à vos données est strictement limité aux processus nécessaires à la fourniture du service."
+        },
+        "article_7": {
+          "title": "Article 7 : Vos droits légaux",
+          "content": "Conformément aux réglementations tunisiennes et internationales sur la protection des données, vous avez le droit d'accéder, de corriger ou de supprimer vos données personnelles.",
+          "portability": "Portabilité :",
+          "portability_desc": "Vous pouvez exporter l'intégralité de votre espace sous forme de fichier JSON à tout moment.",
+          "erasure": "Effacement :",
+          "erasure_desc": "Vous pouvez demander la suppression de votre compte et des données cloud associées directement depuis les paramètres de l'application."
+        },
+        "article_8": {
+          "title": "Article 8 : Contact",
+          "content": "Pour toute question concernant cette politique ou pour exercer vos droits, veuillez nous contacter à :"
+        }
+      }
+    },
+    "cgv": {
+      "title": "Conditions Générales de Vente (CGV)",
+      "last_updated": "Dernière mise à jour : 29 mars 2026",
+      "articles": {
+        "article_1": {
+          "title": "Article 1 : Champ d'application et acceptation",
+          "content": "Ces Conditions Générales de Vente (CGV) s'appliquent à tous les abonnements et services achetés sur Cyberia Space (cyberia.tn). En mettant à niveau votre compte, vous acceptez d'être lié par ces conditions. Cyberia Space est une plateforme spatiale développée par Cyberia AI Studio."
+        },
+        "article_2": {
+          "title": "Article 2 : Abonnement et compte",
+          "content": "Pour accéder aux fonctionnalités Pro, vous devez créer un compte et vous abonner à un forfait. Votre abonnement est lié à votre identité Google.",
+          "pro_tier": "Niveau Pro :",
+          "pro_tier_desc": "Accorde un stockage amélioré, des limites d'IA Oracle plus élevées et d'autres fonctionnalités premium.",
+          "account_responsibility": "Responsabilité du compte :",
+          "account_responsibility_desc": "Vous êtes responsable de toute activité se produisant sous votre compte. Nous nous réservons le droit de suspendre les comptes violant nos politiques."
+        },
+        "article_3": {
+          "title": "Article 3 : Facturation et renouvellements",
+          "local_payments": "Paiements locaux (Tunisie)",
+          "local_payments_desc": "Les paiements via Flouci suivent un modèle de renouvellement manuel. Nous ne débitons pas automatiquement votre mode de paiement. Vous devez renouveler manuellement votre abonnement pour maintenir l'accès Pro.",
+          "international_payments": "Paiements internationaux",
+          "international_payments_desc": "Les abonnements via Polar.sh sont des abonnements récurrents automatiques. Votre mode de paiement sera débité au début de chaque cycle de facturation (mensuel ou annuel), sauf si vous annulez votre abonnement via le portail client."
+        },
+        "article_4": {
+          "title": "Article 4 : Tarification et paiement",
+          "content": "Les prix sont indiqués dans l'application et sur le site web dans la devise locale (TND pour la Tunisie) ou en USD pour les utilisateurs internationaux.",
+          "local_payments": "Paiements locaux (Tunisie) :",
+          "local_payments_desc": "Gérés en toute sécurité via Flouci.",
+          "international_payments": "Paiements internationaux :",
+          "international_payments_desc": "Gérés en toute sécurité via Polar.sh.",
+          "security": "Sécurité :",
+          "security_desc": "Nous ne stockons pas vos données financières. Toutes les transactions sont cryptées et traitées par nos passerelles de paiement tierces."
+        },
+        "article_5": {
+          "title": "Article 5 : Politique de remboursement",
+          "content": "Compte tenu de la nature numérique des services et de l'accès instantané aux fonctionnalités Pro et aux ressources de traitement de l'IA :",
+          "final_sale": "Toutes les ventes sont définitives. Nous n'offrons pas de remboursements ou de crédits pour quelque raison que ce soit.",
+          "free_tier_note": "Veuillez utiliser le forfait gratuit pour vous assurer que le service répond à vos besoins avant de passer au forfait supérieur."
+        },
+        "article_6": {
+          "title": "Article 6 : Disponibilité du service",
+          "content": "Cyberia Space s'efforce d'assurer une disponibilité élevée mais est fourni « en l'état ». Nous ne sommes pas responsables de la perte de données due à une défaillance technique, à l'instabilité du navigateur ou à des conflits de synchronisation. Les utilisateurs sont encouragés à utiliser régulièrement la fonction « Exporter l'espace de travail »."
+        },
+        "article_7": {
+          "title": "Article 7 : Politique d'utilisation acceptable",
+          "content_1": "Cyberia Space est un espace de travail et une plateforme de gestion des connaissances alimentés par l'IA. Il est conçu pour la productivité personnelle, la recherche et l'analyse assistée par l'IA de documents privés.",
+          "content_2": "Utilisations acceptables :",
+          "bullet_1": "Gestion des connaissances personnelles et organisation des notes",
+          "bullet_2": "Analyse assistée par l'IA de documents de recherche et de PDF téléchargés de manière privée",
+          "bullet_3": "Collaboration d'équipe au sein d'espaces de travail privés et authentifiés",
+          "bullet_4": "Stockage de fichiers en tant que pièces jointes contextuelles aux pensées et aux projets"
+        },
+        "article_8": {
+          "title": "Article 8 : Utilisations interdites",
+          "content": "Les utilisations suivantes de Cyberia Space sont strictement interdites :",
+          "bullet_1": "Télécharger ou partager des fichiers dans le but de distribuer du contenu au public ou à des tiers",
+          "bullet_2": "Utiliser la couche de stockage comme un mécanisme de distribution directe de fichiers ou de « cyberlocker »",
+          "bullet_3": "Tenter de contourner les contrôles d'accès ou d'extraire des fichiers pour un partage non autorisé",
+          "bullet_4": "Héberger du contenu qui enfreint les droits de propriété intellectuelle",
+          "bullet_5": "Télécharger du contenu qui viole les lois applicables ou nos Conditions d'Utilisation",
+          "bullet_6": "Utiliser la plateforme comme un CDN ou un service d'hébergement de fichiers public",
+          "violation_note": "Les violations peuvent entraîner la suspension immédiate du compte, la suppression permanente du contenu et le signalement aux autorités compétentes."
+        },
+        "article_9": {
+          "title": "Article 9 : Loi applicable",
+          "content": "Ces Conditions de Vente et tout litige en découlant seront régis par les lois de la Tunisie."
+        }
+      },
+      "copyright": "© 2026 CYBERIA AI STUDIO"
+    },
+    "notice": {
+      "title": "Mentions Légales",
+      "last_updated": "Dernière mise à jour : 12 mars 2026",
+      "sections": {
+        "section_1": {
+          "title": "1. Identité de l'entreprise",
+          "content": "Cyberia Space est développé et exploité par Anas Bassoumi, opérant sous le nom commercial Cyberia AI Studio en Tunisie.",
+          "tax_id": "Identifiant fiscal (Matricule Fiscal)",
+          "registered_address": "Adresse enregistrée",
+          "address": "Rue Taieb El Azzabi, Hammamet, 8050, Nabeul, Tunisie",
+          "legal_rep": "Représentant légal"
+        },
+        "section_2": {
+          "title": "2. Hébergement du site web",
+          "hosting_provider": "Vercel Inc.",
+          "hosting_address": "440 N Barranca Ave #4133, Covina, CA 91723, États-Unis.",
+          "website": "Site web :"
+        },
+        "section_3": {
+          "title": "3. Propriété intellectuelle",
+          "content": "Tout le contenu, le design, le code et les interfaces liés à Cyberia Space sont la propriété exclusive de Cyberia AI Studio. Toute reproduction, modification ou distribution non autorisée est strictement interdite. Les utilisateurs conservent la propriété du contenu qu'ils créent au sein de leur espace."
+        },
+        "section_4": {
+          "title": "4. Loi applicable",
+          "content": "Ces Mentions Légales et tout litige en découlant seront régis par les lois de la Tunisie. Tout litige sera résolu conformément à la juridiction tunisienne."
+        }
+      },
+      "framework": "Cadre juridique de Cyberia"
+    },
+    "contact": {
+      "title": "Contact",
+      "subtitle": "Contactez l'équipe",
+      "send_message": "Envoyer un message",
+      "email_support": "Support par e-mail",
+      "email_support_desc": "Vous préférez l'e-mail ? Envoyez-nous un message directement.",
+      "join_community": "Rejoindre la communauté",
+      "join_community_desc": "Connectez-vous avec d'autres penseurs. Partagez vos commentaires et vos bugs.",
+      "join_discord": "Rejoindre Discord",
+      "copied": "Copié !"
+    }
+  },
+  "feedback": {
+    "title": "Fiabilité du Système & Retours",
+    "description": "Aidez-nous à affiner l'espace cinétique. Partagez vos pensées, signalez des problèmes ou suggérez de nouveaux protocoles.",
+    "my_feedback": "Mes Retours",
+    "all_feedback": "Tous les Retours",
+    "submit": "Soumettre",
+    "my_view": {
+      "title": "Mes Retours",
+      "loading": "Chargement...",
+      "sign_in_required": {
+        "title": "Connexion Requise",
+        "description": "Connectez-vous pour voir vos retours soumis.",
+        "cta": "Soumettre un Retour"
+      },
+      "no_feedback": {
+        "title": "Pas Encore de Retours",
+        "description": "Vous n'avez pas encore soumis de retours.",
+        "cta": "Soumettre un Retour"
+      },
+      "cyberia_response": "Réponse Cyberia"
+    },
+    "all_view": {
+      "title": "Tous les Retours",
+      "loading": "Chargement...",
+      "no_feedback": {
+        "title": "Pas Encore de Retours",
+        "description": "Soyez le premier à soumettre un retour !"
+      }
+    },
+    "submit_view": {
+      "type": "Type",
+      "types": {
+        "issue": "Problème",
+        "feedback": "Retour",
+        "feature": "Fonctionnalité"
+      },
+      "email_optional": "E-mail (optionnel)",
+      "your_message": "Votre Message",
+      "message_placeholder": "Décrivez le problème ou partagez vos pensées...",
+      "submit_button": "Soumettre un Retour",
+      "submitting": "Soumission...",
+      "success": {
+        "title": "Envoyé !",
+        "description": "Votre retour a été enregistré dans le système.",
+        "view_my": "Voir Mes Retours",
+        "submit_another": "Soumettre un Autre"
+      },
+      "error": "Échec de l'envoi. Veuillez réessayer."
+    },
+    "status": {
+      "none": "aucun",
+      "todo": "à faire",
+      "doing": "en cours",
+      "done": "terminé"
+    }
+  }
+}
