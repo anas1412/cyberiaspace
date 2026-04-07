@@ -951,7 +951,7 @@ useEffect(() => {
                           animate={{ opacity: 1, y: 0, scale: 1 }}
                           exit={{ opacity: 0, y: -8, scale: 0.96 }}
                           transition={{ duration: 0.2, ease: [0.23, 1, 0.32, 1] }}
-                          className="absolute top-full left-1/2 -translate-x-1/2 mt-3 w-64 glass backdrop-blur-xl rounded-2xl border border-[var(--glass-border)] shadow-2xl overflow-hidden z-[100]"
+                          className="absolute top-full left-1/2 -translate-x-1/2 mt-3 w-64 bg-[var(--bg-main)] rounded-2xl border border-[var(--glass-border)] shadow-2xl overflow-hidden z-[100]"
                         >
                           {/* Header */}
                           <div className="px-4 py-2.5 border-b border-[var(--glass-border)] bg-[var(--bg-main)]/20">
