@@ -81,7 +81,7 @@ export const DirectorySidebar: React.FC<DirectorySidebarProps> = ({ groups }) =>
   return (
     <div className="flex flex-col h-full overflow-hidden">
       {/* Header */}
-      <div className="directory-sidebar-header p-4 md:p-5 border-b border-[var(--glass-border)] text-[9px] md:text-[10px] font-black tracking-[0.2em] uppercase text-[var(--accent)] bg-[var(--glass-bg)] z-[40] flex-shrink-0 flex items-center justify-between">
+      <div className="directory-sidebar-header p-4 md:p-5 border-b border-[var(--glass-border)] text-[9px] md:text-[10px] font-black tracking-[0.2em] uppercase text-[var(--accent)] z-[40] flex-shrink-0 flex items-center justify-between">
         <span>Directory</span>
         <span className="text-[8px] text-[var(--text-muted)] tracking-normal normal-case font-medium">Search in Filters</span>
       </div>

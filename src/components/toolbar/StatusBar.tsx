@@ -87,11 +87,11 @@ export const StatusBar: React.FC<StatusBarProps> = ({
           <Redo2 className="w-3.5 h-3.5 md:w-4 md:h-4" />
         </button>
       </div>
-
-      <div className="h-3 w-[1px] bg-[var(--glass-border)] mx-0.5"></div>
       
       {/* Physics Intensity Slider - Spatial Mode Only */}
       {activeSpace?.mode === 'spatial' && (
+        <>
+          <div className="h-3 w-[1px] bg-[var(--glass-border)] mx-0.5"></div>
         <div className="flex items-center gap-2">
           <div className="relative group">
             <div className="absolute bottom-full mb-4 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-all duration-300 translate-y-2 group-hover:translate-y-0 pointer-events-none whitespace-nowrap z-[10001]">
@@ -114,6 +114,7 @@ export const StatusBar: React.FC<StatusBarProps> = ({
             </div>
           </div>
         </div>
+        </>
       )}
 
       {/* Zoom Controls - Spatial Mode Only */}

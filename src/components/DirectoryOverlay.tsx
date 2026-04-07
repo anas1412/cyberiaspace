@@ -37,7 +37,8 @@ const DirectoryOverlay: React.FC = () => {
     >
       {/* Left: Directory Sidebar (grouped list) */}
       <div
-        className="directory-sidebar w-full md:w-[260px] h-full glass backdrop-blur-xl rounded-2xl flex flex-col overflow-hidden pointer-events-auto z-[30] relative border border-[var(--glass-border)] shadow-2xl"
+        className="directory-sidebar w-full md:w-[260px] h-full rounded-2xl flex flex-col overflow-hidden pointer-events-auto z-[30] relative border border-[var(--glass-border)] shadow-2xl"
+        style={{ background: 'var(--bg-page)' }}
       >
         <DirectorySidebar groups={groups} />
       </div>

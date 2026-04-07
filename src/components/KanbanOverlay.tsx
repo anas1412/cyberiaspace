@@ -24,9 +24,10 @@ const KanbanOverlay: React.FC = () => {
 
       {/* Sidebar - Unplanned/Unscheduled */}
       <div 
-        className="kanban-sidebar w-full md:w-[260px] min-h-[200px] md:min-h-0 glass backdrop-blur-xl rounded-2xl flex flex-col overflow-hidden pointer-events-auto z-[30] relative border border-[var(--glass-border)] shadow-2xl"
+        className="kanban-sidebar w-full md:w-[260px] min-h-[200px] md:min-h-0 rounded-2xl flex flex-col overflow-hidden pointer-events-auto z-[30] relative border border-[var(--glass-border)] shadow-2xl"
+        style={{ background: 'var(--bg-page)' }}
       >
-        <div className="kanban-sidebar-header p-4 md:p-5 border-b border-[var(--glass-border)] text-[9px] md:text-[10px] font-black tracking-[0.2em] uppercase text-[var(--accent)] bg-[var(--glass-bg)] z-[40] sticky top-0 shadow-[var(--shadow-elevation-2)]">
+        <div className="kanban-sidebar-header p-4 md:p-5 border-b border-[var(--glass-border)] text-[9px] md:text-[10px] font-black tracking-[0.2em] uppercase text-[var(--accent)] z-[40] sticky top-0 shadow-[var(--shadow-elevation-2)]">
           Unplanned
         </div>
         <div id="cal-sidebar-content" className="cal-sidebar-content flex-1 overflow-y-auto overflow-x-hidden relative p-4 md:p-5 custom-scroll overscroll-y-contain">

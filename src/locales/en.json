@@ -478,7 +478,7 @@
   },
   "login": {
     "back": "Back",
-    "title": "WELCOME BACK",
+    "title": "WELCOME ",
     "title_accent": "BACK",
     "subtitle": "Synchronize your space",
     "error_title": "Authentication snaged.",
