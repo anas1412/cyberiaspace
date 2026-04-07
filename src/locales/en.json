@@ -475,5 +475,27 @@
       "doing": "doing",
       "done": "done"
     }
+  },
+  "login": {
+    "back": "Back",
+    "title": "WELCOME BACK",
+    "title_accent": "BACK",
+    "subtitle": "Synchronize your space",
+    "error_title": "Authentication snaged.",
+    "error_desc": "Try signing in again.",
+    "description": "Sign in to enable cross-device synchronization, secure cloud backups, and advanced Oracle AI features.",
+    "signing_in": "Signing in...",
+    "signin_google": "Sign in with Google",
+    "divider_or": "Or",
+    "signin_email": "Sign in with Email",
+    "magic_link_sent": "Check your email!",
+    "magic_link_desc": "We sent a magic link to",
+    "magic_link_click": "Click the link in the email to sign in.",
+    "different_email": "Send to a different email",
+    "placeholder_email": "your@email.com",
+    "sending": "Sending...",
+    "send_magic_link": "Send Magic Link",
+    "back_google": "← Back to Google sign in",
+    "footer_agreement": "By signing in, you agree to our policies and the storage of your profile data."
   }
 }

@@ -4,6 +4,7 @@ import { useAuthStore } from '../../store/useAuthStore';
 import { useStore } from '../../store/useStore';
 import { supabase } from '../../services/supabase';
 import { ArrowLeft, AlertCircle, Loader2, Mail, Zap } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
 const GoogleIcon = () => (
   <svg width="18" height="18" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48">
@@ -16,6 +17,7 @@ const GoogleIcon = () => (
 );
 
 const LoginPage: React.FC = () => {
+  const { t } = useTranslation();
   const { status } = useAuthStore();
   
   useEffect(() => {
@@ -125,16 +127,16 @@ const LoginPage: React.FC = () => {
           className="mb-8 flex items-center gap-2 text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors group"
         >
           <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
-          <span className="text-[10px] font-semibold tracking-wide">Back</span>
+          <span className="text-[10px] font-semibold tracking-wide">{t('login.back')}</span>
         </button>
 
         <div className="glass p-8 md:p-16 rounded-2xl border border-[var(--glass-border)] shadow-2xl space-y-10 text-center">
           <div className="space-y-4">
             <h1 className="text-3xl md:text-5xl font-bold text-[var(--text-primary)] tracking-tight leading-none whitespace-nowrap">
-              WELCOME <span style={{ color: 'var(--accent)' }}>BACK</span>
+              {t('login.title')} <span style={{ color: 'var(--accent)' }}>{t('login.title_accent')}</span>
             </h1>
             <p className="text-[12px] md:text-[14px] font-medium text-[var(--text-muted)]">
-              Synchronize your space
+              {t('login.subtitle')}
             </p>
           </div>
 
@@ -142,15 +144,15 @@ const LoginPage: React.FC = () => {
             <div className="bg-red-500/10 border border-red-500/20 rounded-2xl p-4 flex items-center gap-3 animate-shake">
               <AlertCircle className="w-5 h-5 text-red-400 shrink-0" />
               <p className="text-[10px] font-semibold tracking-wide text-red-400 text-left leading-tight">
-                Authentication snaged. <br/>
-                <span className="opacity-60">Try signing in again.</span>
+                {t('login.error_title')}<br/>
+                <span className="opacity-60">{t('login.error_desc')}</span>
               </p>
             </div>
           )}
 
           <div className="space-y-6">
             <p className="text-[13px] md:text-[14px] text-[var(--text-muted)] leading-relaxed font-medium max-w-sm mx-auto">
-              Sign in to enable cross-device synchronization, secure cloud backups, and advanced Oracle AI features.
+              {t('login.description')}
             </p>
 
             {/* Google Button */}
@@ -168,7 +170,7 @@ const LoginPage: React.FC = () => {
                   </div>
                 )}
                 <span className="text-[14px] font-medium whitespace-nowrap">
-                  {isLoading ? 'Signing in...' : 'Sign in with Google'}
+                  {isLoading ? t('login.signing_in') : t('login.signin_google')}
                 </span>
               </button>
             </div>
@@ -177,7 +179,7 @@ const LoginPage: React.FC = () => {
             <div className="relative flex items-center py-2">
               <div className="flex-grow border-t border-[var(--glass-border)]"></div>
               <span className="flex-shrink-0 mx-4 text-[10px] font-medium text-[var(--text-muted)] uppercase tracking-widest">
-                Or
+                {t('login.divider_or')}
               </span>
               <div className="flex-grow border-t border-[var(--glass-border)]"></div>
             </div>
@@ -191,7 +193,7 @@ const LoginPage: React.FC = () => {
                 >
                   <Mail className="w-4 h-4 text-[var(--text-muted)]" />
                   <span className="text-[14px] font-medium whitespace-nowrap">
-                    Sign in with Email
+                    {t('login.signin_email')}
                   </span>
                 </button>
               </div>
@@ -199,12 +201,12 @@ const LoginPage: React.FC = () => {
               <div className="bg-[var(--accent)]/10 border border-[var(--accent)]/20 rounded-2xl p-6 space-y-3">
                 <Zap className="w-8 h-8 text-[var(--accent)] mx-auto" />
                 <p className="text-[13px] font-medium text-[var(--accent)]">
-                  Check your email!
+                  {t('login.magic_link_sent')}
                 </p>
                 <p className="text-[11px] text-[var(--text-muted)] leading-relaxed">
-                  We sent a magic link to <span className="text-[var(--text-primary)]">{email}</span>
+                  {t('login.magic_link_desc')} <span className="text-[var(--text-primary)]">{email}</span>
                   <br />
-                  Click the link in the email to sign in.
+                  {t('login.magic_link_click')}
                 </p>
                 <button
                   onClick={() => {
@@ -213,14 +215,14 @@ const LoginPage: React.FC = () => {
                   }}
                   className="text-[11px] font-medium text-[var(--accent-secondary)] hover:underline"
                 >
-                  Send to a different email
+                  {t('login.different_email')}
                 </button>
               </div>
             ) : (
               <div className="space-y-4">
                 <input
                   type="email"
-                  placeholder="your@email.com"
+                  placeholder={t('login.placeholder_email')}
                   value={email}
                   onChange={(e) => {
                     setEmail(e.target.value);
@@ -242,12 +244,12 @@ const LoginPage: React.FC = () => {
                   {isMagicLinkLoading ? (
                     <>
                       <Loader2 className="w-4 h-4 animate-spin" />
-                      <span>Sending...</span>
+                      <span>{t('login.sending')}</span>
                     </>
                   ) : (
                     <>
                       <Zap className="w-4 h-4" />
-                      <span>Send Magic Link</span>
+                      <span>{t('login.send_magic_link')}</span>
                     </>
                   )}
                 </button>
@@ -261,7 +263,7 @@ const LoginPage: React.FC = () => {
                   }}
                   className="text-[11px] font-medium text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors"
                 >
-                  ← Back to Google sign in
+                  {t('login.back_google')}
                 </button>
               </div>
             )}
@@ -269,8 +271,7 @@ const LoginPage: React.FC = () => {
 
           <div className="pt-8 border-t border-[var(--glass-border)] text-center space-y-4">
             <p className="text-[12px] font-medium text-[var(--text-muted)] italic leading-relaxed">
-              By signing in, you agree to our policies
-              and the storage of your profile data.
+              {t('login.footer_agreement')}
             </p>
             <div className="flex items-center justify-center gap-4 opacity-40 flex-wrap">
               <button
@@ -280,7 +281,7 @@ const LoginPage: React.FC = () => {
                 }}
                 className="text-[10px] font-medium text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors"
               >
-                Privacy Policy
+                {t('footer.privacy')}
               </button>
               <span className="w-0.5 h-0.5 rounded-full bg-[var(--glass-border)]" />
               <button
@@ -290,7 +291,7 @@ const LoginPage: React.FC = () => {
                 }}
                 className="text-[10px] font-medium text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors"
               >
-                Terms of Sale (CGV)
+                {t('footer.terms')}
               </button>
               <span className="w-0.5 h-0.5 rounded-full bg-[var(--glass-border)]" />
               <button
@@ -300,7 +301,7 @@ const LoginPage: React.FC = () => {
                 }}
                 className="text-[10px] font-medium text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors"
               >
-                Legal Notice
+                {t('footer.legal')}
               </button>
               <span className="w-0.5 h-0.5 rounded-full bg-[var(--glass-border)]" />
               <button
@@ -310,7 +311,7 @@ const LoginPage: React.FC = () => {
                 }}
                 className="text-[10px] font-medium text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors"
               >
-                Contact
+                {t('footer.contact')}
               </button>
             </div>
           </div>

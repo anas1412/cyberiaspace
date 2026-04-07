@@ -475,5 +475,27 @@
       "doing": "en cours",
       "done": "terminé"
     }
+  },
+  "login": {
+    "back": "Retour",
+    "title": "BON",
+    "title_accent": "RETOUR",
+    "subtitle": "Synchronisez votre espace",
+    "error_title": "L'authentification a échoué.",
+    "error_desc": "Essayez de vous connecter à nouveau.",
+    "description": "Connectez-vous pour activer la synchronisation multi-appareils, les sauvegardes cloud sécurisées et les fonctionnalités avancées de l'Oracle AI.",
+    "signing_in": "Connexion en cours...",
+    "signin_google": "Se connecter avec Google",
+    "divider_or": "Ou",
+    "signin_email": "Se connecter avec e-mail",
+    "magic_link_sent": "Vérifiez vos e-mails !",
+    "magic_link_desc": "Nous avons envoyé un lien magique à",
+    "magic_link_click": "Cliquez sur le lien dans l'e-mail pour vous connecter.",
+    "different_email": "Envoyer à un autre e-mail",
+    "placeholder_email": "votre@email.com",
+    "sending": "Envoi en cours...",
+    "send_magic_link": "Envoyer le Lien Magique",
+    "back_google": "← Retour à la connexion Google",
+    "footer_agreement": "En vous connectant, vous acceptez nos politiques et le stockage de vos données de profil."
   }
 }

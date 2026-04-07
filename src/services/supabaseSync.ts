@@ -241,7 +241,7 @@ export const supabaseSync = {
     const clean = toSnakeCase(updates)
     const updatePayload: Record<string, unknown> = { updated_at: new Date().toISOString() }
     for (const [key, value] of Object.entries(clean)) {
-      if (key !== 'id' && key !== 'user_id' && key !== 'last_published') {
+      if (key !== 'id' && key !== 'user_id' && key !== 'last_published' && key !== 'published_id') {
         updatePayload[key] = value
       }
     }
