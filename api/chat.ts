@@ -13,7 +13,7 @@ import {
   GetThoughtDetailsSchema,
   OracleThoughtSchema
 } from '../src/types/schemas.js';
-import { TOP_MODELS, MEDIUM_MODELS, SMALL_MODELS, FREE_MODELS, MODEL_TIERS } from './models.js';
+import { TOP_MODELS, MEDIUM_MODELS, SMALL_MODELS, MODEL_TIERS } from './models.js';
 
 const SCHEMA_MAP: Record<string, z.ZodSchema> = {
   'create_thoughts': CreateThoughtsSchema,
@@ -573,6 +573,9 @@ async function* streamOpenRouter(
           tool_choice: 'auto',
           stream: true,
           max_tokens: 1024
+          // Note: For Gemini models with cache_control, we rely on OpenRouter's
+          // provider sticky routing to maximize cache hits. Adding provider.sort
+          // would route to different providers and break caching.
         })
       });
 
@@ -871,61 +874,53 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       return dailyOk || weeklyOk || monthlyOk;
     };
 
-    // WATERFALL LOGIC - checks all periods (daily, weekly, monthly)
-    let selectedModel = requestedModel || (plan === 'pro' ? MEDIUM_MODELS[0] : FREE_MODELS[0]);
-    let tier: 'top' | 'medium' | 'small' | 'free' = 'free';
+    // WATERFALL LOGIC - Pro users only
+    let selectedModel = requestedModel || MEDIUM_MODELS[0];
+    let tier: 'top' | 'medium' | 'small' = 'medium';
     let autoSwitch = false;
 
-    if (plan === 'pro') {
-      // Determine tier of requested model or default to medium
-      if (TOP_MODELS.includes(selectedModel)) {
-        if (isTierAvailable('top')) {
-          tier = 'top';
-        } else if (isTierAvailable('medium')) {
-          tier = 'medium';
-          autoSwitch = true;
-          selectedModel = MEDIUM_MODELS[0]; // Auto-switch to medium
-        } else if (isTierAvailable('small')) {
-          tier = 'small';
-          autoSwitch = true;
-          selectedModel = SMALL_MODELS[0]; // Auto-switch to small
-        } else {
-          tier = 'free';
-          autoSwitch = true;
-          selectedModel = FREE_MODELS[0]; // Auto-switch to free
-        }
-      } else if (MEDIUM_MODELS.includes(selectedModel)) {
-        if (isTierAvailable('medium')) {
-          tier = 'medium';
-        } else if (isTierAvailable('small')) {
-          tier = 'small';
-          autoSwitch = true;
-          selectedModel = SMALL_MODELS[0]; // Auto-switch to small
-        } else {
-          tier = 'free';
-          autoSwitch = true;
-          selectedModel = FREE_MODELS[0]; // Auto-switch to free
-        }
-      } else if (SMALL_MODELS.includes(selectedModel)) {
-        if (isTierAvailable('small')) {
-          tier = 'small';
-        } else {
-          tier = 'free';
-          autoSwitch = true;
-          selectedModel = FREE_MODELS[0]; // Auto-switch to free
-        }
-      } else {
-        tier = 'free';
-      }
-    } else {
-      // Free plan only has free tier - unlimited via free OpenRouter models
-      tier = 'free';
-      selectedModel = FREE_MODELS.includes(selectedModel) ? selectedModel : FREE_MODELS[0];
-      
-      // Free users now have unlimited access - no blocking, just track usage
+    if (plan !== 'pro') {
+      // Non-pro users blocked - should be handled by AI_ENABLED=false on frontend
+      return res.status(403).json({ error: 'AI requires Pro plan' });
     }
 
-    // Increment counters for all periods (even free users for analytics)
+    // Determine tier of requested model or default to medium
+    if (TOP_MODELS.includes(selectedModel)) {
+      if (isTierAvailable('top')) {
+        tier = 'top';
+      } else if (isTierAvailable('medium')) {
+        tier = 'medium';
+        autoSwitch = true;
+        selectedModel = MEDIUM_MODELS[0]; // Auto-switch to medium
+      } else {
+        tier = 'small';
+        autoSwitch = true;
+        selectedModel = SMALL_MODELS[0]; // Auto-switch to small
+      }
+    } else if (MEDIUM_MODELS.includes(selectedModel)) {
+      if (isTierAvailable('medium')) {
+        tier = 'medium';
+      } else if (isTierAvailable('small')) {
+        tier = 'small';
+        autoSwitch = true;
+        selectedModel = SMALL_MODELS[0]; // Auto-switch to small
+      } else {
+        // No quota available at all
+        return res.status(429).json({ error: 'AI quota exhausted' });
+      }
+    } else if (SMALL_MODELS.includes(selectedModel)) {
+      if (isTierAvailable('small')) {
+        tier = 'small';
+      } else {
+        return res.status(429).json({ error: 'AI quota exhausted' });
+      }
+    } else {
+      // Default to medium
+      tier = 'medium';
+      selectedModel = MEDIUM_MODELS[0];
+    }
+
+    // Increment counters for Pro users
     usage.ai_daily_count = (usage.ai_daily_count || 0) + 1;
     if (tier === 'top') {
       usage.ai_top_count = (usage.ai_top_count || 0) + 1;
@@ -991,20 +986,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           msgContent = m.content.map((item: any) => {
             if (typeof item === 'string') return item;
             
-            // TIERED ACCESS: Free users cannot send images/PDFs to the AI
-            const isVisionContent = ['image', 'input_image', 'image_url', 'file', 'document'].includes(item?.type);
-            
-            if (plan === 'free' && isVisionContent) {
-              // Strip vision content for free users - replace with placeholder text
-              if (item.type === 'file' || item.type === 'document') {
-                return { type: 'text', text: `[Document: ${item.title || 'file'} - Upgrade to Pro to analyze files]` };
-              }
-              if (item.type === 'image' || item.type === 'input_image' || item.type === 'image_url') {
-                return { type: 'text', text: '[Image - Upgrade to Pro to analyze images]' };
-              }
-              return null;
-            }
-            
+            // Pro users only - vision content handled normally
             if (item && typeof item === 'object' && (
               item.type === 'text' || 
               item.type === 'input_text' || 
@@ -1031,8 +1013,25 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         let fullContent = "";
         let toolCalls: any[] = [];
 
+        // Build system message with cache_control for Gemini models
+        const systemPrompt = getSystemPrompt(currentModel, context, plan, mode, personality);
+        const isGeminiModel = currentModel.includes('gemini');
+        
+        const systemMessage = isGeminiModel 
+          ? {
+              role: 'system',
+              content: [
+                {
+                  type: 'text',
+                  text: systemPrompt,
+                  cache_control: { type: 'ephemeral' }
+                }
+              ]
+            }
+          : { role: 'system', content: systemPrompt };
+
         for await (const chunk of streamOpenRouter(OPENROUTER_API_KEY!, currentModel, [
-          { role: 'system', content: getSystemPrompt(currentModel, context, plan, mode, personality) },
+          systemMessage,
           ...sanitizedMessages
         ], currentTools)) {
 
@@ -1198,9 +1197,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       } catch (err: any) {
         console.error(`[OpenRouter API] Model ${currentModel} failed:`, err.message);
         const isSizeError = err.message && err.message.includes('tokens');
-        if (!isRetry && isSizeError && currentModel !== FREE_MODELS[0]) {
+        // Retry with smallest model for size errors
+        if (!isRetry && isSizeError && currentModel !== SMALL_MODELS[0]) {
           res.write(`data: ${JSON.stringify({ type: 'text', content: "\n\n*Optimizing for large dataset...*\n\n" })}\n\n`);
-          return await runChat(currentMessages, FREE_MODELS[0], filteredTools, mode, personality, true);
+          return await runChat(currentMessages, SMALL_MODELS[0], filteredTools, mode, personality, true);
         }
         throw err;
       }

@@ -9,7 +9,7 @@ import {
   type SuggestionItem 
 } from '../utils/referenceParser';
 import SuggestionDropdown from './SuggestionDropdown';
-import { X, Send, MessageSquare, Loader2, History, Square, ChevronDown, Check, ChevronLeft } from 'lucide-react';
+import { X, Send, MessageSquare, Loader2, History, Square, ChevronDown, ChevronLeft } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
@@ -31,40 +31,40 @@ function cn(...inputs: ClassValue[]) {
 type Message = ChatMessage;
 
 // Helper component for model options in dropdown
-const ModelItem: React.FC<{
-  model: { id: string; name: string; desc: string; enabled?: boolean };
-  selected: boolean;
-  onClick: () => void;
-  disabled?: boolean;
-}> = ({ model, selected, onClick, disabled }) => {
-  const isModelDisabled = model.enabled === false;
-  return (
-  <button
-    onClick={onClick}
-    disabled={disabled || isModelDisabled}
-    className={cn(
-      "w-full flex items-center justify-between px-3 py-2 rounded-lg transition-all border text-left",
-      selected
-        ? "bg-[var(--glass-bg)] border-[var(--glass-border)]"
-        : "hover:bg-[var(--bg-page)] border-transparent",
-      (disabled || isModelDisabled) && "opacity-40 cursor-not-allowed grayscale"
-    )}
-  >
-    <div className="flex flex-col gap-0.5">
-      <span className={cn(
-        "text-[10px] font-semibold tracking-wide leading-none",
-        selected ? "text-[var(--text-primary)]" : "text-[var(--text-primary)]"
-      )}>
-        {model.name}
-      </span>
-      <span className="text-[9px] font-medium text-[var(--text-muted)] opacity-80 uppercase tracking-wide leading-tight">
-        {model.desc}
-      </span>
-    </div>
-    {selected && <Check className="w-3 h-3 text-[var(--text-primary)] ml-2 flex-shrink-0" />}
-  </button>
-  );
-};
+// const ModelItem: React.FC<{
+//   model: { id: string; name: string; desc: string; enabled?: boolean };
+//   selected: boolean;
+//   onClick: () => void;
+//   disabled?: boolean;
+// }> = ({ model, selected, onClick, disabled }) => {
+//   const isModelDisabled = model.enabled === false;
+//   return (
+//   <button
+//     onClick={onClick}
+//     disabled={disabled || isModelDisabled}
+//     className={cn(
+//       "w-full flex items-center justify-between px-3 py-2 rounded-lg transition-all border text-left",
+//       selected
+//         ? "bg-[var(--glass-bg)] border-[var(--glass-border)]"
+//         : "hover:bg-[var(--bg-page)] border-transparent",
+//       (disabled || isModelDisabled) && "opacity-40 cursor-not-allowed grayscale"
+//     )}
+//   >
+//     <div className="flex flex-col gap-0.5">
+//       <span className={cn(
+//         "text-[10px] font-semibold tracking-wide leading-none",
+//         selected ? "text-[var(--text-primary)]" : "text-[var(--text-primary)]"
+//       )}>
+//         {model.name}
+//       </span>
+//       <span className="text-[9px] font-medium text-[var(--text-muted)] opacity-80 uppercase tracking-wide leading-tight">
+//         {model.desc}
+//       </span>
+//     </div>
+//     {selected && <Check className="w-3 h-3 text-[var(--text-primary)] ml-2 flex-shrink-0" />}
+//   </button>
+//   );
+// };
 
 // Build message content for follow-up - handle multimodal for images/PDFs
 function getFollowUpMessageContent(toolName: string, result: any) {
@@ -73,13 +73,13 @@ function getFollowUpMessageContent(toolName: string, result: any) {
     if (result?.type === 'image' && result?.url) {
       return [
         { type: 'text', text: 'Analyze this image and describe what you see.' },
-        { type: 'image', source: { type: 'url', url: result.url } }
+        { type: 'image_url', image_url: { url: result.url } }
       ];
     }
     if (result?.type === 'pdf' && result?.url) {
       return [
         { type: 'text', text: `Analyze the contents of this PDF: ${result.name || 'document'}` },
-        { type: 'file', source: { type: 'url', url: result.url, media_type: 'application/pdf' }, title: result.name }
+        { type: 'file', file: { filename: result.name || 'document.pdf', file_data: result.url } }
       ];
     }
     
@@ -94,11 +94,10 @@ function getFollowUpMessageContent(toolName: string, result: any) {
           } else if (f.type === 'pdf' && f.url) {
             contents.push({ 
               type: 'file', 
-              source: { type: 'url', url: f.url, media_type: 'application/pdf' }, 
-              title: f.name || `File ${f.id}` 
+              file: { filename: f.name || `file_${f.id}.pdf`, file_data: f.url }
             });
           } else if (f.type === 'image' && f.url) {
-            contents.push({ type: 'image', source: { type: 'url', url: f.url } });
+            contents.push({ type: 'image_url', image_url: { url: f.url } });
           }
         }
       });
@@ -151,9 +150,6 @@ const ChatOverlay: React.FC = () => {
   const topModels = tiers?.top?.models || [];
   const mediumModels = tiers?.medium?.models || [];
   const smallModels = tiers?.small?.models || [];
-  const freeModels = tiers?.free?.models || [];
-  const allModels = [...mediumModels, ...smallModels, ...topModels, ...freeModels];
-  const freeOnlyModels = freeModels;
   
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
@@ -162,7 +158,6 @@ const ChatOverlay: React.FC = () => {
   const [activeTool, setActiveTool] = useState<{ name: string; args: any } | null>(null);
   
   // Quota from auth store (single source of truth)
-  const dailyUsage = useAuthStore((state) => state.user?.usage?.ai_daily_count ?? 0);
   const topUsage = useAuthStore((state) => state.user?.usage?.ai_top_count ?? 0);
   const mediumUsage = useAuthStore((state) => state.user?.usage?.ai_medium_count ?? 0);
   const smallUsage = useAuthStore((state) => state.user?.usage?.ai_small_count ?? 0);
@@ -178,15 +173,26 @@ const ChatOverlay: React.FC = () => {
   // Anchors from auth store
   const dailyAnchor = useAuthStore((state) => state.user?.usage?.daily_anchor ?? null);
   
-  const [activeTier, setActiveTier] = useState<'top' | 'medium' | 'small' | 'free'>(plan === 'pro' ? 'medium' : 'free');
+  // Load persisted tier or default
+  const getInitialTier = (): 'top' | 'medium' | 'small' | 'free' => {
+    if (plan !== 'pro') return 'free';
+    const saved = localStorage.getItem('cyberia-oracle-tier');
+    if (saved && ['top', 'medium', 'small'].includes(saved)) return saved as 'top' | 'medium' | 'small';
+    return 'medium';
+  };
+  
+  const [activeTier, setActiveTier] = useState<'top' | 'medium' | 'small' | 'free'>(getInitialTier);
+
+  const handleTierChange = (newTier: 'top' | 'medium' | 'small') => {
+    setActiveTier(newTier);
+    localStorage.setItem('cyberia-oracle-tier', newTier);
+  };
 
   const [selectedModel, setSelectedModel] = useState(
-    plan === 'pro' 
-      ? (mediumModels[0]?.id || smallModels[0]?.id || topModels[0]?.id || freeModels[0]?.id || '')
-      : (freeModels[0]?.id || '')
+    mediumModels[0]?.id || smallModels[0]?.id || topModels[0]?.id || ''
   );
   const [showModelDropdown, setShowModelDropdown] = useState(false);
-  const [modelSearch, setModelSearch] = useState('');
+  // const [modelSearch, setModelSearch] = useState('');
 
   // Suggestion dropdown state for @thought and #stack references
   const [suggestions, setSuggestions] = useState<{
@@ -206,8 +212,8 @@ const ChatOverlay: React.FC = () => {
   const prevPlanRef = useRef(plan);
   const userHasSelectedModelRef = useRef(false);
 
-  const availableModels = plan === 'pro' ? allModels : freeOnlyModels;
-  const currentModelInfo = allModels.find((m: any) => m.id === selectedModel) || availableModels[0] || { id: '', name: 'No Model', desc: '' };
+  // const availableModels = plan === 'pro' ? allModels : freeOnlyModels;
+  // const currentModelInfo = allModels.find((m: any) => m.id === selectedModel) || availableModels[0] || { id: '', name: 'No Model', desc: '' };
 
   // Load history from Dexie when spaceId changes
   useEffect(() => {
@@ -228,7 +234,8 @@ const ChatOverlay: React.FC = () => {
   const saveMessage = async (msg: Message) => {
     if (msg.msgType === 'system') return;
     try {
-      await db.chatHistory.add(msg);
+      // Use put() to upsert - handles duplicate IDs gracefully
+      await db.chatHistory.put(msg);
     } catch (err) {
       console.error("[Oracle] Failed to save message:", err);
     }
@@ -257,7 +264,7 @@ const ChatOverlay: React.FC = () => {
     const handleClickOutside = (e: MouseEvent) => {
       if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
         setShowModelDropdown(false);
-        setModelSearch('');
+        // setModelSearch('');
       }
     };
     if (showModelDropdown) {
@@ -273,11 +280,9 @@ useEffect(() => {
   const planChanged = prevPlanRef.current !== plan;
 
   if (!hasInitializedRef.current || planChanged) {
-    const defaultModel = plan === 'pro'
-    ? (mediumModels[0]?.id || smallModels[0]?.id || topModels[0]?.id || freeModels[0]?.id || '')
-    : (freeModels[0]?.id || '');
+    const defaultModel = mediumModels[0]?.id || smallModels[0]?.id || topModels[0]?.id || '';
     setSelectedModel(defaultModel);
-    setActiveTier(plan === 'pro' ? 'medium' : 'free');
+    setActiveTier('medium');
 
     prevPlanRef.current = plan;
     hasInitializedRef.current = true;
@@ -508,30 +513,6 @@ useEffect(() => {
     e.preventDefault();
     if (!input.trim() || isLoading || !store.activeSpaceId) return;
 
-    // Free users now have unlimited access via free OpenRouter models
-
-
-    if (plan === 'free' && dailyUsage >= (limits.AI_DAILY_LIMIT || 0)) {
-      const errorMsg: Message = { 
-        id: ulid(),
-        spaceId: store.activeSpaceId,
-        role: 'assistant', 
-        content: "### Limit Reached\nChoom, you've hit your daily data-stream limit for the Free tier. Upgrade to **Pro** for unlimited access and premium models!",
-        timestamp: Date.now(),
-        msgType: 'system'
-      };
-      setMessages(prev => [...prev, { 
-        id: ulid(), 
-        spaceId: store.activeSpaceId!, 
-        role: 'user', 
-        content: input,
-        timestamp: Date.now() - 1,
-        msgType: 'chat'
-      }, errorMsg]);
-      setInput('');
-      return;
-    }
-
     // Close suggestions if open
     setSuggestions(null);
 
@@ -635,14 +616,11 @@ useEffect(() => {
         if (response.status === 429) {
           const errorData = await response.json();
           const baseMessage = 'Rate limit reached. The AI service is temporarily unavailable.';
-          const upgradeHint = plan === 'free' 
-            ? ' Upgrade to Pro for access to premium models with higher limits.'
-            : '';
           const errorMsg: Message = { 
             id: ulid(), 
             spaceId: store.activeSpaceId,
             role: 'assistant', 
-            content: baseMessage + upgradeHint,
+            content: baseMessage,
             timestamp: Date.now(),
             msgType: 'system'
           };
@@ -737,14 +715,7 @@ useEffect(() => {
                   { ...assistantMessage }
                 ]);
 } else if (data.type === 'error') {
-                // Check if it's a 429 rate limit error
-                const is429 = data.message?.includes('429') || data.message?.toLowerCase().includes('rate');
-                let errorMessage = parseAIError({ message: data.message });
-                
-                // Add upgrade hint for free users on rate limit errors
-                if (is429 && plan === 'free') {
-                  errorMessage += ' Upgrade to Pro for access to premium models with higher limits.';
-                }
+                const errorMessage = parseAIError({ message: data.message });
                 
                 const errMsg: Message = { 
                   id: ulid(), 
@@ -775,20 +746,28 @@ useEffect(() => {
                   monthly_small_count: data.monthly_small_count || 0,
                 });
                 
-if (data.tier && data.autoSwitch) {
-  if (activeTier !== 'free' && plan === 'pro') {
-    const switchMsg: Message = {
-      id: ulid(),
-      spaceId: store.activeSpaceId,
-      role: 'assistant',
-      content: `⚠️ Auto-switched to ${data.tier} tier models`,
-      timestamp: Date.now(),
-      msgType: 'system'
-    };
-    setMessages(prev => [...prev, switchMsg]);
-  }
-  setActiveTier(data.tier);
-}
+                if (data.tier && data.autoSwitch) {
+                  if (activeTier !== 'free' && plan === 'pro') {
+                    const tierNames: Record<string, string> = {
+                      top: 'Reasoning',
+                      medium: 'Balanced',
+                      small: 'Fast',
+                    };
+                    const switchMsg: Message = {
+                      id: ulid(),
+                      spaceId: store.activeSpaceId,
+                      role: 'assistant',
+                      content: `⚠️ ${tierNames[data.tier] || data.tier} quota exhausted — switched to ${tierNames[data.tier] || data.tier}`,
+                      timestamp: Date.now(),
+                      msgType: 'system'
+                    };
+                    setMessages(prev => [...prev, switchMsg]);
+                  }
+                  // Persist the auto-switched tier
+                  if (data.tier !== 'free') {
+                    handleTierChange(data.tier as 'top' | 'medium' | 'small');
+                  }
+                }
                 
                 if (data.model && data.model !== selectedModel) {
                   setSelectedModel(data.model);
@@ -944,142 +923,153 @@ if (data.tier && data.autoSwitch) {
 
           {/* HEADER */}
           <div className="px-4 py-3 md:px-5 border-b border-[var(--glass-border)] bg-[var(--bg-main)]/60 backdrop-blur-xl sticky top-0 z-30">
-            <div className="flex justify-between items-start relative min-h-[44px]">
+            <div className="flex justify-between items-center relative min-h-[44px]">
               
               <div className="flex-1" />
 
               {/* Absolute Center */}
-              <div className="absolute left-1/2 -translate-x-1/2 flex flex-col items-center justify-center pointer-events-none mt-0.5 z-[60]">
-                <div className="flex items-center gap-2 mb-1.5">
-                  <div className="w-1.5 h-1.5 rounded-full bg-[var(--accent)] shadow-[0_0_8px_var(--accent-glow)] animate-pulse" />
-                  <h3 className="text-[11px] font-extrabold uppercase tracking-[0.2em] text-[var(--text-primary)] leading-none">Oracle AI</h3>
-                {plan === 'pro' && (
-                  <div className={cn(
-                    "px-1.5 py-0.5 rounded text-[8px] font-semibold tracking-wide border",
-                    activeTier === 'top' ? "bg-[var(--accent)]/10 border-[var(--accent)]/30 text-[var(--accent)]" :
-                    activeTier === 'medium' ? "bg-[var(--accent)]/10 border-[var(--accent)]/30 text-[var(--accent)]" :
-                    activeTier === 'small' ? "bg-[var(--accent)]/10 border-[var(--accent)]/30 text-[var(--accent)]" :
-                    "bg-slate-500/10 border-slate-500/30 text-[var(--text-muted)]"
-                  )}>
-                    {activeTier === 'top' ? 'reasoning' : activeTier === 'medium' ? 'balanced' : activeTier === 'small' ? 'fast' : activeTier}
-                  </div>
-                )}
-                </div>
-                
-                <div className="pointer-events-auto relative" ref={dropdownRef}>
-                  <button
-                    onClick={() => { setShowModelDropdown(!showModelDropdown); if (!showModelDropdown) setModelSearch(''); }}
-                    className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[var(--glass-bg)] hover:bg-[var(--bg-page)] border border-[var(--glass-border)] transition-all group"
-                  >
-                    <span className="text-[9px] font-bold text-[var(--text-primary)] uppercase tracking-widest leading-none mt-[1px]">
-                      {currentModelInfo.name}
-                    </span>
-                    <ChevronDown className={cn("w-3 h-3 text-[var(--text-muted)] transition-transform", showModelDropdown && "rotate-180")} />
-                  </button>
-
-                  <AnimatePresence>
-                    {showModelDropdown && (
-                      <motion.div
-                        initial={{ opacity: 0, y: -8, scale: 0.95 }}
-                        animate={{ opacity: 1, y: 0, scale: 1 }}
-                        exit={{ opacity: 0, y: -8, scale: 0.95 }}
-                        transition={{ duration: 0.15 }}
-                        className="absolute top-full left-1/2 -translate-x-1/2 mt-2 w-64 backdrop-blur-xl bg-[var(--bg-main)] rounded-xl border border-[var(--glass-border)] shadow-[0_10px_40px_rgba(0,0,0,0.3)] overflow-hidden z-[100]"
-                      >
-                        <div className="p-2 border-b border-[var(--glass-border)]/50">
-                          <input
-                            type="text"
-                            value={modelSearch}
-                            onChange={(e) => setModelSearch(e.target.value)}
-                            placeholder="Search models..."
-                            className="w-full bg-[var(--bg-page)]/50 border border-[var(--glass-border)] rounded-lg px-3 py-2 text-[10px] text-[var(--text-primary)] placeholder:text-[var(--text-muted)] uppercase tracking-wider focus:outline-none focus:border-[var(--accent)]/50 transition-colors"
-                            autoFocus
-                          />
-                        </div>
-
-                        <div className="max-h-[400px] overflow-y-auto custom-scroll">
-                          {/* MEDIUM TIER - visible to all, disabled for free users */}
-                          <div className="p-2">
-                            <div className="flex justify-between items-center px-2 py-1 mb-1">
-                              <span className="text-[8px] font-extrabold uppercase tracking-widest text-[var(--accent)]">Balanced</span>
-                              <span className="text-[8px] font-bold text-[var(--text-muted)] uppercase tracking-widest">
-                                {plan === 'pro' ? getTierResetTimer(mediumUsage, weeklyMediumUsage, monthlyMediumUsage, dailyAnchor, limits.AI_MEDIUM_LIMIT || 60, limits.AI_MEDIUM_WEEKLY || 420, limits.AI_MEDIUM_MONTHLY || 1800) : 'Pro only'}
-                              </span>
-                            </div>
-                            <div className="space-y-1">
-                              {mediumModels.filter((m: any) => m.name.toLowerCase().includes(modelSearch.toLowerCase())).map((model: any) => (
-                                <ModelItem key={model.id} model={model} selected={selectedModel === model.id} onClick={() => { setSelectedModel(model.id); setActiveTier('medium'); setShowModelDropdown(false); userHasSelectedModelRef.current = true; }} disabled={plan !== 'pro' || getTierStatus(mediumUsage, weeklyMediumUsage, monthlyMediumUsage, limits.AI_MEDIUM_LIMIT || 60, limits.AI_MEDIUM_WEEKLY || 420, limits.AI_MEDIUM_MONTHLY || 1800).exhausted || model.enabled === false} />
-                              ))}
-                            </div>
+              <div className="absolute left-1/2 -translate-x-1/2 flex items-center justify-center pointer-events-none z-[60]">
+                <div className="flex items-center gap-2">
+                  {/* Oracle AI Title with Inline Model Selector */}
+                  <div className="flex items-center gap-2 pointer-events-auto" ref={dropdownRef}>
+                    <div className="w-1.5 h-1.5 rounded-full bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.6)]" />
+                    <h3 className="text-[11px] font-extrabold uppercase tracking-[0.2em] text-[var(--text-primary)] leading-none">Oracle AI</h3>
+                    
+                    <button
+                      onClick={() => { setShowModelDropdown(!showModelDropdown); }}
+                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[var(--glass-bg)] hover:bg-[var(--bg-page)] border border-[var(--glass-border)] transition-all group"
+                    >
+                      <span className="text-[9px] font-bold text-[var(--text-primary)] uppercase tracking-widest leading-none">
+                        {activeTier === 'top' ? 'Reasoning' : activeTier === 'medium' ? 'Balanced' : activeTier === 'small' ? 'Fast' : activeTier}
+                      </span>
+                      <ChevronDown className={cn("w-3 h-3 text-[var(--text-muted)] transition-transform", showModelDropdown && "rotate-180")} />
+                    </button>
+                    <AnimatePresence>
+                      {showModelDropdown && (
+                        <motion.div
+                          initial={{ opacity: 0, y: -8, scale: 0.96 }}
+                          animate={{ opacity: 1, y: 0, scale: 1 }}
+                          exit={{ opacity: 0, y: -8, scale: 0.96 }}
+                          transition={{ duration: 0.2, ease: [0.23, 1, 0.32, 1] }}
+                          className="absolute top-full left-1/2 -translate-x-1/2 mt-3 w-64 glass backdrop-blur-xl rounded-2xl border border-[var(--glass-border)] shadow-2xl overflow-hidden z-[100]"
+                        >
+                          {/* Header */}
+                          <div className="px-4 py-2.5 border-b border-[var(--glass-border)] bg-[var(--bg-main)]/20">
+                            <span className="text-[9px] font-semibold tracking-widest uppercase text-[var(--text-muted)]">
+                              Select Model
+                            </span>
                           </div>
-
-                          {/* SMALL TIER - visible to all, disabled for free users */}
-                          {smallModels.length > 0 && (
-                            <div className="p-2 border-t border-[var(--glass-border)]/20">
-                              <div className="flex justify-between items-center px-2 py-1 mb-1">
-                                <span className="text-[8px] font-extrabold uppercase tracking-widest text-[var(--accent)]">Fast</span>
-                                <span className="text-[8px] font-bold text-[var(--text-muted)] uppercase tracking-widest">
-                                  {plan === 'pro' ? getTierResetTimer(smallUsage, weeklySmallUsage, monthlySmallUsage, dailyAnchor, limits.AI_SMALL_LIMIT || 500, limits.AI_SMALL_WEEKLY || 3500, limits.AI_SMALL_MONTHLY || 15000) : 'Pro only'}
-                                </span>
-                              </div>
-                              <div className="space-y-1">
-                              {smallModels.filter((m: any) => m.name.toLowerCase().includes(modelSearch.toLowerCase())).map((model: any) => (
-                                <ModelItem key={model.id} model={model} selected={selectedModel === model.id} onClick={() => { setSelectedModel(model.id); setActiveTier('small'); setShowModelDropdown(false); userHasSelectedModelRef.current = true; }} disabled={plan !== 'pro' || getTierStatus(smallUsage, weeklySmallUsage, monthlySmallUsage, limits.AI_SMALL_LIMIT || 500, limits.AI_SMALL_WEEKLY || 3500, limits.AI_SMALL_MONTHLY || 15000).exhausted || model.enabled === false} />
-                              ))}
-                              </div>
-                            </div>
-                          )}
-
-                          {/* TOP TIER - visible to all, disabled for free users */}
-                          <div className="p-2 border-t border-[var(--glass-border)]/20">
-                            <div className="flex justify-between items-center px-2 py-1 mb-1">
-                              <span className="text-[8px] font-extrabold uppercase tracking-widest text-[var(--accent)]">Reasoning</span>
-                              <span className="text-[8px] font-bold text-[var(--text-muted)] uppercase tracking-widest">
-                                {plan === 'pro' ? getTierResetTimer(topUsage, weeklyTopUsage, monthlyTopUsage, dailyAnchor, limits.AI_TOP_LIMIT || 15, limits.AI_TOP_WEEKLY || 100, limits.AI_TOP_MONTHLY || 400) : 'Pro only'}
-                              </span>
-                            </div>
-                            <div className="space-y-1">
-                              {topModels.filter((m: any) => m.name.toLowerCase().includes(modelSearch.toLowerCase())).map((model: any) => (
-                                <ModelItem key={model.id} model={model} selected={selectedModel === model.id} onClick={() => { setSelectedModel(model.id); setActiveTier('top'); setShowModelDropdown(false); userHasSelectedModelRef.current = true; }} disabled={plan !== 'pro' || getTierStatus(topUsage, weeklyTopUsage, monthlyTopUsage, limits.AI_TOP_LIMIT || 15, limits.AI_TOP_WEEKLY || 100, limits.AI_TOP_MONTHLY || 400).exhausted || model.enabled === false} />
-                              ))}
-                            </div>
-                          </div>
-
-                          {/* FREE TIER */}
-                          <div className="p-2 border-t border-[var(--glass-border)]/20">
-                            <div className="flex justify-between items-center px-2 py-1 mb-1">
-                              <span className="text-[8px] font-extrabold uppercase tracking-widest text-[var(--text-muted)]">Free</span>
-                              <span className="text-[8px] font-bold text-[var(--text-muted)] uppercase tracking-widest">Unlimited (Experimental)</span>
-                            </div>
-                            <div className="space-y-1">
-                              {freeModels.filter((m: any) => m.name.toLowerCase().includes(modelSearch.toLowerCase())).map((model: any) => (
-                                <ModelItem key={model.id} model={model} selected={selectedModel === model.id} onClick={() => { setSelectedModel(model.id); setActiveTier('free'); setShowModelDropdown(false); userHasSelectedModelRef.current = true; }} />
-                              ))}
-                            </div>
-                          </div>
-                        </div>
-
-                        {plan === 'free' && (
-                          <div className="p-2 border-t border-[var(--glass-border)]">
+                          
+                          <div className="py-1">
+                            {/* REASONING */}
                             <button
-                              onClick={() => {
-                                setShowModelDropdown(false);
-                                window.location.href = '/pricing';
-                              }}
-                              className="w-full flex items-center justify-center gap-2 px-3 py-2 rounded-lg bg-[var(--accent)]/10 hover:bg-[var(--accent)]/20 border border-[var(--accent)]/20 transition-all"
+                              onClick={() => { setSelectedModel(topModels[0]?.id || ''); handleTierChange('top'); setShowModelDropdown(false); userHasSelectedModelRef.current = true; }}
+                              disabled={plan !== 'pro' || getTierStatus(topUsage, weeklyTopUsage, monthlyTopUsage, limits.AI_TOP_LIMIT || 15, limits.AI_TOP_WEEKLY || 100, limits.AI_TOP_MONTHLY || 400).exhausted}
+                              className={cn(
+                                "w-full flex items-center gap-3 px-4 py-3 transition-all text-left",
+                                activeTier === 'top'
+                                  ? "bg-[var(--accent)]/10 text-[var(--accent)]"
+                                  : "hover:bg-[var(--glass-bg)] text-[var(--text-primary)]",
+                                (plan !== 'pro' || getTierStatus(topUsage, weeklyTopUsage, monthlyTopUsage, limits.AI_TOP_LIMIT || 15, limits.AI_TOP_WEEKLY || 100, limits.AI_TOP_MONTHLY || 400).exhausted) && "opacity-40 cursor-not-allowed"
+                              )}
                             >
-                              <span className="text-[9px] font-extrabold text-[var(--accent)] uppercase tracking-widest">
-                                Upgrade to Pro
-                              </span>
-                              <span className="text-[8px] font-bold text-[var(--accent)]/60 uppercase tracking-wider">
-                                +Models
-                              </span>
+                              <div className="w-8 h-8 rounded-lg bg-[var(--glass-bg)] flex items-center justify-center flex-shrink-0">
+                                <span className="text-[10px]">🧠</span>
+                              </div>
+                              <div className="flex flex-col items-start flex-1">
+                                <div className="flex items-center gap-2">
+                                  <span className="text-[11px] font-semibold">Reasoning</span>
+                                  {activeTier === 'top' && (
+                                    <svg className="w-3.5 h-3.5 text-[var(--accent)]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                                    </svg>
+                                  )}
+                                </div>
+                                <span className="text-[9px] text-[var(--text-muted)] mt-0.5">Complex analysis</span>
+                              </div>
+                              {getTierStatus(topUsage, weeklyTopUsage, monthlyTopUsage, limits.AI_TOP_LIMIT || 15, limits.AI_TOP_WEEKLY || 100, limits.AI_TOP_MONTHLY || 400).exhausted && getTierResetTimer(topUsage, weeklyTopUsage, monthlyTopUsage, dailyAnchor, limits.AI_TOP_LIMIT || 15, limits.AI_TOP_WEEKLY || 100, limits.AI_TOP_MONTHLY || 400) && (
+                                <span className="text-[8px] text-[var(--text-muted)] ml-2">
+                                  {getTierResetTimer(topUsage, weeklyTopUsage, monthlyTopUsage, dailyAnchor, limits.AI_TOP_LIMIT || 15, limits.AI_TOP_WEEKLY || 100, limits.AI_TOP_MONTHLY || 400)}
+                                </span>
+                              )}
+                            </button>
+
+                            {/* Divider */}
+                            <div className="h-px bg-[var(--glass-border)] mx-4" />
+
+                            {/* BALANCED */}
+                            <button
+                              onClick={() => { setSelectedModel(mediumModels[0]?.id || ''); handleTierChange('medium'); setShowModelDropdown(false); userHasSelectedModelRef.current = true; }}
+                              disabled={plan !== 'pro' || getTierStatus(mediumUsage, weeklyMediumUsage, monthlyMediumUsage, limits.AI_MEDIUM_LIMIT || 60, limits.AI_MEDIUM_WEEKLY || 420, limits.AI_MEDIUM_MONTHLY || 1800).exhausted}
+                              className={cn(
+                                "w-full flex items-center gap-3 px-4 py-3 transition-all text-left",
+                                activeTier === 'medium'
+                                  ? "bg-[var(--accent)]/10 text-[var(--accent)]"
+                                  : "hover:bg-[var(--glass-bg)] text-[var(--text-primary)]",
+                                (plan !== 'pro' || getTierStatus(mediumUsage, weeklyMediumUsage, monthlyMediumUsage, limits.AI_MEDIUM_LIMIT || 60, limits.AI_MEDIUM_WEEKLY || 420, limits.AI_MEDIUM_MONTHLY || 1800).exhausted) && "opacity-40 cursor-not-allowed"
+                              )}
+                            >
+                              <div className="w-8 h-8 rounded-lg bg-[var(--glass-bg)] flex items-center justify-center flex-shrink-0">
+                                <span className="text-[10px]">⚖️</span>
+                              </div>
+                              <div className="flex flex-col items-start flex-1">
+                                <div className="flex items-center gap-2">
+                                  <span className="text-[11px] font-semibold">Balanced</span>
+                                  {activeTier === 'medium' && (
+                                    <svg className="w-3.5 h-3.5 text-[var(--accent)]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                                    </svg>
+                                  )}
+                                </div>
+                                <span className="text-[9px] text-[var(--text-muted)] mt-0.5">Speed & quality</span>
+                              </div>
+                              {getTierStatus(mediumUsage, weeklyMediumUsage, monthlyMediumUsage, limits.AI_MEDIUM_LIMIT || 60, limits.AI_MEDIUM_WEEKLY || 420, limits.AI_MEDIUM_MONTHLY || 1800).exhausted && getTierResetTimer(mediumUsage, weeklyMediumUsage, monthlyMediumUsage, dailyAnchor, limits.AI_MEDIUM_LIMIT || 60, limits.AI_MEDIUM_WEEKLY || 420, limits.AI_MEDIUM_MONTHLY || 1800) && (
+                                <span className="text-[8px] text-[var(--text-muted)] ml-2">
+                                  {getTierResetTimer(mediumUsage, weeklyMediumUsage, monthlyMediumUsage, dailyAnchor, limits.AI_MEDIUM_LIMIT || 60, limits.AI_MEDIUM_WEEKLY || 420, limits.AI_MEDIUM_MONTHLY || 1800)}
+                                </span>
+                              )}
+                            </button>
+
+                            {/* Divider */}
+                            <div className="h-px bg-[var(--glass-border)] mx-4" />
+
+                            {/* FAST */}
+                            <button
+                              onClick={() => { setSelectedModel(smallModels[0]?.id || ''); handleTierChange('small'); setShowModelDropdown(false); userHasSelectedModelRef.current = true; }}
+                              disabled={plan !== 'pro' || getTierStatus(smallUsage, weeklySmallUsage, monthlySmallUsage, limits.AI_SMALL_LIMIT || 500, limits.AI_SMALL_WEEKLY || 3500, limits.AI_SMALL_MONTHLY || 15000).exhausted}
+                              className={cn(
+                                "w-full flex items-center gap-3 px-4 py-3 transition-all text-left",
+                                activeTier === 'small'
+                                  ? "bg-[var(--accent)]/10 text-[var(--accent)]"
+                                  : "hover:bg-[var(--glass-bg)] text-[var(--text-primary)]",
+                                (plan !== 'pro' || getTierStatus(smallUsage, weeklySmallUsage, monthlySmallUsage, limits.AI_SMALL_LIMIT || 500, limits.AI_SMALL_WEEKLY || 3500, limits.AI_SMALL_MONTHLY || 15000).exhausted) && "opacity-40 cursor-not-allowed"
+                              )}
+                            >
+                              <div className="w-8 h-8 rounded-lg bg-[var(--glass-bg)] flex items-center justify-center flex-shrink-0">
+                                <span className="text-[10px]">⚡</span>
+                              </div>
+                              <div className="flex flex-col items-start flex-1">
+                                <div className="flex items-center gap-2">
+                                  <span className="text-[11px] font-semibold">Fast</span>
+                                  {activeTier === 'small' && (
+                                    <svg className="w-3.5 h-3.5 text-[var(--accent)]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                                    </svg>
+                                  )}
+                                </div>
+                                <span className="text-[9px] text-[var(--text-muted)] mt-0.5">Quick responses</span>
+                              </div>
+                              {getTierStatus(smallUsage, weeklySmallUsage, monthlySmallUsage, limits.AI_SMALL_LIMIT || 500, limits.AI_SMALL_WEEKLY || 3500, limits.AI_SMALL_MONTHLY || 15000).exhausted && getTierResetTimer(smallUsage, weeklySmallUsage, monthlySmallUsage, dailyAnchor, limits.AI_SMALL_LIMIT || 500, limits.AI_SMALL_WEEKLY || 3500, limits.AI_SMALL_MONTHLY || 15000) && (
+                                <span className="text-[8px] text-[var(--text-muted)] ml-2">
+                                  {getTierResetTimer(smallUsage, weeklySmallUsage, monthlySmallUsage, dailyAnchor, limits.AI_SMALL_LIMIT || 500, limits.AI_SMALL_WEEKLY || 3500, limits.AI_SMALL_MONTHLY || 15000)}
+                                </span>
+                              )}
                             </button>
                           </div>
-                        )}
-                      </motion.div>
-                    )}
-                  </AnimatePresence>
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+                  </div>
                 </div>
               </div>
 

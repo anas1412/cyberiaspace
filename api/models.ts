@@ -25,11 +25,11 @@ export const MODEL_TIERS = {
     monthlyQuota: 200,   // 10 * 20
     description: 'Premium models for complex reasoning',
     models: [
-      { id: 'deepseek/deepseek-r1', name: 'DeepSeek: DeepSeek R1', desc: 'Fast' },
-      { id: 'openai/gpt-5.4', name: 'OpenAI: GPT-5.4', desc: 'Still in testing', enabled: false },
-      { id: 'google/gemini-3.1-pro-preview', name: 'Google: Gemini 3.1 Pro', desc: 'Still in testing', enabled: false },
-      { id: 'anthropic/claude-sonnet-4.6', name: 'Anthropic: Claude Sonnet 4.6', desc: 'Still in testing', enabled: false},
-      { id: 'anthropic/claude-opus-4.6', name: 'Anthropic: Claude Opus 4.6', desc: 'Still in testing', enabled: false },
+      // { id: 'deepseek/deepseek-r1', name: 'DeepSeek: DeepSeek R1', desc: 'Fast' },
+      // { id: 'openai/gpt-5.4', name: 'OpenAI: GPT-5.4', desc: 'Still in testing', enabled: false },
+      { id: 'google/gemini-3.1-pro-preview-customtools', name: 'Google: Gemini 3.1 Pro', desc: 'Reasoning' },
+      // { id: 'anthropic/claude-sonnet-4.6', name: 'Anthropic: Claude Sonnet 4.6', desc: 'Still in testing', enabled: false},
+      // { id: 'anthropic/claude-opus-4.6', name: 'Anthropic: Claude Opus 4.6', desc: 'Still in testing', enabled: false },
     ]
   },
   // Est. Monthly Cost: ~$1.50 | Est. Margin: ~$8.50
@@ -40,67 +40,38 @@ export const MODEL_TIERS = {
     monthlyQuota: 800,   // 40 * 20
     description: 'Balanced models for everyday tasks',
     models: [
-      { id: 'deepseek/deepseek-v3.2', name: 'DeepSeek: DeepSeek V3.2', desc: 'Recommended, fast and accurate' },
-      { id: 'google/gemini-3-flash-preview', name: 'Google: Gemini 3 Flash', desc: 'Balanced' },
-      { id: 'openai/gpt-5.4-mini', name: 'OpenAI: GPT-5.4 Mini', desc: 'Smart but slower' },
-      { id: 'openai/o4-mini', name: 'OpenAI: o4 Mini', desc: 'Smart but slower' },
-      { id: 'anthropic/claude-haiku-4.5', name: 'Anthropic: Claude Haiku 4.5', desc: 'Still in testing', enabled: false },
+      // { id: 'deepseek/deepseek-v3.2', name: 'DeepSeek: DeepSeek V3.2', desc: 'Recommended, fast and accurate' },
+      { id: 'google/gemini-3-flash-preview', name: 'Google: Gemini 3.0 Flash', desc: 'Balanced' },
+      // { id: 'openai/gpt-5.4-mini', name: 'OpenAI: GPT-5.4 Mini', desc: 'Smart but slower' },
+      // { id: 'openai/o4-mini', name: 'OpenAI: o4 Mini', desc: 'Smart but slower' },
+      // { id: 'anthropic/claude-haiku-4.5', name: 'Anthropic: Claude Haiku 4.5', desc: 'Still in testing', enabled: false },
     ]
   },
   // Est. Monthly Cost: ~$2.00 | Est. Margin: ~$8.00
   small: {
     name: 'Small',
-    quota: 200,          // 200 requests/day
-    weeklyQuota: 1400,   // 200 * 7
-    monthlyQuota: 6000,  // 200 * 30
+    quota: 100,          // 100 requests/day
+    weeklyQuota: 700,   // 100 * 7
+    monthlyQuota: 3000,  // 100 * 30
     description: 'Ultra-fast budget AI for everyday tasks',
     models: [
-      { id: 'google/gemini-3.1-flash-lite-preview', name: 'Google: Gemini 3.1 Flash Lite', desc: 'Recommended,' },
-      { id: 'google/gemini-2.5-flash-lite', name: 'Google: Gemini 2.5 Flash Lite', desc: 'Recommended, fast for simple tasks' },
-      { id: 'openai/gpt-5-nano', name: 'OpenAI: GPT-5 Nano', desc: 'Still in testing', enabled: false },
+      { id: 'google/gemini-3.1-flash-lite-preview', name: 'Google: Gemini 3.1 Flash Lite', desc: 'Fast' },
+      // { id: 'google/gemini-2.5-flash-lite', name: 'Google: Gemini 2.5 Flash Lite', desc: 'Recommended, fast for simple tasks' },
+      // { id: 'openai/gpt-5-nano', name: 'OpenAI: GPT-5 Nano', desc: 'Still in testing', enabled: false },
     ]
   },
-  free: {
-    name: 'Free Tier',
-    quota: null,         
-    weeklyQuota: null,
-    monthlyQuota: null,
-    description: 'Free models with unlimited access',
-    models: [
-      { id: 'qwen/qwen3.6-plus:free', name: 'Qwen: Qwen3.6 Plus', desc: 'Recommended' },
-      { id: 'stepfun/step-3.5-flash:free', name: 'StepFun: Step 3.5 Flash', desc: '' },
-      { id: 'minimax/minimax-m2.5:free', name: 'MiniMax M2.5', desc: '' },
-      { id: 'z-ai/glm-4.5-air:free', name: 'Z.ai: GLM 4.5 Air', desc: '' },
-    ]
-  }
 };
 
 // Helper to get all ENABLED models as flat arrays (for backend validation)
 export const TOP_MODELS = (MODEL_TIERS.top.models as Model[]).filter(m => m.enabled !== false).map(m => m.id);
 export const MEDIUM_MODELS = (MODEL_TIERS.medium.models as Model[]).filter(m => m.enabled !== false).map(m => m.id);
 export const SMALL_MODELS = (MODEL_TIERS.small.models as Model[]).filter(m => m.enabled !== false).map(m => m.id);
-export const FREE_MODELS = MODEL_TIERS.free.models.map(m => m.id);
-
-// Free tier limit for non-pro users
-export const FREE_DAILY_LIMIT = 15;
 
 export default async function handler(_req: VercelRequest, res: VercelResponse) {
   // Return model configuration
   res.status(200).json({
     tiers: MODEL_TIERS,
     config: {
-      free: {
-        AI_DAILY_LIMIT: FREE_DAILY_LIMIT,
-        AI_TOP_LIMIT: 0,
-        AI_MEDIUM_LIMIT: 0,
-        AI_SMALL_LIMIT: 0,
-        AI_TOP_WEEKLY: 0,
-        AI_MEDIUM_WEEKLY: 0,
-        AI_SMALL_WEEKLY: 0,
-        AI_TOP_MONTHLY: 0,
-        AI_MEDIUM_MONTHLY: 0,
-        AI_SMALL_MONTHLY: 0,
-      },
       pro: {
         AI_DAILY_LIMIT: 10000, // essentially unlimited
         AI_TOP_LIMIT: MODEL_TIERS.top.quota,
@@ -118,6 +89,5 @@ export default async function handler(_req: VercelRequest, res: VercelResponse) 
     topModels: TOP_MODELS,
     mediumModels: MEDIUM_MODELS,
     smallModels: SMALL_MODELS,
-    freeModels: FREE_MODELS,
   });
 }
