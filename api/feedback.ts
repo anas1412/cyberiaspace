@@ -6,16 +6,17 @@ const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.VITE_PUB
 const supabaseAnonKey = process.env.VITE_SUPABASE_ANON_KEY || process.env.VITE_PUBLIC_SUPABASE_ANON_KEY;
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
-const supabase = createClient(supabaseUrl!, supabaseAnonKey!, {
-  auth: { autoRefreshToken: false, persistSession: false }
-});
+const supabase = supabaseUrl && supabaseAnonKey
+  ? createClient(supabaseUrl, supabaseAnonKey, { auth: { autoRefreshToken: false, persistSession: false } })
+  : null;
 
-const supabaseAdmin = supabaseServiceKey
-  ? createClient(supabaseUrl!, supabaseServiceKey, { auth: { autoRefreshToken: false, persistSession: false } })
+const supabaseAdmin = supabaseUrl && supabaseServiceKey
+  ? createClient(supabaseUrl, supabaseServiceKey, { auth: { autoRefreshToken: false, persistSession: false } })
   : supabase;
 
 // Helper to check if user is admin
 async function checkIsAdmin(userId: string): Promise<boolean> {
+  if (!supabaseAdmin) return false;
   const { data: user } = await supabaseAdmin
     .from('users')
     .select('is_admin')
@@ -31,6 +32,11 @@ const getUserIdFromToken = async (authHeader?: string): Promise<string | null> =
 };
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
+  if (!supabase || !supabaseAdmin) {
+    console.error('[Feedback] Supabase client not initialized — missing env vars');
+    return res.status(500).json({ error: 'Server configuration error' });
+  }
+
   if (req.method === 'OPTIONS') {
     res.setHeader('Access-Control-Allow-Origin', '*');
     res.setHeader('Access-Control-Allow-Headers', 'authorization, x-client-info, apikey, content-type');

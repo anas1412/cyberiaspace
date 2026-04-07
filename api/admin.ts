@@ -21,6 +21,7 @@ export const config = {
 };
 
 async function checkIsAdmin(userId: string): Promise<boolean> {
+  if (!supabaseAdmin) return false;
   const { data: user } = await supabaseAdmin
     .from('users')
     .select('is_admin')
@@ -30,6 +31,11 @@ async function checkIsAdmin(userId: string): Promise<boolean> {
 }
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
+  if (!supabase || !supabaseAdmin) {
+    console.error('[Admin] Supabase client not initialized — missing env vars');
+    return res.status(500).json({ error: 'Server configuration error' });
+  }
+
   if (req.method === 'OPTIONS') {
     res.setHeader('Access-Control-Allow-Origin', '*');
     res.setHeader('Access-Control-Allow-Headers', 'authorization, x-client-info, apikey, content-type');

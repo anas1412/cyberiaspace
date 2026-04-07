@@ -99,8 +99,15 @@ export const createSpaceSlice: StateCreator<CyberiaState, [], [], any> = (set, g
                 console.log('[BG] Migrating Base64 background for space:', spaceId);
                 const response = await fetch(capturedBase64);
                 const blob = await response.blob();
+
+                // Detect actual MIME type from base64 data — blob.type may be wrong (e.g. 'application/json')
+                const mimeMatch = capturedBase64.match(/^data:([^;]+);base64,/);
+                const detectedMime = mimeMatch ? mimeMatch[1] : null;
+                // Only trust known image MIME types, fallback to image/jpeg
+                const mimeType = detectedMime && detectedMime.startsWith('image/') ? detectedMime : 'image/jpeg';
+
                 const { supabaseStorage } = await import('../../services/supabaseStorage');
-                const { url } = await supabaseStorage.uploadSpaceBackground(userId, spaceId, blob, blob.type);
+                const { url } = await supabaseStorage.uploadSpaceBackground(userId, spaceId, blob, mimeType);
 
                 // Compare-and-swap: only write if background hasn't changed during upload
                 const currentSpace = await db.spaces.get(spaceId);

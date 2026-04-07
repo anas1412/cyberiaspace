@@ -312,13 +312,16 @@ export const supabaseStorage = {
   ): Promise<{ url: string; path: string }> {
     const path = getBackgroundPath(userId, spaceId);
 
+    // Ensure valid image MIME type — Supabase rejects non-image types
+    const safeMime = mimeType?.startsWith('image/') ? mimeType : 'image/jpeg';
+
     const { error } = await storageClient
       .storage
       .from(BUCKET_NAME)
       .upload(path, file, {
         cacheControl: '3600',
         upsert: true,
-        contentType: mimeType || 'image/jpeg',
+        contentType: safeMime,
       });
 
     if (error) {
