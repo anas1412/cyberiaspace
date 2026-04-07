@@ -1000,9 +1000,14 @@ export const usePhysics = (
         lastAppliedStyles.current.set(id, { x: p.x, y: p.y, scale: p.scale, rotation: targetRotation });
       }
 
-      el.style.opacity = (res.opacity ?? 1).toString();
-      el.style.visibility = res.visibility ?? 'visible';
-      el.style.pointerEvents = res.pointerEvents ?? 'auto';
+      // Hide thoughts at (0,0) in non-spatial modes until they get proper layout positions
+      // This prevents the "ghost thought in top-left corner" bug when switching modes
+      const isAtOrigin = Math.abs(p.x) < 1 && Math.abs(p.y) < 1;
+      const shouldHide = mode !== 'spatial' && isAtOrigin && !isDraggingThis && !isSelected;
+      
+      el.style.opacity = shouldHide ? '0' : (res.opacity ?? 1).toString();
+      el.style.visibility = shouldHide ? 'hidden' : (res.visibility ?? 'visible');
+      el.style.pointerEvents = shouldHide ? 'none' : (res.pointerEvents ?? 'auto');
       el.style.clipPath = res.clipPath ?? 'none';
       el.style.zIndex = isSelected ? '10001' : (isDraggingThis ? '1000' : (res.zIndex || (20 + (t.layer || 0)).toString()));
       

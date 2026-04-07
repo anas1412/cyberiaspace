@@ -78,6 +78,9 @@ const ThoughtNode: React.FC<ThoughtNodeProps> = React.memo(({ thought, registerE
 
 
   const altitudeStyles = useMemo(() => {
+    // Layer shadows only apply in spatial mode (3D stacking effect)
+    // Kanban/Calendar use flat layouts - layer should not affect visual shadow
+    const useLayerShadow = isSpatial && thought.layer && thought.layer > 0;
     const shadowSize = isDragging ? 60 : Math.min(50, ((thought.layer || 0) % 100) + 10);
     const altitudeScale = 1 + (Math.min(10, ((thought.layer || 0) % 10)) / 200);
     
@@ -88,13 +91,13 @@ const ThoughtNode: React.FC<ThoughtNodeProps> = React.memo(({ thought, registerE
       };
     }
     
-    if (!thought.layer) return { transform: `scale(${altitudeScale})` };
+    if (!useLayerShadow) return { transform: `scale(${altitudeScale})` };
     
     return {
       boxShadow: `0 ${shadowSize / 2}px ${shadowSize}px rgba(0,0,0,0.6)`,
       transform: `scale(${altitudeScale})`,
     };
-  }, [thought.layer, isDragging, isSelected]);
+  }, [thought.layer, isDragging, isSelected, isSpatial]);
 
   const parsedContent = useMemo(() => {
     return content ? marked.parse(content) : '';

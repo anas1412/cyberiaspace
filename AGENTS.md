@@ -412,6 +412,60 @@ useEffect(() => {
 }, [thoughts, activeSpace?.mode, isSpaceLoading]);
 ```
 
+### Physics Engine - Mode Transition Animations
+
+Smooth animations occur when switching between Spatial, Kanban, and Calendar modes:
+
+1. **Mode Transition System (`modeTransitionRef`):** When switching modes, the engine activates a 500ms transition period with faster lerp speed (0.25 vs normal 0.08)
+2. **Launch Effect:** Thoughts scale up slightly (1.15x) during entry animation, then settle to normal scale
+3. **Spatial Entry:** Camera auto-frames all thoughts by calculating bounding box and animating to fit viewport
+4. **Smooth Lerp:** Non-spatial modes use position interpolation instead of instant snapping
+
+**Key Code:**
+```typescript
+// In usePhysics.ts - transition speed
+const isTransitioning = modeTransitionRef.current.active && 
+  (performance.now() - modeTransitionRef.current.startTime < 500);
+const speed = isTransitioning ? 0.25 : 0.08; // Fast during transition
+```
+
+**Anti-Pattern to Avoid:**
+- ❌ DON'T force `snapNextFrame.current = true` on mode switch — this breaks the animation
+- ✅ DO let the `modeTransitionRef` system handle smooth transitions
+
+### Physics Engine - Ghost Thought Fix (Origin Hiding)
+
+When switching to Kanban/Calendar modes, thoughts at position (0,0) are temporarily hidden until the layout calculates their correct position. This prevents the "ghost thought in top-left corner" flash.
+
+**Implementation:**
+```typescript
+// In usePhysics.ts - hide thoughts at origin in non-spatial modes
+const isAtOrigin = Math.abs(p.x) < 1 && Math.abs(p.y) < 1;
+const shouldHide = mode !== 'spatial' && isAtOrigin && !isDraggingThis && !isSelected;
+
+el.style.opacity = shouldHide ? '0' : (res.opacity ?? 1).toString();
+el.style.visibility = shouldHide ? 'hidden' : (res.visibility ?? 'visible');
+```
+
+This is non-invasive — it only affects newly-created thoughts that haven't yet been positioned, allowing the animation system to work normally.
+
+### Physics Engine - Layer Shadow Mode Awareness
+
+Thought node shadows behave differently per mode:
+
+| Mode | Layer Shadow | Notes |
+|------|-------------|-------|
+| **Spatial** | ✅ Applied | 3D stacking effect via `altitudeStyles` |
+| **Kanban** | ❌ Disabled | Flat layout — layer-based shadows disabled |
+| **Calendar** | ❌ Disabled | Flat layout — layer-based shadows disabled |
+
+**Implementation in `ThoughtNode.tsx`:**
+```typescript
+const useLayerShadow = isSpatial && thought.layer && thought.layer > 0;
+```
+
+In non-spatial modes, only the base CSS shadow (`shadow-[0_10px_40px_rgba(0,0,0,0.5)]`) applies, ensuring consistent flat visuals.
+
 ### Physics Engine - Position Persistence
 
 **How It Works:**
@@ -789,10 +843,11 @@ A trigger `tr_protect_user_columns` on the `users` table prevents users from upd
 The `user-files` bucket has RLS policies on `storage.objects` that enforce user folder isolation. The first path segment must match `auth.uid()`.
 
 **Policies:**
-- `Users read own files`: `(storage.foldername(name))[1] = auth.uid()::text`
 - `Users upload to own folder`: `(storage.foldername(name))[1] = auth.uid()::text`
 - `Users update own files`: `(storage.foldername(name))[1] = auth.uid()::text`
 - `Users delete own files`: `(storage.foldername(name))[1] = auth.uid()::text`
+
+**Note:** No SELECT policy exists — files are accessed via direct CDN URLs (`getPublicUrl()`) which bypass RLS. The Supabase Storage Admin UI file browser won't show files, but the app works correctly.
 
 #### Recommendations for Maintenance
 
