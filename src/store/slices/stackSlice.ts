@@ -195,6 +195,7 @@ export const createStackSlice: StateCreator<CyberiaState, [], [], any> = (set, g
     const { activeSpaceId } = get();
     if (!activeSpaceId) return;
     
+    // Get FRESH state - don't use closure values that might be stale
     const freshThoughts = get().thoughts;
     const freshStacks = get().stacks;
     const authStore = useAuthStore.getState();
@@ -204,10 +205,19 @@ export const createStackSlice: StateCreator<CyberiaState, [], [], any> = (set, g
     const stacksToDelete: string[] = [];
     
     for (const stack of freshStacks) {
+      // Skip already deleted or different space
       if (stack.deletedAt || stack.spaceId !== activeSpaceId) continue;
-      const stackThoughts = freshThoughts.filter(t => t.stackId === stack.id && !t.deletedAt && !t.archivedAt);
+      
+      // Find all thoughts currently linked to this stack
+      const stackThoughts = freshThoughts.filter(t => 
+        t.stackId === stack.id && !t.deletedAt && !t.archivedAt
+      );
+      
+      // Delete stack if it has 0-1 thoughts (0 = all unlinked, 1 = one remaining)
       if (stackThoughts.length < 2) {
         stacksToDelete.push(stack.id);
+        
+        // If exactly one thought remains, unlink it too
         if (stackThoughts.length === 1) {
           thoughtsToUnlink.push(stackThoughts[0].id);
         }
@@ -216,19 +226,23 @@ export const createStackSlice: StateCreator<CyberiaState, [], [], any> = (set, g
     
     if (stacksToDelete.length === 0) return;
     
-    set({
-      thoughts: freshThoughts.map(t => 
-        thoughtsToUnlink.includes(t.id) 
-          ? { ...t, stackId: null, updatedAt: now, syncStatus: 'local' as const }
-          : t
-      ),
-      stacks: freshStacks.map(s => 
-        stacksToDelete.includes(s.id)
-          ? { ...s, deletedAt: now, updatedAt: now, syncStatus: 'local' as const }
-          : s
-      )
-    });
+    // Build new arrays - preserve order, update only what changed
+    const updatedThoughts = freshThoughts.map(t => 
+      thoughtsToUnlink.includes(t.id) 
+        ? { ...t, stackId: null, updatedAt: now, syncStatus: 'local' as const }
+        : t
+    );
     
+    const updatedStacks = freshStacks.map(s => 
+      stacksToDelete.includes(s.id)
+        ? { ...s, deletedAt: now, updatedAt: now, syncStatus: 'local' as const }
+        : s
+    );
+    
+    // Immediate state update - stack disappears from UI right away
+    set({ thoughts: updatedThoughts, stacks: updatedStacks });
+    
+    // Persist to IndexedDB
     await db.transaction('rw', [db.thoughts, db.stacks], async () => {
       if (thoughtsToUnlink.length > 0) {
         await db.thoughts.where('id').anyOf(thoughtsToUnlink).modify({
@@ -246,8 +260,9 @@ export const createStackSlice: StateCreator<CyberiaState, [], [], any> = (set, g
       }
     });
     
+    // Sync to cloud (async, debounced)
     if (authStore.status === 'authenticated') {
-      await syncOrchestrator.triggerSync();
+      syncOrchestrator.triggerSync();
     }
   },
 });

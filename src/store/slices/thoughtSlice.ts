@@ -837,7 +837,8 @@ export const createThoughtSlice: StateCreator<CyberiaState, [], [], any> = (set,
     
     const authStore = useAuthStore.getState();
     if (authStore.status === 'authenticated') {
-      await syncOrchestrator.triggerSync();
+      // Don't await - sync happens in background, UI already updated
+      syncOrchestrator.triggerSync();
     }},
   // Scatter thoughts with small jitter to prevent overlap on load
   scatterThoughts: async (spaceId?: string) => {
