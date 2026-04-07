@@ -9,7 +9,7 @@ import {
   type SuggestionItem 
 } from '../utils/referenceParser';
 import SuggestionDropdown from './SuggestionDropdown';
-import { X, Send, MessageSquare, Loader2, History, Square, ChevronDown, ChevronLeft } from 'lucide-react';
+import { X, SendHorizonal, MessageSquare, Loader2, History, Square, ChevronDown, ChevronLeft, Pencil, Trash2, Check, X as XIcon, Copy } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
@@ -193,6 +193,21 @@ const ChatOverlay: React.FC = () => {
   );
   const [showModelDropdown, setShowModelDropdown] = useState(false);
   // const [modelSearch, setModelSearch] = useState('');
+
+  // Edit/delete state
+  const [editingMessageId, setEditingMessageId] = useState<string | null>(null);
+  const [editInput, setEditInput] = useState('');
+  const [copiedMessageId, setCopiedMessageId] = useState<string | null>(null);
+
+  const handleCopyMessage = async (msg: Message) => {
+    try {
+      await navigator.clipboard.writeText(msg.content);
+      setCopiedMessageId(msg.id);
+      setTimeout(() => setCopiedMessageId(null), 2000);
+    } catch (err) {
+      console.error('[Oracle] Failed to copy message:', err);
+    }
+  };
 
   // Suggestion dropdown state for @thought and #stack references
   const [suggestions, setSuggestions] = useState<{
@@ -506,6 +521,172 @@ useEffect(() => {
     } else if (e.key === 'Escape') {
       e.preventDefault();
       setSuggestions(null);
+    }
+  };
+
+  // Delete a message by ID
+  const handleDeleteMessage = async (id: string) => {
+    setMessages(prev => prev.filter(m => m.id !== id));
+    try {
+      await db.chatHistory.where('id').equals(id).delete();
+    } catch (err) {
+      console.error("[Oracle] Failed to delete message:", err);
+    }
+  };
+
+  // Start editing a user message
+  const handleStartEdit = (msg: Message) => {
+    setEditingMessageId(msg.id);
+    setEditInput(msg.content);
+  };
+
+  // Cancel editing
+  const handleCancelEdit = () => {
+    setEditingMessageId(null);
+    setEditInput('');
+  };
+
+  // Save edit - truncate messages after edited one and re-run
+  const handleSaveEdit = async (msg: Message) => {
+    if (!editInput.trim() || !store.activeSpaceId) return;
+    
+    // Find index of edited message
+    const msgIndex = messages.findIndex(m => m.id === msg.id);
+    if (msgIndex === -1) return;
+
+    // Truncate messages after the edited message
+    const truncatedMessages = messages.slice(0, msgIndex);
+
+    // Update the edited message in DB and state
+    const updatedMsg: Message = { ...msg, content: editInput };
+    try {
+      await db.chatHistory.put(updatedMsg);
+      // Delete all messages that came after
+      const messagesToDelete = messages.slice(msgIndex + 1);
+      for (const m of messagesToDelete) {
+        await db.chatHistory.where('id').equals(m.id).delete();
+      }
+    } catch (err) {
+      console.error("[Oracle] Failed to update message:", err);
+    }
+
+    // Update messages state: truncated + edited message
+    setMessages([...truncatedMessages, updatedMsg]);
+
+    // Exit edit mode
+    setEditingMessageId(null);
+    setEditInput('');
+
+    // Re-run AI with the edited content directly
+    setIsLoading(true);
+    setStatus('thinking');
+
+    const controller = new AbortController();
+    abortControllerRef.current = controller;
+
+    try {
+      const authStore = useAuthStore.getState();
+      const token = await authStore.getOrRefreshToken();
+      
+      if (!token) {
+        throw new Error('Unauthorized: Session expired');
+      }
+
+      const response = await fetch('/api/chat', {
+        method: 'POST',
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        signal: controller.signal,
+        body: JSON.stringify({
+          messages: [...truncatedMessages, updatedMsg].filter(m => m.msgType !== 'system').slice(-ORACLE_CONFIG.HISTORY_WINDOW_SIZE).map(m => ({
+            role: m.role,
+            content: m.content
+          })),
+          model: selectedModel,
+          plan: plan,
+          mode: store.oracleChatMode,
+          context: serializeWorkspace(
+            store.activeSpaceId, 
+            store.thoughts, 
+            store.spaces, 
+            store.stacks,
+            store.selectedThoughtIds,
+            user
+          )
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to fetch from Oracle');
+      }
+
+      const reader = response.body?.getReader();
+      if (!reader) throw new Error('No response body');
+
+      const decoder = new TextDecoder();
+      let buffer = '';
+      let assistantContent = '';
+      let assistantMessage: Message | null = null;
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split('\n');
+        buffer = lines.pop() || '';
+
+        for (const line of lines) {
+          if (line.startsWith('data: ')) {
+            try {
+              const data = JSON.parse(line.slice(6));
+              if (data.type === 'text' && data.content) {
+                assistantContent += data.content;
+                if (!assistantMessage) {
+                  assistantMessage = {
+                    id: ulid(),
+                    spaceId: store.activeSpaceId!,
+                    role: 'assistant',
+                    content: assistantContent,
+                    timestamp: Date.now(),
+                    msgType: 'chat'
+                  };
+                  setMessages(prev => [...prev, assistantMessage!]);
+                } else {
+                  assistantMessage.content = assistantContent;
+                  setMessages(prev => prev.map(m => m.id === assistantMessage!.id ? { ...m, content: assistantContent } : m));
+                }
+              } else if (data.type === 'tool_call' && data.name) {
+                setActiveTool({ name: data.name, args: data.args });
+              } else if (data.type === 'tool_result') {
+                setActiveTool(null);
+              } else if (data.type === 'status' && data.status) {
+                setStatus(data.status);
+              } else if (data.type === 'error' && data.message) {
+                console.error('[Oracle] Stream error:', data.message);
+              }
+            } catch (e) {
+              // Skip malformed JSON
+            }
+          }
+        }
+      }
+
+      // Save assistant message
+      if (assistantMessage) {
+        saveMessage(assistantMessage);
+      }
+    } catch (err: any) {
+      if (err.name !== 'AbortError') {
+        console.error('[Oracle] Error:', err);
+      }
+    } finally {
+      setIsLoading(false);
+      setStatus('');
+      setActiveTool(null);
+      abortControllerRef.current = null;
     }
   };
 
@@ -960,110 +1141,86 @@ useEffect(() => {
                             </span>
                           </div>
                           
-                          <div className="py-1">
+                          <div className="py-0.5">
                             {/* REASONING */}
                             <button
                               onClick={() => { setSelectedModel(topModels[0]?.id || ''); handleTierChange('top'); setShowModelDropdown(false); userHasSelectedModelRef.current = true; }}
                               disabled={plan !== 'pro' || getTierStatus(topUsage, weeklyTopUsage, monthlyTopUsage, limits.AI_TOP_LIMIT || 15, limits.AI_TOP_WEEKLY || 100, limits.AI_TOP_MONTHLY || 400).exhausted}
                               className={cn(
-                                "w-full flex items-center gap-3 px-4 py-3 transition-all text-left",
+                                "w-full flex items-center justify-between px-4 py-2.5 transition-all text-left rounded-lg",
                                 activeTier === 'top'
                                   ? "bg-[var(--accent)]/10 text-[var(--accent)]"
-                                  : "hover:bg-[var(--glass-bg)] text-[var(--text-primary)]",
+                                  : "hover:bg-[var(--bg-page)] text-[var(--text-primary)]",
                                 (plan !== 'pro' || getTierStatus(topUsage, weeklyTopUsage, monthlyTopUsage, limits.AI_TOP_LIMIT || 15, limits.AI_TOP_WEEKLY || 100, limits.AI_TOP_MONTHLY || 400).exhausted) && "opacity-40 cursor-not-allowed"
                               )}
                             >
-                              <div className="w-8 h-8 rounded-lg bg-[var(--glass-bg)] flex items-center justify-center flex-shrink-0">
-                                <span className="text-[10px]">🧠</span>
+                              <span className="text-[11px] font-medium">Reasoning</span>
+                              <div className="flex items-center gap-2">
+                                {activeTier === 'top' && (
+                                  <svg className="w-3.5 h-3.5 text-[var(--accent)]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                                  </svg>
+                                )}
+                                {getTierStatus(topUsage, weeklyTopUsage, monthlyTopUsage, limits.AI_TOP_LIMIT || 15, limits.AI_TOP_WEEKLY || 100, limits.AI_TOP_MONTHLY || 400).exhausted && getTierResetTimer(topUsage, weeklyTopUsage, monthlyTopUsage, dailyAnchor, limits.AI_TOP_LIMIT || 15, limits.AI_TOP_WEEKLY || 100, limits.AI_TOP_MONTHLY || 400) && (
+                                  <span className="text-[8px] text-[var(--text-muted)]">
+                                    {getTierResetTimer(topUsage, weeklyTopUsage, monthlyTopUsage, dailyAnchor, limits.AI_TOP_LIMIT || 15, limits.AI_TOP_WEEKLY || 100, limits.AI_TOP_MONTHLY || 400)}
+                                  </span>
+                                )}
                               </div>
-                              <div className="flex flex-col items-start flex-1">
-                                <div className="flex items-center gap-2">
-                                  <span className="text-[11px] font-semibold">Reasoning</span>
-                                  {activeTier === 'top' && (
-                                    <svg className="w-3.5 h-3.5 text-[var(--accent)]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                                    </svg>
-                                  )}
-                                </div>
-                                <span className="text-[9px] text-[var(--text-muted)] mt-0.5">Complex analysis</span>
-                              </div>
-                              {getTierStatus(topUsage, weeklyTopUsage, monthlyTopUsage, limits.AI_TOP_LIMIT || 15, limits.AI_TOP_WEEKLY || 100, limits.AI_TOP_MONTHLY || 400).exhausted && getTierResetTimer(topUsage, weeklyTopUsage, monthlyTopUsage, dailyAnchor, limits.AI_TOP_LIMIT || 15, limits.AI_TOP_WEEKLY || 100, limits.AI_TOP_MONTHLY || 400) && (
-                                <span className="text-[8px] text-[var(--text-muted)] ml-2">
-                                  {getTierResetTimer(topUsage, weeklyTopUsage, monthlyTopUsage, dailyAnchor, limits.AI_TOP_LIMIT || 15, limits.AI_TOP_WEEKLY || 100, limits.AI_TOP_MONTHLY || 400)}
-                                </span>
-                              )}
                             </button>
-
-                            {/* Divider */}
-                            <div className="h-px bg-[var(--glass-border)] mx-4" />
 
                             {/* BALANCED */}
                             <button
                               onClick={() => { setSelectedModel(mediumModels[0]?.id || ''); handleTierChange('medium'); setShowModelDropdown(false); userHasSelectedModelRef.current = true; }}
                               disabled={plan !== 'pro' || getTierStatus(mediumUsage, weeklyMediumUsage, monthlyMediumUsage, limits.AI_MEDIUM_LIMIT || 60, limits.AI_MEDIUM_WEEKLY || 420, limits.AI_MEDIUM_MONTHLY || 1800).exhausted}
                               className={cn(
-                                "w-full flex items-center gap-3 px-4 py-3 transition-all text-left",
+                                "w-full flex items-center justify-between px-4 py-2.5 transition-all text-left rounded-lg",
                                 activeTier === 'medium'
                                   ? "bg-[var(--accent)]/10 text-[var(--accent)]"
-                                  : "hover:bg-[var(--glass-bg)] text-[var(--text-primary)]",
+                                  : "hover:bg-[var(--bg-page)] text-[var(--text-primary)]",
                                 (plan !== 'pro' || getTierStatus(mediumUsage, weeklyMediumUsage, monthlyMediumUsage, limits.AI_MEDIUM_LIMIT || 60, limits.AI_MEDIUM_WEEKLY || 420, limits.AI_MEDIUM_MONTHLY || 1800).exhausted) && "opacity-40 cursor-not-allowed"
                               )}
                             >
-                              <div className="w-8 h-8 rounded-lg bg-[var(--glass-bg)] flex items-center justify-center flex-shrink-0">
-                                <span className="text-[10px]">⚖️</span>
+                              <span className="text-[11px] font-medium">Balanced</span>
+                              <div className="flex items-center gap-2">
+                                {activeTier === 'medium' && (
+                                  <svg className="w-3.5 h-3.5 text-[var(--accent)]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                                  </svg>
+                                )}
+                                {getTierStatus(mediumUsage, weeklyMediumUsage, monthlyMediumUsage, limits.AI_MEDIUM_LIMIT || 60, limits.AI_MEDIUM_WEEKLY || 420, limits.AI_MEDIUM_MONTHLY || 1800).exhausted && getTierResetTimer(mediumUsage, weeklyMediumUsage, monthlyMediumUsage, dailyAnchor, limits.AI_MEDIUM_LIMIT || 60, limits.AI_MEDIUM_WEEKLY || 420, limits.AI_MEDIUM_MONTHLY || 1800) && (
+                                  <span className="text-[8px] text-[var(--text-muted)]">
+                                    {getTierResetTimer(mediumUsage, weeklyMediumUsage, monthlyMediumUsage, dailyAnchor, limits.AI_MEDIUM_LIMIT || 60, limits.AI_MEDIUM_WEEKLY || 420, limits.AI_MEDIUM_MONTHLY || 1800)}
+                                  </span>
+                                )}
                               </div>
-                              <div className="flex flex-col items-start flex-1">
-                                <div className="flex items-center gap-2">
-                                  <span className="text-[11px] font-semibold">Balanced</span>
-                                  {activeTier === 'medium' && (
-                                    <svg className="w-3.5 h-3.5 text-[var(--accent)]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                                    </svg>
-                                  )}
-                                </div>
-                                <span className="text-[9px] text-[var(--text-muted)] mt-0.5">Speed & quality</span>
-                              </div>
-                              {getTierStatus(mediumUsage, weeklyMediumUsage, monthlyMediumUsage, limits.AI_MEDIUM_LIMIT || 60, limits.AI_MEDIUM_WEEKLY || 420, limits.AI_MEDIUM_MONTHLY || 1800).exhausted && getTierResetTimer(mediumUsage, weeklyMediumUsage, monthlyMediumUsage, dailyAnchor, limits.AI_MEDIUM_LIMIT || 60, limits.AI_MEDIUM_WEEKLY || 420, limits.AI_MEDIUM_MONTHLY || 1800) && (
-                                <span className="text-[8px] text-[var(--text-muted)] ml-2">
-                                  {getTierResetTimer(mediumUsage, weeklyMediumUsage, monthlyMediumUsage, dailyAnchor, limits.AI_MEDIUM_LIMIT || 60, limits.AI_MEDIUM_WEEKLY || 420, limits.AI_MEDIUM_MONTHLY || 1800)}
-                                </span>
-                              )}
                             </button>
-
-                            {/* Divider */}
-                            <div className="h-px bg-[var(--glass-border)] mx-4" />
 
                             {/* FAST */}
                             <button
                               onClick={() => { setSelectedModel(smallModels[0]?.id || ''); handleTierChange('small'); setShowModelDropdown(false); userHasSelectedModelRef.current = true; }}
                               disabled={plan !== 'pro' || getTierStatus(smallUsage, weeklySmallUsage, monthlySmallUsage, limits.AI_SMALL_LIMIT || 500, limits.AI_SMALL_WEEKLY || 3500, limits.AI_SMALL_MONTHLY || 15000).exhausted}
                               className={cn(
-                                "w-full flex items-center gap-3 px-4 py-3 transition-all text-left",
+                                "w-full flex items-center justify-between px-4 py-2.5 transition-all text-left rounded-lg",
                                 activeTier === 'small'
                                   ? "bg-[var(--accent)]/10 text-[var(--accent)]"
-                                  : "hover:bg-[var(--glass-bg)] text-[var(--text-primary)]",
+                                  : "hover:bg-[var(--bg-page)] text-[var(--text-primary)]",
                                 (plan !== 'pro' || getTierStatus(smallUsage, weeklySmallUsage, monthlySmallUsage, limits.AI_SMALL_LIMIT || 500, limits.AI_SMALL_WEEKLY || 3500, limits.AI_SMALL_MONTHLY || 15000).exhausted) && "opacity-40 cursor-not-allowed"
                               )}
                             >
-                              <div className="w-8 h-8 rounded-lg bg-[var(--glass-bg)] flex items-center justify-center flex-shrink-0">
-                                <span className="text-[10px]">⚡</span>
+                              <span className="text-[11px] font-medium">Fast</span>
+                              <div className="flex items-center gap-2">
+                                {activeTier === 'small' && (
+                                  <svg className="w-3.5 h-3.5 text-[var(--accent)]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                                  </svg>
+                                )}
+                                {getTierStatus(smallUsage, weeklySmallUsage, monthlySmallUsage, limits.AI_SMALL_LIMIT || 500, limits.AI_SMALL_WEEKLY || 3500, limits.AI_SMALL_MONTHLY || 15000).exhausted && getTierResetTimer(smallUsage, weeklySmallUsage, monthlySmallUsage, dailyAnchor, limits.AI_SMALL_LIMIT || 500, limits.AI_SMALL_WEEKLY || 3500, limits.AI_SMALL_MONTHLY || 15000) && (
+                                  <span className="text-[8px] text-[var(--text-muted)]">
+                                    {getTierResetTimer(smallUsage, weeklySmallUsage, monthlySmallUsage, dailyAnchor, limits.AI_SMALL_LIMIT || 500, limits.AI_SMALL_WEEKLY || 3500, limits.AI_SMALL_MONTHLY || 15000)}
+                                  </span>
+                                )}
                               </div>
-                              <div className="flex flex-col items-start flex-1">
-                                <div className="flex items-center gap-2">
-                                  <span className="text-[11px] font-semibold">Fast</span>
-                                  {activeTier === 'small' && (
-                                    <svg className="w-3.5 h-3.5 text-[var(--accent)]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                                    </svg>
-                                  )}
-                                </div>
-                                <span className="text-[9px] text-[var(--text-muted)] mt-0.5">Quick responses</span>
-                              </div>
-                              {getTierStatus(smallUsage, weeklySmallUsage, monthlySmallUsage, limits.AI_SMALL_LIMIT || 500, limits.AI_SMALL_WEEKLY || 3500, limits.AI_SMALL_MONTHLY || 15000).exhausted && getTierResetTimer(smallUsage, weeklySmallUsage, monthlySmallUsage, dailyAnchor, limits.AI_SMALL_LIMIT || 500, limits.AI_SMALL_WEEKLY || 3500, limits.AI_SMALL_MONTHLY || 15000) && (
-                                <span className="text-[8px] text-[var(--text-muted)] ml-2">
-                                  {getTierResetTimer(smallUsage, weeklySmallUsage, monthlySmallUsage, dailyAnchor, limits.AI_SMALL_LIMIT || 500, limits.AI_SMALL_WEEKLY || 3500, limits.AI_SMALL_MONTHLY || 15000)}
-                                </span>
-                              )}
                             </button>
                           </div>
                         </motion.div>
@@ -1077,14 +1234,14 @@ useEffect(() => {
               <div className="flex-1 flex items-center justify-end gap-1 relative z-50">
                 <button
                   onClick={handleClear}
-                  className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-[var(--glass-bg)] text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-all"
-                  title="Clear Stream"
+                  className="w-8 h-8 flex items-center justify-center rounded-lg text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors"
+                  title="Clear History"
                 >
                   <History className="w-4 h-4" />
                 </button>
                 <button
                   onClick={() => setChatOpen(false)}
-                  className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-[var(--glass-bg)] text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-all"
+                  className="w-8 h-8 flex items-center justify-center rounded-lg text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors"
                 >
                   <X className="w-4 h-4" />
                 </button>
@@ -1111,22 +1268,112 @@ useEffect(() => {
             
             {messages.map((m) => {
               if (!m.content?.trim() && m.role === 'assistant') return null;
+              
+              const isEditing = editingMessageId === m.id;
+              
               return (
-                <div key={m.id} className={cn(
-                  "flex flex-col gap-1.5 animate-in fade-in slide-in-from-bottom-2 duration-500",
-                  m.role === 'user' ? "items-end" : "items-start"
-                )}>
-                  <div className={cn(
-                    "max-w-[92%] p-3.5 px-4 rounded-2xl text-[12px] leading-relaxed border shadow-sm prose prose-invert prose-xs break-words overflow-hidden",
-                    m.role === 'user' 
-                      ? "bg-[var(--accent)]/20 text-[var(--text-primary)] border-[var(--accent)]/30 rounded-tr-sm" 
-                      : "bg-[var(--bg-page)]/20 text-[var(--text-primary)] border-[var(--glass-border)] rounded-tl-sm"
-                  )}>
-                    <ReactMarkdown remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeRaw]}>{m.content}</ReactMarkdown>
-                  </div>
-                  <span className="text-[8px] font-semibold tracking-wide text-[var(--text-muted)] px-1">
-                    {m.role === 'user' ? 'You' : 'Oracle'}
-                  </span>
+                <div 
+                  key={m.id} 
+                  className={cn(
+                    "flex flex-col gap-1 animate-in fade-in slide-in-from-bottom-2 duration-500",
+                    m.role === 'user' ? "items-end" : "items-start"
+                  )}
+                >
+                  {isEditing ? (
+                    <div className="max-w-[92%] w-full flex flex-col gap-2">
+                      <textarea
+                        value={editInput}
+                        onChange={(e) => setEditInput(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter' && !e.shiftKey) {
+                            e.preventDefault();
+                            handleSaveEdit(m);
+                          }
+                          if (e.key === 'Escape') {
+                            e.preventDefault();
+                            handleCancelEdit();
+                          }
+                        }}
+                        className="w-full bg-[var(--bg-page)]/40 border border-[var(--accent)]/50 rounded-2xl p-3.5 px-4 text-[12px] text-[var(--text-primary)] focus:outline-none focus:border-[var(--accent)] resize-none min-h-[60px]"
+                        autoFocus
+                      />
+                      <div className="flex items-center gap-2 justify-end">
+                        <button
+                          onClick={handleCancelEdit}
+                          className="flex items-center gap-1 px-2 py-1 rounded-lg text-[10px] text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--glass-bg)] transition-all"
+                        >
+                          <XIcon className="w-3 h-3" />
+                          Cancel
+                        </button>
+                        <button
+                          onClick={() => handleSaveEdit(m)}
+                          disabled={!editInput.trim()}
+                          className="flex items-center gap-1 px-2 py-1 rounded-lg text-[10px] text-[var(--accent)] hover:bg-[var(--accent)]/10 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
+                        >
+                          <Check className="w-3 h-3" />
+                          Save
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <>
+                      <div className="relative max-w-[92%]">
+                        <div className={cn(
+                          "p-3.5 px-4 rounded-2xl text-[12px] leading-relaxed border shadow-sm prose prose-invert prose-xs break-words overflow-hidden",
+                          m.role === 'user' 
+                            ? "bg-[var(--accent)]/20 text-[var(--text-primary)] border-[var(--accent)]/30 rounded-tr-sm" 
+                            : "bg-[var(--bg-page)]/20 text-[var(--text-primary)] border-[var(--glass-border)] rounded-tl-sm"
+                        )}>
+                          <ReactMarkdown remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeRaw]}>{m.content}</ReactMarkdown>
+                        </div>
+                      </div>
+                      <div className={cn(
+                        "flex items-center gap-2 px-1",
+                        m.role === 'user' ? "justify-start" : "justify-end"
+                      )}>
+                        {m.role === 'user' && (
+                          <>
+                            <button
+                              onClick={() => handleStartEdit(m)}
+                              className="flex items-center gap-1 px-1 py-0.5 rounded text-[9px] text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors"
+                            >
+                              <Pencil className="w-2.5 h-2.5" />
+                              Edit
+                            </button>
+                            <button
+                              onClick={() => handleDeleteMessage(m.id)}
+                              className="flex items-center gap-1 px-1 py-0.5 rounded text-[9px] text-[var(--text-muted)] hover:text-red-400 transition-colors"
+                            >
+                              <Trash2 className="w-2.5 h-2.5" />
+                              Delete
+                            </button>
+                          </>
+                        )}
+                        {m.role === 'assistant' && (
+                          <>
+                            <button
+                              onClick={() => handleCopyMessage(m)}
+                              className="flex items-center gap-1 px-1 py-0.5 rounded text-[9px] text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors"
+                            >
+                              {copiedMessageId === m.id ? (
+                                <Check className="w-2.5 h-2.5" />
+                              ) : (
+                                <Copy className="w-2.5 h-2.5" />
+                              )}
+                              {copiedMessageId === m.id ? 'Copied' : 'Copy'}
+                            </button>
+                            <button
+                              onClick={() => handleDeleteMessage(m.id)}
+                              className="flex items-center gap-1 px-1 py-0.5 rounded text-[9px] text-[var(--text-muted)] hover:text-red-400 transition-colors"
+                            >
+                              <Trash2 className="w-2.5 h-2.5" />
+                              Delete
+                            </button>
+                          </>
+                        )}
+                      </div>
+                    </>
+                  )}
                 </div>
               );
             })}
@@ -1194,9 +1441,9 @@ useEffect(() => {
                 <button
                   type="submit"
                   disabled={!input.trim()}
-                  className="w-9 h-9 flex-shrink-0 flex items-center justify-center bg-[var(--accent)]/90 hover:bg-[var(--accent)] disabled:bg-[var(--glass-bg)] disabled:text-[var(--text-muted)] text-[var(--bg-main)] rounded-lg transition-all shadow-lg active:scale-95 mb-0.5"
+                  className="w-9 h-9 flex-shrink-0 flex items-center justify-center bg-[var(--accent)]/90 hover:bg-[var(--accent)] disabled:bg-[var(--glass-bg)] disabled:text-[var(--text-muted)] text-white rounded-lg transition-all shadow-lg active:scale-95 mb-0.5"
                 >
-                  <Send className="w-3.5 h-3.5" />
+                  <SendHorizonal className="w-3.5 h-3.5" />
                 </button>
               )}
 
@@ -1214,39 +1461,36 @@ useEffect(() => {
               )}
             </form>
 
-            <div className="flex items-center justify-between gap-2 px-1 pb-1">
+            <div className="flex items-center justify-center pb-2">
               <div className="flex items-center h-8 bg-[var(--glass-bg)] rounded-lg p-1 border border-[var(--glass-border)]">
                 <button
                   onClick={() => store.setOracleChatMode('chat')}
                   className={cn(
                     "px-3 h-6 rounded-md transition-all duration-300 flex items-center gap-1.5",
                     store.oracleChatMode === 'chat' 
-                      ? "bg-[var(--accent)]/20 text-[var(--accent-secondary)] shadow-[0_0_10px_var(--accent-glow)]" 
-                      : "text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-white/[0.03]"
+                      ? "bg-[var(--accent)]/10 text-[var(--accent)]" 
+                      : "text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--glass-bg)]"
                   )}
                 >
-                  <div className={cn("w-1.5 h-1.5 rounded-full transition-all", store.oracleChatMode === 'chat' ? "bg-[var(--accent)] shadow-[0_0_6px_var(--accent-glow)]" : "bg-[var(--glass-border)]")} />
+                  <div className={cn("w-1.5 h-1.5 rounded-full transition-all", store.oracleChatMode === 'chat' ? "bg-[var(--accent)]" : "bg-[var(--glass-border)]")} />
                   <span className="text-[9px] font-semibold tracking-wide mt-[1px]">Chat</span>
                 </button>
-                <div className="w-[1px] h-3 bg-white/10 mx-1"></div>
+                <div className="w-[1px] h-3 bg-[var(--glass-border)] mx-1"></div>
                 <AccessGuard user={user} mode="disable" feature="pro">
                   <button
                     onClick={() => store.setOracleChatMode('action')}
                     className={cn(
                       "px-3 h-6 rounded-md transition-all duration-300 flex items-center gap-1.5",
                       store.oracleChatMode === 'action' 
-                        ? "bg-[var(--status-doing)]/20 text-[var(--status-doing)] shadow-[0_0_10px_rgba(234,179,8,0.15)]" 
-                        : "text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-white/[0.03]"
+                        ? "bg-[var(--status-doing)]/10 text-[var(--status-doing)]" 
+                        : "text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--glass-bg)]"
                     )}
                   >
-                    <div className={cn("w-1.5 h-1.5 rounded-full transition-all", store.oracleChatMode === 'action' ? "bg-[var(--status-doing)] shadow-[0_0_6px_rgba(234,179,8,0.6)]" : "bg-[var(--glass-border)]")} />
+                    <div className={cn("w-1.5 h-1.5 rounded-full transition-all", store.oracleChatMode === 'action' ? "bg-[var(--status-doing)]" : "bg-[var(--glass-border)]")} />
                     <span className="text-[9px] font-semibold tracking-wide mt-[1px]">Action</span>
                   </button>
                 </AccessGuard>
               </div>
-              <span className="text-[9px] font-medium text-[var(--text-muted)] uppercase tracking-wider leading-tight max-w-[160px] text-right">
-                Oracle AI is still in development
-              </span>
             </div>
           </div>
           </div>
