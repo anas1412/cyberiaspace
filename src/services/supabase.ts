@@ -16,9 +16,4 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
     persistSession: true,
     detectSessionInUrl: true,
   },
-  global: {
-    headers: {
-      Authorization: `Bearer ${supabaseAnonKey}`,
-    },
-  },
 })

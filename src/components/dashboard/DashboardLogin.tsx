@@ -16,7 +16,10 @@ const DashboardLogin: React.FC = () => {
       }
 
       try {
-        const res = await fetch('/api/dashboard?action=verify');
+        const encodedId = btoa(user.id);
+        const res = await fetch('/api/dashboard?route=verify', {
+          headers: { 'Authorization': `Bearer ${encodedId}` }
+        });
         const data = await res.json();
         setIsAdmin(data.isAdmin === true);
       } catch (err) {

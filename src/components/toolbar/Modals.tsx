@@ -84,6 +84,8 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
   const [nodeBgKey, setNodeBgKey] = useState(0); // Force re-render for node bg changes
   const [primaryKey, setPrimaryKey] = useState(0); // Force re-render for primary changes
   const [secondaryKey, setSecondaryKey] = useState(0); // Force re-render for secondary changes
+  const [localPersonality, setLocalPersonality] = useState('');
+  const [personalitySaving, setPersonalitySaving] = useState(false);
   const { user, storageUsageMB, updateSettings, updateQuotaUsage } = useAuthStore();
   const totalThoughtCount = useStore((state) => state.totalThoughtCount);
   const clearWorkspace = useStore((state) => state.clearWorkspace);
@@ -100,6 +102,22 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
       setActiveTab('general');
     }
   }, [user?.plan, activeTab]);
+
+  // Sync local personality state when user settings change
+  useEffect(() => {
+    setLocalPersonality(user?.settings?.personality || '');
+  }, [user?.settings?.personality]);
+
+  // Save personality handler
+  const savePersonality = async () => {
+    if (!user) return;
+    setPersonalitySaving(true);
+    try {
+      await updateSettings({ personality: localPersonality });
+    } finally {
+      setPersonalitySaving(false);
+    }
+  };
 
   // Fetch fresh usage when quota tab is opened and update centralized auth store
   useEffect(() => {
@@ -445,9 +463,36 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
               >
                 {/* AI Personality */}
                 <section>
-                  <p className="text-[10px] font-semibold tracking-wide text-[var(--text-muted)] mb-4 flex items-center gap-2">
-                    <MessageSquare className="w-3.5 h-3.5" /> AI Personality
-                  </p>
+                  <div className="flex items-center justify-between mb-4">
+                    <p className="text-[10px] font-semibold tracking-wide text-[var(--text-muted)] flex items-center gap-2">
+                      <MessageSquare className="w-3.5 h-3.5" /> AI Personality
+                    </p>
+                    <AccessGuard 
+                      user={user} 
+                      mode="disable" 
+                      feature="pro"
+                      modalTitle="Upgrade to Pro"
+                      modalMessage="Customize your AI personality with Pro."
+                    >
+                      <button
+                        onClick={savePersonality}
+                        disabled={personalitySaving}
+                        className={cn(
+                          "text-[9px] font-semibold tracking-wide px-3 py-1.5 rounded-lg transition-all flex items-center gap-1.5",
+                          localPersonality !== (user?.settings?.personality || '')
+                            ? "bg-[var(--accent)] text-white hover:bg-[var(--accent-secondary)]"
+                            : "bg-[var(--glass-bg)] text-[var(--text-muted)] cursor-not-allowed"
+                        )}
+                      >
+                        {personalitySaving ? (
+                          <Loader2 className="w-3 h-3 animate-spin" />
+                        ) : (
+                          <CheckCircle className="w-3 h-3" />
+                        )}
+                        {personalitySaving ? 'Saving...' : 'Save'}
+                      </button>
+                    </AccessGuard>
+                  </div>
                   <AccessGuard 
                     user={user} 
                     mode="disable" 
@@ -455,12 +500,12 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                     modalTitle="Upgrade to Pro"
                     modalMessage="Customize your AI personality with Pro."
                   >
-<textarea
-                        value={user?.settings?.personality || ''}
-                        onChange={(e) => updateSettings({ personality: e.target.value })}
-                        placeholder="Describe how Oracle should behave..."
-                        className="w-full h-24 bg-[var(--glass-bg)] border border-[var(--glass-border)] rounded-xl p-4 text-xs text-[var(--text-primary)] outline-none focus:border-[var(--accent)]/50 transition-all resize-none"
-                      />
+                    <textarea
+                      value={localPersonality}
+                      onChange={(e) => setLocalPersonality(e.target.value)}
+                      placeholder="Describe how Oracle should behave..."
+                      className="w-full h-24 bg-[var(--glass-bg)] border border-[var(--glass-border)] rounded-xl p-4 text-xs text-[var(--text-primary)] outline-none focus:border-[var(--accent)]/50 transition-all resize-none"
+                    />
                   </AccessGuard>
                 </section>
 

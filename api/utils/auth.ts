@@ -40,18 +40,18 @@ export async function verifyAuth(authHeader: string | undefined): Promise<AuthRe
     if (user && !error) {
       console.log('[Auth] Supabase verification succeeded for user:', user.id);
       
-      // Look up the user in public.users by auth_user_id to get the actual userId used for data
+      // Look up the user in public.users by id (users.id = auth.users.id)
       const { data: publicUser, error: userError } = await supabase
         .from('users')
         .select('id')
-        .eq('auth_user_id', user.id)
+        .eq('id', user.id)
         .maybeSingle();
       
       if (userError) {
         console.error('[Auth] Error looking up public user:', userError);
       }
       
-      // Use the public.users id (which may be the old numeric ID) for data operations
+      // Use the public.users id for data operations
       const actualUserId = publicUser?.id || user.id;
       console.log('[Auth] Public user ID:', actualUserId);
       

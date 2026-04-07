@@ -732,7 +732,7 @@ export const syncOrchestrator = {
           return result;
         });
 
-        await supabaseSync.createThoughts(safeThoughts);
+        await supabaseSync.createThoughts(safeThoughts, userId);
         const ids = thoughtsToPush.map(t => t.id);
         
         // Atomic update: Only mark as synced if not modified during push

@@ -599,8 +599,8 @@ export const createAuthSlice: StateCreator<AuthState, [], [], any> = (set, get, 
   },
 
   /**
-   * Process a Supabase OAuth session and convert it to app user
-   * Handles both new users (create record) and existing users (link via auth_user_id)
+   * Process a Supabase OAuth session and convert it to app user.
+   * users.id = auth.users.id (UUID), so we query directly by id.
    */
   handleSupabaseSession: async (session: any) => {
     if (!session?.user) {
@@ -609,59 +609,33 @@ export const createAuthSlice: StateCreator<AuthState, [], [], any> = (set, get, 
     }
 
     const sbUser = session.user;
-    const authUserId = sbUser.id;
+    const userId = sbUser.id; // users.id = auth.users.id
     const accessToken = session.access_token;
     const email = sbUser.email || '';
     const name = sbUser.user_metadata?.full_name || sbUser.user_metadata?.name || '';
     const avatar = sbUser.user_metadata?.avatar_url || sbUser.user_metadata?.picture || '';
 
-    console.log('[Auth] Processing Supabase session for:', email, 'auth_user_id:', authUserId);
+    console.log('[Auth] Processing Supabase session for:', email, 'userId:', userId);
 
     try {
-      // Try to find existing user by auth_user_id (new users) or by email (legacy users)
+      // Try to find existing user by id (users.id = auth.users.id)
       let { data: existingUser, error: lookupError } = await supabase
         .from('users')
         .select('*')
-        .eq('auth_user_id', authUserId)
+        .eq('id', userId)
         .maybeSingle();
 
       if (lookupError) {
         console.error('[Auth] Error looking up user:', lookupError);
       }
 
-      // If not found by auth_user_id, try by email (for legacy users)
-      if (!existingUser && email) {
-        const { data: emailMatch, error: emailLookupError } = await supabase
-          .from('users')
-          .select('*')
-          .eq('email', email)
-          .maybeSingle();
-
-        if (emailLookupError) {
-          console.error('[Auth] Error looking up by email:', emailLookupError);
-        }
-
-        if (emailMatch) {
-          // Link existing user to new auth_user_id
-          existingUser = emailMatch;
-          await supabase
-            .from('users')
-            .update({ auth_user_id: authUserId })
-            .eq('id', emailMatch.id);
-          console.log('[Auth] Linked legacy user to Supabase auth:', emailMatch.id);
-        }
-      }
-
-      let userId: string;
       let isNewUser = false;
 
       if (existingUser) {
         // Use existing user
-        userId = existingUser.id;
         console.log('[Auth] Found existing user:', userId);
       } else {
         // Create new user - use the auth UUID as the ID
-        userId = authUserId;
         isNewUser = true;
         console.log('[Auth] Creating new user:', userId);
       }
@@ -671,7 +645,6 @@ export const createAuthSlice: StateCreator<AuthState, [], [], any> = (set, get, 
         .from('users')
         .upsert({
           id: userId,
-          auth_user_id: authUserId,
           email,
           name,
           avatar,
@@ -679,6 +652,16 @@ export const createAuthSlice: StateCreator<AuthState, [], [], any> = (set, get, 
 
       if (upsertError) {
         console.error('[Auth] Error upserting user:', upsertError);
+      }
+
+      // Create user_usage row for new users
+      if (isNewUser) {
+        const { error: usageError } = await supabase
+          .from('user_usage')
+          .insert({ user_id: userId });
+        if (usageError) {
+          console.error('[Auth] Error creating user_usage:', usageError);
+        }
       }
 
       // Build the app User object

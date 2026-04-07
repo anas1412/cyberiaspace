@@ -3,15 +3,20 @@ import { createClient } from '@supabase/supabase-js';
 import { verifyAuth } from './utils/auth.js';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.VITE_PUBLIC_SUPABASE_URL;
-const supabaseKey = process.env.VITE_SUPABASE_ANON_KEY || process.env.VITE_PUBLIC_SUPABASE_ANON_KEY;
+const supabaseAnonKey = process.env.VITE_SUPABASE_ANON_KEY || process.env.VITE_PUBLIC_SUPABASE_ANON_KEY;
+const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
-const supabase = createClient(supabaseUrl!, supabaseKey!, {
+const supabase = createClient(supabaseUrl!, supabaseAnonKey!, {
   auth: { autoRefreshToken: false, persistSession: false }
 });
 
+const supabaseAdmin = supabaseServiceKey
+  ? createClient(supabaseUrl!, supabaseServiceKey, { auth: { autoRefreshToken: false, persistSession: false } })
+  : supabase;
+
 // Helper to check if user is admin
 async function checkIsAdmin(userId: string): Promise<boolean> {
-  const { data: user } = await supabase
+  const { data: user } = await supabaseAdmin
     .from('users')
     .select('is_admin')
     .eq('id', userId)
@@ -94,7 +99,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     // Return all feedback (no auth required) - for public feedback page
     if (action === 'listAll') {
-      let query = supabase
+      let query = supabaseAdmin
         .from('feedback')
         .select('*')
         .order('created_at', { ascending: false })
@@ -116,7 +121,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     // Admin only: return all feedback with admin flag
     if (isAdmin && (!userId || action === 'listAll')) {
-      let query = supabase
+      let query = supabaseAdmin
         .from('feedback')
         .select('*')
         .order('created_at', { ascending: false })
@@ -179,7 +184,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       updateData.admin_reply_at = new Date().toISOString();
     }
 
-    const { data: feedback, error } = await supabase
+    const { data: feedback, error } = await supabaseAdmin
       .from('feedback')
       .update(updateData)
       .eq('id', targetId)
@@ -206,7 +211,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       return res.status(400).json({ error: 'Missing feedbackId' });
     }
 
-    const { error } = await supabase
+    const { error } = await supabaseAdmin
       .from('feedback')
       .delete()
       .eq('id', feedbackId);

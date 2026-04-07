@@ -2,20 +2,36 @@ import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { createClient } from '@supabase/supabase-js';
 
 const supabaseUrl = process.env.VITE_PUBLIC_SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL;
-const supabaseKey = process.env.VITE_SUPABASE_ANON_KEY || process.env.VITE_PUBLIC_SUPABASE_ANON_KEY;
+const supabaseAnonKey = process.env.VITE_SUPABASE_ANON_KEY || process.env.VITE_PUBLIC_SUPABASE_ANON_KEY;
+const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
-if (!supabaseUrl || !supabaseKey) {
+if (!supabaseUrl || !supabaseAnonKey) {
   console.error('[Dashboard] Missing SUPABASE_URL or ANON_KEY env vars');
 }
 
-const supabase = createClient(supabaseUrl!, supabaseKey!, {
+const supabase = createClient(supabaseUrl!, supabaseAnonKey!, {
   auth: { autoRefreshToken: false, persistSession: false }
 });
 
-async function isAdmin(userId: string): Promise<boolean> {
-  if (!userId || !supabase) return false;
+const supabaseAdmin = supabaseServiceKey
+  ? createClient(supabaseUrl!, supabaseServiceKey, { auth: { autoRefreshToken: false, persistSession: false } })
+  : supabase;
+
+// Helper to decode user ID from base64 token
+function decodeUserId(authHeader: string | undefined): string | null {
+  if (!authHeader?.startsWith('Bearer ')) return null;
+  const token = authHeader.replace('Bearer ', '');
   try {
-    const { data: user, error } = await supabase
+    return Buffer.from(token, 'base64').toString('utf8');
+  } catch {
+    return null;
+  }
+}
+
+async function isAdmin(userId: string): Promise<boolean> {
+  if (!userId || !supabaseAdmin) return false;
+  try {
+    const { data: user, error } = await supabaseAdmin
       .from('users')
       .select('is_admin')
       .eq('id', userId)
@@ -33,9 +49,9 @@ async function isAdmin(userId: string): Promise<boolean> {
 }
 
 async function getAdminUser(userId: string) {
-  if (!userId || !supabase) return null;
+  if (!userId || !supabaseAdmin) return null;
   try {
-    const { data: user, error } = await supabase
+    const { data: user, error } = await supabaseAdmin
       .from('users')
       .select('id, email, name, is_admin, created_at')
       .eq('id', userId)
@@ -73,7 +89,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         return res.status(400).json({ error: 'Missing email or password' });
       }
 
-      const { data: user, error } = await supabase
+      const { data: user, error } = await supabaseAdmin
         .from('users')
         .select('id, email, name, is_admin, created_at')
         .eq('email', email)
@@ -112,36 +128,20 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         return res.status(405).json({ error: 'Method not allowed' });
       }
 
-      const authHeader = req.headers.authorization?.replace('Bearer ', '');
+      const userId = decodeUserId(req.headers.authorization);
       
-      if (!authHeader) {
-        return res.status(401).json({ error: 'Missing authorization token' });
-      }
-
-      // Decode base64 to get user ID
-      let userId: string;
-      try {
-        userId = Buffer.from(authHeader, 'base64').toString('utf8');
-        console.log('[Dashboard verify] Decoded userId:', userId);
-      } catch (err) {
-        console.error('[Dashboard verify] Failed to decode:', err);
-        return res.status(400).json({ error: 'Invalid token format' });
+      if (!userId) {
+        return res.status(401).json({ error: 'Invalid token' });
       }
 
       const admin = await isAdmin(userId);
-      console.log('[Dashboard verify] isAdmin result:', admin);
-      
       const user = await getAdminUser(userId);
-      console.log('[Dashboard verify] getAdminUser result:', user);
 
       if (!user) {
-        // User not found - might be using a different user ID format
-        console.log('[Dashboard verify] User not found in database');
         return res.status(200).json({ isAdmin: false, error: 'User not found' });
       }
 
       if (!admin) {
-        console.log('[Dashboard verify] User found but is_admin is false');
         return res.status(200).json({ isAdmin: false, is_admin_value: user.is_admin });
       }
 
@@ -162,22 +162,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         return res.status(405).json({ error: 'Method not allowed' });
       }
 
-      const authHeader = req.headers.authorization?.replace('Bearer ', '');
+      const userId = decodeUserId(req.headers.authorization);
       
-      if (!authHeader) {
-        return res.status(401).json({ error: 'Unauthorized' });
-      }
-
-      let userId: string;
-      try {
-        userId = Buffer.from(authHeader, 'base64').toString('utf8');
-        console.log('[Dashboard Stats] UserID:', userId);
-      } catch {
-        return res.status(400).json({ error: 'Invalid token format' });
-      }
-
-      if (!(await isAdmin(userId))) {
-        console.log('[Dashboard Stats] Not admin:', userId);
+      if (!userId || !(await isAdmin(userId))) {
         return res.status(401).json({ error: 'Unauthorized' });
       }
 
@@ -190,14 +177,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           newUsersResult,
           newFeedbackResult
         ] = await Promise.all([
-          supabase.from('users').select('id', { count: 'exact', head: true }),
-          supabase.from('feedback').select('id', { count: 'exact', head: true }),
-          supabase.from('feedback').select('status'),
-          supabase.from('feedback').select('type'),
-          supabase.from('users')
+          supabaseAdmin.from('users').select('id', { count: 'exact', head: true }),
+          supabaseAdmin.from('feedback').select('id', { count: 'exact', head: true }),
+          supabaseAdmin.from('feedback').select('status'),
+          supabaseAdmin.from('feedback').select('type'),
+          supabaseAdmin.from('users')
             .select('id', { count: 'exact', head: true })
             .gte('created_at', new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString()),
-          supabase.from('feedback')
+          supabaseAdmin.from('feedback')
             .select('id', { count: 'exact', head: true })
             .gte('created_at', new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString())
         ]);
@@ -241,20 +228,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         return res.status(405).json({ error: 'Method not allowed' });
       }
 
-      const authHeader = req.headers.authorization?.replace('Bearer ', '');
+      const userId = decodeUserId(req.headers.authorization);
       
-      if (!authHeader) {
-        return res.status(401).json({ error: 'Unauthorized' });
-      }
-
-      let userId: string;
-      try {
-        userId = Buffer.from(authHeader, 'base64').toString('utf8');
-      } catch {
-        return res.status(400).json({ error: 'Invalid token format' });
-      }
-
-      if (!(await isAdmin(userId))) {
+      if (!userId || !(await isAdmin(userId))) {
         return res.status(401).json({ error: 'Unauthorized' });
       }
 
@@ -263,7 +239,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       const offset = (page - 1) * limit;
 
       try {
-        const { data: users, error, count } = await supabase
+        const { data: users, error, count } = await supabaseAdmin
           .from('users')
           .select('id, email, name, plan, is_admin, created_at', { count: 'exact' })
           .order('created_at', { ascending: false })
@@ -278,7 +254,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         let feedbackCounts: Record<string, number> = {};
 
         if (userIds.length > 0) {
-          const { data: feedbackData } = await supabase
+          const { data: feedbackData } = await supabaseAdmin
             .from('feedback')
             .select('user_id');
 
@@ -330,20 +306,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         return res.status(405).json({ error: 'Method not allowed' });
       }
 
-      const authHeader = req.headers.authorization?.replace('Bearer ', '');
+      const adminUserId = decodeUserId(req.headers.authorization);
       
-      if (!authHeader) {
-        return res.status(401).json({ error: 'Unauthorized' });
-      }
-
-      let adminUserId: string;
-      try {
-        adminUserId = Buffer.from(authHeader, 'base64').toString('utf8');
-      } catch {
-        return res.status(400).json({ error: 'Invalid token format' });
-      }
-
-      if (!(await isAdmin(adminUserId))) {
+      if (!adminUserId || !(await isAdmin(adminUserId))) {
         return res.status(401).json({ error: 'Unauthorized' });
       }
 
@@ -354,7 +319,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       }
 
       try {
-        const { data: updatedUser, error } = await supabase
+        const { data: updatedUser, error } = await supabaseAdmin
           .from('users')
           .update({ is_admin })
           .eq('id', userId)
@@ -422,19 +387,16 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       };
 
       try {
-        const { data: updatedUser, error } = await supabase
-          .from('users')
-          .update({ usage: resetUsage })
-          .eq('id', userId)
-          .select('id, email, name, usage')
-          .single();
+        const { error } = await supabaseAdmin
+          .from('user_usage')
+          .upsert({ user_id: userId, ...resetUsage, updated_at: new Date().toISOString() });
 
         if (error) {
           console.error('[Dashboard ResetQuota] Error:', error.message);
           return res.status(500).json({ error: 'Failed to reset quota' });
         }
 
-        return res.status(200).json({ success: true, user: updatedUser });
+        return res.status(200).json({ success: true });
       } catch (err) {
         console.error('[Dashboard ResetQuota] Error:', err);
         return res.status(500).json({ error: 'Failed to reset quota' });
@@ -487,19 +449,16 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       };
 
       try {
-        const { data: updatedUser, error } = await supabase
-          .from('users')
-          .update({ usage: resetUsage })
-          .eq('id', userId)
-          .select('id, email, name, usage')
-          .single();
+        const { error } = await supabaseAdmin
+          .from('user_usage')
+          .upsert({ user_id: userId, ...resetUsage, updated_at: new Date().toISOString() });
 
         if (error) {
           console.error('[Dashboard ResetQuota] Error:', error.message);
           return res.status(500).json({ error: 'Failed to reset quota' });
         }
 
-        return res.status(200).json({ success: true, user: updatedUser });
+        return res.status(200).json({ success: true });
       } catch (err) {
         console.error('[Dashboard ResetQuota] Error:', err);
         return res.status(500).json({ error: 'Failed to reset quota' });
@@ -507,20 +466,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
 
     case 'feedback': {
-      const authHeader = req.headers.authorization?.replace('Bearer ', '');
+
+      const userId = decodeUserId(req.headers.authorization);
       
-      if (!authHeader) {
+      if (!userId) {
         return res.status(401).json({ error: 'Unauthorized' });
       }
 
-      let feedbackUserId: string;
-      try {
-        feedbackUserId = Buffer.from(authHeader, 'base64').toString('utf8');
-      } catch {
-        return res.status(400).json({ error: 'Invalid token format' });
-      }
-
-      if (!(await isAdmin(feedbackUserId))) {
+      if (!(await isAdmin(userId))) {
         return res.status(401).json({ error: 'Unauthorized' });
       }
 
@@ -532,7 +485,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         const type = req.query.type as string;
 
         try {
-          let query = supabase
+          let query = supabaseAdmin
             .from('feedback')
             .select('*', { count: 'exact' })
             .order('created_at', { ascending: false })
@@ -560,7 +513,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           const userIds = Array.from(userIdSet);
 
           if (userIds.length > 0) {
-            const { data: usersData } = await supabase
+            const { data: usersData } = await supabaseAdmin
               .from('users')
               .select('id, email, name')
               .in('id', userIds);
@@ -621,7 +574,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             updateData.admin_reply_at = admin_reply ? new Date().toISOString() : null;
           }
 
-          const { data: updatedFeedback, error } = await supabase
+          const { data: updatedFeedback, error } = await supabaseAdmin
             .from('feedback')
             .update(updateData)
             .eq('id', id)
@@ -652,7 +605,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         }
 
         try {
-          const { error } = await supabase
+          const { error } = await supabaseAdmin
             .from('feedback')
             .delete()
             .eq('id', id);

@@ -474,6 +474,8 @@ The application uses a modular, slice-based architecture for state management to
 This section serves as a definitive reference for patterns that are deprecated. Agents must avoid these when writing new code or refactoring.
 
 - **Database Tables:** `pendingDeletions` and `pendingBlobs` are deprecated. All deletion tracking now uses the `deletedAt` tombstone pattern and `syncStatus`.
+- **auth_user_id Column:** The `auth_user_id` column in `users` is deprecated. All users now have `users.id = auth.users.id` (UUID). No mapping table or subquery is needed — RLS policies use `user_id = auth.uid()` directly.
+- **usage JSONB Column:** The `usage` JSONB column in `users` is deprecated. AI usage is now tracked in the dedicated `user_usage` table with explicit columns for atomic updates.
 - **Auto-Increment IDs & Mapping:** Numeric `++id` primary keys and the local-to-cloud ID mapping system are deprecated. All new entities must use **ULIDs** (Universally Unique Lexicographically Sortable Identifiers) as their primary IDs across both IndexedDB and Supabase to prevent multi-device collisions and maintain temporal sorting. 
 - **ID Handling:** Purge all `parseInt(id, 10)` logic and mapping lookups as IDs transition to strings.
 - **Sync Logic:** 
@@ -485,6 +487,7 @@ This section serves as a definitive reference for patterns that are deprecated. 
   - **Handshake Sequence:** Prematurely setting `isInitializing: false` on fresh logins is deprecated.
   - **Smart Hydration:** Unconditional merging in `handlePostAuthSync` is deprecated in favor of `isLocalWorkspaceEmpty` logic.
 - **Backend:** Supabase Edge Functions (`supabase/functions/`) are deprecated in favor of Vercel Serverless Functions (`api/`).
+- **published_spaces:** The `published_spaces` table is deprecated. Space publishing was replaced by the Oracle workspace intelligence sharing features. The table and `api/publish.ts` are no longer in use.
 - **Authentication:** Custom Google OAuth2 flow is deprecated. Use Supabase Auth (`signInWithOAuth`, `signInWithOtp`) instead. The following are deprecated:
   - `api/google-auth.ts` - Removed (was token exchange/refresh)
   - `api/auth.ts` GET handler - Removed (was OAuth callback)
@@ -751,9 +754,55 @@ All overlay/modals should use the standardized backdrop pattern for consistency:
 ---
 
 ##  Backend (Vercel & Supabase)
+
 - **API Endpoints:** Located in `api/`. These are Vercel Serverless Functions.
 - **Supabase Schema:** `supabase/schema.sql` is the primary source of truth for the database schema.
-- **RLS:** RLS is is disabled for the supabase database
+- **RLS:** RLS is **enabled** on all tables. Serverless functions use the `SUPABASE_SERVICE_ROLE_KEY` env var to bypass RLS for admin operations. Browser client uses user JWT which is validated by RLS policies.
+- **User ID:** `users.id` = `auth.users.id` (UUID). All data tables reference `users.id` as `user_id`.
+- **AI Usage:** The `user_usage` table tracks AI usage counters server-side to prevent client tampering. Users can SELECT their own usage (for UI display) but cannot INSERT/UPDATE via the browser client — only the server can modify counters.
+- **Realtime Tables:** Cross-device sync is enabled via Supabase Realtime for `users`, `spaces`, `stacks`, `thoughts`, and `user_usage`. The `syncOrchestrator.setupRealtimeListener(userId)` sets up subscriptions filtered by `user_id`. Tables not in realtime (`feedback`, `payments`) don't need cross-device sync.
+
+#### Database Tables
+
+| Table | RLS | Realtime | Purpose |
+|-------|-----|----------|---------|
+| `users` | ✅ SELECT/UPDATE own row | ✅ UPDATE only | User profiles and settings |
+| `spaces` | ✅ Full CRUD own rows | ✅ All events | Workspace data |
+| `stacks` | ✅ Full CRUD own rows | ✅ All events | Collection data |
+| `thoughts` | ✅ Full CRUD own rows | ✅ All events | All thought content |
+| `user_usage` | ✅ SELECT own row | ✅ All events | AI usage counters |
+| `feedback` | ✅ SELECT own row, INSERT own or anonymous | ❌ No | User feedback |
+| `payments` | ✅ SELECT own row | ❌ No | Payment records |
+
+#### User Table Protection (CRITICAL)
+
+A trigger `tr_protect_user_columns` on the `users` table prevents users from updating sensitive columns via the browser client.
+
+**Protected Columns:** `plan`, `subscription_status`, `expiry_date`, `is_admin`, `polar_customer_id`, `polar_subscription_id`, `payment_provider`, `created_at`, `email`, `id`.
+
+**Enforcement:**
+- On `INSERT`: Forces defaults (`plan = 'free'`, `is_admin = FALSE`, etc.) unless using `service_role`.
+- On `UPDATE`: Reverts changes to these columns unless using `service_role`.
+
+#### Storage Security (CRITICAL)
+
+The `user-files` bucket has RLS policies on `storage.objects` that enforce user folder isolation. The first path segment must match `auth.uid()`.
+
+**Policies:**
+- `Users read own files`: `(storage.foldername(name))[1] = auth.uid()::text`
+- `Users upload to own folder`: `(storage.foldername(name))[1] = auth.uid()::text`
+- `Users update own files`: `(storage.foldername(name))[1] = auth.uid()::text`
+- `Users delete own files`: `(storage.foldername(name))[1] = auth.uid()::text`
+
+#### Recommendations for Maintenance
+
+1. **Schema Drift**: Always use the `supabase/migrations/` folder for changes. Never modify RLS policies directly in the Supabase Dashboard without updating the SQL files.
+
+2. **New Tables**: If you add a new table, immediately run `ALTER TABLE x ENABLE ROW LEVEL SECURITY;` and add a user_id policy.
+
+3. **Storage Paths**: Always use the `${userId}/...` prefix for any new storage features (e.g., exports, avatars) to ensure the existing RLS policies cover them automatically.
+
+4. **Admin Tools**: If you need a "Super Admin" dashboard, do not add RLS policies for it. Instead, create a dedicated API route that uses the Service Role and validates an `ADMIN_KEY`.
 
 ---
 
@@ -765,7 +814,7 @@ All overlay/modals should use the standardized backdrop pattern for consistency:
 - **Delta Sync:** Always ensure `updatedAt` is updated to `Date.now()` on every mutation (create/update/delete) to support incremental Delta Sync logic.
 - **User Isolation in IndexedDB:** When querying the database directly (not through Zustand), ALWAYS include `userId` in your filter. Example: `db.thoughts.filter(t => t.userId === currentUserId && !t.deletedAt)`. This prevents data leakage between users.
 - **SignOut User Isolation:** When signing out, the `signOut()` function in `authSlice.ts` must clean up ALL user-scoped state to prevent data leakage to the next user:
-    1. Clear localStorage keys: `cyberia-user`, `cyberia-token`, `cyberia-token-expiry`, `cyberia-last-sync`, `cyberia-scopes`, `cyberia-refresh-secret`, `cyberia-active-space-id`. Note: Do NOT clear `cyberia-theme` - user's theme preference persists across logout/login.
+    1. Clear localStorage keys: `cyberia-user`, `cyberia-last-sync`, `cyberia-active-space-id`. Note: Do NOT clear `cyberia-theme` - user's theme preference persists across logout/login.
     2. Clear in-memory Zustand store: `thoughts`, `spaces`, `stacks`, `activeSpaceId`, `transform`, `selectedThoughtIds`, `creatorName`, `customBg`, `theme`.
     3. Apply stored theme from localStorage (not hardcoded `dark`) to `document.body` theme attribute.
     4. Call `createInitialWorkspace()` to provision a fresh guest workspace so the app isn't blank after logout.

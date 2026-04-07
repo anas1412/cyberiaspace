@@ -29,10 +29,17 @@ const SCHEMA_MAP: Record<string, z.ZodSchema> = {
 
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.VITE_SUPABASE_URL || process.env.VITE_PUBLIC_SUPABASE_URL;
-const supabaseKey = process.env.VITE_SUPABASE_ANON_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || process.env.VITE_PUBLIC_SUPABASE_ANON_KEY;
-const supabase = supabaseUrl && supabaseKey 
-    ? createClient(supabaseUrl, supabaseKey, { auth: { autoRefreshToken: false, persistSession: false } })
+const supabaseAnonKey = process.env.VITE_SUPABASE_ANON_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || process.env.VITE_PUBLIC_SUPABASE_ANON_KEY;
+const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+const supabase = supabaseUrl && supabaseAnonKey
+    ? createClient(supabaseUrl, supabaseAnonKey, { auth: { autoRefreshToken: false, persistSession: false } })
     : null;
+
+// Service role client for writing user_usage (bypasses RLS)
+const supabaseAdmin = supabaseUrl && supabaseServiceKey
+    ? createClient(supabaseUrl, supabaseServiceKey, { auth: { autoRefreshToken: false, persistSession: false } })
+    : supabase;
 
 
 
@@ -133,6 +140,8 @@ ${isPro ? 'PRO PLAN: You have full access to analyze images and documents.' : 'F
 [/RULES]
 `;
 };
+
+import { TAVILY_CONFIG } from '../src/constants';
 
 const allTools: any[] = [
   {
@@ -417,19 +426,46 @@ async function executeServerTool(name: string, args: any) {
   if (name === 'web_search') {
     const apiKey = process.env.TAVILY_API_KEY;
     if (!apiKey) return { error: 'Tavily API Key missing.' };
+
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), TAVILY_CONFIG.TIMEOUT_MS);
+
     try {
-      const response = await fetch('https://api.tavily.com/search', {
+      const response = await fetch(TAVILY_CONFIG.API_URL, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           api_key: apiKey,
           query: args.query,
-          search_depth: 'fast',
-          max_results: 5,
+          search_depth: TAVILY_CONFIG.SEARCH_DEPTH,
+          max_results: TAVILY_CONFIG.MAX_RESULTS,
+          include_answer: TAVILY_CONFIG.INCLUDE_ANSWER,
         }),
+        signal: controller.signal,
       });
-      return await response.json();
+
+      clearTimeout(timeout);
+
+      if (!response.ok) {
+        return { error: `Tavily API error: ${response.status}` };
+      }
+
+      const data = await response.json() as { answer?: string; results?: Array<{ title: string; url: string; content: string }> };
+
+      // Return only what the AI needs - trim excess to save tokens
+      return {
+        answer: data.answer,
+        results: (data.results || []).slice(0, TAVILY_CONFIG.MAX_RESULTS).map((r) => ({
+          title: r.title,
+          url: r.url,
+          content: r.content,
+        })),
+      };
     } catch (error: any) {
+      clearTimeout(timeout);
+      if (error.name === 'AbortError') {
+        return { error: 'Search timed out. Please try again.' };
+      }
       return { error: error.message };
     }
   }
@@ -680,7 +716,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   let profile = getCachedProfile(userId);
   
   if (!profile) {
-    const { data: profileData, error: profileError } = await supabase!
+    const { data: profileData, error: profileError } = await (supabaseAdmin || supabase)!
       .from('users')
       .select('*')
       .eq('id', userId)
@@ -692,8 +728,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     
     profile = profileData;
     
-    // Lazy healing check
-    const healedProfile = await checkAndHealSubscription(profile, supabase!);
+    // Lazy healing check (use service role to bypass RLS)
+    const healedProfile = await checkAndHealSubscription(profile, supabaseAdmin || supabase!);
     if (healedProfile.plan !== profile.plan) {
       profile = healedProfile;
     }
@@ -701,8 +737,15 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     setCachedProfile(userId, profile);
   }
 
+  // Fetch usage from dedicated user_usage table (service role to bypass RLS for reads too, in case of cache miss)
+  const { data: usageData } = await (supabaseAdmin || supabase)!
+    .from('user_usage')
+    .select('*')
+    .eq('user_id', userId)
+    .maybeSingle();
+
   // Initialize usage with all fields (backwards compatible)
-  let usage: any = profile.usage || { 
+  let usage: any = usageData || { 
     ai_daily_count: 0, 
     ai_top_count: 0,
     ai_medium_count: 0,
@@ -718,12 +761,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     monthly_medium_count: 0,
     monthly_small_count: 0,
   };
-
-  // Handle migration from old last_ai_reset field
-  if (usage.last_ai_reset && !usage.daily_anchor) {
-    usage.daily_anchor = usage.last_ai_reset;
-    delete usage.last_ai_reset;
-  }
 
   // === RESET LOGIC ===
   let dailyReset = false;
@@ -778,9 +815,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     monthlyReset = true;
   }
 
-  // Persist usage changes and invalidate cache
+  // Persist usage changes to user_usage table
   if (dailyReset || weeklyReset || monthlyReset) {
-    await supabase!.from('users').update({ usage }).eq('id', userId);
+    await (supabaseAdmin || supabase)!
+      .from('user_usage')
+      .upsert({ user_id: userId, ...usage, updated_at: new Date().toISOString() });
     profileCache.delete(userId); // Invalidate cache after update
   }
 
@@ -936,7 +975,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       usage.monthly_small_count = (usage.monthly_small_count || 0) + 1;
     }
 
-    await supabase!.from('users').update({ usage }).eq('id', userId);
+    await (supabaseAdmin || supabase)!
+      .from('user_usage')
+      .upsert({ user_id: userId, ...usage, updated_at: new Date().toISOString() });
     profileCache.delete(userId); // Invalidate cache after update
 
     const filteredTools = getFilteredTools(plan, mode);

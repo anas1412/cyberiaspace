@@ -7,8 +7,9 @@ import Dashboard from '../../pages/dashboard/Dashboard';
 import DashboardUsers from '../../pages/dashboard/DashboardUsers';
 import DashboardFeedback from '../../pages/dashboard/DashboardFeedback';
 import DashboardSettings from '../../pages/dashboard/DashboardSettings';
+import DashboardSecurity from '../../pages/dashboard/DashboardSecurity';
 
-type DashboardPage = 'overview' | 'users' | 'feedback' | 'settings';
+type DashboardPage = 'overview' | 'users' | 'feedback' | 'settings' | 'security';
 
 const DashboardLayout: React.FC = () => {
   const [isCollapsed, setIsCollapsed] = useState(false);
@@ -24,6 +25,8 @@ const DashboardLayout: React.FC = () => {
         setCurrentPage('users');
       } else if (path.startsWith('/dashboard/feedback')) {
         setCurrentPage('feedback');
+      } else if (path.startsWith('/dashboard/security')) {
+        setCurrentPage('security');
       } else if (path.startsWith('/dashboard/settings')) {
         setCurrentPage('settings');
       } else {
@@ -46,6 +49,7 @@ const DashboardLayout: React.FC = () => {
       overview: '/dashboard',
       users: '/dashboard/users',
       feedback: '/dashboard/feedback',
+      security: '/dashboard/security',
       settings: '/dashboard/settings'
     };
     window.history.pushState({}, '', pathMap[page]);
@@ -62,6 +66,8 @@ const DashboardLayout: React.FC = () => {
         return <DashboardUsers onBack={() => navigateTo('overview')} />;
       case 'feedback':
         return <DashboardFeedback onBack={() => navigateTo('overview')} />;
+      case 'security':
+        return <DashboardSecurity onBack={() => navigateTo('overview')} />;
       case 'settings':
         return <DashboardSettings onBack={() => navigateTo('overview')} onLogout={handleLogout} />;
       default:

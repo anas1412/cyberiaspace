@@ -3,9 +3,12 @@ export type AccessPeriod = 'monthly' | 'yearly';
 export type Theme = 'dark' | 'light';
 
 export const DEFAULT_THEME: Theme = (() => {
-  const stored = typeof window !== 'undefined' ? localStorage.getItem('cyberia-theme') : null;
-  if (stored === 'dark' || stored === 'light') return stored;
-  return 'light'; // Default to light mode
+  // Module loads in browser only, cast to access localStorage safely
+  try {
+    const stored = (globalThis as unknown as { localStorage: { getItem: (key: string) => string | null } }).localStorage.getItem('cyberia-theme');
+    if (stored === 'dark' || stored === 'light') return stored;
+  } catch {}
+  return 'light';
 })();
 export const DEFAULT_PHYSICS = true;
 
@@ -193,6 +196,15 @@ export const YOUTUBE_VIDEO_ID = 'hP92Obd9hFA';
 
 // Discord
 export const DISCORD_INVITE_URL = 'https://discord.gg/wjHTsaGpc4';
+
+// Tavily Web Search Configuration
+export const TAVILY_CONFIG = {
+  API_URL: 'https://api.tavily.com/search',
+  SEARCH_DEPTH: 'fast' as const,
+  MAX_RESULTS: 5,
+  TIMEOUT_MS: 8000,
+  INCLUDE_ANSWER: true,
+};
 
 // Enterprise features for pricing page
 export const ENTERPRISE_FEATURES = [

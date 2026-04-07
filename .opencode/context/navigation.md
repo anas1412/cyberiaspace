@@ -11,6 +11,7 @@
 |----------|------|---------|----------|
 | Standards | `core/standards/code-quality.md` | Critical patterns (stale state, 3-layer write, etc.) | critical |
 | Standards | `core/standards/ui-components.md` | CSS variables, typography, glass patterns | high |
+| Standards | `core/standards/supabase-security.md` | RLS policies, API auth, user_usage, realtime | critical |
 | Processes | `core/processes/state-mutations.md` | Decision trees for store operations | high |
 | Intelligence | `project-intelligence/technical-domain.md` | Tech stack, architecture, coding patterns | critical |
 
@@ -24,6 +25,7 @@
 |------|----------------|
 | `code-quality.md` | Zustand/IndexedDB patterns, user isolation, ULIDs, editing registry |
 | `ui-components.md` | CSS variables, glass containers, typography scale, overlay patterns |
+| `supabase-security.md` | RLS policies, API auth patterns, user_usage, realtime tables |
 
 ### Processes (`core/processes/`)
 
@@ -65,5 +67,6 @@ When executing code tasks, load context in this order:
 |------|---------|---------|
 | `core/standards/code-quality.md` | 1.0 | 2026-04-03 |
 | `core/standards/ui-components.md` | 1.0 | 2026-04-03 |
+| `core/standards/supabase-security.md` | 1.0 | 2026-04-07 |
 | `core/processes/state-mutations.md` | 1.0 | 2026-04-03 |
 | `project-intelligence/technical-domain.md` | 1.0 | 2026-04-04 |

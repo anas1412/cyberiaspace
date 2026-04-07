@@ -1,7 +1,7 @@
 import React from 'react';
-import { LayoutDashboard, Users, MessageSquare, Settings } from 'lucide-react';
+import { LayoutDashboard, Users, MessageSquare, Settings, Shield } from 'lucide-react';
 
-type DashboardPage = 'overview' | 'users' | 'feedback' | 'settings';
+type DashboardPage = 'overview' | 'users' | 'feedback' | 'settings' | 'security';
 
 interface NavItem {
   page: DashboardPage;
@@ -13,6 +13,7 @@ const navItems: NavItem[] = [
   { page: 'overview', label: 'Overview', icon: <LayoutDashboard className="w-5 h-5" /> },
   { page: 'users', label: 'Users', icon: <Users className="w-5 h-5" /> },
   { page: 'feedback', label: 'Feedback', icon: <MessageSquare className="w-5 h-5" /> },
+  { page: 'security', label: 'Security', icon: <Shield className="w-5 h-5" /> },
   { page: 'settings', label: 'Settings', icon: <Settings className="w-5 h-5" /> },
 ];
 

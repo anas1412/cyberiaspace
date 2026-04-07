@@ -3,18 +3,25 @@ import { createClient } from '@supabase/supabase-js';
 import { verifyAuth } from './utils/auth.js';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.VITE_PUBLIC_SUPABASE_URL;
-const supabaseKey = process.env.VITE_SUPABASE_ANON_KEY || process.env.VITE_PUBLIC_SUPABASE_ANON_KEY;
+const supabaseAnonKey = process.env.VITE_SUPABASE_ANON_KEY || process.env.VITE_PUBLIC_SUPABASE_ANON_KEY;
+const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
-const supabase = createClient(supabaseUrl!, supabaseKey!, {
+// Anon client for auth verification
+const supabase = createClient(supabaseUrl!, supabaseAnonKey!, {
   auth: { autoRefreshToken: false, persistSession: false }
 });
+
+// Service role client for admin operations (bypasses RLS)
+const supabaseAdmin = supabaseServiceKey
+  ? createClient(supabaseUrl!, supabaseServiceKey, { auth: { autoRefreshToken: false, persistSession: false } })
+  : supabase;
 
 export const config = {
   runtime: 'nodejs',
 };
 
 async function checkIsAdmin(userId: string): Promise<boolean> {
-  const { data: user } = await supabase
+  const { data: user } = await supabaseAdmin
     .from('users')
     .select('is_admin')
     .eq('id', userId)
@@ -45,10 +52,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   if (action === 'stats') {
     const [usersCount, spacesCount, thoughtsCount, feedbackCount] = await Promise.all([
-      supabase.from('users').select('id', { count: 'exact', head: true }),
-      supabase.from('spaces').select('id', { count: 'exact', head: true }),
-      supabase.from('thoughts').select('id', { count: 'exact', head: true }),
-      supabase.from('feedback').select('id', { count: 'exact', head: true })
+      supabaseAdmin.from('users').select('id', { count: 'exact', head: true }),
+      supabaseAdmin.from('spaces').select('id', { count: 'exact', head: true }),
+      supabaseAdmin.from('thoughts').select('id', { count: 'exact', head: true }),
+      supabaseAdmin.from('feedback').select('id', { count: 'exact', head: true })
     ]);
 
     return res.status(200).json({
@@ -60,7 +67,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   if (action === 'cleanupExpired') {
-    const { data: deleted, error } = await supabase
+    const { data: deleted, error } = await supabaseAdmin
       .from('published_spaces')
       .delete()
       .lt('expires_at', new Date().toISOString())

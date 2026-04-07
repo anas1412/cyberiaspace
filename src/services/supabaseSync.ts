@@ -135,16 +135,20 @@ export function toCamelCase(obj: any): any {
 
 export const supabaseSync = {
   async getProfile(userId: string) {
-    const { data, error } = await supabase
-      .from('users')
-      .select('*')
-      .eq('id', userId)
-      .maybeSingle()
-    if (error) {
-      console.error('[Supabase] getProfile error:', error.message)
-      throw new Error(error.message)
+    const [{ data: userData, error: userError }, { data: usageData }] = await Promise.all([
+      supabase.from('users').select('*').eq('id', userId).maybeSingle(),
+      supabase.from('user_usage').select('*').eq('user_id', userId).maybeSingle(),
+    ])
+    if (userError) {
+      console.error('[Supabase] getProfile error:', userError.message)
+      throw new Error(userError.message)
     }
-    return { user: toCamelCase(data) }
+    // Merge usage into user object for backwards compatibility with frontend
+    const user = toCamelCase(userData)
+    if (usageData) {
+      user.usage = toCamelCase(usageData)
+    }
+    return { user }
   },
 
   async upsertProfile(userId: string, email: string, name: string, avatar: string) {
@@ -297,8 +301,8 @@ export const supabaseSync = {
     return { thought: toCamelCase(data) }
   },
 
-  async createThoughts(thoughts: Record<string, unknown>[]) {
-    const records = thoughts.map(t => toSnakeCase(t))
+  async createThoughts(thoughts: Record<string, unknown>[], userId: string) {
+    const records = thoughts.map(t => toSnakeCase({ ...t, user_id: userId }))
     const { data, error } = await supabase
       .from('thoughts')
       .upsert(records, { onConflict: 'id' })
@@ -458,16 +462,4 @@ export const supabaseSync = {
     return { feedback: toCamelCase(data || []) }
   },
 
-  async getAdminStats(_adminKey: string) {
-    const [usersCount, spacesCount, thoughtsCount] = await Promise.all([
-      supabase.from('users').select('id', { count: 'exact', head: true }),
-      supabase.from('spaces').select('id', { count: 'exact', head: true }),
-      supabase.from('thoughts').select('id', { count: 'exact', head: true })
-    ])
-    return {
-      users: usersCount.count,
-      spaces: spacesCount.count,
-      thoughts: thoughtsCount.count
-    }
-  }
 }
