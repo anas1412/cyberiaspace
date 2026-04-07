@@ -16,7 +16,6 @@ export default function ExternalScripts() {
       script.src = src;
       if (charset) script.charset = charset;
       if (async) script.async = true;
-      script.crossOrigin = 'anonymous';
       document.body.appendChild(script);
     });
   }, []);
