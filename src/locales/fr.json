@@ -18,6 +18,29 @@
       "cta_free": "Essayer Gratuitement",
       "cta_demo": "Voir la Démo"
     },
+    "how_it_works": {
+      "title_start": "Comment ça ",
+      "title_accent": "marche",
+      "subtitle": "Quatre étapes pour votre nouvel espace de travail",
+      "steps": [
+        {
+          "title": "1. Créez votre espace",
+          "description": "Inscrivez-vous en quelques secondes. Votre espace de travail est prêt instantanément—pas de configuration."
+        },
+        {
+          "title": "2. Ajoutez vos pensées",
+          "description": "Déposez des notes, fichiers, images, liens. Disposez-les librement sur le canevas ou laissez Oracle IA les organiser."
+        },
+        {
+          "title": "3. Basculez de vue",
+          "description": "Canevas pour le brainstorming, Kanban pour les tâches, Calendrier pour les échéances, Répertoire pour l'organisation. Tout sur les mêmes données."
+        },
+        {
+          "title": "4. Oracle IA organise",
+          "description": "Demandez à Oracle IA d'analyser votre espace, créer des tâches, résumer ou répondre à des questions sur votre contenu."
+        }
+      ]
+    },
     "social_proof": {
       "adopters": "Plus de 50 adoptants précoces"
     },

@@ -8,9 +8,13 @@ const MENTION_TOPICS = [
   { id: 'cold', label: 'Cold War', desc: '1947–1991 · Geopolitical tension', icon: '' },
 ];
 
-const AgenticWorkspaceVisual: React.FC = () => {
+interface AgenticWorkspaceVisualProps {
+  showLinked?: boolean;
+}
+
+const AgenticWorkspaceVisual: React.FC<AgenticWorkspaceVisualProps> = ({ showLinked = false }) => {
   const [promptSegments, setPromptSegments] = useState<{ type: 'text' | 'mention'; value: string }[]>([]);
-  const [stage, setStage] = useState<'prompt' | 'beam' | 'spawn' | 'linked' | 'settled'>('prompt');
+  const [stage, setStage] = useState<'prompt' | 'beam' | 'spawn' | 'linked' | 'settled'>(showLinked ? 'settled' : 'prompt');
   const [showDropup, setShowDropup] = useState(false);
   const [activeDropupItem] = useState(0);
 
@@ -33,6 +37,13 @@ const AgenticWorkspaceVisual: React.FC = () => {
 
   useEffect(() => {
     if (typeof window !== 'undefined' && window.innerWidth < 1024) return;
+    
+    // If showLinked is true, skip animation and go to settled state
+    if (showLinked) {
+      setStage('settled');
+      return;
+    }
+    
     let mounted = true;
     const sleep = (ms: number) => new Promise(r => setTimeout(r, ms));
 
@@ -111,7 +122,7 @@ const AgenticWorkspaceVisual: React.FC = () => {
 
     runSequence();
     return () => { mounted = false; };
-  }, []);
+  }, [showLinked]);
 
   if (typeof window !== 'undefined' && window.innerWidth < 1024) return null;
 

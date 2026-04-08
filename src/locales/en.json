@@ -18,6 +18,29 @@
       "cta_free": "Try it for Free",
       "cta_demo": "Watch Demo"
     },
+    "how_it_works": {
+      "title_start": "How it ",
+      "title_accent": "works",
+      "subtitle": "Four steps to your new workspace",
+      "steps": [
+        {
+          "title": "1. Create your space",
+          "description": "Sign up in seconds. Your workspace is ready instantly—no setup, no configuration."
+        },
+        {
+          "title": "2. Add your thoughts",
+          "description": "Drop in notes, files, images, links. Arrange them freely on the canvas or let Oracle AI organize them for you."
+        },
+        {
+          "title": "3. Switch views anytime",
+          "description": "Canvas for brainstorming, Kanban for tasks, Calendar for deadlines, Directory for organization. All on the same data."
+        },
+        {
+          "title": "4. Oracle AI organizes",
+          "description": "Ask Oracle AI to analyze your space, create tasks, summarize findings, or answer questions about your content."
+        }
+      ]
+    },
     "social_proof": {
       "adopters": "50+ early adopters"
     },

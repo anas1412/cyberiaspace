@@ -1,14 +1,11 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
-import { Layout, Database, ArrowRight, Cpu, Rocket, Send, Loader2, CheckCircle, ChevronDown, MessageCircle, X, Play, Quote, Cloud } from 'lucide-react';
+import { ArrowRight, Cpu, Rocket, Send, Loader2, CheckCircle, ChevronDown, MessageCircle, X, Play, Quote, Plus, FileText, Layout } from 'lucide-react';
 
 import { YOUTUBE_VIDEO_ID, DISCORD_INVITE_URL } from '../constants';
 
-import SpatialThinkingVisual from './demo/SpatialThinkingVisual';
-import DynamicViewsVisual from './demo/DynamicViewsVisual';
-import CloudSyncVisual from './demo/CloudSyncVisual';
-import AgenticWorkspaceVisual from './demo/AgenticWorkspaceVisual';
+import HowItWorksVisual from './demo/HowItWorksVisual';
 
 import BackgroundEngine from './background/BackgroundEngine';
 import Navigation from './Navigation';
@@ -121,33 +118,6 @@ const ActiveUsersStack: React.FC = React.memo(() => {
   );
 });
 
-const FEATURES = [
-  {
-    id: 'unified',
-    icon: Layout,
-    titleKey: 'homepage.features.unified.title',
-    descriptionKey: 'homepage.features.unified.description'
-  },
-  {
-    id: 'agentic',
-    icon: Cpu,
-    titleKey: 'homepage.features.agentic.title',
-    descriptionKey: 'homepage.features.agentic.description'
-  },
-  {
-    id: 'storage',
-    icon: Database,
-    titleKey: 'homepage.features.storage.title',
-    descriptionKey: 'homepage.features.storage.description'
-  },
-  {
-    id: 'sync',
-    icon: Cloud,
-    titleKey: 'homepage.features.sync.title',
-    descriptionKey: 'homepage.features.sync.description'
-  }
-];
-
 const TESTIMONIALS = [
   {
     quote: "Cyberia changed how I interact with my tasks. Seeing my notes as floating entities helped me stay productive all day.",
@@ -234,96 +204,38 @@ const FAQItem: React.FC<{
     </div>
   );
 };
-
-const ResponsiveStage = React.memo(({ children }: { children: React.ReactNode }) => {
-  const containerRef = useRef<HTMLDivElement>(null);
-  const [scale, setScale] = useState(1);
-  const lastDimensions = useRef({ width: 0, height: 0 });
-
-  useEffect(() => {
-    const updateScale = () => {
-      if (containerRef.current) {
-        const width = containerRef.current.offsetWidth;
-        const height = containerRef.current.offsetHeight;
-        
-        const widthChanged = width !== lastDimensions.current.width;
-        const heightSignificant = Math.abs(height - lastDimensions.current.height) > 100;
-
-        if (widthChanged || heightSignificant) {
-          const safeWidth = width - 32;
-          const safeHeight = height - 32;
-          const designSize = 600;
-          const newScale = Math.min(safeWidth / designSize, safeHeight / designSize);
-          setScale(Math.max(0.45, newScale));
-          
-          lastDimensions.current = { width, height };
-        }
-      }
-    };
-    updateScale();
-    window.addEventListener('resize', updateScale);
-    return () => window.removeEventListener('resize', updateScale);
-  }, []);
-
-  return (
-    <div ref={containerRef} className="w-full h-full relative flex items-center justify-center overflow-hidden">
-      <motion.div 
-        style={{ scale, width: 600, height: 600 }} 
-        className="relative flex-shrink-0 origin-center will-change-transform"
-      >
-        {children}
-      </motion.div>
-    </div>
-  );
-});
-
-const FeatureVisual: React.FC<{ activeFeature: number }> = React.memo(({ activeFeature }) => {
-  const [isLargeScreen, setIsLargeScreen] = useState(typeof window !== 'undefined' ? window.innerWidth >= 1024 : true);
-
-  useEffect(() => {
-    const handleResize = () => setIsLargeScreen(window.innerWidth >= 1024);
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
-  }, []);
-
-  if (!isLargeScreen) return null;
-
-  return (
-    <div className="w-full h-full relative">
-      <ResponsiveStage>
-        <AnimatePresence mode="wait">
-          <motion.div
-            key={activeFeature}
-            initial={{ opacity: 0, scale: 0.95, filter: 'blur(10px)' }}
-            animate={{ opacity: 1, scale: 1, filter: 'blur(0px)' }}
-            exit={{ opacity: 0, scale: 1.02, filter: 'blur(10px)' }}
-            transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
-            className="w-full h-full"
-          >
-            {activeFeature === 0 && <DynamicViewsVisual />}
-            {activeFeature === 1 && <AgenticWorkspaceVisual />}
-            {activeFeature === 2 && <SpatialThinkingVisual />}
-            {activeFeature === 3 && <CloudSyncVisual />}
-          </motion.div>
-        </AnimatePresence>
-      </ResponsiveStage>
-    </div>
-  );
-});
-
 const Homepage: React.FC = () => {
   const { t } = useTranslation();
   const { theme } = useStore();
-  const [activeFeature, setActiveFeature] = useState(0);
+  const [activeHowItWorksStep, setActiveHowItWorksStep] = useState(0);
+  const [howItWorksRestartKey, setHowItWorksRestartKey] = useState(0);
   const [activeFAQIndex, setActiveFAQIndex] = useState<number | null>(null);
   const [isImageZoomed, setIsImageZoomed] = useState(false);
   const [isVideoOpen, setIsVideoOpen] = useState(false);
+  const [isHowItWorksVisible, setIsHowItWorksVisible] = useState(false);
+  const howItWorksRef = useRef<HTMLElement>(null);
   
   const [contactName, setContactName] = useState('');
   const [contactEmail, setContactEmail] = useState('');
   const [contactMessage, setContactMessage] = useState('');
   const [isContactSubmitting, setIsContactSubmitting] = useState(false);
   const [contactSubmitStatus, setContactSubmitStatus] = useState<'idle' | 'success' | 'error'>('idle');
+
+  // Detect when How It Works section is visible
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        setIsHowItWorksVisible(entry.isIntersecting);
+      },
+      { threshold: 0.1 }
+    );
+    
+    if (howItWorksRef.current) {
+      observer.observe(howItWorksRef.current);
+    }
+    
+    return () => observer.disconnect();
+  }, []);
 
   const handleContactSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -421,61 +333,61 @@ const Homepage: React.FC = () => {
           </motion.div>
         </section>
 
-        {/* FEATURES SECTION */}
-        <section id="features" className="py-24 md:py-32 px-6 relative z-10">
+        {/* HOW IT WORKS SECTION */}
+        <section ref={howItWorksRef} id="how-it-works" className="py-24 md:py-32 px-6 relative z-10">
           <div className="max-w-7xl mx-auto">
-            <div className="mb-16 md:mb-24 text-center lg:text-left">
+            <div className="mb-16 md:mb-24 text-center">
               <h2 className="text-3xl md:text-5xl font-bold tracking-tight mb-4">
-                {t('homepage.features.title_start')}<span className="text-[var(--accent)]">{t('homepage.features.title_accent')}</span>
+                {t('homepage.how_it_works.title_start')}<span className="text-[var(--accent)]">{t('homepage.how_it_works.title_accent')}</span>
               </h2>
-              <p className="text-[var(--text-muted)] text-lg md:text-xl max-w-2xl mx-auto lg:mx-0">
-                {t('homepage.features.subtitle')}
+              <p className="text-[var(--text-muted)] text-lg md:text-xl">
+                {t('homepage.how_it_works.subtitle')}
               </p>
             </div>
 
             <div className="flex flex-col lg:flex-row gap-8 lg:gap-16 items-start">
-              {/* Feature Selection Cards */}
+              {/* Step Cards */}
               <div className="w-full lg:w-5/12 space-y-3">
-                {FEATURES.map((feature, index) => (
+                {[
+                  { step: 0, title: t('homepage.how_it_works.steps.0.title'), desc: t('homepage.how_it_works.steps.0.description'), icon: Plus },
+                  { step: 1, title: t('homepage.how_it_works.steps.1.title'), desc: t('homepage.how_it_works.steps.1.description'), icon: FileText },
+                  { step: 2, title: t('homepage.how_it_works.steps.2.title'), desc: t('homepage.how_it_works.steps.2.description'), icon: Layout },
+                  { step: 3, title: t('homepage.how_it_works.steps.3.title'), desc: t('homepage.how_it_works.steps.3.description'), icon: Cpu }
+                ].map((item) => (
                   <motion.div
-                    key={feature.id}
-                    onMouseEnter={() => setActiveFeature(index)}
-                    className={`w-full text-left relative p-6 rounded-2xl group cursor-pointer ${
-                      activeFeature === index 
-                        ? 'bg-[var(--glass-bg)] border border-[var(--accent)]/30 shadow-xl shadow-[var(--accent)]/10 translate-x-0 lg:translate-x-2' 
-                        : 'border border-transparent hover:bg-[var(--glass-bg)]'
+                    key={item.step}
+                    onClick={() => { setActiveHowItWorksStep(item.step); setHowItWorksRestartKey(k => k + 1); }}
+                    className={`w-full text-left relative p-6 rounded-2xl group cursor-pointer transition-all ${
+                      activeHowItWorksStep === item.step
+                        ? 'bg-[var(--glass-bg)] border border-[var(--accent)]/30 shadow-xl shadow-[var(--accent)]/10 translate-x-0 lg:translate-x-2'
+                        : 'border border-transparent hover:bg-[var(--glass-bg)] hover:border-[var(--glass-border)]'
                     }`}
-                    transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
                   >
                     <div className="relative z-10 flex items-start gap-5">
-                      <motion.div 
-                        className={`w-12 h-12 rounded-xl flex items-center justify-center shrink-0 border ${
-                          activeFeature === index 
-                            ? 'bg-[var(--accent)] border-[var(--accent)] text-[var(--accent-contrast)] shadow-lg shadow-[var(--accent)]/30'
-                            : 'bg-[var(--bg-main)] border-[var(--glass-border)] text-[var(--text-muted)] group-hover:border-[var(--accent)]/50 group-hover:text-[var(--text-primary)]'
-                        }`}
-                        transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
-                      >
-                        <feature.icon className="w-6 h-6" />
-                      </motion.div>
-                      
+                      <div className={`w-12 h-12 rounded-xl flex items-center justify-center shrink-0 border transition-all ${
+                        activeHowItWorksStep === item.step
+                          ? 'bg-[var(--accent)] border-[var(--accent)] text-[var(--accent-contrast)] shadow-lg shadow-[var(--accent)]/30'
+                          : 'bg-[var(--bg-main)] border-[var(--glass-border)] text-[var(--text-muted)] group-hover:border-[var(--accent)]/50 group-hover:text-[var(--accent)]'
+                      }`}>
+                        <item.icon className="w-6 h-6" />
+                      </div>
                       <div className="flex-1 pt-1">
                         <h3 className={`text-lg font-semibold mb-2 transition-colors duration-300 ${
-                          activeFeature === index ? 'text-[var(--text-primary)]' : 'text-[var(--text-dimmed)] group-hover:text-[var(--text-primary)]'
+                          activeHowItWorksStep === item.step ? 'text-[var(--text-primary)]' : 'text-[var(--text-dimmed)] group-hover:text-[var(--text-primary)]'
                         }`}>
-                          {t(feature.titleKey)}
+                          {item.title}
                         </h3>
                         <motion.div
                           initial={false}
                           animate={{
-                            height: activeFeature === index ? 'auto' : 0,
-                            opacity: activeFeature === index ? 1 : 0,
+                            height: activeHowItWorksStep === item.step ? 'auto' : 0,
+                            opacity: activeHowItWorksStep === item.step ? 1 : 0,
                           }}
                           transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
                           className="overflow-hidden"
                         >
                           <p className="text-[15px] leading-relaxed text-[var(--text-secondary)]">
-                            {t(feature.descriptionKey)}
+                            {item.desc}
                           </p>
                         </motion.div>
                       </div>
@@ -487,8 +399,12 @@ const Homepage: React.FC = () => {
               {/* Visual Display Stage */}
               <div className="hidden lg:block lg:w-7/12 sticky top-32">
                 <div className="bg-[var(--bg-page)] h-[500px] xl:h-[600px] rounded-3xl border border-[var(--glass-border)] overflow-hidden relative shadow-2xl shadow-[var(--accent)]/5">
-                  <div className="absolute inset-0 bg-gradient-to-br from-[var(--accent)]/5 via-transparent to-transparent opacity-50 pointer-events-none" />
-                  <FeatureVisual activeFeature={activeFeature} />
+                  <HowItWorksVisual
+                    startFromStep={activeHowItWorksStep}
+                    restartKey={howItWorksRestartKey}
+                    onStepChange={setActiveHowItWorksStep}
+                    isVisible={isHowItWorksVisible}
+                  />
                 </div>
               </div>
             </div>
