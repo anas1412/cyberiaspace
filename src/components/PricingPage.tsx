@@ -695,6 +695,7 @@ const PricingPage: React.FC = () => {
                 {[
                   t('pricing.enterprise.features.members'),
                   t('pricing.enterprise.features.storage', { storage: PLAN_CONFIG.enterprise.MAX_STORAGE_MB / 1000 }),
+                  t('pricing.enterprise.features.payasyougo'),
                   t('pricing.enterprise.features.collaboration'),
                   t('pricing.enterprise.features.support'),
                   t('pricing.enterprise.features.ai_limits'),

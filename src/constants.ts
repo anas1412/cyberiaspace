@@ -125,7 +125,7 @@ export const PLAN_CONFIG: Record<SubscriptionPlan, PlanLimits> = {
     MAX_SPACES: 100,
     MAX_THOUGHTS_PER_SPACE: 500,
     MAX_CLOUD_THOUGHTS: 10000,
-    MAX_STORAGE_MB: 5000, // 5GB - generous but not "unlimited"
+    MAX_STORAGE_MB: 10000, // 10GB - generous but not "unlimited"
     AI_ENABLED: true,
     AI_DAILY_LIMIT: 50000,
     AI_TOP_LIMIT: 1000,

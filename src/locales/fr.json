@@ -261,6 +261,7 @@
       "features": {
         "members": "5+ membres d'équipe",
         "storage": "{{storage}} Go de stockage par utilisateur",
+        "payasyougo": "Augmentation du stockage en fonction de l'utilisation",
         "collaboration": "Collaboration d'équipe en temps réel dans les espaces partagés",
         "support": "Support prioritaire",
         "ai_limits": "Limites d'utilisation de l'IA plus élevées"

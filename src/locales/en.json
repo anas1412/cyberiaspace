@@ -261,6 +261,7 @@
       "features": {
         "members": "5+ team members",
         "storage": "{{storage}}GB storage per user",
+        "payasyougo": "Pay-as-you-go storage scaling",
         "collaboration": "Realtime team collaboration across shared spaces",
         "support": "Priority support",
         "ai_limits": "Higher AI usage limits"
