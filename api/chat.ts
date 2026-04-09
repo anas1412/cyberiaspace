@@ -715,6 +715,47 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(500).json({ error: 'Server configuration error' });
   }
 
+  // ==========================================
+  // Signed URL endpoint for private storage bucket
+  // ==========================================
+  if (req.method === 'POST' && req.body?.action === 'getSignedUrl') {
+    const { path, expiresIn = 3600 } = req.body;
+
+    // Validation: path traversal protection
+    if (!path || typeof path !== 'string') {
+      return res.status(400).json({ error: 'Invalid path' });
+    }
+    if (path.includes('..') || path.startsWith('/')) {
+      return res.status(400).json({ error: 'Path traversal not allowed' });
+    }
+
+    // Ownership validation: path must start with userId/
+    const expectedPrefix = `${userId}/`;
+    if (!path.startsWith(expectedPrefix)) {
+      return res.status(403).json({ error: 'Cannot access files outside your folder' });
+    }
+
+    // Clamp expiration: 60s min, 24h max
+    const safeExpiresIn = Math.min(Math.max(60, expiresIn), 86400);
+
+    try {
+      const { data, error } = await supabaseAdmin
+        .storage
+        .from('user-files')
+        .createSignedUrl(path, safeExpiresIn);
+
+      if (error) {
+        console.error('[SignedURL] Error:', error);
+        return res.status(500).json({ error: error.message });
+      }
+
+      return res.status(200).json({ url: data.signedUrl, expiresIn: safeExpiresIn });
+    } catch (err: any) {
+      console.error('[SignedURL] Exception:', err);
+      return res.status(500).json({ error: err.message });
+    }
+  }
+
   if (!OPENROUTER_API_KEY) {
     console.error('[Oracle] OPENROUTER_API_KEY not set');
     return res.status(500).json({ error: 'OpenRouter API key not configured' });

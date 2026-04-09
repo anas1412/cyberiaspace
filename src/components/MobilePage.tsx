@@ -7,7 +7,7 @@ const MobilePage: React.FC = () => {
     if (window.history.length > 1) {
       window.history.back();
     } else {
-      window.location.href = 'https://cyberia.tn';
+      window.location.href = 'https://cyberiaspace.app';
     }
   };
 
@@ -76,7 +76,7 @@ const MobilePage: React.FC = () => {
 
             <div className="pt-6">
               <a
-                href="https://cyberia.tn"
+                href="https://cyberiaspace.app"
                 className="inline-block w-full py-4 bg-[var(--glass-bg)] hover:bg-[var(--bg-page)] border border-[var(--glass-border)] text-[var(--text-primary)] rounded-xl text-[10px] font-semibold tracking-[0.3em] transition-all text-center"
               >
                 Return to Landing Page

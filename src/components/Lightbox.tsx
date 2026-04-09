@@ -1,4 +1,4 @@
-import React, { useMemo, useEffect, useRef } from 'react';
+import React, { useMemo, useEffect, useRef, useState } from 'react';
 import { useStore } from '../store/useStore';
 import { useThoughtPayload } from './thought/hooks/useThoughtPayload';
 import { ChevronLeft, ChevronRight, Download } from 'lucide-react';
@@ -6,6 +6,8 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { FocusEditorShell } from './editors/FocusEditorShell';
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
+import { supabaseStorage } from '../services/supabaseStorage';
+import { db } from '../db';
 
 function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -25,6 +27,44 @@ const Lightbox: React.FC = () => {
   const { image } = useThoughtPayload(thought);
   const stack = stacks.find((s) => s.id === thought?.stackId);
   const isVisible = isLightboxOpen && !!thought;
+
+  // Local blob and signed URL for private bucket
+  const [localUrl, setLocalUrl] = useState<string | null>(null);
+  const [signedUrl, setSignedUrl] = useState<string | null>(null);
+
+  // Load local blob
+  useEffect(() => {
+    if (!thought) return;
+    let url: string | null = null;
+    const loadLocal = async () => {
+      try {
+        const entry = await db.blobs.where('thoughtId').equals(thought.id).first();
+        if (entry) {
+          url = URL.createObjectURL(entry.blob);
+          setLocalUrl(url);
+        }
+      } catch (e) { /* ignore */ }
+    };
+    loadLocal();
+    return () => { if (url) URL.revokeObjectURL(url); };
+  }, [thought?.id]);
+
+  // Fetch signed URL
+  useEffect(() => {
+    if (localUrl || !thought?.storagePath) return;
+    let cancelled = false;
+    const fetchSigned = async () => {
+      try {
+        const url = await supabaseStorage.getSignedUrl(thought.storagePath!);
+        if (!cancelled) setSignedUrl(url);
+      } catch (e) { /* ignore */ }
+    };
+    fetchSigned();
+    return () => { cancelled = true; };
+  }, [thought?.storagePath, localUrl]);
+
+  // Resolve URL for display
+  const displayUrl = localUrl || signedUrl || image;
 
   const scrollerRef = useRef<HTMLDivElement>(null);
 
@@ -46,31 +86,61 @@ const Lightbox: React.FC = () => {
     [stackItems, thought]
   );
 
-  const navigate = (dir: number) => {
-    if (stackItems.length <= 1) return;
-    let nextIndex = currentIndex + dir;
-    if (nextIndex < 0) nextIndex = stackItems.length - 1;
-    if (nextIndex >= stackItems.length) nextIndex = 0;
-    
-    const nextThought = stackItems[nextIndex];
-    if (nextThought) {
-      const nextPayload = nextThought.data?.type === 'file' ? nextThought.data.url : (nextThought as any).image;
-      if (nextPayload) {
-        openLightbox(nextPayload, nextThought.id);
+  const getItemUrl = async (item: any): Promise<string> => {
+      // Try local blob first
+      try {
+        const entry = await db.blobs.where('thoughtId').equals(item.id).first();
+        if (entry) return URL.createObjectURL(entry.blob);
+      } catch (e) { /* ignore */ }
+      // Try signed URL
+      if (item.storagePath) {
+        try {
+          return await supabaseStorage.getSignedUrl(item.storagePath);
+        } catch (e) { /* ignore */ }
       }
-    }
-  };
-
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (!isVisible) return;
-      if (e.key === 'Escape') closeLightbox();
-      if (e.key === 'ArrowLeft') navigate(-1);
-      if (e.key === 'ArrowRight') navigate(1);
+      // Fallback to data.url or image
+      return item.data?.type === 'file' ? item.data.url : (item as any).image;
     };
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [isVisible, currentIndex, stackItems]);
+
+    // Preload thumbnail URLs
+    const [thumbnailUrls] = useState(() => {
+      const urls: Record<string, string> = {};
+      stackItems.forEach(async (item) => {
+        urls[item.id] = await getItemUrl(item);
+      });
+      return urls;
+    });
+
+    const handleThumbnailClick = async (item: any) => {
+      const url = await getItemUrl(item);
+      openLightbox(url, item.id);
+    };
+
+    // Navigate function uses currentIndex from closure
+    const navigate = (dir: number) => {
+      if (stackItems.length <= 1) return;
+      let nextIndex = currentIndex + dir;
+      if (nextIndex < 0) nextIndex = stackItems.length - 1;
+      if (nextIndex >= stackItems.length) nextIndex = 0;
+      
+      const nextThought = stackItems[nextIndex];
+      if (nextThought) {
+        getItemUrl(nextThought).then(url => {
+          if (url) openLightbox(url, nextThought.id);
+        });
+      }
+    };
+
+    useEffect(() => {
+      const handleKeyDown = (e: KeyboardEvent) => {
+        if (!isVisible) return;
+        if (e.key === 'Escape') closeLightbox();
+        if (e.key === 'ArrowLeft') navigate(-1);
+        if (e.key === 'ArrowRight') navigate(1);
+      };
+      window.addEventListener('keydown', handleKeyDown);
+      return () => window.removeEventListener('keydown', handleKeyDown);
+    }, [isVisible, currentIndex, stackItems]);
 
   useEffect(() => {
     const el = scrollerRef.current;
@@ -87,9 +157,9 @@ const Lightbox: React.FC = () => {
   if (!thought) return null;
 
   const handleDownload = () => {
-    if (!image) return;
+    if (!displayUrl) return;
     const link = document.createElement('a');
-    link.href = image;
+    link.href = displayUrl;
     link.download = `cyberia-image-${thought.id}.png`;
     document.body.appendChild(link);
     link.click();
@@ -149,7 +219,7 @@ const Lightbox: React.FC = () => {
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.98, y: -10 }}
               transition={{ duration: 0.2, ease: "easeOut" }}
-              src={image || undefined} 
+              src={displayUrl || undefined} 
               className="max-w-full max-h-full object-contain rounded-xl shadow-2xl" 
               alt={thought.text} 
             />
@@ -170,11 +240,12 @@ const Lightbox: React.FC = () => {
               </div>
               <div className="flex gap-3 overflow-x-auto custom-scroll pb-2 w-full snap-x px-1" ref={scrollerRef}>
                 {stackItems.map((item, idx) => {
-                  const itemImage = item.data?.type === 'file' ? item.data.url : (item as any).image;
+                  // Use thumbnailUrls if available, otherwise use getItemUrl logic
+                  const itemImage = thumbnailUrls[item.id] || (item.data?.type === 'file' ? item.data.url : (item as any).image);
                   return (
                     <button
                       key={item.id}
-                      onClick={() => openLightbox(itemImage!, item.id)}
+                      onClick={() => handleThumbnailClick(item)}
                       className={cn(
                         "flex-shrink-0 w-24 md:w-32 aspect-video rounded-xl overflow-hidden border transition-all group/item snap-start relative bg-[var(--glass-bg)]",
                         idx === currentIndex ? "border-[var(--accent)] ring-2 ring-[var(--accent)]/20 scale-95" : "border-[var(--glass-border)] hover:border-[var(--accent)]"

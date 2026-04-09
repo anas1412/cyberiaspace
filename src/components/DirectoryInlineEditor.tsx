@@ -3,7 +3,8 @@ import { useStore } from '../store/useStore';
 import { useThoughtPayload } from './thought/hooks/useThoughtPayload';
 import { getThoughtConfig } from './thought/registry';
 import { syncOrchestrator } from '../services/sync/syncOrchestrator';
-import { type Thought } from '../db';
+import { supabaseStorage } from '../services/supabaseStorage';
+import { type Thought, db } from '../db';
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 import { motion, Reorder } from 'framer-motion';
@@ -842,6 +843,38 @@ interface InlineFileEditorProps {
 const InlineFileEditor: React.FC<InlineFileEditorProps> = ({ thought, groupThoughtIds, onNavigate }) => {
   const isReadOnly = useStore((s) => s.isReadOnly);
   const { fileInfo } = useThoughtPayload(thought) as any;
+  const [localUrl, setLocalUrl] = useState<string | null>(null);
+  const [signedUrl, setSignedUrl] = useState<string | null>(null);
+
+  // Load local blob first
+  useEffect(() => {
+    let url: string | null = null;
+    const loadLocal = async () => {
+      try {
+        const entry = await db.blobs.where('thoughtId').equals(thought.id).first();
+        if (entry) {
+          url = URL.createObjectURL(entry.blob);
+          setLocalUrl(url);
+        }
+      } catch (e) { /* ignore */ }
+    };
+    loadLocal();
+    return () => { if (url) URL.revokeObjectURL(url); };
+  }, [thought.id]);
+
+  // Fetch signed URL for cloud files
+  useEffect(() => {
+    if (localUrl || !thought.storagePath) return;
+    let cancelled = false;
+    const fetchSigned = async () => {
+      try {
+        const url = await supabaseStorage.getSignedUrl(thought.storagePath!);
+        if (!cancelled) setSignedUrl(url);
+      } catch (e) { /* ignore - will use storageUrl as fallback */ }
+    };
+    fetchSigned();
+    return () => { cancelled = true; };
+  }, [thought.storagePath, localUrl]);
 
   const cached: any = fileInfo || {};
   const fileName = (cached.name || thought.text || '').toLowerCase();
@@ -858,8 +891,9 @@ const InlineFileEditor: React.FC<InlineFileEditorProps> = ({ thought, groupThoug
   const hasNext = currentIdx < groupThoughtIds.length - 1;
 
   const renderContent = () => {
-    const source = (thought.data as any)?.url || thought.storageUrl;
-
+    // Use local blob only - if sync didn't download it, cloud won't work either
+    const source = localUrl || signedUrl;
+    
     if (!source) {
       return (
         <div className="flex flex-col items-center justify-center h-full gap-4 text-[var(--text-muted)]">

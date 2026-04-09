@@ -1,4 +1,4 @@
-<!-- Context: core/standards/supabase-security | Priority: critical | Version: 1.0 | Updated: 2026-04-07 -->
+<!-- Context: core/standards/supabase-security | Priority: critical | Version: 1.1 | Updated: 2026-04-09 -->
 # Supabase Security & RLS Guide
 
 **Purpose**: Supabase database security, RLS policies, and API authentication patterns.
@@ -151,7 +151,33 @@ supabase
 
 The `user-files` bucket has RLS policies on `storage.objects` that enforce user folder isolation. The first path segment must match `auth.uid()`.
 
-**Policies:**
+**IMPORTANT (2026-04-09):** The bucket is now **private** (`public: false`). Files are accessed via **signed URLs**, not public URLs.
+
+### Signed URL Flow
+```typescript
+// 1. Client requests signed URL via API endpoint (api/chat.ts → /storage/signed-url)
+const response = await fetch('/api/chat', {
+  body: JSON.stringify({ action: 'get-signed-url', storagePath: 'userId/thoughtId/file.jpg' })
+});
+const { url } = await response.json();
+
+// 2. Server uses SUPABASE_SERVICE_ROLE_KEY to generate signed URL
+const { data, error } = await supabaseAdmin
+  .storage
+  .from('user-files')
+  .createSignedUrl(path, { expiresIn: 3600 }); // 1 hour
+
+// 3. Client renders file from signed URL (or local IndexedDB blob)
+return data.signedUrl;
+```
+
+### Key Rules
+1. **Private bucket**: `public: false` - no direct CDN URLs
+2. **Signed URLs**: 1-hour expiry, cached in memory to reduce API calls
+3. **Local-first**: Always try IndexedDB blob first (works offline)
+4. **No cloud fallback**: If sync couldn't download locally, cloud URL won't work either
+
+### Policies
 ```sql
 -- Users can only read files in their own folder
 CREATE POLICY "Users read own files" ON storage.objects
@@ -217,6 +243,14 @@ A trigger `tr_protect_user_columns` on the `users` table prevents users from upd
 ---
 
 ## Migration History
+
+### 2026-04-09: Private Bucket with Signed URLs
+- Changed bucket to private (`public: false`)
+- Added signed URL endpoint to `api/chat.ts`
+- Rewrote `supabaseStorage.ts` with caching and signed URL support
+- Updated file-rendering components: FileRenderer, FileFocusEditor, DirectoryInlineEditor, Lightbox, executor
+- Removed background uploads (space backgrounds stay local-only)
+- Removed cloud URL fallback (if sync couldn't download locally, cloud won't work either)
 
 ### 2026-04-07: RLS Enablement (Round 3 - User Protection)
 - Added `tr_protect_user_columns` trigger to `users` table

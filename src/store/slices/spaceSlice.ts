@@ -65,74 +65,57 @@ export const createSpaceSlice: StateCreator<CyberiaState, [], [], any> = (set, g
             set({ customBg: blobUrl });
             console.log('[BG] Loaded background from local IndexedDB:', id);
           } else if (space.customBg.startsWith('http')) {
-            // No local blob but have cloud URL - download to local for offline
-            try {
-              const res = await fetch(space.customBg);
-              const blob = await res.blob();
-              await db.spaceBackgrounds.put({
-                id: space.id,
-                spaceId: space.id,
-                blob,
-                name: 'background',
-                type: blob.type || 'image/jpeg',
-                userId: currentUserId,
-                updatedAt: Date.now()
-              });
-              const blobUrl = URL.createObjectURL(blob);
-              set({ customBg: blobUrl });
-              console.log('[BG] Downloaded cloud background to local:', id);
-            } catch (e) {
-              console.warn('[BG] Failed to download cloud background:', e);
-            }
+            // Legacy cloud URL — no backgrounds exist in cloud, so this shouldn't happen.
+            // Clear the broken reference; user can re-set their background locally.
+            console.warn('[BG] Found cloud URL for background but backgrounds are local-only now. Clearing.');
+            await db.spaces.update(space.id, { customBg: null, updatedAt: Date.now() });
           }
         }
 
-        // Opportunistic migration: convert Base64 backgrounds to storage URLs
+        // Opportunistic migration: convert Base64 backgrounds to local blob URLs
         if (space.customBg && space.customBg.startsWith('data:')) {
-          const authStore = useAuthStore.getState();
-          if (authStore.status === 'authenticated' && authStore.user) {
-            const spaceId = space.id;
-            const userId = authStore.user.id;
-            const capturedBase64 = space.customBg; // Capture for compare-and-swap
-            (async () => {
-              try {
-                console.log('[BG] Migrating Base64 background for space:', spaceId);
-                const response = await fetch(capturedBase64);
-                const blob = await response.blob();
+          const spaceId = space.id;
+          const capturedBase64 = space.customBg;
+          (async () => {
+            try {
+              console.log('[BG] Migrating Base64 background to local blob for space:', spaceId);
+              const response = await fetch(capturedBase64);
+              const blob = await response.blob();
 
-                // Detect actual MIME type from base64 data — blob.type may be wrong (e.g. 'application/json')
-                const mimeMatch = capturedBase64.match(/^data:([^;]+);base64,/);
-                const detectedMime = mimeMatch ? mimeMatch[1] : null;
-                // Only trust known image MIME types, fallback to image/jpeg
-                const mimeType = detectedMime && detectedMime.startsWith('image/') ? detectedMime : 'image/jpeg';
+              const { useAuthStore: authImport } = await import('../useAuthStore');
+              const userId = authImport.getState().user?.id ?? 'guest';
 
-                const { supabaseStorage } = await import('../../services/supabaseStorage');
-                const { url } = await supabaseStorage.uploadSpaceBackground(userId, spaceId, blob, mimeType);
+              // Store in local IndexedDB
+              await db.spaceBackgrounds.put({
+                id: spaceId,
+                spaceId: spaceId,
+                blob,
+                name: 'background',
+                type: blob.type || 'image/jpeg',
+                userId,
+                updatedAt: Date.now()
+              });
 
-                // Compare-and-swap: only write if background hasn't changed during upload
-                const currentSpace = await db.spaces.get(spaceId);
-                if (!currentSpace || currentSpace.customBg !== capturedBase64) {
-                  console.log('[BG] Migration aborted: background changed during migration');
-                  // Clean up the just-uploaded file since we won't use it
-                  supabaseStorage.deleteSpaceBackground(userId, spaceId).catch(() => {});
-                  return;
-                }
+              const blobUrl = URL.createObjectURL(blob);
 
-                await db.spaces.update(spaceId, { customBg: url, updatedAt: Date.now(), syncStatus: 'local' as const });
-                // Always update spaces array so re-entry doesn't re-migrate
-                const migSpaces = get().spaces.map((ms: any) => ms.id === spaceId ? { ...ms, customBg: url } : ms);
-                set({ spaces: migSpaces });
-                // Only update active UI customBg if still viewing this space
-                if (get().activeSpaceId === spaceId) {
-                  set({ customBg: url });
-                }
-                await syncOrchestrator.triggerSync();
-                console.log('[BG] Migration complete for space:', spaceId);
-              } catch (e) {
-                console.warn('[BG] Base64 migration failed, keeping current value:', e);
+              // Compare-and-swap: only write if background hasn't changed during migration
+              const currentSpace = await db.spaces.get(spaceId);
+              if (!currentSpace || currentSpace.customBg !== capturedBase64) {
+                console.log('[BG] Migration aborted: background changed during migration');
+                return;
               }
-            })();
-          }
+
+              await db.spaces.update(spaceId, { customBg: blobUrl, updatedAt: Date.now() });
+              const migSpaces = get().spaces.map((ms: any) => ms.id === spaceId ? { ...ms, customBg: blobUrl } : ms);
+              set({ spaces: migSpaces });
+              if (get().activeSpaceId === spaceId) {
+                set({ customBg: blobUrl });
+              }
+              console.log('[BG] Base64 migration complete for space:', spaceId);
+            } catch (e) {
+              console.warn('[BG] Base64 migration failed, keeping current value:', e);
+            }
+          })();
         }
       }
 

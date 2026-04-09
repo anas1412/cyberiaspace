@@ -198,9 +198,6 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
     const activeSpaceId = useStore.getState().activeSpaceId;
     if (!activeSpaceId) return;
     
-    const { useAuthStore } = await import('../../store/useAuthStore');
-    const authStore = useAuthStore.getState();
-    const { supabaseStorage } = await import('../../services/supabaseStorage');
     const { db } = await import('../../db');
     
     // Get current customBg from space to revoke blob URL if needed
@@ -212,13 +209,11 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
       URL.revokeObjectURL(currentBg);
     }
     
-    // Delete from cloud storage if authenticated
-    if (authStore.status === 'authenticated' && authStore.user) {
-      try {
-        await supabaseStorage.deleteSpaceBackground(authStore.user.id, activeSpaceId);
-      } catch (e) {
-        console.warn('[BG] Failed to delete background from cloud:', e);
-      }
+    // Clean up local IndexedDB background (backgrounds are local-only now)
+    try {
+      await db.spaceBackgrounds.delete(activeSpaceId);
+    } catch (e) {
+      console.warn('[BG] Failed to delete local background:', e);
     }
     
     setCustomBg(null);

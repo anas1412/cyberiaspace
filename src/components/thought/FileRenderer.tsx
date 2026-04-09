@@ -1,8 +1,9 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { type Thought } from '../../db';
 import { useThoughtPayload } from './hooks/useThoughtPayload';
 import { FileText, FileAudio, FileVideo, FileCode, File as FileIcon, Maximize2 } from 'lucide-react';
 import { db } from '../../db';
+import { supabaseStorage } from '../../services/supabaseStorage';
 
 interface FileRendererProps {
   thought: Thought;
@@ -11,6 +12,8 @@ interface FileRendererProps {
 export const FileRenderer: React.FC<FileRendererProps> = ({ thought }) => {
   const { image, fileInfo } = useThoughtPayload(thought);
   const [localUrl, setLocalUrl] = useState<string | null>(null);
+  const [signedUrl, setSignedUrl] = useState<string | null>(null);
+  const [signedUrlError, setSignedUrlError] = useState(false);
   
   useEffect(() => {
     let url: string | null = null;
@@ -33,6 +36,35 @@ export const FileRenderer: React.FC<FileRendererProps> = ({ thought }) => {
     };
   }, [thought.id, thought.syncStatus]);
 
+  // Fetch signed URL when no local blob and we have a storagePath
+  useEffect(() => {
+    if (localUrl || !thought.storagePath || signedUrlError) return;
+    let cancelled = false;
+    const fetchSigned = async () => {
+      try {
+        const url = await supabaseStorage.getSignedUrl(thought.storagePath!);
+        if (!cancelled) setSignedUrl(url);
+      } catch (e) {
+        console.warn('[FileRenderer] Failed to get signed URL:', e);
+        if (!cancelled) setSignedUrlError(true);
+      }
+    };
+    fetchSigned();
+    return () => { cancelled = true; };
+  }, [thought.storagePath, localUrl, signedUrlError]);
+
+  // Refresh signed URL on media load error (expired URL)
+  const handleMediaError = useCallback(async () => {
+    if (!thought.storagePath) return;
+    try {
+      const freshUrl = await supabaseStorage.getSignedUrl(thought.storagePath, 3600);
+      setSignedUrl(freshUrl);
+      setSignedUrlError(false);
+    } catch (e) {
+      console.warn('[FileRenderer] Failed to refresh signed URL:', e);
+    }
+  }, [thought.storagePath]);
+
   const fileName = (thought.text || '').toLowerCase();
   const extension = fileName.split('.').pop() || '';
   const mimeType = (fileInfo?.type || '').toLowerCase();
@@ -54,10 +86,10 @@ export const FileRenderer: React.FC<FileRendererProps> = ({ thought }) => {
     return <FileIcon className="w-8 h-8 text-[var(--text-muted)]" />;
   };
 
-  const activeSource = localUrl || thought.storageUrl || image;
+  const activeSource = localUrl || signedUrl || thought.storageUrl || image;
   const hasContent = !!activeSource;
   
-  const hasRemoteContent = thought.storageUrl && !localUrl && thought.syncStatus !== 'synced';
+  const hasRemoteContent = (signedUrl || thought.storageUrl) && !localUrl && thought.syncStatus !== 'synced';
 
   // MEDIA PREVIEW BLOCK (Images & Videos)
   // Audio files use the list view below to ensure correct icon and prevent video overlay
@@ -74,6 +106,7 @@ export const FileRenderer: React.FC<FileRendererProps> = ({ thought }) => {
               loop
               onMouseEnter={(e) => e.currentTarget.play().catch(() => {})}
               onMouseLeave={(e) => e.currentTarget.pause()}
+              onError={handleMediaError}
             />
           ) : (
             <img
@@ -81,6 +114,7 @@ export const FileRenderer: React.FC<FileRendererProps> = ({ thought }) => {
               draggable="false"
               className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
               alt={thought.text}
+              onError={handleMediaError}
             />
           )
         ) : (

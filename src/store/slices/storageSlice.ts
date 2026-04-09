@@ -1,6 +1,6 @@
 import { type StateCreator } from 'zustand';
 import { db } from '../../db';
-import { supabaseStorage, isStorageUrl } from '../../services/supabaseStorage';
+import { supabaseStorage } from '../../services/supabaseStorage';
 import { PLAN_CONFIG, type SubscriptionPlan } from '../../constants';
 import { syncOrchestrator } from '../../services/sync/syncOrchestrator';
 import { type AuthState } from '../types';
@@ -196,73 +196,11 @@ export const createStorageSlice: StateCreator<AuthState, [], [], any> = (set, ge
     }
   },
 
-  uploadSpaceBackground: async (spaceId: string, force?: boolean) => {
-    const { user, isOnline } = get();
-    if (!user || !isOnline) return;
-
-    try {
-      // Get local blob from IndexedDB
-      const bgEntry = await db.spaceBackgrounds.get(spaceId);
-      if (!bgEntry) {
-        console.log('[Storage] No local background to upload for space:', spaceId);
-        return;
-      }
-
-      // Check if already synced (has cloud URL in space record)
-      const space = await db.spaces.get(spaceId);
-      if (space?.customBg && !space.customBg.startsWith('blob:') && !force) {
-        // Already has cloud URL, skip
-        return;
-      }
-
-      // Check storage quota before uploading background
-      const plan = (user.plan || 'free') as SubscriptionPlan;
-      const storageLimitMB = PLAN_CONFIG[plan].MAX_STORAGE_MB;
-      const bgMB = bgEntry.blob.size / (1024 * 1024);
-      if (get().storageUsageMB + bgMB > storageLimitMB) {
-        console.error('[Storage] Quota exceeded for background upload:', `Need ${bgMB.toFixed(1)}MB, have ${(storageLimitMB - get().storageUsageMB).toFixed(1)}MB remaining`);
-        return;
-      }
-
-      // Upload to Supabase Storage
-      const { url } = await supabaseStorage.uploadSpaceBackground(
-        user.id,
-        spaceId,
-        bgEntry.blob,
-        bgEntry.type
-      );
-
-      // Update space with cloud URL
-      const now = Date.now();
-      await db.spaces.update(spaceId, { 
-        customBg: url, 
-        updatedAt: now,
-        syncStatus: 'synced' 
-      });
-
-      // Update local state
-      const { useStore } = await import('../useStore');
-      const store = useStore.getState();
-      
-      // Revoke old blob URL and use cloud URL
-      const oldBg = store.customBg;
-      if (oldBg && oldBg.startsWith('blob:')) {
-        URL.revokeObjectURL(oldBg);
-      }
-      
-      store.setCustomBgValue(url);
-      const updated = store.spaces.map((s: any) => s.id === spaceId ? { ...s, customBg: url } : s);
-      store.spaces = updated;
-
-      // Clean up local blob (optional - keep for offline backup)
-      // await db.spaceBackgrounds.delete(spaceId);
-
-      console.log('[Storage] Background uploaded for space:', spaceId, url);
-      syncOrchestrator.triggerSync(true);
-
-    } catch (err) {
-      console.error('[Storage] Failed to upload space background:', err);
-    }
+  uploadSpaceBackground: async (_spaceId: string, _force?: boolean) => {
+    // Backgrounds are local-only now — no cloud upload needed.
+    // The blob is already stored in IndexedDB (db.spaceBackgrounds).
+    // This is intentional: zero egress, instant load, no signed URL complexity.
+    console.log('[Storage] Background upload skipped — backgrounds are local-only');
   },
 
   downloadSingleBlob: async (thoughtId: string) => {
@@ -279,10 +217,15 @@ export const createStorageSlice: StateCreator<AuthState, [], [], any> = (set, ge
         console.warn('[Storage] Thought not found or belongs to another user:', thoughtId);
         return;
       }
-      if (!thought.storageUrl) return;
+      if (!thought.storagePath) return;
 
       console.log(`[Storage] Downloading blob for thought: ${thoughtId}`);
-      const response = await fetch(thought.storageUrl);
+      // Use signed URL since bucket is private
+      const signedUrl = await supabaseStorage.getSignedUrl(thought.storagePath);
+      const response = await fetch(signedUrl);
+      if (!response.ok) {
+        throw new Error(`Failed to download file: ${response.status} ${response.statusText}`);
+      }
       const blob = await response.blob();
       
       const fileName = thought.text || 'asset';
@@ -332,7 +275,7 @@ export const createStorageSlice: StateCreator<AuthState, [], [], any> = (set, ge
       const { useStore } = await import('../useStore');
       const currentUserId = user?.id ?? 'guest';
       const cloudThoughts = await db.thoughts
-        .filter(t => !!t.storageUrl && !t.deletedAt && t.userId === currentUserId)
+        .filter(t => !!t.storagePath && !t.deletedAt && t.userId === currentUserId)
         .toArray();
       
       const missing = [];
@@ -350,7 +293,12 @@ export const createStorageSlice: StateCreator<AuthState, [], [], any> = (set, ge
         const batch = missing.slice(i, i + BATCH_SIZE);
         await Promise.all(batch.map(async (t) => {
           try {
-            const res = await fetch(t.storageUrl!);
+            // Use signed URL since bucket is private
+            const signedUrl = await supabaseStorage.getSignedUrl(t.storagePath!);
+            const res = await fetch(signedUrl);
+            if (!res.ok) {
+              throw new Error(`Failed to download file: ${res.status}`);
+            }
             const blob = await res.blob();
             const now = Date.now();
 
@@ -378,82 +326,8 @@ export const createStorageSlice: StateCreator<AuthState, [], [], any> = (set, ge
   },
 
   healSpaceBackgrounds: async () => {
-    const { user, isOnline } = get();
-    if (!user || !isOnline) return;
-
-    try {
-      const currentUserId = user!.id;
-      // Find all spaces with customBg (cloud URLs)
-      const spacesWithBg = await db.spaces
-        .filter((s: any) => !!s.customBg && isStorageUrl(s.customBg) && !s.deletedAt && s.userId === currentUserId)
-        .toArray();
-
-      if (spacesWithBg.length === 0) return;
-
-      const { useStore } = await import('../useStore');
-      const healed: string[] = [];
-      const cleared: string[] = [];
-
-      for (const space of spacesWithBg) {
-        try {
-          // Check if the background file is actually accessible in cloud storage
-          const res = await fetch(space.customBg!, { method: 'HEAD' });
-          if (res.ok) {
-            // Check if we have local blob, if not download it
-            let bgEntry = await db.spaceBackgrounds.get(space.id);
-            if (!bgEntry) {
-              // Download and store locally
-              const downloadRes = await fetch(space.customBg!);
-              const blob = await downloadRes.blob();
-              await db.spaceBackgrounds.put({
-                id: space.id,
-                spaceId: space.id,
-                blob,
-                name: 'background',
-                type: blob.type || 'image/jpeg',
-                userId: currentUserId,
-                updatedAt: Date.now()
-              });
-            }
-            continue; // File exists, all good
-          }
-
-          // File is gone from cloud storage — check local IndexedDB
-          const localBg = await db.spaceBackgrounds.get(space.id);
-          if (localBg) {
-            // Re-upload from local blob
-            const { url: newUrl } = await supabaseStorage.uploadSpaceBackground(
-              user.id,
-              space.id,
-              localBg.blob,
-              localBg.type
-            );
-            await db.spaces.update(space.id, { customBg: newUrl, syncStatus: 'synced' });
-            healed.push(space.id);
-            console.log(`[Heal] Background re-uploaded for space ${space.id}`);
-          } else {
-            // No local copy — clear the broken URL
-            await db.spaces.update(space.id, {
-              customBg: null,
-              syncStatus: 'local',
-              updatedAt: Date.now(),
-            });
-            cleared.push(space.id);
-            console.log(`[Heal] Background URL broken and cleared for space ${space.id}`);
-          }
-        } catch (e) {
-          console.warn(`[Heal] Background check failed for space ${space.id}:`, e);
-        }
-      }
-
-      if (healed.length > 0 || cleared.length > 0) {
-        await useStore.getState().refreshSpaces();
-        // Trigger sync to push any cleared backgrounds
-        syncOrchestrator.triggerSync();
-      }
-    } catch (err) {
-      console.error('[Storage] Space background healing failed:', err);
-    }
+    // No-op: backgrounds are local-only now. No cloud backgrounds to heal.
+    // Kept as stub for interface compatibility.
   },
 
   removeCloudAsset: async (thoughtId: string) => {

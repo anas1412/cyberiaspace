@@ -1,8 +1,9 @@
-import React, { useState, useEffect, useMemo, useRef } from 'react';
+import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import { useStore } from '../../store/useStore';
 import { useAuthStore } from '../../store/useAuthStore';
 import { useSyncStore } from '../../store/useSyncStore';
 import { useThoughtPayload } from '../thought/hooks/useThoughtPayload';
+import { supabaseStorage } from '../../services/supabaseStorage';
 import { useModalStore } from '../../store/useModalStore';
 import { syncOrchestrator } from '../../services/sync/syncOrchestrator';
 import { 
@@ -251,10 +252,38 @@ const EditorContent: React.FC<{
   const extension = fileName.split('.').pop() || '';
   
   const isLocalOnly = thought.syncStatus === 'local' || thought.syncStatus === 'error';
+
+  // Signed URL state for private bucket access
+  const [signedUrl, setSignedUrl] = useState<string | null>(null);
+  useEffect(() => {
+    if (isLocalOnly || localPreviewUrl || !thought.storagePath) return;
+    let cancelled = false;
+    const fetchSigned = async () => {
+      try {
+        const url = await supabaseStorage.getSignedUrl(thought.storagePath!);
+        if (!cancelled) setSignedUrl(url);
+      } catch (e) {
+        console.warn('[FileFocusEditor] Failed to get signed URL:', e);
+      }
+    };
+    fetchSigned();
+    return () => { cancelled = true; };
+  }, [thought.storagePath, isLocalOnly, localPreviewUrl]);
+
+  const handleMediaError = useCallback(async () => {
+    if (!thought.storagePath) return;
+    try {
+      const freshUrl = await supabaseStorage.getSignedUrl(thought.storagePath, 3600);
+      setSignedUrl(freshUrl);
+    } catch (e) {
+      console.warn('[FileFocusEditor] Failed to refresh signed URL:', e);
+    }
+  }, [thought.storagePath]);
+
   // LOCAL FIRST GUARD: If we are still fetching/checking local, don't fallback to cloud yet
   const activeSource = isFetching 
     ? localPreviewUrl 
-    : (localPreviewUrl || (isLocalOnly ? null : thought.storageUrl) || image);
+    : (localPreviewUrl || (isLocalOnly ? null : (signedUrl || thought.storageUrl)) || image);
 
   // Use cached values if available, otherwise analyze
   const isPdf = fileInfo?.isPdf ?? false;
@@ -332,6 +361,7 @@ const EditorContent: React.FC<{
                   alt={thought.text}
                   className="max-w-[90%] max-h-[85%] object-contain rounded-xl shadow-[0_20px_60px_-15px_rgba(0,0,0,0.5)] transition-opacity duration-700"
                   style={{ opacity: isFetching ? 0.5 : 1 }}
+                  onError={handleMediaError}
                 />
               </div>
             ) : isVideo ? (
@@ -343,6 +373,7 @@ const EditorContent: React.FC<{
                   playsInline
                   loop
                   className="max-w-[90%] max-h-[85%] object-contain"
+                  onError={handleMediaError}
                 />
               </div>
             ) : isAudio ? (
@@ -361,6 +392,7 @@ const EditorContent: React.FC<{
                     autoPlay 
                     className="w-full h-10"
                     src={activeSource}
+                    onError={handleMediaError}
                   />
                 </div>
               </div>

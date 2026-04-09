@@ -5,13 +5,78 @@ export const storageClient = supabase
 
 const BUCKET_NAME = 'user-files'
 
-const getBackgroundPath = (userId: string, spaceId: string): string =>
-  `${userId}/backgrounds/bg_${spaceId}`;
+// ==========================================
+// Signed URL Cache
+// ==========================================
+const signedUrlCache = new Map<string, { url: string; expiresAt: number }>();
+
+const getCachedSignedUrl = (path: string): string | null => {
+  const cached = signedUrlCache.get(path);
+  // Refresh 60s before expiry to avoid edge cases
+  if (cached && cached.expiresAt > Date.now() + 60000) {
+    return cached.url;
+  }
+  return null;
+};
+
+const setCachedSignedUrl = (path: string, url: string, expiresIn: number) => {
+  signedUrlCache.set(path, {
+    url,
+    expiresAt: Date.now() + (expiresIn * 1000)
+  });
+};
 
 export const isStorageUrl = (value: string): boolean =>
   value.startsWith('https://') || value.startsWith('http://');
 
 export const supabaseStorage = {
+  // ==========================================
+  // Signed URL Generation (via API endpoint)
+  // ==========================================
+  async getSignedUrl(storagePath: string, expiresIn: number = 3600): Promise<string> {
+    // Check cache first
+    const cached = getCachedSignedUrl(storagePath);
+    if (cached) return cached;
+
+    // Get auth token for API call
+    const { useAuthStore } = await import('../store/useAuthStore');
+    const token = await useAuthStore.getState().getSessionToken();
+    if (!token) {
+      throw new Error('Not authenticated — cannot get signed URL');
+    }
+
+    const response = await fetch('/api/chat', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`,
+      },
+      body: JSON.stringify({
+        action: 'getSignedUrl',
+        path: storagePath,
+        expiresIn,
+      }),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
+      throw new Error(`Failed to get signed URL: ${errorData.error || response.statusText}`);
+    }
+
+    const data = await response.json();
+    if (data.error) {
+      throw new Error(`Failed to get signed URL: ${data.error}`);
+    }
+
+    // Cache the result
+    setCachedSignedUrl(storagePath, data.url, data.expiresIn || expiresIn);
+
+    return data.url;
+  },
+
+  // ==========================================
+  // File Upload (still uses client SDK with RLS)
+  // ==========================================
   async uploadFile(
     userId: string, 
     file: File | Blob, 
@@ -25,8 +90,7 @@ export const supabaseStorage = {
     const safeName = fileName.replace(/[^a-zA-Z0-9.-]/g, '_')
     const path = thoughtId ? `${userId}/${thoughtId}/${safeName}` : `${userId}/${safeName}`;
     
-    // Just upload with upsert - don't check if file exists
-    // This prevents the re-upload bug
+    // Upload with upsert - RLS handles auth
     const { error } = await storageClient
       .storage
       .from(BUCKET_NAME)
@@ -41,20 +105,21 @@ export const supabaseStorage = {
       throw new Error(`Upload failed: ${error.message}`)
     }
 
-    const { data: urlData } = storageClient
-      .storage
-      .from(BUCKET_NAME)
-      .getPublicUrl(path)
+    // Get signed URL instead of public URL (bucket is now private)
+    const signedUrl = await this.getSignedUrl(path);
 
     console.log('[Storage] Upload success:', path)
     
     return {
-      url: urlData.publicUrl,
+      url: signedUrl,
       path: path,
       size: file.size,
     }
   },
 
+  // ==========================================
+  // File Deletion
+  // ==========================================
   async deleteFile(storagePath: string): Promise<void> {
     const { error } = await storageClient
       .storage
@@ -66,19 +131,15 @@ export const supabaseStorage = {
       throw new Error(`Delete failed: ${error.message}`)
     }
 
+    // Invalidate cache for this path
+    signedUrlCache.delete(storagePath);
+
     console.log('[Storage] Deleted:', storagePath)
   },
 
-  async getSignedUrl(storagePath: string): Promise<string> {
-    // Bucket is public, use getPublicUrl for direct access
-    const { data } = await storageClient
-      .storage
-      .from(BUCKET_NAME)
-      .getPublicUrl(storagePath)
-
-    return data.publicUrl
-  },
-
+  // ==========================================
+  // File Listing (uses client SDK with RLS)
+  // ==========================================
   async listFiles(userId: string): Promise<{ name: string; size: number }[]> {
     const { data, error } = await storageClient
       .storage
@@ -97,38 +158,34 @@ export const supabaseStorage = {
     return data.map(f => ({ name: f.name, size: f.metadata?.size || 0 }))
   },
 
+  // ==========================================
+  // File Existence Check (uses signed URL attempt)
+  // ==========================================
   async fileExists(userId: string, fileName: string): Promise<boolean> {
     try {
       const fullPath = fileName.includes('/') ? fileName : `${userId}/${fileName}`;
-      // Use getPublicUrl since bucket is public
-      const { data } = await storageClient
-        .storage
-        .from(BUCKET_NAME)
-        .getPublicUrl(fullPath);
-      
-      // If publicUrl is returned, file exists
-      return !!data.publicUrl;
+      // Try to get a signed URL — if it fails, file doesn't exist
+      await this.getSignedUrl(fullPath);
+      return true;
     } catch (err) {
-      console.error('[Storage] fileExists failed:', err);
+      console.warn('[Storage] fileExists check failed:', err);
       return false;
     }
   },
 
   async checkFileAccessible(storagePath: string): Promise<boolean> {
     try {
-      // Use getPublicUrl since bucket is public
-      const { data } = await storageClient
-        .storage
-        .from(BUCKET_NAME)
-        .getPublicUrl(storagePath);
-      
-      return !!data.publicUrl;
+      await this.getSignedUrl(storagePath);
+      return true;
     } catch (err) {
       console.error('[Storage] checkFileAccessible failed:', err);
       return false;
     }
   },
 
+  // ==========================================
+  // Storage Usage (RPC)
+  // ==========================================
   async getStorageUsage(userId: string): Promise<number> {
     try {
       const { data, error } = await supabase.rpc('get_user_storage_size', {
@@ -145,7 +202,9 @@ export const supabaseStorage = {
     }
   },
 
-
+  // ==========================================
+  // Bulk File Deletion (user wipe)
+  // ==========================================
   async deleteAllUserFiles(userId: string): Promise<number> {
     console.log('[Storage] Starting full user directory wipe for:', userId);
     try {
@@ -178,6 +237,10 @@ export const supabaseStorage = {
       for (let i = 0; i < itemsToDelete.length; i += batchSize) {
         await storageClient.storage.from(BUCKET_NAME).remove(itemsToDelete.slice(i, i + batchSize));
       }
+
+      // Invalidate cache for all deleted paths
+      itemsToDelete.forEach(p => signedUrlCache.delete(p));
+
       return itemsToDelete.length;
     } catch (err) {
       console.error('[Storage] Full wipe failed:', err);
@@ -195,6 +258,9 @@ export const supabaseStorage = {
     return { valid: true }
   },
 
+  // ==========================================
+  // Orphaned File Cleanup
+  // ==========================================
   async cleanupOrphanedFiles(userId: string, validPaths: Set<string>): Promise<number> {
     console.log('[Storage] Starting structural orphan cleanup for user:', userId);
     console.log(`[Storage] Index of valid paths: ${validPaths.size} items`);
@@ -202,7 +268,6 @@ export const supabaseStorage = {
     try {
       const itemsToDelete: string[] = [];
       
-      // 1. List all items in userId/
       const { data: rootItems, error: rootError } = await storageClient
         .storage
         .from(BUCKET_NAME)
@@ -221,16 +286,13 @@ export const supabaseStorage = {
       console.log(`[Storage] Analyzing ${rootItems.length} root items...`);
 
       for (const item of rootItems) {
-        // id is null for folders
         const isFolder = !item.id;
         const itemName = item.name;
 
         if (isFolder) {
-          // New style: numeric folder name (thoughtId)
           const folderPathPrefix = `${userId}/${itemName}/`;
           const isFolderValid = Array.from(validPaths).some(p => p.startsWith(folderPathPrefix));
 
-          // List files inside that folder
           const { data: folderFiles, error: folderError } = await storageClient
             .storage
             .from(BUCKET_NAME)
@@ -242,19 +304,13 @@ export const supabaseStorage = {
           }
 
           if (!isFolderValid) {
-            // Orphaned thought folder - delete all files inside it
             console.log(`[Storage] Orphaned folder detected: ${itemName} (not in valid index)`);
             if (folderFiles && folderFiles.length > 0) {
               folderFiles.forEach(f => {
                 itemsToDelete.push(`${userId}/${itemName}/${f.name}`);
               });
-            } else {
-              // Empty folders technically don't exist in Supabase storage, 
-              // but if we encounter one we should try to clear it
-              // (actually just skipping it is fine as it's virtual)
             }
           } else {
-            // Folder is valid, but check if individual files inside are valid
             if (folderFiles && folderFiles.length > 0) {
               for (const f of folderFiles) {
                 const fullPath = `${userId}/${itemName}/${f.name}`;
@@ -266,7 +322,6 @@ export const supabaseStorage = {
             }
           }
         } else {
-          // Legacy style: file directly in userId/
           const fullPath = `${userId}/${itemName}`;
           if (!validPaths.has(fullPath)) {
             console.log(`[Storage] Orphaned legacy file detected: ${fullPath}`);
@@ -281,7 +336,6 @@ export const supabaseStorage = {
         return 0;
       }
 
-      // Batch delete items
       const batchSize = 10;
       for (let i = 0; i < itemsToDelete.length; i += batchSize) {
         const batch = itemsToDelete.slice(i, i + batchSize);
@@ -304,55 +358,23 @@ export const supabaseStorage = {
     }
   },
 
+  // ==========================================
+  // Background Methods (kept for interface compat, but no-ops)
+  // Backgrounds are local-only now — no cloud upload
+  // ==========================================
   async uploadSpaceBackground(
-    userId: string,
-    spaceId: string,
-    file: File | Blob,
-    mimeType: string
+    _userId: string,
+    _spaceId: string,
+    _file: File | Blob,
+    _mimeType: string
   ): Promise<{ url: string; path: string }> {
-    const path = getBackgroundPath(userId, spaceId);
-
-    // Ensure valid image MIME type — Supabase rejects non-image types
-    const safeMime = mimeType?.startsWith('image/') ? mimeType : 'image/jpeg';
-
-    const { error } = await storageClient
-      .storage
-      .from(BUCKET_NAME)
-      .upload(path, file, {
-        cacheControl: '3600',
-        upsert: true,
-        contentType: safeMime,
-      });
-
-    if (error) {
-      console.error('[Storage] Background upload error:', error);
-      throw new Error(`Background upload failed: ${error.message}`);
-    }
-
-    const { data } = storageClient
-      .storage
-      .from(BUCKET_NAME)
-      .getPublicUrl(path);
-
-    // Add cache-busting timestamp to force browser to refetch new image
-    const urlWithCacheBust = data.publicUrl + '?t=' + Date.now();
-    
-    console.log('[Storage] Background upload success:', path);
-    return { url: urlWithCacheBust, path };
+    // No-op: backgrounds are local-only
+    console.warn('[Storage] uploadSpaceBackground called but backgrounds are local-only');
+    return { url: '', path: '' };
   },
 
-  async deleteSpaceBackground(userId: string, spaceId: string): Promise<void> {
-    const path = getBackgroundPath(userId, spaceId);
-
-    const { error } = await storageClient
-      .storage
-      .from(BUCKET_NAME)
-      .remove([path]);
-
-    if (error && !error.message?.includes('not found')) {
-      console.warn('[Storage] Background delete warning:', error.message);
-    }
-
-    console.log('[Storage] Background deleted (or did not exist):', path);
+  async deleteSpaceBackground(_userId: string, _spaceId: string): Promise<void> {
+    // No-op: backgrounds are local-only, nothing to delete from cloud
+    console.warn('[Storage] deleteSpaceBackground called but backgrounds are local-only');
   },
 }

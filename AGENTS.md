@@ -489,6 +489,12 @@ Spatial Mode → Move thoughts (physics runs, positions stored in memory)
 ###  Storage
 - **Unique Folder Protocol:** To prevent filename collisions and ensure clean user isolation, all file assets in cloud storage are organized using the path structure: `${userId}/${thoughtId}/${fileName}`.
 - **Lazy Loading / On-Demand:** To minimize egress, the application uses an on-demand strategy where thoughts and assets are only "woken" (downloaded) into local IndexedDB when a space is opened by the user.
+- **Private Bucket with Signed URLs:** The `user-files` bucket is private (`public: false`). All file access requires signed URLs generated via the API endpoint `api/chat.ts`. Signed URLs expire after 1 hour and are cached in memory to reduce API calls.
+- **Local-First Rendering:** All file-rendering components prioritize local IndexedDB blobs over cloud access. The flow is:
+  1. Try local IndexedDB blob first (fastest, works offline)
+  2. If no local blob, fetch signed URL from cloud (authenticated access)
+  3. **No cloud URL fallback** - If sync couldn't download the blob locally, the cloud URL won't work either (expired tokens, network issues). This ensures consistent behavior.
+- **Background Images Stay Local:** Space backgrounds are stored locally only with zero cloud egress. They are never uploaded to Supabase Storage.
 
 
 ###  State Management (Zustand)
@@ -555,6 +561,9 @@ This section serves as a definitive reference for patterns that are deprecated. 
 - **Custom Themes:** Space-specific themes (storing theme in space settings) are deprecated. Only the global `dark` and `light` themes are supported. The `theme` field in Space entities should not be used.
 - **Performance Mode:** The `performanceMode` flag and related optimizations are deprecated. The physics engine and rendering are now always-on at full quality. Remove all `performanceMode` checks and branches from components.
 - **Mobile Support:** The web app is **desktop-only** (mouse/trackpad + wide viewport required). `src/components/MobilePage.tsx` is a gate that redirects mobile users to the landing page. All touch/long-press/mobile-specific interaction patterns are deprecated. Remove `onTouchStart`/`onTouchEnd`/`mobile-fab-adjust`/`mobile-bottom-bar-adjust` patterns from components. The `MobilePage` component itself is kept only as a "desktop required" gate — do not add mobile-responsive layouts to the main app.
+- **Public Storage Bucket:** The `user-files` bucket was previously public (`public: true`), allowing direct CDN URLs. This is deprecated. The bucket is now private (`public: false`) and requires signed URLs for access. Use `supabaseStorage.getSignedUrl()` instead of `getPublicUrl()`.
+- **Cloud URL Fallback:** The pattern of falling back to `storageUrl` from the database when local blobs are unavailable is deprecated. If sync couldn't download a blob locally, the cloud URL won't work either (expired tokens, network issues). Only use local IndexedDB blobs or signed URLs.
+- **Background Cloud Uploads:** Uploading space backgrounds to Supabase Storage is deprecated. Backgrounds now stay local-only in IndexedDB with zero cloud egress. Remove any `uploadSpaceBackground()` or background cloud deletion logic.
 
 ---
 
@@ -840,14 +849,27 @@ A trigger `tr_protect_user_columns` on the `users` table prevents users from upd
 
 #### Storage Security (CRITICAL)
 
-The `user-files` bucket has RLS policies on `storage.objects` that enforce user folder isolation. The first path segment must match `auth.uid()`.
+The `user-files` bucket is **private** (`public: false`). Files are accessed via **signed URLs** instead of public URLs.
 
-**Policies:**
+**Signed URL Flow:**
+1. Client requests signed URL via API endpoint (`api/chat.ts` → `/storage/signed-url`)
+2. Server uses `SUPABASE_SERVICE_ROLE_KEY` to generate a signed URL (1-hour expiry)
+3. Client renders file from signed URL or local IndexedDB blob
+4. Signed URLs are cached in memory to reduce API calls
+
+**RLS Policies (still enforced):**
 - `Users upload to own folder`: `(storage.foldername(name))[1] = auth.uid()::text`
 - `Users update own files`: `(storage.foldername(name))[1] = auth.uid()::text`
 - `Users delete own files`: `(storage.foldername(name))[1] = auth.uid()::text`
 
-**Note:** No SELECT policy exists — files are accessed via direct CDN URLs (`getPublicUrl()`) which bypass RLS. The Supabase Storage Admin UI file browser won't show files, but the app works correctly.
+**Why Signed URLs?**
+- Security: Only authenticated users with valid tokens can access files
+- Egress control: Private buckets don't generate CDN egress costs
+- User isolation: RLS ensures users can only access their own folder (`userId/...`)
+
+**No Public SELECT Policy:** There is no SELECT policy on `storage.objects` — files are accessed via signed URLs which bypass RLS. The Supabase Storage Admin UI file browser won't show files, but the app works correctly.
+
+**Backgrounds Are Local-Only:** Space backgrounds are never uploaded to Supabase Storage. They stay in IndexedDB only, ensuring zero cloud egress for decorative images.
 
 #### Recommendations for Maintenance
 

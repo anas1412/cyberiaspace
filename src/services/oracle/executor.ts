@@ -51,15 +51,26 @@ const readFileHelper = async (id: string, store: any) => {
   const isPdf = t.meta?.file?.type?.includes('pdf') || 
                 t.text?.toLowerCase().endsWith('.pdf');
 
+  // Helper to get a fresh signed URL for cloud files (bucket is private)
+  const getFreshUrl = async (): Promise<string | null> => {
+    if (t.storagePath) {
+      try {
+        const { supabaseStorage } = await import('../supabaseStorage');
+        return await supabaseStorage.getSignedUrl(t.storagePath);
+      } catch (e) {
+        console.warn('[Oracle] Failed to get signed URL:', e);
+      }
+    }
+    return t.storageUrl || (data?.type === 'file' ? data.url : null);
+  };
+
   if (isImage) {
-    const url = data?.type === 'file' ? data.url : (t as any).image;
+    const url = await getFreshUrl();
     return { id, success: true, type: 'image', url, name: t.text };
   }
 
   if (isPdf) {
-    const url = t.storageUrl || (data?.type === 'file' ? data.url : null);
-    // If we have a local blob, we might need to get it
-    let finalUrl = url;
+    let finalUrl = await getFreshUrl();
     if (!finalUrl) {
       const blobEntry = await db.blobs.filter(b => b.thoughtId === id && b.userId === currentUserId).first();
       if (blobEntry) finalUrl = URL.createObjectURL(blobEntry.blob);

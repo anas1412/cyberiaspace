@@ -96,9 +96,21 @@ const PrivacyPolicy: React.FC = () => {
       title: t('legal.privacy.articles.article_6.title'),
       icon: <Lock className="w-5 h-5 text-blue-400" />,
       content: (
-        <p className="leading-relaxed text-[var(--text-muted)]">
-          {t('legal.privacy.articles.article_6.content')}
-        </p>
+        <>
+          <p className="leading-relaxed text-[var(--text-muted)]">
+            {t('legal.privacy.articles.article_6.content')}
+          </p>
+          <p className="leading-relaxed text-[var(--text-muted)] mt-4">
+            We use multiple layers of security to protect your files and data:
+          </p>
+          <ul className="list-disc list-inside space-y-3 mt-4 ml-2 text-[var(--text-muted)]">
+            <li><strong className="text-[var(--text-primary)] font-bold">Private Storage</strong> — Your files are stored in a private cloud bucket that cannot be accessed via public URLs. Only authenticated users can access their own files.</li>
+            <li><strong className="text-[var(--text-primary)] font-bold">Signed URLs</strong> — When accessing files, we generate time-limited signed URLs (1-hour expiry) rather than using permanent public links.</li>
+            <li><strong className="text-[var(--text-primary)] font-bold">Local-First Storage</strong> — Your files are stored locally in your browser first (IndexedDB). The cloud is used only for backup and cross-device sync.</li>
+            <li><strong className="text-[var(--text-primary)] font-bold">Row-Level Security</strong> — Database policies ensure you can only access your own data. There is no way for one user to view or modify another user's files.</li>
+            <li><strong className="text-[var(--text-primary)] font-bold">Local-Only Backgrounds</strong> — Space backgrounds stay on your device only, never uploaded to the cloud.</li>
+          </ul>
+        </>
       )
     },
     {
@@ -113,7 +125,7 @@ const PrivacyPolicy: React.FC = () => {
           <ul className="list-disc list-inside space-y-3 mt-4 ml-2 text-[var(--text-muted)]">
             <li><strong className="text-[var(--text-primary)] font-bold">{t('legal.privacy.articles.article_7.portability')}</strong> {t('legal.privacy.articles.article_7.portability_desc')}</li>
             <li><strong className="text-[var(--text-primary)] font-bold">{t('legal.privacy.articles.article_7.erasure')}</strong> {t('legal.privacy.articles.article_7.erasure_desc')}</li>
-          </ul>
+</ul>
         </>
       )
     },

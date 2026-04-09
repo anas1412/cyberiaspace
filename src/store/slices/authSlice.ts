@@ -4,7 +4,7 @@ import { type User, type SubscriptionPlan, type AccessPeriod, PLAN_CONFIG } from
 import { db } from '../../db';
 import { supabaseSync } from '../../services/supabaseSync';
 import { type AuthState } from '../types';
-import { supabaseStorage, isStorageUrl } from '../../services/supabaseStorage';
+import { isStorageUrl } from '../../services/supabaseStorage';
 import { supabase } from '../../services/supabase';
 
 let refreshInterval: ReturnType<typeof setInterval> | null = null;
@@ -786,11 +786,7 @@ export const createAuthSlice: StateCreator<AuthState, [], [], any> = (set, get, 
       }
       
       if (space.customBg && isStorageUrl(space.customBg)) {
-        try {
-          await supabaseStorage.deleteSpaceBackground(user.id, space.id);
-        } catch (e) {
-          console.warn('[Auth] Remote storage clean failed on regression:', e);
-        }
+        // Backgrounds are local-only now — clear any stale cloud URL references
         updates.customBg = null;
         needsUpdate = true;
       }

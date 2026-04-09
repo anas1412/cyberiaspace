@@ -1,6 +1,6 @@
 import { db } from '../../db';
 import { supabaseSync, supabase, toCamelCase } from '../supabaseSync';
-import { supabaseStorage, isStorageUrl } from '../supabaseStorage';
+import { supabaseStorage } from '../supabaseStorage';
 import type { SyncConflictData } from './syncTypes';
 import { type RealtimeChannel } from '@supabase/supabase-js';
 
@@ -367,12 +367,7 @@ export const syncOrchestrator = {
               // FK Safety: Clear spaceId from orphaned stacks and thoughts before deleting space
               await db.stacks.where('spaceId').equals(s.id).and(st => st.userId === userId).modify((st: any) => { st.spaceId = null; });
               await db.thoughts.where('spaceId').equals(s.id).and(t => t.userId === userId).modify((t: any) => { t.spaceId = null; });
-              // Clean up background file from storage before deleting the space record
-              if (s.customBg && isStorageUrl(s.customBg)) {
-                supabaseStorage.deleteSpaceBackground(userId, s.id)
-                  .catch((e: any) => console.warn('[Sync] Absence rule bg cleanup failed:', s.id, e));
-              }
-              // Clean up local IndexedDB background blob
+              // Clean up local IndexedDB background blob (backgrounds are local-only now)
               await db.spaceBackgrounds.delete(s.id);
               await db.spaces.delete(s.id);
             }
@@ -554,23 +549,10 @@ export const syncOrchestrator = {
       }
 
       for (const space of localSpaces.filter(s => s.deletedAt)) {
-        // Clean up background file from storage before DB deletion
-        if (space.customBg && isStorageUrl(space.customBg)) {
-          try {
-            await supabaseStorage.deleteSpaceBackground(userId, space.id);
-          } catch (e: any) {
-            // On non-404 errors, skip this space to prevent permanent orphans
-            // The tombstone is preserved and deletion will retry on next sync
-            const is404 = e.message?.includes('404') || e.message?.includes('not found') || e.status === 404;
-            if (!is404) {
-              console.warn('[Sync] Background cleanup failed, deferring space deletion:', space.id);
-              continue;
-            }
-          }
-        }
+        // Backgrounds are local-only — just clean up IndexedDB
+        await db.spaceBackgrounds.delete(space.id);
         try {
           await supabaseSync.deleteSpace(space.id, userId);
-          await db.spaceBackgrounds.delete(space.id);
           await db.spaces.delete(space.id);
         } catch (e: any) {
           if (e.status === 404 || e.message?.includes('not found')) await db.spaces.delete(space.id);
@@ -589,64 +571,10 @@ export const syncOrchestrator = {
       );
 
       // ==========================================
-      // Step 2.2.1: Upload any pending blob backgrounds from IndexedDB
-      // This ensures cloud storage has the actual image, not a blob: URL
+      // Step 2.2.1: Backgrounds are local-only (no cloud upload)
+      // Backgrounds stay in IndexedDB as blob URLs — zero egress, instant load.
+      // They do NOT sync across devices. This is intentional for cost optimization.
       // ==========================================
-      const spacesWithPendingBlobs = spacesToPush.filter(s => s.customBg && s.customBg.startsWith('blob:'));
-      if (spacesWithPendingBlobs.length > 0) {
-        console.log(`[Sync] Found ${spacesWithPendingBlobs.length} spaces with pending blob backgrounds to upload`);
-        
-        // Check storage quota before uploading backgrounds
-        const { useAuthStore } = await import('../../store/useAuthStore');
-        const { PLAN_CONFIG } = await import('../../constants');
-        const authState = useAuthStore.getState();
-        const plan = (authState.user?.plan || 'free') as keyof typeof PLAN_CONFIG;
-        const storageLimitMB = PLAN_CONFIG[plan].MAX_STORAGE_MB;
-        
-        if (authState.storageUsageMB > storageLimitMB) {
-          console.warn(`[Sync] Storage quota exceeded (${authState.storageUsageMB.toFixed(1)}MB / ${storageLimitMB}MB), skipping background uploads`);
-        } else {
-          for (const space of spacesWithPendingBlobs) {
-            try {
-              // Get blob from IndexedDB instead of fetching from blob: URL
-              const bgEntry = await db.spaceBackgrounds.get(space.id);
-              if (!bgEntry) {
-                console.warn(`[Sync] No local background found for space ${space.id}, skipping bg upload`);
-                continue;
-              }
-              
-              // Per-background quota check
-              const bgMB = bgEntry.blob.size / (1024 * 1024);
-              const currentUsage = useAuthStore.getState().storageUsageMB;
-              if (currentUsage + bgMB > storageLimitMB) {
-                console.warn(`[Sync] Background upload skipped for space ${space.id}: quota exceeded (${bgMB.toFixed(1)}MB needed)`);
-                continue;
-              }
-              
-              const { url: storageUrl } = await supabaseStorage.uploadSpaceBackground(
-                userId,
-                space.id,
-                bgEntry.blob,
-                bgEntry.type
-              );
-              // Update IndexedDB with the storage URL so it syncs properly
-              await db.spaces.update(space.id, {
-                customBg: storageUrl,
-                syncStatus: 'local',
-                updatedAt: Date.now(),
-              });
-              console.log(`[Sync] Background uploaded for space ${space.id}: ${storageUrl}`);
-            } catch (e) {
-              console.warn(`[Sync] Failed to upload background for space ${space.id}:`, e);
-              // Don't fail the whole sync — push the space without the bg, it will retry next sync
-            }
-          }
-        }
-        // Re-fetch spaces with updated customBg URLs
-        const updatedSpaceIds = new Set(spacesWithPendingBlobs.map(s => s.id));
-        spacesToPush.length = 0; // Clear the array
-        spacesToPush.push(...localSpaces.filter(s => !s.deletedAt && !s.isOnboarding && updatedSpaceIds.has(s.id)));
-      }
 
       // Capture timestamps to prevent race conditions (Sync Overwrite)
       const spaceTimestamps = new Map(spacesToPush.map(s => [s.id, s.updatedAt]));
