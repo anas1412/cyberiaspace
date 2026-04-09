@@ -103,7 +103,7 @@ export const PLAN_CONFIG: Record<SubscriptionPlan, PlanLimits> = {
     MAX_SPACES: 20,
     MAX_THOUGHTS_PER_SPACE: 100,
     MAX_CLOUD_THOUGHTS: 2000,
-    MAX_STORAGE_MB: 200,
+    MAX_STORAGE_MB: 1024,
     AI_ENABLED: true,
     AI_DAILY_LIMIT: 10000, // Legacy - AI limits now fetched from /api/models
     AI_TOP_LIMIT: 0,       // Legacy - now fetched from /api/models

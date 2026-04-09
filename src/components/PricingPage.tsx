@@ -798,7 +798,7 @@ const PricingPage: React.FC = () => {
               <ComparisonRow 
                 label={t('pricing.comparison.rows.storage')} 
                 free={`${PLAN_CONFIG.free.MAX_STORAGE_MB}MB`} 
-                pro={`${PLAN_CONFIG.pro.MAX_STORAGE_MB}MB`}
+                pro={PLAN_CONFIG.pro.MAX_STORAGE_MB >= 1024 ? '1GB' : `${PLAN_CONFIG.pro.MAX_STORAGE_MB}MB`}
                 enterprise={`${PLAN_CONFIG.enterprise.MAX_STORAGE_MB / 1000}GB / user`}
               />
               <ComparisonRow 

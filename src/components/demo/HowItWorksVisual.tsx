@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Plus, ChevronDown, Check, Orbit, FolderTree, Columns3, CalendarDays, Cpu, Cloud, Wifi, WifiOff } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
+import { Plus, ChevronDown, Check, Orbit, FolderTree, Columns3, CalendarDays, Cpu, Cloud, WifiOff, RefreshCw, Monitor, Smartphone, Tablet } from 'lucide-react';
 import DemoThought from './DemoThought';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -13,14 +14,6 @@ interface HowItWorksVisualProps {
 
 // ─── Constants ───────────────────────────────────────────────────────────────
 const STEP_DURATIONS = [9000, 10000, 13000, 12000, 11000];
-
-const STEP_INFO = [
-  { title: 'Create your space',    sub: 'Sign up in seconds' },
-  { title: 'Add your thoughts',    sub: 'Drop notes, files, images on the canvas' },
-  { title: 'Switch views anytime', sub: 'Same data, different perspectives' },
-  { title: 'Oracle AI organizes',  sub: 'AI connects and structures your workspace' },
-  { title: 'Works everywhere',    sub: 'Offline-first with automatic cloud sync' },
-];
 
 const CANVAS_THOUGHTS = [
   { id: 't1', title: 'RESEARCH', type: 'doc'   as const, color: 'var(--accent)',           sx: -140, sy: -100 },
@@ -55,12 +48,12 @@ const VIEWS = [
 
 type ViewId = typeof VIEWS[number]['id'];
 
-// ─── View position helpers ─────────────────────────────────────────────────────
-const getCentroid = () => {
+// ─── Precomputed centroid (static data, never changes) ─────────────────────────
+const CENTROID = (() => {
   let cx = 0, cy = 0;
   CANVAS_THOUGHTS.forEach(t => { cx += t.sx; cy += t.sy; });
   return { x: cx / CANVAS_THOUGHTS.length, y: cy / CANVAS_THOUGHTS.length };
-};
+})();
 
 const getThoughtPos = (index: number, view: ViewId, clustering = false): { x: number; y: number; rot: number } => {
   const t = CANVAS_THOUGHTS[index];
@@ -68,10 +61,9 @@ const getThoughtPos = (index: number, view: ViewId, clustering = false): { x: nu
   
   // When clustering, slightly drift toward centroid (10-20% attraction)
   if (clustering) {
-    const centroid = getCentroid();
     const pull = 0.15;
-    x += (centroid.x - t.sx) * pull;
-    y += (centroid.y - t.sy) * pull;
+    x += (CENTROID.x - t.sx) * pull;
+    y += (CENTROID.y - t.sy) * pull;
   }
   
   if (view === 'spatial')    return { x, y, rot: index * 5 - 8 };
@@ -96,6 +88,10 @@ const getThoughtPos = (index: number, view: ViewId, clustering = false): { x: nu
 
 const sleep = (ms: number) => new Promise<void>(r => setTimeout(r, ms));
 
+// ─── Reduced motion check ────────────────────────────────────────────────────
+const getPrefersReducedMotion = () =>
+  typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
 // ─── Main Component ────────────────────────────────────────────────────────────
 const HowItWorksVisual: React.FC<HowItWorksVisualProps> = ({
   onStepChange,
@@ -103,6 +99,7 @@ const HowItWorksVisual: React.FC<HowItWorksVisualProps> = ({
   restartKey,
   isVisible = true,
 }) => {
+  const { t } = useTranslation();
   const [activeStep, setActiveStep]         = useState(0);
   const [activeSpace, setActiveSpace]       = useState('Workspace');
   const [spaces, setSpaces]                 = useState(['Workspace']);
@@ -169,8 +166,21 @@ const HowItWorksVisual: React.FC<HowItWorksVisualProps> = ({
 
   // ─── Run animation step (async, with generation check) ─────────────────────
   const runAnimationStep = useCallback(async (step: number, gen: number) => {
-    // Guard: Has this run been superseded?
-    if (gen !== generationRef.current || !mountedRef.current) return;
+    // DRY guard: check if this generation has been superseded
+    const cancelled = () => gen !== generationRef.current || !mountedRef.current;
+    if (cancelled()) return;
+
+    // Skip animations entirely for users who prefer reduced motion
+    if (getPrefersReducedMotion()) {
+      resetState();
+      setActiveStep(step);
+      onStepChange?.(step);
+      // Show final state of each step immediately
+      if (step === 1 || step === 2 || step === 3 || step === 4) {
+        setVisibleThoughts(CANVAS_THOUGHTS.map(t => t.id));
+      }
+      return;
+    }
 
     // CRITICAL: Reset state at start of EACH step (not just at useEffect)
     // This ensures clean state when timer auto-advances or user clicks
@@ -178,7 +188,7 @@ const HowItWorksVisual: React.FC<HowItWorksVisualProps> = ({
     
     // Brief delay to let React process the reset
     await sleep(20);
-    if (gen !== generationRef.current || !mountedRef.current) return;
+    if (cancelled()) return;
     
     setActiveStep(step);
     onStepChange?.(step);
@@ -187,50 +197,49 @@ const HowItWorksVisual: React.FC<HowItWorksVisualProps> = ({
     if (step === 0) {
       // Start with 8 initial thoughts in "Workspace"
       setInitialVisibleThoughts(INITIAL_THOUGHTS.map(t => t.id));
-      setVisibleThoughts([]);
       
       await sleep(600);
-      if (gen !== generationRef.current || !mountedRef.current) return;
+      if (cancelled()) return;
       setShowSwitcher(true);
 
       await sleep(800);
-      if (gen !== generationRef.current || !mountedRef.current) return;
+      if (cancelled()) return;
       setShowDropdown(true);
 
       await sleep(800);
-      if (gen !== generationRef.current || !mountedRef.current) return;
+      if (cancelled()) return;
       setSpaces(['Workspace', 'Research']);
 
       await sleep(400);
-      if (gen !== generationRef.current || !mountedRef.current) return;
+      if (cancelled()) return;
       setActiveSpace('Research');
 
       // CRITICAL: Switching to new space clears the thoughts (empty workspace)
       await sleep(300);
-      if (gen !== generationRef.current || !mountedRef.current) return;
+      if (cancelled()) return;
       setInitialVisibleThoughts([]);
 
       await sleep(300);
-      if (gen !== generationRef.current || !mountedRef.current) return;
+      if (cancelled()) return;
       setShowDropdown(false);
     }
 
     // ── Step 1: Add your thoughts ────────────────────────────────────────────
     if (step === 1) {
       await sleep(400);
-      if (gen !== generationRef.current || !mountedRef.current) return;
+      if (cancelled()) return;
       setPlusVisible(true);
       setPlusPulse(true);
 
       await sleep(600);
       for (let i = 0; i < CANVAS_THOUGHTS.length; i++) {
-        if (gen !== generationRef.current || !mountedRef.current) return;
+        if (cancelled()) return;
         setVisibleThoughts(prev => [...prev, CANVAS_THOUGHTS[i].id]);
         await sleep(700);
       }
 
       await sleep(400);
-      if (gen !== generationRef.current || !mountedRef.current) return;
+      if (cancelled()) return;
       setPlusPulse(false);
       setPlusVisible(false);
     }
@@ -240,33 +249,33 @@ const HowItWorksVisual: React.FC<HowItWorksVisualProps> = ({
       setVisibleThoughts(CANVAS_THOUGHTS.map(t => t.id));
       
       await sleep(200);
-      if (gen !== generationRef.current || !mountedRef.current) return;
+      if (cancelled()) return;
       setShowViewSwitcher(true);
 
       // Spatial
       setCurrentView('spatial');
       await sleep(2200);
-      if (gen !== generationRef.current || !mountedRef.current) return;
+      if (cancelled()) return;
 
       // Directory
       setCurrentView('directory');
       setShowDirSidebar(true);
       await sleep(2300);
-      if (gen !== generationRef.current || !mountedRef.current) return;
+      if (cancelled()) return;
 
       // Kanban
       setCurrentView('kanban');
       setShowDirSidebar(false);
       setShowKanbanLabels(true);
       await sleep(2300);
-      if (gen !== generationRef.current || !mountedRef.current) return;
+      if (cancelled()) return;
 
       // Calendar
       setCurrentView('calendar');
       setShowKanbanLabels(false);
       setShowCalGrid(true);
       await sleep(2200);
-      if (gen !== generationRef.current || !mountedRef.current) return;
+      if (cancelled()) return;
 
       setShowViewSwitcher(false);
     }
@@ -276,58 +285,57 @@ const HowItWorksVisual: React.FC<HowItWorksVisualProps> = ({
       setVisibleThoughts(CANVAS_THOUGHTS.map(t => t.id));
       
       await sleep(500);
-      if (gen !== generationRef.current || !mountedRef.current) return;
+      if (cancelled()) return;
       setShowOracle(true);
 
       await sleep(600);
-      if (gen !== generationRef.current || !mountedRef.current) return;
+      if (cancelled()) return;
       setShowCursor(true);
       setShowUserMsg(true);
 
       // Typing user message
       const userMsg = 'Organize my thoughts and generate a summary and actionable tasks';
       for (let i = 0; i <= userMsg.length; i++) {
-        if (gen !== generationRef.current || !mountedRef.current) return;
+        if (cancelled()) return;
         setUserText(userMsg.slice(0, i));
         await sleep(40);
       }
 
       await sleep(600);
-      if (gen !== generationRef.current || !mountedRef.current) return;
+      if (cancelled()) return;
       setShowCursor(false);
-      // Keep user message visible while AI processes
 
       // Simulate AI thinking/processing (user msg stays on screen)
       await sleep(800);
-      if (gen !== generationRef.current || !mountedRef.current) return;
+      if (cancelled()) return;
       setShowLinks(true);
 
       await sleep(1200);
-      if (gen !== generationRef.current || !mountedRef.current) return;
+      if (cancelled()) return;
       setShowSpawned(true);
 
       await sleep(600);
-      if (gen !== generationRef.current || !mountedRef.current) return;
+      if (cancelled()) return;
       setShowSpawnedLinks(true);
 
       await sleep(400);
-      if (gen !== generationRef.current || !mountedRef.current) return;
+      if (cancelled()) return;
       setShowClustering(true);
 
       // Show Oracle response (both messages visible now)
       await sleep(600);
-      if (gen !== generationRef.current || !mountedRef.current) return;
+      if (cancelled()) return;
       setShowOracleResponse(true);
 
       const responseText = "I've organized your research materials and created a summary with actionable tasks. You now have a clear overview and next steps.";
       for (let i = 0; i <= responseText.length; i++) {
-        if (gen !== generationRef.current || !mountedRef.current) return;
+        if (cancelled()) return;
         setOracleText(responseText.slice(0, i));
         await sleep(30);
       }
 
       await sleep(2000);
-      if (gen !== generationRef.current || !mountedRef.current) return;
+      if (cancelled()) return;
       setShowUserMsg(false);
       setShowOracleResponse(false);
       setShowLinks(false);
@@ -338,38 +346,31 @@ const HowItWorksVisual: React.FC<HowItWorksVisualProps> = ({
 
     // ── Step 4: Works everywhere ─────────────────────────────────────────────────
     if (step === 4) {
-      // Start fresh - show some thoughts on canvas
       setVisibleThoughts(CANVAS_THOUGHTS.map(t => t.id));
       
       await sleep(500);
-      if (gen !== generationRef.current || !mountedRef.current) return;
+      if (cancelled()) return;
       setShowSyncPanel(true);
 
-      await sleep(800);
-      if (gen !== generationRef.current || !mountedRef.current) return;
-      // Start offline
-      setSyncStatus('offline');
-
-      await sleep(1000);
-      if (gen !== generationRef.current || !mountedRef.current) return;
+      await sleep(1800);
+      if (cancelled()) return;
       // Switch to syncing with animation
       setSyncStatus('syncing');
 
       // Animated sync progress
       await sleep(1500);
-      if (gen !== generationRef.current || !mountedRef.current) return;
+      if (cancelled()) return;
       setShowDevices(true);
 
       await sleep(1000);
-      if (gen !== generationRef.current || !mountedRef.current) return;
+      if (cancelled()) return;
       // Complete sync
       setSyncStatus('synced');
 
       await sleep(2000);
-      if (gen !== generationRef.current || !mountedRef.current) return;
+      if (cancelled()) return;
       setShowSyncPanel(false);
       setShowDevices(false);
-      setSyncStatus('offline');
     }
   }, [onStepChange, resetState]);
 
@@ -422,9 +423,6 @@ const HowItWorksVisual: React.FC<HowItWorksVisualProps> = ({
     };
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [restartKey, isVisible]);
-
-  // ─── Computed centroid (for SVG lines) ─────────────────────────────────────────
-  const centroid = getCentroid();
 
   return (
     <div className="relative w-full h-full flex items-center justify-center overflow-hidden">
@@ -664,93 +662,100 @@ const HowItWorksVisual: React.FC<HowItWorksVisualProps> = ({
         )}
       </AnimatePresence>
 
-      {/* ── STEP 5: Works Everywhere (Sync) ── */}
+      {/* ── STEP 5: Works Everywhere (Sync) — Compact top-right pill like AccountMenu ── */}
       <AnimatePresence>
         {showSyncPanel && (
           <motion.div
-            initial={{ opacity: 0, x: -36 }}
-            animate={{ opacity: 1, x: 0 }}
-            exit={{ opacity: 0, x: -36 }}
-            transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
-            className="absolute left-4 top-1/2 -translate-y-1/2 z-30 w-[180px]
-              glass backdrop-blur-xl rounded-2xl border border-[var(--glass-border)] shadow-2xl overflow-hidden"
+            initial={{ opacity: 0, y: -12 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -12 }}
+            transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
+            className="absolute top-4 right-4 z-30"
           >
-            <div className="flex items-center gap-2 px-4 py-2.5 border-b border-[var(--glass-border)]">
-              <Cloud className="w-4 h-4" style={{ color: 'var(--accent)' }} />
-              <span className="text-[9px] font-black tracking-[0.2em] uppercase" style={{ color: 'var(--accent)' }}>
-                Sync
-              </span>
-            </div>
-            <div className="px-4 py-4 space-y-3">
-              {/* Status indicator */}
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  {syncStatus === 'offline' && <WifiOff className="w-4 h-4 text-[var(--text-muted)]" />}
-                  {syncStatus === 'syncing' && <Cloud className="w-4 h-4 text-amber-500" />}
-                  {syncStatus === 'synced' && <Wifi className="w-4 h-4 text-emerald-500" />}
-                  <span className="text-[10px] font-medium text-[var(--text-secondary)]">
-                    {syncStatus === 'offline' && 'Offline'}
-                    {syncStatus === 'syncing' && 'Syncing...'}
-                    {syncStatus === 'synced' && 'Synced'}
-                  </span>
+            {/* Account-style pill */}
+            <div className="glass backdrop-blur-xl rounded-2xl border border-[var(--glass-border)] shadow-lg flex items-center gap-2.5 px-3 h-[40px]">
+              {/* Avatar placeholder with status dot */}
+              <div className="relative">
+                <div className="w-7 h-7 rounded-lg bg-[var(--glass-bg)] border border-[var(--glass-border)] flex items-center justify-center">
+                  <Cloud className="w-3.5 h-3.5 text-[var(--text-muted)]" />
                 </div>
-                {syncStatus === 'syncing' && (
-                  <motion.div
-                    animate={{ rotate: 360 }}
-                    transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
-                  >
-                    <Cloud className="w-4 h-4 text-amber-500" />
-                  </motion.div>
-                )}
+                <div className={`absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full border-2 border-[var(--bg-page)] transition-colors duration-300 ${
+                  syncStatus === 'offline' ? 'bg-slate-500' :
+                  syncStatus === 'syncing' ? 'bg-blue-500 animate-pulse' : 'bg-emerald-500'
+                }`} />
               </div>
 
-              {/* Progress bar */}
-              {syncStatus === 'syncing' && (
-                <div className="h-1.5 rounded-full bg-[var(--glass-border)] overflow-hidden">
-                  <motion.div
-                    className="h-full rounded-full"
-                    style={{ background: 'var(--accent)' }}
-                    initial={{ width: '0%' }}
-                    animate={{ width: '100%' }}
-                    transition={{ duration: 1.5, ease: 'easeInOut' }}
-                  />
-                </div>
-              )}
-
-              {/* Devices */}
-              <AnimatePresence>
-                {showDevices && (
-                  <motion.div
-                    initial={{ opacity: 0, y: 4 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: 4 }}
-                    className="pt-2 border-t border-[var(--glass-border)]"
-                  >
-                    <p className="text-[8px] font-semibold text-[var(--text-muted)] uppercase tracking-wider mb-2">
-                      Available on
-                    </p>
-                    <div className="flex items-center gap-2">
-                      {[
-                        { icon: '💻', label: 'Mac' },
-                        { icon: '📱', label: 'iPhone' },
-                        { icon: '📱', label: 'iPad' }
-                      ].map((device, i) => (
-                        <motion.div
-                          key={device.label}
-                          initial={{ opacity: 0, scale: 0.8 }}
-                          animate={{ opacity: 1, scale: 1 }}
-                          transition={{ delay: i * 0.1 }}
-                          className="w-8 h-8 rounded-lg bg-[var(--bg-page)] border border-[var(--glass-border)] flex items-center justify-center text-[14px]"
-                          title={device.label}
-                        >
-                          {device.icon}
-                        </motion.div>
-                      ))}
-                    </div>
-                  </motion.div>
-                )}
+              {/* Status text */}
+              <AnimatePresence mode="wait">
+                <motion.span
+                  key={syncStatus}
+                  initial={{ opacity: 0, y: 4 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -4 }}
+                  transition={{ duration: 0.2 }}
+                  className="text-[11px] font-semibold tracking-wider text-[var(--text-primary)]"
+                >
+                  {syncStatus === 'offline' && 'Offline'}
+                  {syncStatus === 'syncing' && 'Syncing'}
+                  {syncStatus === 'synced' && 'Synced'}
+                </motion.span>
               </AnimatePresence>
+
+              {/* Sync spinner / check */}
+              {syncStatus === 'syncing' && (
+                <motion.div
+                  animate={{ rotate: 360 }}
+                  transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
+                >
+                  <RefreshCw className="w-3 h-3 text-blue-400" />
+                </motion.div>
+              )}
+              {syncStatus === 'synced' && (
+                <motion.div
+                  initial={{ scale: 0 }}
+                  animate={{ scale: 1 }}
+                  transition={{ type: 'spring', damping: 15, stiffness: 200 }}
+                >
+                  <Check className="w-3.5 h-3.5 text-emerald-500" />
+                </motion.div>
+              )}
+              {syncStatus === 'offline' && (
+                <WifiOff className="w-3 h-3 text-slate-500" />
+              )}
             </div>
+
+            {/* Devices row — appears below pill when synced */}
+            <AnimatePresence>
+              {showDevices && (
+                <motion.div
+                  initial={{ opacity: 0, y: -4, scale: 0.95 }}
+                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                  exit={{ opacity: 0, y: -4, scale: 0.95 }}
+                  transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
+                  className="mt-2 glass backdrop-blur-xl rounded-2xl border border-[var(--glass-border)] shadow-lg px-3 py-2.5 flex items-center gap-2"
+                >
+                  {[
+                    { Icon: Monitor, label: 'Desktop' },
+                    { Icon: Smartphone, label: 'Phone' },
+                    { Icon: Tablet, label: 'Tablet' },
+                  ].map((device, i) => (
+                    <motion.div
+                      key={device.label}
+                      initial={{ opacity: 0, scale: 0.5 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      transition={{ delay: i * 0.08, type: 'spring', damping: 15 }}
+                      className="w-7 h-7 rounded-lg bg-[var(--bg-page)] border border-[var(--glass-border)] flex items-center justify-center"
+                      title={device.label}
+                    >
+                      <device.Icon className="w-3.5 h-3.5 text-[var(--text-muted)]" />
+                    </motion.div>
+                  ))}
+                  <span className="text-[9px] font-semibold tracking-wider text-[var(--text-muted)] uppercase ml-1">
+                    All devices
+                  </span>
+                </motion.div>
+              )}
+            </AnimatePresence>
           </motion.div>
         )}
       </AnimatePresence>
@@ -762,16 +767,17 @@ const HowItWorksVisual: React.FC<HowItWorksVisualProps> = ({
         <AnimatePresence>
           {showLinks && (
             <svg
-              className="absolute inset-0 w-full h-full overflow-visible pointer-events-none z-10"
+              className="absolute pointer-events-none z-10"
+              style={{ left: '50%', top: '50%', width: 0, height: 0, overflow: 'visible' }}
             >
               {/* Glow layer */}
               {CANVAS_THOUGHTS.map((t, i) => (
                 <motion.line
                   key={`link-glow-${i}`}
-                  x1={`calc(50% + ${t.sx}px)`}
-                  y1={`calc(50% + ${t.sy}px)`}
-                  x2={`calc(50% + ${centroid.x}px)`}
-                  y2={`calc(50% + ${centroid.y}px)`}
+                  x1={t.sx}
+                  y1={t.sy}
+                  x2={CENTROID.x}
+                  y2={CENTROID.y}
                   stroke="var(--accent-secondary)"
                   strokeWidth="4"
                   strokeLinecap="round"
@@ -785,10 +791,10 @@ const HowItWorksVisual: React.FC<HowItWorksVisualProps> = ({
               {CANVAS_THOUGHTS.map((t, i) => (
                 <motion.line
                   key={`link-${i}`}
-                  x1={`calc(50% + ${t.sx}px)`}
-                  y1={`calc(50% + ${t.sy}px)`}
-                  x2={`calc(50% + ${centroid.x}px)`}
-                  y2={`calc(50% + ${centroid.y}px)`}
+                  x1={t.sx}
+                  y1={t.sy}
+                  x2={CENTROID.x}
+                  y2={CENTROID.y}
                   stroke="var(--accent-secondary)"
                   strokeWidth="1.0"
                   strokeLinecap="round"
@@ -805,16 +811,17 @@ const HowItWorksVisual: React.FC<HowItWorksVisualProps> = ({
         <AnimatePresence>
           {showSpawnedLinks && (
             <svg
-              className="absolute inset-0 w-full h-full overflow-visible pointer-events-none z-10"
+              className="absolute pointer-events-none z-10"
+              style={{ left: '50%', top: '50%', width: 0, height: 0, overflow: 'visible' }}
             >
               {/* Glow layer */}
               {SPAWNED_THOUGHTS.map((t, i) => (
                 <motion.line
                   key={`link-spawned-glow-${i}`}
-                  x1={`calc(50% + ${t.sx}px)`}
-                  y1={`calc(50% + ${t.sy}px)`}
-                  x2={`calc(50% + ${centroid.x}px)`}
-                  y2={`calc(50% + ${centroid.y}px)`}
+                  x1={t.sx}
+                  y1={t.sy}
+                  x2={CENTROID.x}
+                  y2={CENTROID.y}
                   stroke="var(--accent)"
                   strokeWidth="4"
                   strokeLinecap="round"
@@ -828,10 +835,10 @@ const HowItWorksVisual: React.FC<HowItWorksVisualProps> = ({
               {SPAWNED_THOUGHTS.map((t, i) => (
                 <motion.line
                   key={`link-spawned-${i}`}
-                  x1={`calc(50% + ${t.sx}px)`}
-                  y1={`calc(50% + ${t.sy}px)`}
-                  x2={`calc(50% + ${centroid.x}px)`}
-                  y2={`calc(50% + ${centroid.y}px)`}
+                  x1={t.sx}
+                  y1={t.sy}
+                  x2={CENTROID.x}
+                  y2={CENTROID.y}
                   stroke="var(--accent)"
                   strokeWidth="1.0"
                   strokeLinecap="round"
@@ -1013,15 +1020,15 @@ const HowItWorksVisual: React.FC<HowItWorksVisualProps> = ({
 
         {/* CANVAS_THOUGHTS (steps 1-4) */}
         {CANVAS_THOUGHTS.map((thought, i) => {
-          const isVisible = visibleThoughts.includes(thought.id);
+          const isThoughtVisible = visibleThoughts.includes(thought.id);
           // Hide thoughts in directory view - they show in the sidebar instead
-          const isHiddenInDirectory = currentView === 'directory' && isVisible;
+          const isHiddenInDirectory = currentView === 'directory' && isThoughtVisible;
           const pos = getThoughtPos(i, currentView, showClustering);
           const scale = currentView === 'calendar' ? 0.75 : (showClustering ? 1.0 : 0.9);
 
           return (
             <AnimatePresence key={thought.id}>
-              {isVisible && !isHiddenInDirectory && (
+              {isThoughtVisible && !isHiddenInDirectory && (
                 <motion.div
                   initial={{ opacity: 0, scale: 0.3, x: 0, y: 0, rotate: 0 }}
                   animate={{
@@ -1045,7 +1052,7 @@ const HowItWorksVisual: React.FC<HowItWorksVisualProps> = ({
                     <DemoThought
                       title={thought.title}
                       type={thought.type}
-                      color={thought.color}
+                      color={syncStatus === 'synced' ? '#10b981' : thought.color}
                       className="shadow-2xl"
                     />
                   </div>
@@ -1057,13 +1064,13 @@ const HowItWorksVisual: React.FC<HowItWorksVisualProps> = ({
 
         {/* INITIAL_THOUGHTS (Step 0 - only in "Workspace") */}
         {INITIAL_THOUGHTS.map((thought, i) => {
-          const isVisible = initialVisibleThoughts.includes(thought.id);
+          const isThoughtVisible = initialVisibleThoughts.includes(thought.id);
           // Hide in directory view
-          const isHiddenInDirectory = currentView === 'directory' && isVisible;
+          const isHiddenInDirectory = currentView === 'directory' && isThoughtVisible;
           
           return (
             <AnimatePresence key={thought.id}>
-              {isVisible && !isHiddenInDirectory && (
+              {isThoughtVisible && !isHiddenInDirectory && (
                 <motion.div
                   initial={{ opacity: 0, scale: 0.3 }}
                   animate={{ opacity: 1, scale: 0.9, x: thought.sx, y: thought.sy, rotate: i * 3 - 10 }}
@@ -1115,7 +1122,7 @@ const HowItWorksVisual: React.FC<HowItWorksVisualProps> = ({
                     <DemoThought
                       title={thought.title}
                       type={thought.type}
-                      color="var(--accent)"
+                      color={syncStatus === 'synced' ? '#10b981' : 'var(--accent)'}
                       className="shadow-2xl"
                     />
                   </div>
@@ -1137,10 +1144,10 @@ const HowItWorksVisual: React.FC<HowItWorksVisualProps> = ({
             transition={{ duration: 0.3 }}
           >
             <h4 className="text-[14px] font-semibold text-[var(--text-primary)]">
-              {STEP_INFO[activeStep].title}
+              {t(`homepage.how_it_works.steps.${activeStep}.title`)}
             </h4>
             <p className="text-[11px] text-[var(--text-muted)] mt-1">
-              {STEP_INFO[activeStep].sub}
+              {t(`homepage.how_it_works.steps.${activeStep}.subtitle`)}
             </p>
           </motion.div>
         </AnimatePresence>
@@ -1149,4 +1156,4 @@ const HowItWorksVisual: React.FC<HowItWorksVisualProps> = ({
   );
 };
 
-export default HowItWorksVisual;
+export default React.memo(HowItWorksVisual);

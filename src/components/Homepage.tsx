@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
-import { ArrowRight, Cpu, Rocket, Send, Loader2, CheckCircle, ChevronDown, MessageCircle, X, Play, Quote, Plus, FileText, Layout } from 'lucide-react';
+import { ArrowRight, Cpu, Rocket, Send, Loader2, CheckCircle, ChevronDown, MessageCircle, X, Play, Quote, Plus, FileText, Layout, Smartphone, Calendar, Cloud, Zap } from 'lucide-react';
 
 import { YOUTUBE_VIDEO_ID, DISCORD_INVITE_URL } from '../constants';
 
@@ -352,7 +352,8 @@ const Homepage: React.FC = () => {
                   { step: 0, title: t('homepage.how_it_works.steps.0.title'), desc: t('homepage.how_it_works.steps.0.description'), icon: Plus },
                   { step: 1, title: t('homepage.how_it_works.steps.1.title'), desc: t('homepage.how_it_works.steps.1.description'), icon: FileText },
                   { step: 2, title: t('homepage.how_it_works.steps.2.title'), desc: t('homepage.how_it_works.steps.2.description'), icon: Layout },
-                  { step: 3, title: t('homepage.how_it_works.steps.3.title'), desc: t('homepage.how_it_works.steps.3.description'), icon: Cpu }
+                  { step: 3, title: t('homepage.how_it_works.steps.3.title'), desc: t('homepage.how_it_works.steps.3.description'), icon: Cpu },
+                  { step: 4, title: t('homepage.how_it_works.steps.4.title'), desc: t('homepage.how_it_works.steps.4.description'), icon: Cloud }
                 ].map((item) => (
                   <motion.div
                     key={item.step}
@@ -687,6 +688,44 @@ const Homepage: React.FC = () => {
             </motion.div>
           </div>
           <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-2xl h-64 bg-[var(--accent)]/10 blur-[120px] rounded-full -z-10 pointer-events-none" />
+        </section>
+
+        {/* COMING SOON SECTION */}
+        <section className="py-24 px-6 relative z-10 bg-[var(--accent)]/[0.02]">
+          <div className="max-w-5xl mx-auto">
+            <div className="text-center mb-12">
+              <h2 className="text-3xl md:text-5xl font-bold tracking-tight mb-4">
+                {t('homepage.coming_soon.title_start')}<span className="text-[var(--accent)]">{t('homepage.coming_soon.title_accent')}</span>
+              </h2>
+              <p className="text-[var(--text-muted)] text-lg max-w-2xl mx-auto">
+                {t('homepage.coming_soon.subtitle')}
+              </p>
+            </div>
+
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+              {[
+                { icon: Smartphone, title: t('homepage.coming_soon.mobile.title'), desc: t('homepage.coming_soon.mobile.desc') },
+                { icon: Calendar, title: t('homepage.coming_soon.calendar.title'), desc: t('homepage.coming_soon.calendar.desc') },
+                { icon: Cloud, title: t('homepage.coming_soon.storage.title'), desc: t('homepage.coming_soon.storage.desc') },
+                { icon: Zap, title: t('homepage.coming_soon.api.title'), desc: t('homepage.coming_soon.api.desc') }
+              ].map((item, i) => (
+                <motion.div
+                  key={i}
+                  initial={{ opacity: 0, y: 20 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true }}
+                  transition={{ delay: i * 0.1 }}
+                  className="glass p-6 rounded-2xl border border-[var(--glass-border)] flex flex-col items-center text-center hover:-translate-y-1 transition-transform duration-300"
+                >
+                  <div className="w-14 h-14 rounded-2xl bg-[var(--accent)]/10 flex items-center justify-center mb-4 border border-[var(--accent)]/20">
+                    <item.icon className="w-7 h-7" style={{ color: 'var(--accent)' }} />
+                  </div>
+                  <h3 className="text-base font-semibold text-[var(--text-primary)] mb-2">{item.title}</h3>
+                  <p className="text-sm text-[var(--text-muted)] leading-relaxed">{item.desc}</p>
+                </motion.div>
+              ))}
+            </div>
+          </div>
         </section>
       </main>
 

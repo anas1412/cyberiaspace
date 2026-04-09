@@ -21,23 +21,32 @@
     "how_it_works": {
       "title_start": "How it ",
       "title_accent": "works",
-      "subtitle": "Four steps to your new workspace",
+      "subtitle": "Five steps to your new workspace",
       "steps": [
         {
           "title": "1. Create your space",
-          "description": "Sign up in seconds. Your workspace is ready instantly—no setup, no configuration."
+          "description": "Sign up in seconds. Your workspace is ready instantly—no setup, no configuration.",
+          "subtitle": "Sign up in seconds"
         },
         {
           "title": "2. Add your thoughts",
-          "description": "Drop in notes, files, images, links. Arrange them freely on the canvas or let Oracle AI organize them for you."
+          "description": "Drop in notes, files, images, links. Arrange them freely on the canvas or let Oracle AI organize them for you.",
+          "subtitle": "Drop notes, files, images on the canvas"
         },
         {
           "title": "3. Switch views anytime",
-          "description": "Canvas for brainstorming, Kanban for tasks, Calendar for deadlines, Directory for organization. All on the same data."
+          "description": "Canvas for brainstorming, Kanban for tasks, Calendar for deadlines, Directory for organization. All on the same data.",
+          "subtitle": "Same data, different perspectives"
         },
         {
           "title": "4. Oracle AI organizes",
-          "description": "Ask Oracle AI to analyze your space, create tasks, summarize findings, or answer questions about your content."
+          "description": "Ask Oracle AI to analyze your space, create tasks, summarize findings, or answer questions about your content.",
+          "subtitle": "AI connects and structures your workspace"
+        },
+        {
+          "title": "5. Works everywhere",
+          "description": "Offline-first with automatic cloud sync. Your workspace follows you on any device.",
+          "subtitle": "Offline-first with automatic cloud sync"
         }
       ]
     },
@@ -154,6 +163,27 @@
       "title": "Ready?",
       "description": "The only workspace with Canvas, Directory, Kanban, Calendar, AI that acts, and file storage — all in one.",
       "cta": "Try it for Free"
+    },
+    "coming_soon": {
+      "title_start": "What's ",
+      "title_accent": "Coming",
+      "subtitle": "Exciting features on our roadmap",
+      "mobile": {
+        "title": "Mobile App",
+        "desc": "Full native iOS & Android experience"
+      },
+      "calendar": {
+        "title": "Google Calendar",
+        "desc": "Two-way sync with your calendars"
+      },
+      "storage": {
+        "title": "Cloud Storage",
+        "desc": "Google Drive & Dropbox integration"
+      },
+      "api": {
+        "title": "API & Zapier",
+        "desc": "Connect to 5000+ tools & automation"
+      }
     }
   },
   "footer": {
