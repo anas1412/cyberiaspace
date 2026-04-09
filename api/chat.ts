@@ -141,7 +141,14 @@ ${isPro ? 'PRO PLAN: You have full access to analyze images and documents.' : 'F
 `;
 };
 
-import { TAVILY_CONFIG } from '../src/constants';
+// Tavily Web Search Configuration (server-side only)
+const TAVILY_CONFIG = {
+  API_URL: 'https://api.tavily.com/search',
+  SEARCH_DEPTH: 'fast' as const,
+  MAX_RESULTS: 5,
+  TIMEOUT_MS: 8000,
+  INCLUDE_ANSWER: true,
+};
 
 const allTools: any[] = [
   {
