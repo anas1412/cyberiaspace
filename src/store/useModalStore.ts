@@ -1,19 +1,30 @@
 import { create } from 'zustand';
 
+export type DeletionMode = 'all' | 'local' | 'cloud';
+
+export interface DeletionCounts {
+  spaces: number;
+  thoughts: number;
+  stacks: number;
+  files: number;
+}
+
 export interface ModalState {
   isOpen: boolean;
   isPricingOpen: boolean;
   title: string;
   description?: string;
-  type: 'rename' | 'delete_space' | 'delete_thought' | 'delete_stack' | 'limit_space' | 'limit_thought' | 'new_space' | 'alert' | 'import_confirm' | 'reset_confirm' | 'confirm_cancel' | 'terms' | 'custom' | 'conflict_resolver' | 'quota_resolver';
+  type: 'rename' | 'delete_space' | 'delete_thought' | 'delete_stack' | 'limit_space' | 'limit_thought' | 'new_space' | 'alert' | 'import_confirm' | 'reset_confirm' | 'confirm_cancel' | 'terms' | 'custom' | 'conflict_resolver' | 'quota_resolver' | 'delete_data';
   guestSpaces?: number;
   cloudSpaces?: number;
   inputValue?: string;
   confirmText?: string;
   cancelText?: string;
   onCancel?: () => void;
-  onConfirm?: (value?: string) => void;
+  onConfirm?: (value?: string | DeletionMode) => void;
   content?: React.ReactNode;
+  deletionCounts?: DeletionCounts;
+  defaultDeletionMode?: DeletionMode;
   openModal: (params: Omit<ModalState, 'isOpen' | 'isPricingOpen' | 'openModal' | 'closeModal' | 'openPricing' | 'closePricing'>) => void;
   closeModal: () => void;
   openPricing: () => void;

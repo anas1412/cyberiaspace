@@ -218,6 +218,74 @@ const editing = syncOrchestrator.getEditingThoughts();
 
 ---
 
+## 6. Data Deletion
+
+### Unified Deletion System
+
+Use the `deleteData(mode)` function in `dataSlice.ts` for all data deletion operations.
+
+```typescript
+deleteData(mode: 'all' | 'local' | 'cloud') => Promise<void>
+```
+
+| Mode | Scope | Use Case |
+|------|-------|----------|
+| `'all'` | Local + Cloud | Complete reset |
+| `'local'` | Local only | Clear device only |
+| `'cloud'` | Cloud only | Clear backup, keep device |
+
+### Decision Tree
+
+```
+User wants to delete data?
+│
+├── Everything (local + cloud) → deleteData('all')
+│   └── Creates fresh workspace, deletes old data, wipes cloud
+│
+├── Local data only → deleteData('local')
+│   └── Deletes local IndexedDB data, optionally signs out
+│
+└── Cloud backup only → deleteData('cloud')
+    └── Deletes cloud data only, keeps local
+```
+
+### Key Features
+
+1. **User-scoped deletion**: Always filters by `userId`, never uses `db.table.clear()`
+2. **Safe UI**: Creates new workspace BEFORE deleting old data
+3. **Parallel cloud deletion**: Uses `Promise.allSettled()` for faster deletion
+4. **Sync blocked**: Prevents sync during deletion operations
+
+### Old Functions (Deprecated)
+
+```typescript
+// ❌ DEPRECATED - Don't use
+clearWorkspace()      // Use deleteData('all')
+clearLocalData()     // Use deleteData('local')
+
+// ✅ CORRECT
+deleteData('all')    // Complete reset
+deleteData('local')  // Local only
+deleteData('cloud')  // Cloud backup only
+```
+
+### IndexedDB Deletion Pattern
+
+```typescript
+// ✅ CORRECT: User-scoped deletion
+await db.spaces.where('userId').equals(currentUserId).delete();
+
+// ❌ WRONG: Clears ALL users' data
+await db.spaces.clear();
+```
+
+### Codebase References
+
+- `src/store/slices/dataSlice.ts` - `deleteData()`, `getDeletionCounts()`
+- `src/services/sync/syncOrchestrator.ts` - `deleteCloudContent()` with parallel deletion
+
+---
+
 ## Related Files
 
 - Code Quality: `.opencode/context/core/standards/code-quality.md`

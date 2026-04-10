@@ -783,15 +783,28 @@ export const syncOrchestrator = {
     if (authState.status !== 'authenticated' || !authState.user) return;
     const userId = authState.user.id;
     try {
+      // Fetch all entities in parallel
       const [spaces, thoughts, stacks] = await Promise.all([
         supabaseSync.getSpaces(userId, 'id'),
         supabaseSync.getThoughts(userId, 'id'),
         supabaseSync.getStacks(userId, 'id'),
       ]);
-      for (const s of spaces.spaces) await supabaseSync.deleteSpace(s.id, userId);
-      for (const t of thoughts.thoughts) await supabaseSync.deleteThought(t.id, userId);
-      for (const s of stacks.stacks) await supabaseSync.deleteStack(s.id, userId);
-      await supabaseStorage.deleteAllUserFiles(userId);
+      
+      // Parallelize all deletions for better performance
+      const errors: string[] = [];
+      
+      await Promise.allSettled([
+        ...spaces.spaces.map((s: { id: string }) => supabaseSync.deleteSpace(s.id, userId).catch((e: string) => errors.push(`space:${s.id}:${e}`))),
+        ...thoughts.thoughts.map((t: { id: string }) => supabaseSync.deleteThought(t.id, userId).catch((e: string) => errors.push(`thought:${t.id}:${e}`))),
+        ...stacks.stacks.map((s: { id: string }) => supabaseSync.deleteStack(s.id, userId).catch((e: string) => errors.push(`stack:${s.id}:${e}`))),
+        supabaseStorage.deleteAllUserFiles(userId).catch((e: string) => errors.push(`storage:${e}`)),
+      ]);
+      
+      if (errors.length > 0) {
+        console.warn('[Sync] Some deletions failed:', errors);
+      }
+      
+      console.log(`[Sync] Cloud deletion complete: ${spaces.spaces.length} spaces, ${thoughts.thoughts.length} thoughts, ${stacks.stacks.length} stacks`);
     } catch (err) {
       console.error('[Sync] Failed to delete cloud content:', err);
       throw err;

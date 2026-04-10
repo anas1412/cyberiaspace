@@ -7,7 +7,7 @@ import { PLAN_CONFIG, type SubscriptionPlan } from '../../constants';
 import { 
   LogOut, Cloud, CloudOff, RefreshCw, 
   Database, WifiOff, CreditCard, User, 
-  Trash2, ChevronDown, ExternalLink, Zap
+  ChevronDown, ExternalLink, Zap
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { clsx, type ClassValue } from 'clsx';
@@ -24,7 +24,7 @@ const formatStorage = (mb: number) => {
 
 export const AccountMenu: React.FC = () => {
   const [isOpen, setIsOpen] = useState(false);
-  const { user, status, signOut, syncData, deleteCloudData, storageUsageMB, calculateUsage, isOnline, accessToken } = useAuthStore();
+  const { user, status, signOut, syncData, storageUsageMB, calculateUsage, isOnline, accessToken } = useAuthStore();
   const { lastSyncTime, status: syncStatus } = useSyncStore();
   const totalThoughtCount = useStore((state) => state.totalThoughtCount);
   const { openModal } = useModalStore();
@@ -88,24 +88,6 @@ export const AccountMenu: React.FC = () => {
         confirmText: 'Got it'
       });
     }
-  };
-
-  const handleClearCloudData = () => {
-    openModal({
-      title: 'DANGER: Wipe Cloud Backup?',
-      description: 'THIS ACTION IS IRREVERSIBLE. This will permanently delete your entire space backup from the cloud, including all synced files. Only proceed if you want to start with a fresh slate on all devices.',
-      type: 'delete_thought',
-      confirmText: 'Wipe Everything',
-      onConfirm: async () => {
-        await deleteCloudData();
-        setIsOpen(false);
-        try {
-          await syncData();
-        } catch (err) {
-          console.error('[AccountMenu] Post-clear sync failed:', err);
-        }
-      }
-    });
   };
 
   if (status !== 'authenticated' || !user) {
@@ -281,13 +263,6 @@ className={cn(
 
               {/* Actions Section */}
               <div className="pt-4 border-t border-[var(--border)] space-y-2">
-                <button 
-                  onClick={handleClearCloudData}
-                  className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-red-500/10 text-[12px] font-semibold tracking-wide text-red-400 transition-colors group"
-                >
-                  <Trash2 className="w-3.5 h-3.5 group-hover:scale-110 transition-transform" />
-                  Clear Cloud Database
-                </button>
                 <button 
                   onClick={() => { signOut(); setIsOpen(false); }}
                   className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-[var(--text-primary)]/5 text-[12px] font-semibold tracking-wide text-[var(--text-primary)] transition-colors group"

@@ -88,8 +88,6 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
   const [personalitySaving, setPersonalitySaving] = useState(false);
   const { user, storageUsageMB, updateSettings, updateQuotaUsage } = useAuthStore();
   const totalThoughtCount = useStore((state) => state.totalThoughtCount);
-  const clearWorkspace = useStore((state) => state.clearWorkspace);
-  const clearLocalData = useStore((state) => state.clearLocalData);
   const { openModal } = useModalStore();
 
   const limits = (user?.plan && user.plan in PLAN_CONFIG) 
@@ -822,42 +820,42 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                 {/* Data Management */}
                 <section>
                   <p className="text-[10px] font-semibold tracking-wide text-red-500/50 mb-4 flex items-center gap-2">
-                    <RefreshCw className="w-3.5 h-3.5" /> Local Management
+                    <RefreshCw className="w-3.5 h-3.5" /> Data Management
                   </p>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    <button
-                      onClick={() => {
-                        openModal({
-                          title: 'Factory Reset App?',
-                          description: 'This will clear your local session and log you out. Your cloud data remains safe and can be restored by signing in again.',
-                          type: 'reset_confirm',
-                          confirmText: 'Reset Local',
-                          onConfirm: () => clearLocalData()
-                        });
-                      }}
-                      className="flex flex-col items-start gap-1 p-5 rounded-2xl bg-[var(--bg-page)] border border-[var(--glass-border)] hover:bg-red-500/5 hover:border-red-500/20 transition-all group"
-                    >
-                      <RefreshCw className="w-4 h-4 text-[var(--text-muted)] group-hover:text-red-400 transition-colors" />
-                      <p className="text-[10px] font-semibold tracking-wide text-[var(--text-dimmed)] group-hover:text-red-400 mt-2">Reset Session</p>
-                      <p className="text-[8px] font-medium text-[var(--text-muted)] uppercase tracking-wide leading-relaxed mt-1">Clears local cache and logs you out</p>
-                    </button>
-                    <button
-                      onClick={() => {
-                        openModal({
-                          title: 'Clear Workspace?',
-                          description: 'This will permanently delete ALL local data. This action is irreversible.',
-                          type: 'reset_confirm',
-                          confirmText: 'Wipe Local',
-                          onConfirm: () => clearWorkspace()
-                        });
-                      }}
-                      className="flex flex-col items-start gap-1 p-5 rounded-2xl bg-[var(--bg-page)] border border-[var(--glass-border)] hover:bg-red-500/5 hover:border-red-500/20 transition-all group"
-                    >
-                      <Trash2 className="w-4 h-4 text-[var(--text-muted)] group-hover:text-red-400 transition-colors" />
-                      <p className="text-[10px] font-semibold tracking-wide text-[var(--text-dimmed)] group-hover:text-red-400 mt-2">Wipe All Data</p>
-                      <p className="text-[8px] font-medium text-[var(--text-muted)] uppercase tracking-wide leading-relaxed mt-1">Permanently deletes all local thoughts</p>
-                    </button>
-                  </div>
+                  <button
+                    onClick={async () => {
+                      // Fetch deletion counts for preview
+                      const counts = await useStore.getState().getDeletionCounts();
+                      
+                      openModal({
+                        type: 'delete_data',
+                        title: 'Delete Your Data',
+                        confirmText: 'Continue',
+                        cancelText: 'Cancel',
+                        deletionCounts: counts,
+                        onConfirm: (mode) => {
+                          if (!mode) return;
+                          
+                          // Show final confirmation with danger styling
+                          openModal({
+                            type: 'alert',
+                            title: '⚠️ Confirm Deletion',
+                            description: `This will permanently delete your ${mode === 'all' ? 'local and cloud' : mode === 'local' ? 'local' : 'cloud'} data. This cannot be undone.`,
+                            confirmText: 'Delete Everything',
+                            cancelText: 'Cancel',
+                            onConfirm: () => {
+                              useStore.getState().deleteData(mode as 'all' | 'local' | 'cloud');
+                            }
+                          });
+                        }
+                      });
+                    }}
+                    className="w-full flex flex-col items-start gap-1 p-5 rounded-2xl bg-[var(--bg-page)] border border-[var(--glass-border)] hover:bg-red-500/5 hover:border-red-500/20 transition-all group"
+                  >
+                    <Trash2 className="w-4 h-4 text-[var(--text-muted)] group-hover:text-red-400 transition-colors" />
+                    <p className="text-[10px] font-semibold tracking-wide text-[var(--text-dimmed)] group-hover:text-red-400 mt-2">Delete All Data</p>
+                    <p className="text-[8px] font-medium text-[var(--text-muted)] uppercase tracking-wide leading-relaxed mt-1">Manage or remove your data</p>
+                  </button>
                 </section>
               </motion.div>
             )}

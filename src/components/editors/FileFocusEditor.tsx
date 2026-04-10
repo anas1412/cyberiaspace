@@ -816,15 +816,46 @@ const FileFocusEditor: React.FC = () => {
     }
   };
 
-  const handleDownload = () => {
-    const url = localPreviewUrl || thought?.storageUrl;
-    if (!url || !thought) return;
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = thought.text || 'asset';
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
+  const handleDownload = async () => {
+    if (!thought) return;
+    
+    // Prefer local blob, then generate fresh signed URL
+    if (localPreviewUrl) {
+      const a = document.createElement('a');
+      a.href = localPreviewUrl;
+      a.download = thought.text || 'asset';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+    } else if (thought.storagePath) {
+      try {
+        const url = await supabaseStorage.getSignedUrl(thought.storagePath);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = thought.text || 'asset';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+      } catch (e) {
+        console.error('[FileEditor] Failed to download:', e);
+      }
+    }
+  };
+
+  const handleOpenExternal = async () => {
+    if (!thought) return;
+    
+    // Prefer local blob URL, then generate fresh signed URL
+    if (localPreviewUrl) {
+      window.open(localPreviewUrl, '_blank');
+    } else if (thought.storagePath) {
+      try {
+        const url = await supabaseStorage.getSignedUrl(thought.storagePath);
+        window.open(url, '_blank');
+      } catch (e) {
+        console.error('[FileEditor] Failed to open file:', e);
+      }
+    }
   };
 
   const handleSyncToCloud = async () => {
@@ -847,7 +878,9 @@ const FileFocusEditor: React.FC = () => {
 
   if (!thought) return null;
 
-  const isSynced = !!thought.storageUrl;
+  // isSynced means file is uploaded to cloud (has storagePath)
+  // Note: We no longer store signed URLs (storageUrl) as they expire
+  const isSynced = !!thought.storagePath;
   const isSyncing = thought.syncStatus === 'syncing';
   
   // Guard the source label to avoid flashing "Cloud" while checking local
@@ -901,7 +934,7 @@ const FileFocusEditor: React.FC = () => {
       }
       footerActions={
         <div className="flex items-center gap-2">
-          {(localPreviewUrl || thought.storageUrl) && (
+          {(localPreviewUrl || thought.storagePath) && (
             <button 
               onClick={handleDownload} 
               className="p-2.5 bg-white/5 hover:bg-white/10 rounded-xl text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-all border border-[var(--glass-border)] group active:scale-95" 
@@ -910,15 +943,15 @@ const FileFocusEditor: React.FC = () => {
               <Download className="w-3.5 h-3.5 group-hover:scale-110 transition-transform" />
             </button>
           )}
-          <a 
-            href={thought.storageUrl || localPreviewUrl || undefined} 
-            target="_blank" 
-            rel="noreferrer" 
-            className="p-2.5 bg-white/5 hover:bg-white/10 rounded-xl text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-all border border-[var(--glass-border)] group active:scale-95" 
-            title="Open in New Tab"
-          >
-            <ExternalLink className="w-3.5 h-3.5 group-hover:scale-110 transition-transform" />
-          </a>
+          {(localPreviewUrl || thought.storagePath) && (
+            <button 
+              onClick={handleOpenExternal}
+              className="p-2.5 bg-white/5 hover:bg-white/10 rounded-xl text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-all border border-[var(--glass-border)] group active:scale-95" 
+              title="Open in New Tab"
+            >
+              <ExternalLink className="w-3.5 h-3.5 group-hover:scale-110 transition-transform" />
+            </button>
+          )}
         </div>
       }
     >

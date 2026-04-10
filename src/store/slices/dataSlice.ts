@@ -185,38 +185,68 @@ export const createDataSlice: StateCreator<CyberiaState, [], [], any> = (set, ge
     }
   },
 
-  clearWorkspace: async () => {
-    if (get().isReadOnly) return;
-    try {
-      const { useAuthStore: dynamicAuthStore } = await import('../useAuthStore');
-      const authStore = dynamicAuthStore.getState();
-      const isAuthenticated = authStore.status === 'authenticated';
-      const currentUserId = authStore.user?.id ?? 'guest';
-      
-      console.log('[Store] Initiating GLOBAL space clear...');
-      await syncOrchestrator.setSyncBlocked(true);
+  /**
+   * Get deletion counts for the current user (for UI preview)
+   */
+  getDeletionCounts: async (): Promise<{ spaces: number; thoughts: number; stacks: number; files: number }> => {
+    const currentUserId = useAuthStore.getState().user?.id ?? 'guest';
+    
+    const [spaces, thoughts, stacks] = await Promise.all([
+      db.spaces.where('userId').equals(currentUserId).filter(s => !s.deletedAt).count(),
+      db.thoughts.where('userId').equals(currentUserId).filter(t => !t.deletedAt).count(),
+      db.stacks.where('userId').equals(currentUserId).filter(s => !s.deletedAt).count(),
+    ]);
+    
+    // Count files from thoughts with storagePath
+    const thoughtsWithFiles = await db.thoughts
+      .where('userId').equals(currentUserId)
+      .filter(t => !t.deletedAt && !!t.storagePath)
+      .toArray();
+    
+    return {
+      spaces,
+      thoughts,
+      stacks,
+      files: thoughtsWithFiles.length,
+    };
+  },
 
+  /**
+   * Unified deletion function - handles all deletion modes with proper user scoping
+   * 
+   * @param mode - 'all' (local + cloud), 'local' (device only), 'cloud' (backup only)
+   */
+  deleteData: async (mode: 'all' | 'local' | 'cloud') => {
+    if (get().isReadOnly) return;
+    
+    const { useAuthStore: dynamicAuthStore } = await import('../useAuthStore');
+    const authStore = dynamicAuthStore.getState();
+    const isAuthenticated = authStore.status === 'authenticated';
+    const currentUserId = authStore.user?.id ?? 'guest';
+    
+    console.log(`[Store] Initiating deletion: mode=${mode}, userId=${currentUserId}`);
+    await syncOrchestrator.setSyncBlocked(true);
+    
+    try {
+      // Step 1: Create fresh workspace FIRST (before deleting old data)
       const workspaceId = ulid();
       const now = Date.now();
       const randomSpaceName = SPACE_NAMES[Math.floor(Math.random() * SPACE_NAMES.length)];
-      const newSpace = { id: workspaceId, userId: currentUserId, name: randomSpaceName, mode: 'spatial' as const, physics: localStorage.getItem('cyberia-physics-enabled') !== 'false', order: 0, updatedAt: now, syncStatus: 'local' as const };
+      const newSpace = { 
+        id: workspaceId, 
+        userId: currentUserId, 
+        name: randomSpaceName, 
+        mode: 'spatial' as const, 
+        physics: localStorage.getItem('cyberia-physics-enabled') !== 'false', 
+        order: 0, 
+        updatedAt: now, 
+        syncStatus: 'local' as const 
+      };
       
-      await db.transaction('rw', [db.spaces, db.thoughts, db.stacks, db.blobs], async () => {
-        await Promise.all([
-          db.spaces.clear(),
-          db.thoughts.clear(),
-          db.stacks.clear(),
-          db.blobs.clear()
-        ]);
-        await db.spaces.add(newSpace);
-        localStorage.setItem('cyberia-active-space-id', workspaceId);
-      });
-
-      if (isAuthenticated) {
-        console.log('[Store] Cleaning cloud backup to match local slate...');
-        await authStore.deleteCloudData(); 
-      }
-
+      // Step 2: Add the new space and update Zustand BEFORE deleting old data
+      await db.spaces.add(newSpace);
+      localStorage.setItem('cyberia-active-space-id', workspaceId);
+      
       set({ 
         spaces: [newSpace], 
         stacks: [], 
@@ -226,12 +256,38 @@ export const createDataSlice: StateCreator<CyberiaState, [], [], any> = (set, ge
       });
       get().pushHistory();
       
-      console.log('[Store] Global clear complete.');
+      // Step 3: Delete old data (user-scoped to avoid cross-user deletion)
+      if (mode === 'all' || mode === 'local') {
+        console.log('[Store] Deleting local data...');
+        await db.transaction('rw', [db.spaces, db.thoughts, db.stacks, db.blobs], async () => {
+          // FIXED: Filter by userId instead of clear() to prevent cross-user deletion
+          await db.spaces.where('userId').equals(currentUserId).filter(s => s.id !== workspaceId).delete();
+          await db.thoughts.where('userId').equals(currentUserId).delete();
+          await db.stacks.where('userId').equals(currentUserId).delete();
+          await db.blobs.where('userId').equals(currentUserId).delete();
+        });
+        
+        // Clear user-specific sync metadata
+        localStorage.removeItem('cyberia-last-sync');
+      }
+      
+      // Step 4: Delete cloud data if authenticated
+      if ((mode === 'all' || mode === 'cloud') && isAuthenticated) {
+        console.log('[Store] Deleting cloud data...');
+        await authStore.deleteCloudData();
+      }
+      
+      console.log(`[Store] Deletion complete: mode=${mode}`);
     } catch (err) { 
-      console.error('Global clear failed:', err); 
+      console.error('Deletion failed:', err); 
     } finally {
       await syncOrchestrator.setSyncBlocked(false);
     }
+  },
+
+  clearWorkspace: async () => {
+    // Redirect to unified deleteData function
+    await get().deleteData('all');
   },
 
   importFullState: async (data: any, merge: boolean = false) => {
@@ -283,29 +339,14 @@ export const createDataSlice: StateCreator<CyberiaState, [], [], any> = (set, ge
   },
 
   clearLocalData: async () => {
-    try {
-      console.log('[Store] Initiating LOCAL Factory Reset...');
-      const { useAuthStore: dynamicAuthStore } = await import('../useAuthStore');
-      const authStore = dynamicAuthStore.getState();
-
-      await db.transaction('rw', [db.spaces, db.thoughts, db.stacks, db.blobs], async () => {
-        await Promise.all([
-          db.spaces.clear(),
-          db.thoughts.clear(),
-          db.stacks.clear(),
-          db.blobs.clear()
-        ]);
-      });
-      
-      if (authStore.status === 'authenticated') {
-        await authStore.signOut();
-      } else {
-        localStorage.clear();
-      }
-      
-      await get().createInitialWorkspace();
-      console.log('[Store] Factory reset complete.');
-    } catch (err) { console.error('Local reset failed:', err); }
+    // Redirect to unified deleteData function (local only, then sign out)
+    await get().deleteData('local');
+    // Sign out after deletion
+    const { useAuthStore: dynamicAuthStore } = await import('../useAuthStore');
+    const authStore = dynamicAuthStore.getState();
+    if (authStore.status === 'authenticated') {
+      await authStore.signOut();
+    }
   },
 
   exportData: async () => {

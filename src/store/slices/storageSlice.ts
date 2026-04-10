@@ -140,8 +140,12 @@ export const createStorageSlice: StateCreator<AuthState, [], [], any> = (set, ge
         thoughtId
       );
 
+      // IMPORTANT: We only store storagePath, NOT the signed URL.
+      // Signed URLs expire after 1 hour. We generate fresh URLs on-demand
+      // using storagePath via supabaseStorage.getSignedUrl().
+      // This prevents the "expired JWT" error when opening files later.
       const updates: any = {
-        storageUrl: result.url,
+        storageUrl: null,  // Don't store signed URL - it expires!
         storagePath: result.path,
         // CRITICAL: We don't mark as 'synced' here. 
         // We leave it as 'local' (or 'syncing') and bump updatedAt.
@@ -155,7 +159,7 @@ export const createStorageSlice: StateCreator<AuthState, [], [], any> = (set, ge
         updates.data = {
           ...currentData,
           type: 'file',
-          url: result.url,
+          url: result.url,  // Still store in data.payload for thumbnail/display
           meta: {
             ...(currentData.meta || {}),
             file: {

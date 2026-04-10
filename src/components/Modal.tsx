@@ -1,15 +1,15 @@
 import React, { useEffect, useState } from 'react';
-import { useModalStore } from '../store/useModalStore';
+import { useModalStore, type DeletionMode, type DeletionCounts } from '../store/useModalStore';
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
-import { Cloud, HardDrive, X } from 'lucide-react';
+import { Cloud, HardDrive, X, Trash2 } from 'lucide-react';
 
 function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
 
 const Modal: React.FC = () => {
-  const { isOpen, title, description, type, inputValue: initialValue, confirmText, onConfirm, content, cancelText, onCancel, closeModal } = useModalStore();
+  const { isOpen, title, description, type, inputValue: initialValue, confirmText, onConfirm, content, cancelText, onCancel, closeModal, deletionCounts, defaultDeletionMode } = useModalStore();
   const [inputValue, setInputValue] = useState('');
 
   const handleConfirm = React.useCallback((value?: string) => {
@@ -41,9 +41,9 @@ const Modal: React.FC = () => {
   if (!isOpen) return null;
 
   const showInput = ['rename', 'new_space'].includes(type);
-  const showCancel = !['limit_space', 'limit_thought', 'terms', 'conflict_resolver'].includes(type);
-  const showStandardButtons = !['terms', 'conflict_resolver', 'custom'].includes(type);
-  const showXButton = !['terms', 'custom'].includes(type);
+  const showCancel = !['limit_space', 'limit_thought', 'terms', 'conflict_resolver', 'delete_data'].includes(type);
+  const showStandardButtons = !['terms', 'conflict_resolver', 'custom', 'delete_data'].includes(type);
+  const showXButton = !['terms', 'custom', 'delete_data'].includes(type);
 
   return (
     <div id="modal-overlay" className="fixed inset-0 bg-[var(--bg-page)]/90 backdrop-blur-[10px] z-[11000] flex items-center justify-center animate-in fade-in duration-200 p-4">
@@ -129,6 +129,15 @@ const Modal: React.FC = () => {
               Cloud sync will update with your choice
             </p>
           </div>
+        ) : type === 'delete_data' ? (
+          <DeleteDataModal 
+            deletionCounts={deletionCounts}
+            defaultMode={defaultDeletionMode || 'all'}
+            onConfirm={onConfirm}
+            onCancel={handleCancel}
+            confirmText={confirmText}
+            cancelText={cancelText}
+          />
         ) : type === 'custom' ? (
           <div className="my-4">
             {content}
@@ -182,6 +191,186 @@ const Modal: React.FC = () => {
             Acknowledge & Enter
           </button>
         )}
+      </div>
+    </div>
+  );
+};
+
+interface DeleteDataModalProps {
+  deletionCounts?: DeletionCounts;
+  defaultMode?: DeletionMode;
+  onConfirm?: (value?: DeletionMode) => void;
+  onCancel?: () => void;
+  confirmText?: string;
+  cancelText?: string;
+}
+
+const DeleteDataModal: React.FC<DeleteDataModalProps> = ({
+  deletionCounts,
+  defaultMode = 'all',
+  onConfirm,
+  onCancel,
+  confirmText,
+  cancelText,
+}) => {
+  const [selectedMode, setSelectedMode] = useState<DeletionMode>(defaultMode);
+
+  const handleContinue = () => {
+    onConfirm?.(selectedMode);
+  };
+
+  const deletionModes: Array<{
+    mode: DeletionMode;
+    icon: React.ReactNode;
+    title: string;
+    description: string;
+    color: string;
+    bgColor: string;
+    borderColor: string;
+    selectedBorderColor: string;
+    iconBg: string;
+  }> = [
+    {
+      mode: 'all',
+      icon: <Trash2 className="w-5 h-5" />,
+      title: 'Everything (Local + Cloud)',
+      description: 'Complete reset everywhere',
+      color: 'red',
+      bgColor: 'bg-red-500/10',
+      borderColor: 'border-[var(--glass-border)]',
+      selectedBorderColor: 'border-red-500/30',
+      iconBg: 'bg-red-500/20',
+    },
+    {
+      mode: 'local',
+      icon: <HardDrive className="w-5 h-5" />,
+      title: 'Local Data Only',
+      description: 'Clear this device only',
+      color: 'accent',
+      bgColor: 'bg-[var(--accent)]/10',
+      borderColor: 'border-[var(--glass-border)]',
+      selectedBorderColor: 'border-[var(--accent)]/30',
+      iconBg: 'bg-[var(--accent)]/20',
+    },
+    {
+      mode: 'cloud',
+      icon: <Cloud className="w-5 h-5" />,
+      title: 'Cloud Backup Only',
+      description: 'Clear cloud, keep this device',
+      color: 'blue',
+      bgColor: 'bg-blue-500/10',
+      borderColor: 'border-[var(--glass-border)]',
+      selectedBorderColor: 'border-blue-500/30',
+      iconBg: 'bg-blue-500/20',
+    },
+  ];
+
+  const getTextColor = (mode: DeletionMode, selected: boolean) => {
+    if (!selected) return 'text-[var(--text-primary)]';
+    if (mode === 'all') return 'text-red-300';
+    if (mode === 'cloud') return 'text-blue-300';
+    return 'text-[var(--accent)]';
+  };
+
+  const getIconColor = (mode: DeletionMode, selected: boolean) => {
+    if (!selected) return 'text-[var(--text-dimmed)]';
+    if (mode === 'all') return 'text-red-400';
+    if (mode === 'cloud') return 'text-blue-400';
+    return 'text-[var(--accent)]';
+  };
+
+  return (
+    <div className="mt-6">
+      <p className="text-[9px] text-[var(--text-muted)] uppercase font-bold tracking-widest text-center mb-6">
+        What would you like to delete?
+      </p>
+
+      <div className="space-y-3">
+        {deletionModes.map(({ mode, icon, title, description, bgColor, borderColor, selectedBorderColor, iconBg }) => {
+          const isSelected = selectedMode === mode;
+          return (
+            <button
+              key={mode}
+              onClick={() => setSelectedMode(mode)}
+              className={cn(
+                "w-full flex items-center gap-4 p-4 rounded-2xl border transition-all",
+                isSelected ? bgColor : "bg-[var(--glass-bg)]",
+                isSelected ? selectedBorderColor : borderColor,
+                !isSelected && "hover:bg-[var(--bg-page)]"
+              )}
+            >
+              <div className={cn(
+                "w-10 h-10 rounded-xl flex items-center justify-center shrink-0",
+                isSelected ? iconBg : "bg-[var(--glass-border)]"
+              )}>
+                <span className={getIconColor(mode, isSelected)}>{icon}</span>
+              </div>
+              <div className="flex-1 text-left">
+                <span className={cn(
+                  "block text-[10px] font-semibold tracking-wide",
+                  getTextColor(mode, isSelected)
+                )}>
+                  {title}
+                </span>
+                <span className="text-[9px] text-[var(--text-muted)]">{description}</span>
+              </div>
+              {isSelected && (
+                <div className="w-4 h-4 rounded-full shrink-0 bg-red-500" />
+              )}
+            </button>
+          );
+        })}
+      </div>
+
+      {/* Count Summary */}
+      {deletionCounts && (
+        <div className="mt-6 p-4 rounded-xl bg-[var(--bg-page)] border border-[var(--glass-border)]">
+          <p className="text-[9px] text-red-400 font-semibold tracking-wide mb-2">
+            Will delete:
+          </p>
+          <ul className="space-y-1">
+            {deletionCounts.spaces > 0 && (
+              <li className="text-[10px] text-[var(--text-muted)]">
+                • {deletionCounts.spaces} {deletionCounts.spaces === 1 ? 'space' : 'spaces'}
+              </li>
+            )}
+            {deletionCounts.thoughts > 0 && (
+              <li className="text-[10px] text-[var(--text-muted)]">
+                • {deletionCounts.thoughts} {deletionCounts.thoughts === 1 ? 'thought' : 'thoughts'}
+              </li>
+            )}
+            {deletionCounts.stacks > 0 && (
+              <li className="text-[10px] text-[var(--text-muted)]">
+                • {deletionCounts.stacks} {deletionCounts.stacks === 1 ? 'stack' : 'stacks'}
+              </li>
+            )}
+            {deletionCounts.files > 0 && (
+              <li className="text-[10px] text-[var(--text-muted)]">
+                • {deletionCounts.files} {deletionCounts.files === 1 ? 'file' : 'files'}
+              </li>
+            )}
+            {deletionCounts.spaces === 0 && deletionCounts.thoughts === 0 && 
+             deletionCounts.stacks === 0 && deletionCounts.files === 0 && (
+              <li className="text-[10px] text-[var(--text-muted)]">• Nothing to delete</li>
+            )}
+          </ul>
+        </div>
+      )}
+
+      {/* Buttons */}
+      <div className="flex gap-3 mt-6">
+        <button
+          onClick={onCancel}
+          className="flex-1 py-3.5 text-[10px] font-semibold tracking-wide bg-[var(--glass-bg)] rounded-xl text-[var(--text-primary)] hover:bg-[var(--bg-page)] transition-colors"
+        >
+          {cancelText || 'Cancel'}
+        </button>
+        <button
+          onClick={handleContinue}
+          className="flex-1 py-3.5 text-[10px] font-semibold tracking-wide bg-red-500 rounded-xl text-white hover:bg-red-600 transition-colors shadow-lg shadow-red-500/20"
+        >
+          {confirmText || 'Continue'} →
+        </button>
       </div>
     </div>
   );

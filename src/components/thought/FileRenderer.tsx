@@ -37,6 +37,7 @@ export const FileRenderer: React.FC<FileRendererProps> = ({ thought }) => {
   }, [thought.id, thought.syncStatus]);
 
   // Fetch signed URL when no local blob and we have a storagePath
+  // Note: We don't rely on thought.storageUrl (expired signed URLs) - generate fresh ones
   useEffect(() => {
     if (localUrl || !thought.storagePath || signedUrlError) return;
     let cancelled = false;
@@ -86,10 +87,13 @@ export const FileRenderer: React.FC<FileRendererProps> = ({ thought }) => {
     return <FileIcon className="w-8 h-8 text-[var(--text-muted)]" />;
   };
 
-  const activeSource = localUrl || signedUrl || thought.storageUrl || image;
+  // Use local blob first, then signed URL, then data.url for embeds/thumbnails
+  // Never use thought.storageUrl - it's an expired signed URL
+  const activeSource = localUrl || signedUrl || image;
   const hasContent = !!activeSource;
   
-  const hasRemoteContent = (signedUrl || thought.storageUrl) && !localUrl && thought.syncStatus !== 'synced';
+  // hasRemoteContent: has cloud file (via signedUrl) but no local blob
+  const hasRemoteContent = signedUrl && !localUrl;
 
   // MEDIA PREVIEW BLOCK (Images & Videos)
   // Audio files use the list view below to ensure correct icon and prevent video overlay

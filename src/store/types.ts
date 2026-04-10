@@ -80,6 +80,8 @@ export interface CyberiaState {
   zoomOut: () => void;
   resetTransform: () => void;
   clearWorkspace: () => Promise<void>;
+  deleteData: (mode: 'all' | 'local' | 'cloud') => Promise<void>;
+  getDeletionCounts: () => Promise<{ spaces: number; thoughts: number; stacks: number; files: number }>;
 
   setTheme: (theme: 'dark' | 'light') => void;
   setLanguage: (lang: 'en' | 'fr') => void;

@@ -493,8 +493,70 @@ Spatial Mode → Move thoughts (physics runs, positions stored in memory)
 - **Local-First Rendering:** All file-rendering components prioritize local IndexedDB blobs over cloud access. The flow is:
   1. Try local IndexedDB blob first (fastest, works offline)
   2. If no local blob, fetch signed URL from cloud (authenticated access)
-  3. **No cloud URL fallback** - If sync couldn't download the blob locally, the cloud URL won't work either (expired tokens, network issues). This ensures consistent behavior.
+  3. **No cloud URL fallback** - If sync couldn't download a blob locally, the cloud URL won't work either (expired tokens, network issues). This ensures consistent behavior.
 - **Background Images Stay Local:** Space backgrounds are stored locally only with zero cloud egress. They are never uploaded to Supabase Storage.
+
+###  File Access: Signed URLs On-Demand
+
+**Critical Pattern - NEVER Store Signed URLs in Database:**
+
+Signed URLs expire after 1 hour. Storing them in the database causes "expired JWT" errors when users try to open files later.
+
+```typescript
+// ✅ CORRECT: Store only storagePath, generate URL on-demand
+uploadThoughtBlob: async (thoughtId) => {
+  const result = await supabaseStorage.uploadFile(user.id, blob, name, thoughtId);
+  // Store PATH only, not the URL
+  await db.thoughts.update(thoughtId, {
+    storageUrl: null,  // Don't store signed URL - it expires!
+    storagePath: result.path,  // Keep this - needed for fresh URL generation
+  });
+}
+
+// ✅ CORRECT: Generate fresh signed URL when opening files
+handleOpenExternal: async () => {
+  const url = await supabaseStorage.getSignedUrl(thought.storagePath);
+  window.open(url, '_blank');
+}
+```
+
+**For File Operations:**
+- **Download:** Prefer local blob, fallback to `getSignedUrl(storagePath)`
+- **Open in New Tab:** Always use `getSignedUrl(storagePath)` - never `thought.storageUrl`
+- **Render Images:** Use local blob → signed URL → `data.url` (for embeds/thumbnails)
+- **Never use `thought.storageUrl`** - it's always null or expired
+
+###  Unified Data Deletion System
+
+**Location:** Settings → Storage → "Delete All Data"
+
+The deletion system is unified in a single modal with three options:
+
+| Option | Scope | Use Case |
+|--------|-------|----------|
+| Everything (Local + Cloud) | `deleteData('all')` | Complete reset |
+| Local Data Only | `deleteData('local')` | Clear device only |
+| Cloud Backup Only | `deleteData('cloud')` | Clear cloud, keep device |
+
+**Implementation (`dataSlice.ts`):**
+```typescript
+deleteData: async (mode: 'all' | 'local' | 'cloud') => {
+  // 1. Create fresh workspace FIRST (prevents UI crash)
+  // 2. Update Zustand + localStorage
+  // 3. Delete old data (user-scoped, NOT .clear())
+  // 4. Delete cloud if authenticated
+}
+```
+
+**Key Features:**
+- User-scoped deletion (prevents cross-user data loss)
+- Creates new workspace before deleting (safe UI)
+- Parallel cloud deletion with error tracking
+- Confirmation modal always required
+
+**Deprecated Functions (now redirects):**
+- `clearWorkspace()` → redirects to `deleteData('all')`
+- `clearLocalData()` → redirects to `deleteData('local')`
 
 
 ###  State Management (Zustand)
@@ -564,6 +626,10 @@ This section serves as a definitive reference for patterns that are deprecated. 
 - **Public Storage Bucket:** The `user-files` bucket was previously public (`public: true`), allowing direct CDN URLs. This is deprecated. The bucket is now private (`public: false`) and requires signed URLs for access. Use `supabaseStorage.getSignedUrl()` instead of `getPublicUrl()`.
 - **Cloud URL Fallback:** The pattern of falling back to `storageUrl` from the database when local blobs are unavailable is deprecated. If sync couldn't download a blob locally, the cloud URL won't work either (expired tokens, network issues). Only use local IndexedDB blobs or signed URLs.
 - **Background Cloud Uploads:** Uploading space backgrounds to Supabase Storage is deprecated. Backgrounds now stay local-only in IndexedDB with zero cloud egress. Remove any `uploadSpaceBackground()` or background cloud deletion logic.
+- **Storing Signed URLs in Database:** Storing signed URLs in the `storageUrl` field is deprecated. Signed URLs expire after 1 hour. Always store `storagePath` only and generate fresh signed URLs on-demand via `supabaseStorage.getSignedUrl(path)`. The old pattern of `storageUrl = result.url` from uploads causes "expired JWT" errors.
+- **Using thought.storageUrl for File Links:** Direct use of `thought.storageUrl` for links (href, window.open) is deprecated. This field may contain expired signed URLs. Use `handleOpenExternal()` / `handleDownload()` which generate fresh signed URLs.
+- **Old Deletion Functions:** The separate `clearWorkspace()` and `clearLocalData()` functions are deprecated. Use the unified `deleteData(mode)` function with mode `'all'`, `'local'`, or `'cloud'`.
+- **IndexedDB Bulk Clear:** Using `db.table.clear()` without userId filtering is deprecated and dangerous. It wipes ALL users' data. Always use `db.table.where('userId').equals(userId).delete()` for user-scoped deletion.
 
 ---
 
@@ -857,6 +923,12 @@ The `user-files` bucket is **private** (`public: false`). Files are accessed via
 3. Client renders file from signed URL or local IndexedDB blob
 4. Signed URLs are cached in memory to reduce API calls
 
+**IMPORTANT: Never Store Signed URLs in Database**
+- Signed URLs expire after 1 hour
+- Storing them in `storageUrl` causes "expired JWT" errors when users open files later
+- Only store `storagePath` (e.g., `userId/thoughtId/file.ext`) in the database
+- Generate fresh signed URLs on-demand using `supabaseStorage.getSignedUrl(storagePath)`
+
 **RLS Policies (still enforced):**
 - `Users upload to own folder`: `(storage.foldername(name))[1] = auth.uid()::text`
 - `Users update own files`: `(storage.foldername(name))[1] = auth.uid()::text`
@@ -890,6 +962,7 @@ The `user-files` bucket is **private** (`public: false`). Files are accessed via
 - **Unused Code:** Be aware that `supabase/functions/` and some scripts in `scripts/` may be legacy or for testing only. Always refer to `api/` for the active backend logic.
 - **Delta Sync:** Always ensure `updatedAt` is updated to `Date.now()` on every mutation (create/update/delete) to support incremental Delta Sync logic.
 - **User Isolation in IndexedDB:** When querying the database directly (not through Zustand), ALWAYS include `userId` in your filter. Example: `db.thoughts.filter(t => t.userId === currentUserId && !t.deletedAt)`. This prevents data leakage between users.
+- **Bulk IndexedDB Deletes:** When deleting user data, ALWAYS use user-scoped deletion: `db.thoughts.where('userId').equals(userId).delete()`. NEVER use `db.thoughts.clear()` as it wipes ALL users' data.
 - **SignOut User Isolation:** When signing out, the `signOut()` function in `authSlice.ts` must clean up ALL user-scoped state to prevent data leakage to the next user:
     1. Clear localStorage keys: `cyberia-user`, `cyberia-last-sync`, `cyberia-active-space-id`. Note: Do NOT clear `cyberia-theme` - user's theme preference persists across logout/login.
     2. Clear in-memory Zustand store: `thoughts`, `spaces`, `stacks`, `activeSpaceId`, `transform`, `selectedThoughtIds`, `creatorName`, `customBg`, `theme`.

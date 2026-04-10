@@ -177,6 +177,30 @@ return data.signedUrl;
 3. **Local-first**: Always try IndexedDB blob first (works offline)
 4. **No cloud fallback**: If sync couldn't download locally, cloud URL won't work either
 
+### CRITICAL: Never Store Signed URLs in Database
+
+Signed URLs expire after 1 hour. Storing them in `storageUrl` causes "expired JWT" errors when users open files later.
+
+```typescript
+// ✅ CORRECT: Store only storagePath, generate URL on-demand
+uploadThoughtBlob: async (thoughtId) => {
+  const result = await supabaseStorage.uploadFile(user.id, blob, name, thoughtId);
+  // Store PATH only, not the URL
+  await db.thoughts.update(thoughtId, {
+    storageUrl: null,  // Don't store signed URL - it expires!
+    storagePath: result.path,  // Keep this - needed for fresh URL generation
+  });
+}
+
+// ✅ CORRECT: Generate fresh signed URL when opening files
+handleOpenExternal: async () => {
+  const url = await supabaseStorage.getSignedUrl(thought.storagePath);
+  window.open(url, '_blank');
+}
+
+// ❌ WRONG: Using thought.storageUrl for links
+href={thought.storageUrl}  // May be expired!
+
 ### Policies
 ```sql
 -- Users can only read files in their own folder
@@ -243,6 +267,13 @@ A trigger `tr_protect_user_columns` on the `users` table prevents users from upd
 ---
 
 ## Migration History
+
+### 2026-04-10: Signed URLs Never Stored in Database
+- Changed `uploadThoughtBlob()` to set `storageUrl: null` after upload
+- Only `storagePath` is now stored in the database
+- FileFocusEditor generates fresh signed URLs on "Open in New Tab" click
+- FileRenderer removed `thought.storageUrl` from fallback chain
+- Prevents "expired JWT" errors when opening files hours later
 
 ### 2026-04-09: Private Bucket with Signed URLs
 - Changed bucket to private (`public: false`)
