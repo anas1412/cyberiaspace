@@ -103,7 +103,24 @@
     "testimonials": {
       "title_start": "Loved by ",
       "title_accent": "thinkers",
-      "description": "Join other researchers, designers, and engineers who have upgraded their mental space."
+      "description": "Join other researchers, designers, and engineers who have upgraded their mental space.",
+      "items": [
+        {
+          "quote": "I used to have 20 tabs open just to hold a thought. Now I drop everything on the canvas and it finds its own place. I don't organize anymore. The space organizes itself around how I think.",
+          "author": "Nidhal G.",
+          "role": "Senior Software Developer"
+        },
+        {
+          "quote": "I uploaded my entire research folder and asked Oracle to make sense of it. It built a structured workspace from 30 pages of scattered notes in seconds. I didn't organize my thesis. My thesis organized itself.",
+          "author": "Mohamed C.",
+          "role": "University Student"
+        },
+        {
+          "quote": "I stopped switching between my task app, my calendar, and my notes. The same thought sits on my canvas, in my kanban, and on my timeline. When I move it in one view, it moves everywhere. It's one mind, not six apps.",
+          "author": "Nadia D.",
+          "role": "UI/UX Designer"
+        }
+      ]
     },
     "community": {
       "title": "Join the community",
@@ -298,14 +315,6 @@
         "all_models": "All Models",
         "all_files": "All file types"
       }
-    },
-    "status": {
-      "failed": "Payment Failed",
-      "failed_desc": "Payment was cancelled or failed. Your account was not charged.",
-      "try_another": "Try Another Method",
-      "return": "Return to Workspace",
-      "success": "You're Pro!",
-      "verifying": "Verifying Upgrade"
     }
   },
   "legal": {

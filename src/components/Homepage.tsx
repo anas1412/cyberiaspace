@@ -120,21 +120,21 @@ const ActiveUsersStack: React.FC = React.memo(() => {
 
 const TESTIMONIALS = [
   {
-    quote: "Cyberia changed how I interact with my tasks. Seeing my notes as floating entities helped me stay productive all day.",
-    author: "Nidhal G.",
-    role: "Senior Software Developper",
+    quoteKey: 'homepage.testimonials.items.0.quote',
+    authorKey: 'homepage.testimonials.items.0.author',
+    roleKey: 'homepage.testimonials.items.0.role',
     avatar: "NG"
   },
   {
-    quote: "The canvas view is a game-changer for researching. I can finally map out my entire thesis visually with the AI aware of all my notes.",
-    author: "Mohamed C.",
-    role: "University Student",
+    quoteKey: 'homepage.testimonials.items.1.quote',
+    authorKey: 'homepage.testimonials.items.1.author',
+    roleKey: 'homepage.testimonials.items.1.role',
     avatar: "MD"
   },
   {
-    quote: "The transition between freeform canvas and calendar is seamless. Adding AI-awareness helped me optimize my workflow ",
-    author: "Nadia D.",
-    role: "UI/UX Designer",
+    quoteKey: 'homepage.testimonials.items.2.quote',
+    authorKey: 'homepage.testimonials.items.2.author',
+    roleKey: 'homepage.testimonials.items.2.role',
     avatar: "ND"
   }
 ];
@@ -501,7 +501,7 @@ const Homepage: React.FC = () => {
                   <Quote className="w-10 h-10 text-[var(--accent)]/20 absolute top-6 right-8 group-hover:text-[var(--accent)]/40 transition-colors" />
                   
                   <p className="text-[15px] text-[var(--text-primary)] leading-relaxed mb-8 relative z-10 italic">
-                    "{testimonial.quote}"
+                    "{t(testimonial.quoteKey)}"
                   </p>
 
                   <div className="flex items-center gap-4 mt-auto">
@@ -509,8 +509,8 @@ const Homepage: React.FC = () => {
                       {testimonial.avatar}
                     </div>
                     <div className="text-left">
-                      <p className="text-sm font-semibold text-[var(--text-primary)]">{testimonial.author}</p>
-                      <p className="text-xs text-[var(--text-muted)]">{testimonial.role}</p>
+                      <p className="text-sm font-semibold text-[var(--text-primary)]">{t(testimonial.authorKey)}</p>
+                      <p className="text-xs text-[var(--text-muted)]">{t(testimonial.roleKey)}</p>
                     </div>
                   </div>
                 </motion.div>

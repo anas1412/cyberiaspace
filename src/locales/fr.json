@@ -103,7 +103,24 @@
     "testimonials": {
       "title_start": "Aimé par les ",
       "title_accent": "penseurs",
-      "description": "Rejoignez d'autres chercheurs, designers et ingénieurs qui ont amélioré leur espace mental."
+      "description": "Rejoignez d'autres chercheurs, designers et ingénieurs qui ont amélioré leur espace mental.",
+      "items": [
+        {
+          "quote": "J'avais toujours 20 onglets ouverts pour retenir une idee. Maintenant je pose tout sur le canvas et chaque pensee trouve sa place. Je n'organise plus rien. L'espace s'organise tout seul autour de ma facon de penser.",
+          "author": "Nidhal G.",
+          "role": "Developpeur Senior"
+        },
+        {
+          "quote": "J'ai importe tout mon dossier de recherche et demande a Oracle de le structurer. Il a construit un espace de travail organise a partir de 30 pages de notes eparses en quelques secondes. Je n'ai pas organise ma these. Ma these s'est organisee toute seule.",
+          "author": "Mohamed C.",
+          "role": "Etudiant Universitaire"
+        },
+        {
+          "quote": "J'ai arrete de jongler entre mon app de taches, mon calendrier et mes notes. La meme pensee est sur mon canvas, dans mon kanban et sur mon timeline. Quand je la deplace dans une vue, elle bouge partout. C'est un seul esprit, pas six applis.",
+          "author": "Nadia D.",
+          "role": "Designer UI/UX"
+        }
+      ]
     },
     "community": {
       "title": "Rejoignez la communauté",
@@ -298,14 +315,6 @@
         "all_models": "Tous les modèles",
         "all_files": "Tous les types de fichiers"
       }
-    },
-    "status": {
-      "failed": "Échec du Paiement",
-      "failed_desc": "Le paiement a été annulé ou a échoué. Votre compte n'a pas été débité.",
-      "try_another": "Essayer une Autre Méthode",
-      "return": "Retourner à l'Espace de Travail",
-      "success": "Vous Êtes Pro !",
-      "verifying": "Vérification de la Mise à Niveau"
     }
   },
   "legal": {
