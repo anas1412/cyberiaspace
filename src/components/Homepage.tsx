@@ -158,6 +158,18 @@ const TRUSTED_LOGOS = [
     lightSrc: 'https://cdn.brandfetch.io/idDpCfN4VD/theme/dark/logo.svg?c=1bxid64Mup7aczewSAYMX&t=1759982666477',
     isImage: true,
   },
+  {
+    name: 'Polar',
+    darkSrc: '/SVG/polar_white.png',
+    lightSrc: '/SVG/polar_black.png',
+    isImage: true,
+  },
+  {
+    name: 'Flouci',
+    darkSrc: 'https://cdn.brandfetch.io/idZWBxd8fZ/w/1843/h/500/theme/dark/logo.svg?c=1bxid64Mup7aczewSAYMX&t=1748973745923',
+    lightSrc: 'https://cdn.brandfetch.io/idZWBxd8fZ/w/1843/h/500/theme/dark/logo.svg?c=1bxid64Mup7aczewSAYMX&t=1748973745923',
+    isImage: true,
+  },
 ];
 
 const FAQ_ITEMS = [
@@ -246,13 +258,13 @@ const TrustedBy: React.FC = () => {
             className="opacity-30 hover:opacity-60 transition-opacity duration-500"
             title={logo.name}
           >
-            {'isImage' in logo && logo.isImage ? (
+            {'isImage' in logo && logo.isImage && (
               <img
                 src={theme === 'dark' ? logo.darkSrc : logo.lightSrc}
                 alt={logo.name}
                 className="h-6 w-auto"
               />
-            ) : null}
+            )}
           </div>
         ))}
       </div>
