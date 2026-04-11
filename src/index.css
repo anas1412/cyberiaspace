@@ -190,6 +190,10 @@
   --prio-urgent: #dc2626;
 }
 
+html {
+  scroll-behavior: smooth;
+}
+
 body {
   background-color: transparent;
   color: var(--text-primary);

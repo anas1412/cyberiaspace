@@ -17,6 +17,7 @@
       "description": "Pensée visuelle. Gestion des tâches. Planification de calendrier. IA qui passe à l'action. Stockage de fichiers. Tout est connecté. Tout au même endroit.",
       "cta_free": "Essayer Gratuitement",
       "cta_demo": "Voir la Démo",
+      "cta_how_it_works": "Voir comment ça marche",
       "subtitle_line2": "Aurez Jamais Besoin",
       "trusted_by": "Ils nous font confiance"
     },
@@ -181,8 +182,8 @@
       }
     },
     "cta_section": {
-      "title": "Prêt ?",
-      "description": "Le seul espace de travail avec Canevas, Répertoire, Kanban, Calendrier, une IA qui agit et un stockage de fichiers — tout-en-un.",
+      "title": "Prêt à arrêter de jongler?",
+      "description": "Votre canevas, kanban, calendrier, fichiers et IA — tout fonctionne ensemble. Un espace de travail pour toute votre équipe.",
       "cta": "Essayer Gratuitement"
     },
     "coming_soon": {

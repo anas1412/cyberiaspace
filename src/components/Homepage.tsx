@@ -1,9 +1,9 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
-import { ArrowRight, Cpu, Rocket, Send, Loader2, CheckCircle, ChevronDown, MessageCircle, X, Play, Quote, Plus, FileText, Layout, Cloud, XCircle, CheckCircle2 } from 'lucide-react';
+import { ArrowRight, Cpu, Rocket, Send, Loader2, CheckCircle, ChevronDown, MessageCircle, X, Quote, Plus, FileText, Layout, Cloud, XCircle, CheckCircle2 } from 'lucide-react';
 
-import { YOUTUBE_VIDEO_ID, DISCORD_INVITE_URL } from '../constants';
+import { DISCORD_INVITE_URL } from '../constants';
 
 import HowItWorksVisual from './demo/HowItWorksVisual';
 
@@ -279,7 +279,6 @@ const Homepage: React.FC = () => {
   const [howItWorksRestartKey, setHowItWorksRestartKey] = useState(0);
   const [activeFAQIndex, setActiveFAQIndex] = useState<number | null>(null);
   const [isImageZoomed, setIsImageZoomed] = useState(false);
-  const [isVideoOpen, setIsVideoOpen] = useState(false);
   const [isHowItWorksVisible, setIsHowItWorksVisible] = useState(false);
   const howItWorksRef = useRef<HTMLElement>(null);
   
@@ -365,11 +364,10 @@ const Homepage: React.FC = () => {
                   <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
                 </a>
                 <button
-                  onClick={() => setIsVideoOpen(true)}
+                  onClick={() => document.getElementById('how-it-works')?.scrollIntoView({ behavior: 'smooth' })}
                   className="w-full sm:w-auto px-8 py-4 bg-[var(--glass-bg)] hover:bg-[var(--glass-border)] text-[var(--text-primary)] rounded-xl text-base font-semibold transition-all flex items-center justify-center gap-2 group border border-[var(--glass-border)] active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)]"
                 >
-                  <Play className="w-5 h-5 text-[var(--text-muted)] group-hover:text-[var(--text-primary)] transition-colors" />
-                  {t('homepage.hero.cta_demo')}
+                  {t('homepage.hero.cta_how_it_works')}
                 </button>
               </div>
             </motion.div>
@@ -539,6 +537,7 @@ const Homepage: React.FC = () => {
         </section>
 
         {/* DEMO SECTION */}
+        {/*
         <section className="py-24 px-6 relative z-10">
           <div className="max-w-5xl mx-auto">
             <div className="text-center mb-12">
@@ -566,6 +565,7 @@ const Homepage: React.FC = () => {
             </motion.div>
           </div>
         </section>
+        */}
 
         {/* TESTIMONIALS SECTION */}
         <section className="py-24 px-6 relative z-10 bg-[var(--accent)]/[0.01]">
@@ -808,6 +808,8 @@ const Homepage: React.FC = () => {
         )}
       </AnimatePresence>
 
+      {/* VIDEO MODAL */}
+      {/*
       <AnimatePresence>
         {isVideoOpen && (
           <motion.div
@@ -841,6 +843,7 @@ const Homepage: React.FC = () => {
           </motion.div>
         )}
       </AnimatePresence>
+      */}
 
       <Footer />
     </div>

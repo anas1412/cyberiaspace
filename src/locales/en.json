@@ -17,6 +17,7 @@
       "description": "Visual thinking. Task management. Calendar planning. AI that takes action. File storage. All connected. All in one place.",
       "cta_free": "Try it for Free",
       "cta_demo": "Watch Demo",
+      "cta_how_it_works": "See How It Works",
       "subtitle_line2": "Will Ever Need",
       "trusted_by": "Trusted by"
     },
@@ -181,9 +182,9 @@
       }
     },
     "cta_section": {
-      "title": "Ready?",
-      "description": "The only workspace with Canvas, Directory, Kanban, Calendar, AI that acts, and file storage — all in one.",
-      "cta": "Try it for Free"
+      "title": "Ready to stop juggling apps?",
+      "description": "Your canvas, kanban, calendar, files, and AI — all working together. One workspace for your whole team.",
+      "cta": "Try it Free"
     },
     "coming_soon": {
       "title_start": "What's ",
