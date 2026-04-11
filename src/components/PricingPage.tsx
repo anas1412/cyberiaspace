@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { useAuthStore } from '../store/useAuthStore';
 import { PLAN_CONFIG, type AccessPeriod } from '../constants';
 import { resolvePricingLocation } from '../utils/pricing';
-import { Sparkles, Check, Star, Shield, Loader2, CreditCard, ExternalLink, Smartphone, Layout, AlertCircle, RefreshCw, Users } from 'lucide-react';
+import { Sparkles, Check, Star, Shield, Loader2, CreditCard, ExternalLink, Smartphone, Layout, AlertCircle, RefreshCw, Users, Calendar, Cloud, Zap } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
@@ -713,11 +713,10 @@ const PricingPage: React.FC = () => {
             {/* RIGHT: Enterprise CTA */}
             <div className="w-full md:w-72 p-6 md:p-8 bg-[var(--glass-bg)] border-t md:border-t-0 md:border-l border-[var(--accent)]/20 flex flex-col justify-center">
               <div className="text-center mb-6">
+                <span className="text-xs text-[var(--text-muted)] font-medium block mb-2">{t('pricing.enterprise.starting_at')}</span>
                 <div className="flex items-baseline justify-center gap-1">
                   <span className="text-4xl font-extrabold text-[var(--text-primary)]">{t('pricing.enterprise.price')}</span>
-                  <span className="text-lg text-[var(--text-muted)] font-semibold">{t('pricing.enterprise.per_seat')}</span>
                 </div>
-                <span className="text-xs text-[var(--text-muted)] font-medium block mt-1">{t('pricing.enterprise.starting_at')}</span>
               </div>
 
               <button
@@ -852,6 +851,42 @@ const PricingPage: React.FC = () => {
             </div>
           </div>
         </motion.div>
+
+        {/* Coming Soon / What's Next Section */}
+        <section className="mt-12">
+          <div className="text-center mb-10">
+            <h2 className="text-3xl md:text-4xl font-bold tracking-tight mb-3">
+              {t('homepage.coming_soon.title_start')}<span className="text-[var(--accent)]">{t('homepage.coming_soon.title_accent')}</span>
+            </h2>
+            <p className="text-[var(--text-muted)] text-lg max-w-2xl mx-auto">
+              {t('homepage.coming_soon.subtitle')}
+            </p>
+          </div>
+
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+            {[
+              { icon: Smartphone, title: t('homepage.coming_soon.mobile.title'), desc: t('homepage.coming_soon.mobile.desc') },
+              { icon: Calendar, title: t('homepage.coming_soon.calendar.title'), desc: t('homepage.coming_soon.calendar.desc') },
+              { icon: Cloud, title: t('homepage.coming_soon.storage.title'), desc: t('homepage.coming_soon.storage.desc') },
+              { icon: Zap, title: t('homepage.coming_soon.api.title'), desc: t('homepage.coming_soon.api.desc') }
+            ].map((item, i) => (
+              <motion.div
+                key={i}
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ delay: i * 0.1 }}
+                className="glass p-6 rounded-xl border border-[var(--glass-border)] flex flex-col items-center text-center hover:-translate-y-1 transition-transform duration-300"
+              >
+                <div className="w-14 h-14 rounded-xl bg-[var(--accent)]/10 flex items-center justify-center mb-4 border border-[var(--accent)]/20">
+                  <item.icon className="w-7 h-7" style={{ color: 'var(--accent)' }} />
+                </div>
+                <h3 className="text-base font-semibold text-[var(--text-primary)] mb-2">{item.title}</h3>
+                <p className="text-sm text-[var(--text-muted)] leading-relaxed">{item.desc}</p>
+              </motion.div>
+            ))}
+          </div>
+        </section>
 
       </div>
       

@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
-import { ArrowRight, Cpu, Rocket, Send, Loader2, CheckCircle, ChevronDown, MessageCircle, X, Play, Quote, Plus, FileText, Layout, Smartphone, Calendar, Cloud, Zap } from 'lucide-react';
+import { ArrowRight, Cpu, Rocket, Send, Loader2, CheckCircle, ChevronDown, MessageCircle, X, Play, Quote, Plus, FileText, Layout, Cloud, XCircle, CheckCircle2 } from 'lucide-react';
 
 import { YOUTUBE_VIDEO_ID, DISCORD_INVITE_URL } from '../constants';
 
@@ -139,6 +139,27 @@ const TESTIMONIALS = [
   }
 ];
 
+const TRUSTED_LOGOS = [
+  {
+    name: 'Google',
+    darkSrc: 'https://cdn.brandfetch.io/id6O2oGzv-/theme/light/logo.svg?c=1bxid64Mup7aczewSAYMX&t=1753067851661',
+    lightSrc: 'https://cdn.brandfetch.io/id6O2oGzv-/theme/dark/logo.svg?c=1bxid64Mup7aczewSAYMX&t=1731911497387',
+    isImage: true,
+  },
+  {
+    name: 'Supabase',
+    darkSrc: 'https://cdn.brandfetch.io/idsSceG8fK/theme/light/logo.svg?c=1bxid64Mup7aczewSAYMX&t=1668081496717',
+    lightSrc: 'https://cdn.brandfetch.io/idsSceG8fK/theme/dark/logo.svg?c=1bxid64Mup7aczewSAYMX&t=1668081495951',
+    isImage: true,
+  },
+  {
+    name: 'Vercel',
+    darkSrc: 'https://cdn.brandfetch.io/idDpCfN4VD/theme/light/logo.svg?c=1bxid64Mup7aczewSAYMX&t=1759982651358',
+    lightSrc: 'https://cdn.brandfetch.io/idDpCfN4VD/theme/dark/logo.svg?c=1bxid64Mup7aczewSAYMX&t=1759982666477',
+    isImage: true,
+  },
+];
+
 const FAQ_ITEMS = [
   {
     questionKey: 'homepage.faq.items.0.question',
@@ -204,6 +225,41 @@ const FAQItem: React.FC<{
     </div>
   );
 };
+const TrustedBy: React.FC = () => {
+  const { t } = useTranslation();
+  const { theme } = useStore();
+  return (
+    <motion.div
+      initial={{ opacity: 0 }}
+      whileInView={{ opacity: 1 }}
+      viewport={{ once: true, margin: '-50px' }}
+      transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
+      className="flex flex-col items-center gap-5 mt-20 md:mt-24"
+    >
+      <span className="text-[11px] font-medium uppercase tracking-[0.2em] text-[var(--text-muted)]">
+        {t('homepage.hero.trusted_by')}
+      </span>
+      <div className="flex items-center gap-10 md:gap-16 text-[var(--text-muted)]">
+        {TRUSTED_LOGOS.map((logo) => (
+          <div
+            key={logo.name}
+            className="opacity-30 hover:opacity-60 transition-opacity duration-500"
+            title={logo.name}
+          >
+            {'isImage' in logo && logo.isImage ? (
+              <img
+                src={theme === 'dark' ? logo.darkSrc : logo.lightSrc}
+                alt={logo.name}
+                className="h-6 w-auto"
+              />
+            ) : null}
+          </div>
+        ))}
+      </div>
+    </motion.div>
+  );
+};
+
 const Homepage: React.FC = () => {
   const { t } = useTranslation();
   const { theme } = useStore();
@@ -280,7 +336,7 @@ const Homepage: React.FC = () => {
                   transition={{ duration: 0.8, delay: 0.2, ease: "easeOut" }}
                   className="bg-clip-text text-transparent bg-gradient-to-r from-[var(--accent)] to-[var(--accent-secondary)]"
                 >
-                  {t('homepage.hero.subtitle')}
+                  {t('homepage.hero.subtitle')}<br />{t('homepage.hero.subtitle_line2')}
                 </motion.span>
               </h1>
               
@@ -331,6 +387,64 @@ const Homepage: React.FC = () => {
             
             <div className="absolute inset-0 bg-[var(--accent)]/20 blur-[120px] rounded-full pointer-events-none -z-10" />
           </motion.div>
+
+          <TrustedBy />
+        </section>
+
+        {/* ABOUT SECTION */}
+        <section id="about" className="py-24 px-6 relative z-10 bg-[var(--accent)]/[0.02]">
+          <div className="max-w-6xl mx-auto">
+            <div className="text-center mb-16 md:mb-20">
+              <h2 className="text-3xl md:text-5xl font-bold tracking-tight mb-4">
+                {t('homepage.about.title_start')}<span className="text-[var(--accent)]">{t('homepage.about.title_accent')}</span>
+              </h2>
+              <p className="text-[var(--text-muted)] text-lg">{t('homepage.about.subtitle')}</p>
+            </div>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-8">
+              {[
+                { pain: t('homepage.about.items.0.pain'), solution: t('homepage.about.items.0.solution') },
+                { pain: t('homepage.about.items.1.pain'), solution: t('homepage.about.items.1.solution') },
+                { pain: t('homepage.about.items.2.pain'), solution: t('homepage.about.items.2.solution') },
+                { pain: t('homepage.about.items.3.pain'), solution: t('homepage.about.items.3.solution') }
+              ].map((item, i) => (
+                <motion.div 
+                  key={i}
+                  initial={{ opacity: 0, y: 20 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true }}
+                  transition={{ delay: i * 0.1 }}
+                  className="glass group relative p-8 md:p-10 rounded-xl border border-[var(--glass-border)] hover:border-[var(--accent)]/30 hover:bg-[var(--glass-bg)] transition-all duration-500 overflow-hidden shadow-lg hover:shadow-xl hover:shadow-[var(--accent)]/5"
+                >
+                  {/* Subtle background glow on hover */}
+                  <div className="absolute inset-0 bg-gradient-to-br from-[var(--accent)]/0 via-[var(--accent)]/0 to-[var(--accent)]/5 opacity-0 group-hover:opacity-100 transition-opacity duration-700 pointer-events-none" />
+                  
+                  <div className="relative z-10 flex flex-col h-full justify-between">
+                    {/* PAIN */}
+                    <div className="mb-8">
+                      <p className="text-[16px] md:text-[17px] text-[var(--text-muted)] italic leading-relaxed">
+                        <XCircle className="w-4 h-4 text-rose-400 inline mr-2 -mt-0.5" />
+                        "{item.pain}"
+                      </p>
+                    </div>
+
+                    {/* DIVIDER */}
+                    <div className="mb-8">
+                      <div className="w-full h-px bg-gradient-to-r from-[var(--glass-border)] via-[var(--glass-border)] to-transparent" />
+                    </div>
+
+                    {/* SOLUTION */}
+                    <div>
+                      <p className="text-[16px] md:text-[17px] text-[var(--text-primary)] font-medium leading-relaxed">
+                        <CheckCircle2 className="w-4 h-4 text-emerald-400 inline mr-2 -mt-0.5" />
+                        {item.solution}
+                      </p>
+                    </div>
+                  </div>
+                </motion.div>
+              ))}
+            </div>
+          </div>
         </section>
 
         {/* HOW IT WORKS SECTION */}
@@ -408,41 +522,6 @@ const Homepage: React.FC = () => {
                   />
                 </div>
               </div>
-            </div>
-          </div>
-        </section>
-
-        {/* ABOUT SECTION */}
-        <section id="about" className="py-24 px-6 relative z-10 bg-[var(--accent)]/[0.02]">
-          <div className="max-w-5xl mx-auto">
-            <div className="text-center mb-16">
-              <h2 className="text-3xl md:text-5xl font-bold tracking-tight mb-4">
-                {t('homepage.about.title_start')}<span className="text-[var(--accent)]">{t('homepage.about.title_accent')}</span>
-              </h2>
-              <p className="text-[var(--text-muted)] text-lg">{t('homepage.about.subtitle')}</p>
-            </div>
-            
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {[
-                { title: t('homepage.about.scattered.title'), desc: t('homepage.about.scattered.description') },
-                { title: t('homepage.about.visual.title'), desc: t('homepage.about.visual.description') },
-                { title: t('homepage.about.agentic_action.title'), desc: t('homepage.about.agentic_action.description') },
-                { title: t('homepage.about.ownership.title'), desc: t('homepage.about.ownership.description') }
-              ].map((item, i) => (
-                <motion.div 
-                  key={i}
-                  initial={{ opacity: 0, y: 20 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  viewport={{ once: true }}
-                  transition={{ delay: i * 0.1 }}
-                  className="glass rounded-2xl p-8 hover:-translate-y-1 transition-transform duration-300 shadow-xl border border-[var(--glass-border)]"
-                >
-                  <h3 className="text-lg font-semibold text-[var(--text-primary)] mb-3">{item.title}</h3>
-                  <p className="text-[15px] text-[var(--text-muted)] leading-relaxed">
-                    {item.desc}
-                  </p>
-                </motion.div>
-              ))}
             </div>
           </div>
         </section>
@@ -678,7 +757,7 @@ const Homepage: React.FC = () => {
               </p>
               <a
                   href="/home"
-                  className="inline-flex items-center gap-3 px-10 py-5  bg-[var(--accent)] hover:bg-[var(--accent-hover)] text-[var(--accent-contrast)] rounded-xl text-base font-semibold transition-all shadow-lg shadow-[var(--accent)]/25 active:scale-95 flex items-center justify-center gap-2 group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--bg-page)] focus-visible:ring-[var(--accent)]"
+                  className="inline-flex items-center justify-center gap-2 px-10 py-5 bg-[var(--accent)] hover:bg-[var(--accent-hover)] text-[var(--accent-contrast)] rounded-xl text-base font-semibold transition-all shadow-lg shadow-[var(--accent)]/25 active:scale-95 group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--bg-page)] focus-visible:ring-[var(--accent)]"
                 >
                   {t('homepage.cta_section.cta')}
                   <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
@@ -688,44 +767,6 @@ const Homepage: React.FC = () => {
             </motion.div>
           </div>
           <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-2xl h-64 bg-[var(--accent)]/10 blur-[120px] rounded-full -z-10 pointer-events-none" />
-        </section>
-
-        {/* COMING SOON SECTION */}
-        <section className="py-24 px-6 relative z-10 bg-[var(--accent)]/[0.02]">
-          <div className="max-w-5xl mx-auto">
-            <div className="text-center mb-12">
-              <h2 className="text-3xl md:text-5xl font-bold tracking-tight mb-4">
-                {t('homepage.coming_soon.title_start')}<span className="text-[var(--accent)]">{t('homepage.coming_soon.title_accent')}</span>
-              </h2>
-              <p className="text-[var(--text-muted)] text-lg max-w-2xl mx-auto">
-                {t('homepage.coming_soon.subtitle')}
-              </p>
-            </div>
-
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
-              {[
-                { icon: Smartphone, title: t('homepage.coming_soon.mobile.title'), desc: t('homepage.coming_soon.mobile.desc') },
-                { icon: Calendar, title: t('homepage.coming_soon.calendar.title'), desc: t('homepage.coming_soon.calendar.desc') },
-                { icon: Cloud, title: t('homepage.coming_soon.storage.title'), desc: t('homepage.coming_soon.storage.desc') },
-                { icon: Zap, title: t('homepage.coming_soon.api.title'), desc: t('homepage.coming_soon.api.desc') }
-              ].map((item, i) => (
-                <motion.div
-                  key={i}
-                  initial={{ opacity: 0, y: 20 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  viewport={{ once: true }}
-                  transition={{ delay: i * 0.1 }}
-                  className="glass p-6 rounded-2xl border border-[var(--glass-border)] flex flex-col items-center text-center hover:-translate-y-1 transition-transform duration-300"
-                >
-                  <div className="w-14 h-14 rounded-2xl bg-[var(--accent)]/10 flex items-center justify-center mb-4 border border-[var(--accent)]/20">
-                    <item.icon className="w-7 h-7" style={{ color: 'var(--accent)' }} />
-                  </div>
-                  <h3 className="text-base font-semibold text-[var(--text-primary)] mb-2">{item.title}</h3>
-                  <p className="text-sm text-[var(--text-muted)] leading-relaxed">{item.desc}</p>
-                </motion.div>
-              ))}
-            </div>
-          </div>
         </section>
       </main>
 

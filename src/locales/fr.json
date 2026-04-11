@@ -13,10 +13,12 @@
   "homepage": {
     "hero": {
       "title": "Le Seul Espace de Travail",
-      "subtitle": "Dont Vous Aurez Jamais Besoin",
+      "subtitle": "Vous et Votre Équipe",
       "description": "Pensée visuelle. Gestion des tâches. Planification de calendrier. IA qui passe à l'action. Stockage de fichiers. Tout est connecté. Tout au même endroit.",
       "cta_free": "Essayer Gratuitement",
-      "cta_demo": "Voir la Démo"
+      "cta_demo": "Voir la Démo",
+      "subtitle_line2": "Aurez Jamais Besoin",
+      "trusted_by": "Ils nous font confiance"
     },
     "how_it_works": {
       "title_start": "Comment ça ",
@@ -29,7 +31,7 @@
           "subtitle": "Inscrivez-vous en quelques secondes"
         },
         {
-          "title": "2. Ajoutez vos pensées",
+          "title": "2. Ajoutez des notes",
           "description": "Déposez des notes, fichiers, images, liens. Disposez-les librement sur le canevas ou laissez Oracle IA les organiser.",
           "subtitle": "Déposez notes, fichiers, images sur le canevas"
         },
@@ -75,25 +77,27 @@
       }
     },
     "about": {
-      "title_start": "Pourquoi ça ",
-      "title_accent": "marche",
-      "subtitle": "Votre cerveau n'est pas un tableur. Votre espace ne devrait pas l'être non plus.",
-      "scattered": {
-        "title": "Informations dispersées",
-        "description": "Notes, documents et idées partout. Passer d'une application à l'autre fait perdre du temps et brise votre flux."
-      },
-      "visual": {
-        "title": "Organisation visuelle",
-        "description": "Visualisez tout d'un coup d'œil. Organisez vos documents et vos idées visuellement, comme sur un bureau, mais en mieux."
-      },
-      "agentic_action": {
-        "title": "Une IA qui passe à l'action",
-        "description": "L'IA Oracle lit vos fichiers, répond aux questions et peut créer des tâches ou modifier du contenu — sans que vous ayez à lever le petit doigt."
-      },
-      "ownership": {
-        "title": "Vos données vous appartiennent",
-        "description": "Votre travail vous appartient. Exportez tout à tout moment. Pas de verrouillage propriétaire, pas de ruses."
-      }
+      "title_start": "Pourquoi on ",
+      "title_accent": "a créé ça",
+      "subtitle": "Ça vous parle?",
+      "items": [
+        {
+          "pain": "Les infos de votre équipe sont partout — 67 onglets ouverts, Notion, Slack, Drive, emails?",
+          "solution": "Un seul espace partagé. Tout est connecté, tout le monde est aligné."
+        },
+        {
+          "pain": "Combien de temps perdez-vous chaque semaine à transformer des notes en tâches, événements calendrier et prompts IA?",
+          "solution": "Penser, planifier et exécuter avec votre équipe et IA — tout au même endroit."
+        },
+        {
+          "pain": "Vous arrive-t-il d'ouvrir une tâche et de perdre 15 minutes à comprendre ce que c'est?",
+          "solution": "Votre équipe et IA travaillent au même endroit. Plus de recherche."
+        },
+        {
+          "pain": "Êtes-vous fatigué de copier-coller entre votre espace et l'IA?",
+          "solution": "Votre équipe et Oracle IA travaillent au même endroit. Plus de copier-coller."
+        }
+      ]
     },
     "demo": {
       "title_start": "Voyez-le en ",
@@ -198,8 +202,8 @@
         "desc": "Intégration Google Drive & Dropbox"
       },
       "api": {
-        "title": "API & Zapier",
-        "desc": "Connexion à 5000+ outils & automatisations"
+        "title": "Automatisation IA",
+        "desc": "Connexion à 5000+ outils et automatisation"
       }
     }
   },
@@ -283,11 +287,11 @@
         "support": "Support prioritaire",
         "ai_limits": "Limites d'utilisation de l'IA plus élevées"
       },
-      "price": "25 $",
-      "per_seat": "/siège",
-      "starting_at": "À partir de 5 sièges",
+      "price": "$25",
+      "per_seat": "",
+      "starting_at": "À partir de",
       "cta": "Contacter Nous",
-      "discounts": "Remises sur volume disponibles"
+      "discounts": "Pay as you grow"
     },
     "comparison": {
       "cta_show": "Voir la Comparaison Complète",

@@ -13,10 +13,12 @@
   "homepage": {
     "hero": {
       "title": "The Only Workspace",
-      "subtitle": "You'll Ever Need",
+      "subtitle": "You and Your Team",
       "description": "Visual thinking. Task management. Calendar planning. AI that takes action. File storage. All connected. All in one place.",
       "cta_free": "Try it for Free",
-      "cta_demo": "Watch Demo"
+      "cta_demo": "Watch Demo",
+      "subtitle_line2": "Will Ever Need",
+      "trusted_by": "Trusted by"
     },
     "how_it_works": {
       "title_start": "How it ",
@@ -29,7 +31,7 @@
           "subtitle": "Sign up in seconds"
         },
         {
-          "title": "2. Add your thoughts",
+          "title": "2. Add notes",
           "description": "Drop in notes, files, images, links. Arrange them freely on the canvas or let Oracle AI organize them for you.",
           "subtitle": "Drop notes, files, images on the canvas"
         },
@@ -75,25 +77,27 @@
       }
     },
     "about": {
-      "title_start": "Why it ",
-      "title_accent": "works",
-      "subtitle": "Your brain isn't a spreadsheet. Your space shouldn't be either.",
-      "scattered": {
-        "title": "Scattered information",
-        "description": "Notes, documents, and ideas everywhere. Switching between apps wastes time and breaks your flow."
-      },
-      "visual": {
-        "title": "Visual organization",
-        "description": "See everything at a glance. Arrange documents and ideas visually, just like on a desk, but better."
-      },
-      "agentic_action": {
-        "title": "AI that takes action",
-        "description": "Oracle AI reads your files, answers questions, and can create tasks or edit content — without you lifting a finger."
-      },
-      "ownership": {
-        "title": "You own your data",
-        "description": "Your work belongs to you. Export everything anytime. No vendor lock-in, no tricks."
-      }
+      "title_start": "Why we ",
+      "title_accent": "built this",
+      "subtitle": "Sound familiar?",
+      "items": [
+        {
+          "pain": "Is your team's info everywhere — 67 open tabs, Notion, Slack, Drive, emails?",
+          "solution": "One shared space. Everything connected, everyone aligned."
+        },
+        {
+          "pain": "How much time do you waste turning notes into tasks, calendar events, and AI prompts every week?",
+          "solution": "Think, plan, and execute with your team and AI — all in one place."
+        },
+        {
+          "pain": "Do you open a task and waste 15 minutes figuring out what it's about?",
+          "solution": "Your team and AI work in the same space. No more digging."
+        },
+        {
+          "pain": "Are you tired of copy-pasting between your workspace and AI?",
+          "solution": "Your team and Oracle AI work in the same space. No more copy-pasting."
+        }
+      ]
     },
     "demo": {
       "title_start": "See it in ",
@@ -198,7 +202,7 @@
         "desc": "Google Drive & Dropbox integration"
       },
       "api": {
-        "title": "API & Zapier",
+        "title": "AI Automation",
         "desc": "Connect to 5000+ tools & automation"
       }
     }
@@ -284,10 +288,10 @@
         "ai_limits": "Higher AI usage limits"
       },
       "price": "$25",
-      "per_seat": "/seat",
-      "starting_at": "Starting at 5 seats",
+      "per_seat": "",
+      "starting_at": "Starting from",
       "cta": "Contact Us",
-      "discounts": "Volume discounts available"
+      "discounts": "Pay as you grow"
     },
     "comparison": {
       "cta_show": "View Full Comparison",
