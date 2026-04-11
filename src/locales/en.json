@@ -47,9 +47,9 @@
           "subtitle": "AI connects and structures your workspace"
         },
         {
-          "title": "5. Works everywhere",
-          "description": "Offline-first with automatic cloud sync. Your workspace follows you on any device.",
-          "subtitle": "Offline-first with automatic cloud sync"
+          "title": "5. Real-time collaboration",
+          "description": "Your team's shared workspace follows you on any device. Your data stays private with secure access controls, and everything syncs automatically so nobody ever misses a thing.",
+          "subtitle": "Shared workspace on any device"
         }
       ]
     },
@@ -182,7 +182,7 @@
       }
     },
     "cta_section": {
-      "title": "Ready to stop juggling apps?",
+      "title": "Ready to stop switching apps?",
       "description": "Your canvas, kanban, calendar, files, and AI — all working together. One workspace for your whole team.",
       "cta": "Try it Free"
     },

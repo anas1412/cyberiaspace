@@ -47,9 +47,9 @@
           "subtitle": "L'IA connecte et structure votre espace"
         },
         {
-          "title": "5. Fonctionne partout",
-          "description": "Hors ligne avec synchronisation automatique cloud. Votre espace de travail vous suit sur tous vos appareils.",
-          "subtitle": "Hors ligne avec synchronisation cloud automatique"
+          "title": "5. Collaboration en temps réel",
+          "description": "L'espace de travail partagé de votre équipe vous suit sur tous vos appareils. Vos données restent privées grâce à des contrôles d'accès sécurisés, et tout se synchronise automatiquement pour que personne ne manque jamais rien.",
+          "subtitle": "Espace partagé sur tous vos appareils"
         }
       ]
     },
@@ -182,7 +182,7 @@
       }
     },
     "cta_section": {
-      "title": "Prêt à arrêter de jongler?",
+      "title": "Prêt à centraliser tout?",
       "description": "Votre canevas, kanban, calendrier, fichiers et IA — tout fonctionne ensemble. Un espace de travail pour toute votre équipe.",
       "cta": "Essayer Gratuitement"
     },
