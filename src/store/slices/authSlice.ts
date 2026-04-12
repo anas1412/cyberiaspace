@@ -287,11 +287,21 @@ export const createAuthSlice: StateCreator<AuthState, [], [], any> = (set, get, 
     
     get().fetchModelConfig();
 
+    // ============================================================
+    // CRITICAL: Verify Supabase session BEFORE assuming user is authenticated
+    // This prevents the "stale auth state" bug where localStorage says authenticated
+    // but the Supabase session has expired, causing 401 errors on sync.
+    // Use refreshSession to validate the token is actually working.
+    // ============================================================
+    const { data: { session: supabaseSession } } = await supabase.auth.refreshSession();
+    
     const currentUser = get().user;
-    if (get().status === 'authenticated' && currentUser?.id) {
+    
+    // Only proceed if we have BOTH a valid Supabase session AND user in state
+    if (supabaseSession && currentUser?.id && get().status === 'authenticated') {
       syncOrchestrator.setupRealtimeListener(currentUser.id);
       
-      console.log('[AUTH] initAuth: Running sync flow for returning authenticated user');
+      console.log('[AUTH] initAuth: Valid Supabase session found, running sync flow');
       
       // Always fetch fresh profile from database - this ensures plan updates
       // are picked up on every app load (like logout/login does)
@@ -299,6 +309,13 @@ export const createAuthSlice: StateCreator<AuthState, [], [], any> = (set, get, 
       
       // Pass false for isFreshLogin -> prevents re-downloading/overwriting offline work
       await runAuthenticationFlow(currentUser, get, false);
+    } else if (currentUser?.id && !supabaseSession) {
+      // Session expired - clear the stale authenticated state
+      console.log('[AUTH] initAuth: Supabase session expired, clearing stale state');
+      if (typeof get().signOut === 'function') {
+        await get().signOut();
+      }
+      return;
     }
 
     // ============================================================
@@ -306,10 +323,10 @@ export const createAuthSlice: StateCreator<AuthState, [], [], any> = (set, get, 
     // ============================================================
     
     // 1. Check for existing session (from OAuth redirect)
-    const { data: { session: existingSession } } = await supabase.auth.getSession();
-    if (existingSession) {
+    // Already fetched above, reuse it
+    if (supabaseSession) {
       console.log('[Auth] Found existing Supabase session on init, processing...');
-      await get().handleSupabaseSession(existingSession);
+      await get().handleSupabaseSession(supabaseSession);
       return; // handleSupabaseSession will run full auth flow
     }
 

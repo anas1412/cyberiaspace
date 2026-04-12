@@ -139,9 +139,21 @@ export const syncOrchestrator = {
   async triggerSync(force: boolean = false): Promise<void> {
     const { useSyncStore } = await import('../../store/useSyncStore');
     const { useAuthStore } = await import('../../store/useAuthStore');
+    const { supabase } = await import('../supabaseSync');
     
     const authState = useAuthStore.getState();
     const syncState = useSyncStore.getState();
+    
+    // CRITICAL: Verify Supabase session is still valid by attempting refresh
+    // getSession() only returns cached token - doesn't validate if it's actually working
+    // We need to explicitly refresh to catch expired tokens
+    const { data: refreshData, error: refreshError } = await supabase.auth.refreshSession();
+    if (refreshError || !refreshData.session) {
+      console.log('[Sync] triggerSync: Session refresh failed/invalid, aborting sync');
+      // Trigger proper signOut since session is invalid
+      useAuthStore.getState().signOut?.();
+      return;
+    }
     
     if (authState.status !== 'authenticated' || !authState.isOnline) return;
     if (!force && !authState.autoSync) return;
@@ -301,6 +313,16 @@ export const syncOrchestrator = {
   async deltaSync(bypassBlock: boolean = false, providedCloudData: SyncConflictData | null = null): Promise<{ success: boolean; error?: string }> {
     const { useSyncStore } = await import('../../store/useSyncStore');
     const { useAuthStore } = await import('../../store/useAuthStore');
+    const { supabase } = await import('../supabaseSync');
+    
+    // CRITICAL: Verify Supabase session is actually valid by refreshing
+    // getSession() returns cached token even if expired - refreshSession() validates it
+    const { data: refreshData, error: refreshError } = await supabase.auth.refreshSession();
+    if (refreshError || !refreshData.session) {
+      console.log('[Sync] deltaSync: Session refresh failed/invalid, aborting');
+      useAuthStore.getState().signOut?.();
+      return { success: false, error: 'No valid session' };
+    }
     
     if (isSyncBlocked && !bypassBlock) {
       return { success: false, error: 'Sync is blocked' };
