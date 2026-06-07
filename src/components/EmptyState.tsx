@@ -127,10 +127,10 @@ const EmptyState: React.FC = () => {
         <p className={`font-['CyberiaBlueprint',_cursive,_sans-serif] ${guideTextColor} text-[12px] tracking-widest uppercase`}>Cyberia AI</p>
       </div>
 
-      {/* 4. Account Menu (Top Right) */}
+      {/* 4. Search (Top Right) */}
       <div className="hidden md:flex absolute top-[95px] right-[90px] rotate-[4deg] text-center flex flex-col items-center">
         <ChalkArrow d="M 30 70 L 30 10 M 15 30 L 30 10 L 45 30" />
-        <p className={`font-['CyberiaBlueprint',_cursive,_sans-serif] ${guideTextColor} text-[12px] mt-2 tracking-widest uppercase`}>Account</p>
+        <p className={`font-['CyberiaBlueprint',_cursive,_sans-serif] ${guideTextColor} text-[12px] mt-2 tracking-widest uppercase`}>Search</p>
       </div>
 
       {/* 5. System Settings (Bottom Right) */}
