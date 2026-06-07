@@ -686,6 +686,7 @@ export const usePhysics = (
     const spatialVisibleIds = mode === 'spatial' ? new Set(ids.filter(id => {
       const t = thoughtMap.current.get(id);
       if (!t) return false;
+      if (t.deletedAt) return false;
       if (t.archivedAt && !useStore.getState().showArchived) return false;
       const matchesSearch = !spatialSearchQuery || 
         t.text.toLowerCase().includes(spatialSearchQuery.toLowerCase()) ||
