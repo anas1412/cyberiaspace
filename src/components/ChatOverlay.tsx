@@ -1080,7 +1080,9 @@ const ChatOverlay: React.FC = () => {
                           .filter(m =>
                             !modelSearch ||
                             m.name.toLowerCase().includes(modelSearch.toLowerCase()) ||
-                            m.id.toLowerCase().includes(modelSearch.toLowerCase())
+                            m.id.toLowerCase().includes(modelSearch.toLowerCase()) ||
+                            (modelSearch.toLowerCase().includes('free') &&
+                              m.promptPrice === 0 && m.completionPrice === 0)
                           )
                           .map((model) => (
                           <button
