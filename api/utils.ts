@@ -1,5 +1,18 @@
-import type { VercelRequest, VercelResponse } from '@vercel/node';
+import type { IncomingMessage, ServerResponse } from 'node:http';
 import * as cheerio from 'cheerio';
+
+// Inlined Vercel types to avoid dependency on @vercel/node
+interface VercelRequest extends IncomingMessage {
+  query: { [key: string]: string | string[] };
+  cookies: { [key: string]: string };
+  body: any;
+}
+interface VercelResponse extends ServerResponse {
+  send: (body: any) => VercelResponse;
+  json: (jsonBody: any) => VercelResponse;
+  status: (statusCode: number) => VercelResponse;
+  redirect: (statusOrUrl: string | number, url?: string) => VercelResponse;
+}
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
     const { action } = req.query;
