@@ -1026,31 +1026,17 @@ const ChatOverlay: React.FC = () => {
               )}
             </AnimatePresence>
 
-            {/* Model & API Row — replaces Inspector's tab row */}
-            <div className="flex items-center justify-between px-4 md:px-5 py-2.5 relative">
-              <div className="flex-1 pointer-events-none" />
-              <div className="flex items-center gap-2 relative" ref={dropdownRef}>
+            {/* Model & API Row — full width */}
+            <div className="flex items-center gap-2 px-4 md:px-5 py-2.5">
+              <div className="relative flex-1" ref={dropdownRef}>
                 <button
                   onClick={() => setShowModelDropdown(!showModelDropdown)}
-                  className="flex items-center justify-between w-64 px-3 py-1.5 rounded-lg bg-[var(--glass-bg)] hover:bg-[var(--bg-page)] border border-[var(--glass-border)] transition-all group"
+                  className="flex items-center justify-between w-full px-3 py-1.5 rounded-lg bg-[var(--glass-bg)] hover:bg-[var(--bg-page)] border border-[var(--glass-border)] transition-all group"
                 >
                   <span className="text-[9px] font-bold text-[var(--text-primary)] uppercase tracking-widest leading-none truncate">
                     {availableModels.find(m => m.id === selectedModel)?.name || selectedModel.split('/').pop() || 'Model'}
                   </span>
                   <ChevronDown className={cn("w-3 h-3 flex-shrink-0 text-[var(--text-muted)] transition-transform", showModelDropdown && "rotate-180")} />
-                </button>
-
-                <button
-                  onClick={() => setEditingApiKey(true)}
-                  className={cn(
-                    "flex items-center gap-1.5 px-2 py-1.5 rounded-lg border transition-all",
-                    apiKey
-                      ? "bg-[var(--glass-bg)] border-[var(--glass-border)] text-green-500"
-                      : "bg-amber-500/10 border-amber-500/30 text-amber-400 animate-pulse"
-                  )}
-                  title={apiKey ? 'API Key configured' : 'API Key required'}
-                >
-                  <Key className="w-3 h-3" />
                 </button>
 
                 <AnimatePresence>
@@ -1060,7 +1046,7 @@ const ChatOverlay: React.FC = () => {
                       animate={{ opacity: 1, y: 0, scale: 1 }}
                       exit={{ opacity: 0, y: -8, scale: 0.96 }}
                       transition={{ duration: 0.2, ease: [0.23, 1, 0.32, 1] }}
-                      className="absolute top-full left-0 mt-2 w-64 bg-[var(--bg-main)] rounded-2xl border border-[var(--glass-border)] shadow-2xl overflow-hidden z-[100]"
+                      className="absolute top-full left-0 mt-2 w-full bg-[var(--bg-main)] rounded-2xl border border-[var(--glass-border)] shadow-2xl overflow-hidden z-[100]"
                     >
                       {/* Search */}
                       <div className="relative border-b border-[var(--glass-border)]">
@@ -1115,7 +1101,19 @@ const ChatOverlay: React.FC = () => {
                   )}
                 </AnimatePresence>
               </div>
-              <div className="flex-1 pointer-events-none" />
+
+              <button
+                onClick={() => setEditingApiKey(true)}
+                className={cn(
+                  "flex items-center gap-1.5 px-2 py-1.5 rounded-lg border transition-all",
+                  apiKey
+                    ? "bg-[var(--glass-bg)] border-[var(--glass-border)] text-green-500"
+                    : "bg-amber-500/10 border-amber-500/30 text-amber-400 animate-pulse"
+                )}
+                title={apiKey ? 'API Key configured' : 'API Key required'}
+              >
+                <Key className="w-3 h-3" />
+              </button>
             </div>
           </div>
 
