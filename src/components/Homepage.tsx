@@ -93,7 +93,7 @@ const HOW_IT_WORKS_STEPS = [
 const FAQ_ITEMS = [
   {
     question: 'What is Cyberia?',
-    answer: 'Cyberia is a spatial-thinking workspace where your thoughts become physical objects you can move, organize, and connect on an infinite canvas. Designed for researchers, writers, designers, and anyone who thinks visually — it\'s a new way to work with ideas.'
+    answer: 'Cyberia is a visual workspace where your thoughts become physical objects you can move, organize, and connect on an infinite canvas. Designed for researchers, writers, designers, and anyone who thinks visually — it\'s a new way to work with ideas.'
   },
   {
     question: 'How does the AI work?',
@@ -113,7 +113,7 @@ const FAQ_ITEMS = [
   },
   {
     question: 'Can I contribute to the project?',
-    answer: 'Absolutely! Cyberia is open-source on GitHub. You can report bugs, request features, submit pull requests, or join our Discord community to help shape the future of the spatial-thinking workspace.'
+    answer: 'Absolutely! Cyberia is open-source on GitHub. You can report bugs, request features, submit pull requests, or join our Discord community to help shape the future of visual thinking.'
   }
 ];
 
@@ -304,7 +304,7 @@ const Homepage: React.FC = () => {
           <div className="max-w-6xl mx-auto">
             <div className="text-center mb-16 md:mb-20">
               <h2 className="text-3xl md:text-5xl font-bold tracking-tight mb-4">
-                Everything you need for <span className="text-[var(--accent)]">spatial thinking</span>
+                Everything you need for <span className="text-[var(--accent)]">visual thinking</span>
               </h2>
               <p className="text-[var(--text-muted)] text-lg">A workspace that adapts to how your mind naturally organizes information.</p>
             </div>
@@ -341,7 +341,7 @@ const Homepage: React.FC = () => {
               <h2 className="text-3xl md:text-5xl font-bold tracking-tight mb-4">
                 Why <span className="text-[var(--accent)]">Cyberia?</span>
               </h2>
-              <p className="text-[var(--text-muted)] text-lg">Traditional tools were built for folders and lists — not for spatial thinking.</p>
+              <p className="text-[var(--text-muted)] text-lg">Traditional tools were built for folders and lists — not for visual thinking.</p>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-8">
@@ -545,7 +545,7 @@ const Homepage: React.FC = () => {
               </h2>
 
               <p className="text-[var(--text-muted)] text-lg mb-10 max-w-lg mx-auto">
-                Be part of something new. Share ideas, get help, and help shape the future of spatial thinking.
+                Be part of something new. Share ideas, get help, and help shape the future of visual thinking.
               </p>
 
               <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
