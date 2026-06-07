@@ -79,7 +79,7 @@ const Navigation: React.FC<NavigationProps> = ({ isHomepage = false }) => {
             href="/home" 
             className="h-10 px-6 bg-[var(--accent)] hover:bg-[var(--accent-secondary)] text-[var(--accent-contrast)] rounded-xl text-sm font-semibold tracking-wide transition-all shadow-lg shadow-[var(--accent)]/20 hover:shadow-[var(--accent)]/40 flex items-center justify-center border border-white/10 gap-2 group"
           >
-            Launch Cyberia
+            Get started
           </a>
         </div>
 
@@ -146,7 +146,7 @@ const Navigation: React.FC<NavigationProps> = ({ isHomepage = false }) => {
               </button>
 
               <a href="/home" className="w-full py-3 bg-[var(--accent)] text-[var(--accent-contrast)] rounded-xl text-sm font-semibold transition-all text-center flex items-center justify-center gap-2 group">
-                Launch Cyberia
+                Get started
               </a>
             </div>
           </motion.div>
