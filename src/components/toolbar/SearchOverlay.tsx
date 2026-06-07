@@ -1,5 +1,6 @@
 import React, { useEffect, useRef } from 'react';
 import { useStore } from '../../store/useStore';
+import { useModalStore } from '../../store/useModalStore';
 import { Search, X, Circle, Clock, CheckCircle2, Calendar, Tag, Archive, Eye, EyeOff, ChevronDown } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { clsx, type ClassValue } from 'clsx';
@@ -312,26 +313,55 @@ export const SearchOverlay: React.FC<SearchOverlayProps> = ({ isOpen, onClose })
                     {activeStacks.map((stack) => {
                       const isActive = stackFilter?.includes(stack.id) ?? false;
                       return (
-                        <button
-                          key={stack.id}
-                          onClick={() => {
-                            const current = stackFilter ?? [];
-                            const next = isActive ? current.filter(s => s !== stack.id) : [...current, stack.id];
-                            setStackFilter(next.length ? next : null);
-                          }}
-                          className={cn(
-                            "h-7 px-2.5 rounded-lg text-[9px] font-medium tracking-wider border transition-all",
-                            isActive
-                              ? "border-current text-[var(--text-primary)]"
-                              : "bg-[var(--bg-page)] border-transparent text-[var(--text-muted)] hover:text-[var(--text-primary)]"
+                        <div key={stack.id} className="relative group/stack">
+                          <button
+                            onClick={() => {
+                              const current = stackFilter ?? [];
+                              const next = isActive ? current.filter(s => s !== stack.id) : [...current, stack.id];
+                              setStackFilter(next.length ? next : null);
+                            }}
+                            className={cn(
+                              "h-7 px-2.5 rounded-lg text-[9px] font-medium tracking-wider border transition-all",
+                              isActive
+                                ? "border-current text-[var(--text-primary)]"
+                                : "bg-[var(--bg-page)] border-transparent text-[var(--text-muted)] hover:text-[var(--text-primary)]"
+                            )}
+                            style={isActive ? {
+                              backgroundColor: stack.color.replace('1)', '0.3)'),
+                              color: stack.color
+                            } : {}}
+                          >
+                            {stack.name}
+                          </button>
+                          {!isReadOnly && (
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                const thoughtCount = useStore.getState().thoughts.filter(t => t.stackId === stack.id && !t.deletedAt && !t.archivedAt).length;
+                                useModalStore.getState().openModal({
+                                  title: 'Remove Collection?',
+                                  type: 'delete_stack',
+                                  stackName: stack.name,
+                                  thoughtCount,
+                                  onConfirm: (choice) => {
+                                    if (choice === 'delete_all') {
+                                      useStore.getState().deleteStackWithThoughts(stack.id);
+                                    } else {
+                                      useStore.getState().deleteStack(stack.id);
+                                    }
+                                    if (stackFilter?.includes(stack.id)) {
+                                      const next = stackFilter.filter(s => s !== stack.id);
+                                      setStackFilter(next.length ? next : null);
+                                    }
+                                  }
+                                });
+                              }}
+                              className="absolute -top-1 -right-1 w-3.5 h-3.5 flex items-center justify-center rounded-full bg-[var(--bg-page)] border border-[var(--glass-border)] text-[var(--text-muted)] hover:text-red-400 opacity-0 group-hover/stack:opacity-100 transition-all z-10"
+                            >
+                              <X className="w-2 h-2" />
+                            </button>
                           )}
-                          style={isActive ? {
-                            backgroundColor: stack.color.replace('1)', '0.3)'),
-                            color: stack.color
-                          } : {}}
-                        >
-                          {stack.name}
-                        </button>
+                        </div>
                       );
                     })}
                     {activeStacks.length === 0 && (
