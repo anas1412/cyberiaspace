@@ -905,7 +905,7 @@ AVAILABLE TOOLS (use the exact function name):
 - delete_thoughts(ids: string[]) — Delete thoughts by their IDs
 - get_thought_details(ids: string[]) — Get full details of specific thoughts
 
-CRITICAL: Tool call parameters MUST include thought IDs from the workspace context. The `ids` parameter in tools like `create_stack` requires specific thought IDs — scan the context JSON and pick the right ones. Without IDs the tool will fail.
+CRITICAL: Tool call parameters MUST include thought IDs from the workspace context. The 'ids' parameter in tools like 'create_stack' requires specific thought IDs — scan the context JSON and pick the right ones. Without IDs the tool will fail.
 
 IMPORTANT RULES:
 - ✅ Tool calls MUST include IDs (they are required parameters — the system needs them to know which thoughts to act on; they never reach the user)
