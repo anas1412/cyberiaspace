@@ -3,25 +3,18 @@ import {
   CheckCircle, MessageSquare, Loader2, Send, MousePointer2,
   Palette, Database, HelpCircle, Laptop, Download, Upload, 
   Camera, RefreshCw, Trash2, X, Info, ExternalLink,
-  FileText, Smartphone, Zap
+  FileText, Smartphone
 } from 'lucide-react';
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 import { motion, AnimatePresence } from 'framer-motion';
-import { APP_VERSION, PLAN_CONFIG, SHOW_QUOTA_TAB, MAX_UPLOAD_SIZE, MAX_UPLOAD_SIZE_MB } from '../../constants';
+import { APP_VERSION, MAX_UPLOAD_SIZE, MAX_UPLOAD_SIZE_MB } from '../../constants';
 import { useStore } from '../../store/useStore';
-import { useAuthStore } from '../../store/useAuthStore';
 import { useModalStore } from '../../store/useModalStore';
-import { AccessGuard } from '../common/AccessGuard';
 
 function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
-
-const formatStorage = (mb: number) => {
-  if (mb >= 1024) return `${(mb / 1024).toFixed(1)} GB`;
-  return `${mb.toFixed(1)} MB`;
-};
 
 // --- Shared Components ---
 
@@ -79,101 +72,29 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
   handleExport, handleImport,
   deferredPrompt, handleInstall
 }) => {
-  const [activeTab, setActiveTab] = useState<'general' | 'custom' | 'storage' | 'quota'>('general');
-  const [quotaPeriod, setQuotaPeriod] = useState<'daily' | 'weekly' | 'monthly'>('daily');
-  const [nodeBgKey, setNodeBgKey] = useState(0); // Force re-render for node bg changes
-  const [primaryKey, setPrimaryKey] = useState(0); // Force re-render for primary changes
-  const [secondaryKey, setSecondaryKey] = useState(0); // Force re-render for secondary changes
+  const [activeTab, setActiveTab] = useState<'general' | 'custom' | 'storage'>('general');
+  const [nodeBgKey, setNodeBgKey] = useState(0);
+  const [primaryKey, setPrimaryKey] = useState(0);
+  const [secondaryKey, setSecondaryKey] = useState(0);
   const [localPersonality, setLocalPersonality] = useState('');
   const [personalitySaving, setPersonalitySaving] = useState(false);
-  const { user, storageUsageMB, updateSettings, updateQuotaUsage } = useAuthStore();
   const totalThoughtCount = useStore((state) => state.totalThoughtCount);
   const { openModal } = useModalStore();
 
-  const limits = (user?.plan && user.plan in PLAN_CONFIG) 
-    ? PLAN_CONFIG[user.plan as keyof typeof PLAN_CONFIG] 
-    : PLAN_CONFIG.free;
-
-  // Reset to general tab if user is no longer pro but quota tab was selected
+  // Sync local personality state from localStorage
   useEffect(() => {
-    if (activeTab === 'quota' && user?.plan !== 'pro') {
-      setActiveTab('general');
-    }
-  }, [user?.plan, activeTab]);
-
-  // Sync local personality state when user settings change
-  useEffect(() => {
-    setLocalPersonality(user?.settings?.personality || '');
-  }, [user?.settings?.personality]);
+    const stored = localStorage.getItem('cyberia-ai-personality') || '';
+    setLocalPersonality(stored);
+  }, []);
 
   // Save personality handler
-  const savePersonality = async () => {
-    if (!user) return;
+  const savePersonality = () => {
     setPersonalitySaving(true);
     try {
-      await updateSettings({ personality: localPersonality });
+      localStorage.setItem('cyberia-ai-personality', localPersonality);
     } finally {
       setPersonalitySaving(false);
     }
-  };
-
-  // Fetch fresh usage when quota tab is opened and update centralized auth store
-  useEffect(() => {
-    if (activeTab === 'quota' && user?.id && user.id !== 'guest') {
-      const fetchQuotaUsage = async () => {
-        try {
-          const { useAuthStore } = await import('../../store/useAuthStore');
-          const authStore = useAuthStore.getState();
-          const token = await authStore.getOrRefreshToken();
-          if (!token) return;
-          
-          const res = await fetch('/api/chat', {
-            headers: { 'Authorization': `Bearer ${token}` }
-          });
-          const data = await res.json();
-          
-          // Update centralized auth store - propagates to all components including ChatOverlay and Settings
-          updateQuotaUsage({
-            daily_anchor: data.daily_anchor,
-            weekly_anchor: data.weekly_anchor,
-            monthly_anchor: data.monthly_anchor,
-            ai_daily_count: data.count,
-            ai_top_count: data.top_count,
-            ai_medium_count: data.medium_count,
-            ai_small_count: data.small_count,
-            weekly_top_count: data.weekly_top_count,
-            weekly_medium_count: data.weekly_medium_count,
-            weekly_small_count: data.weekly_small_count,
-            monthly_top_count: data.monthly_top_count,
-            monthly_medium_count: data.monthly_medium_count,
-            monthly_small_count: data.monthly_small_count,
-          });
-        } catch (err) {
-          console.error('[Settings] Failed to fetch quota usage:', err);
-        }
-      };
-      fetchQuotaUsage();
-    }
-  }, [activeTab, user?.id, updateQuotaUsage]);
-
-  // Read from centralized auth store - no local state needed
-  const usage = {
-    daily: {
-      top: user?.usage?.ai_top_count || 0,
-      medium: user?.usage?.ai_medium_count || 0,
-      small: user?.usage?.ai_small_count || 0,
-      free: user?.usage?.ai_daily_count || 0,
-    },
-    weekly: {
-      top: user?.usage?.weekly_top_count || 0,
-      medium: user?.usage?.weekly_medium_count || 0,
-      small: user?.usage?.weekly_small_count || 0,
-    },
-    monthly: {
-      top: user?.usage?.monthly_top_count || 0,
-      medium: user?.usage?.monthly_medium_count || 0,
-      small: user?.usage?.monthly_small_count || 0,
-    },
   };
 
   const handleBgUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -198,16 +119,13 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
     
     const { db } = await import('../../db');
     
-    // Get current customBg from space to revoke blob URL if needed
     const currentSpace = await db.spaces.get(activeSpaceId);
     const currentBg = currentSpace?.customBg;
     
-    // Revoke blob URL if it's a local blob
     if (currentBg && currentBg.startsWith('blob:')) {
       URL.revokeObjectURL(currentBg);
     }
     
-    // Clean up local IndexedDB background (backgrounds are local-only now)
     try {
       await db.spaceBackgrounds.delete(activeSpaceId);
     } catch (e) {
@@ -219,7 +137,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
 
   const handleNodeBgChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const color = e.target.value;
-    const alphaColor = color + 'f5'; // Add 96% opacity
+    const alphaColor = color + 'f5';
     localStorage.setItem('cyberia-node-bg', alphaColor);
     document.documentElement.style.setProperty('--node-bg', alphaColor, 'important');
     setNodeBgKey(prev => prev + 1);
@@ -227,24 +145,21 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
 
   const handleNodeBgReset = () => {
     localStorage.removeItem('cyberia-node-bg');
-    // Remove the !important override, apply theme-appropriate default
     const isDark = document.documentElement.getAttribute('data-theme') !== 'light';
     const defaultColor = isDark ? '#12121af5' : '#f8fafc';
     document.documentElement.style.setProperty('--node-bg', defaultColor, 'important');
     setNodeBgKey(prev => prev + 1);
   };
 
-  // Initialize node bg from localStorage on mount
   useEffect(() => {
     const stored = localStorage.getItem('cyberia-node-bg');
     if (stored) {
-      // Use !important to override theme-specific values
       document.documentElement.style.setProperty('--node-bg', stored, 'important');
     }
   }, []);
 
   const getNodeBgColor = () => {
-    void nodeBgKey; // Reference to trigger re-render
+    void nodeBgKey;
     return localStorage.getItem('cyberia-node-bg') || '#12121af5';
   };
 
@@ -252,8 +167,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
     const color = e.target.value;
     localStorage.setItem('cyberia-accent', color);
     document.documentElement.style.setProperty('--accent', color, 'important');
-    // Also update secondary accent
-    const secondaryColor = color + '99'; // Slightly lighter
+    const secondaryColor = color + '99';
     document.documentElement.style.setProperty('--accent-secondary', secondaryColor, 'important');
     setPrimaryKey(prev => prev + 1);
   };
@@ -265,7 +179,6 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
     setPrimaryKey(prev => prev + 1);
   };
 
-  // Initialize accent from localStorage on mount
   useEffect(() => {
     const stored = localStorage.getItem('cyberia-accent');
     if (stored) {
@@ -275,7 +188,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
   }, []);
 
   const getPrimaryColor = () => {
-    void primaryKey; // Reference to trigger re-render
+    void primaryKey;
     return localStorage.getItem('cyberia-accent') || '#6366f1';
   };
 
@@ -292,7 +205,6 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
     setSecondaryKey(prev => prev + 1);
   };
 
-  // Initialize secondary from localStorage on mount
   useEffect(() => {
     const stored = localStorage.getItem('cyberia-secondary');
     if (stored) {
@@ -301,7 +213,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
   }, []);
 
   const getSecondaryColor = () => {
-    void secondaryKey; // Reference to trigger re-render
+    void secondaryKey;
     return localStorage.getItem('cyberia-secondary') || '#8b5cf6';
   };
 
@@ -318,7 +230,6 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
           {[
             { id: 'general', label: 'General', icon: Info },
             { id: 'custom', label: 'Customization', icon: Palette },
-            ...(user?.plan === 'pro' && SHOW_QUOTA_TAB ? [{ id: 'quota', label: 'Quota Usage', icon: Zap }] : []),
             { id: 'storage', label: 'Storage', icon: Database }
           ].map((tab) => (
             <button
@@ -404,7 +315,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                           <link.icon className="w-4 h-4 text-[var(--text-muted)] group-hover:text-[var(--accent)] transition-colors" />
                           <span className="text-[10px] font-semibold tracking-wide text-[var(--text-dimmed)] group-hover:text-[var(--text-primary)]">{link.label}</span>
                         </div>
-<ExternalLink className="w-3 h-3 text-[var(--text-muted)] group-hover:text-[var(--text-dimmed)]" />
+                        <ExternalLink className="w-3 h-3 text-[var(--text-muted)] group-hover:text-[var(--text-dimmed)]" />
                       </button>
                     ))}
                   </div>
@@ -460,46 +371,30 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                     <p className="text-[10px] font-semibold tracking-wide text-[var(--text-muted)] flex items-center gap-2">
                       <MessageSquare className="w-3.5 h-3.5" /> AI Personality
                     </p>
-                    <AccessGuard 
-                      user={user} 
-                      mode="disable" 
-                      feature="pro"
-                      modalTitle="Upgrade to Pro"
-                      modalMessage="Customize your AI personality with Pro."
+                    <button
+                      onClick={savePersonality}
+                      disabled={personalitySaving}
+                      className={cn(
+                        "text-[9px] font-semibold tracking-wide px-3 py-1.5 rounded-lg transition-all flex items-center gap-1.5",
+                        localPersonality !== (localStorage.getItem('cyberia-ai-personality') || '')
+                          ? "bg-[var(--accent)] text-white hover:bg-[var(--accent-secondary)]"
+                          : "bg-[var(--glass-bg)] text-[var(--text-muted)] cursor-not-allowed"
+                      )}
                     >
-                      <button
-                        onClick={savePersonality}
-                        disabled={personalitySaving}
-                        className={cn(
-                          "text-[9px] font-semibold tracking-wide px-3 py-1.5 rounded-lg transition-all flex items-center gap-1.5",
-                          localPersonality !== (user?.settings?.personality || '')
-                            ? "bg-[var(--accent)] text-white hover:bg-[var(--accent-secondary)]"
-                            : "bg-[var(--glass-bg)] text-[var(--text-muted)] cursor-not-allowed"
-                        )}
-                      >
-                        {personalitySaving ? (
-                          <Loader2 className="w-3 h-3 animate-spin" />
-                        ) : (
-                          <CheckCircle className="w-3 h-3" />
-                        )}
-                        {personalitySaving ? 'Saving...' : 'Save'}
-                      </button>
-                    </AccessGuard>
+                      {personalitySaving ? (
+                        <Loader2 className="w-3 h-3 animate-spin" />
+                      ) : (
+                        <CheckCircle className="w-3 h-3" />
+                      )}
+                      {personalitySaving ? 'Saving...' : 'Save'}
+                    </button>
                   </div>
-                  <AccessGuard 
-                    user={user} 
-                    mode="disable" 
-                    feature="pro"
-                    modalTitle="Upgrade to Pro"
-                    modalMessage="Customize your AI personality with Pro."
-                  >
-                    <textarea
-                      value={localPersonality}
-                      onChange={(e) => setLocalPersonality(e.target.value)}
-                      placeholder="Describe how Oracle should behave..."
-                      className="w-full h-24 bg-[var(--glass-bg)] border border-[var(--glass-border)] rounded-xl p-4 text-xs text-[var(--text-primary)] outline-none focus:border-[var(--accent)]/50 transition-all resize-none"
-                    />
-                  </AccessGuard>
+                  <textarea
+                    value={localPersonality}
+                    onChange={(e) => setLocalPersonality(e.target.value)}
+                    placeholder="Describe how Oracle should behave..."
+                    className="w-full h-24 bg-[var(--glass-bg)] border border-[var(--glass-border)] rounded-xl p-4 text-xs text-[var(--text-primary)] outline-none focus:border-[var(--accent)]/50 transition-all resize-none"
+                  />
                 </section>
 
                 {/* Custom Background */}
@@ -529,26 +424,18 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                       </div>
                     </div>
                   ) : (
-                    <AccessGuard 
-                      user={user} 
-                      mode="disable" 
-                      feature="pro"
-                      modalTitle="Pro Feature"
-                      modalMessage="Custom backgrounds require Pro."
-                    >
-                      <label className="relative flex flex-col items-center justify-center gap-4 p-8 rounded-3xl bg-[var(--glass-bg)] border-2 border-dashed border-[var(--glass-border)] hover:border-[var(--accent)]/50 hover:bg-[var(--bg-page)] transition-all cursor-pointer group">
-                        <div className="w-12 h-12 rounded-2xl bg-[var(--bg-page)] flex items-center justify-center group-hover:scale-110 group-hover:bg-[var(--glass-bg)] transition-all">
-                          <Upload className="w-6 h-6 text-[var(--text-muted)] group-hover:text-[var(--text-primary)]" />
-                        </div>
-                        <div className="text-center">
-                          <p className="text-[10px] font-semibold tracking-wide text-[var(--text-dimmed)] group-hover:text-[var(--text-primary)] transition-colors">
-                            {customBg ? 'Update Background' : 'Upload Custom Background'}
-                          </p>
-                          <p className="text-[8px] font-bold text-[var(--text-muted)] uppercase tracking-wide mt-1.5">Supports JPG, PNG, GIF • Max 2MB</p>
-                        </div>
-                        <input type="file" className="hidden" accept="image/*,.gif" onChange={handleBgUpload} />
-                      </label>
-                    </AccessGuard>
+                    <label className="relative flex flex-col items-center justify-center gap-4 p-8 rounded-3xl bg-[var(--glass-bg)] border-2 border-dashed border-[var(--glass-border)] hover:border-[var(--accent)]/50 hover:bg-[var(--bg-page)] transition-all cursor-pointer group">
+                      <div className="w-12 h-12 rounded-2xl bg-[var(--bg-page)] flex items-center justify-center group-hover:scale-110 group-hover:bg-[var(--glass-bg)] transition-all">
+                        <Upload className="w-6 h-6 text-[var(--text-muted)] group-hover:text-[var(--text-primary)]" />
+                      </div>
+                      <div className="text-center">
+                        <p className="text-[10px] font-semibold tracking-wide text-[var(--text-dimmed)] group-hover:text-[var(--text-primary)] transition-colors">
+                          {customBg ? 'Update Background' : 'Upload Custom Background'}
+                        </p>
+                        <p className="text-[8px] font-bold text-[var(--text-muted)] uppercase tracking-wide mt-1.5">Supports JPG, PNG, GIF • Max 2MB</p>
+                      </div>
+                      <input type="file" className="hidden" accept="image/*,.gif" onChange={handleBgUpload} />
+                    </label>
                   )}
                 </section>
 
@@ -593,7 +480,6 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                       </div>
                     </div>
                     
-                    {/* Preset Colors */}
                     <div className="flex gap-2 flex-wrap">
                       {[
                         { color: '#12121a', name: 'Charcoal' },
@@ -661,7 +547,6 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                       </div>
                     </div>
                     
-                    {/* Preset Colors */}
                     <div className="flex gap-2 flex-wrap">
                       {[
                         { color: '#6366f1', name: 'Indigo' },
@@ -735,7 +620,6 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                       </div>
                     </div>
                     
-                    {/* Preset Colors */}
                     <div className="flex gap-2 flex-wrap">
                       {[
                         { color: '#8b5cf6', name: 'Violet' },
@@ -779,39 +663,20 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                 transition={{ duration: 0.2 }}
                 className="space-y-8"
               >
-                {/* Metrics */}
+                {/* Local Storage Info */}
                 <section>
                   <p className="text-[10px] font-semibold tracking-wide text-[var(--text-muted)] mb-4 flex items-center gap-2">
-                    <Database className="w-3.5 h-3.5" /> Storage Usage
+                    <Database className="w-3.5 h-3.5" /> Local Storage
                   </p>
                   <div className="p-6 rounded-2xl bg-[var(--glass-bg)] border border-[var(--glass-border)]">
-                    <div className="flex justify-between items-end mb-4">
-                      <div>
-                        <p className="text-[14px] font-black text-[var(--text-primary)]">{formatStorage(storageUsageMB)}</p>
-                        <p className="text-[9px] font-bold text-[var(--text-muted)] uppercase tracking-wide mt-0.5">Used</p>
-                      </div>
-                      <div className="text-right">
-                        <p className="text-[11px] font-black text-[var(--text-muted)]">{formatStorage(limits.MAX_STORAGE_MB)}</p>
-                        <p className="text-[9px] font-bold text-[var(--text-muted)] uppercase tracking-wide mt-0.5">Quota Limit</p>
-                      </div>
-                    </div>
-                    <div className="h-2 w-full bg-[var(--bg-page)] rounded-full overflow-hidden border border-[var(--glass-border)] p-0.5">
-                      <div 
-                        className={cn(
-                          "h-full transition-all duration-1000 rounded-full",
-                          storageUsageMB > limits.MAX_STORAGE_MB * 0.9 ? "bg-red-500" : storageUsageMB > limits.MAX_STORAGE_MB * 0.7 ? "bg-amber-500" : "bg-[var(--accent)] shadow-[0_0_15px_var(--accent-glow)]"
-                        )}
-                        style={{ width: `${Math.min((storageUsageMB / limits.MAX_STORAGE_MB) * 100, 100)}%` }}
-                      />
-                    </div>
-                    <div className="mt-6 grid grid-cols-2 gap-4">
+                    <div className="mt-4 grid grid-cols-2 gap-4">
                       <div className="p-3 rounded-xl bg-[var(--bg-page)] border border-[var(--glass-border)]">
                         <p className="text-[11px] font-black text-[var(--text-primary)]">{totalThoughtCount}</p>
                         <p className="text-[8px] font-bold text-[var(--text-muted)] uppercase tracking-wide mt-0.5">Total Thoughts</p>
                       </div>
                       <div className="p-3 rounded-xl bg-[var(--bg-page)] border border-[var(--glass-border)]">
-                        <p className="text-[11px] font-black text-[var(--text-primary)]">{Math.round((storageUsageMB / limits.MAX_STORAGE_MB) * 100)}%</p>
-                        <p className="text-[8px] font-bold text-[var(--text-muted)] uppercase tracking-wide mt-0.5">Storage Used</p>
+                        <p className="text-[11px] font-black text-[var(--text-primary)]">Local</p>
+                        <p className="text-[8px] font-bold text-[var(--text-muted)] uppercase tracking-wide mt-0.5">Storage Type</p>
                       </div>
                     </div>
                   </div>
@@ -824,117 +689,24 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                   </p>
                   <button
                     onClick={async () => {
-                      // Fetch deletion counts for preview
-                      const counts = await useStore.getState().getDeletionCounts();
-                      
                       openModal({
-                        type: 'delete_data',
-                        title: 'Delete Your Data',
-                        confirmText: 'Continue',
+                        type: 'alert',
+                        title: '⚠️ Clear All Local Data?',
+                        description: 'This will permanently delete all your local data, including all spaces and thoughts. This cannot be undone.',
+                        confirmText: 'Clear Everything',
                         cancelText: 'Cancel',
-                        deletionCounts: counts,
-                        onConfirm: (mode) => {
-                          if (!mode) return;
-                          
-                          // Show final confirmation with danger styling
-                          openModal({
-                            type: 'alert',
-                            title: '⚠️ Confirm Deletion',
-                            description: `This will permanently delete your ${mode === 'all' ? 'local and cloud' : mode === 'local' ? 'local' : 'cloud'} data. This cannot be undone.`,
-                            confirmText: 'Delete Everything',
-                            cancelText: 'Cancel',
-                            onConfirm: () => {
-                              useStore.getState().deleteData(mode as 'all' | 'local' | 'cloud');
-                            }
-                          });
+                        onConfirm: () => {
+                          useStore.getState().clearWorkspaceData();
                         }
                       });
                     }}
                     className="w-full flex flex-col items-start gap-1 p-5 rounded-2xl bg-[var(--bg-page)] border border-[var(--glass-border)] hover:bg-red-500/5 hover:border-red-500/20 transition-all group"
                   >
                     <Trash2 className="w-4 h-4 text-[var(--text-muted)] group-hover:text-red-400 transition-colors" />
-                    <p className="text-[10px] font-semibold tracking-wide text-[var(--text-dimmed)] group-hover:text-red-400 mt-2">Delete All Data</p>
-                    <p className="text-[8px] font-medium text-[var(--text-muted)] uppercase tracking-wide leading-relaxed mt-1">Manage or remove your data</p>
+                    <p className="text-[10px] font-semibold tracking-wide text-[var(--text-dimmed)] group-hover:text-red-400 mt-2">Clear All Data</p>
+                    <p className="text-[8px] font-medium text-[var(--text-muted)] uppercase tracking-wide leading-relaxed mt-1">Permanently delete everything</p>
                   </button>
                 </section>
-              </motion.div>
-            )}
-
-            {activeTab === 'quota' && (
-              <motion.div 
-                key="quota"
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -10 }}
-                transition={{ duration: 0.2 }}
-                className="space-y-4"
-              >
-                {/* Period Tabs */}
-                <div className="flex gap-2 mb-4">
-                  {(['daily', 'weekly', 'monthly'] as const).map((period) => (
-                    <button
-                      key={period}
-                      onClick={() => setQuotaPeriod(period)}
-className={cn(
-                         "px-4 py-2 rounded-lg text-[9px] font-semibold tracking-wide transition-all",
-                         quotaPeriod === period
-                           ? "bg-[var(--glass-bg)] text-[var(--text-primary)] border border-[var(--glass-border)]"
-                           : "text-[var(--text-muted)] hover:text-[var(--text-primary)]"
-                       )}
-                    >
-                      {period}
-                    </button>
-                  ))}
-                </div>
-
-                {/* Usage Bars - show remaining percentage (100% = full quota remaining, 0% = quota exhausted) */}
-                {quotaPeriod === 'daily' && (
-                  <>
-                    {/* Premium */}
-                    <div className="p-4 rounded-2xl bg-[var(--glass-bg)] border border-[var(--glass-border)]">
-                      <div className="flex justify-between items-center mb-3">
-                        <span className="text-[11px] font-bold text-[var(--accent-secondary)]">PREMIUM</span>
-                        <span className="text-[14px] font-black text-[var(--text-primary)]">{Math.max(0, 100 - Math.round((usage.daily.top / 15) * 100))}%</span>
-                      </div>
-                      <div className="h-2 w-full bg-[var(--bg-page)] rounded-full overflow-hidden border border-[var(--glass-border)] p-0.5">
-                        <div className="h-full bg-[var(--accent)] rounded-full" style={{ width: `${Math.max(0, Math.min(100, 100 - (usage.daily.top / 15) * 100))}%` }} />
-                      </div>
-                    </div>
-
-                    {/* Normal */}
-                    <div className="p-4 rounded-2xl bg-[var(--glass-bg)] border border-[var(--glass-border)]">
-                      <div className="flex justify-between items-center mb-3">
-                        <span className="text-[11px] font-bold text-[var(--accent-secondary)]">NORMAL</span>
-                        <span className="text-[14px] font-black text-[var(--text-primary)]">{Math.max(0, 100 - Math.round((usage.daily.medium / 60) * 100))}%</span>
-                      </div>
-                      <div className="h-2 w-full bg-[var(--bg-page)] rounded-full overflow-hidden border border-[var(--glass-border)] p-0.5">
-                        <div className="h-full bg-[var(--accent)] rounded-full" style={{ width: `${Math.max(0, Math.min(100, 100 - (usage.daily.medium / 60) * 100))}%` }} />
-                      </div>
-                    </div>
-
-                    {/* Small */}
-                    <div className="p-4 rounded-2xl bg-[var(--glass-bg)] border border-[var(--glass-border)]">
-                      <div className="flex justify-between items-center mb-3">
-                        <span className="text-[11px] font-bold text-[var(--accent-secondary)]">SMALL</span>
-                        <span className="text-[14px] font-black text-[var(--text-primary)]">{Math.max(0, 100 - Math.round((usage.daily.small / 500) * 100))}%</span>
-                      </div>
-                      <div className="h-2 w-full bg-[var(--bg-page)] rounded-full overflow-hidden border border-[var(--glass-border)] p-0.5">
-                        <div className="h-full bg-[var(--accent)] rounded-full" style={{ width: `${Math.max(0, Math.min(100, 100 - (usage.daily.small / 500) * 100))}%` }} />
-                      </div>
-                    </div>
-
-{/* Free */}
-                    <div className="p-4 rounded-2xl bg-[var(--glass-bg)] border border-[var(--glass-border)]">
-                      <div className="flex justify-between items-center mb-3">
-                        <span className="text-[11px] font-bold text-[var(--text-muted)]">FREE</span>
-                        <span className="text-[14px] font-black text-[var(--text-primary)]">{(user?.plan || 'free') === 'pro' ? '∞' : `${Math.max(0, 100 - Math.round((usage.daily.free / 15) * 100))}%`}</span>
-                      </div>
-                      <div className="h-2 w-full bg-[var(--bg-page)] rounded-full overflow-hidden border border-[var(--glass-border)] p-0.5">
-                        <div className="h-full bg-[var(--text-muted)] rounded-full" style={{ width: `${(user?.plan || 'free') === 'pro' ? 100 : Math.max(0, Math.min(100, 100 - (usage.daily.free / 15) * 100))}%` }} />
-                      </div>
-                    </div>
-                  </>
-                )}
               </motion.div>
             )}
           </AnimatePresence>
@@ -1161,7 +933,6 @@ export const ShortcutsModal: React.FC<{ isOpen: boolean; onClose: () => void }> 
             </div>
           ))}
           
-
         </div>
 
         <ModalFooter onClose={onClose} />

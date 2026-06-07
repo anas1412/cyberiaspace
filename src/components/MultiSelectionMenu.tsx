@@ -3,7 +3,6 @@ import { useStore } from '../store/useStore';
 import { useModalStore } from '../store/useModalStore';
 import { X, Trash2, Palette, Archive, ArchiveRestore } from 'lucide-react';
 import { STACK_COLORS } from '../constants';
-import { syncOrchestrator } from '../services/sync/syncOrchestrator';
 import { motion, AnimatePresence } from 'framer-motion';
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
@@ -158,17 +157,6 @@ const MultiSelectionMenu: React.FC = () => {
     setPendingRecurrence(sharedRecurrence ?? null);
     setPendingLocation(sharedLocation ?? null);
   }, [selectedThoughtIds, sharedDate, sharedReminder, sharedRecurrence, sharedLocation]);
-
-  // Register all selected thoughts as being edited for sync protection
-  React.useEffect(() => {
-    // Register all selected thoughts as being edited
-    selectedThoughtIds.forEach(id => syncOrchestrator.startEditing(id));
-
-    return () => {
-      // Unregister when selection changes or component unmounts
-      selectedThoughtIds.forEach(id => syncOrchestrator.stopEditing(id));
-    };
-  }, [selectedThoughtIds]);
 
   const sharedStack = React.useMemo(() => {
     if (!selectedThoughtIds || selectedThoughtIds.length < 2) return null;

@@ -9,7 +9,6 @@ function cn(...inputs: ClassValue[]) {
 
 interface StatusBarProps {
   thoughtsCount: number;
-  limits: any;
   activeSpace: any;
   undo: () => void;
   redo: () => void;
@@ -22,12 +21,14 @@ interface StatusBarProps {
   setPhysicsIntensity: (intensity: number) => void;
 }
 
+const NO_LIMIT = 999999;
+
 export const StatusBar: React.FC<StatusBarProps> = ({ 
-  thoughtsCount, limits, activeSpace, undo, redo, 
+  thoughtsCount, activeSpace, undo, redo, 
   historyIndex, historyLength, zoomIn, zoomOut, resetTransform,
   physicsIntensity, setPhysicsIntensity
 }) => {
-  const capacity = (thoughtsCount / limits.MAX_THOUGHTS_PER_SPACE) * 100;
+  const capacity = (thoughtsCount / NO_LIMIT) * 100;
   
   const capacityDotColor = capacity >= 100 
     ? "bg-red-500 text-red-500" 
@@ -51,15 +52,13 @@ export const StatusBar: React.FC<StatusBarProps> = ({
       <div className="group relative flex items-center justify-center gap-2 md:gap-3 cursor-default">
         <div className="absolute bottom-full mb-4 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-all duration-300 translate-y-2 group-hover:translate-y-0 pointer-events-none whitespace-nowrap z-[10001]">
           <div className="glass px-3 py-1.5 rounded-xl border border-[var(--glass-border)] flex items-center gap-2 shadow-2xl bg-[var(--bg-main)]/90 backdrop-blur-xl">
-            <span className="text-[10px] font-semibold tracking-wide text-[var(--text-primary)]/90">Capacity</span>
-            <div className="w-[1px] h-2 bg-[var(--glass-border)] mx-0.5" />
-            <span className="text-[10px] font-semibold text-[var(--accent-secondary)]">{limits.MAX_THOUGHTS_PER_SPACE} Max</span>
+            <span className="text-[10px] font-semibold tracking-wide text-[var(--text-primary)]/90">Thoughts</span>
           </div>
         </div>
         <span className={cn("w-1.5 h-1.5 rounded-full flex-shrink-0 transition-all shadow-[0_0_10px_currentColor]", capacityDotColor)}></span>
         <span className={cn("text-[9px] md:text-[10px] uppercase font-semibold tracking-wide transition-colors", capacityTextColor)}>
           <span>{thoughtsCount}</span>
-          <span className="hidden sm:inline">/{limits.MAX_THOUGHTS_PER_SPACE} {thoughtsCount > limits.MAX_THOUGHTS_PER_SPACE ? 'Overcapacity' : 'Available'}</span>
+          <span className="hidden sm:inline"> Total</span>
         </span>
       </div>
 

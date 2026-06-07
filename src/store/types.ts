@@ -1,5 +1,4 @@
 import { type Space, type Thought, type Stack, type ThoughtType } from '../db';
-import { type User, type SubscriptionPlan, type AccessPeriod, PLAN_CONFIG } from '../constants';
 
 export interface CyberiaState {
   activeSpaceId: string | null;
@@ -16,18 +15,21 @@ export interface CyberiaState {
   linkingSourceId: string | null;
   calendarSearchQuery: string;
   calendarStackFilter: string | null;
+  calendarStatusFilter: 'none' | 'todo' | 'doing' | 'done' | null;
+  calendarTypeFilter: ThoughtType[] | null;
   kanbanSearchQuery: string;
   kanbanStackFilter: string | null;
   kanbanStatusFilter: 'none' | 'todo' | 'doing' | 'done' | null;
   kanbanDateFilter: string | null;
-  calendarStatusFilter: 'none' | 'todo' | 'doing' | 'done' | null;
+  kanbanTypeFilter: ThoughtType[] | null;
   spatialSearchQuery: string;
   spatialStackFilter: string | null;
   spatialStatusFilter: 'none' | 'todo' | 'doing' | 'done' | null;
   spatialDateFilter: string | null;
+  spatialTypeFilter: ThoughtType[] | null;
   showArchived: boolean;
   theme: 'dark' | 'light';
-  language: 'en' | 'fr';
+
   customBg: string | null;
   customBgLoading: boolean;
   isSpaceLoading: boolean;
@@ -59,8 +61,6 @@ export interface CyberiaState {
   _savedUserState: { spaces: Space[]; thoughts: Thought[]; stacks: Stack[]; activeSpaceId: string | null } | null;
   createInitialWorkspace: () => Promise<void>;
 
-  getLimits: () => typeof PLAN_CONFIG['free'];
-
   isChatOpen: boolean;
   oracleChatMode: 'chat' | 'action';
 
@@ -79,12 +79,8 @@ export interface CyberiaState {
   zoomIn: () => void;
   zoomOut: () => void;
   resetTransform: () => void;
-  clearWorkspace: () => Promise<void>;
-  deleteData: (mode: 'all' | 'local' | 'cloud') => Promise<void>;
-  getDeletionCounts: () => Promise<{ spaces: number; thoughts: number; stacks: number; files: number }>;
 
   setTheme: (theme: 'dark' | 'light') => void;
-  setLanguage: (lang: 'en' | 'fr') => void;
   setCustomBg: (bg: File | string | null) => Promise<void>;
   setCustomBgValue: (bg: string | null) => void;
   setDeferredPrompt: (prompt: any) => void;
@@ -95,7 +91,7 @@ export interface CyberiaState {
   setActiveSpace: (id: string) => Promise<void>;
   setCalendarViewDate: (date: Date) => void;
   addSpace: (name: string) => Promise<void>;
-  updateSpace: (id: string, updates: Partial<Space>, options?: { skipSync?: boolean }) => Promise<void>;
+  updateSpace: (id: string, updates: Partial<Space>) => Promise<void>;
   deleteSpace: (id: string) => Promise<void>;
   reorderSpaces: (spaces: Space[]) => Promise<void>;
   saveSpaceTransform: (id: string, transform: { x: number; y: number; scale: number }) => Promise<void>;
@@ -103,9 +99,9 @@ export interface CyberiaState {
   addThought: (thought: Partial<Thought>) => Promise<string>;
   addThoughts: (thoughts: Partial<Thought>[]) => Promise<string[]>;
   patchThought: (id: string, updates: Partial<Thought>) => void;
-  updateThought: (id: string, updates: Partial<Thought>, options?: { skipSync?: boolean }) => Promise<void>;
-  updateThoughts: (ids: string[], updates: Partial<Thought>, options?: { skipSync?: boolean }) => Promise<void>;
-  bulkUpdateThoughts: (updates: { id: string; updates: Partial<Thought> }[], options?: { skipSync?: boolean }) => Promise<void>;
+  updateThought: (id: string, updates: Partial<Thought>) => Promise<void>;
+  updateThoughts: (ids: string[], updates: Partial<Thought>) => Promise<void>;
+  bulkUpdateThoughts: (updates: { id: string; updates: Partial<Thought> }[]) => Promise<void>;
   deleteThought: (id: string) => Promise<void>;
   deleteThoughts: (ids: string[]) => Promise<void>;
   archiveThought: (id: string) => Promise<void>;
@@ -128,22 +124,18 @@ export interface CyberiaState {
   setCalendarSearchQuery: (query: string) => void;
   setCalendarStackFilter: (stackIds: string[] | null) => void;
   setCalendarStatusFilter: (statuses: Array<'todo' | 'doing' | 'done'> | null) => void;
-  calendarTypeFilter: ThoughtType[] | null;
   setCalendarTypeFilter: (types: ThoughtType[] | null) => void;
   setKanbanSearchQuery: (query: string) => void;
   setKanbanStackFilter: (stackIds: string[] | null) => void;
   setKanbanStatusFilter: (statuses: Array<'todo' | 'doing' | 'done'> | null) => void;
   setKanbanDateFilter: (date: string | null) => void;
-  kanbanTypeFilter: ThoughtType[] | null;
   setKanbanTypeFilter: (types: ThoughtType[] | null) => void;
   setSpatialSearchQuery: (query: string) => void;
   setSpatialStackFilter: (stackIds: string[] | null) => void;
   setSpatialStatusFilter: (statuses: Array<'todo' | 'doing' | 'done'> | null) => void;
   setSpatialDateFilter: (date: string | null) => void;
-  spatialTypeFilter: ThoughtType[] | null;
   setSpatialTypeFilter: (types: ThoughtType[] | null) => void;
 
-  // Directory mode state
   directorySearchQuery: string;
   directoryGroupBy: 'stack' | 'status' | 'date' | 'priority' | 'type';
   directorySortBy: 'order' | 'alpha' | 'alpha-reverse' | 'date-newest' | 'date-oldest';
@@ -167,98 +159,13 @@ export interface CyberiaState {
   isReadOnly: boolean;
   creatorName: string | null;
   lastUpdated: string | null;
-  importFullState: (data: any, merge?: boolean) => Promise<void>;
 
-  clearLocalData: () => Promise<void>;
   resetStoreState: (theme?: 'dark' | 'light') => void;
   exportData: () => Promise<void>;
   importData: (file: File) => Promise<void>;
   cleanupTrash: () => Promise<void>;
   isLocalWorkspaceEmpty: () => Promise<boolean>;
   migrateLegacyData: (userId: string) => Promise<void>;
-  migrateGuestSpaces: (accountUserId: string) => Promise<{ migrated: number; discarded: number }>;
-  calculatePendingUploadSize: (userId: string) => Promise<number>;
-  discardGuestSpaces: () => Promise<void>;
   ensureWorkspaceForCurrentUser: () => Promise<void>;
-  mergeGuestSpace: (sourceSpaceId: string, targetSpaceId: string) => Promise<boolean>;
-  discardGuestSpace: (id: string) => Promise<boolean>;
   clearWorkspaceData: () => void;
-}
-
-export interface AuthState {
-  user: User | null;
-  accessToken: string | null;
-  accessTokenExpiresAt: number | null;
-  refreshSecret: string | null;
-  grantedScopes: string[];
-  status: 'idle' | 'loading' | 'authenticated' | 'unauthenticated';
-  syncStatus: 'synced' | 'syncing' | 'error' | 'offline';
-  lastSync: Date | null;
-  autoSync: boolean;
-  cloudUsage: number;
-  storageUsageMB: number;
-  activeDownloads: string[];
-  isOnline: boolean;
-  _migrationInProgress: boolean;
-  setMigrationInProgress: (inProgress: boolean) => void;
-
-  // AI Model configuration (fetched from backend)
-  modelConfig: {
-    tiers: {
-      top: { name: string; quota: number; weeklyQuota: number; monthlyQuota: number; models: { id: string; name: string; desc: string }[] };
-      medium: { name: string; quota: number; weeklyQuota: number; monthlyQuota: number; models: { id: string; name: string; desc: string }[] };
-      small: { name: string; quota: number; weeklyQuota: number; monthlyQuota: number; models: { id: string; name: string; desc: string }[] };
-      free: { name: string; quota: number | null; weeklyQuota: number | null; monthlyQuota: number | null; models: { id: string; name: string; desc: string }[] };
-    };
-    config: {
-      free: { AI_DAILY_LIMIT: number; AI_TOP_LIMIT: number; AI_MEDIUM_LIMIT: number; AI_SMALL_LIMIT: number; AI_TOP_WEEKLY: number; AI_MEDIUM_WEEKLY: number; AI_SMALL_WEEKLY: number; AI_TOP_MONTHLY: number; AI_MEDIUM_MONTHLY: number; AI_SMALL_MONTHLY: number };
-      pro: { AI_DAILY_LIMIT: number; AI_TOP_LIMIT: number; AI_MEDIUM_LIMIT: number; AI_SMALL_LIMIT: number; AI_TOP_WEEKLY: number; AI_MEDIUM_WEEKLY: number; AI_SMALL_WEEKLY: number; AI_TOP_MONTHLY: number; AI_MEDIUM_MONTHLY: number; AI_SMALL_MONTHLY: number };
-    };
-  } | null;
-  fetchModelConfig: () => Promise<void>;
-
-  setAuthenticatedUser: (user: User, token: string, _refreshSecret?: string, _scopes?: string[], _expiresIn?: number) => Promise<void>;
-  signOut: () => Promise<void>;
-  syncData: () => Promise<void>;
-  syncToServices: () => Promise<void>;
-  processOfflineChanges: () => Promise<void>;
-  uploadThoughtBlob: (thoughtId: string, force?: boolean) => Promise<void>;
-  downloadSingleBlob: (thoughtId: string) => Promise<void>;
-  downloadMissingBlobs: () => Promise<void>;
-  uploadSpaceBackground: (spaceId: string, force?: boolean) => Promise<void>;
-  healSpaceBackgrounds: () => Promise<void>;
-  removeCloudAsset: (thoughtId: string) => Promise<void>;
-  importCloudData: () => Promise<unknown | null>;
-  setAutoSync: (enabled: boolean) => void;
-  deleteCloudData: () => Promise<void>;
-  calculateUsage: (thoughtCount: number) => void;
-  initAuth: () => Promise<void>;
-  handlePostAuthSync: () => Promise<void>;
-  _syncPromise: Promise<void> | null;
-  upgradePlan: (plan: SubscriptionPlan, period?: AccessPeriod) => void;
-  checkExpiry: () => void;
-  handlePlanRegression: () => Promise<void>;
-  refreshProfile: () => Promise<void>;
-  getOrRefreshToken: () => Promise<string | null>;
-  getSessionToken: () => Promise<string | null>;
-  updateSettings: (settings: Partial<User['settings']>) => Promise<void>;
-  cancelSubscription: () => void;
-  setupRefreshInterval: () => void;
-  mergeUserData: (userData: Partial<User>) => void;
-  handleSupabaseSession: (session: any) => Promise<void>;
-  updateQuotaUsage: (usageData: {
-    daily_anchor?: string;
-    weekly_anchor?: string;
-    monthly_anchor?: string;
-    ai_daily_count?: number;
-    ai_top_count?: number;
-    ai_medium_count?: number;
-    ai_small_count?: number;
-    weekly_top_count?: number;
-    weekly_medium_count?: number;
-    weekly_small_count?: number;
-    monthly_top_count?: number;
-    monthly_medium_count?: number;
-    monthly_small_count?: number;
-  }) => void;
 }

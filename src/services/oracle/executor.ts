@@ -39,43 +39,30 @@ const readFileHelper = async (id: string, store: any) => {
   const t = store.thoughts.find((thought: any) => thought.id === id);
   if (!t) return { id, success: false, error: 'Not found' };
 
-  const { useAuthStore } = await import('../../store/useAuthStore');
-  const currentUserId = useAuthStore.getState().user?.id ?? 'guest';
-  if (t.userId !== currentUserId) {
-    return { id, success: false, error: 'Access denied: thought belongs to another user' };
-  }
-
   const data = t.data;
   const isImage = t.meta?.file?.type?.startsWith('image/') || 
                   t.text?.toLowerCase().match(/\.(jpg|jpeg|png|gif|webp|svg)$/);
   const isPdf = t.meta?.file?.type?.includes('pdf') || 
                 t.text?.toLowerCase().endsWith('.pdf');
 
-  // Helper to get a fresh signed URL for cloud files (bucket is private)
-  const getFreshUrl = async (): Promise<string | null> => {
-    if (t.storagePath) {
-      try {
-        const { supabaseStorage } = await import('../supabaseStorage');
-        return await supabaseStorage.getSignedUrl(t.storagePath);
-      } catch (e) {
-        console.warn('[Oracle] Failed to get signed URL:', e);
-      }
-    }
-    return t.storageUrl || (data?.type === 'file' ? data.url : null);
+  // Resolve file URL from local blob or data.url
+  const getLocalUrl = async (): Promise<string | null> => {
+    // First check data.url (inline thumbnail/data)
+    if (data?.type === 'file' && data.url) return data.url;
+    // Fall back to local IndexedDB blob
+    const blobEntry = await db.blobs.filter(b => b.thoughtId === id && b.userId === 'guest').first();
+    if (blobEntry) return URL.createObjectURL(blobEntry.blob);
+    return null;
   };
 
   if (isImage) {
-    const url = await getFreshUrl();
+    const url = await getLocalUrl();
     return { id, success: true, type: 'image', url, name: t.text };
   }
 
   if (isPdf) {
-    let finalUrl = await getFreshUrl();
-    if (!finalUrl) {
-      const blobEntry = await db.blobs.filter(b => b.thoughtId === id && b.userId === currentUserId).first();
-      if (blobEntry) finalUrl = URL.createObjectURL(blobEntry.blob);
-    }
-    return { id, success: true, type: 'pdf', url: finalUrl, name: t.text };
+    const url = await getLocalUrl();
+    return { id, success: true, type: 'pdf', url, name: t.text };
   }
 
   // Default to text content
@@ -131,8 +118,7 @@ export const executeOracleTool = async (toolCall: any, store: any) => {
             location: t.location,
             status: t.status,
             priority: t.priority,
-            meta: t.meta,
-            syncStatus: t.syncStatus
+            meta: t.meta
           };
         });
         

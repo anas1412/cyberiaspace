@@ -25,7 +25,7 @@ export const PaintRenderer: React.FC<PaintRendererProps> = ({
   // Use the dual-read hook for backward compatibility
   const { drawing } = useThoughtPayload(thought);
   
-  const hasRemoteContent = thought.storageUrl && !drawing && thought.syncStatus !== 'synced';
+  const hasRemoteContent = false;
 
   return (
     <div data-trigger="paint" className={cn(

@@ -1,150 +1,14 @@
-export type SubscriptionPlan = 'free' | 'pro' | 'enterprise';
-export type AccessPeriod = 'monthly' | 'yearly';
 export type Theme = 'dark' | 'light';
 
 export const DEFAULT_THEME: Theme = (() => {
-  // Module loads in browser only, cast to access localStorage safely
   try {
     const stored = (globalThis as unknown as { localStorage: { getItem: (key: string) => string | null } }).localStorage.getItem('cyberia-theme');
     if (stored === 'dark' || stored === 'light') return stored;
   } catch {}
   return 'light';
 })();
+
 export const DEFAULT_PHYSICS = true;
-
-export interface User {
-  id: string;
-  name: string;
-  email: string;
-  avatar: string;
-  plan: SubscriptionPlan;
-  subscriptionStatus: 'active' | 'trialing' | 'past_due' | 'unpaid' | 'canceled' | 'expired' | 'none';
-  expiryDate: string | null;
-  polarCustomerId?: string | null;
-  polarSubscriptionId?: string | null;
-  paymentProvider?: 'polar' | 'flouci';
-  usage: {
-    // Daily counters
-    ai_daily_count: number;
-    ai_top_count: number;
-    ai_medium_count: number;
-    ai_small_count: number;
-    sync_thoughts: number;
-    // Anchors (local date strings)
-    daily_anchor: string;
-    weekly_anchor: string;
-    monthly_anchor: string;
-    // Weekly counters
-    weekly_top_count: number;
-    weekly_medium_count: number;
-    weekly_small_count: number;
-    // Monthly counters
-    monthly_top_count: number;
-    monthly_medium_count: number;
-    monthly_small_count: number;
-  };
-  settings: {
-    // Account-wide settings only
-    autoSync: boolean;
-    space: string;
-    personality?: string;
-    theme?: 'dark' | 'light';
-  };
-}
-
-
-export interface PlanLimits {
-  MAX_SPACES: number;
-  MAX_THOUGHTS_PER_SPACE: number;
-  MAX_CLOUD_THOUGHTS: number;
-  MAX_STORAGE_MB: number;
-  AI_ENABLED: boolean;
-  AI_DAILY_LIMIT?: number;
-  AI_TOP_LIMIT?: number;
-  AI_MEDIUM_LIMIT?: number;
-  AI_SMALL_LIMIT?: number;
-  // Weekly limits
-  AI_TOP_WEEKLY?: number;
-  AI_MEDIUM_WEEKLY?: number;
-  AI_SMALL_WEEKLY?: number;
-  // Monthly limits
-  AI_TOP_MONTHLY?: number;
-  AI_MEDIUM_MONTHLY?: number;
-  AI_SMALL_MONTHLY?: number;
-  THEMES_ENABLED: string[];
-  PRICE?: {
-    monthly: { usd: number; tnd: number };
-    yearly: { usd: number; tnd: number };
-  };
-  // Enterprise specific
-  MIN_SEATS?: number;
-}
-
-export const PLAN_CONFIG: Record<SubscriptionPlan, PlanLimits> = {
-  free: {
-    MAX_SPACES: 4,
-    MAX_THOUGHTS_PER_SPACE: 30,
-    MAX_CLOUD_THOUGHTS: 120,
-    MAX_STORAGE_MB: 20,
-    AI_ENABLED: false,
-    AI_DAILY_LIMIT: 15,
-    AI_TOP_LIMIT: 0,
-    AI_MEDIUM_LIMIT: 0,
-    AI_SMALL_LIMIT: 0,
-    AI_TOP_WEEKLY: 0,
-    AI_MEDIUM_WEEKLY: 0,
-    AI_SMALL_WEEKLY: 0,
-    AI_TOP_MONTHLY: 0,
-    AI_MEDIUM_MONTHLY: 0,
-    AI_SMALL_MONTHLY: 0,
-    THEMES_ENABLED: ['dark', 'light'],
-  },
-  pro: {
-    MAX_SPACES: 20,
-    MAX_THOUGHTS_PER_SPACE: 100,
-    MAX_CLOUD_THOUGHTS: 2000,
-    MAX_STORAGE_MB: 1024,
-    AI_ENABLED: true,
-    AI_DAILY_LIMIT: 10000, // Legacy - AI limits now fetched from /api/models
-    AI_TOP_LIMIT: 0,       // Legacy - now fetched from /api/models
-    AI_MEDIUM_LIMIT: 0,    // Legacy - now fetched from /api/models
-    AI_SMALL_LIMIT: 0,     // Legacy - now fetched from /api/models
-    AI_TOP_WEEKLY: 0,      // Legacy - now fetched from /api/models
-    AI_MEDIUM_WEEKLY: 0,   // Legacy - now fetched from /api/models
-    AI_SMALL_WEEKLY: 0,    // Legacy - now fetched from /api/models
-    AI_TOP_MONTHLY: 0,     // Legacy - now fetched from /api/models
-    AI_MEDIUM_MONTHLY: 0,  // Legacy - now fetched from /api/models
-    AI_SMALL_MONTHLY: 0,   // Legacy - now fetched from /api/models
-    THEMES_ENABLED: ['dark', 'light'],
-    PRICE: {
-      monthly: { usd: 10, tnd: 19 },
-      yearly: { usd: 100, tnd: 190 },
-    },
-  },
-  enterprise: {
-    MAX_SPACES: 100,
-    MAX_THOUGHTS_PER_SPACE: 500,
-    MAX_CLOUD_THOUGHTS: 10000,
-    MAX_STORAGE_MB: 10000, // 10GB - generous but not "unlimited"
-    AI_ENABLED: true,
-    AI_DAILY_LIMIT: 50000,
-    AI_TOP_LIMIT: 1000,
-    AI_MEDIUM_LIMIT: 5000,
-    AI_SMALL_LIMIT: 10000,
-    AI_TOP_WEEKLY: 5000,
-    AI_MEDIUM_WEEKLY: 20000,
-    AI_SMALL_WEEKLY: 50000,
-    AI_TOP_MONTHLY: 20000,
-    AI_MEDIUM_MONTHLY: 80000,
-    AI_SMALL_MONTHLY: 200000,
-    THEMES_ENABLED: ['dark', 'light'],
-    PRICE: {
-      monthly: { usd: 25, tnd: 75 }, // per seat, min 5 seats
-      yearly: { usd: 250, tnd: 750 },
-    },
-    MIN_SEATS: 5,
-  },
-};
 
 export const STACK_COLORS = [
   '#6366f1', // Indigo
@@ -172,13 +36,9 @@ export const ORACLE_CONFIG = {
 export const APP_VERSION = '1.1.0';
 
 // Feature Flags
-export const SHOW_QUOTA_TAB = false; // Set to true to show quota usage tab in settings
+export const SHOW_QUOTA_TAB = false;
 
-// Use process.env for server-side (Vercel), import.meta.env for client-side
 const getDefaultModel = () => {
-  if (typeof process !== 'undefined' && process.env?.VITE_OPENROUTER_MODEL) {
-    return process.env.VITE_OPENROUTER_MODEL;
-  }
   // @ts-ignore - import.meta.env is available in Vite client
   return (typeof import.meta !== 'undefined' && import.meta?.env?.VITE_OPENROUTER_MODEL) 
     || 'openrouter/free';
@@ -186,7 +46,6 @@ const getDefaultModel = () => {
 export const DEFAULT_MODEL = getDefaultModel();
 
 export const VERIFICATION_MODEL = [
-/*   'gemma-3-27b-it', */
   'gemma-3-12b-it',
 ];
 
@@ -205,12 +64,3 @@ export const TAVILY_CONFIG = {
   TIMEOUT_MS: 8000,
   INCLUDE_ANSWER: true,
 };
-
-// Enterprise features for pricing page
-export const ENTERPRISE_FEATURES = [
-  'All Pro features',
-  '5+ team members',
-  '5GB storage per user',
-  'Realtime team collaboration across shared spaces',
-  'Priority support with SLA',
-];

@@ -1,7 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useStore } from '../../store/useStore';
 import { useThoughtPayload } from '../thought/hooks/useThoughtPayload';
-import { syncOrchestrator } from '../../services/sync/syncOrchestrator';
 import { Youtube, ExternalLink, Music, MessageCircle, Share2, Link as LinkIcon, ChevronDown, ChevronUp, Palette, ChevronLeft, ChevronRight } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { getEmbedInfo } from '../../utils/embeds';
@@ -323,15 +322,6 @@ const EmbedFocusEditor: React.FC = () => {
 
   const scrollerRef = useRef<HTMLDivElement>(null);
   const [isHydrated, setIsHydrated] = useState(false);
-
-  React.useEffect(() => {
-    if (thought?.id) {
-      syncOrchestrator.setFocusEditing(true, thought.id);
-    }
-    return () => {
-      syncOrchestrator.setFocusEditing(false, null);
-    };
-  }, [thought?.id]);
 
   const stackItems = useMemo(() => {
     if (!thought?.stackId) return [];

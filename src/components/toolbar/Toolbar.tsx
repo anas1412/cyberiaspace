@@ -1,8 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useStore } from '../../store/useStore';
 import { useModalStore } from '../../store/useModalStore';
-import { useAuthStore } from '../../store/useAuthStore';
-import { PLAN_CONFIG, type SubscriptionPlan } from '../../constants';
 
 // Modular Components
 import { SpaceSwitcher } from './SpaceSwitcher';
@@ -83,16 +81,6 @@ const Toolbar: React.FC = () => {
   const [isContactSubmitting, setIsContactSubmitting] = useState(false);
   const [contactSubmitStatus, setContactSubmitStatus] = useState<'idle' | 'success' | 'error'>('idle');
 
-  const { user } = useAuthStore();
-  const limits = (user?.plan && user.plan in PLAN_CONFIG) ? PLAN_CONFIG[user.plan as SubscriptionPlan] : PLAN_CONFIG.free;
-
-  useEffect(() => {
-    if (user?.email && !contactEmail) {
-      setContactEmail(user.email);
-      setContactName(user.name);
-    }
-  }, [user, contactEmail]);
-
   const handleContactSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!contactMessage.trim() || isContactSubmitting) return;
@@ -121,7 +109,7 @@ const Toolbar: React.FC = () => {
       const res = await fetch('/api/feedback', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ message: quickMessage, email: user?.email || 'anonymous', type: quickType })
+        body: JSON.stringify({ message: quickMessage, email: 'anonymous', type: quickType })
       });
       if (res.ok) {
         setQuickSubmitStatus('success');
@@ -164,19 +152,6 @@ const Toolbar: React.FC = () => {
 
   const handleAddThought = async () => {
     if (isReadOnly) return;
-    if (thoughts.length >= limits.MAX_THOUGHTS_PER_SPACE) {
-      const isPro = user?.plan === 'pro';
-      openModal({
-        title: isPro ? 'Space Limit Reached' : 'Thinking Limit Reached',
-        description: isPro 
-          ? `You’ve reached the pro limit of ${limits.MAX_THOUGHTS_PER_SPACE} thoughts for this space. Need more capacity? Contact us for specialized plans.` 
-          : `You’ve reached the free limit of ${limits.MAX_THOUGHTS_PER_SPACE} thoughts for this space. Upgrade to Cyberia Pro to unlock unlimited mapping and premium Oracle AI features.`,
-        type: 'limit_thought', 
-        confirmText: isPro ? 'Acknowledged' : 'Upgrade to Pro', 
-        onConfirm: isPro ? undefined : () => window.location.href = '/pricing'
-      });
-      return;
-    }
 
     // Use current hover context for placement if available
     const hoverContext = (window as any)._cyberia_hover_context || {};
@@ -201,19 +176,6 @@ const Toolbar: React.FC = () => {
 
   const handleRenameSpace = () => activeSpace && (openModal({ title: 'Rename Space', type: 'rename', inputValue: activeSpace.name, confirmText: 'Rename', onConfirm: (n) => n && updateSpace(activeSpace.id, { name: (n as string).substring(0, 15) }) }), setIsSpaceMenuOpen(false));
   const handleCreateSpace = () => {
-    if (spaces.length >= limits.MAX_SPACES) {
-      const isPro = user?.plan === 'pro';
-      openModal({ 
-        title: 'Space Limit Reached', 
-        description: isPro 
-          ? `You’ve reached the pro limit of ${limits.MAX_SPACES} spaces. Contact us if you need higher space capacity.` 
-          : `You’ve reached the free limit of ${limits.MAX_SPACES} spaces. Upgrade to Cyberia Pro to create more spaces and unlock premium features.`, 
-        type: 'limit_space', 
-        confirmText: isPro ? 'Acknowledged' : 'Upgrade to Pro', 
-        onConfirm: isPro ? undefined : () => window.location.href = '/pricing' 
-      });
-      return;
-    }
     openModal({ title: 'Create New Space', type: 'new_space', confirmText: 'Create Space', onConfirm: (n) => addSpace(n && (n as string).trim() ? (n as string).substring(0, 15) : 'New Space') });
   };
   const handleDeleteSpace = () => {
@@ -239,7 +201,6 @@ const Toolbar: React.FC = () => {
             activeSpace={activeSpace}
             isSpaceMenuOpen={isSpaceMenuOpen}
             setIsSpaceMenuOpen={setIsSpaceMenuOpen}
-            limits={limits}
             handleCreateSpace={handleCreateSpace}
             handleRenameSpace={handleRenameSpace}
             handleDeleteSpace={handleDeleteSpace}
@@ -276,7 +237,6 @@ const Toolbar: React.FC = () => {
 
       <StatusBar 
         thoughtsCount={thoughts.length} 
-        limits={limits} 
         activeSpace={activeSpace} 
         undo={undo} 
         redo={redo} 

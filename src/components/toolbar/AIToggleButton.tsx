@@ -1,26 +1,12 @@
 import React from 'react';
 import { useStore } from '../../store/useStore';
-import { useAuthStore } from '../../store/useAuthStore';
 import { BotMessageSquare, ChevronRight } from 'lucide-react';
-import { PLAN_CONFIG } from '../../constants';
 
 export const AIToggleButton: React.FC = () => {
-  const user = useAuthStore((state) => state.user);
   const isChatOpen = useStore((state) => state.isChatOpen);
   const setChatOpen = useStore((state) => state.setChatOpen);
-  
-  const limits = PLAN_CONFIG[user?.plan || 'free'];
 
   const handleToggle = () => {
-    if (!user) {
-      window.history.pushState({}, '', '/login');
-      window.dispatchEvent(new PopStateEvent('popstate'));
-      return;
-    }
-    if (!limits.AI_ENABLED) {
-      window.location.href = '/pricing';
-      return;
-    }
     setChatOpen(!isChatOpen);
   };
 

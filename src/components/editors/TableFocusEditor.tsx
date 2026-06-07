@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { useStore } from '../../store/useStore';
 import { useThoughtPayload } from '../thought/hooks/useThoughtPayload';
-import { syncOrchestrator } from '../../services/sync/syncOrchestrator';
 import { Plus, Trash2, Download } from 'lucide-react';
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
@@ -120,15 +119,6 @@ const TableFocusEditor: React.FC = () => {
   const { table } = useThoughtPayload(thought as any);
   const stack = stacks.find((s) => s.id === thought?.stackId);
   const isVisible = focusType === 'table' && !!thought;
-
-  React.useEffect(() => {
-    if (thought?.id) {
-      syncOrchestrator.setFocusEditing(true, thought.id);
-    }
-    return () => {
-      syncOrchestrator.setFocusEditing(false, null);
-    };
-  }, [thought?.id]);
 
   const saveTable = (newTable: string[][]) => {
     if (!thought) return;

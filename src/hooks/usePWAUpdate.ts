@@ -2,14 +2,6 @@ import { useState, useEffect } from 'react';
 
 let registerSW: ((options?: any) => any) | null = null;
 
-try {
-  // eslint-disable-next-line @typescript-eslint/no-require-imports
-  const pwaRegister = require('virtual:pwa-register');
-  registerSW = pwaRegister.registerSW;
-} catch (e) {
-  // PWA not enabled - this is fine for marketing site
-}
-
 export function usePWAUpdate() {
   const [needRefresh, setNeedRefresh] = useState(false);
   const [isUpdating, setIsUpdating] = useState(false);

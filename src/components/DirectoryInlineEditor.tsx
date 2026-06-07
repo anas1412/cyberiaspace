@@ -2,8 +2,6 @@ import React, { useState, useRef, useEffect } from 'react';
 import { useStore } from '../store/useStore';
 import { useThoughtPayload } from './thought/hooks/useThoughtPayload';
 import { getThoughtConfig } from './thought/registry';
-import { syncOrchestrator } from '../services/sync/syncOrchestrator';
-import { supabaseStorage } from '../services/supabaseStorage';
 import { type Thought, db } from '../db';
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
@@ -49,13 +47,6 @@ const InlineTextEditor: React.FC<InlineTextEditorProps> = ({ thought }) => {
       setLocalContent(content);
     }
   }, [thought.id, content]);
-
-  useEffect(() => {
-    if (thought.id) {
-      syncOrchestrator.setFocusEditing(true, thought.id);
-    }
-    return () => syncOrchestrator.setFocusEditing(false, null);
-  }, [thought.id]);
 
   const handleTitleChange = (val: string) => {
     setLocalTitle(val);
@@ -249,11 +240,6 @@ const InlineTasksEditor: React.FC<InlineTasksEditorProps> = ({ thought }) => {
     }
   }, [thought.id]);
 
-  useEffect(() => {
-    if (thought.id) syncOrchestrator.setFocusEditing(true, thought.id);
-    return () => syncOrchestrator.setFocusEditing(false, null);
-  }, [thought.id]);
-
   const saveTasks = (tasksToSave: Task[]) => {
     updateThought(thought.id, { data: { type: 'tasks', tasks: tasksToSave } });
   };
@@ -433,11 +419,6 @@ const InlineTableEditor: React.FC<InlineTableEditorProps> = ({ thought }) => {
   const isReadOnly = useStore((s) => s.isReadOnly);
   const [isEditMode, setIsEditMode] = useState(false);
   const { table } = useThoughtPayload(thought);
-
-  useEffect(() => {
-    if (thought.id) syncOrchestrator.setFocusEditing(true, thought.id);
-    return () => syncOrchestrator.setFocusEditing(false, null);
-  }, [thought.id]);
 
   const saveTable = (newTable: string[][]) => {
     updateThought(thought.id, { data: { type: 'table', rows: newTable } });
@@ -648,11 +629,6 @@ const InlinePaintEditor: React.FC<InlinePaintEditorProps> = ({ thought, groupTho
   const CANVAS_H = 1080;
 
   useEffect(() => {
-    if (thought.id) syncOrchestrator.setFocusEditing(true, thought.id);
-    return () => syncOrchestrator.setFocusEditing(false, null);
-  }, [thought.id]);
-
-  useEffect(() => {
     if (!canvasRef.current || !containerRef.current || hasInit.current) return;
     const canvas = canvasRef.current;
     const ctx = canvas.getContext('2d');
@@ -844,7 +820,6 @@ const InlineFileEditor: React.FC<InlineFileEditorProps> = ({ thought, groupThoug
   const isReadOnly = useStore((s) => s.isReadOnly);
   const { fileInfo } = useThoughtPayload(thought) as any;
   const [localUrl, setLocalUrl] = useState<string | null>(null);
-  const [signedUrl, setSignedUrl] = useState<string | null>(null);
 
   // Load local blob first
   useEffect(() => {
@@ -862,20 +837,6 @@ const InlineFileEditor: React.FC<InlineFileEditorProps> = ({ thought, groupThoug
     return () => { if (url) URL.revokeObjectURL(url); };
   }, [thought.id]);
 
-  // Fetch signed URL for cloud files
-  useEffect(() => {
-    if (localUrl || !thought.storagePath) return;
-    let cancelled = false;
-    const fetchSigned = async () => {
-      try {
-        const url = await supabaseStorage.getSignedUrl(thought.storagePath!);
-        if (!cancelled) setSignedUrl(url);
-      } catch (e) { /* ignore - will use storageUrl as fallback */ }
-    };
-    fetchSigned();
-    return () => { cancelled = true; };
-  }, [thought.storagePath, localUrl]);
-
   const cached: any = fileInfo || {};
   const fileName = (cached.name || thought.text || '').toLowerCase();
   const extension = fileName.split('.').pop() || '';
@@ -892,7 +853,7 @@ const InlineFileEditor: React.FC<InlineFileEditorProps> = ({ thought, groupThoug
 
   const renderContent = () => {
     // Use local blob only - if sync didn't download it, cloud won't work either
-    const source = localUrl || signedUrl;
+    const source = localUrl;
     
     if (!source) {
       return (

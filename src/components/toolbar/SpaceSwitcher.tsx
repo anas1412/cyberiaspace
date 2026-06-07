@@ -8,11 +8,12 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 import type { Space } from '../../db';
-import type { PlanLimits } from '../../constants';
 
 function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
+
+const NO_LIMIT = 999999;
 
 interface SpaceSwitcherProps {
   spaces: Space[];
@@ -25,7 +26,6 @@ interface SpaceSwitcherProps {
   activeSpace: Space | undefined;
   isSpaceMenuOpen: boolean;
   setIsSpaceMenuOpen: (val: boolean) => void;
-  limits: PlanLimits;
   handleCreateSpace: () => void;
   handleRenameSpace: () => void;
   handleDeleteSpace: () => void;
@@ -34,7 +34,7 @@ interface SpaceSwitcherProps {
 export const SpaceSwitcher: React.FC<SpaceSwitcherProps> = ({ 
   spaces, activeSpaceId, setActiveSpace, isReadOnly, isSpaceLoading, 
   creatorName, lastUpdated, activeSpace, isSpaceMenuOpen, setIsSpaceMenuOpen, 
-  limits, handleCreateSpace, handleRenameSpace, handleDeleteSpace
+  handleCreateSpace, handleRenameSpace, handleDeleteSpace
 }) => {
   const isActive = (id: string) => id === activeSpaceId;
 
@@ -114,7 +114,7 @@ className={cn(
                 <span className="text-[12px] font-semibold tracking-wide text-[var(--text-primary)]/90">Switch Space</span>
               </div>
               <span className="text-[10px] font-bold text-[var(--text-muted)] bg-[var(--glass-bg)] px-2 py-0.5 rounded-md border border-[var(--border)]">
-                {spaces.length} / {limits.MAX_SPACES}
+                {spaces.length}
               </span>
             </div>
             
@@ -171,8 +171,8 @@ className={cn(
                 );
               })}
 
-              {/* Inline Create Space Button - Free users can create spaces too, up to their limit */}
-              {spaces.length < limits.MAX_SPACES && (
+              {/* Inline Create Space Button */}
+              {spaces.length < NO_LIMIT && (
                 <button
                   onClick={() => { handleCreateSpace(); setIsSpaceMenuOpen(false); }}
                   aria-label="Create New Space"

@@ -6,7 +6,6 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { FocusEditorShell } from './editors/FocusEditorShell';
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
-import { supabaseStorage } from '../services/supabaseStorage';
 import { db } from '../db';
 
 function cn(...inputs: ClassValue[]) {
@@ -28,9 +27,8 @@ const Lightbox: React.FC = () => {
   const stack = stacks.find((s) => s.id === thought?.stackId);
   const isVisible = isLightboxOpen && !!thought;
 
-  // Local blob and signed URL for private bucket
+  // Local blob for local-only rendering
   const [localUrl, setLocalUrl] = useState<string | null>(null);
-  const [signedUrl, setSignedUrl] = useState<string | null>(null);
 
   // Load local blob
   useEffect(() => {
@@ -49,22 +47,8 @@ const Lightbox: React.FC = () => {
     return () => { if (url) URL.revokeObjectURL(url); };
   }, [thought?.id]);
 
-  // Fetch signed URL
-  useEffect(() => {
-    if (localUrl || !thought?.storagePath) return;
-    let cancelled = false;
-    const fetchSigned = async () => {
-      try {
-        const url = await supabaseStorage.getSignedUrl(thought.storagePath!);
-        if (!cancelled) setSignedUrl(url);
-      } catch (e) { /* ignore */ }
-    };
-    fetchSigned();
-    return () => { cancelled = true; };
-  }, [thought?.storagePath, localUrl]);
-
-  // Resolve URL for display
-  const displayUrl = localUrl || signedUrl || image;
+  // Resolve URL for display - local blob only
+  const displayUrl = localUrl || image;
 
   const scrollerRef = useRef<HTMLDivElement>(null);
 
@@ -87,20 +71,14 @@ const Lightbox: React.FC = () => {
   );
 
   const getItemUrl = async (item: any): Promise<string> => {
-      // Try local blob first
-      try {
-        const entry = await db.blobs.where('thoughtId').equals(item.id).first();
-        if (entry) return URL.createObjectURL(entry.blob);
-      } catch (e) { /* ignore */ }
-      // Try signed URL
-      if (item.storagePath) {
-        try {
-          return await supabaseStorage.getSignedUrl(item.storagePath);
-        } catch (e) { /* ignore */ }
-      }
-      // Fallback to data.url or image
-      return item.data?.type === 'file' ? item.data.url : (item as any).image;
-    };
+    // Try local blob first
+    try {
+      const entry = await db.blobs.where('thoughtId').equals(item.id).first();
+      if (entry) return URL.createObjectURL(entry.blob);
+    } catch (e) { /* ignore */ }
+    // Fallback to data.url or image
+    return item.data?.type === 'file' ? item.data.url : (item as any).image;
+  };
 
     // Preload thumbnail URLs
     const [thumbnailUrls] = useState(() => {

@@ -1,11 +1,8 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import { Scale, ArrowLeft, Building2, Server, Shield, Lock } from 'lucide-react';
-import { useTranslation } from 'react-i18next';
 
 const LegalNotice: React.FC = () => {
-  const { t } = useTranslation();
-
   const handleBack = () => {
     if (window.history.length > 1) {
       window.history.back();
@@ -18,24 +15,24 @@ const LegalNotice: React.FC = () => {
   const sections = [
     {
       id: 1,
-      title: t('legal.notice.sections.section_1.title'),
+      title: 'Company Information',
       icon: <Building2 className="w-5 h-5 text-blue-400" />,
       content: (
         <div className="space-y-4">
           <p className="leading-relaxed text-[var(--text-muted)]">
-            {t('legal.notice.sections.section_1.content')}
+            Cyberia AI Studio is operated by an independent developer. The following information is provided in accordance with legal requirements.
           </p>
           <div className="bg-[var(--glass-bg)] border border-[var(--glass-border)] p-6 rounded-2xl space-y-3 font-mono text-[11px] uppercase tracking-wider">
             <div className="flex justify-between items-center border-b border-[var(--glass-border)] pb-2">
-              <span className="text-[var(--text-muted)]">{t('legal.notice.sections.section_1.tax_id')}</span>
+              <span className="text-[var(--text-muted)]">SIRET / Tax ID</span>
               <span className="text-[var(--text-primary)] font-bold">1970272D</span>
             </div>
             <div className="flex justify-between items-start border-b border-[var(--glass-border)] pb-2">
-              <span className="text-[var(--text-muted)]">{t('legal.notice.sections.section_1.registered_address')}</span>
-              <span className="text-[var(--text-primary)] text-right">{t('legal.notice.sections.section_1.address')}</span>
+              <span className="text-[var(--text-muted)]">Registered Address</span>
+              <span className="text-[var(--text-primary)] text-right">France</span>
             </div>
             <div className="flex justify-between items-center">
-              <span className="text-[var(--text-muted)]">{t('legal.notice.sections.section_1.legal_rep')}</span>
+              <span className="text-[var(--text-muted)]">Legal Representative</span>
               <span className="text-[var(--text-primary)] font-bold">Anas Bassoumi</span>
             </div>
           </div>
@@ -44,36 +41,37 @@ const LegalNotice: React.FC = () => {
     },
     {
       id: 2,
-      title: t('legal.notice.sections.section_2.title'),
+      title: 'Hosting',
       icon: <Server className="w-5 h-5 text-blue-400" />,
       content: (
           <div className="bg-[var(--glass-bg)] border border-[var(--glass-border)] p-6 rounded-2xl space-y-2">
-            <p className="text-[var(--text-primary)] font-semibold text-xs tracking-widest">{t('legal.notice.sections.section_2.hosting_provider')}</p>
+            <p className="text-[var(--text-primary)] font-semibold text-xs tracking-widest">Hosting Provider</p>
           <p className="text-sm leading-relaxed text-[var(--text-muted)] italic">
-            {t('legal.notice.sections.section_2.hosting_address')}<br />
-            {t('legal.notice.sections.section_2.website')} <a href="https://vercel.com" target="_blank" rel="noreferrer" className="text-blue-400 hover:text-white transition-colors">https://vercel.com</a>
+            Vercel Inc.<br />
+            340 S Lemon Ave #4133, Walnut, CA 91789, USA<br />
+            Website: <a href="https://vercel.com" target="_blank" rel="noreferrer" className="text-blue-400 hover:text-white transition-colors">https://vercel.com</a>
           </p>
         </div>
       )
     },
     {
       id: 3,
-      title: t('legal.notice.sections.section_3.title'),
+      title: 'Intellectual Property',
       icon: <Shield className="w-5 h-5 text-blue-400" />,
       content: (
         <p className="leading-relaxed text-[var(--text-muted)]">
-          {t('legal.notice.sections.section_3.content')}
+          The Cyberia AI Studio application, including its design, source code, graphics, and branding, is protected by applicable intellectual property laws. Users retain ownership of content they create within the app. Unauthorized reproduction, distribution, or modification of the application itself is prohibited.
         </p>
       )
     },
     {
       id: 4,
-      title: t('legal.notice.sections.section_4.title'),
+      title: 'Limitation of Liability',
       icon: <Lock className="w-5 h-5 text-blue-400" />,
       highlight: true,
       content: (
         <p className="leading-relaxed text-[var(--text-dimmed)]">
-          {t('legal.notice.sections.section_4.content')}
+          The application is provided on an &quot;as is&quot; and &quot;as available&quot; basis. The operator makes no representations or warranties of any kind, express or implied, regarding the operation or availability of the service. To the fullest extent permitted by law, the operator disclaims all liability for any damages arising from the use of the application.
         </p>
       )
     }
@@ -91,7 +89,7 @@ const LegalNotice: React.FC = () => {
           className="flex items-center gap-2 text-blue-400 hover:text-[var(--text-primary)] transition-colors mb-12 group"
         >
           <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
-          <span className="text-xs font-semibold tracking-widest">{t('legal.back')}</span>
+          <span className="text-xs font-semibold tracking-widest">Back</span>
         </button>
 
         <header className="mb-16">
@@ -99,9 +97,9 @@ const LegalNotice: React.FC = () => {
             <div className="w-12 h-12 bg-blue-500/10 rounded-2xl flex items-center justify-center border border-blue-500/20">
               <Scale className="w-6 h-6 text-blue-400" />
             </div>
-            <h1 className="text-4xl md:text-6xl font-black text-[var(--text-primary)] uppercase tracking-tighter leading-none">{t('legal.notice.title')}</h1>
+            <h1 className="text-4xl md:text-6xl font-black text-[var(--text-primary)] uppercase tracking-tighter leading-none">Legal Notice</h1>
           </div>
-          <p className="text-[var(--text-muted)] font-mono text-sm uppercase tracking-widest">{t('legal.notice.last_updated')}</p>
+          <p className="text-[var(--text-muted)] font-mono text-sm uppercase tracking-widest">Last Updated: January 1, 2025</p>
         </header>
 
         <section className="space-y-8 pb-20">
@@ -127,7 +125,7 @@ const LegalNotice: React.FC = () => {
           <div className="pt-12 border-t border-[var(--glass-border)] flex items-center justify-between opacity-30">
             <Scale className="w-8 h-8 text-[var(--text-muted)]" />
             <p className="text-[10px] font-semibold tracking-widest text-[var(--text-muted)]">
-              {t('legal.notice.framework')}
+              Legal Framework
             </p>
           </div>
         </section>

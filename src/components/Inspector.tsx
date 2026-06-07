@@ -12,8 +12,6 @@ import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 import { motion, AnimatePresence } from 'framer-motion';
 import { DateTimePicker } from './common/DateTimePicker';
-import { syncOrchestrator } from '../services/sync/syncOrchestrator';
-
 function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
@@ -120,17 +118,6 @@ const Inspector: React.FC = () => {
   const [activeTab, setActiveTab] = React.useState<'content' | 'status' | 'layout'>('content');
 
   const titleInputRef = React.useRef<HTMLInputElement>(null);
-
-  React.useEffect(() => {
-    if (selectedThoughtId) {
-      syncOrchestrator.setFocusEditing(true, selectedThoughtId);
-    }
-    return () => {
-      if (selectedThoughtId) {
-        syncOrchestrator.setFocusEditing(false, selectedThoughtId);
-      }
-    };
-  }, [selectedThoughtId]);
 
   // Reset local state when selected thought changes
   React.useEffect(() => {
@@ -511,7 +498,7 @@ className={cn(
                                   const timerKey = `stack-color-${stack.id}`;
                                   if ((window as any)[timerKey]) clearTimeout((window as any)[timerKey]);
                                   (window as any)[timerKey] = setTimeout(async () => {
-                                    updateStack(stack.id, { color, updatedAt: Date.now(), syncStatus: 'local' });
+                                    updateStack(stack.id, { color, updatedAt: Date.now() });
                                     delete (window as any)[timerKey];
                                   }, 1000);
                                 }

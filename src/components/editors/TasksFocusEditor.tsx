@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { useStore } from '../../store/useStore';
 import { useThoughtPayload } from '../thought/hooks/useThoughtPayload';
-import { syncOrchestrator } from '../../services/sync/syncOrchestrator';
 import { Plus, Trash2, GripVertical, CheckSquare, Square } from 'lucide-react';
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
@@ -127,15 +126,6 @@ const TasksFocusEditor: React.FC = () => {
       setLocalTasks(tasksWithIds);
     }
   }, [thought?.id, tasks]);
-
-  React.useEffect(() => {
-    if (thought?.id) {
-      syncOrchestrator.setFocusEditing(true, thought.id);
-    }
-    return () => {
-      syncOrchestrator.setFocusEditing(false, null);
-    };
-  }, [thought?.id]);
 
   const saveTasks = (tasksToSaveRaw: Task[]) => {
     if (!thought) return;

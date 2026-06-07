@@ -1,10 +1,6 @@
 import { type StateCreator } from 'zustand';
 import { db, type Space } from '../../db';
-import { useAuthStore } from '../useAuthStore';
-import { useModalStore } from '../useModalStore';
-import { syncOrchestrator } from '../../services/sync/syncOrchestrator';
 import { type CyberiaState } from '../types';
-import { PLAN_CONFIG } from '../../constants';
 import { ulid } from 'ulid';
 
 export const createSpaceSlice: StateCreator<CyberiaState, [], [], any> = (set, get, _api) => ({
@@ -20,55 +16,34 @@ export const createSpaceSlice: StateCreator<CyberiaState, [], [], any> = (set, g
     try {
       localStorage.setItem('cyberia-active-space-id', id);
       const space = get().spaces.find((s: Space) => s.id === id);
-      
-      // Set loading state and clear current thoughts/stacks
-      set({ 
-        activeSpaceId: id, 
-        thoughts: [], 
-        stacks: [], 
-        isSpaceLoading: true, 
+
+      set({
+        activeSpaceId: id,
+        thoughts: [],
+        stacks: [],
+        isSpaceLoading: true,
         lastSpaceRequestId: requestId,
-        history: [], 
-        historyIndex: -1, 
-        layerActionTrigger: null 
+        history: [],
+        historyIndex: -1,
+        layerActionTrigger: null
       });
 
       if (space) {
-        const transform = space.mode === 'spatial' 
-          ? { x: space.transformX ?? 0, y: space.transformY ?? 0, scale: space.transformScale ?? 1 } 
+        const transform = space.mode === 'spatial'
+          ? { x: space.transformX ?? 0, y: space.transformY ?? 0, scale: space.transformScale ?? 1 }
           : { x: 0, y: 0, scale: 1 };
-        
-        set({ transform } as Partial<CyberiaState>);
-        
-        if (space.theme) {
-          const { useAuthStore: authImport } = await import('../useAuthStore');
-          const authStore = authImport.getState();
-          const userPlan = authStore.user?.plan || 'free';
-          const allowedThemes = PLAN_CONFIG[userPlan]?.THEMES_ENABLED || PLAN_CONFIG.free.THEMES_ENABLED;
 
-          if (!allowedThemes.includes(space.theme)) {
-            await get().updateSpace(id, { theme: 'dark' }, { skipSync: false });
-          }
-        }
+        set({ transform } as Partial<CyberiaState>);
         set({ customBg: space.customBg || null });
 
         // Load background from local IndexedDB first (local-first pattern)
         if (space.customBg) {
-          const { useAuthStore: authImport } = await import('../useAuthStore');
-          const authStore = authImport.getState();
-          const currentUserId = authStore.user?.id ?? 'guest';
-          
+          const currentUserId = 'guest';
           const localBg = await db.spaceBackgrounds.filter(b => b.spaceId === id && b.userId === currentUserId).first();
           if (localBg) {
-            // Use local blob URL
             const blobUrl = URL.createObjectURL(localBg.blob);
             set({ customBg: blobUrl });
             console.log('[BG] Loaded background from local IndexedDB:', id);
-          } else if (space.customBg.startsWith('http')) {
-            // Legacy cloud URL — no backgrounds exist in cloud, so this shouldn't happen.
-            // Clear the broken reference; user can re-set their background locally.
-            console.warn('[BG] Found cloud URL for background but backgrounds are local-only now. Clearing.');
-            await db.spaces.update(space.id, { customBg: null, updatedAt: Date.now() });
           }
         }
 
@@ -82,10 +57,8 @@ export const createSpaceSlice: StateCreator<CyberiaState, [], [], any> = (set, g
               const response = await fetch(capturedBase64);
               const blob = await response.blob();
 
-              const { useAuthStore: authImport } = await import('../useAuthStore');
-              const userId = authImport.getState().user?.id ?? 'guest';
+              const userId = 'guest';
 
-              // Store in local IndexedDB
               await db.spaceBackgrounds.put({
                 id: spaceId,
                 spaceId: spaceId,
@@ -98,10 +71,8 @@ export const createSpaceSlice: StateCreator<CyberiaState, [], [], any> = (set, g
 
               const blobUrl = URL.createObjectURL(blob);
 
-              // Compare-and-swap: only write if background hasn't changed during migration
               const currentSpace = await db.spaces.get(spaceId);
               if (!currentSpace || currentSpace.customBg !== capturedBase64) {
-                console.log('[BG] Migration aborted: background changed during migration');
                 return;
               }
 
@@ -111,7 +82,6 @@ export const createSpaceSlice: StateCreator<CyberiaState, [], [], any> = (set, g
               if (get().activeSpaceId === spaceId) {
                 set({ customBg: blobUrl });
               }
-              console.log('[BG] Base64 migration complete for space:', spaceId);
             } catch (e) {
               console.warn('[BG] Base64 migration failed, keeping current value:', e);
             }
@@ -124,15 +94,10 @@ export const createSpaceSlice: StateCreator<CyberiaState, [], [], any> = (set, g
         get().refreshThoughts(id),
         get().refreshStacks(id)
       ]);
-      
-      // NOTE: scatterThoughts disabled - it was adding random jitter to all thoughts
-      // on every space load, causing positions to drift randomly
-      // await get().scatterThoughts(id);
-      
+
     } catch (err) {
       console.error('Failed to set active space:', err);
     } finally {
-      // Data loaded (or failed), stop loading state ONLY if this is the latest request
       if (get().lastSpaceRequestId === requestId) {
         set({ isSpaceLoading: false });
       }
@@ -140,56 +105,36 @@ export const createSpaceSlice: StateCreator<CyberiaState, [], [], any> = (set, g
   },
 
   refreshSpaces: async () => {
-    // Robust fetching: Query only current user's non-deleted spaces with Dexie filter
-    const currentUserId = useAuthStore.getState().user?.id ?? 'guest';
+    const currentUserId = 'guest';
     const activeSpaces = await db.spaces
       .filter((s: any) => !s.deletedAt && s.userId === currentUserId)
       .toArray();
     activeSpaces.sort((a: any, b: any) => (a.order ?? 0) - (b.order ?? 0));
-    
+
     set({ spaces: activeSpaces });
   },
 
   addSpace: async (name: string) => {
     if (get().isReadOnly) return;
-    
-    // Get user's spaces from DB filtered by current user (not in-memory)
-    const currentUserId = useAuthStore.getState().user?.id ?? 'guest';
+    const currentUserId = 'guest';
     const userSpaces = await db.spaces.filter((s: any) => s.userId === currentUserId && !s.deletedAt).toArray();
-    
-    const limits = get().getLimits();
-    if (userSpaces.length >= limits.MAX_SPACES) {
-      useModalStore.getState().openModal({ 
-        title: 'Space Limit Reached', 
-        description: `You've reached the free limit of ${limits.MAX_SPACES} spaces. Upgrade to Cyberia Pro to create more spaces and unlock premium features.`, 
-        type: 'limit_space', 
-        confirmText: 'Upgrade to Pro', 
-        onConfirm: () => window.location.href = '/pricing' 
-      });
-      return;
-    }
+
     const id = ulid();
-    await db.spaces.add({ 
-      id, 
+    await db.spaces.add({
+      id,
       userId: currentUserId,
-      name, 
-      mode: 'spatial', 
-      physics: localStorage.getItem('cyberia-physics-enabled') !== 'false', 
+      name,
+      mode: 'spatial',
+      physics: localStorage.getItem('cyberia-physics-enabled') !== 'false',
       order: userSpaces.length,
       updatedAt: Date.now(),
-      syncStatus: 'local'
     });
     await get().refreshSpaces();
     await get().setActiveSpace(id);
     get().pushHistory();
-    
-    const authStore = useAuthStore.getState();
-    if (authStore.status === 'authenticated') {
-      await syncOrchestrator.triggerSync();
-    }
   },
 
-  updateSpace: async (id: string, updates: Partial<Space>, options?: { skipSync?: boolean }) => {
+  updateSpace: async (id: string, updates: Partial<Space>) => {
     const { spaces } = get();
     const index = spaces.findIndex((s: Space) => s.id === id);
     if (index !== -1) {
@@ -198,29 +143,21 @@ export const createSpaceSlice: StateCreator<CyberiaState, [], [], any> = (set, g
       set({ spaces: newSpaces });
     }
     if (get().isReadOnly) return;
-    
-    const finalUpdates = {
+
+    await db.spaces.update(id, {
       ...updates,
       updatedAt: Date.now(),
-      syncStatus: 'local' as const
-    };
-    
-    await db.spaces.update(id, finalUpdates);
+    });
     await get().refreshSpaces();
-    
-    const authStore = useAuthStore.getState();
-    if (authStore.status === 'authenticated' && !options?.skipSync) {
-      await syncOrchestrator.triggerSync();
-    }
   },
 
   deleteSpace: async (id: string) => {
     if (get().isReadOnly) return;
     const { spaces, activeSpaceId } = get();
-    
-    // Prevent deleting the last space
+
     const remainingSpaces = spaces.filter(s => s.id !== id && !s.deletedAt);
     if (remainingSpaces.length === 0) {
+      const { useModalStore } = await import('../useModalStore');
       useModalStore.getState().openModal({
         title: 'Core Workspace Required',
         description: 'You must have at least one active space. Create a new one before removing this dimension.',
@@ -232,45 +169,33 @@ export const createSpaceSlice: StateCreator<CyberiaState, [], [], any> = (set, g
 
     const space = spaces.find((s: Space) => s.id === id);
     if (!space) return;
-    
-    const authStore = useAuthStore.getState();
-    const currentUserId = authStore.user?.id ?? 'guest';
-    
-    // SOFT DELETE: Mark everything as deleted
+
+    const currentUserId = 'guest';
     const now = Date.now();
     try {
       await db.transaction('rw', [db.spaces, db.thoughts, db.stacks], async () => {
-        await db.spaces.update(id, { 
-          deletedAt: now, 
-          updatedAt: now, 
-          syncStatus: 'local' 
+        await db.spaces.update(id, {
+          deletedAt: now,
+          updatedAt: now,
         });
-        
-        await db.thoughts.where('spaceId').equals(id).and(t => t.userId === currentUserId).modify({ 
-          deletedAt: now, 
-          updatedAt: now, 
-          syncStatus: 'local' 
+
+        await db.thoughts.where('spaceId').equals(id).and(t => t.userId === currentUserId).modify({
+          deletedAt: now,
+          updatedAt: now,
         });
-        
-        await db.stacks.where('spaceId').equals(id).and(s => s.userId === currentUserId).modify({ 
-          deletedAt: now, 
-          updatedAt: now, 
-          syncStatus: 'local' 
+
+        await db.stacks.where('spaceId').equals(id).and(s => s.userId === currentUserId).modify({
+          deletedAt: now,
+          updatedAt: now,
         });
       });
 
-      // Update store immediately to reflect disappearance in UI
       await get().refreshSpaces();
       get().pushHistory();
-      
-      // Switch to another space if we deleted the active one
+
       const freshSpaces = get().spaces;
       if (id === activeSpaceId && freshSpaces.length > 0) {
         await get().setActiveSpace(freshSpaces[Math.max(0, freshSpaces.length - 1)].id);
-      }
-
-      if (authStore.status === 'authenticated') {
-        await syncOrchestrator.triggerSync(true);
       }
     } catch (err) {
       console.error('[Space] Deletion failed:', err);
@@ -280,18 +205,12 @@ export const createSpaceSlice: StateCreator<CyberiaState, [], [], any> = (set, g
   reorderSpaces: async (newSpaces: Space[]) => {
     if (get().isReadOnly) return;
     const now = Date.now();
-    await Promise.all(newSpaces.map((s, i) => db.spaces.update(s.id, { 
-      order: i, 
-      updatedAt: now, 
-      syncStatus: 'local' 
+    await Promise.all(newSpaces.map((s, i) => db.spaces.update(s.id, {
+      order: i,
+      updatedAt: now,
     })));
     await get().refreshSpaces();
     get().pushHistory();
-    
-    const authStore = useAuthStore.getState();
-    if (authStore.status === 'authenticated') {
-      await syncOrchestrator.triggerSync();
-    }
   },
 
   saveSpaceTransform: async (id: string, transform: { x: number; y: number; scale: number }) => {
@@ -310,7 +229,6 @@ export const createSpaceSlice: StateCreator<CyberiaState, [], [], any> = (set, g
         transformY: transform.y,
         transformScale: transform.scale,
         updatedAt: now,
-        syncStatus: 'local' as const
       };
       set({ spaces: newSpaces });
     }
@@ -320,335 +238,6 @@ export const createSpaceSlice: StateCreator<CyberiaState, [], [], any> = (set, g
       transformY: transform.y,
       transformScale: transform.scale,
       updatedAt: now,
-      syncStatus: 'local'
     });
-
-    const authStore = useAuthStore.getState();
-    if (authStore.status === 'authenticated') {
-      await syncOrchestrator.triggerSync();
-    }
   },
-
-  importFullState: async (data: any, merge: boolean = false) => {
-    try {
-      const authStore = useAuthStore.getState();
-      const currentUserId = authStore.user?.id ?? 'guest';
-
-      console.log(`[Store] ${merge ? 'Merging' : 'Importing'} full state from cloud for user: ${currentUserId}`);
-      
-      // CRITICAL: Preserve local tombstones (deleted items that haven't synced yet)
-      // This ensures offline deletions persist through login/logout cycles
-      const localDeletedSpaces = await db.spaces.filter((s: any) => Boolean(s.deletedAt) && s.userId === currentUserId).toArray();
-      const localDeletedThoughts = await db.thoughts.filter((t: any) => Boolean(t.deletedAt) && t.userId === currentUserId).toArray();
-      const localDeletedStacks = await db.stacks.filter((s: any) => Boolean(s.deletedAt) && s.userId === currentUserId).toArray();
-      
-      console.log(`[Store] Preserving ${localDeletedSpaces.length} space, ${localDeletedThoughts.length} thought, ${localDeletedStacks.length} stack tombstones`);
-      
-      await db.transaction('rw', [db.spaces, db.thoughts, db.stacks], async () => {
-        if (data.spaces && data.spaces.length > 0) {
-          if (!merge) {
-            // Only clear spaces belonging to the current user (non-deleted only)
-            await db.spaces.where('userId').equals(currentUserId).filter((s: any) => !Boolean(s.deletedAt)).delete();
-          }
-          // Ensure incoming spaces have the correct userId
-          const spacesToPut = data.spaces.map((s: any) => ({ ...s, userId: currentUserId }));
-          await db.spaces.bulkPut(spacesToPut);
-        }
-        if (data.thoughts && data.thoughts.length > 0) {
-          if (!merge) {
-            await db.thoughts.where('userId').equals(currentUserId).filter((t: any) => !Boolean(t.deletedAt)).delete();
-          }
-          const thoughtsToPut = data.thoughts.map((t: any) => ({ ...t, userId: currentUserId }));
-          await db.thoughts.bulkPut(thoughtsToPut);
-        }
-        if (data.stacks && data.stacks.length > 0) {
-          if (!merge) {
-            await db.stacks.where('userId').equals(currentUserId).filter((s: any) => !Boolean(s.deletedAt)).delete();
-          }
-          const stacksToPut = data.stacks.map((s: any) => ({ ...s, userId: currentUserId }));
-          await db.stacks.bulkPut(stacksToPut);
-        }
-        
-        // Restore preserved tombstones (these will be synced to cloud)
-        if (localDeletedSpaces.length > 0) {
-          await db.spaces.bulkPut(localDeletedSpaces);
-        }
-        if (localDeletedThoughts.length > 0) {
-          await db.thoughts.bulkPut(localDeletedThoughts);
-        }
-        if (localDeletedStacks.length > 0) {
-          await db.stacks.bulkPut(localDeletedStacks);
-        }
-      });
-
-      if (data.activeSpaceId) {
-        localStorage.setItem('cyberia-active-space-id', data.activeSpaceId);
-      }
-      
-      await get().refreshSpaces();
-      await get().refreshTotalThoughtCount();
-      await get().cleanupTrash();
-      
-      const { spaces, activeSpaceId } = get();
-      if (spaces.length > 0) {
-        const targetId = activeSpaceId || data.activeSpaceId || spaces[0].id;
-        await get().setActiveSpace(targetId);
-      }
-      
-      console.log('[Store] Full state import complete.');
-    } catch (err) {
-      console.error('Full state import failed', err);
-    }
-  },
-
-  mergeGuestSpace: async (sourceSpaceId: string, targetSpaceId: string) => {
-    try {
-      // Security: Verify both spaces belong to current user OR are guest spaces
-      const authStore = useAuthStore.getState();
-      const currentUserId = authStore.user?.id ?? 'guest';
-      
-      const sourceSpace = await db.spaces.get(sourceSpaceId);
-      const targetSpace = await db.spaces.get(targetSpaceId);
-      
-      if (!sourceSpace || !targetSpace) {
-        console.error('[Space] Merge failed: Space not found');
-        return false;
-      }
-      
-      // Allow merge if:
-      // - Both spaces belong to current user, OR
-      // - Source space is unmigrated guest space
-      const sourceIsGuest = !sourceSpace.userId || sourceSpace.userId === 'guest';
-      const targetIsGuest = !targetSpace.userId || targetSpace.userId === 'guest';
-      
-      if (sourceIsGuest && targetIsGuest) {
-        console.error('[Space] Merge failed: Cannot merge two guest spaces');
-        return false;
-      }
-      
-      if (!sourceIsGuest && sourceSpace.userId !== currentUserId) {
-        console.error('[Space] Merge failed: Source space does not belong to current user');
-        return false;
-      }
-      
-      if (!targetIsGuest && targetSpace.userId !== currentUserId) {
-        console.error('[Space] Merge failed: Target space does not belong to current user');
-        return false;
-      }
-
-      // When merging guest space, also include thoughts with userId: 'guest' or undefined
-      const sourceThoughtsQuery = sourceIsGuest
-        ? db.thoughts.where('spaceId').equals(sourceSpaceId).and(t => (!t.userId || t.userId === 'guest' || t.userId === currentUserId) && !t.deletedAt && !t.archivedAt)
-        : db.thoughts.where('spaceId').equals(sourceSpaceId).and(t => t.userId === currentUserId && !t.deletedAt && !t.archivedAt);
-      
-      await db.transaction('rw', [db.thoughts, db.stacks, db.spaces], async () => {
-        const timestamp = Date.now();
-        
-        // When merging guest space, update userId to current user as well
-        // When merging guest space, update userId to current user as well
-        // Move thoughts
-        if (sourceIsGuest) {
-          await sourceThoughtsQuery.modify({ 
-            spaceId: targetSpaceId,
-            userId: currentUserId,
-            syncStatus: 'local' as const,
-            updatedAt: timestamp
-          });
-        } else {
-          await sourceThoughtsQuery.modify({ 
-            spaceId: targetSpaceId,
-            syncStatus: 'local' as const,
-            updatedAt: timestamp
-          });
-        }
-        
-        // Move stacks
-        if (sourceIsGuest) {
-          await db.stacks.where('spaceId').equals(sourceSpaceId)
-            .and(s => !s.userId || s.userId === 'guest' || s.userId === currentUserId)
-            .modify({ 
-              spaceId: targetSpaceId,
-              userId: currentUserId,
-              syncStatus: 'local' as const,
-              updatedAt: timestamp
-            });
-        } else {
-          await db.stacks.where('spaceId').equals(sourceSpaceId)
-            .and(s => s.userId === currentUserId)
-            .modify({ 
-              spaceId: targetSpaceId,
-              syncStatus: 'local' as const,
-              updatedAt: timestamp
-            });
-        }
-        
-        // SOFT DELETE source space to ensure cloud removal
-        await db.spaces.update(sourceSpaceId, {
-          deletedAt: timestamp,
-          updatedAt: timestamp,
-          syncStatus: 'local'
-        });
-      });
-
-      await get().refreshSpaces();
-      await get().refreshThoughts(targetSpaceId);
-      await get().refreshStacks(targetSpaceId);
-      
-      if (authStore.status === 'authenticated') {
-        syncOrchestrator.triggerSync(true);
-      }
-      return true;
-    } catch (err) {
-      console.error('[Space] Merge failed:', err);
-      return false;
-    }
-  },
-
-  replaceCloudSpace: async (sourceSpaceId: string, targetSpaceIdToReplace: string) => {
-    try {
-      const authStore = useAuthStore.getState();
-      if (authStore.status !== 'authenticated') return false;
-
-      // Security: Verify both spaces belong to current user OR are guest spaces
-      const currentUserId = authStore.user?.id ?? 'guest';
-      const sourceSpace = await db.spaces.get(sourceSpaceId);
-      const targetSpace = await db.spaces.get(targetSpaceIdToReplace);
-      
-      if (!sourceSpace || !targetSpace) {
-        console.error('[Space] Replace failed: Space not found');
-        return false;
-      }
-      
-      const sourceIsGuest = !sourceSpace.userId || sourceSpace.userId === 'guest';
-      const targetIsGuest = !targetSpace.userId || targetSpace.userId === 'guest';
-      
-      if (sourceIsGuest && targetIsGuest) {
-        console.error('[Space] Replace failed: Cannot replace two guest spaces');
-        return false;
-      }
-      
-      if (!sourceIsGuest && sourceSpace.userId !== currentUserId) {
-        console.error('[Space] Replace failed: Source space does not belong to current user');
-        return false;
-      }
-      
-      if (!targetIsGuest && targetSpace.userId !== currentUserId) {
-        console.error('[Space] Replace failed: Target space does not belong to current user');
-        return false;
-      }
-
-      // When replacing with guest space, also include thoughts with userId: 'guest' or undefined
-      const sourceThoughtsQuery = sourceIsGuest
-        ? db.thoughts.where('spaceId').equals(sourceSpaceId).and(t => (!t.userId || t.userId === 'guest' || t.userId === currentUserId) && !t.deletedAt && !t.archivedAt)
-        : db.thoughts.where('spaceId').equals(sourceSpaceId).and(t => t.userId === currentUserId && !t.deletedAt && !t.archivedAt);
-      
-      const sourceThoughtsCount = await sourceThoughtsQuery.count();
-      const targetThoughtsCount = await db.thoughts.where('spaceId').equals(targetSpaceIdToReplace).and(t => t.userId === currentUserId && !t.deletedAt && !t.archivedAt).count();
-      const currentCloudThoughts = authStore.user?.usage?.sync_thoughts || 0;
-      
-      const limits = get().getLimits();
-      // Total will be: CurrentCloud - OldSpaceThoughts + NewSpaceThoughts
-      if (currentCloudThoughts - targetThoughtsCount + sourceThoughtsCount > limits.MAX_CLOUD_THOUGHTS) {
-        useModalStore.getState().openModal({
-          title: 'Account Limit Reached',
-          description: `Replacing this space would put you at ${currentCloudThoughts - targetThoughtsCount + sourceThoughtsCount} total thoughts, exceeding your ${authStore.user?.plan} account limit of ${limits.MAX_CLOUD_THOUGHTS}.`,
-          type: 'alert',
-          confirmText: 'Acknowledged'
-        });
-        return false;
-      }
-
-      await get().deleteSpace(targetSpaceIdToReplace);
-      
-      // Update source space - mark as synced and update userId if guest
-      const timestamp = Date.now();
-      const spaceUpdates: any = { 
-        syncStatus: 'local',
-        updatedAt: timestamp
-      };
-      if (sourceIsGuest) {
-        spaceUpdates.userId = currentUserId;
-      }
-      await db.spaces.update(sourceSpaceId, spaceUpdates);
-      
-      // Update thoughts' userId if source is guest
-      if (sourceIsGuest) {
-        await sourceThoughtsQuery.modify({
-          userId: currentUserId,
-          syncStatus: 'local',
-          updatedAt: timestamp
-        });
-        
-        // Update stacks' userId if source is guest
-        await db.stacks.where('spaceId').equals(sourceSpaceId)
-          .and(s => !s.userId || s.userId === 'guest' || s.userId === currentUserId)
-          .modify({
-            userId: currentUserId,
-            syncStatus: 'local',
-            updatedAt: timestamp
-          });
-      }
-
-      await syncOrchestrator.triggerSync(true);
-      return true;
-    } catch (err) {
-      console.error('[Space] Replace failed:', err);
-      return false;
-    }
-  },
-
-  discardGuestSpace: async (id: string) => {
-    try {
-      const authStore = useAuthStore.getState();
-      const currentUserId = authStore.user?.id ?? 'guest';
-      
-      const space = await db.spaces.get(id);
-      
-      if (!space) {
-        console.error('[Space] Discard failed: Space not found');
-        return false;
-      }
-      
-      const spaceIsGuest = !space.userId || space.userId === 'guest';
-      if (!spaceIsGuest && space.userId !== currentUserId) {
-        console.error('[Space] Discard failed: Unauthorized - space does not belong to current user');
-        return false;
-      }
-
-      const timestamp = Date.now();
-      await db.transaction('rw', [db.spaces, db.thoughts, db.stacks], async () => {
-        await db.spaces.update(id, { 
-          deletedAt: timestamp, 
-          updatedAt: timestamp, 
-          syncStatus: 'local' 
-        });
-        
-        await db.thoughts.where('spaceId').equals(id)
-          .and(t => !t.userId || t.userId === 'guest' || t.userId === currentUserId)
-          .modify({ 
-            deletedAt: timestamp, 
-            updatedAt: timestamp, 
-            syncStatus: 'local' 
-          });
-        
-        await db.stacks.where('spaceId').equals(id)
-          .and(s => !s.userId || s.userId === 'guest' || s.userId === currentUserId)
-          .modify({ 
-            deletedAt: timestamp, 
-            updatedAt: timestamp, 
-            syncStatus: 'local' 
-          });
-      });
-
-      await get().refreshSpaces();
-      
-      if (authStore.status === 'authenticated') {
-        syncOrchestrator.triggerSync(true);
-      }
-      return true;
-    } catch (err) {
-      console.error('[Space] Discard failed:', err);
-      return false;
-    }
-  }
 });

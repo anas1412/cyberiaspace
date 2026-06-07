@@ -1,9 +1,8 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect } from 'react';
 import { type Thought } from '../../db';
 import { useThoughtPayload } from './hooks/useThoughtPayload';
 import { FileText, FileAudio, FileVideo, FileCode, File as FileIcon, Maximize2 } from 'lucide-react';
 import { db } from '../../db';
-import { supabaseStorage } from '../../services/supabaseStorage';
 
 interface FileRendererProps {
   thought: Thought;
@@ -12,9 +11,7 @@ interface FileRendererProps {
 export const FileRenderer: React.FC<FileRendererProps> = ({ thought }) => {
   const { image, fileInfo } = useThoughtPayload(thought);
   const [localUrl, setLocalUrl] = useState<string | null>(null);
-  const [signedUrl, setSignedUrl] = useState<string | null>(null);
-  const [signedUrlError, setSignedUrlError] = useState(false);
-  
+
   useEffect(() => {
     let url: string | null = null;
     const loadLocal = async () => {
@@ -34,37 +31,7 @@ export const FileRenderer: React.FC<FileRendererProps> = ({ thought }) => {
     return () => {
       if (url) URL.revokeObjectURL(url);
     };
-  }, [thought.id, thought.syncStatus]);
-
-  // Fetch signed URL when no local blob and we have a storagePath
-  // Note: We don't rely on thought.storageUrl (expired signed URLs) - generate fresh ones
-  useEffect(() => {
-    if (localUrl || !thought.storagePath || signedUrlError) return;
-    let cancelled = false;
-    const fetchSigned = async () => {
-      try {
-        const url = await supabaseStorage.getSignedUrl(thought.storagePath!);
-        if (!cancelled) setSignedUrl(url);
-      } catch (e) {
-        console.warn('[FileRenderer] Failed to get signed URL:', e);
-        if (!cancelled) setSignedUrlError(true);
-      }
-    };
-    fetchSigned();
-    return () => { cancelled = true; };
-  }, [thought.storagePath, localUrl, signedUrlError]);
-
-  // Refresh signed URL on media load error (expired URL)
-  const handleMediaError = useCallback(async () => {
-    if (!thought.storagePath) return;
-    try {
-      const freshUrl = await supabaseStorage.getSignedUrl(thought.storagePath, 3600);
-      setSignedUrl(freshUrl);
-      setSignedUrlError(false);
-    } catch (e) {
-      console.warn('[FileRenderer] Failed to refresh signed URL:', e);
-    }
-  }, [thought.storagePath]);
+  }, [thought.id]);
 
   const fileName = (thought.text || '').toLowerCase();
   const extension = fileName.split('.').pop() || '';
@@ -87,17 +54,13 @@ export const FileRenderer: React.FC<FileRendererProps> = ({ thought }) => {
     return <FileIcon className="w-8 h-8 text-[var(--text-muted)]" />;
   };
 
-  // Use local blob first, then signed URL, then data.url for embeds/thumbnails
-  // Never use thought.storageUrl - it's an expired signed URL
-  const activeSource = localUrl || signedUrl || image;
+  // Use local blob only - if sync didn't download it, cloud won't work either
+  const activeSource = localUrl || image;
   const hasContent = !!activeSource;
-  
-  // hasRemoteContent: has cloud file (via signedUrl) but no local blob
-  const hasRemoteContent = signedUrl && !localUrl;
 
   // MEDIA PREVIEW BLOCK (Images & Videos)
   // Audio files use the list view below to ensure correct icon and prevent video overlay
-  if ((isImage || isVideo) && (hasContent || hasRemoteContent)) {
+  if ((isImage || isVideo) && hasContent) {
     return (
       <div data-trigger="file" className="mt-2 relative group cursor-pointer overflow-hidden rounded-xl border border-[var(--glass-border)] bg-[var(--node-bg)]/50 aspect-video flex items-center justify-center">
         {activeSource ? (
@@ -110,7 +73,6 @@ export const FileRenderer: React.FC<FileRendererProps> = ({ thought }) => {
               loop
               onMouseEnter={(e) => e.currentTarget.play().catch(() => {})}
               onMouseLeave={(e) => e.currentTarget.pause()}
-              onError={handleMediaError}
             />
           ) : (
             <img
@@ -118,7 +80,6 @@ export const FileRenderer: React.FC<FileRendererProps> = ({ thought }) => {
               draggable="false"
               className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
               alt={thought.text}
-              onError={handleMediaError}
             />
           )
         ) : (

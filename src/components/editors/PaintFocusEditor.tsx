@@ -1,7 +1,6 @@
 import React, { useRef, useState, useEffect, useCallback } from 'react';
 import { useStore } from '../../store/useStore';
 import { useThoughtPayload } from '../thought/hooks/useThoughtPayload';
-import { syncOrchestrator } from '../../services/sync/syncOrchestrator';
 import { Trash2, Pencil, Eraser, Zap } from 'lucide-react';
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
@@ -337,15 +336,6 @@ const PaintFocusEditor: React.FC = () => {
   const thought = thoughts.find((t) => t.id === activeFocusId);
   const { drawing } = useThoughtPayload(thought as any);
   const isVisible = focusType === 'paint' && !!thought;
-
-  React.useEffect(() => {
-    if (thought?.id) {
-      syncOrchestrator.setFocusEditing(true, thought.id);
-    }
-    return () => {
-      syncOrchestrator.setFocusEditing(false, null);
-    };
-  }, [thought?.id]);
 
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement | null>(null);

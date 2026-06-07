@@ -3,9 +3,6 @@ import { isBrowser } from 'react-device-detect';
 import { Analytics } from '@vercel/analytics/react';
 import { SpeedInsights } from '@vercel/speed-insights/react';
 import { useStore } from './store/useStore';
-import { useModalStore } from './store/useModalStore';
-import { useAuthStore } from './store/useAuthStore';
-import { PLAN_CONFIG } from './constants';
 import { detectImageType, generateThumbnail } from './utils/image';
 import { stripFileExtension } from './utils/file';
 import Viewport from './components/Viewport';
@@ -15,7 +12,6 @@ import BackgroundEngine from './components/background/BackgroundEngine';
 import MultiSelectionMenu from './components/MultiSelectionMenu';
 import EmptyState from './components/EmptyState';
 import Modal from './components/Modal';
-import PricingPage from './components/PricingPage';
 import Lightbox from './components/Lightbox';
 import LoadingOverlay from './components/LoadingOverlay';
 import UpdateToast from './components/UpdateToast';
@@ -34,21 +30,16 @@ const PaintFocusEditor = lazy(() => import('./components/editors/PaintFocusEdito
 const TasksFocusEditor = lazy(() => import('./components/editors/TasksFocusEditor'));
 const EmbedFocusEditor = lazy(() => import('./components/editors/EmbedFocusEditor'));
 const FileFocusEditor = lazy(() => import('./components/editors/FileFocusEditor'));
-const FeedbackPage = lazy(() => import('./components/FeedbackPage'));
 const PrivacyPolicy = lazy(() => import('./components/legal/PrivacyPolicy'));
 const CGV = lazy(() => import('./components/legal/CGV'));
 const LegalNotice = lazy(() => import('./components/legal/LegalNotice'));
-const Contact = lazy(() => import('./components/legal/Contact'));
-const LoginPage = lazy(() => import('./components/auth/LoginPage'));
 const Homepage = lazy(() => import('./components/Homepage'));
 const MobilePage = lazy(() => import('./components/MobilePage'));
 const NotFound = lazy(() => import('./components/NotFound'));
-const DashboardLayout = lazy(() => import('./components/dashboard/DashboardLayout'));
-const DashboardLogin = lazy(() => import('./components/dashboard/DashboardLogin'));
 
 function App() {
   // ========== ALL HOOKS AT TOP ==========
-  
+
   const init = useStore((state) => state.init);
   const setDeferredPrompt = useStore((state) => state.setDeferredPrompt);
   const thoughts = useStore((state) => state.thoughts);
@@ -58,52 +49,10 @@ function App() {
   const activeSpaceId = useStore((state) => state.activeSpaceId);
   const spaces = useStore((state) => state.spaces);
 
-  const { openModal } = useModalStore();
-  
   const mouseWorldPos = useRef({ x: 0, y: 0 });
   const mouseScreenPos = useRef({ x: 0, y: 0 });
-  
+
   const [path, setPath] = useState(window.location.pathname);
-
-  // Hook: Dashboard admin check - use useAuthStore directly
-  const authStatus = useAuthStore((state) => state.status);
-  const authUser = useAuthStore((state) => state.user);
-
-  // Admin check state
-  const [dashboardReady, setDashboardReady] = useState(false);
-  const [isAdmin, setIsAdmin] = useState(false);
-
-  useEffect(() => {
-    // Skip if not on dashboard path or not authenticated
-    if (!path.startsWith('/dashboard')) return;
-    if (authStatus !== 'authenticated' || !authUser?.id) return;
-
-    const checkAdmin = async () => {
-      try {
-        const encodedId = btoa(authUser.id);
-        const res = await fetch('/api/dashboard?route=verify', {
-          headers: { 'Authorization': `Bearer ${encodedId}` }
-        });
-        
-        if (res.ok) {
-          const data = await res.json();
-          const adminStatus = data.isAdmin === true || data.isAdmin === 'true';
-          setIsAdmin(adminStatus);
-          setDashboardReady(true);
-          console.log('[Dashboard] Admin check complete:', adminStatus);
-        } else {
-          setIsAdmin(false);
-          setDashboardReady(true);
-        }
-      } catch (err) {
-        console.error('[Dashboard] Admin check failed:', err);
-        setIsAdmin(false);
-        setDashboardReady(true);
-      }
-    };
-
-    checkAdmin();
-  }, [path, authStatus, authUser?.id]);
 
   // Hook: Body class
   useEffect(() => {
@@ -113,27 +62,23 @@ function App() {
     } else {
       document.body.classList.remove('app-body');
     }
-    // No return cleanup needed here as it's handled by the path dependency
   }, [path]);
 
-const theme = useStore((state) => state.theme);
+  const theme = useStore((state) => state.theme);
 
-useEffect(() => {
-  // Sync theme to DOM for CSS variables to work
-  document.documentElement.setAttribute('data-theme', theme);
-  document.body.setAttribute('data-theme', theme);
-  // Persist for the index.html blocking script
-  localStorage.setItem('cyberia-theme', theme);
-  
-  // Initialize node bg based on custom vs default
-  const customNodeBg = localStorage.getItem('cyberia-node-bg');
-  if (customNodeBg) {
-    document.documentElement.style.setProperty('--node-bg', customNodeBg, 'important');
-  } else {
-    const defaultNodeBg = theme === 'dark' ? '#12121af5' : '#f8fafc';
-    document.documentElement.style.setProperty('--node-bg', defaultNodeBg, 'important');
-  }
-}, [theme]);
+  useEffect(() => {
+    document.documentElement.setAttribute('data-theme', theme);
+    document.body.setAttribute('data-theme', theme);
+    localStorage.setItem('cyberia-theme', theme);
+
+    const customNodeBg = localStorage.getItem('cyberia-node-bg');
+    if (customNodeBg) {
+      document.documentElement.style.setProperty('--node-bg', customNodeBg, 'important');
+    } else {
+      const defaultNodeBg = theme === 'dark' ? '#12121af5' : '#f8fafc';
+      document.documentElement.style.setProperty('--node-bg', defaultNodeBg, 'important');
+    }
+  }, [theme]);
 
   // Hook: Popstate
   useEffect(() => {
@@ -223,19 +168,6 @@ useEffect(() => {
     };
 
     const processPasteData = async (clipboardData: DataTransfer | null, textFallback?: string) => {
-      const authStore = useAuthStore.getState();
-      const currentLimits = PLAN_CONFIG[authStore.user?.plan || 'free'];
-      if (thoughts.length >= currentLimits.MAX_THOUGHTS_PER_SPACE) {
-        openModal({
-          title: 'Thinking Limit Reached',
-          description: `You’ve reached the free limit of ${currentLimits.MAX_THOUGHTS_PER_SPACE} thoughts for this space. Upgrade to Cyberia Pro to unlock unlimited mapping and premium Oracle AI features.`,
-          type: 'limit_thought',
-          confirmText: 'Upgrade to Pro',
-          onConfirm: () => window.location.href = '/pricing'
-        });
-        return;
-      }
-
       if (clipboardData) {
         const items = clipboardData.items;
         let bestFile: File | null = null;
@@ -282,14 +214,14 @@ useEffect(() => {
           const actualType = bestFile.type;
           const extension = actualType.split('/')[1] || 'png';
           const fileName = bestFile.name || `pasted_image.${extension}`;
-          
+
           const thumbnail = await generateThumbnail(bestFile).catch(() => null);
           const id = await addThought({
             ...getPlacementProps(),
-            type: 'file', // Consolidated to 'file'
+            type: 'file',
             text: stripFileExtension(fileName),
             data: {
-              type: 'file', // Consolidated to 'file'
+              type: 'file',
               url: thumbnail || '',
               name: fileName,
               size: bestFile.size,
@@ -307,22 +239,20 @@ useEffect(() => {
               }
             }
           });
-          
+
           if (id !== '') {
             const { db } = await import('./db');
-            const userId = useAuthStore.getState().user?.id ?? 'guest';
             await db.blobs.put({
-              id: id, // Deterministic ID
+              id: id,
               thoughtId: id,
               blob: bestFile,
               name: fileName,
               type: actualType,
               updatedAt: Date.now(),
-              userId
+              userId: 'guest'
             });
-            
+
             setSelectedThoughtId(id);
-            useAuthStore.getState().uploadThoughtBlob(id);
           }
           return;
         }
@@ -355,7 +285,6 @@ useEffect(() => {
                       type: 'embed',
                       url: cleanText,
                       provider: metadata.provider_name,
-                      // Note: thumbnail_url is not in embed payload but we keep it in meta if needed
                     },
                     meta: metadata
                   });
@@ -398,32 +327,14 @@ useEffect(() => {
       window.removeEventListener('paste', handlePaste);
       window.removeEventListener('cyberia-paste-triggered', handleCustomPaste);
     };
-  }, [addThought, setSelectedThoughtId, setInspectorOpen, thoughts.length, openModal, path, spaces, activeSpaceId]);
+  }, [addThought, setSelectedThoughtId, setInspectorOpen, thoughts.length, path, spaces, activeSpaceId]);
 
   // ========== RENDER BASED ON PATH ==========
-  
-  // Standalone Pricing Page - no init required
-  if (path === '/pricing') {
-    return (
-      <Suspense fallback={<LoadingOverlay force />}>
-        <PricingPage />
-      </Suspense>
-    );
-  }
 
   if (path === '/') {
     return (
       <Suspense fallback={<LoadingOverlay force />}>
         <Homepage />
-        <Modal />
-      </Suspense>
-    );
-  }
-
-  if (path === '/feedback') {
-    return (
-      <Suspense fallback={<LoadingOverlay force />}>
-        <FeedbackPage />
         <Modal />
       </Suspense>
     );
@@ -453,55 +364,9 @@ useEffect(() => {
     );
   }
 
-  if (path === '/contact') {
-    return (
-      <Suspense fallback={<LoadingOverlay force />}>
-        <Contact />
-      </Suspense>
-    );
-  }
-
-  if (path === '/login') {
-    return (
-      <Suspense fallback={<LoadingOverlay force />}>
-        <LoginPage />
-      </Suspense>
-    );
-  }
-
-  if (path === '/dashboard/login') {
-    return (
-      <Suspense fallback={<LoadingOverlay force />}>
-        <DashboardLogin />
-      </Suspense>
-    );
-  }
-
-  // Dashboard check
-  if (path.startsWith('/dashboard')) {
-    if (!dashboardReady) {
-      return <LoadingOverlay force />; // Uses your branded theme-aware loader
-    }
-    
-    if (authStatus !== 'authenticated' || !authUser || !isAdmin) {
-      return (
-        <Suspense fallback={<LoadingOverlay force />}>
-          <DashboardLogin />
-        </Suspense>
-      );
-    }
-    
-    return (
-      <Suspense fallback={<LoadingOverlay force />}>
-        <DashboardLayout />
-      </Suspense>
-    );
-  }
-
   // Main Workspace logic for /home
   const isWorkspacePath = path.startsWith('/home');
   if (isWorkspacePath) {
-    // Guard: Mobile/Tablet access to space
     if (!isBrowser) {
       return (
         <Suspense fallback={<LoadingOverlay force />}>
@@ -514,7 +379,7 @@ useEffect(() => {
       <main className="w-full h-full relative overflow-hidden app-body">
         <BackgroundEngine />
         <LoadingOverlay />
-        
+
         <Suspense fallback={<LoadingOverlay force />}>
           <Viewport />
           <EmptyState />

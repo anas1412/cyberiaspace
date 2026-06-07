@@ -1,11 +1,7 @@
 import { type StateCreator } from 'zustand';
 import { db } from '../../db';
-import { syncOrchestrator } from '../../services/sync/syncOrchestrator';
 import { type CyberiaState } from '../types';
-import i18n from '../../i18n';
 
-// Generation counter and abort controller to prevent concurrent setCustomBg races
-let bgOperationId = 0;
 let activeAbortController: AbortController | null = null;
 
 const revokeCurrentBg = (bg: string | null) => {
@@ -24,250 +20,199 @@ export const createUiSlice: StateCreator<CyberiaState, [], [], any> = (set, get,
     return 'light';
   };
 
-  const getInitialLanguage = (): 'en' | 'fr' => {
-    const stored = localStorage.getItem('cyberia-lang');
-    if (stored === 'en' || stored === 'fr') return stored;
-    return 'en';
-  };
-  
   return {
     theme: getInitialTheme(),
-    language: getInitialLanguage(),
-  customBg: null,
-  customBgLoading: false,
-  oracleChatMode: 'chat',
-  isChatOpen: false,
-  isInspectorOpen: false,
-  deferredPrompt: null,
-  calendarViewDate: new Date(),
-  hoveredCalDate: null,
-  calendarSearchQuery: '',
-  calendarStackFilter: null,
-  calendarStatusFilter: null,
-  calendarTypeFilter: null,
-  kanbanSearchQuery: '',
-  kanbanStackFilter: null,
-  kanbanStatusFilter: null,
-  kanbanDateFilter: null,
-  kanbanTypeFilter: null,
-  spatialSearchQuery: '',
-  spatialStackFilter: null,
-  spatialStatusFilter: null,
-  spatialDateFilter: null,
-  spatialTypeFilter: null,
-  showArchived: false,
-  linkingSourceId: null,
-  layerActionTrigger: null,
+    customBg: null,
+    customBgLoading: false,
+    oracleChatMode: 'chat',
+    isChatOpen: false,
+    isInspectorOpen: false,
+    deferredPrompt: null,
+    calendarViewDate: new Date(),
+    hoveredCalDate: null,
+    calendarSearchQuery: '',
+    calendarStackFilter: null,
+    calendarStatusFilter: null,
+    calendarTypeFilter: null,
+    kanbanSearchQuery: '',
+    kanbanStackFilter: null,
+    kanbanStatusFilter: null,
+    kanbanDateFilter: null,
+    kanbanTypeFilter: null,
+    spatialSearchQuery: '',
+    spatialStackFilter: null,
+    spatialStatusFilter: null,
+    spatialDateFilter: null,
+    spatialTypeFilter: null,
+    showArchived: false,
+    linkingSourceId: null,
+    layerActionTrigger: null,
 
-  // Directory mode state
-  directorySearchQuery: '',
-  directoryGroupBy: 'stack' as const,
-  directorySortBy: 'order' as const,
-  directoryCollapsedGroups: new Set<string>(),
-  directorySelectedThoughtId: null,
+    // Directory mode state
+    directorySearchQuery: '',
+    directoryGroupBy: 'stack' as const,
+    directorySortBy: 'order' as const,
+    directoryCollapsedGroups: new Set<string>(),
+    directorySelectedThoughtId: null,
 
-  setTheme: async (theme: 'dark' | 'light') => {
-    const { activeSpaceId, isReadOnly, theme: currentTheme } = get();
-    // Prevent unnecessary updates if theme hasn't changed
-    if (theme === currentTheme) return;
-    
-    set({ theme });
-    localStorage.setItem('cyberia-theme', theme);
-    document.documentElement.setAttribute('data-theme', theme);
-    document.body.setAttribute('data-theme', theme);
-    // Clear inline styles set by index.html blocking script so CSS variables work
-    document.documentElement.style.removeProperty('--bg-page');
-    document.documentElement.style.removeProperty('--text-primary');
-    document.documentElement.style.removeProperty('--accent');
-    document.documentElement.style.removeProperty('--glass-border');
-    
-    // Update node bg based on custom vs default
-    const customNodeBg = localStorage.getItem('cyberia-node-bg');
-    if (customNodeBg) {
-      document.documentElement.style.setProperty('--node-bg', customNodeBg, 'important');
-    } else {
-      const defaultNodeBg = theme === 'dark' ? '#12121af5' : '#f8fafc';
-      document.documentElement.style.setProperty('--node-bg', defaultNodeBg, 'important');
-    }
-    
-    // Update accent based on custom vs default
-    const customAccent = localStorage.getItem('cyberia-accent');
-    if (customAccent) {
-      document.documentElement.style.setProperty('--accent', customAccent, 'important');
-    } else {
+    setTheme: async (theme: 'dark' | 'light') => {
+      const { theme: currentTheme } = get();
+      if (theme === currentTheme) return;
+
+      set({ theme });
+      localStorage.setItem('cyberia-theme', theme);
+      document.documentElement.setAttribute('data-theme', theme);
+      document.body.setAttribute('data-theme', theme);
+      document.documentElement.style.removeProperty('--bg-page');
+      document.documentElement.style.removeProperty('--text-primary');
       document.documentElement.style.removeProperty('--accent');
-    }
-    
-    if (activeSpaceId && !isReadOnly) get().updateSpace(activeSpaceId, { theme });
-    
-    const { useAuthStore } = await import('../useAuthStore');
-    const authStore = useAuthStore.getState();
-    if (authStore.status === 'authenticated') authStore.updateSettings({ theme } as any);
-  },
+      document.documentElement.style.removeProperty('--glass-border');
 
-  setLanguage: (language: 'en' | 'fr') => {
-    set({ language });
-    localStorage.setItem('cyberia-lang', language);
-    i18n.changeLanguage(language);
-  },
-
-  setCustomBg: async (bg: File | string | null) => {
-    const { activeSpaceId, isReadOnly, customBg } = get();
-    if (isReadOnly || !activeSpaceId) return;
-
-    // 1. Supersede previous operation
-    if (activeAbortController) {
-      activeAbortController.abort();
-    }
-    const operationId = ++bgOperationId;
-    const controller = new AbortController();
-    activeAbortController = controller;
-    const isStale = () => bgOperationId !== operationId;
-
-    // 2. Revoke previous background blob URL
-    revokeCurrentBg(customBg);
-
-    // 3. Process new background
-    try {
-      // Get current user
-      const { useAuthStore } = await import('../useAuthStore');
-      const authStore = useAuthStore.getState();
-      const currentUserId = authStore.user?.id ?? 'guest';
-
-      // If it's a File - store locally FIRST, upload later via sync
-      if (bg instanceof File) {
-        set({ customBgLoading: true });
-
-        // A. Store blob in IndexedDB immediately
-        const blobUrl = URL.createObjectURL(bg);
-        const now = Date.now();
-        
-        await db.spaceBackgrounds.put({
-          id: activeSpaceId,
-          spaceId: activeSpaceId,
-          blob: bg,
-          name: bg.name,
-          type: bg.type,
-          userId: currentUserId,
-          updatedAt: now
-        });
-
-        // B. Show immediately from local blob
-        set({ customBg: blobUrl, customBgLoading: false });
-        
-        const updated = get().spaces.map((s: any) => s.id === activeSpaceId ? { ...s, customBg: blobUrl } : s);
-        set({ spaces: updated });
-
-        // C. Update IndexedDB spaces with blob URL (not cloud URL)
-        await db.spaces.update(activeSpaceId, { 
-          customBg: blobUrl, 
-          updatedAt: now, 
-          syncStatus: 'local' as const 
-        });
-
-        // D. Trigger background sync (will upload blob to cloud)
-        if (authStore.status === 'authenticated' && !isStale()) {
-          await syncOrchestrator.triggerSync();
-        }
-        
-        console.log('[BG] Background saved locally, will sync to cloud:', blobUrl);
-        return;
+      const customNodeBg = localStorage.getItem('cyberia-node-bg');
+      if (customNodeBg) {
+        document.documentElement.style.setProperty('--node-bg', customNodeBg, 'important');
+      } else {
+        const defaultNodeBg = theme === 'dark' ? '#12121af5' : '#f8fafc';
+        document.documentElement.style.setProperty('--node-bg', defaultNodeBg, 'important');
       }
-      
-      // If it's null (clear background)
-      if (bg === null) {
-        // Delete local blob
-        await db.spaceBackgrounds.delete(activeSpaceId);
-        
-        set({ customBg: null });
-        const updated = get().spaces.map((s: any) => s.id === activeSpaceId ? { ...s, customBg: null } : s);
-        set({ spaces: updated });
-        await db.spaces.update(activeSpaceId, { customBg: null, updatedAt: Date.now(), syncStatus: 'local' as const });
-        
-        if (authStore.status === 'authenticated') await syncOrchestrator.triggerSync();
-        return;
+
+      const customAccent = localStorage.getItem('cyberia-accent');
+      if (customAccent) {
+        document.documentElement.style.setProperty('--accent', customAccent, 'important');
+      } else {
+        document.documentElement.style.removeProperty('--accent');
       }
-      
-      // If it's a string URL (e.g., cloud URL from another device)
-      // Download to local first, then show local blob
-      if (bg.startsWith('http')) {
-        set({ customBgLoading: true });
-        
-        try {
-          // Download from cloud
-          const res = await fetch(bg);
-          const blob = await res.blob();
-          const blobUrl = URL.createObjectURL(blob);
+
+      const spaceId = get().activeSpaceId;
+      if (spaceId && !get().isReadOnly) get().updateSpace(spaceId, { theme });
+    },
+
+    setCustomBg: async (bg: File | string | null) => {
+      const { activeSpaceId, isReadOnly, customBg } = get();
+      if (isReadOnly || !activeSpaceId) return;
+
+      if (activeAbortController) {
+        activeAbortController.abort();
+      }
+      const controller = new AbortController();
+      activeAbortController = controller;
+      revokeCurrentBg(customBg);
+
+      try {
+        const currentUserId = 'guest';
+
+        if (bg instanceof File) {
+          set({ customBgLoading: true });
+
+          const blobUrl = URL.createObjectURL(bg);
           const now = Date.now();
 
-          // Store locally
           await db.spaceBackgrounds.put({
             id: activeSpaceId,
             spaceId: activeSpaceId,
-            blob,
-            name: 'background',
-            type: blob.type,
+            blob: bg,
+            name: bg.name,
+            type: bg.type,
             userId: currentUserId,
             updatedAt: now
           });
 
-          // Show local blob
           set({ customBg: blobUrl, customBgLoading: false });
+
           const updated = get().spaces.map((s: any) => s.id === activeSpaceId ? { ...s, customBg: blobUrl } : s);
           set({ spaces: updated });
-          await db.spaces.update(activeSpaceId, { customBg: blobUrl, updatedAt: now, syncStatus: 'synced' as const });
-          
-          console.log('[BG] Downloaded cloud background to local:', blobUrl);
-        } catch (err) {
-          console.error('[BG] Failed to download cloud background:', err);
-          set({ customBgLoading: false });
+
+          await db.spaces.update(activeSpaceId, {
+            customBg: blobUrl,
+            updatedAt: now,
+          });
+
+          return;
         }
-        return;
+
+        if (bg === null) {
+          await db.spaceBackgrounds.delete(activeSpaceId);
+
+          set({ customBg: null });
+          const updated = get().spaces.map((s: any) => s.id === activeSpaceId ? { ...s, customBg: null } : s);
+          set({ spaces: updated });
+          await db.spaces.update(activeSpaceId, { customBg: null, updatedAt: Date.now() });
+          return;
+        }
+
+        if (bg.startsWith('http')) {
+          set({ customBgLoading: true });
+
+          try {
+            const res = await fetch(bg);
+            const blob = await res.blob();
+            const blobUrl = URL.createObjectURL(blob);
+            const now = Date.now();
+
+            await db.spaceBackgrounds.put({
+              id: activeSpaceId,
+              spaceId: activeSpaceId,
+              blob,
+              name: 'background',
+              type: blob.type,
+              userId: currentUserId,
+              updatedAt: now
+            });
+
+            set({ customBg: blobUrl, customBgLoading: false });
+            const updated = get().spaces.map((s: any) => s.id === activeSpaceId ? { ...s, customBg: blobUrl } : s);
+            set({ spaces: updated });
+            await db.spaces.update(activeSpaceId, { customBg: blobUrl, updatedAt: now });
+          } catch (err) {
+            console.error('[BG] Failed to download background:', err);
+            set({ customBgLoading: false });
+          }
+          return;
+        }
+
+      } catch (e: any) {
+        if (e.name === 'AbortError') return;
+        set({ customBgLoading: false });
+        console.error('[BG] Failed to process background:', e);
       }
+    },
 
-    } catch (e: any) {
-      if (e.name === 'AbortError') return;
-      set({ customBgLoading: false });
-      console.error('[BG] Failed to process background:', e);
-    }
-  },
+    setDeferredPrompt: (prompt: any) => set({ deferredPrompt: prompt }),
 
-  setDeferredPrompt: (prompt: any) => set({ deferredPrompt: prompt }),
+    setChatOpen: (isOpen: boolean) => set({ isChatOpen: isOpen }),
+    setOracleChatMode: (mode: 'chat' | 'action') => set({ oracleChatMode: mode }),
+    setCalendarViewDate: (date: Date) => set({ calendarViewDate: date }),
+    setHoveredCalDate: (date: string | null) => set({ hoveredCalDate: date }),
+    setCalendarSearchQuery: (query: string) => set({ calendarSearchQuery: query }),
+    setCalendarStackFilter: (stackIds: string[] | null) => set({ calendarStackFilter: stackIds } as any),
+    setCalendarStatusFilter: (statuses: Array<'todo' | 'doing' | 'done'> | null) => set({ calendarStatusFilter: statuses } as any),
+    setCalendarTypeFilter: (types: import('../../db').ThoughtType[] | null) => set({ calendarTypeFilter: types } as any),
+    setKanbanSearchQuery: (query: string) => set({ kanbanSearchQuery: query }),
+    setKanbanStackFilter: (stackIds: string[] | null) => set({ kanbanStackFilter: stackIds } as any),
+    setKanbanStatusFilter: (statuses: Array<'todo' | 'doing' | 'done'> | null) => set({ kanbanStatusFilter: statuses } as any),
+    setKanbanDateFilter: (date: string | null) => set({ kanbanDateFilter: date }),
+    setKanbanTypeFilter: (types: import('../../db').ThoughtType[] | null) => set({ kanbanTypeFilter: types }),
+    setSpatialSearchQuery: (query: string) => set({ spatialSearchQuery: query }),
+    setSpatialStackFilter: (stackIds: string[] | null) => set({ spatialStackFilter: stackIds } as any),
+    setSpatialStatusFilter: (statuses: Array<'todo' | 'doing' | 'done'> | null) => set({ spatialStatusFilter: statuses } as any),
+    setSpatialDateFilter: (date: string | null) => set({ spatialDateFilter: date }),
+    setSpatialTypeFilter: (types: import('../../db').ThoughtType[] | null) => set({ spatialTypeFilter: types }),
+    setDirectorySearchQuery: (query: string) => set({ directorySearchQuery: query }),
+    setDirectoryGroupBy: (groupBy: 'stack' | 'status' | 'date' | 'priority' | 'type') => set({ directoryGroupBy: groupBy }),
+    setDirectorySortBy: (sortBy: 'order' | 'alpha' | 'alpha-reverse' | 'date-newest' | 'date-oldest') => set({ directorySortBy: sortBy }),
+    setDirectoryCollapsedGroups: (groups: Set<string>) => set({ directoryCollapsedGroups: groups }),
+    toggleDirectoryGroupCollapse: (groupId: string) => set((state) => {
+      const next = new Set(state.directoryCollapsedGroups);
+      if (next.has(groupId)) next.delete(groupId);
+      else next.add(groupId);
+      return { directoryCollapsedGroups: next };
+    }),
+    setDirectorySelectedThoughtId: (id: string | null) => set({ directorySelectedThoughtId: id }),
 
-  setChatOpen: (isOpen: boolean) => set({ isChatOpen: isOpen }),
-  setOracleChatMode: (mode: 'chat' | 'action') => set({ oracleChatMode: mode }),
-  setCalendarViewDate: (date: Date) => set({ calendarViewDate: date }),
-  setHoveredCalDate: (date: string | null) => set({ hoveredCalDate: date }),
-  setCalendarSearchQuery: (query: string) => set({ calendarSearchQuery: query }),
-  setCalendarStackFilter: (stackIds: string[] | null) => set({ calendarStackFilter: stackIds } as any),
-  setCalendarStatusFilter: (statuses: Array<'todo' | 'doing' | 'done'> | null) => set({ calendarStatusFilter: statuses } as any),
-  setCalendarTypeFilter: (types: import('../../db').ThoughtType[] | null) => set({ calendarTypeFilter: types } as any),
-  setKanbanSearchQuery: (query: string) => set({ kanbanSearchQuery: query }),
-  setKanbanStackFilter: (stackIds: string[] | null) => set({ kanbanStackFilter: stackIds } as any),
-  setKanbanStatusFilter: (statuses: Array<'todo' | 'doing' | 'done'> | null) => set({ kanbanStatusFilter: statuses } as any),
-  setKanbanDateFilter: (date: string | null) => set({ kanbanDateFilter: date }),
-  setKanbanTypeFilter: (types: import('../../db').ThoughtType[] | null) => set({ kanbanTypeFilter: types }),
-  setSpatialSearchQuery: (query: string) => set({ spatialSearchQuery: query }),
-  setSpatialStackFilter: (stackIds: string[] | null) => set({ spatialStackFilter: stackIds } as any),
-  setSpatialStatusFilter: (statuses: Array<'todo' | 'doing' | 'done'> | null) => set({ spatialStatusFilter: statuses } as any),
-  setSpatialDateFilter: (date: string | null) => set({ spatialDateFilter: date }),
-  setSpatialTypeFilter: (types: import('../../db').ThoughtType[] | null) => set({ spatialTypeFilter: types }),
-  setDirectorySearchQuery: (query: string) => set({ directorySearchQuery: query }),
-  setDirectoryGroupBy: (groupBy: 'stack' | 'status' | 'date' | 'priority' | 'type') => set({ directoryGroupBy: groupBy }),
-  setDirectorySortBy: (sortBy: 'order' | 'alpha' | 'alpha-reverse' | 'date-newest' | 'date-oldest') => set({ directorySortBy: sortBy }),
-  setDirectoryCollapsedGroups: (groups: Set<string>) => set({ directoryCollapsedGroups: groups }),
-  toggleDirectoryGroupCollapse: (groupId: string) => set((state) => {
-    const next = new Set(state.directoryCollapsedGroups);
-    if (next.has(groupId)) next.delete(groupId);
-    else next.add(groupId);
-    return { directoryCollapsedGroups: next };
-  }),
-  setDirectorySelectedThoughtId: (id: string | null) => set({ directorySelectedThoughtId: id }),
+    setShowArchived: (show: boolean) => set({ showArchived: show }),
+    setLinkingSourceId: (id: string | null) => set({ linkingSourceId: id }),
+    setInspectorOpen: (open: boolean) => set({ isInspectorOpen: open }),
 
-  setShowArchived: (show: boolean) => set({ showArchived: show }),
-  setLinkingSourceId: (id: string | null) => set({ linkingSourceId: id }),
-  setInspectorOpen: (open: boolean) => set({ isInspectorOpen: open }),
-
-  setCustomBgValue: (bg: string | null) => set({ customBg: bg }),
+    setCustomBgValue: (bg: string | null) => set({ customBg: bg }),
   };
 };

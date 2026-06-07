@@ -31,7 +31,7 @@ export const TextRenderer: React.FC<TextRendererProps> = ({
   const { content } = useThoughtPayload(thought);
   
   const hasContent = content && content.trim().length > 0;
-  const hasRemoteContent = thought.storageUrl && !hasContent && thought.syncStatus !== 'synced' && !isReadOnly;
+  const hasRemoteContent = false;
 
   if (!hasContent) {
     if (isCalendar) return null;

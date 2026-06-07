@@ -1,6 +1,5 @@
 import React from 'react';
 import { useStore } from '../../../store/useStore';
-import { useAuthStore } from '../../../store/useAuthStore';
 import { useModalStore } from '../../../store/useModalStore';
 import { db } from '../../../db';
 import { type InspectorPanelProps } from '../registry';
@@ -18,7 +17,6 @@ function formatFileSize(bytes: number): string {
 
 export const FileInspector: React.FC<InspectorPanelProps> = ({ thought, isReadOnly }) => {
   const updateThought = useStore(state => state.updateThought);
-  const uploadThoughtBlob = useAuthStore((state) => state.uploadThoughtBlob);
   const openModal = useModalStore(state => state.openModal);
 
   const fileData = thought.data as { type: string; name?: string; size?: number; meta?: { file?: { type?: string } } } | undefined;
@@ -86,10 +84,8 @@ export const FileInspector: React.FC<InspectorPanelProps> = ({ thought, isReadOn
                   name: file.name,
                   type: file.type,
                   updatedAt: Date.now(),
-                  userId: useAuthStore.getState().user?.id ?? 'guest'
+                  userId: 'guest'
                 });
-
-                uploadThoughtBlob(thought.id);
               }
             }}
           />

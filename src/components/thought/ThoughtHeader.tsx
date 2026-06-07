@@ -3,9 +3,7 @@ import { type Thought } from '../../db';
 import { PRIO_COLORS } from './constants';
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
-import { Globe, RefreshCw, AlertCircle } from 'lucide-react';
-
-import { useAuthStore } from '../../store/useAuthStore';
+import { Globe } from 'lucide-react';
 
 function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -19,8 +17,6 @@ interface ThoughtHeaderProps {
 }
 
 export const ThoughtHeader: React.FC<ThoughtHeaderProps> = ({ thought, isCalendar, isExpanded, isArchived = false }) => {
-  const isAuthenticated = useAuthStore(state => state.status === 'authenticated');
-
   return (
     <div className={cn("flex items-start justify-between gap-4 pointer-events-none", isArchived && "pointer-events-none", isCalendar && !isExpanded ? "min-h-0" : "min-h-[24px]")}>
       <div className="flex items-start gap-2.5 flex-1 min-w-0">
@@ -43,30 +39,11 @@ export const ThoughtHeader: React.FC<ThoughtHeaderProps> = ({ thought, isCalenda
       </div>
 
       <div className="flex items-center gap-1.5 flex-shrink-0 mt-0.5">
-        {isAuthenticated && thought.syncStatus && thought.type === 'file' && (
-          <div className="flex items-center justify-center ml-1 group/sync relative">
-            {thought.syncStatus === 'synced' || (thought.type === 'file' && thought.storageUrl) ? (
-              <div className="w-3 h-3 flex items-center justify-center rounded-full bg-green-500/10 border border-green-500/20 shadow-[0_0_8px_rgba(34,197,94,0.2)]">
-                <Globe className="w-2 h-2 text-green-500 opacity-80" />
-              </div>
-            ) : thought.syncStatus === 'syncing' ? (
-              <div className="relative">
-                <RefreshCw className="w-2.5 h-2.5 text-blue-400 animate-spin opacity-80" />
-                <div className="absolute inset-0 bg-blue-400/20 blur-sm rounded-full animate-pulse" />
-              </div>
-            ) : thought.syncStatus === 'error' ? (
-              <div className="relative">
-                <AlertCircle className="w-3 h-3 text-red-500 animate-pulse" />
-                <div className="absolute bottom-full right-0 mb-2 hidden group-hover/sync:block z-[100] pointer-events-none">
-                  <div className="bg-red-950/90 backdrop-blur-md border border-red-500/30 rounded-lg p-2 shadow-2xl min-w-[120px]">
-                    <p className="text-[7px] font-semibold tracking-widest text-red-400">Sync Failure</p>
-                    <p className="text-[8px] font-bold text-red-200/70 mt-0.5 leading-tight">Connection interrupted or media asset too large.</p>
-                  </div>
-                </div>
-              </div>
-            ) : (
-              <div className="w-1.5 h-1.5 rounded-full bg-blue-400/40 animate-pulse shadow-[0_0_8px_rgba(96,165,250,0.4)]" />
-            )}
+        {thought.type === 'file' && (
+          <div className="flex items-center justify-center ml-1">
+            <div className="w-3 h-3 flex items-center justify-center rounded-full bg-green-500/10 border border-green-500/20 shadow-[0_0_8px_rgba(34,197,94,0.2)]">
+              <Globe className="w-2 h-2 text-green-500 opacity-80" />
+            </div>
           </div>
         )}
       </div>

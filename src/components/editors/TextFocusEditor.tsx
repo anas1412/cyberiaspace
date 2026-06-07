@@ -1,7 +1,6 @@
 import React, { useState, useRef } from 'react';
 import { useStore } from '../../store/useStore';
 import { useThoughtPayload } from '../thought/hooks/useThoughtPayload';
-import { syncOrchestrator } from '../../services/sync/syncOrchestrator';
 import { Download, Bold, Italic, List, ListOrdered, Link, Heading1, Heading2, Quote, Code, Eye, Edit3, Split } from 'lucide-react';
 import { marked } from 'marked';
 import { clsx, type ClassValue } from 'clsx';
@@ -129,15 +128,6 @@ const TextFocusEditor: React.FC = () => {
       setLocalContent(content);
     }
   }, [thought?.id, content]);
-
-  React.useEffect(() => {
-    if (thought?.id) {
-      syncOrchestrator.setFocusEditing(true, thought.id);
-    }
-    return () => {
-      syncOrchestrator.setFocusEditing(false, null);
-    };
-  }, [thought?.id]);
 
   const handleTitleChange = (val: string) => {
     setLocalTitle(val);

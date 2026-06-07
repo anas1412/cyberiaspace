@@ -113,12 +113,10 @@ export function parseReferences(
 async function getThoughtMediaUrl(thought: Thought): Promise<string | null> {
   if (thought.data?.type === 'file' && thought.data.url) return thought.data.url;
   if (thought.image) return thought.image;
-  if (thought.storageUrl) return thought.storageUrl;
 
   // Local IndexedDB Blob Fallback
   const { db } = await import('../db');
-  const { useAuthStore } = await import('../store/useAuthStore');
-  const userId = useAuthStore.getState().user?.id ?? 'guest';
+  const userId = 'guest';
 
   const blobEntry = await db.blobs
     .where('thoughtId').equals(thought.id)

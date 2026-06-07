@@ -28,7 +28,7 @@ export const TasksRenderer: React.FC<TasksRendererProps> = ({
   const done = tasks.filter((t) => t.done).length;
   const progress = tasks.length > 0 ? (done / tasks.length) * 100 : 0;
   const previewTasks = tasks.slice(0, 3);
-  const hasRemoteContent = thought.storageUrl && tasks.length === 0 && thought.syncStatus !== 'synced' && !isReadOnly;
+  const hasRemoteContent = false;
 
   if (tasks.length === 0) {
     return (

@@ -1,24 +1,14 @@
 import Dexie, { type EntityTable } from 'dexie';
 
 // ============================================
-// NEW: Thought Type Definitions (Modular)
+// Thought Type Definitions
 // ============================================
 
 export type ThoughtType = 'label' | 'text' | 'tasks' | 'paint' | 'table' | 'embed' | 'file';
 
 /**
  * Type-based default layer offsets for visual stacking order.
- * Higher values render on top. Manual bringToFront/sendToBack
- * adds/subtracts from this base value.
- *
- * Order rationale:
- *   label  — Annotations must always be readable on top
- *   tasks  — Interactive elements need visibility
- *   text   — Primary content, needs legibility
- *   table  — Structured data, medium priority
- *   paint  — Creative layer, neutral
- *   embed  — Media is often decorative/background
- *   file   — Reference material, sits behind content
+ * Higher values render on top.
  */
 export const TYPE_BASE_LAYERS: Record<ThoughtType, number> = {
   label: 10,
@@ -53,7 +43,7 @@ export type ThoughtPayload =
   | { type: 'paint'; drawing: string }
   | { type: 'embed'; url: string; provider?: string; providerId?: string }
   | { type: 'file'; url: string; name: string; size: number; meta?: FileMeta }
-  | { type: 'label' };  // No payload data needed
+  | { type: 'label' };
 
 // ============================================
 // Entity Interfaces
@@ -71,11 +61,9 @@ interface Space {
   transformX?: number;
   transformY?: number;
   transformScale?: number;
-  updatedAt?: number | null; // Changed to number (Unix ms)
+  updatedAt?: number | null;
   theme?: 'dark' | 'light';
   customBg?: string | null;
-  syncStatus?: 'local' | 'synced' | 'syncing' | 'error';
-  retryCount?: number;
 }
 
 interface Stack {
@@ -86,13 +74,11 @@ interface Stack {
   spaceId: string;
   isOnboarding?: boolean;
   deletedAt?: number | null;
-  syncStatus?: 'local' | 'synced' | 'syncing' | 'error';
-  retryCount?: number;
-  updatedAt?: number | null; // Added field
+  updatedAt?: number | null;
 }
 
 interface Thought {
-  id: string; // Changed from number to string (ULID)
+  id: string;
   spaceId: string;
   userId: string;
   stackId: string | null;
@@ -121,13 +107,9 @@ interface Thought {
   author: string;
   image?: string | null;
   meta?: any;
-  storageUrl?: string;
-  storagePath?: string;
   googleTaskListId?: string;
   googleCalendarEventId?: string;
-  syncStatus?: 'local' | 'synced' | 'syncing' | 'error';
-  retryCount?: number;
-  updatedAt?: number | null; // Standardized to number
+  updatedAt?: number | null;
 
   // Modular Payload (Discriminated Union)
   data?: ThoughtPayload;
@@ -139,17 +121,17 @@ interface LocalBlob {
   blob: Blob;
   name: string;
   type: string;
-  userId: string; // Required for user isolation
+  userId: string;
   updatedAt: number;
 }
 
 interface ChatMessage {
-  id: string;      // ULID for ordering
-  spaceId: string; // Per-space history
+  id: string;
+  spaceId: string;
   role: 'user' | 'assistant';
   content: string;
   timestamp: number;
-  msgType?: 'chat' | 'system'; //区分聊天消息和系统错误消息
+  msgType?: 'chat' | 'system';
 }
 
 interface SpaceBackground {
@@ -180,7 +162,7 @@ db.on('versionchange', () => {
   window.location.reload();
 });
 
-// Version 17: Added deletedAt index to spaces and stacks for robust filtering. Note: date field was deprecated here and removed in v19, replaced by startTime/endTime.
+// Version 17: Base schema
 db.version(17).stores({
   spaces: 'id, userId, name, order, syncStatus, deletedAt, updatedAt',
   thoughts: 'id, userId, spaceId, stackId, text, type, status, date, priority, order, author, storageUrl, syncStatus, deletedAt, updatedAt',
@@ -188,17 +170,17 @@ db.version(17).stores({
   blobs: 'id, thoughtId, userId'
 });
 
-// Version 18: Added chatHistory for local persistent Oracle conversations
+// Version 18: Added chatHistory
 db.version(18).stores({
   chatHistory: 'id, spaceId, timestamp'
 });
 
-// Version 19: Added time-based fields to thoughts (startTime, endTime, etc.) and removed date
+// Version 19: Added time-based fields
 db.version(19).stores({
   thoughts: 'id, userId, spaceId, stackId, text, type, status, startTime, endTime, priority, order, author, storageUrl, syncStatus, deletedAt, updatedAt',
 });
 
-// Version 20: Added spaceBackgrounds for local-first custom background storage
+// Version 20: Added spaceBackgrounds
 db.version(20).stores({
   spaceBackgrounds: 'id, spaceId, userId'
 });

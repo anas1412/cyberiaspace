@@ -1,6 +1,5 @@
 import React, { useRef, useState, useEffect, useCallback } from 'react';
 import { useStore } from '../store/useStore';
-import { useAuthStore } from '../store/useAuthStore';
 import { useModalStore } from '../store/useModalStore';
 import { MAX_UPLOAD_SIZE, MAX_UPLOAD_SIZE_MB } from '../constants';
 import { clsx, type ClassValue } from 'clsx';
@@ -38,8 +37,6 @@ const Viewport: React.FC<{ isInteracting?: boolean }> = ({ isInteracting }) => {
   const addThought = useStore((state) => state.addThought);
   const setLinkingSourceId = useStore((state) => state.setLinkingSourceId);
   const linkingSourceId = useStore((state) => state.linkingSourceId);
-  const uploadThoughtBlob = useAuthStore((state) => state.uploadThoughtBlob);
-
 
 
   const isReadOnly = useStore((state) => state.isReadOnly);
@@ -300,21 +297,6 @@ const Viewport: React.FC<{ isInteracting?: boolean }> = ({ isInteracting }) => {
         e.preventDefault();
         if (e.repeat) return;
 
-        const limits = useStore.getState().getLimits();
-        if (thoughts.length >= limits.MAX_THOUGHTS_PER_SPACE) {
-          const isPro = useAuthStore.getState().user?.plan === 'pro';
-          openModal({
-            title: isPro ? 'Space Limit Reached' : 'Thinking Limit Reached',
-            description: isPro 
-              ? `You’ve reached the pro limit of ${limits.MAX_THOUGHTS_PER_SPACE} thoughts for this space.` 
-              : `You’ve reached the free limit of ${limits.MAX_THOUGHTS_PER_SPACE} thoughts for this space. Upgrade to Cyberia Pro to unlock unlimited mapping and premium Oracle AI features.`,
-            type: 'limit_thought',
-            confirmText: isPro ? 'Acknowledged' : 'Upgrade to Pro',
-            onConfirm: isPro ? undefined : () => window.location.href = '/pricing'
-          });
-          return;
-        }
-
         const newThoughtProps: any = {
           x: mouseWorldPos.current.x,
           y: mouseWorldPos.current.y
@@ -398,25 +380,6 @@ const Viewport: React.FC<{ isInteracting?: boolean }> = ({ isInteracting }) => {
       const files = Array.from(e.dataTransfer?.files || []);
       if (files.length === 0) return;
 
-      // Pre-check: storage quota
-      const { storageUsageMB } = useAuthStore.getState();
-      const { useAuthStore: authStoreImport } = await import('../store/useAuthStore');
-      const authState = authStoreImport.getState();
-      const { PLAN_CONFIG } = await import('../constants');
-      const plan = (authState.user?.plan || 'free') as keyof typeof PLAN_CONFIG;
-      const storageLimitMB = PLAN_CONFIG[plan].MAX_STORAGE_MB;
-      const totalFileMB = files.reduce((sum, f) => sum + f.size / (1024 * 1024), 0);
-      if (storageUsageMB + totalFileMB > storageLimitMB) {
-        const remaining = (storageLimitMB - storageUsageMB).toFixed(1);
-        openModal({
-          title: 'Storage Full',
-          description: `You have ${remaining}MB of storage remaining. These files need ${totalFileMB.toFixed(1)}MB. Upgrade your plan or remove some files first.`,
-          type: 'alert',
-          confirmText: 'Okay'
-        });
-        return;
-      }
-
       const currentScale = camera.scale.get();
       const currentX = camera.x.get();
       const currentY = camera.y.get();
@@ -456,7 +419,6 @@ const Viewport: React.FC<{ isInteracting?: boolean }> = ({ isInteracting }) => {
           const id = await addThought({
             type: 'file', // Consolidated to 'file'
             text: stripFileExtension(file.name),
-            syncStatus: 'local',
             x: dropX + (Math.random() * 20 - 10),
             y: dropY + (Math.random() * 20 - 10),
             data: {
@@ -482,7 +444,7 @@ const Viewport: React.FC<{ isInteracting?: boolean }> = ({ isInteracting }) => {
           });
 
           if (id !== '') {
-            const userId = useAuthStore.getState().user?.id ?? 'guest';
+            const userId = 'guest';
             await db.blobs.put({
               id: id,
               thoughtId: id,
@@ -493,7 +455,6 @@ const Viewport: React.FC<{ isInteracting?: boolean }> = ({ isInteracting }) => {
               userId
             });
             setSelectedThoughtId(id);
-            uploadThoughtBlob(id);
           }
           continue;
         }
@@ -502,7 +463,6 @@ const Viewport: React.FC<{ isInteracting?: boolean }> = ({ isInteracting }) => {
           const id = await addThought({
             type: 'file',
             text: stripFileExtension(file.name),
-            syncStatus: 'local',
             x: dropX + (Math.random() * 20 - 10),
             y: dropY + (Math.random() * 20 - 10),
             data: {
@@ -527,7 +487,7 @@ const Viewport: React.FC<{ isInteracting?: boolean }> = ({ isInteracting }) => {
           });
 
           if (id !== '') {
-            const userId = useAuthStore.getState().user?.id ?? 'guest';
+            const userId = 'guest';
             await db.blobs.put({
               id: id,
               thoughtId: id,
@@ -539,7 +499,6 @@ const Viewport: React.FC<{ isInteracting?: boolean }> = ({ isInteracting }) => {
             });
             setSelectedThoughtId(id);
             setInspectorOpen(true);
-            uploadThoughtBlob(id);
           }
           continue;
         }
@@ -548,7 +507,6 @@ const Viewport: React.FC<{ isInteracting?: boolean }> = ({ isInteracting }) => {
           const id = await addThought({
             type: 'file',
             text: stripFileExtension(file.name),
-            syncStatus: 'local',
             x: dropX + (Math.random() * 20 - 10),
             y: dropY + (Math.random() * 20 - 10),
             data: {
@@ -568,7 +526,7 @@ const Viewport: React.FC<{ isInteracting?: boolean }> = ({ isInteracting }) => {
           });
 
           if (id !== '') {
-            const userId = useAuthStore.getState().user?.id ?? 'guest';
+            const userId = 'guest';
             await db.blobs.put({
               id: id,
               thoughtId: id,
@@ -580,7 +538,6 @@ const Viewport: React.FC<{ isInteracting?: boolean }> = ({ isInteracting }) => {
             });
             setSelectedThoughtId(id);
             setInspectorOpen(true);
-            uploadThoughtBlob(id);
           }
           continue;
         }
@@ -676,7 +633,7 @@ const Viewport: React.FC<{ isInteracting?: boolean }> = ({ isInteracting }) => {
       window.removeEventListener('touchmove', handleTouchMove);
       window.removeEventListener('touchend', handleTouchEnd);
     };
-  }, [activeSpace, setInspectorOpen, isGrabbing, selectedThoughtId, selectedThoughtIds, openModal, deleteThought, deleteSelectedThoughts, thoughts, addThought, setSelectedThoughtId, setSelectedThoughtIds, clearSelection, isReadOnly, handleWheel, handleTouchStartLocal, handleTouchMove, handleTouchEnd, getGlobalScale, uploadThoughtBlob, applyConstraints, lastMousePos, selectionStartRef, isPanningRef, isSelectingRef, isDemo, isInteracting, camera, linkingSourceId, setLinkingSourceId, handleMouseMoveGesture]);
+  }, [activeSpace, setInspectorOpen, isGrabbing, selectedThoughtId, selectedThoughtIds, openModal, deleteThought, deleteSelectedThoughts, thoughts, addThought, setSelectedThoughtId, setSelectedThoughtIds, clearSelection, isReadOnly, handleWheel, handleTouchStartLocal, handleTouchMove, handleTouchEnd, getGlobalScale, applyConstraints, lastMousePos, selectionStartRef, isPanningRef, isSelectingRef, isDemo, isInteracting, camera, linkingSourceId, setLinkingSourceId, handleMouseMoveGesture]);
 
 
   return (

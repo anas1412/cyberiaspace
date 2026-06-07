@@ -1,11 +1,8 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { FileText, ArrowLeft, ShieldCheck, CreditCard, RefreshCw, AlertCircle, Scale, Building2, User, Ban } from 'lucide-react';
-import { useTranslation } from 'react-i18next';
+import { FileText, ArrowLeft, ShieldCheck, Scale } from 'lucide-react';
 
 const CGV: React.FC = () => {
-  const { t } = useTranslation();
-
   const handleBack = () => {
     if (window.history.length > 1) {
       window.history.back();
@@ -18,157 +15,80 @@ const CGV: React.FC = () => {
   const articles = [
     {
       id: 1,
-      title: t('legal.cgv.articles.article_1.title'),
+      title: 'Scope & Acceptance',
       icon: <Scale className="w-5 h-5 text-blue-400" />,
       content: (
         <p className="leading-relaxed text-[var(--text-muted)]">
-          {t('legal.cgv.articles.article_1.content')}
+          These Terms and Conditions govern your use of the Cyberia application. By accessing or using the app, you agree to be bound by these terms. If you do not agree with any part of these terms, you must not use the application. We reserve the right to update these terms at any time, and continued use after changes constitutes acceptance of the new terms.
         </p>
       )
     },
     {
       id: 2,
-      title: t('legal.cgv.articles.article_2.title'),
-      icon: <Building2 className="w-5 h-5 text-blue-400" />,
+      title: 'Free & Open Source',
+      icon: <ShieldCheck className="w-5 h-5 text-blue-400" />,
+      highlight: true,
       content: (
         <>
           <p className="leading-relaxed text-[var(--text-muted)]">
-            {t('legal.cgv.articles.article_2.content')}
+            Cyberia is free and open-source software released under the MIT License. You can use, modify, and distribute the software in accordance with the license terms. The full source code is available on GitHub.
           </p>
           <ul className="list-disc list-inside space-y-3 mt-4 ml-2 text-[var(--text-muted)]">
-            <li><strong className="text-[var(--text-primary)] font-bold">{t('legal.cgv.articles.article_2.pro_tier')}</strong> {t('legal.cgv.articles.article_2.pro_tier_desc')}</li>
-            <li><strong className="text-[var(--text-primary)] font-bold">{t('legal.cgv.articles.article_2.account_responsibility')}</strong> {t('legal.cgv.articles.article_2.account_responsibility_desc')}</li>
+            <li><strong className="text-[var(--text-primary)] font-bold">No Account Required</strong> — You can use Cyberia immediately without creating an account or providing any personal information.</li>
+            <li><strong className="text-[var(--text-primary)] font-bold">No Subscription</strong> — The app is completely free. There are no paid tiers, subscriptions, or hidden fees.</li>
+            <li><strong className="text-[var(--text-primary)] font-bold">Local-First</strong> — All your data is stored locally in your browser. No cloud storage is used.</li>
           </ul>
         </>
       )
     },
     {
       id: 3,
-      title: t('legal.cgv.articles.article_3.title'),
-      icon: <RefreshCw className="w-5 h-5 text-blue-400" />,
-      highlight: true,
+      title: 'AI Features (BYOK)',
+      icon: <ShieldCheck className="w-5 h-5 text-blue-400" />,
       content: (
-        <div className="space-y-4">
-          <div className="bg-[var(--glass-bg)] p-6 rounded-2xl border border-[var(--glass-border)]">
-            <h3 className="text-sm font-bold text-[var(--text-primary)] uppercase tracking-widest mb-2 flex items-center gap-2">
-              <span className="w-2 h-2 rounded-full bg-blue-400" />
-              {t('legal.cgv.articles.article_3.local_payments')}
-            </h3>
-            <p className="leading-relaxed text-sm text-[var(--text-muted)]">
-              {t('legal.cgv.articles.article_3.local_payments_desc')}
-            </p>
-          </div>
-
-          <div className="bg-[var(--glass-bg)] p-6 rounded-2xl border border-[var(--glass-border)]">
-            <h3 className="text-sm font-bold text-[var(--text-primary)] uppercase tracking-widest mb-2 flex items-center gap-2">
-              <span className="w-2 h-2 rounded-full bg-purple-400" />
-              {t('legal.cgv.articles.article_3.international_payments')}
-            </h3>
-            <p className="leading-relaxed text-sm text-[var(--text-muted)]">
-              {t('legal.cgv.articles.article_3.international_payments_desc')}
-            </p>
-          </div>
-        </div>
+        <p className="leading-relaxed text-[var(--text-muted)]">
+          Cyberia offers optional AI features through OpenRouter. You must provide your own OpenRouter API key to use AI functionality. Your API key is stored locally in your browser and is never sent to us. AI queries are sent directly from your browser to OpenRouter. We are not responsible for the availability, accuracy, or behavior of third-party AI models. You are responsible for complying with OpenRouter&apos;s terms of service and the terms of the AI models you choose to use.
+        </p>
       )
     },
     {
       id: 4,
-      title: t('legal.cgv.articles.article_4.title'),
-      icon: <CreditCard className="w-5 h-5 text-blue-400" />,
+      title: 'Intellectual Property',
+      icon: <ShieldCheck className="w-5 h-5 text-blue-400" />,
       content: (
-        <>
-          <p className="leading-relaxed text-[var(--text-muted)]">
-            {t('legal.cgv.articles.article_4.content')}
-          </p>
-          <ul className="list-disc list-inside space-y-3 mt-4 ml-2 text-[var(--text-muted)]">
-            <li><strong className="text-[var(--text-primary)] font-bold">{t('legal.cgv.articles.article_4.local_payments')}</strong> {t('legal.cgv.articles.article_4.local_payments_desc')}</li>
-            <li><strong className="text-[var(--text-primary)] font-bold">{t('legal.cgv.articles.article_4.international_payments')}</strong> {t('legal.cgv.articles.article_4.international_payments_desc')}</li>
-            <li><strong className="text-[var(--text-primary)] font-bold">{t('legal.cgv.articles.article_4.security')}</strong> {t('legal.cgv.articles.article_4.security_desc')}</li>
-          </ul>
-        </>
+        <p className="leading-relaxed font-mono text-xs uppercase tracking-wider text-[var(--text-muted)] italic">
+          You retain full ownership of all content you create within the application. We claim no intellectual property rights over your thoughts, files, or spaces. The Cyberia software, logo, and branding are our intellectual property and may not be copied or reproduced without permission. The source code is licensed under the MIT License.
+        </p>
       )
     },
     {
       id: 5,
-      title: t('legal.cgv.articles.article_5.title'),
-      icon: <AlertCircle className="w-5 h-5 text-red-400" />,
-      error: true,
+      title: 'Acceptable Use',
+      icon: <ShieldCheck className="w-5 h-5 text-blue-400" />,
       content: (
         <>
-          <p className="leading-relaxed font-bold text-[var(--text-primary)]">
-            {t('legal.cgv.articles.article_5.content')}
+          <p className="leading-relaxed text-[var(--text-muted)]">
+            You agree to use the application responsibly and in compliance with all applicable laws. Prohibited activities include:
           </p>
-          <p className="text-xl font-black text-[var(--text-primary)] uppercase tracking-tighter mt-4 border-l-4 border-red-500 pl-4 py-2">
-            {t('legal.cgv.articles.article_5.final_sale')}
+          <p className="leading-relaxed text-[var(--text-muted)] mt-3">
+            <strong className="text-[var(--text-primary)]">You must not use Cyberia to:</strong>
           </p>
-          <p className="leading-relaxed mt-4 text-sm text-[var(--text-muted)] italic">
-            {t('legal.cgv.articles.article_5.free_tier_note')}
-          </p>
+          <ul className="list-disc list-inside space-y-2 mt-2 ml-2 text-[var(--text-muted)]">
+            <li>Upload illegal, harmful, or abusive content</li>
+            <li>Attempt to compromise the service or other users</li>
+            <li>Use automated scripts or bots to scrape or overload the service</li>
+            <li>Reverse engineer, decompile, or attempt to extract the source code beyond what the MIT License permits</li>
+          </ul>
         </>
       )
     },
     {
       id: 6,
-      title: t('legal.cgv.articles.article_6.title'),
-      icon: <ShieldCheck className="w-5 h-5 text-blue-400" />,
-      content: (
-        <p className="leading-relaxed font-mono text-xs uppercase tracking-wider text-[var(--text-muted)] italic">
-          {t('legal.cgv.articles.article_6.content')}
-        </p>
-      )
-    },
-    {
-      id: 7,
-      title: t('legal.cgv.articles.article_7.title'),
-      icon: <ShieldCheck className="w-5 h-5 text-blue-400" />,
-      content: (
-        <>
-          <p className="leading-relaxed text-[var(--text-muted)]">
-            {t('legal.cgv.articles.article_7.content_1')}
-          </p>
-          <p className="leading-relaxed text-[var(--text-muted)] mt-3">
-            <strong className="text-[var(--text-primary)]">{t('legal.cgv.articles.article_7.content_2')}</strong>
-          </p>
-          <ul className="list-disc list-inside space-y-2 mt-2 ml-2 text-[var(--text-muted)]">
-            <li>{t('legal.cgv.articles.article_7.bullet_1')}</li>
-            <li>{t('legal.cgv.articles.article_7.bullet_2')}</li>
-            <li>{t('legal.cgv.articles.article_7.bullet_3')}</li>
-            <li>{t('legal.cgv.articles.article_7.bullet_4')}</li>
-          </ul>
-        </>
-      )
-    },
-    {
-      id: 8,
-      title: t('legal.cgv.articles.article_8.title'),
-      icon: <Ban className="w-5 h-5 text-red-400" />,
-      error: true,
-      content: (
-        <>
-          <p className="leading-relaxed text-[var(--text-muted)]">
-            {t('legal.cgv.articles.article_8.content')}
-          </p>
-          <ul className="list-disc list-inside space-y-2 mt-3 ml-2 text-[var(--text-muted)]">
-            <li>{t('legal.cgv.articles.article_8.bullet_1')}</li>
-            <li>{t('legal.cgv.articles.article_8.bullet_2')}</li>
-            <li>{t('legal.cgv.articles.article_8.bullet_3')}</li>
-            <li>{t('legal.cgv.articles.article_8.bullet_4')}</li>
-            <li>{t('legal.cgv.articles.article_8.bullet_5')}</li>
-            <li>{t('legal.cgv.articles.article_8.bullet_6')}</li>
-          </ul>
-          <p className="leading-relaxed mt-4 text-sm text-[var(--text-muted)]">
-            {t('legal.cgv.articles.article_8.violation_note')}
-          </p>
-        </>
-      )
-    },
-    {
-      id: 9,
-      title: t('legal.cgv.articles.article_9.title'),
+      title: 'Limitation of Liability',
       icon: <Scale className="w-5 h-5 text-blue-400" />,
       content: (
         <p className="leading-relaxed text-[var(--text-dimmed)]">
-          {t('legal.cgv.articles.article_9.content')}
+          The application is provided &quot;as is&quot; without warranty of any kind. In no event shall Cyberia be liable for any damages arising from the use or inability to use the service. This includes, but is not limited to, data loss, service interruption, or any indirect or consequential damages. Since all data is stored locally in your browser, you are responsible for maintaining backups of your important data.
         </p>
       )
     }
@@ -186,7 +106,7 @@ const CGV: React.FC = () => {
           className="flex items-center gap-2 text-blue-400 hover:text-[var(--text-primary)] transition-colors mb-12 group"
         >
           <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
-          <span className="text-xs font-semibold tracking-widest">{t('legal.back')}</span>
+          <span className="text-xs font-semibold tracking-widest">Back</span>
         </button>
 
         <header className="mb-16">
@@ -194,9 +114,9 @@ const CGV: React.FC = () => {
             <div className="w-12 h-12 bg-blue-500/10 rounded-2xl flex items-center justify-center border border-blue-500/20">
               <FileText className="w-6 h-6 text-blue-400" />
             </div>
-            <h1 className="text-4xl md:text-6xl font-black text-[var(--text-primary)] uppercase tracking-tighter leading-none">{t('legal.cgv.title')}</h1>
+            <h1 className="text-4xl md:text-6xl font-black text-[var(--text-primary)] uppercase tracking-tighter leading-none">Terms &amp; Conditions</h1>
           </div>
-          <p className="text-[var(--text-muted)] font-mono text-sm uppercase tracking-widest">{t('legal.cgv.last_updated')}</p>
+          <p className="text-[var(--text-muted)] font-mono text-sm uppercase tracking-widest">Last Updated: June 2025</p>
         </header>
 
         <section className="space-y-8 pb-20">
@@ -206,8 +126,6 @@ const CGV: React.FC = () => {
               className={`border p-8 rounded-[2.5rem] space-y-4 transition-colors duration-500 ${
                 article.highlight 
                   ? 'bg-blue-500/5 border-blue-500/10 hover:border-blue-500/20 shadow-[0_0_40px_rgba(59,130,246,0.03)]' 
-                  : article.error
-                  ? 'bg-red-500/5 border-red-500/10 hover:border-red-500/20'
                   : 'bg-[var(--glass-bg)] border border-[var(--glass-border)] hover:border-[var(--accent)]/30'
               }`}
             >
@@ -220,17 +138,6 @@ const CGV: React.FC = () => {
               {article.content}
             </div>
           ))}
-
-          <div className="pt-12 border-t border-[var(--glass-border)] flex flex-col md:flex-row justify-between items-center gap-8">
-            <div className="flex gap-4 opacity-30">
-              <CreditCard className="w-8 h-8" />
-              <ShieldCheck className="w-8 h-8" />
-              <User className="w-8 h-8" />
-            </div>
-            <p className="text-[10px] font-semibold tracking-widest text-[var(--text-muted)]">
-              {t('legal.cgv.copyright')}
-            </p>
-          </div>
         </section>
       </motion.div>
     </div>

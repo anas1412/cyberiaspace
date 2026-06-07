@@ -1,14 +1,10 @@
-import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useStore } from '../../store/useStore';
-import { useAuthStore } from '../../store/useAuthStore';
-import { useSyncStore } from '../../store/useSyncStore';
 import { useThoughtPayload } from '../thought/hooks/useThoughtPayload';
-import { supabaseStorage } from '../../services/supabaseStorage';
 import { useModalStore } from '../../store/useModalStore';
-import { syncOrchestrator } from '../../services/sync/syncOrchestrator';
 import { 
   File as FileIcon, Upload, Download, Loader2, FileAudio, 
-  Database, CloudOff, ExternalLink, 
+  ExternalLink, 
   ChevronDown, ChevronUp, Palette, Edit2, Check,
   ChevronLeft, ChevronRight
 } from 'lucide-react';
@@ -211,8 +207,6 @@ const EditorContent: React.FC<{
   const [showPreviews, setShowPreviews] = useState(false);
   const [isRenamingStack, setIsRenamingStack] = useState(false);
   const [tempStackName, setTempStackName] = useState(stack?.name || '');
-  const isStranded = !thought.storageUrl && !localPreviewUrl && !image && !!thought.storagePath;
-
   const currentIndex = stackItems.findIndex(i => i.id === thought.id);
   
   const handlePrevious = (e: React.MouseEvent) => {
@@ -251,39 +245,8 @@ const EditorContent: React.FC<{
   const mimeType = (cached.type || '').toLowerCase();
   const extension = fileName.split('.').pop() || '';
   
-  const isLocalOnly = thought.syncStatus === 'local' || thought.syncStatus === 'error';
-
-  // Signed URL state for private bucket access
-  const [signedUrl, setSignedUrl] = useState<string | null>(null);
-  useEffect(() => {
-    if (isLocalOnly || localPreviewUrl || !thought.storagePath) return;
-    let cancelled = false;
-    const fetchSigned = async () => {
-      try {
-        const url = await supabaseStorage.getSignedUrl(thought.storagePath!);
-        if (!cancelled) setSignedUrl(url);
-      } catch (e) {
-        console.warn('[FileFocusEditor] Failed to get signed URL:', e);
-      }
-    };
-    fetchSigned();
-    return () => { cancelled = true; };
-  }, [thought.storagePath, isLocalOnly, localPreviewUrl]);
-
-  const handleMediaError = useCallback(async () => {
-    if (!thought.storagePath) return;
-    try {
-      const freshUrl = await supabaseStorage.getSignedUrl(thought.storagePath, 3600);
-      setSignedUrl(freshUrl);
-    } catch (e) {
-      console.warn('[FileFocusEditor] Failed to refresh signed URL:', e);
-    }
-  }, [thought.storagePath]);
-
-  // LOCAL FIRST GUARD: If we are still fetching/checking local, don't fallback to cloud yet
-  const activeSource = isFetching 
-    ? localPreviewUrl 
-    : (localPreviewUrl || (isLocalOnly ? null : (signedUrl || thought.storageUrl)) || image);
+  // Use local blob or image preview
+  const activeSource = isFetching ? localPreviewUrl : (localPreviewUrl || image);
 
   // Use cached values if available, otherwise analyze
   const isPdf = fileInfo?.isPdf ?? false;
@@ -315,7 +278,7 @@ const EditorContent: React.FC<{
           await useStore.getState().updateThought(thought.id, { 
             meta,
             data: thought.data?.type === 'file' ? { ...thought.data, meta } : thought.data
-          }, { skipSync: true });
+          });
         };
         updateStore();
       }
@@ -329,21 +292,6 @@ const EditorContent: React.FC<{
           <div className="absolute inset-0 flex flex-col items-center justify-center bg-[var(--glass-bg)] gap-4 backdrop-blur-sm">
             <Loader2 className="w-10 h-10 text-[var(--accent)] animate-spin" />
             <p className="text-[10px] font-semibold tracking-[0.3em] text-[var(--accent)] animate-pulse">Retrieving Data...</p>
-          </div>
-        ) : isStranded ? (
-          <div className="absolute inset-0 flex flex-col items-center justify-center bg-[var(--glass-bg)] p-8 text-center gap-6">
-            <div className="w-24 h-24 bg-amber-500/5 rounded-[2rem] border border-amber-500/10 flex items-center justify-center shadow-2xl relative">
-              <Database className="w-10 h-10 text-amber-500 opacity-40" />
-              <div className="absolute -bottom-1 -right-1 bg-[var(--bg-page)] rounded-full p-1 border border-amber-500/20">
-                <CloudOff className="w-4 h-4 text-amber-500" />
-              </div>
-            </div>
-            <div className="max-w-xs">
-              <h3 className="text-xl font-semibold tracking-[0.2em] text-[var(--text-primary)] mb-3">Sync Pending</h3>
-              <p className="text-xs font-medium text-[var(--text-muted)] leading-relaxed mb-8 uppercase tracking-widest text-center">
-                This content exists only on your other device. Please sync that device to the cloud to access it here.
-              </p>
-            </div>
           </div>
         ) : activeSource ? (
           <div className="absolute inset-0 flex items-center justify-center p-4 md:p-12 bg-[var(--bg-page)]">
@@ -361,7 +309,6 @@ const EditorContent: React.FC<{
                   alt={thought.text}
                   className="max-w-[90%] max-h-[85%] object-contain rounded-xl shadow-[0_20px_60px_-15px_rgba(0,0,0,0.5)] transition-opacity duration-700"
                   style={{ opacity: isFetching ? 0.5 : 1 }}
-                  onError={handleMediaError}
                 />
               </div>
             ) : isVideo ? (
@@ -373,7 +320,6 @@ const EditorContent: React.FC<{
                   playsInline
                   loop
                   className="max-w-[90%] max-h-[85%] object-contain"
-                  onError={handleMediaError}
                 />
               </div>
             ) : isAudio ? (
@@ -392,7 +338,6 @@ const EditorContent: React.FC<{
                     autoPlay 
                     className="w-full h-10"
                     src={activeSource}
-                    onError={handleMediaError}
                   />
                 </div>
               </div>
@@ -569,92 +514,15 @@ const EditorContent: React.FC<{
   );
 };
 
-const CloudPill: React.FC<{
-  isSyncing: boolean;
-  isSyncBlocked: boolean;
-  isSynced: boolean;
-  isReadOnly: boolean;
-  localPreviewUrl: string | null;
-  storageUrl?: string | null;
-  onRemove: () => void;
-  onSync: () => void;
-}> = ({ isSyncing, isSyncBlocked, isSynced, isReadOnly, localPreviewUrl, storageUrl, onRemove, onSync }) => {
-  const [isHovered, setIsHovered] = useState(false);
-  
-  if (isSyncing || isSyncBlocked) {
-    return (
-      <div className="flex items-center gap-2 px-3 py-1.5 bg-blue-500/5 border border-blue-500/10 rounded-xl opacity-50 cursor-wait">
-        <Loader2 className="w-3 h-3 text-blue-400 animate-spin" />
-        <span className="text-[7px] font-semibold tracking-[0.2em] text-blue-400">
-          {isSyncing ? 'Synchronizing' : 'Sync Blocked'}
-        </span>
-      </div>
-    );
-  }
-
-  if (isSynced) {
-    return (
-      <button 
-        onMouseEnter={() => setIsHovered(true)}
-        onMouseLeave={() => setIsHovered(false)}
-        onClick={onRemove}
-        disabled={isReadOnly}
-        className={cn(
-          "flex items-center gap-2 px-3 py-1.5 rounded-xl transition-all duration-300 border select-none group/pill",
-          isHovered 
-            ? "bg-red-500/10 border-red-500/20 text-red-400 shadow-[0_0_15px_rgba(239,68,68,0.1)]" 
-            : "bg-emerald-500/5 border-emerald-500/10 text-emerald-400"
-        )}
-      >
-        <div className={cn(
-          "w-1.5 h-1.5 rounded-full shadow-sm transition-colors duration-300",
-          isHovered ? "bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.8)]" : "bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.8)] animate-pulse"
-        )} />
-        <span className="text-[7px] font-semibold tracking-[0.2em] whitespace-nowrap">
-          {isHovered ? 'Remove from Cloud' : 'Cloud Synced'}
-        </span>
-      </button>
-    );
-  }
-
-  return (
-    <button 
-      onMouseEnter={() => setIsHovered(true)}
-      onMouseLeave={() => setIsHovered(false)}
-      onClick={onSync}
-      disabled={isReadOnly || (!localPreviewUrl && !storageUrl)}
-      className={cn(
-        "flex items-center gap-2 px-3 py-1.5 rounded-xl transition-all duration-300 border select-none group/pill",
-        isHovered 
-          ? "bg-blue-500/10 border-blue-500/20 text-blue-400 shadow-[0_0_15px_rgba(59,130,246,0.1)]" 
-          : "bg-slate-500/5 border-white/5 text-[var(--text-muted)]"
-      )}
-    >
-      <div className={cn(
-        "w-1.5 h-1.5 rounded-full shadow-sm transition-colors duration-300",
-        isHovered ? "bg-blue-500 shadow-[0_0_8px_rgba(59,130,246,0.8)]" : "bg-slate-600"
-      )} />
-      <span className="text-[7px] font-semibold tracking-[0.2em] whitespace-nowrap">
-        {isHovered ? 'Propagate to Cloud' : 'Local Only'}
-      </span>
-    </button>
-  );
-};
-
 const FileFocusEditor: React.FC = () => {
   const activeFocusId = useStore((state) => state.activeFocusId);
   const focusType = useStore((state) => state.focusType);
-  const isSyncBlocked = useSyncStore((state) => state.isSyncBlocked);
   const setActiveFocus = useStore((state) => state.setActiveFocus);
   const thoughts = useStore((state) => state.thoughts);
   const stacks = useStore((state) => state.stacks);
   const updateThought = useStore((state) => state.updateThought);
   const isReadOnly = useStore((state) => state.isReadOnly);
   const isDemo = useStore((state) => state.isDemo);
-  const { 
-    uploadThoughtBlob, 
-    removeCloudAsset
-  } = useAuthStore();
   const openModal = useModalStore(state => state.openModal);
 
   const thought = thoughts.find((t) => t.id === activeFocusId);
@@ -666,15 +534,6 @@ const FileFocusEditor: React.FC = () => {
   const [isUploading, setIsUploading] = useState(false);
   const [isFetching, setIsFetching] = useState(true); // Start true to guard initial check
   const scrollerRef = useRef<HTMLDivElement>(null);
-
-  React.useEffect(() => {
-    if (thought?.id) {
-      syncOrchestrator.setFocusEditing(true, thought.id);
-    }
-    return () => {
-      syncOrchestrator.setFocusEditing(false, null);
-    };
-  }, [thought?.id]);
 
   // RESET LOGIC: When thought ID changes, clear state and revoke URLs
   useEffect(() => {
@@ -745,10 +604,8 @@ const FileFocusEditor: React.FC = () => {
         setLocalPreviewUrl(url);
         try {
           const { useStore } = await import('../../store/useStore');
-          useStore.getState().updateThought(thought.id, { updatedAt: Date.now() }, { skipSync: true });
+          useStore.getState().updateThought(thought.id, { updatedAt: Date.now() });
         } catch {}
-      } else if (thought.storageUrl) {
-        useAuthStore.getState().downloadSingleBlob(thought.id);
       }
     } catch (e) {
       console.warn("[FileFocus] Local blob load failed", e);
@@ -803,12 +660,11 @@ const FileFocusEditor: React.FC = () => {
         name: file.name,
         type: file.type,
         updatedAt: Date.now(),
-        userId: useAuthStore.getState().user?.id ?? 'guest'
+        userId: 'guest'
       });
 
       const url = URL.createObjectURL(file);
       setLocalPreviewUrl(url);
-      uploadThoughtBlob(thought.id);
     } catch (error) {
       console.error("[FileFocus] Upload failed", error);
     } finally {
@@ -819,7 +675,7 @@ const FileFocusEditor: React.FC = () => {
   const handleDownload = async () => {
     if (!thought) return;
     
-    // Prefer local blob, then generate fresh signed URL
+    // Only local blobs are available
     if (localPreviewUrl) {
       const a = document.createElement('a');
       a.href = localPreviewUrl;
@@ -827,66 +683,19 @@ const FileFocusEditor: React.FC = () => {
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
-    } else if (thought.storagePath) {
-      try {
-        const url = await supabaseStorage.getSignedUrl(thought.storagePath);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = thought.text || 'asset';
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-      } catch (e) {
-        console.error('[FileEditor] Failed to download:', e);
-      }
     }
   };
 
   const handleOpenExternal = async () => {
     if (!thought) return;
     
-    // Prefer local blob URL, then generate fresh signed URL
+    // Only local blobs are available
     if (localPreviewUrl) {
       window.open(localPreviewUrl, '_blank');
-    } else if (thought.storagePath) {
-      try {
-        const url = await supabaseStorage.getSignedUrl(thought.storagePath);
-        window.open(url, '_blank');
-      } catch (e) {
-        console.error('[FileEditor] Failed to open file:', e);
-      }
     }
   };
 
-  const handleSyncToCloud = async () => {
-    if (!thought || isReadOnly) return;
-    await uploadThoughtBlob(thought.id, true);
-  };
-
-  const handleRemoveFromCloud = () => {
-    if (!thought || isReadOnly || !thought.storagePath) return;
-    
-    openModal({
-      title: 'Remove from Cloud?',
-      description: 'This will delete the file from cloud storage. A local copy will remain on this device, but it will no longer be available on other devices until re-synced.',
-      type: 'confirm_cancel',
-      confirmText: 'Remove Asset',
-      cancelText: 'Cancel',
-      onConfirm: () => removeCloudAsset(thought.id)
-    });
-  };
-
   if (!thought) return null;
-
-  // isSynced means file is uploaded to cloud (has storagePath)
-  // Note: We no longer store signed URLs (storageUrl) as they expire
-  const isSynced = !!thought.storagePath;
-  const isSyncing = thought.syncStatus === 'syncing';
-  
-  // Guard the source label to avoid flashing "Cloud" while checking local
-  const sourceLabel = isFetching 
-    ? 'Checking...' 
-    : (localPreviewUrl ? 'Local' : (thought.storageUrl ? 'Cloud' : 'None'));
 
   return (
     <FocusEditorShell
@@ -896,25 +705,14 @@ const FileFocusEditor: React.FC = () => {
       onTitleChange={(val) => { if (!isReadOnly) updateThought(thought.id, { text: val }); }}
       description={thought.description}
       isReadOnly={isReadOnly}
-      headerActions={
-        <div className="flex items-center gap-3">
-          <CloudPill 
-            isSyncing={isSyncing}
-            isSyncBlocked={isSyncBlocked}
-            isSynced={isSynced}
-            isReadOnly={isReadOnly}
-            localPreviewUrl={localPreviewUrl}
-            storageUrl={thought.storageUrl}
-            onRemove={handleRemoveFromCloud}
-            onSync={handleSyncToCloud}
-          />
-        </div>
-      }
+      headerActions={null}
       footerStatus={
         <div className="flex items-center gap-4">
           <div className="flex flex-col">
             <span className="text-[7px] font-black text-[var(--text-muted)] uppercase tracking-widest mb-0.5">Origin</span>
-            <span className="text-[9px] font-black text-[var(--text-dimmed)] uppercase tracking-widest">{sourceLabel}</span>
+            <span className="text-[9px] font-black text-[var(--text-dimmed)] uppercase tracking-widest">
+              {localPreviewUrl ? 'Local' : 'None'}
+            </span>
           </div>
           <div className="w-px h-6 bg-white/5" />
           <div className="flex flex-col">
@@ -934,7 +732,7 @@ const FileFocusEditor: React.FC = () => {
       }
       footerActions={
         <div className="flex items-center gap-2">
-          {(localPreviewUrl || thought.storagePath) && (
+          {localPreviewUrl && (
             <button 
               onClick={handleDownload} 
               className="p-2.5 bg-white/5 hover:bg-white/10 rounded-xl text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-all border border-[var(--glass-border)] group active:scale-95" 
@@ -943,7 +741,7 @@ const FileFocusEditor: React.FC = () => {
               <Download className="w-3.5 h-3.5 group-hover:scale-110 transition-transform" />
             </button>
           )}
-          {(localPreviewUrl || thought.storagePath) && (
+          {localPreviewUrl && (
             <button 
               onClick={handleOpenExternal}
               className="p-2.5 bg-white/5 hover:bg-white/10 rounded-xl text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-all border border-[var(--glass-border)] group active:scale-95" 

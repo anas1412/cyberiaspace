@@ -26,7 +26,7 @@ export const TableRenderer: React.FC<TableRendererProps> = ({
   const { table } = useThoughtPayload(thought);
   
   const isTableEmpty = !table || table.every(row => row.every(cell => !cell || !cell.trim()));
-  const hasRemoteContent = thought.storageUrl && isTableEmpty && thought.syncStatus !== 'synced' && !isReadOnly;
+  const hasRemoteContent = false;
 
   if (isTableEmpty) {
     return (

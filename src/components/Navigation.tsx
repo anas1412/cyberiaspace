@@ -1,8 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Menu, X, Sun, Moon } from 'lucide-react';
-import { useTranslation } from 'react-i18next';
-import { useAuthStore } from '../store/useAuthStore';
 import { useStore } from '../store/useStore';
 
 interface NavigationProps {
@@ -10,19 +8,12 @@ interface NavigationProps {
 }
 
 const Navigation: React.FC<NavigationProps> = ({ isHomepage = false }) => {
-  const { t } = useTranslation();
-  const { user } = useAuthStore();
-  const { theme, setTheme, language, setLanguage } = useStore();
+  const { theme, setTheme } = useStore();
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   
   const toggleTheme = () => {
     setTheme(theme === 'light' ? 'dark' : 'light');
-  };
-
-  const toggleLanguage = () => {
-    const newLang = language === 'en' ? 'fr' : 'en';
-    setLanguage(newLang);
   };
 
   useEffect(() => {
@@ -44,11 +35,10 @@ const Navigation: React.FC<NavigationProps> = ({ isHomepage = false }) => {
   };
 
   const navItems = [
-    { id: 'features', label: t('nav.features') },
-    { id: 'about', label: t('nav.about') },
-    { id: 'faq', label: t('nav.faq') },
-    { id: 'contact', label: t('nav.contact') },
-    { id: 'pricing', label: t('nav.pricing'), isLink: true },
+    { id: 'features', label: 'Features' },
+    { id: 'about', label: 'About' },
+    { id: 'faq', label: 'FAQ' },
+    { id: 'contact', label: 'Contact' },
   ];
 
   return (
@@ -85,57 +75,26 @@ const Navigation: React.FC<NavigationProps> = ({ isHomepage = false }) => {
             )}
           </button>
 
-          <button
-            onClick={toggleLanguage}
-            className="group relative h-10 w-10 flex items-center justify-center transition-all hover:opacity-70"
-            aria-label="Toggle language"
+          <a 
+            href="/home" 
+            className="h-10 px-6 bg-[var(--accent)] hover:bg-[var(--accent-secondary)] text-[var(--accent-contrast)] rounded-xl text-sm font-semibold tracking-wide transition-all shadow-lg shadow-[var(--accent)]/20 hover:shadow-[var(--accent)]/40 flex items-center justify-center border border-white/10 gap-2 group"
           >
-            <span className="text-xs font-bold text-[var(--text-muted)]">{language.toUpperCase()}</span>
-          </button>
-
-          {user ? (
-            <a 
-              href="/home" 
-              className="h-10 px-6 bg-[var(--accent)] hover:bg-[var(--accent-secondary)] text-[var(--accent-contrast)] rounded-xl text-sm font-semibold tracking-wide transition-all shadow-lg shadow-[var(--accent)]/20 hover:shadow-[var(--accent)]/40 flex items-center justify-center border border-white/10 gap-2 group"
-            >
-              {t('nav.launch')}
-            </a>
-          ) : (
-            <a 
-              href="/login" 
-              className="h-10 px-6 bg-[var(--accent)] hover:bg-[var(--accent-secondary)] text-[var(--accent-contrast)] rounded-xl text-sm font-semibold tracking-wide transition-all shadow-lg shadow-[var(--accent)]/20 hover:shadow-[var(--accent)]/40 flex items-center justify-center border border-white/10 gap-2 group"
-            >
-              {t('nav.login')}
-            </a>
-          )}
+            Launch Cyberia
+          </a>
         </div>
 
         <div className="hidden md:flex absolute left-1/2 transform -translate-x-1/2 items-center gap-1">
           <div className="flex items-center h-10 p-1 rounded-2xl">
             {navItems.map((item) => (
-              item.isLink ? (
-                <a 
-                  key={item.id}
-                  href="/pricing"
-                  className="px-3 h-full rounded-xl transition-all duration-300 flex items-center group/nav"
-                >
-                  <span className={`text-sm font-semibold tracking-wide transition-colors ${
-                    window.location.pathname === '/pricing' ? 'text-[var(--accent)]' : 'text-[var(--text-muted)] group-hover/nav:text-[var(--text-primary)]'
-                  }`}>
-                    {item.label}
-                  </span>
-                </a>
-              ) : (
-                <button 
-                  key={item.id}
-                  onClick={() => scrollToSection(item.id)} 
-                  className="px-3 h-full rounded-xl transition-all duration-300 flex items-center group/nav"
-                >
-                  <span className="text-sm font-semibold tracking-wide text-[var(--text-muted)] group-hover/nav:text-[var(--text-primary)] transition-colors">
-                    {item.label}
-                  </span>
-                </button>
-              )
+              <button
+                key={item.id}
+                onClick={() => scrollToSection(item.id)}
+                className="px-3 h-full rounded-xl transition-all duration-300 flex items-center group/nav"
+              >
+                <span className="text-sm font-semibold tracking-wide text-[var(--text-muted)] group-hover/nav:text-[var(--text-primary)] transition-colors">
+                  {item.label}
+                </span>
+              </button>
             ))}
           </div>
         </div>
@@ -160,7 +119,7 @@ const Navigation: React.FC<NavigationProps> = ({ isHomepage = false }) => {
             className="md:hidden glass border-t border-[var(--glass-border)] overflow-hidden"
           >
             <div className="flex flex-col p-6 gap-6">
-          {navItems.filter(item => !item.isLink).map((item) => (
+          {navItems.map((item) => (
             <button
               key={item.id}
               onClick={() => scrollToSection(item.id)}
@@ -169,14 +128,6 @@ const Navigation: React.FC<NavigationProps> = ({ isHomepage = false }) => {
               {item.label}
             </button>
           ))}
-          <a
-            href="/pricing"
-            className={`text-left text-sm font-medium transition-colors ${
-              window.location.pathname === '/pricing' ? 'text-[var(--accent)]' : 'text-[var(--text-muted)] hover:text-[var(--accent-secondary)]'
-            }`}
-          >
-            {t('nav.pricing')}
-          </a>
               <button
                 onClick={toggleTheme}
                 className="w-full py-3 flex items-center justify-center gap-2 text-sm font-medium text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-all"
@@ -184,35 +135,19 @@ const Navigation: React.FC<NavigationProps> = ({ isHomepage = false }) => {
                 {theme === 'light' ? (
                   <>
                     <Moon className="w-5 h-5" />
-                    {t('nav.dark_mode')}
+                    Dark Mode
                   </>
                 ) : (
                   <>
                     <Sun className="w-5 h-5" />
-                    {t('nav.light_mode')}
+                    Light Mode
                   </>
                 )}
               </button>
 
-              <button
-                onClick={toggleLanguage}
-                className="w-full py-3 flex items-center justify-center gap-2 text-sm font-medium text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-all"
-              >
-                <span className="text-xs font-bold">{language.toUpperCase()}</span>
-                <span>{language === 'en' ? 'Français' : 'English'}</span>
-              </button>
-
-              {user ? (
-                <a href="/home" className="w-full py-3 bg-[var(--accent)] text-[var(--accent-contrast)] rounded-xl text-sm font-semibold transition-all text-center flex items-center justify-center gap-2 group">
-                  Launch
-                  
-                </a>
-              ) : (
-                <a href="/login" className="w-full py-3 bg-[var(--accent)] text-[var(--accent-contrast)] rounded-xl text-sm font-semibold transition-all text-center flex items-center justify-center gap-2 group">
-                  Log In
-                  
-                </a>
-              )}
+              <a href="/home" className="w-full py-3 bg-[var(--accent)] text-[var(--accent-contrast)] rounded-xl text-sm font-semibold transition-all text-center flex items-center justify-center gap-2 group">
+                Launch Cyberia
+              </a>
             </div>
           </motion.div>
         )}

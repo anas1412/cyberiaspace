@@ -1,11 +1,8 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { Shield, ArrowLeft, Database, Globe, Brain, UserCheck, Lock, Mail } from 'lucide-react';
-import { useTranslation } from 'react-i18next';
+import { Shield, ArrowLeft, Database, Globe, Brain, Lock, Mail } from 'lucide-react';
 
 const PrivacyPolicy: React.FC = () => {
-  const { t } = useTranslation();
-
   const handleBack = () => {
     if (window.history.length > 1) {
       window.history.back();
@@ -18,124 +15,114 @@ const PrivacyPolicy: React.FC = () => {
   const articles = [
     {
       id: 1,
-      title: t('legal.privacy.articles.article_1.title'),
+      title: 'Introduction',
       icon: <Shield className="w-5 h-5 text-blue-400" />,
       content: (
         <p className="leading-relaxed text-[var(--text-muted)]">
-          {t('legal.privacy.articles.article_1.content')}
+          Cyberia (&quot;we,&quot; &quot;our,&quot; or &quot;us&quot;) is committed to protecting your privacy. This Privacy Policy explains how we handle your information when you use our application. Cyberia is a local-first, open-source application — your data stays on your device. Please read this policy carefully.
         </p>
       )
     },
     {
       id: 2,
-      title: t('legal.privacy.articles.article_2.title'),
+      title: 'Data We Collect',
       icon: <Database className="w-5 h-5 text-blue-400" />,
       content: (
         <>
           <p className="leading-relaxed text-[var(--text-muted)]">
-            {t('legal.privacy.articles.article_2.content_1')}
+            Cyberia collects minimal data. The application is designed to work entirely locally — no accounts, no cloud sync, no data leaves your device unless you choose to use AI features.
           </p>
           <p className="leading-relaxed text-[var(--text-primary)] font-medium mt-2">
-            {t('legal.privacy.articles.article_2.content_2')}
+            We do not collect, sell, or share your personal data. We do not have access to your content.
           </p>
         </>
       )
     },
     {
       id: 3,
-      title: t('legal.privacy.articles.article_3.title'),
-      icon: <UserCheck className="w-5 h-5 text-blue-400" />,
-      content: (
-        <>
-          <p className="leading-relaxed text-[var(--text-muted)]">
-            {t('legal.privacy.articles.article_3.content')}
-          </p>
-          <ul className="list-disc list-inside space-y-3 mt-4 ml-2 text-[var(--text-muted)]">
-            <li><strong className="text-[var(--text-primary)] font-bold">{t('legal.privacy.articles.article_3.identity_info')}</strong> {t('legal.privacy.articles.article_3.identity_info_desc')}</li>
-            <li><strong className="text-[var(--text-primary)] font-bold">{t('legal.privacy.articles.article_3.usage_data')}</strong> {t('legal.privacy.articles.article_3.usage_data_desc')}</li>
-            <li><strong className="text-[var(--text-primary)] font-bold">{t('legal.privacy.articles.article_3.payment_data')}</strong> {t('legal.privacy.articles.article_3.payment_data_desc')}</li>
-          </ul>
-        </>
-      )
-    },
-    {
-      id: 4,
-      title: t('legal.privacy.articles.article_4.title'),
+      title: 'Local-First Architecture',
       icon: <Globe className="w-5 h-5 text-blue-400" />,
       highlight: true,
       content: (
         <>
           <p className="leading-relaxed text-[var(--text-dimmed)]">
-            {t('legal.privacy.articles.article_4.content_1')}
+            Cyberia is built on a local-first architecture. All your data — thoughts, files, spaces, settings — is stored in your browser&apos;s IndexedDB database. Nothing is uploaded to any server. You own your data completely.
           </p>
           <p className="leading-relaxed text-sm text-[var(--text-muted)] mt-2">
-            {t('legal.privacy.articles.article_4.content_2')}
+            No account is required. No cloud storage is used. Your workspace stays on your machine and is never transmitted to us.
           </p>
         </>
       )
     },
     {
-      id: 5,
-      title: t('legal.privacy.articles.article_5.title'),
+      id: 4,
+      title: 'AI & OpenRouter',
       icon: <Brain className="w-5 h-5 text-blue-400" />,
       content: (
         <>
           <p className="leading-relaxed text-[var(--text-muted)]">
-            {t('legal.privacy.articles.article_5.content')}
+            Cyberia offers optional AI features through OpenRouter. You must provide your own OpenRouter API key, which is stored locally in your browser and never sent to our servers. When you use AI features:
           </p>
-          <ul className="list-disc list-inside space-y-3 mt-4 ml-2 text-[var(--text-muted)] italic">
-            <li>{t('legal.privacy.articles.article_5.bullet_1')}</li>
-            <li>{t('legal.privacy.articles.article_5.bullet_2')}</li>
-            <li>{t('legal.privacy.articles.article_5.bullet_3')}</li>
+          <ul className="list-disc list-inside space-y-3 mt-4 ml-2 text-[var(--text-muted)]">
+            <li>Your prompts and selected thought content are sent directly from your browser to the AI model you choose via OpenRouter.</li>
+            <li>We do not have access to your API key, your prompts, or the AI responses.</li>
+            <li>Your data is not used to train or improve AI models.</li>
+            <li>AI usage is subject to OpenRouter&apos;s privacy policy and the privacy policy of the model provider you select.</li>
           </ul>
         </>
       )
     },
     {
+      id: 5,
+      title: 'File Storage',
+      icon: <Database className="w-5 h-5 text-blue-400" />,
+      content: (
+        <p className="leading-relaxed text-[var(--text-muted)]">
+          Files you add to Cyberia are stored as blobs in your browser&apos;s IndexedDB. They never leave your device. There is no cloud upload, no remote backup — your files stay local and under your control.
+        </p>
+      )
+    },
+    {
       id: 6,
-      title: t('legal.privacy.articles.article_6.title'),
+      title: 'Security Measures',
       icon: <Lock className="w-5 h-5 text-blue-400" />,
       content: (
         <>
           <p className="leading-relaxed text-[var(--text-muted)]">
-            {t('legal.privacy.articles.article_6.content')}
-          </p>
-          <p className="leading-relaxed text-[var(--text-muted)] mt-4">
-            We use multiple layers of security to protect your files and data:
+            Since all data stays in your browser, security is managed by your browser&apos;s built-in protections. IndexedDB data is sandboxed per origin and cannot be accessed by other websites. To further protect your data:
           </p>
           <ul className="list-disc list-inside space-y-3 mt-4 ml-2 text-[var(--text-muted)]">
-            <li><strong className="text-[var(--text-primary)] font-bold">Private Storage</strong> — Your files are stored in a private cloud bucket that cannot be accessed via public URLs. Only authenticated users can access their own files.</li>
-            <li><strong className="text-[var(--text-primary)] font-bold">Signed URLs</strong> — When accessing files, we generate time-limited signed URLs (1-hour expiry) rather than using permanent public links.</li>
-            <li><strong className="text-[var(--text-primary)] font-bold">Local-First Storage</strong> — Your files are stored locally in your browser first (IndexedDB). The cloud is used only for backup and cross-device sync.</li>
-            <li><strong className="text-[var(--text-primary)] font-bold">Row-Level Security</strong> — Database policies ensure you can only access your own data. There is no way for one user to view or modify another user's files.</li>
-            <li><strong className="text-[var(--text-primary)] font-bold">Local-Only Backgrounds</strong> — Space backgrounds stay on your device only, never uploaded to the cloud.</li>
+            <li><strong className="text-[var(--text-primary)] font-bold">Local-Only</strong> — No data is ever transmitted to external servers (except optional AI queries sent directly to OpenRouter with your API key).</li>
+            <li><strong className="text-[var(--text-primary)] font-bold">Open Source</strong> — The full source code is available on GitHub for independent review.</li>
+            <li><strong className="text-[var(--text-primary)] font-bold">Minimal Analytics</strong> — We use Vercel Analytics for basic page view counting. No personal data is collected, and no cookies are used for tracking.</li>
           </ul>
         </>
       )
     },
     {
       id: 7,
-      title: t('legal.privacy.articles.article_7.title'),
+      title: 'Your Rights',
       icon: <Shield className="w-5 h-5 text-blue-400" />,
       content: (
         <>
           <p className="leading-relaxed text-[var(--text-muted)]">
-            {t('legal.privacy.articles.article_7.content')}
+            You have full control over your data. Since everything is stored locally:
           </p>
           <ul className="list-disc list-inside space-y-3 mt-4 ml-2 text-[var(--text-muted)]">
-            <li><strong className="text-[var(--text-primary)] font-bold">{t('legal.privacy.articles.article_7.portability')}</strong> {t('legal.privacy.articles.article_7.portability_desc')}</li>
-            <li><strong className="text-[var(--text-primary)] font-bold">{t('legal.privacy.articles.article_7.erasure')}</strong> {t('legal.privacy.articles.article_7.erasure_desc')}</li>
-</ul>
+            <li><strong className="text-[var(--text-primary)] font-bold">Data Portability</strong> — You can export all your data at any time from the Settings page.</li>
+            <li><strong className="text-[var(--text-primary)] font-bold">Right to Erasure</strong> — You can delete all your data from Settings or clear your browser data for the site at any time.</li>
+            <li><strong className="text-[var(--text-primary)] font-bold">No Third-Party Access</strong> — Because your data never leaves your device, no third party (including us) can access it without your explicit action.</li>
+          </ul>
         </>
       )
     },
     {
       id: 8,
-      title: t('legal.privacy.articles.article_8.title'),
+      title: 'Contact',
       icon: <Mail className="w-5 h-5 text-blue-400" />,
       content: (
         <p className="leading-relaxed text-[var(--text-muted)]">
-          {t('legal.privacy.articles.article_8.content')}
+          If you have any questions about this Privacy Policy, please contact us at:
           <br />
           <a href="mailto:support@cyberiaspace.app" className="text-blue-400 font-bold hover:text-[var(--text-primary)] transition-colors">support@cyberiaspace.app</a>
         </p>
@@ -155,7 +142,7 @@ const PrivacyPolicy: React.FC = () => {
           className="flex items-center gap-2 text-blue-400 hover:text-[var(--text-primary)] transition-colors mb-12 group"
         >
           <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
-          <span className="text-xs font-semibold tracking-widest">{t('legal.back')}</span>
+          <span className="text-xs font-semibold tracking-widest">Back</span>
         </button>
 
         <header className="mb-16">
@@ -163,9 +150,9 @@ const PrivacyPolicy: React.FC = () => {
             <div className="w-12 h-12 bg-blue-500/10 rounded-2xl flex items-center justify-center border border-blue-500/20">
               <Shield className="w-6 h-6 text-blue-400" />
             </div>
-            <h1 className="text-4xl md:text-6xl font-black text-[var(--text-primary)] uppercase tracking-tighter leading-none">{t('legal.privacy.title')}</h1>
+            <h1 className="text-4xl md:text-6xl font-black text-[var(--text-primary)] uppercase tracking-tighter leading-none">Privacy Policy</h1>
           </div>
-          <p className="text-[var(--text-muted)] font-mono text-sm uppercase tracking-widest">{t('legal.privacy.effective_date')}</p>
+          <p className="text-[var(--text-muted)] font-mono text-sm uppercase tracking-widest">Effective Date: June 2025</p>
         </header>
 
         <section className="space-y-8 pb-20">

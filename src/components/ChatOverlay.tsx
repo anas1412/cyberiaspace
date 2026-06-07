@@ -1,6 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { useStore } from '../store/useStore';
-import { useAuthStore } from '../store/useAuthStore';
 import { serializeWorkspace } from '../utils/contextBuilder';
 import { 
   resolveAllReferences, 
@@ -9,20 +8,18 @@ import {
   type SuggestionItem 
 } from '../utils/referenceParser';
 import SuggestionDropdown from './SuggestionDropdown';
-import { X, SendHorizonal, MessageSquare, Loader2, History, Square, ChevronDown, ChevronLeft, Pencil, Trash2, Check, X as XIcon, Copy } from 'lucide-react';
+import { X, SendHorizonal, MessageSquare, Loader2, History, Square, ChevronDown, ChevronLeft, Pencil, Trash2, Check, X as XIcon, Copy, Key, Eye, EyeOff } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import rehypeRaw from 'rehype-raw';
-import { ORACLE_CONFIG, type PlanLimits } from '../constants';
-import { executeOracleTool } from '../services/oracle/executor';
-import { parseAIError } from '../utils/errorParser';
+import { ORACLE_CONFIG } from '../constants';
+
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 
 import { db, type ChatMessage } from '../db';
 import { ulid } from 'ulid';
-import { AccessGuard } from './common/AccessGuard';
 
 function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -30,169 +27,64 @@ function cn(...inputs: ClassValue[]) {
 
 type Message = ChatMessage;
 
-// Helper component for model options in dropdown
-// const ModelItem: React.FC<{
-//   model: { id: string; name: string; desc: string; enabled?: boolean };
-//   selected: boolean;
-//   onClick: () => void;
-//   disabled?: boolean;
-// }> = ({ model, selected, onClick, disabled }) => {
-//   const isModelDisabled = model.enabled === false;
-//   return (
-//   <button
-//     onClick={onClick}
-//     disabled={disabled || isModelDisabled}
-//     className={cn(
-//       "w-full flex items-center justify-between px-3 py-2 rounded-lg transition-all border text-left",
-//       selected
-//         ? "bg-[var(--glass-bg)] border-[var(--glass-border)]"
-//         : "hover:bg-[var(--bg-page)] border-transparent",
-//       (disabled || isModelDisabled) && "opacity-40 cursor-not-allowed grayscale"
-//     )}
-//   >
-//     <div className="flex flex-col gap-0.5">
-//       <span className={cn(
-//         "text-[10px] font-semibold tracking-wide leading-none",
-//         selected ? "text-[var(--text-primary)]" : "text-[var(--text-primary)]"
-//       )}>
-//         {model.name}
-//       </span>
-//       <span className="text-[9px] font-medium text-[var(--text-muted)] opacity-80 uppercase tracking-wide leading-tight">
-//         {model.desc}
-//       </span>
-//     </div>
-//     {selected && <Check className="w-3 h-3 text-[var(--text-primary)] ml-2 flex-shrink-0" />}
-//   </button>
-//   );
-// };
+// BYOK API key management
+const API_KEY_STORAGE_KEY = 'cyberia-openrouter-key';
 
-// Build message content for follow-up - handle multimodal for images/PDFs
-function getFollowUpMessageContent(toolName: string, result: any) {
-  if (toolName === 'read_file_content' || toolName === 'read_files_content') {
-    // Handle single file result
-    if (result?.type === 'image' && result?.url) {
-      return [
-        { type: 'text', text: 'Analyze this image and describe what you see.' },
-        { type: 'image_url', image_url: { url: result.url } }
-      ];
-    }
-    if (result?.type === 'pdf' && result?.url) {
-      return [
-        { type: 'text', text: `Analyze the contents of this PDF: ${result.name || 'document'}` },
-        { type: 'file', file: { filename: result.name || 'document.pdf', file_data: result.url } }
-      ];
-    }
-    
-    // Handle multiple files result
-    if (result?.files && Array.isArray(result.files)) {
-      const contents: any[] = [{ type: 'text', text: 'I have retrieved the contents of the requested files. Please analyze them:' }];
-      
-      result.files.forEach((f: any) => {
-        if (f.success) {
-          if (f.type === 'text') {
-            contents.push({ type: 'text', text: `File Content (${f.id}):\n${f.content}` });
-          } else if (f.type === 'pdf' && f.url) {
-            contents.push({ 
-              type: 'file', 
-              file: { filename: f.name || `file_${f.id}.pdf`, file_data: f.url }
-            });
-          } else if (f.type === 'image' && f.url) {
-            contents.push({ type: 'image_url', image_url: { url: f.url } });
-          }
-        }
-      });
-      return contents.length > 1 ? contents : 'Continue with the details I provided.';
-    }
-  }
-  return 'Continue with the details I provided.';
+const getStoredApiKey = (): string => {
+  try {
+    return localStorage.getItem(API_KEY_STORAGE_KEY) || '';
+  } catch { return ''; }
+};
+
+const setStoredApiKey = (key: string) => {
+  try {
+    localStorage.setItem(API_KEY_STORAGE_KEY, key);
+  } catch { /* noop */ }
+};
+
+// Common free/cheap OpenRouter models
+const AVAILABLE_MODELS = [
+  { id: 'openai/gpt-4o-mini', name: 'GPT-4o Mini', desc: 'Fast & capable' },
+  { id: 'google/gemini-2.0-flash-001', name: 'Gemini 2.0 Flash', desc: 'Google fast' },
+  { id: 'mistralai/mixtral-8x22b-instruct', name: 'Mixtral 8x22B', desc: 'Mistral large' },
+  { id: 'anthropic/claude-3-5-haiku', name: 'Claude 3.5 Haiku', desc: 'Anthropic fast' },
+  { id: 'openai/gpt-4o', name: 'GPT-4o', desc: 'OpenAI flagship' },
+  { id: 'anthropic/claude-3-5-sonnet', name: 'Claude 3.5 Sonnet', desc: 'Anthropic balanced' },
+  { id: 'qwen/qwq-32b', name: 'QwQ 32B', desc: 'Qwen reasoning' },
+  { id: 'google/gemini-2.5-pro-exp-03-25', name: 'Gemini 2.5 Pro', desc: 'Google reasoning' },
+  { id: 'deepseek/deepseek-r1', name: 'DeepSeek R1', desc: 'Deep reasoning' },
+];
+
+/** Convert ChatOverlay messages to OpenRouter-compatible format */
+function toOpenRouterMessages(messages: Message[]) {
+  return messages.map(m => ({
+    role: m.role,
+    content: m.content
+  }));
 }
 
 const ChatOverlay: React.FC = () => {
   const isChatOpen = useStore((state) => state.isChatOpen);
   const setChatOpen = useStore((state) => state.setChatOpen);
   const store = useStore();
-  const { user, modelConfig } = useAuthStore();
-  const plan = user?.plan || 'free';
-  
-  // Use modelConfig from store (fetched from backend) or plan-specific fallbacks
-  const config = modelConfig?.config as Record<string, PlanLimits> | undefined;
-  const limits = config?.[plan] || 
-    (plan === 'enterprise' 
-      ? { 
-          AI_DAILY_LIMIT: 50000, 
-          AI_TOP_LIMIT: 1000, 
-          AI_MEDIUM_LIMIT: 5000, 
-          AI_SMALL_LIMIT: 10000,
-          AI_TOP_WEEKLY: 5000,
-          AI_MEDIUM_WEEKLY: 20000,
-          AI_SMALL_WEEKLY: 50000,
-          AI_TOP_MONTHLY: 20000,
-          AI_MEDIUM_MONTHLY: 80000,
-          AI_SMALL_MONTHLY: 200000
-        } as PlanLimits
-      : plan === 'pro' 
-        ? { 
-            AI_DAILY_LIMIT: 10000, 
-            AI_TOP_LIMIT: 15, 
-            AI_MEDIUM_LIMIT: 60, 
-            AI_SMALL_LIMIT: 500,
-            AI_TOP_WEEKLY: 100,
-            AI_MEDIUM_WEEKLY: 420,
-            AI_SMALL_WEEKLY: 3500,
-            AI_TOP_MONTHLY: 400,
-            AI_MEDIUM_MONTHLY: 1800,
-            AI_SMALL_MONTHLY: 15000
-          } as PlanLimits
-        : { AI_DAILY_LIMIT: 15, AI_TOP_LIMIT: 0, AI_MEDIUM_LIMIT: 0, AI_SMALL_LIMIT: 0, AI_TOP_WEEKLY: 0, AI_MEDIUM_WEEKLY: 0, AI_SMALL_WEEKLY: 0, AI_TOP_MONTHLY: 0, AI_MEDIUM_MONTHLY: 0, AI_SMALL_MONTHLY: 0 } as PlanLimits
-    );
-  const tiers = modelConfig?.tiers;
-  
-  const topModels = tiers?.top?.models || [];
-  const mediumModels = tiers?.medium?.models || [];
-  const smallModels = tiers?.small?.models || [];
-  
+
+  // BYOK state
+  const [apiKey, setApiKey] = useState(getStoredApiKey);
+  const [showApiKey, setShowApiKey] = useState(false);
+  const [editingApiKey, setEditingApiKey] = useState(false);
+  const [apiKeyInput, setApiKeyInput] = useState(apiKey);
+
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [status, setStatus] = useState<string>('');
-  const [activeTool, setActiveTool] = useState<{ name: string; args: any } | null>(null);
-  
-  // Quota from auth store (single source of truth)
-  const topUsage = useAuthStore((state) => state.user?.usage?.ai_top_count ?? 0);
-  const mediumUsage = useAuthStore((state) => state.user?.usage?.ai_medium_count ?? 0);
-  const smallUsage = useAuthStore((state) => state.user?.usage?.ai_small_count ?? 0);
-  
-  // Weekly/Monthly quota from auth store (single source of truth)
-  const weeklyTopUsage = useAuthStore((state) => state.user?.usage?.weekly_top_count ?? 0);
-  const weeklyMediumUsage = useAuthStore((state) => state.user?.usage?.weekly_medium_count ?? 0);
-  const weeklySmallUsage = useAuthStore((state) => state.user?.usage?.weekly_small_count ?? 0);
-  const monthlyTopUsage = useAuthStore((state) => state.user?.usage?.monthly_top_count ?? 0);
-  const monthlyMediumUsage = useAuthStore((state) => state.user?.usage?.monthly_medium_count ?? 0);
-  const monthlySmallUsage = useAuthStore((state) => state.user?.usage?.monthly_small_count ?? 0);
-  
-  // Anchors from auth store
-  const dailyAnchor = useAuthStore((state) => state.user?.usage?.daily_anchor ?? null);
-  
-  // Load persisted tier or default
-  const getInitialTier = (): 'top' | 'medium' | 'small' | 'free' => {
-    if (plan !== 'pro') return 'free';
-    const saved = localStorage.getItem('cyberia-oracle-tier');
-    if (saved && ['top', 'medium', 'small'].includes(saved)) return saved as 'top' | 'medium' | 'small';
-    return 'medium';
-  };
-  
-  const [activeTier, setActiveTier] = useState<'top' | 'medium' | 'small' | 'free'>(getInitialTier);
+  const [activeTool] = useState<{ name: string; args: any } | null>(null);
 
-  const handleTierChange = (newTier: 'top' | 'medium' | 'small') => {
-    setActiveTier(newTier);
-    localStorage.setItem('cyberia-oracle-tier', newTier);
-  };
-
+  // Simple model selection (no tiers/plans)
   const [selectedModel, setSelectedModel] = useState(
-    mediumModels[0]?.id || smallModels[0]?.id || topModels[0]?.id || ''
+    () => localStorage.getItem('cyberia-oracle-model') || AVAILABLE_MODELS[0].id
   );
   const [showModelDropdown, setShowModelDropdown] = useState(false);
-  // const [modelSearch, setModelSearch] = useState('');
 
   // Edit/delete state
   const [editingMessageId, setEditingMessageId] = useState<string | null>(null);
@@ -223,12 +115,6 @@ const ChatOverlay: React.FC = () => {
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const abortControllerRef = useRef<AbortController | null>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
-  const hasInitializedRef = useRef(false);
-  const prevPlanRef = useRef(plan);
-  const userHasSelectedModelRef = useRef(false);
-
-  // const availableModels = plan === 'pro' ? allModels : freeOnlyModels;
-  // const currentModelInfo = allModels.find((m: any) => m.id === selectedModel) || availableModels[0] || { id: '', name: 'No Model', desc: '' };
 
   // Load history from Dexie when spaceId changes
   useEffect(() => {
@@ -246,10 +132,19 @@ const ChatOverlay: React.FC = () => {
     }
   }, [store.activeSpaceId]);
 
+  // Save API key on change
+  useEffect(() => {
+    if (apiKey) setStoredApiKey(apiKey);
+  }, [apiKey]);
+
+  // Save selected model
+  useEffect(() => {
+    localStorage.setItem('cyberia-oracle-model', selectedModel);
+  }, [selectedModel]);
+
   const saveMessage = async (msg: Message) => {
     if (msg.msgType === 'system') return;
     try {
-      // Use put() to upsert - handles duplicate IDs gracefully
       await db.chatHistory.put(msg);
     } catch (err) {
       console.error("[Oracle] Failed to save message:", err);
@@ -279,7 +174,6 @@ const ChatOverlay: React.FC = () => {
     const handleClickOutside = (e: MouseEvent) => {
       if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
         setShowModelDropdown(false);
-        // setModelSearch('');
       }
     };
     if (showModelDropdown) {
@@ -287,23 +181,6 @@ const ChatOverlay: React.FC = () => {
       return () => document.removeEventListener('mousedown', handleClickOutside);
     }
   }, [showModelDropdown]);
-
-// Set default model once on mount, or when plan actually changes (upgrade/downgrade)
-// IMPORTANT: Only depend on 'plan' - model arrays are derived values that recreate on each render
-// Adding them as dependencies would cause unwanted resets when modelConfig refreshes
-useEffect(() => {
-  const planChanged = prevPlanRef.current !== plan;
-
-  if (!hasInitializedRef.current || planChanged) {
-    const defaultModel = mediumModels[0]?.id || smallModels[0]?.id || topModels[0]?.id || '';
-    setSelectedModel(defaultModel);
-    setActiveTier('medium');
-
-    prevPlanRef.current = plan;
-    hasInitializedRef.current = true;
-  }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-}, [plan]);
 
   const getFriendlyToolName = (name: string) => {
     switch (name) {
@@ -325,81 +202,6 @@ useEffect(() => {
       case 'link_thoughts': return 'Linking Thoughts...';
       case 'unlink_thoughts': return 'Unlinking Thoughts...';
       default: return 'Working...';
-    }
-  };
-
-  // Calculate reset time remaining for a specific period
-  const getResetTimeDisplay = (anchor: string | null, period: 'daily' | 'weekly' | 'monthly') => {
-    if (!anchor) return '—';
-    
-    const anchorDate = new Date(anchor + 'T00:00:00'); // Local midnight
-    let nextReset: Date;
-    
-    if (period === 'daily') {
-      nextReset = new Date(anchorDate);
-      nextReset.setDate(nextReset.getDate() + 1);
-    } else if (period === 'weekly') {
-      nextReset = new Date(anchorDate);
-      nextReset.setDate(nextReset.getDate() + 7);
-    } else {
-      // Monthly - go to next month
-      nextReset = new Date(anchorDate);
-      nextReset.setMonth(nextReset.getMonth() + 1);
-    }
-    
-    const now = new Date();
-    const msRemaining = nextReset.getTime() - now.getTime();
-    
-    if (msRemaining <= 0) return 'Soon';
-    
-    const hours = Math.floor(msRemaining / (1000 * 60 * 60));
-    const days = Math.floor(hours / 24);
-    
-    if (days > 0) return `${days}d`;
-    if (hours > 0) return `${hours}h`;
-    const minutes = Math.floor((msRemaining % (1000 * 60 * 60)) / (1000 * 60));
-    return `${minutes}m`;
-  };
-
-  // Get the period that's the bottleneck (first exhausted) and remaining count
-  const getTierStatus = (daily: number, weekly: number, monthly: number, dailyLimit: number, weeklyLimit: number, monthlyLimit: number) => {
-    const dailyRemaining = dailyLimit - daily;
-    const weeklyRemaining = weeklyLimit - weekly;
-    const monthlyRemaining = monthlyLimit - monthly;
-    
-    // If monthly exhausted, show monthly reset time
-    if (monthlyRemaining <= 0) {
-      return { remaining: 0, period: 'monthly', exhausted: true };
-    }
-    // If weekly exhausted, show weekly reset time
-    if (weeklyRemaining <= 0) {
-      return { remaining: 0, period: 'weekly', exhausted: true };
-    }
-    // If daily exhausted, show daily reset time
-    if (dailyRemaining <= 0) {
-      return { remaining: 0, period: 'daily', exhausted: true };
-    }
-    
-    // Not exhausted - show the smallest remaining
-    const minRemaining = Math.min(dailyRemaining, weeklyRemaining, monthlyRemaining);
-    return { remaining: minRemaining, period: 'daily', exhausted: false };
-  };
-
-  // Get reset timer for tier - ONLY shows time when exhausted, empty otherwise
-  const getTierResetTimer = (daily: number, weekly: number, monthly: number, dailyAnchor: string | null, dailyLimit: number, weeklyLimit: number, monthlyLimit: number) => {
-    const status = getTierStatus(daily, weekly, monthly, dailyLimit, weeklyLimit, monthlyLimit);
-    
-    if (!status.exhausted) {
-      return ''; // Empty when not exhausted
-    }
-    
-    // Return reset time based on which period is exhausted
-    if (status.period === 'daily') {
-      return getResetTimeDisplay(dailyAnchor, 'daily');
-    } else if (status.period === 'weekly') {
-      return getResetTimeDisplay(dailyAnchor, 'weekly');
-    } else {
-      return getResetTimeDisplay(dailyAnchor, 'monthly');
     }
   };
 
@@ -431,12 +233,87 @@ useEffect(() => {
     }
   };
 
+  /** Call OpenRouter API directly from browser */
+  const callOpenRouter = async (
+    messages: any[],
+    model: string,
+    signal: AbortSignal,
+    onChunk: (text: string) => void
+  ) => {
+    if (!apiKey) throw new Error('No API key configured');
+
+    const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${apiKey}`,
+        'HTTP-Referer': window.location.origin,
+        'X-Title': 'Cyberia'
+      },
+      signal,
+      body: JSON.stringify({
+        model,
+        messages,
+        stream: true,
+        max_tokens: 4096,
+      }),
+    });
+
+    if (!response.ok) {
+      const errBody = await response.text();
+      let errMsg = `OpenRouter API error (${response.status})`;
+      try {
+        const errJson = JSON.parse(errBody);
+        errMsg = errJson.error?.message || errMsg;
+      } catch { /* ignore parse errors */ }
+      throw new Error(errMsg);
+    }
+
+    const reader = response.body?.getReader();
+    if (!reader) throw new Error('No response stream');
+
+    const decoder = new TextDecoder();
+    let buffer = '';
+
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+
+      buffer += decoder.decode(value, { stream: true });
+      const lines = buffer.split('\n');
+      buffer = lines.pop() || '';
+
+      for (const line of lines) {
+        const trimmed = line.trim();
+        if (!trimmed || !trimmed.startsWith('data: ')) continue;
+        const dataStr = trimmed.slice(6);
+        if (dataStr === '[DONE]') continue;
+
+        try {
+          const data = JSON.parse(dataStr);
+          const choice = data.choices?.[0];
+
+          if (choice?.delta?.content) {
+            onChunk(choice.delta.content);
+          }
+
+          if (choice?.delta?.tool_calls) {
+            // Not handling tool calls via streaming format - using response-level instead
+          }
+
+          if (choice?.finish_reason) {
+            // Stream complete
+          }
+        } catch { /* skip malformed */ }
+      }
+    }
+  };
+
   // Handle input changes and show suggestion dropdown for @thought/#stack references
   const handleInputChange = (value: string, textarea: HTMLTextAreaElement) => {
     const cursorPos = textarea.selectionStart;
     const textBeforeCursor = value.substring(0, cursorPos);
     
-    // Check for @ or # trigger at cursor position - handle multi-word names
     const atMatch = textBeforeCursor.match(/@(.*)$/);
     const hashMatch = textBeforeCursor.match(/#(.*)$/);
     
@@ -449,7 +326,7 @@ useEffect(() => {
           isOpen: true,
           type: 'thought',
           query,
-          position: { top: 0, left: 0 }, // Not used anymore - CSS positioning handles it
+          position: { top: 0, left: 0 },
           items: filtered,
           selectedIndex: 0
         });
@@ -474,7 +351,6 @@ useEffect(() => {
       }
     }
     
-    // No trigger found, close dropdown
     setSuggestions(null);
   };
 
@@ -486,17 +362,14 @@ useEffect(() => {
     const textBeforeCursor = input.substring(0, cursorPos);
     const textAfterCursor = input.substring(cursorPos);
     
-    // Find what trigger was used (@ or #)
     const triggerMatch = textBeforeCursor.match(/([@#])\S*$/);
     const trigger = triggerMatch ? triggerMatch[1] : (item.type === 'thought' ? '@' : '#');
     
-    // Replace @query or #query with trigger + name + trailing space
     const newTextBefore = textBeforeCursor.replace(/[@#]\S*$/, `${trigger}${item.name} `);
     
     setInput(newTextBefore + textAfterCursor);
     setSuggestions(null);
     
-    // Refocus and set cursor after the space
     setTimeout(() => {
       inputRef.current?.focus();
       const newPos = newTextBefore.length;
@@ -550,18 +423,14 @@ useEffect(() => {
   const handleSaveEdit = async (msg: Message) => {
     if (!editInput.trim() || !store.activeSpaceId) return;
     
-    // Find index of edited message
     const msgIndex = messages.findIndex(m => m.id === msg.id);
     if (msgIndex === -1) return;
 
-    // Truncate messages after the edited message
     const truncatedMessages = messages.slice(0, msgIndex);
 
-    // Update the edited message in DB and state
     const updatedMsg: Message = { ...msg, content: editInput };
     try {
       await db.chatHistory.put(updatedMsg);
-      // Delete all messages that came after
       const messagesToDelete = messages.slice(msgIndex + 1);
       for (const m of messagesToDelete) {
         await db.chatHistory.where('id').equals(m.id).delete();
@@ -570,122 +439,59 @@ useEffect(() => {
       console.error("[Oracle] Failed to update message:", err);
     }
 
-    // Update messages state: truncated + edited message
     setMessages([...truncatedMessages, updatedMsg]);
-
-    // Exit edit mode
     setEditingMessageId(null);
     setEditInput('');
 
-    // Re-run AI with the edited content directly
+    // Re-run AI with the edited content
     setIsLoading(true);
     setStatus('thinking');
 
     const controller = new AbortController();
     abortControllerRef.current = controller;
 
-    try {
-      const authStore = useAuthStore.getState();
-      const token = await authStore.getOrRefreshToken();
-      
-      if (!token) {
-        throw new Error('Unauthorized: Session expired');
-      }
+    let assistantContent = '';
+    const assistantMsg: Message = {
+      id: ulid(),
+      spaceId: store.activeSpaceId,
+      role: 'assistant',
+      content: '',
+      timestamp: Date.now(),
+      msgType: 'chat'
+    };
+    setMessages(prev => [...prev, assistantMsg]);
 
-      const response = await fetch('/api/chat', {
-        method: 'POST',
-        headers: { 
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        signal: controller.signal,
-        body: JSON.stringify({
-          messages: [...truncatedMessages, updatedMsg].filter(m => m.msgType !== 'system').slice(-ORACLE_CONFIG.HISTORY_WINDOW_SIZE).map(m => ({
-            role: m.role,
-            content: m.content
-          })),
-          model: selectedModel,
-          plan: plan,
-          mode: store.oracleChatMode,
-          context: serializeWorkspace(
-            store.activeSpaceId, 
-            store.thoughts, 
-            store.spaces, 
-            store.stacks,
-            store.selectedThoughtIds,
-            user
-          )
-        }),
+    try {
+      const apiMessages = toOpenRouterMessages(
+        [...truncatedMessages, updatedMsg].filter(m => m.msgType !== 'system').slice(-ORACLE_CONFIG.HISTORY_WINDOW_SIZE)
+      );
+
+      await callOpenRouter(apiMessages, selectedModel, controller.signal, (chunk) => {
+        assistantContent += chunk;
+        assistantMsg.content = assistantContent;
+        setMessages(prev => prev.map(m => m.id === assistantMsg.id ? { ...m, content: assistantContent } : m));
       });
 
-      if (!response.ok) {
-        throw new Error('Failed to fetch from Oracle');
-      }
-
-      const reader = response.body?.getReader();
-      if (!reader) throw new Error('No response body');
-
-      const decoder = new TextDecoder();
-      let buffer = '';
-      let assistantContent = '';
-      let assistantMessage: Message | null = null;
-
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-
-        buffer += decoder.decode(value, { stream: true });
-        const lines = buffer.split('\n');
-        buffer = lines.pop() || '';
-
-        for (const line of lines) {
-          if (line.startsWith('data: ')) {
-            try {
-              const data = JSON.parse(line.slice(6));
-              if (data.type === 'text' && data.content) {
-                assistantContent += data.content;
-                if (!assistantMessage) {
-                  assistantMessage = {
-                    id: ulid(),
-                    spaceId: store.activeSpaceId!,
-                    role: 'assistant',
-                    content: assistantContent,
-                    timestamp: Date.now(),
-                    msgType: 'chat'
-                  };
-                  setMessages(prev => [...prev, assistantMessage!]);
-                } else {
-                  assistantMessage.content = assistantContent;
-                  setMessages(prev => prev.map(m => m.id === assistantMessage!.id ? { ...m, content: assistantContent } : m));
-                }
-              } else if (data.type === 'tool_call' && data.name) {
-                setActiveTool({ name: data.name, args: data.args });
-              } else if (data.type === 'tool_result') {
-                setActiveTool(null);
-              } else if (data.type === 'status' && data.status) {
-                setStatus(data.status);
-              } else if (data.type === 'error' && data.message) {
-                console.error('[Oracle] Stream error:', data.message);
-              }
-            } catch (e) {
-              // Skip malformed JSON
-            }
-          }
-        }
-      }
-
-      // Save assistant message
-      if (assistantMessage) {
-        saveMessage(assistantMessage);
+      if (assistantContent.trim()) {
+        saveMessage(assistantMsg);
       }
     } catch (err: any) {
       if (err.name !== 'AbortError') {
         console.error('[Oracle] Error:', err);
+        const errorMsg: Message = {
+          id: ulid(),
+          spaceId: store.activeSpaceId,
+          role: 'assistant',
+          content: `⚠️ **Error:** ${err.message || 'Unknown error occurred'}`,
+          timestamp: Date.now(),
+          msgType: 'system'
+        };
+        setMessages(prev => [...prev, errorMsg]);
+        saveMessage(errorMsg);
       }
     } finally {
       setIsLoading(false);
       setStatus('');
-      setActiveTool(null);
       abortControllerRef.current = null;
     }
   };
@@ -693,6 +499,12 @@ useEffect(() => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!input.trim() || isLoading || !store.activeSpaceId) return;
+
+    // Check API key
+    if (!apiKey) {
+      setEditingApiKey(true);
+      return;
+    }
 
     // Close suggestions if open
     setSuggestions(null);
@@ -709,36 +521,27 @@ useEffect(() => {
     }
     
     if (resolvedReferences.references.length === 0) {
-      // No references, simple text
       messageContent = input;
     } else {
-      // Build multimodal content array for API (raw data)
       const contentBlocks: unknown[] = [];
-      
-      // Add reference content first
       for (const ref of resolvedReferences.references) {
         contentBlocks.push(...ref.data);
       }
-      
-      // Add user message
       contentBlocks.push({ type: 'text', text: `User question: ${resolvedReferences.userMessage}` });
-      
       messageContent = contentBlocks;
     }
 
-    // For UI display - just use the input directly, it already contains the references
     const contentForUI = input;
 
     const userMessage: Message = { 
       id: ulid(), 
       spaceId: store.activeSpaceId, 
       role: 'user', 
-      content: contentForUI,  // Clean text for UI display
+      content: contentForUI,
       timestamp: Date.now(),
       msgType: 'chat'
     };
     
-    // Build content for API - use raw multimodal data if references exist
     const apiContent = typeof messageContent === 'string' ? messageContent : messageContent;
     
     setMessages(prev => [...prev, userMessage]);
@@ -751,333 +554,68 @@ useEffect(() => {
     const controller = new AbortController();
     abortControllerRef.current = controller;
 
-    let retryCount = 0;
-    const MAX_RETRIES = 1;
-    let response: Response | null = null;
+    // Build context for the AI
+    const contextString = resolvedReferences.references.length === 0 
+      ? serializeWorkspace(
+          store.activeSpaceId, 
+          store.thoughts, 
+          store.spaces, 
+          store.stacks,
+          store.selectedThoughtIds,
+          { id: 'guest', plan: 'free' }
+        )
+      : null;
 
-    while (retryCount <= MAX_RETRIES) {
-      try {
-        const authStore = useAuthStore.getState();
-        const token = await authStore.getOrRefreshToken();
-        
-        if (!token) {
-          throw new Error('Unauthorized: Session expired');
-        }
+    // Build system prompt
+    const systemPrompt = store.oracleChatMode === 'action'
+      ? `You are Cyberia Oracle AI in ACTION mode. You have tools to create, read, update, and delete thoughts and stacks. The user can tag thoughts with @name and stacks with #name. Current time: ${new Date().toLocaleString()}. Workspace context: ${contextString || 'Provided via references'}. Use tools to fulfill the user's request.`
+      : `You are Cyberia Oracle AI in CHAT mode (read-only). The user can tag thoughts with @name and stacks with #name. Current time: ${new Date().toLocaleString()}. Workspace context: ${contextString || 'Provided via references'}. You can read thoughts but CANNOT modify them.`;
 
-        response = await fetch('/api/chat', {
-          method: 'POST',
-          headers: { 
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${token}`
-          },
-          signal: controller.signal,
-          body: JSON.stringify({
-            messages: [...messages.filter(m => m.msgType !== 'system').slice(-ORACLE_CONFIG.HISTORY_WINDOW_SIZE), userMessage].map(m => ({
-              role: m.role,
-              // Use raw multimodal content for API, or clean text for simple messages
-              content: resolvedReferences.references.length > 0 ? apiContent : m.content
-            })),
-            model: selectedModel,
-            plan: plan,
-            mode: store.oracleChatMode,
-            // Only send workspace context when no references are tagged
-            context: resolvedReferences.references.length === 0 
-              ? serializeWorkspace(
-                  store.activeSpaceId, 
-                  store.thoughts, 
-                  store.spaces, 
-                  store.stacks,
-                  store.selectedThoughtIds,
-                  user
-                )
-              : null
-          }),
-        });
-
-        if (response.status === 429) {
-          const errorData = await response.json();
-          const baseMessage = 'Rate limit reached. The AI service is temporarily unavailable.';
-          const errorMsg: Message = { 
-            id: ulid(), 
-            spaceId: store.activeSpaceId,
-            role: 'assistant', 
-            content: baseMessage,
-            timestamp: Date.now(),
-            msgType: 'system'
-          };
-          setMessages(prev => [...prev, errorMsg]);
-          saveMessage(errorMsg);
-          const { updateQuotaUsage } = useAuthStore.getState();
-          updateQuotaUsage({ ai_daily_count: errorData.usage });
-          return;
-        }
-
-        if (response.status === 401 && retryCount < MAX_RETRIES) {
-          console.log('[ChatOverlay] Got 401, retrying with fresh token...');
-          retryCount++;
-          await authStore.refreshProfile();
-          continue;
-        }
-
-        if (response.status === 401) {
-          const errorMsg: Message = { 
-            id: ulid(), 
-            spaceId: store.activeSpaceId,
-            role: 'assistant', 
-            content: `### Connection Expired\nChoom, your session has timed out. Please sign in again to continue your data stream.`,
-            timestamp: Date.now(),
-            msgType: 'system'
-          };
-          setMessages(prev => [...prev, errorMsg]);
-          saveMessage(errorMsg);
-          useAuthStore.getState().signOut(); 
-          return;
-        }
-
-        if (!response.ok) throw new Error('Failed to fetch from Oracle');
-        
-        break;
-      } catch (err: any) {
-        if (err.name === 'AbortError') {
-          console.log('[Oracle] Stream aborted by user');
-        } else {
-          console.error('[Oracle] Error:', err);
-        }
-        break;
+    const apiMessages = [
+      { role: 'system', content: systemPrompt },
+      ...toOpenRouterMessages(
+        messages.filter(m => m.msgType !== 'system').slice(-ORACLE_CONFIG.HISTORY_WINDOW_SIZE)
+      ),
+      { 
+        role: 'user', 
+        content: resolvedReferences.references.length > 0 ? apiContent : input 
       }
-    }
+    ];
 
-    if (!response || !response.ok) {
-      setIsLoading(false);
-      setStatus('');
-      abortControllerRef.current = null;
-      return;
-    }
+    let assistantContent = '';
+    const assistantMsg: Message = { 
+      id: ulid(), 
+      spaceId: store.activeSpaceId,
+      role: 'assistant', 
+      content: '',
+      timestamp: Date.now(),
+      msgType: 'chat'
+    };
+    setMessages(prev => [...prev, assistantMsg]);
 
     try {
-      const reader = response.body?.getReader();
-      if (!reader) throw new Error('No reader available');
+      await callOpenRouter(apiMessages, selectedModel, controller.signal, (chunk) => {
+        assistantContent += chunk;
+        assistantMsg.content = assistantContent;
+        setMessages(prev => prev.map(m => m.id === assistantMsg.id ? { ...m, content: assistantContent } : m));
+      });
 
-      const decoder = new TextDecoder();
-      let assistantMessage: Message = { 
-        id: ulid(), 
-        spaceId: store.activeSpaceId,
-        role: 'assistant', 
-        content: '',
-        timestamp: Date.now(),
-        msgType: 'chat'
-      };
-      
-      setMessages(prev => [...prev, assistantMessage]);
-
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) {
-          if (assistantMessage.content.trim()) {
-            saveMessage(assistantMessage);
-          }
-          break;
-        }
-
-        const chunk = decoder.decode(value, { stream: true });
-        const lines = chunk.split('\n');
-
-        for (const line of lines) {
-          if (line.startsWith('data: ')) {
-            const dataStr = line.slice(6);
-            if (dataStr === '[DONE]') break;
-
-            try {
-              const data = JSON.parse(dataStr);
-              if (data.type === 'text') {
-                assistantMessage.content += data.content;
-                setMessages(prev => [
-                  ...prev.slice(0, -1),
-                  { ...assistantMessage }
-                ]);
-} else if (data.type === 'error') {
-                const errorMessage = parseAIError({ message: data.message });
-                
-                const errMsg: Message = { 
-                  id: ulid(), 
-                  spaceId: store.activeSpaceId,
-                  role: 'assistant', 
-                  content: errorMessage,
-                  timestamp: Date.now(),
-                  msgType: 'system'
-                };
-                setMessages(prev => [
-                  ...prev.slice(0, -1),
-                  errMsg
-                ]);
-                saveMessage(errMsg);
-              } else if (data.type === 'usage') {
-                // Update centralized auth store (propagates to all components including Settings)
-                const { updateQuotaUsage } = useAuthStore.getState();
-                updateQuotaUsage({
-                  ai_daily_count: data.count,
-                  ai_top_count: data.top_count || 0,
-                  ai_medium_count: data.medium_count || 0,
-                  ai_small_count: data.small_count || 0,
-                  weekly_top_count: data.weekly_top_count || 0,
-                  weekly_medium_count: data.weekly_medium_count || 0,
-                  weekly_small_count: data.weekly_small_count || 0,
-                  monthly_top_count: data.monthly_top_count || 0,
-                  monthly_medium_count: data.monthly_medium_count || 0,
-                  monthly_small_count: data.monthly_small_count || 0,
-                });
-                
-                if (data.tier && data.autoSwitch) {
-                  if (activeTier !== 'free' && plan === 'pro') {
-                    const tierNames: Record<string, string> = {
-                      top: 'Reasoning',
-                      medium: 'Balanced',
-                      small: 'Fast',
-                    };
-                    const switchMsg: Message = {
-                      id: ulid(),
-                      spaceId: store.activeSpaceId,
-                      role: 'assistant',
-                      content: `⚠️ ${tierNames[data.tier] || data.tier} quota exhausted — switched to ${tierNames[data.tier] || data.tier}`,
-                      timestamp: Date.now(),
-                      msgType: 'system'
-                    };
-                    setMessages(prev => [...prev, switchMsg]);
-                  }
-                  // Persist the auto-switched tier
-                  if (data.tier !== 'free') {
-                    handleTierChange(data.tier as 'top' | 'medium' | 'small');
-                  }
-                }
-                
-                if (data.model && data.model !== selectedModel) {
-                  setSelectedModel(data.model);
-                }
-                
-
-              } else if (data.type === 'tool_call') {
-                setActiveTool({ name: data.toolCall.toolName, args: data.toolCall.args });
-                setStatus(data.isBatch 
-                  ? `Batch Creating ${data.batchCount} Thoughts...` 
-                  : getFriendlyToolName(data.toolCall.toolName));
-                
-                try {
-                  const result = await executeOracleTool(data.toolCall, store);
-                  
-                  if (!result.success && result.error) {
-                    const errResultMsg: Message = {
-                      id: ulid(),
-                      spaceId: store.activeSpaceId,
-                      role: 'assistant',
-                      content: `⚠️ ${result.error}`,
-                      timestamp: Date.now(),
-                      msgType: 'system'
-                    };
-                    setMessages(prev => [...prev, errResultMsg]);
-                    saveMessage(errResultMsg);
-                  }
-                  
-                  if (['get_thought_details', 'read_file_content', 'read_files_content'].includes(data.toolCall.toolName) && result.success) {
-                    const minimalContext = JSON.stringify({
-                      currentTime: {
-                        date: new Date().toLocaleDateString('en-CA'),
-                        full: new Date().toLocaleString(),
-                        day: new Date().toLocaleDateString('en-US', { weekday: 'long' })
-                      },
-                      userQuota: user ? {
-                        plan: user.plan,
-                        aiDailyUsed: user.usage?.ai_daily_count,
-                      } : undefined,
-                      currentSpace: {
-                        id: store.activeSpaceId,
-                        name: store.spaces.find((s: any) => s.id === store.activeSpaceId)?.name || 'Unknown'
-                      }
-                    });
-
-                    const authStore = useAuthStore.getState();
-                    const followUpToken = await authStore.getOrRefreshToken();
-                    
-                    if (!followUpToken) throw new Error('Unauthorized: Session expired');
-
-                    const followUpResponse = await fetch('/api/chat', {
-                      method: 'POST',
-                      headers: { 
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${followUpToken}`
-                      },
-                      signal: controller.signal,
-                      body: JSON.stringify({
-                        messages: [
-                          { role: 'user', content: getFollowUpMessageContent(data.toolCall.toolName, result) },
-                          { role: 'tool', tool_call_id: data.toolCall.id, name: data.toolCall.toolName, content: JSON.stringify(result) }
-                        ],
-                        model: selectedModel,
-                        plan: plan,
-                        mode: store.oracleChatMode,
-                        context: minimalContext
-                      }),
-                    });
-                    
-                    if (followUpResponse.ok) {
-                      const followUpReader = followUpResponse.body?.getReader();
-                      if (followUpReader) {
-                        const followUpDecoder = new TextDecoder();
-                        while (true) {
-                          const { done, value } = await followUpReader.read();
-                          if (done) {
-                            if (assistantMessage.content.trim()) {
-                               saveMessage(assistantMessage);
-                            }
-                            break;
-                          }
-                          const followUpChunk = followUpDecoder.decode(value, { stream: true });
-                          const followUpLines = followUpChunk.split('\n');
-                          for (const fLine of followUpLines) {
-                            if (fLine.startsWith('data: ')) {
-                              const fDataStr = fLine.slice(6);
-                              if (fDataStr === '[DONE]') break;
-                              try {
-                                const fData = JSON.parse(fDataStr);
-                                if (fData.type === 'text') {
-                                  assistantMessage.content += fData.content;
-                                  setMessages(prev => [...prev.slice(0, -1), { ...assistantMessage }]);
-                                } else if (fData.type === 'tool_call') {
-                                  setActiveTool({ name: fData.toolCall.toolName, args: fData.toolCall.args });
-                                  setStatus(getFriendlyToolName(fData.toolCall.toolName));
-                                  const toolResult = await executeOracleTool(fData.toolCall, store);
-                                  if (!toolResult.success && toolResult.error) {
-                                    const errRecMsg: Message = {
-                                      id: ulid(),
-                                      spaceId: store.activeSpaceId,
-                                      role: 'assistant',
-                                      content: `⚠️ ${toolResult.error}`,
-                                      timestamp: Date.now(),
-                                      msgType: 'system'
-                                    };
-                                    setMessages(prev => [...prev, errRecMsg]);
-                                    saveMessage(errRecMsg);
-                                  }
-                                }
-                              } catch (e) {}
-                            }
-                          }
-                        }
-                      }
-                    }
-                  }
-                } finally {
-                  setActiveTool(null);
-                }
-              }
-            } catch (e) { }
-          }
-        }
+      if (assistantContent.trim()) {
+        saveMessage(assistantMsg);
       }
-    } catch (error: any) {
-      if (error.name === 'AbortError') {
-        console.log('[Oracle] Stream aborted by user');
-      } else {
-        console.error('[Oracle] Error:', error);
+    } catch (err: any) {
+      if (err.name !== 'AbortError') {
+        console.error('[Oracle] Error:', err);
+        const errorMsg: Message = {
+          id: ulid(),
+          spaceId: store.activeSpaceId,
+          role: 'assistant',
+          content: `⚠️ **Error:** ${err.message || 'Unknown error occurred'}`,
+          timestamp: Date.now(),
+          msgType: 'system'
+        };
+        setMessages(prev => [...prev, errorMsg]);
+        saveMessage(errorMsg);
       }
     } finally {
       setIsLoading(false);
@@ -1111,20 +649,34 @@ useEffect(() => {
               {/* Absolute Center */}
               <div className="absolute left-1/2 -translate-x-1/2 flex items-center justify-center pointer-events-none z-[60]">
                 <div className="flex items-center gap-2">
-                  {/* Oracle AI Title with Inline Model Selector */}
                   <div className="flex items-center gap-2 pointer-events-auto" ref={dropdownRef}>
                     <div className="w-1.5 h-1.5 rounded-full bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.6)]" />
                     <h3 className="text-[11px] font-extrabold uppercase tracking-[0.2em] text-[var(--text-primary)] leading-none">Oracle AI</h3>
                     
                     <button
-                      onClick={() => { setShowModelDropdown(!showModelDropdown); }}
+                      onClick={() => setShowModelDropdown(!showModelDropdown)}
                       className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[var(--glass-bg)] hover:bg-[var(--bg-page)] border border-[var(--glass-border)] transition-all group"
                     >
                       <span className="text-[9px] font-bold text-[var(--text-primary)] uppercase tracking-widest leading-none">
-                        {activeTier === 'top' ? 'Reasoning' : activeTier === 'medium' ? 'Balanced' : activeTier === 'small' ? 'Fast' : activeTier}
+                        {AVAILABLE_MODELS.find(m => m.id === selectedModel)?.name || selectedModel.split('/').pop() || 'Model'}
                       </span>
                       <ChevronDown className={cn("w-3 h-3 text-[var(--text-muted)] transition-transform", showModelDropdown && "rotate-180")} />
                     </button>
+
+                    {/* API Key button */}
+                    <button
+                      onClick={() => setEditingApiKey(true)}
+                      className={cn(
+                        "flex items-center gap-1.5 px-2 py-1.5 rounded-lg border transition-all",
+                        apiKey
+                          ? "bg-[var(--glass-bg)] border-[var(--glass-border)] text-green-500"
+                          : "bg-amber-500/10 border-amber-500/30 text-amber-400 animate-pulse"
+                      )}
+                      title={apiKey ? 'API Key configured' : 'API Key required'}
+                    >
+                      <Key className="w-3 h-3" />
+                    </button>
+
                     <AnimatePresence>
                       {showModelDropdown && (
                         <motion.div
@@ -1134,94 +686,35 @@ useEffect(() => {
                           transition={{ duration: 0.2, ease: [0.23, 1, 0.32, 1] }}
                           className="absolute top-full left-1/2 -translate-x-1/2 mt-3 w-64 bg-[var(--bg-main)] rounded-2xl border border-[var(--glass-border)] shadow-2xl overflow-hidden z-[100]"
                         >
-                          {/* Header */}
                           <div className="px-4 py-2.5 border-b border-[var(--glass-border)] bg-[var(--bg-main)]/20">
                             <span className="text-[9px] font-semibold tracking-widest uppercase text-[var(--text-muted)]">
                               Select Model
                             </span>
                           </div>
                           
-                          <div className="py-0.5">
-                            {/* REASONING */}
-                            <button
-                              onClick={() => { setSelectedModel(topModels[0]?.id || ''); handleTierChange('top'); setShowModelDropdown(false); userHasSelectedModelRef.current = true; }}
-                              disabled={plan !== 'pro' || getTierStatus(topUsage, weeklyTopUsage, monthlyTopUsage, limits.AI_TOP_LIMIT || 15, limits.AI_TOP_WEEKLY || 100, limits.AI_TOP_MONTHLY || 400).exhausted}
-                              className={cn(
-                                "w-full flex items-center justify-between px-4 py-2.5 transition-all text-left rounded-lg",
-                                activeTier === 'top'
-                                  ? "bg-[var(--accent)]/10 text-[var(--accent)]"
-                                  : "hover:bg-[var(--bg-page)] text-[var(--text-primary)]",
-                                (plan !== 'pro' || getTierStatus(topUsage, weeklyTopUsage, monthlyTopUsage, limits.AI_TOP_LIMIT || 15, limits.AI_TOP_WEEKLY || 100, limits.AI_TOP_MONTHLY || 400).exhausted) && "opacity-40 cursor-not-allowed"
-                              )}
-                            >
-                              <span className="text-[11px] font-medium">Reasoning</span>
-                              <div className="flex items-center gap-2">
-                                {activeTier === 'top' && (
-                                  <svg className="w-3.5 h-3.5 text-[var(--accent)]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <div className="py-0.5 max-h-[300px] overflow-y-auto custom-scroll">
+                            {AVAILABLE_MODELS.map((model) => (
+                              <button
+                                key={model.id}
+                                onClick={() => { setSelectedModel(model.id); setShowModelDropdown(false); }}
+                                className={cn(
+                                  "w-full flex items-center justify-between px-4 py-2.5 transition-all text-left",
+                                  selectedModel === model.id
+                                    ? "bg-[var(--accent)]/10 text-[var(--accent)]"
+                                    : "hover:bg-[var(--bg-page)] text-[var(--text-primary)]"
+                                )}
+                              >
+                                <div className="flex flex-col gap-0.5">
+                                  <span className="text-[11px] font-medium">{model.name}</span>
+                                  <span className="text-[9px] text-[var(--text-muted)]">{model.desc}</span>
+                                </div>
+                                {selectedModel === model.id && (
+                                  <svg className="w-3.5 h-3.5 text-[var(--accent)] flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                                   </svg>
                                 )}
-                                {getTierStatus(topUsage, weeklyTopUsage, monthlyTopUsage, limits.AI_TOP_LIMIT || 15, limits.AI_TOP_WEEKLY || 100, limits.AI_TOP_MONTHLY || 400).exhausted && getTierResetTimer(topUsage, weeklyTopUsage, monthlyTopUsage, dailyAnchor, limits.AI_TOP_LIMIT || 15, limits.AI_TOP_WEEKLY || 100, limits.AI_TOP_MONTHLY || 400) && (
-                                  <span className="text-[8px] text-[var(--text-muted)]">
-                                    {getTierResetTimer(topUsage, weeklyTopUsage, monthlyTopUsage, dailyAnchor, limits.AI_TOP_LIMIT || 15, limits.AI_TOP_WEEKLY || 100, limits.AI_TOP_MONTHLY || 400)}
-                                  </span>
-                                )}
-                              </div>
-                            </button>
-
-                            {/* BALANCED */}
-                            <button
-                              onClick={() => { setSelectedModel(mediumModels[0]?.id || ''); handleTierChange('medium'); setShowModelDropdown(false); userHasSelectedModelRef.current = true; }}
-                              disabled={plan !== 'pro' || getTierStatus(mediumUsage, weeklyMediumUsage, monthlyMediumUsage, limits.AI_MEDIUM_LIMIT || 60, limits.AI_MEDIUM_WEEKLY || 420, limits.AI_MEDIUM_MONTHLY || 1800).exhausted}
-                              className={cn(
-                                "w-full flex items-center justify-between px-4 py-2.5 transition-all text-left rounded-lg",
-                                activeTier === 'medium'
-                                  ? "bg-[var(--accent)]/10 text-[var(--accent)]"
-                                  : "hover:bg-[var(--bg-page)] text-[var(--text-primary)]",
-                                (plan !== 'pro' || getTierStatus(mediumUsage, weeklyMediumUsage, monthlyMediumUsage, limits.AI_MEDIUM_LIMIT || 60, limits.AI_MEDIUM_WEEKLY || 420, limits.AI_MEDIUM_MONTHLY || 1800).exhausted) && "opacity-40 cursor-not-allowed"
-                              )}
-                            >
-                              <span className="text-[11px] font-medium">Balanced</span>
-                              <div className="flex items-center gap-2">
-                                {activeTier === 'medium' && (
-                                  <svg className="w-3.5 h-3.5 text-[var(--accent)]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                                  </svg>
-                                )}
-                                {getTierStatus(mediumUsage, weeklyMediumUsage, monthlyMediumUsage, limits.AI_MEDIUM_LIMIT || 60, limits.AI_MEDIUM_WEEKLY || 420, limits.AI_MEDIUM_MONTHLY || 1800).exhausted && getTierResetTimer(mediumUsage, weeklyMediumUsage, monthlyMediumUsage, dailyAnchor, limits.AI_MEDIUM_LIMIT || 60, limits.AI_MEDIUM_WEEKLY || 420, limits.AI_MEDIUM_MONTHLY || 1800) && (
-                                  <span className="text-[8px] text-[var(--text-muted)]">
-                                    {getTierResetTimer(mediumUsage, weeklyMediumUsage, monthlyMediumUsage, dailyAnchor, limits.AI_MEDIUM_LIMIT || 60, limits.AI_MEDIUM_WEEKLY || 420, limits.AI_MEDIUM_MONTHLY || 1800)}
-                                  </span>
-                                )}
-                              </div>
-                            </button>
-
-                            {/* FAST */}
-                            <button
-                              onClick={() => { setSelectedModel(smallModels[0]?.id || ''); handleTierChange('small'); setShowModelDropdown(false); userHasSelectedModelRef.current = true; }}
-                              disabled={plan !== 'pro' || getTierStatus(smallUsage, weeklySmallUsage, monthlySmallUsage, limits.AI_SMALL_LIMIT || 500, limits.AI_SMALL_WEEKLY || 3500, limits.AI_SMALL_MONTHLY || 15000).exhausted}
-                              className={cn(
-                                "w-full flex items-center justify-between px-4 py-2.5 transition-all text-left rounded-lg",
-                                activeTier === 'small'
-                                  ? "bg-[var(--accent)]/10 text-[var(--accent)]"
-                                  : "hover:bg-[var(--bg-page)] text-[var(--text-primary)]",
-                                (plan !== 'pro' || getTierStatus(smallUsage, weeklySmallUsage, monthlySmallUsage, limits.AI_SMALL_LIMIT || 500, limits.AI_SMALL_WEEKLY || 3500, limits.AI_SMALL_MONTHLY || 15000).exhausted) && "opacity-40 cursor-not-allowed"
-                              )}
-                            >
-                              <span className="text-[11px] font-medium">Fast</span>
-                              <div className="flex items-center gap-2">
-                                {activeTier === 'small' && (
-                                  <svg className="w-3.5 h-3.5 text-[var(--accent)]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                                  </svg>
-                                )}
-                                {getTierStatus(smallUsage, weeklySmallUsage, monthlySmallUsage, limits.AI_SMALL_LIMIT || 500, limits.AI_SMALL_WEEKLY || 3500, limits.AI_SMALL_MONTHLY || 15000).exhausted && getTierResetTimer(smallUsage, weeklySmallUsage, monthlySmallUsage, dailyAnchor, limits.AI_SMALL_LIMIT || 500, limits.AI_SMALL_WEEKLY || 3500, limits.AI_SMALL_MONTHLY || 15000) && (
-                                  <span className="text-[8px] text-[var(--text-muted)]">
-                                    {getTierResetTimer(smallUsage, weeklySmallUsage, monthlySmallUsage, dailyAnchor, limits.AI_SMALL_LIMIT || 500, limits.AI_SMALL_WEEKLY || 3500, limits.AI_SMALL_MONTHLY || 15000)}
-                                  </span>
-                                )}
-                              </div>
-                            </button>
+                              </button>
+                            ))}
                           </div>
                         </motion.div>
                       )}
@@ -1249,6 +742,67 @@ useEffect(() => {
             </div>
           </div>
 
+          {/* API Key Setup Modal */}
+          <AnimatePresence>
+            {editingApiKey && (
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                className="absolute inset-0 z-50 bg-[var(--bg-page)]/80 backdrop-blur-md flex items-center justify-center p-6 rounded-2xl"
+              >
+                <div className="w-full max-w-sm glass rounded-2xl p-6 border border-[var(--glass-border)] shadow-2xl">
+                  <div className="flex items-center gap-3 mb-4">
+                    <div className="w-10 h-10 rounded-xl bg-[var(--accent)]/10 flex items-center justify-center">
+                      <Key className="w-5 h-5 text-[var(--accent)]" />
+                    </div>
+                    <div>
+                      <h3 className="text-[13px] font-bold text-[var(--text-primary)]">OpenRouter API Key</h3>
+                      <p className="text-[10px] text-[var(--text-muted)]">Get yours at <span className="text-[var(--accent)]">openrouter.ai/keys</span></p>
+                    </div>
+                  </div>
+                  <div className="relative mb-4">
+                    <input
+                      type={showApiKey ? 'text' : 'password'}
+                      value={apiKeyInput}
+                      onChange={(e) => setApiKeyInput(e.target.value)}
+                      placeholder="sk-or-v1-..."
+                      className="w-full bg-[var(--bg-page)]/40 border border-[var(--glass-border)] rounded-xl px-3.5 py-2.5 pr-10 text-[12px] text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus:outline-none focus:border-[var(--accent)]/50 font-mono"
+                      autoFocus
+                    />
+                    <button
+                      onClick={() => setShowApiKey(!showApiKey)}
+                      className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[var(--text-muted)] hover:text-[var(--text-primary)]"
+                    >
+                      {showApiKey ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                    </button>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => {
+                        setEditingApiKey(false);
+                        setApiKeyInput(apiKey);
+                      }}
+                      className="flex-1 px-3 py-2 rounded-xl text-[11px] font-semibold text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--glass-bg)] border border-[var(--glass-border)] transition-all"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      onClick={() => {
+                        setApiKey(apiKeyInput.trim());
+                        setEditingApiKey(false);
+                      }}
+                      disabled={!apiKeyInput.trim()}
+                      className="flex-1 px-3 py-2 rounded-xl text-[11px] font-semibold text-white bg-[var(--accent)]/90 hover:bg-[var(--accent)] disabled:opacity-40 disabled:cursor-not-allowed transition-all"
+                    >
+                      Save Key
+                    </button>
+                  </div>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+
           {/* Messages Area */}
           <div 
             ref={scrollRef}
@@ -1259,9 +813,13 @@ useEffect(() => {
                 <div className="w-14 h-14 bg-[var(--glass-bg)] rounded-2xl flex items-center justify-center mb-5 border border-[var(--glass-border)] shadow-inner">
                   <MessageSquare className="w-6 h-6 text-[var(--text-muted)]" />
                 </div>
-                <h4 className="text-[12px] font-extrabold uppercase tracking-[0.25em] text-[var(--text-primary)] mb-2">Welcome to Agentic Workspace</h4>
+                <h4 className="text-[12px] font-extrabold uppercase tracking-[0.25em] text-[var(--text-primary)] mb-2">
+                  {apiKey ? 'Welcome to Agentic Workspace' : 'Configure API Key to Start'}
+                </h4>
                 <p className="text-[10px] font-medium text-[var(--text-muted)] max-w-[320px] leading-relaxed uppercase tracking-widest">
-                  Ready to map your thoughts. Ask me to research, organize, or create.
+                  {apiKey 
+                    ? 'Ready to map your thoughts. Ask me to research, organize, or create.'
+                    : 'Click the key icon in the header to enter your OpenRouter API key.'}
                 </p>
               </div>
             )}
@@ -1415,7 +973,6 @@ useEffect(() => {
                   handleInputChange(e.target.value, e.target);
                 }}
                 onKeyDown={(e) => {
-                  // Handle suggestion keyboard navigation when dropdown is open
                   if (suggestions?.isOpen) {
                     handleSuggestionKeyDown(e);
                     return;
@@ -1447,7 +1004,7 @@ useEffect(() => {
                 </button>
               )}
 
-              {/* Suggestion Dropdown for @thought and #stack references - anchored to input */}
+              {/* Suggestion Dropdown for @thought and #stack references */}
               {suggestions?.isOpen && (
                 <SuggestionDropdown
                   query={suggestions.query}
@@ -1476,20 +1033,18 @@ useEffect(() => {
                   <span className="text-[9px] font-semibold tracking-wide mt-[1px]">Chat</span>
                 </button>
                 <div className="w-[1px] h-3 bg-[var(--glass-border)] mx-1"></div>
-                <AccessGuard user={user} mode="disable" feature="pro">
-                  <button
-                    onClick={() => store.setOracleChatMode('action')}
-                    className={cn(
-                      "px-3 h-6 rounded-md transition-all duration-300 flex items-center gap-1.5",
-                      store.oracleChatMode === 'action' 
-                        ? "bg-[var(--status-doing)]/10 text-[var(--status-doing)]" 
-                        : "text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--glass-bg)]"
-                    )}
-                  >
-                    <div className={cn("w-1.5 h-1.5 rounded-full transition-all", store.oracleChatMode === 'action' ? "bg-[var(--status-doing)]" : "bg-[var(--glass-border)]")} />
-                    <span className="text-[9px] font-semibold tracking-wide mt-[1px]">Action</span>
-                  </button>
-                </AccessGuard>
+                <button
+                  onClick={() => store.setOracleChatMode('action')}
+                  className={cn(
+                    "px-3 h-6 rounded-md transition-all duration-300 flex items-center gap-1.5",
+                    store.oracleChatMode === 'action' 
+                      ? "bg-[var(--status-doing)]/10 text-[var(--status-doing)]" 
+                      : "text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--glass-bg)]"
+                  )}
+                >
+                  <div className={cn("w-1.5 h-1.5 rounded-full transition-all", store.oracleChatMode === 'action' ? "bg-[var(--status-doing)]" : "bg-[var(--glass-border)]")} />
+                  <span className="text-[9px] font-semibold tracking-wide mt-[1px]">Action</span>
+                </button>
               </div>
             </div>
           </div>
