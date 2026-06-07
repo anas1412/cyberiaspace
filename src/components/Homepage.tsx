@@ -235,13 +235,13 @@ const Homepage: React.FC = () => {
                   href="/home"
                   className="w-full sm:w-auto px-10 py-5 bg-[var(--accent)] hover:bg-[var(--accent-hover)] text-[var(--accent-contrast)] rounded-xl text-base font-semibold transition-all shadow-lg shadow-[var(--accent)]/25 active:scale-95 flex items-center justify-center gap-2 group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--bg-page)] focus-visible:ring-[var(--accent)]"
                 >
-                  Launch Cyberia Space
+                  Get started
                   <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
                 </a>
                 <a
                   href={GITHUB_URL}
                   target="_blank"
-                  className="inline-flex items-center justify-center gap-2 px-10 py-5 bg-[var(--glass-bg)] hover:bg-[var(--bg-page)] border border-[var(--glass-border)] rounded-xl text-base font-semibold text-[var(--text-primary)] transition-all active:scale-95 group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--bg-page)] focus-visible:ring-[var(--glass-border)]"
+                  className="w-full sm:w-auto px-10 py-5 bg-[var(--glass-bg)] hover:bg-[var(--bg-page)] border border-[var(--glass-border)] rounded-xl text-base font-semibold text-[var(--text-primary)] transition-all active:scale-95 flex items-center justify-center gap-2 group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--bg-page)] focus-visible:ring-[var(--glass-border)]"
                 >
                   View on GitHub
                 </a>
@@ -604,7 +604,7 @@ const Homepage: React.FC = () => {
                   href="/home"
                   className="inline-flex items-center justify-center gap-2 px-10 py-5 bg-[var(--accent)] hover:bg-[var(--accent-hover)] text-[var(--accent-contrast)] rounded-xl text-base font-semibold transition-all shadow-lg shadow-[var(--accent)]/25 active:scale-95 group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--bg-page)] focus-visible:ring-[var(--accent)]"
                 >
-                  Launch Cyberia
+                  Get started
                   <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
                 </a>
                 <a
