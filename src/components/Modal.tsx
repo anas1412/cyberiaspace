@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useModalStore, type DeletionMode, type DeletionCounts } from '../store/useModalStore';
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
-import { Cloud, HardDrive, X, Trash2, Layers, Unlink } from 'lucide-react';
+import { Cloud, HardDrive, X, Trash2, Unlink } from 'lucide-react';
 
 function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
