@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 
-export type DeletionMode = 'all' | 'local' | 'cloud';
+export type DeletionMode = 'all' | 'local';
 
 export interface DeletionCounts {
   spaces: number;
@@ -14,9 +14,8 @@ export interface ModalState {
   isPricingOpen: boolean;
   title: string;
   description?: string;
-  type: 'rename' | 'delete_space' | 'delete_thought' | 'delete_stack' | 'limit_space' | 'limit_thought' | 'new_space' | 'alert' | 'import_confirm' | 'reset_confirm' | 'confirm_cancel' | 'terms' | 'custom' | 'conflict_resolver' | 'quota_resolver' | 'delete_data';
+  type: 'rename' | 'delete_space' | 'delete_thought' | 'delete_stack' | 'limit_space' | 'limit_thought' | 'new_space' | 'alert' | 'import_confirm' | 'reset_confirm' | 'confirm_cancel' | 'terms' | 'custom' | 'delete_data';
   guestSpaces?: number;
-  cloudSpaces?: number;
   inputValue?: string;
   confirmText?: string;
   cancelText?: string;

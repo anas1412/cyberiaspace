@@ -36,7 +36,7 @@ export const createSpaceSlice: StateCreator<CyberiaState, [], [], any> = (set, g
         set({ transform } as Partial<CyberiaState>);
         set({ customBg: space.customBg || null });
 
-        // Load background from local IndexedDB first (local-first pattern)
+        // Load background from local IndexedDB first (local pattern)
         if (space.customBg) {
           const currentUserId = 'guest';
           const localBg = await db.spaceBackgrounds.filter(b => b.spaceId === id && b.userId === currentUserId).first();

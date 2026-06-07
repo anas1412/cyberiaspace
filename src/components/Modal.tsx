@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useModalStore, type DeletionMode, type DeletionCounts } from '../store/useModalStore';
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
-import { Cloud, HardDrive, X, Trash2, Unlink } from 'lucide-react';
+import { HardDrive, X, Trash2, Unlink } from 'lucide-react';
 
 function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -41,8 +41,8 @@ const Modal: React.FC = () => {
   if (!isOpen) return null;
 
   const showInput = ['rename', 'new_space'].includes(type);
-  const showCancel = !['limit_space', 'limit_thought', 'terms', 'conflict_resolver', 'delete_data'].includes(type);
-  const showStandardButtons = !['terms', 'conflict_resolver', 'custom', 'delete_data', 'delete_stack'].includes(type);
+  const showCancel = !['limit_space', 'limit_thought', 'terms', 'delete_data'].includes(type);
+  const showStandardButtons = !['terms', 'custom', 'delete_data', 'delete_stack'].includes(type);
   const showXButton = !['terms', 'custom', 'delete_data'].includes(type);
 
   return (
@@ -66,7 +66,7 @@ const Modal: React.FC = () => {
           <div className="text-left space-y-8 my-8 max-h-[70vh] overflow-y-auto pr-4 custom-scroll">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
               {[
-                { title: 'Local First', icon: '🔒', desc: 'Your data stays on your device by default.' },
+                { title: 'Local & Private', icon: '🔒', desc: 'Your data stays on your device. Always.' },
                 { title: 'Manual Pay', icon: '💳', desc: 'No auto-billing. You control renewals.' },
                 { title: 'Pure Ownership', icon: '✨', desc: 'We never sell your data or your thoughts.' },
               ].map((card, i) => (
@@ -82,9 +82,8 @@ const Modal: React.FC = () => {
               {[
                 { title: 'A. Data Ownership & Governance', desc: 'Everything you create in Cyberia is your property. We treat your thoughts as private, kinetic assets.' },
                 { title: 'B. AI Interaction', desc: 'When communicating with Cyberia AI, relevant snippets of your space are processed by high-speed Llama models via Groq.' },
-                { title: 'C. Cloud Sync Protocol', desc: 'Sync is a convenience service. Data sent to our cloud (Supabase) is encrypted in-transit and isolated to your account.' },
-                { title: 'D. Ephemeral Sharing', desc: 'Publicly shared snapshots are temporary. They naturally expire and are purged from our servers 30 days after their last update.' },
-                { title: 'E. Portability Commitment', desc: "Cyberia will always provide a free, unrestricted way to export your data into standard formats like Markdown or JSON." }
+                { title: 'C. Ephemeral Sharing', desc: 'Publicly shared snapshots are temporary. They naturally expire and are purged from our servers 30 days after their last update.' },
+                { title: 'D. Portability Commitment', desc: "Cyberia will always provide a free, unrestricted way to export your data into standard formats like Markdown or JSON." }
               ].map((protocol, i) => (
                 <div key={i} className="space-y-1.5 border-l-2 border-blue-500/20 pl-4 py-1">
                   <h4 className="text-[10px] font-semibold tracking-wide text-blue-400/80">{protocol.title}</h4>
@@ -92,41 +91,6 @@ const Modal: React.FC = () => {
                 </div>
               ))}
             </div>
-          </div>
-        ) : type === 'conflict_resolver' ? (
-          <div className="mt-8">
-            <p className="text-[9px] text-[var(--text-muted)] uppercase font-bold tracking-widest text-center mb-6">
-              Choose which data to keep
-            </p>
-            <div className="flex flex-row gap-3">
-              <button
-                onClick={() => handleConfirm('local')}
-                className="flex-1 flex flex-col items-center gap-3 py-5 px-3 bg-[var(--glass-bg)] hover:bg-[var(--bg-page)] border border-[var(--border)] rounded-2xl transition-all active:scale-95 group"
-              >
-                <div className="w-12 h-12 rounded-2xl bg-[var(--glass-border)] flex items-center justify-center group-hover:scale-105 transition-transform">
-                  <HardDrive className="w-5 h-5 text-[var(--text-dimmed)]" />
-                </div>
-                <div className="text-center">
-                  <span className="block text-[9px] font-semibold tracking-wide text-[var(--text-primary)] mb-1">Local Data</span>
-                  <span className="text-[10px] text-[var(--text-muted)] font-medium">Keep this device</span>
-                </div>
-              </button>
-              <button
-                onClick={() => handleConfirm('cloud')}
-                className="flex-1 flex flex-col items-center gap-3 py-5 px-3 bg-indigo-500/10 hover:bg-indigo-500/20 border border-indigo-500/20 rounded-2xl transition-all active:scale-95 group"
-              >
-                <div className="w-12 h-12 rounded-2xl bg-indigo-500/20 flex items-center justify-center group-hover:scale-105 transition-transform">
-                  <Cloud className="w-5 h-5 text-indigo-400" />
-                </div>
-                <div className="text-center">
-                  <span className="block text-[9px] font-semibold tracking-wide text-indigo-300 mb-1">Cloud Backup</span>
-                  <span className="text-[10px] text-[var(--text-muted)] font-medium">Restore from cloud</span>
-                </div>
-              </button>
-            </div>
-            <p className="text-[10px] text-[var(--text-muted)] font-medium text-center mt-4">
-              Cloud sync will update with your choice
-            </p>
           </div>
         ) : type === 'delete_stack' ? (
           <DeleteStackModal
@@ -239,8 +203,8 @@ const DeleteDataModal: React.FC<DeleteDataModalProps> = ({
     {
       mode: 'all',
       icon: <Trash2 className="w-5 h-5" />,
-      title: 'Everything (Local + Cloud)',
-      description: 'Complete reset everywhere',
+      title: 'Everything (Local)',
+      description: 'Complete reset',
       color: 'red',
       bgColor: 'bg-red-500/10',
       borderColor: 'border-[var(--glass-border)]',
@@ -258,30 +222,17 @@ const DeleteDataModal: React.FC<DeleteDataModalProps> = ({
       selectedBorderColor: 'border-[var(--accent)]/30',
       iconBg: 'bg-[var(--accent)]/20',
     },
-    {
-      mode: 'cloud',
-      icon: <Cloud className="w-5 h-5" />,
-      title: 'Cloud Backup Only',
-      description: 'Clear cloud, keep this device',
-      color: 'blue',
-      bgColor: 'bg-blue-500/10',
-      borderColor: 'border-[var(--glass-border)]',
-      selectedBorderColor: 'border-blue-500/30',
-      iconBg: 'bg-blue-500/20',
-    },
   ];
 
   const getTextColor = (mode: DeletionMode, selected: boolean) => {
     if (!selected) return 'text-[var(--text-primary)]';
     if (mode === 'all') return 'text-red-300';
-    if (mode === 'cloud') return 'text-blue-300';
     return 'text-[var(--accent)]';
   };
 
   const getIconColor = (mode: DeletionMode, selected: boolean) => {
     if (!selected) return 'text-[var(--text-dimmed)]';
     if (mode === 'all') return 'text-red-400';
-    if (mode === 'cloud') return 'text-blue-400';
     return 'text-[var(--accent)]';
   };
 

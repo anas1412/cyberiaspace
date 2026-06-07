@@ -77,7 +77,7 @@ const Lightbox: React.FC = () => {
       if (entry) return URL.createObjectURL(entry.blob);
     } catch (e) { /* ignore */ }
     // Fallback to data.url or image
-    return item.data?.type === 'file' ? item.data.url : (item as any).image;
+    return item.data?.type === 'file' ? item.data.url : undefined;
   };
 
     // Preload thumbnail URLs
@@ -219,7 +219,7 @@ const Lightbox: React.FC = () => {
               <div className="flex gap-3 overflow-x-auto custom-scroll pb-2 w-full snap-x px-1" ref={scrollerRef}>
                 {stackItems.map((item, idx) => {
                   // Use thumbnailUrls if available, otherwise use getItemUrl logic
-                  const itemImage = thumbnailUrls[item.id] || (item.data?.type === 'file' ? item.data.url : (item as any).image);
+                  const itemImage = thumbnailUrls[item.id] || (item.data?.type === 'file' ? item.data.url : undefined);
                   return (
                     <button
                       key={item.id}

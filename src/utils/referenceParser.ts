@@ -112,7 +112,6 @@ export function parseReferences(
  */
 async function getThoughtMediaUrl(thought: Thought): Promise<string | null> {
   if (thought.data?.type === 'file' && thought.data.url) return thought.data.url;
-  if (thought.image) return thought.image;
 
   // Local IndexedDB Blob Fallback
   const { db } = await import('../db');

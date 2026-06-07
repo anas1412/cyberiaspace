@@ -98,7 +98,7 @@ const StackItemThumbnail: React.FC<{
   onClick: (type: any) => void;
   color?: string;
 }> = ({ item, isActive, onClick, color }) => {
-  const thumb = item.data?.url || item.image;
+  const thumb = item.data?.url || undefined;
   const accentColor = color || '#6366f1';
   
   // Detect file type for icon fallback

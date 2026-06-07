@@ -117,7 +117,7 @@ export const executeAiTool = async (toolCall: any, store: any) => {
             type: t.type,
             description: t.description,
             content: data?.type === 'text' ? data.content : (t as any).content,
-            url: data?.type === 'file' ? data.url : (t as any).image,
+            url: data?.type === 'file' ? data.url : undefined,
             tasks: data?.type === 'tasks' ? data.tasks : (t.type === 'tasks' ? (t as any).tasks : undefined),
             table: data?.type === 'table' ? data.rows : (t.type === 'table' ? (t as any).table : undefined),
             drawing: data?.type === 'paint' ? data.drawing : (t.type === 'paint' ? (t as any).drawing : undefined),

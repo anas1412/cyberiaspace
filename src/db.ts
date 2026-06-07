@@ -103,7 +103,6 @@ interface Thought {
   order: number;
   layer?: number;
   author: string;
-  image?: string | null; // Deprecated: use data.url for file thoughts
   meta?: any;
   updatedAt?: number | null;
 
@@ -195,6 +194,17 @@ db.version(20).stores({
 db.version(21).stores({
   chatConversations: 'id, spaceId',
   chatHistory: 'id, spaceId, [spaceId+conversationId], timestamp'
+});
+
+// Version 22: Remove syncStatus from schema (local-only, no sync)
+db.version(22).stores({
+  spaces: 'id, userId, name, order, deletedAt, updatedAt',
+  thoughts: 'id, userId, spaceId, stackId, text, type, status, startTime, endTime, priority, order, author, deletedAt, updatedAt',
+  stacks: 'id, userId, spaceId, name, deletedAt, updatedAt',
+  blobs: 'id, thoughtId, userId',
+  chatHistory: 'id, spaceId, [spaceId+conversationId], timestamp',
+  spaceBackgrounds: 'id, spaceId, userId',
+  chatConversations: 'id, spaceId'
 });
 
 export type { Space, Thought, Stack, ChatMessage, ChatConversation };

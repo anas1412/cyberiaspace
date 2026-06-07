@@ -91,7 +91,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
   const totalThoughtCount = useStore((state) => state.totalThoughtCount);
   const { openModal } = useModalStore();
 
-  // Sync local personality state from localStorage
+  // Load local personality state from localStorage
   useEffect(() => {
     const stored = localStorage.getItem('cyberia-ai-personality') || '';
     setLocalPersonality(stored);

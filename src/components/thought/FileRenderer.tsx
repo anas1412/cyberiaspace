@@ -54,7 +54,7 @@ export const FileRenderer: React.FC<FileRendererProps> = ({ thought }) => {
     return <FileIcon className="w-8 h-8 text-[var(--text-muted)]" />;
   };
 
-  // Use local blob only - if sync didn't download it, cloud won't work either
+  // Use local blob only
   const activeSource = localUrl || image;
   const hasContent = !!activeSource;
 

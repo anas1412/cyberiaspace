@@ -107,7 +107,7 @@ const StackItemThumbnail: React.FC<{
   const ItemIcon = itemConfig.icon;
   const thumb = item.data?.url && itemInfo.provider === 'youtube' && itemInfo.id
     ? `https://img.youtube.com/vi/${itemInfo.id}/mqdefault.jpg`
-    : (item.data?.url || item.image);
+    : (item.data?.url || undefined);
 
   const accentColor = color || '#6366f1';
 

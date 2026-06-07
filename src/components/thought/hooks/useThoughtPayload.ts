@@ -40,7 +40,6 @@ export function useThoughtPayload(thought: Thought | null | undefined): UseThoug
     const legacyContent = raw.content || '';
     const legacyTasks = raw.tasks || [];
     const legacyTable = raw.table || [];
-    const legacyImage = raw.image || null;
     const legacyDrawing = raw.drawing || null;
 
     // Modular fields
@@ -48,7 +47,7 @@ export function useThoughtPayload(thought: Thought | null | undefined): UseThoug
     const modTasks = data.type === 'tasks' ? data.tasks : [];
     const modTable = data.type === 'table' ? data.rows : [];
     
-    const modImage = data.type === 'file' ? (data.url || null) : (thought.image || null);
+    const modImage = data.type === 'file' ? data.url : null;
     const modDrawing = data.type === 'paint' ? data.drawing : null;
 
     // NORMALIZE FILE INFO
@@ -64,7 +63,7 @@ export function useThoughtPayload(thought: Thought | null | undefined): UseThoug
     // Prioritize MIME type if available, then fallback to extension, then fallback to presence of image URL
     const isAudio = fileInfo?.isAudio ?? (mimeType.startsWith('audio/') || ['mp3', 'wav', 'ogg', 'm4a', 'aac', 'flac'].includes(extension));
     const isVideo = fileInfo?.isVideo ?? ((mimeType.startsWith('video/') || ['mp4', 'webm', 'mov', 'm4v'].includes(extension)) && !isAudio);
-    const isImage = fileInfo?.isImage ?? ((mimeType.startsWith('image/') || ['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg'].includes(extension) || !!thought.image) && !isAudio && !isVideo);
+    const isImage = fileInfo?.isImage ?? ((mimeType.startsWith('image/') || ['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg'].includes(extension)) && !isAudio && !isVideo);
     const isPdf = fileInfo?.isPdf ?? (mimeType.includes('pdf') || extension === 'pdf');
 
     return {

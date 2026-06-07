@@ -107,7 +107,7 @@ function constructDataFromLegacy(t: Thought): ThoughtPayload {
     case 'file':
       return { 
         type: 'file', 
-        url: (t as any).image || '', 
+        url: '', 
         name: t.text || 'Untitled',
         size: (t.meta as any)?.file?.size || 0,
         meta: t.meta

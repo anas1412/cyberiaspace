@@ -852,7 +852,7 @@ const InlineFileEditor: React.FC<InlineFileEditorProps> = ({ thought, groupThoug
   const hasNext = currentIdx < groupThoughtIds.length - 1;
 
   const renderContent = () => {
-    // Use local blob only - if sync didn't download it, cloud won't work either
+    // Use local blob only
     const source = localUrl;
     
     if (!source) {
