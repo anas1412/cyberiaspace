@@ -49,10 +49,10 @@ const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
 
 /** Minimal fallback in case fetching fails */
 const FALLBACK_MODELS: ModelOption[] = [
-  { id: 'openai/gpt-5.5', name: 'GPT 5.5', desc: 'OpenAI flagship' },
+  { id: 'openai/gpt-5.5', name: 'GPT 5.5', desc: 'OpenAI flagship', supportsTools: true },
 ];
 
-export type ModelOption = { id: string; name: string; desc: string; promptPrice?: number; completionPrice?: number };
+export type ModelOption = { id: string; name: string; desc: string; promptPrice?: number; completionPrice?: number; supportsTools: boolean };
 
 function formatPrice(price: number | undefined | null): string {
   if (price == null) return '';
@@ -133,9 +133,11 @@ const ChatOverlay: React.FC = () => {
         .then(r => r.json())
         .then((data: ModelOption[]) => {
           if (Array.isArray(data) && data.length > 0) {
-            cachedModels = data;
+            // Default supportsTools to true for override data (assume custom list is curated)
+            const withTools = data.map(m => ({ ...m, supportsTools: m.supportsTools ?? true }));
+            cachedModels = withTools;
             cachedModelsAt = Date.now();
-            setAvailableModels(data);
+            setAvailableModels(withTools);
           }
         })
         .catch(err => console.error('[AI] Failed to load models from override URL:', err))
@@ -156,11 +158,11 @@ const ChatOverlay: React.FC = () => {
         if (!r.ok) throw new Error(`OpenRouter API ${r.status}`);
         return r.json();
       })
-      .then((res: { data: { id: string; name: string; description?: string; pricing?: { prompt?: number | string; completion?: number | string } }[] }) => {
+      .then((res: { data: { id: string; name: string; description?: string; supported_parameters?: string[]; pricing?: { prompt?: number | string; completion?: number | string } }[] }) => {
         if (!res.data || !Array.isArray(res.data) || res.data.length === 0) {
           throw new Error('Empty model list');
         }
-        const mapped: ModelOption[] = res.data.map(m => ({
+        const allMapped: ModelOption[] = res.data.map(m => ({
           id: m.id,
           name: m.name,
           desc: m.description
@@ -171,7 +173,9 @@ const ChatOverlay: React.FC = () => {
           // API returns per-token prices; multiply by 1M for the standard per-1M display
           promptPrice: m.pricing?.prompt != null ? Number(m.pricing.prompt) * 1_000_000 : undefined,
           completionPrice: m.pricing?.completion != null ? Number(m.pricing.completion) * 1_000_000 : undefined,
+          supportsTools: Array.isArray(m.supported_parameters) && m.supported_parameters.includes('tools'),
         }));
+        const mapped = allMapped.filter(m => m.supportsTools);
         cachedModels = mapped;
         cachedModelsAt = Date.now();
         setAvailableModels(mapped);
