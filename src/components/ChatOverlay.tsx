@@ -167,8 +167,9 @@ const ChatOverlay: React.FC = () => {
               ? m.description.slice(0, 77) + '...'
               : m.description
             : '',
-          promptPrice: m.pricing?.prompt != null ? Number(m.pricing.prompt) : undefined,
-          completionPrice: m.pricing?.completion != null ? Number(m.pricing.completion) : undefined,
+          // API returns per-token prices; multiply by 1M for the standard per-1M display
+          promptPrice: m.pricing?.prompt != null ? Number(m.pricing.prompt) * 1_000_000 : undefined,
+          completionPrice: m.pricing?.completion != null ? Number(m.pricing.completion) * 1_000_000 : undefined,
         }));
         cachedModels = mapped;
         cachedModelsAt = Date.now();
