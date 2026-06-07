@@ -25,6 +25,18 @@ function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
 
+// Strips raw tool call syntax and internal IDs from AI responses
+const sanitizeAssistantContent = (content: string): string => {
+  // Remove lines that are standalone tool call invocations (e.g. `create_stack({...})`)
+  const toolCallPattern = /^(?:const\s+\w+\s*=\s*)?(?:create_thought|create_thoughts|create_stack|link_thoughts|unlink_thoughts|update_thought|update_thoughts|delete_thoughts|delete_stack|delete_stacks|get_thought_details|read_file_content|read_files_content|update_stack|update_stacks|map_stack_to_thought)\s*\([\s\S]*?\)\s*;?\s*$/gm;
+  let sanitized = content.replace(toolCallPattern, '').trim();
+
+  // Remove any lines that are just JSON-like tool call objects in code blocks
+  sanitized = sanitized.replace(/```(?:json|js)?\s*\n\s*\{[^}]*?"toolName"[^}]*?\}\s*\n```\s*/g, '');
+
+  return sanitized;
+};
+
 type Message = ChatMessage;
 
 // BYOK API key management
@@ -653,6 +665,9 @@ const ChatOverlay: React.FC = () => {
       });
 
       if (assistantContent.trim()) {
+        const sanitized = sanitizeAssistantContent(assistantContent);
+        assistantMsg.content = sanitized;
+        setMessages(prev => prev.map(m => m.id === assistantMsg.id ? { ...m, content: sanitized } : m));
         saveMessage(assistantMsg);
       }
     } catch (err: any) {
@@ -839,11 +854,22 @@ const ChatOverlay: React.FC = () => {
 
     // Build system prompt
     const systemPrompt = store.aiChatMode === 'action'
-      ? `You are Cyberia AI in ACTION mode. You have tools to create, read, update, and delete thoughts and stacks. The user can tag thoughts with @name and stacks with #name. Current time: ${new Date().toLocaleString()}. Workspace context: ${contextString || 'Provided via references'}. Use tools to fulfill the user's request.
+      ? `You are Cyberia AI in ACTION mode on a spatial-thinking canvas. You have tools to create, read, update, and delete thoughts and stacks. The user can tag thoughts with @name and stacks with #name. Current time: ${new Date().toLocaleString()}. Workspace context: ${contextString || 'Provided via references'}. Use tools to fulfill the user's request.
+
+AVAILABLE TOOLS (use the exact function name):
+- create_stack(ids: string[], name: string) — Link thoughts (by their IDs) into a new or existing stack
+- create_thought(text: string, type?: string, stackName?: string, status?: string, priority?: string) — Create a single thought
+- create_thoughts(items: array of {text, type?, stackName?, ...}) — Create multiple thoughts at once
+- update_thought(id: string, text?: string, stackName?: string, ...) — Update a thought's properties
+- delete_thoughts(ids: string[]) — Delete thoughts by their IDs
+- get_thought_details(ids: string[]) — Get full details of specific thoughts
+
+To use a tool, call it as a one-line JavaScript function with JSON-like arguments. Only call ONE tool at a time and wait before proceeding.
 
 IMPORTANT RULES:
 - NEVER show internal IDs to the user. Always refer to thoughts by their text/name or use descriptive labels.
-- When listing or grouping thoughts, use their text content — not their internal ID.` 
+- When listing or grouping thoughts, use their text content — not their internal ID.
+- After completing tool actions, summarize what you did in plain language — do NOT show the raw tool call syntax.` 
 
       : `You are Cyberia AI in CHAT mode (read-only). The user can tag thoughts with @name and stacks with #name. Current time: ${new Date().toLocaleString()}. Workspace context: ${contextString || 'Provided via references'}. You can read thoughts but CANNOT modify them.
 
@@ -881,6 +907,9 @@ IMPORTANT RULES:
       });
 
       if (assistantContent.trim()) {
+        const sanitized = sanitizeAssistantContent(assistantContent);
+        assistantMsg.content = sanitized;
+        setMessages(prev => prev.map(m => m.id === assistantMsg.id ? { ...m, content: sanitized } : m));
         saveMessage(assistantMsg);
       }
     } catch (err: any) {
