@@ -3,7 +3,7 @@ import { type Thought } from '../../db';
 import { PRIO_COLORS } from './constants';
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
-import { Globe } from 'lucide-react';
+
 
 function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -38,15 +38,7 @@ export const ThoughtHeader: React.FC<ThoughtHeaderProps> = ({ thought, isCalenda
         </p>
       </div>
 
-      <div className="flex items-center gap-1.5 flex-shrink-0 mt-0.5">
-        {thought.type === 'file' && (
-          <div className="flex items-center justify-center ml-1">
-            <div className="w-3 h-3 flex items-center justify-center rounded-full bg-green-500/10 border border-green-500/20 shadow-[0_0_8px_rgba(34,197,94,0.2)]">
-              <Globe className="w-2 h-2 text-green-500 opacity-80" />
-            </div>
-          </div>
-        )}
-      </div>
+
     </div>
   );
 };
