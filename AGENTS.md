@@ -7,9 +7,10 @@ Welcome to the **Cyberia** codebase! This is a modern, high-performance **visual
 ##  Commands
 
 ### Build & Lint
-- **Build:** `npm run build` (Runs TypeScript type-checking followed by Vite build)
-- **Lint:** `npm run lint` (Uses ESLint with TypeScript and React Refresh rules)
-- **Dev:** `npm run dev` (Starts the Vite development server)
+- **Build:** `bun run build` (Runs TypeScript type-checking followed by Vite build)
+- **Lint:** `bun run lint` (Uses ESLint with TypeScript and React Refresh rules)
+- **Dev:** `bun run dev` (Starts the Vite development server)
+- **Add package:** `bun add <package>`
 
 ### Testing
 - No standard test suite (Jest/Vitest) is currently configured.
