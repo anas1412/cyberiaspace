@@ -19,7 +19,7 @@ const PrivacyPolicy: React.FC = () => {
       icon: <Shield className="w-5 h-5 text-blue-400" />,
       content: (
         <p className="leading-relaxed text-[var(--text-muted)]">
-          Cyberia (&quot;we,&quot; &quot;our,&quot; or &quot;us&quot;) is committed to protecting your privacy. This Privacy Policy explains how we handle your information when you use our application. Cyberia is a local-first, open-source application — your data stays on your device. Please read this policy carefully.
+          Cyberia (&quot;we,&quot; &quot;our,&quot; or &quot;us&quot;) is committed to protecting your privacy. This Privacy Policy explains how we handle your information when you use our application. Cyberia is a local, open-source application — your data stays on your device. Please read this policy carefully.
         </p>
       )
     },
@@ -46,7 +46,7 @@ const PrivacyPolicy: React.FC = () => {
       content: (
         <>
           <p className="leading-relaxed text-[var(--text-dimmed)]">
-            Cyberia is built on a local-first architecture. All your data — thoughts, files, spaces, settings — is stored in your browser&apos;s IndexedDB database. Nothing is uploaded to any server. You own your data completely.
+            Cyberia is built on a local architecture. All your data — thoughts, files, spaces, settings — is stored in your browser&apos;s IndexedDB database. Nothing is uploaded to any server. You own your data completely.
           </p>
           <p className="leading-relaxed text-sm text-[var(--text-muted)] mt-2">
             No account is required. No cloud storage is used. Your workspace stays on your machine and is never transmitted to us.

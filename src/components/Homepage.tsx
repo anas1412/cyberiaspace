@@ -101,7 +101,7 @@ const FAQ_ITEMS = [
   },
   {
     question: 'Is my data private?',
-    answer: 'Absolutely. Cyberia is 100% local-first. Your workspace lives entirely on your device — nothing is uploaded anywhere without your explicit action. Your thoughts, files, and ideas remain under your control at all times.'
+    answer: 'Absolutely. Cyberia is 100% local. Your workspace lives entirely on your device — nothing is uploaded anywhere without your explicit action. Your thoughts, files, and ideas remain under your control at all times.'
   },
   {
     question: 'Is it really free?',
@@ -348,7 +348,7 @@ const Homepage: React.FC = () => {
               {[
                 { pain: 'My notes are scattered across different apps and folders.', solution: 'One infinite canvas where everything lives together, connected naturally.' },
                 { pain: 'I spend more time organizing my notes than actually thinking.', solution: 'Thoughts are physical objects. Move them, stack them, connect them — just like things on your desk.' },
-                { pain: 'I don\'t want my data uploaded to someone else\'s cloud.', solution: '100% local-first. Your data stays on your device, always under your control.' },
+                { pain: 'I don\'t want my data uploaded to someone else\'s cloud.', solution: '100% local. Your data stays on your device, always under your control.' },
                 { pain: 'AI tools are locked behind subscriptions I don\'t need.', solution: 'Bring your own API key. Only pay for what you use, directly to the model provider.' }
               ].map((item, i) => (
                 <motion.div
@@ -598,7 +598,7 @@ const Homepage: React.FC = () => {
                 Start thinking in space
               </h2>
               <p className="text-[var(--text-muted)] text-lg mb-10 max-w-lg mx-auto">
-                Free, open-source, local-first. Your canvas, your data, your AI.
+                Free, open-source, local. Your canvas, your data, your AI.
                 Get started instantly.
               </p>
               <div className="flex flex-col sm:flex-row items-center justify-center gap-4">

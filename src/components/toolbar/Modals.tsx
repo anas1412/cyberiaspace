@@ -799,7 +799,7 @@ export const HelpModal: React.FC<HelpModalProps> = ({
                 className="space-y-5"
               >
                 <h4 className="text-[11px] font-black text-[var(--text-primary)] uppercase tracking-wide">About Cyberia</h4>
-                <p className="text-xs text-[var(--text-muted)] leading-relaxed">A spatial workspace for non-linear thinking. Open source, local-first, runs entirely in your browser.</p>
+                <p className="text-xs text-[var(--text-muted)] leading-relaxed">A spatial workspace for non-linear thinking. Open source, local, runs entirely in your browser.</p>
 
                 <div className="pt-3 border-t border-[var(--glass-border)] space-y-2">
                   <p className="text-[9px] font-semibold uppercase tracking-wider text-[var(--text-muted)]">Community & Resources</p>
