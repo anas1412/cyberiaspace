@@ -42,8 +42,12 @@ const setStoredApiKey = (key: string) => {
   } catch { /* noop */ }
 };
 
-// Common free/cheap OpenRouter models
-/** Minimal fallback in case the models JSON fails to load */
+// Cache models across panel open/close (module-level)
+let cachedModels: ModelOption[] | null = null;
+let cachedModelsAt: number = 0;
+const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
+
+/** Minimal fallback in case fetching fails */
 const FALLBACK_MODELS: ModelOption[] = [
   { id: 'openai/gpt-5.5', name: 'GPT 5.5', desc: 'OpenAI flagship' },
 ];
@@ -101,19 +105,72 @@ const ChatOverlay: React.FC = () => {
     if (!showModelDropdown) setModelSearch('');
   }, [showModelDropdown]);
 
-  // Fetch models from JSON at runtime — override URL via localStorage key 'cyberia-models-url'
+  // Fetch models live from OpenRouter API (with module-level cache)
   useEffect(() => {
-    const url = localStorage.getItem('cyberia-models-url') || '/available-models.json';
-    fetch(url)
-      .then(r => r.json())
-      .then((data: ModelOption[]) => {
-        if (Array.isArray(data) && data.length > 0) {
-          setAvailableModels(data);
+    // 1. Use cached models if still fresh
+    if (cachedModels && Date.now() - cachedModelsAt < CACHE_TTL) {
+      setAvailableModels(cachedModels);
+      setModelsLoaded(true);
+      return;
+    }
+
+    // 2. Allow override URL via localStorage (for testing/power users)
+    const overrideUrl = localStorage.getItem('cyberia-models-url');
+
+    if (overrideUrl) {
+      fetch(overrideUrl)
+        .then(r => r.json())
+        .then((data: ModelOption[]) => {
+          if (Array.isArray(data) && data.length > 0) {
+            cachedModels = data;
+            cachedModelsAt = Date.now();
+            setAvailableModels(data);
+          }
+        })
+        .catch(err => console.error('[AI] Failed to load models from override URL:', err))
+        .finally(() => setModelsLoaded(true));
+      return;
+    }
+
+    // 3. Live fetch from OpenRouter
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json',
+    };
+    if (apiKey) {
+      headers['Authorization'] = `Bearer ${apiKey}`;
+    }
+
+    fetch('https://openrouter.ai/api/v1/models', { headers })
+      .then(r => {
+        if (!r.ok) throw new Error(`OpenRouter API ${r.status}`);
+        return r.json();
+      })
+      .then((res: { data: { id: string; name: string; description?: string }[] }) => {
+        if (!res.data || !Array.isArray(res.data) || res.data.length === 0) {
+          throw new Error('Empty model list');
+        }
+        const mapped: ModelOption[] = res.data.map(m => ({
+          id: m.id,
+          name: m.name,
+          desc: m.description
+            ? m.description.length > 80
+              ? m.description.slice(0, 77) + '...'
+              : m.description
+            : '',
+        }));
+        cachedModels = mapped;
+        cachedModelsAt = Date.now();
+        setAvailableModels(mapped);
+      })
+      .catch(err => {
+        console.error('[AI] Failed to fetch models from OpenRouter:', err);
+        // Try to serve stale cache or fall back
+        if (cachedModels) {
+          setAvailableModels(cachedModels);
         }
       })
-      .catch(err => console.error('[AI] Failed to load models:', err))
       .finally(() => setModelsLoaded(true));
-  }, []);
+  }, [apiKey]);
 
   // Set default model once loaded if nothing saved
   useEffect(() => {
