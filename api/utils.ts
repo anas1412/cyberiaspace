@@ -24,7 +24,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             return handleOembed(req, res);
         case 'proxy-video':
             return handleProxyVideo(req, res);
-
+        case 'youtube-search':
+            return handleYoutubeSearch(req, res);
         default:
             return res.status(400).json({ error: 'Invalid action' });
     }
@@ -327,4 +328,48 @@ async function handleProxyVideo(req: VercelRequest, res: VercelResponse) {
     }
 }
 
+async function handleYoutubeSearch(req: VercelRequest, res: VercelResponse) {
+    const query = req.query.q as string;
+    const maxResults = parseInt(req.query.maxResults as string) || 5;
 
+    if (!query) return res.status(400).json({ error: "Missing query parameter 'q'" });
+
+    try {
+        const apiKey = process.env.YOUTUBE_API_KEY;
+        if (!apiKey) {
+            console.error("YOUTUBE_API_KEY is not defined");
+            return res.status(500).json({ error: "Server configuration error", message: "Missing YouTube API Key on server." });
+        }
+
+        const url = `https://www.googleapis.com/youtube/v3/search?part=snippet&type=video&maxResults=${maxResults}&q=${encodeURIComponent(query)}&key=${apiKey}`;
+        const response = await fetch(url);
+        const data = await response.json() as any;
+
+        if (!response.ok) {
+            console.error("YouTube API returned an error:", data);
+            return res.status(response.status).json({
+                error: "YouTube API Error",
+                message: data.error?.message || "Forbidden",
+                reason: data.error?.errors?.[0]?.reason || "unknown"
+            });
+        }
+
+        const items = data.items || [];
+        const cleanedResults = items
+            .filter((item: any) => item.id && item.id.videoId)
+            .map((item: any) => ({
+                title: item.snippet.title,
+                url: `https://www.youtube.com/watch?v=${item.id.videoId}`,
+                author: item.snippet.channelTitle,
+                description: item.snippet.description
+                    ? item.snippet.description.substring(0, 160) + "..."
+                    : "No description available."
+            }));
+
+        return res.status(200).json({ results: cleanedResults, count: cleanedResults.length });
+
+    } catch (err: any) {
+        console.error("Internal Script Error in youtube-search.ts:", err);
+        return res.status(500).json({ error: "Internal Server Error", message: err.message || "An unexpected error occurred." });
+    }
+}

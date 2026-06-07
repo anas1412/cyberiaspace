@@ -107,7 +107,6 @@ interface Thought {
   author: string;
   image?: string | null; // Deprecated: use data.url for file thoughts
   meta?: any;
-
   updatedAt?: number | null;
 
   // Modular Payload (Discriminated Union)
