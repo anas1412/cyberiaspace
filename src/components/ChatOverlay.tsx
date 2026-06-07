@@ -907,7 +907,7 @@ AVAILABLE TOOLS (use the exact function name):
 
 CRITICAL: Tool call parameters MUST include thought IDs from the workspace context. The 'ids' parameter in tools like 'create_stack' requires specific thought IDs — scan the context JSON and pick the right ones. Without IDs the tool will fail.
 
-CRITICAL — NEVER show internal thought IDs to the user. Always refer to thoughts by their text content, not their raw ID. IDs are internal identifiers the user should never see.
+CRITICAL — In your written response to the user, never use raw IDs in natural language. Reference thoughts by their text content or title. (Tool call parameters naturally contain IDs — that's fine, they're just code.)
 
 IMPORTANT RULES:
 - ✅ Tool calls MUST include IDs (they are required parameters — the system needs them to know which thoughts to act on; they never reach the user)
