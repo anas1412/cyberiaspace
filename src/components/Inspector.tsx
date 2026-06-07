@@ -541,7 +541,7 @@ className={cn(
                               onKeyDown={(e) => {
                                 if (e.key === 'Enter' && e.currentTarget.value.trim()) {
                                   const name = e.currentTarget.value.trim();
-                                  const existingStack = stacks.find(s => s.name.toLowerCase() === name.toLowerCase());
+                                  const existingStack = stacks.find(s => s.name.toLowerCase() === name.toLowerCase() && !s.deletedAt);
                                   if (existingStack) {
                                     updateThought(thought.id, { stackId: existingStack.id });
                                   } else {
@@ -554,11 +554,11 @@ className={cn(
                             />
                           </div>
 
-                          {stacks.length > 0 && (
+                          {stacks.filter(s => !s.deletedAt).length > 0 && (
                             <div className="space-y-2">
                               <label className="text-[9px] uppercase font-bold tracking-[0.2em] text-[var(--text-muted)] ml-1">Existing Groups</label>
                               <div className="flex flex-col gap-1 max-h-[160px] overflow-y-auto custom-scroll pr-1">
-                                {stacks.map(s => (
+                                {stacks.filter(s => !s.deletedAt).map(s => (
                                   <div key={s.id} className="relative group/s">
 <button
                                        onClick={() => updateThought(thought.id, { stackId: s.id })}

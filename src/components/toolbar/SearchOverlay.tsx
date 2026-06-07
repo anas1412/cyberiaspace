@@ -81,7 +81,7 @@ export const SearchOverlay: React.FC<SearchOverlayProps> = ({ isOpen, onClose })
   const stacks = useStore((state) => state.stacks);
   const activeSpaceId = useStore((state) => state.activeSpaceId);
   const isReadOnly = useStore((state) => state.isReadOnly);
-  const activeStacks = isReadOnly ? stacks : stacks.filter(s => s.spaceId === activeSpaceId);
+  const activeStacks = isReadOnly ? stacks : stacks.filter(s => s.spaceId === activeSpaceId && !s.deletedAt);
 
   // Mode-specific search
   const spatialSearchQuery = useStore((state) => state.spatialSearchQuery);

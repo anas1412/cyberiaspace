@@ -36,7 +36,7 @@ export const ViewFilterBar: React.FC<ViewFilterBarProps> = ({
   const isReadOnly = useStore((state) => state.isReadOnly);
 
   const reelRef = useRef<HTMLDivElement>(null);
-  const activeStacks = isReadOnly ? stacks : stacks.filter(s => s.spaceId === activeSpaceId);
+  const activeStacks = isReadOnly ? stacks : stacks.filter(s => s.spaceId === activeSpaceId && !s.deletedAt);
 
   // Enable horizontal scrolling with mouse wheel
   useEffect(() => {
