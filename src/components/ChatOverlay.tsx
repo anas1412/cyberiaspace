@@ -1084,7 +1084,7 @@ const ChatOverlay: React.FC = () => {
                           )}
                           title="Show free models only"
                         >
-                          <span className={freeOnly ? "opacity-100" : "opacity-50"}>$0</span>
+                          <span className={freeOnly ? "opacity-100" : "opacity-50"}>FREE</span>
                         </button>
                       </div>
                       
