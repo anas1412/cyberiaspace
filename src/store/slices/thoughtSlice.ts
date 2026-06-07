@@ -611,32 +611,4 @@ export const createThoughtSlice: StateCreator<CyberiaState, [], [], any> = (set,
     get().pushHistory();
   },
 
-  scatterThoughts: async (spaceId?: string) => {
-    const targetId = spaceId || get().activeSpaceId;
-    if (!targetId || get().isReadOnly) return;
-
-    const currentUserId = 'guest';
-    const thoughts = await db.thoughts
-      .filter((t: any) => t.spaceId === targetId && t.userId === currentUserId && !t.deletedAt && !t.archivedAt)
-      .toArray();
-
-    if (thoughts.length < 2) return;
-
-    const updates = thoughts.map(t => ({
-      id: t.id,
-      updates: {
-        x: t.x + (Math.random() - 0.5) * 40,
-        y: t.y + (Math.random() - 0.5) * 40,
-        updatedAt: Date.now(),
-      }
-    }));
-
-    await db.transaction('rw', db.thoughts, async () => {
-      for (const { id, updates: u } of updates) {
-        await db.thoughts.update(id, u);
-      }
-    });
-
-    await get().refreshThoughts(targetId);
-  },
 });

@@ -56,7 +56,6 @@ interface Space {
   mode: 'spatial' | 'kanban' | 'calendar' | 'directory';
   physics: boolean;
   order: number;
-  isOnboarding?: boolean;
   deletedAt?: number | null;
   transformX?: number;
   transformY?: number;
@@ -72,7 +71,6 @@ interface Stack {
   userId: string;
   color: string;
   spaceId: string;
-  isOnboarding?: boolean;
   deletedAt?: number | null;
   updatedAt?: number | null;
 }

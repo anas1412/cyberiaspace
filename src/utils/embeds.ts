@@ -3,6 +3,8 @@
  * Supports YouTube, Spotify, Twitter, Reddit, and more.
  */
 
+import { getYouTubeVideoId } from './youtube';
+
 export type EmbedProvider = 'youtube' | 'spotify' | 'twitter' | 'reddit' | 'facebook' | 'instagram' | 'tiktok' | 'unknown';
 
 export interface EmbedInfo {
@@ -28,12 +30,10 @@ export interface EmbedMeta {
 export const getEmbedInfo = (url: string): EmbedInfo => {
   if (!url) return { provider: 'unknown', id: null, url: '' };
 
-  // YouTube
-  const ytRegex = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|&v=)([^#&?]*).*/;
-  const ytMatch = url.match(ytRegex);
-  // Fix: Safe guard for length check
-  if (ytMatch && ytMatch[2] && ytMatch[2].length === 11) {
-    return { provider: 'youtube', id: ytMatch[2], url };
+  // YouTube (uses shared utility from youtube.ts)
+  const ytId = getYouTubeVideoId(url);
+  if (ytId) {
+    return { provider: 'youtube', id: ytId, url };
   }
 
   // Spotify

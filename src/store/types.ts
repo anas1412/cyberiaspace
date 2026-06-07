@@ -68,7 +68,6 @@ export interface CyberiaState {
   refreshTotalThoughtCount: () => Promise<void>;
   refreshSpaces: () => Promise<void>;
   refreshThoughts: (spaceId?: string) => Promise<void>;
-  scatterThoughts: (spaceId?: string) => Promise<void>;
   refreshStacks: (spaceId?: string) => Promise<void>;
   pushHistory: () => void;
   undo: () => void;
