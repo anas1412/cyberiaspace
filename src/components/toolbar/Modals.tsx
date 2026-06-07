@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { 
   CheckCircle, MessageSquare, Loader2, Send, MousePointer2,
   Palette, Database, HelpCircle, Laptop, Download, Upload, 
-  Camera, RefreshCw, Trash2, X, Info, ExternalLink,
+  Camera, Trash2, X, Info, ExternalLink,
   FileText, Smartphone, Github
 } from 'lucide-react';
 import { clsx, type ClassValue } from 'clsx';
@@ -700,31 +700,6 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                   </div>
                 </section>
 
-                {/* Data Management */}
-                <section>
-                  <p className="text-[10px] font-semibold tracking-wide text-red-500/50 mb-4 flex items-center gap-2">
-                    <RefreshCw className="w-3.5 h-3.5" /> Data Management
-                  </p>
-                  <button
-                    onClick={async () => {
-                      openModal({
-                        type: 'alert',
-                        title: '⚠️ Clear All Local Data?',
-                        description: 'This will permanently delete all your local data, including all spaces and thoughts. This cannot be undone.',
-                        confirmText: 'Clear Everything',
-                        cancelText: 'Cancel',
-                        onConfirm: () => {
-                          useStore.getState().clearWorkspaceData();
-                        }
-                      });
-                    }}
-                    className="w-full flex flex-col items-start gap-1 p-5 rounded-2xl bg-[var(--bg-page)] border border-[var(--glass-border)] hover:bg-red-500/5 hover:border-red-500/20 transition-all group"
-                  >
-                    <Trash2 className="w-4 h-4 text-[var(--text-muted)] group-hover:text-red-400 transition-colors" />
-                    <p className="text-[10px] font-semibold tracking-wide text-[var(--text-dimmed)] group-hover:text-red-400 mt-2">Clear All Data</p>
-                    <p className="text-[8px] font-medium text-[var(--text-muted)] uppercase tracking-wide leading-relaxed mt-1">Permanently delete everything</p>
-                  </button>
-                </section>
               </motion.div>
             )}
           </AnimatePresence>

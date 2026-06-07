@@ -167,5 +167,4 @@ export interface CyberiaState {
   isLocalWorkspaceEmpty: () => Promise<boolean>;
   migrateLegacyData: (userId: string) => Promise<void>;
   ensureWorkspaceForCurrentUser: () => Promise<void>;
-  clearWorkspaceData: () => void;
 }

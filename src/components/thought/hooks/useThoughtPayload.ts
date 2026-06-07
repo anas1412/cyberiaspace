@@ -48,7 +48,6 @@ export function useThoughtPayload(thought: Thought | null | undefined): UseThoug
     const modTasks = data.type === 'tasks' ? data.tasks : [];
     const modTable = data.type === 'table' ? data.rows : [];
     
-    // FALLBACK: Use thought.storageUrl if modular data.url is empty for files
     const modImage = data.type === 'file' ? (data.url || null) : (thought.image || null);
     const modDrawing = data.type === 'paint' ? data.drawing : null;
 

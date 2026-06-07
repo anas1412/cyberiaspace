@@ -296,11 +296,4 @@ export const createDataSlice: StateCreator<CyberiaState, [], [], any> = (set, ge
     });
   },
 
-  clearWorkspaceData: () => {
-    set({
-      thoughts: [],
-      spaces: [],
-      stacks: []
-    });
-  },
 });

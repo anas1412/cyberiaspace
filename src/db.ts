@@ -171,7 +171,7 @@ db.on('versionchange', () => {
 // Version 17: Base schema
 db.version(17).stores({
   spaces: 'id, userId, name, order, syncStatus, deletedAt, updatedAt',
-  thoughts: 'id, userId, spaceId, stackId, text, type, status, date, priority, order, author, storageUrl, syncStatus, deletedAt, updatedAt',
+   thoughts: 'id, userId, spaceId, stackId, text, type, status, date, priority, order, author, syncStatus, deletedAt, updatedAt',
   stacks: 'id, userId, spaceId, name, syncStatus, deletedAt, updatedAt',
   blobs: 'id, thoughtId, userId'
 });
@@ -183,7 +183,7 @@ db.version(18).stores({
 
 // Version 19: Added time-based fields
 db.version(19).stores({
-  thoughts: 'id, userId, spaceId, stackId, text, type, status, startTime, endTime, priority, order, author, storageUrl, syncStatus, deletedAt, updatedAt',
+   thoughts: 'id, userId, spaceId, stackId, text, type, status, startTime, endTime, priority, order, author, syncStatus, deletedAt, updatedAt',
 });
 
 // Version 20: Added spaceBackgrounds
