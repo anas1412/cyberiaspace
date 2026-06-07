@@ -109,10 +109,11 @@ const ChatOverlay: React.FC = () => {
   );
   const [showModelDropdown, setShowModelDropdown] = useState(false);
   const [modelSearch, setModelSearch] = useState('');
+  const [freeOnly, setFreeOnly] = useState(false);
 
-  // Reset search when dropdown closes
+  // Reset search/filter when dropdown closes
   useEffect(() => {
-    if (!showModelDropdown) setModelSearch('');
+    if (!showModelDropdown) { setModelSearch(''); setFreeOnly(false); }
   }, [showModelDropdown]);
 
   // Fetch models live from OpenRouter API (with module-level cache)
@@ -1062,7 +1063,7 @@ const ChatOverlay: React.FC = () => {
                       className="absolute top-full left-0 mt-2 w-full bg-[var(--bg-main)] rounded-2xl border border-[var(--glass-border)] shadow-2xl overflow-hidden z-[100]"
                     >
                       {/* Search */}
-                      <div className="relative border-b border-[var(--glass-border)]">
+                      <div className="relative flex items-center border-b border-[var(--glass-border)]">
                         <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-[var(--text-muted)] pointer-events-none" />
                         <input
                           ref={searchInputRef}
@@ -1071,19 +1072,30 @@ const ChatOverlay: React.FC = () => {
                           onChange={e => setModelSearch(e.target.value)}
                           placeholder="Search models..."
                           onKeyDown={e => { if (e.key === 'Escape') setShowModelDropdown(false); }}
-                          className="w-full bg-transparent pl-9 pr-3 py-2.5 text-[11px] text-[var(--text-primary)] placeholder:text-[var(--text-muted)] outline-none"
+                          className="flex-1 bg-transparent pl-9 pr-3 py-2.5 text-[11px] text-[var(--text-primary)] placeholder:text-[var(--text-muted)] outline-none"
                         />
+                        <button
+                          onClick={() => setFreeOnly(!freeOnly)}
+                          className={cn(
+                            "flex items-center gap-1 mr-2 px-2 py-1 rounded-lg text-[9px] font-bold uppercase tracking-wider border transition-all",
+                            freeOnly
+                              ? "bg-emerald-500/15 border-emerald-500/40 text-emerald-400"
+                              : "border-transparent text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--glass-bg)]"
+                          )}
+                          title="Show free models only"
+                        >
+                          <span className={freeOnly ? "opacity-100" : "opacity-50"}>$0</span>
+                        </button>
                       </div>
                       
                       <div className="py-0.5 max-h-[280px] overflow-y-auto custom-scroll">
                         {availableModels
-                          .filter(m =>
-                            !modelSearch ||
-                            m.name.toLowerCase().includes(modelSearch.toLowerCase()) ||
-                            m.id.toLowerCase().includes(modelSearch.toLowerCase()) ||
-                            (modelSearch.toLowerCase().includes('free') &&
-                              m.promptPrice === 0 && m.completionPrice === 0)
-                          )
+                          .filter(m => {
+                            if (freeOnly && !(m.promptPrice === 0 && m.completionPrice === 0)) return false;
+                            if (!modelSearch) return true;
+                            const q = modelSearch.toLowerCase();
+                            return m.name.toLowerCase().includes(q) || m.id.toLowerCase().includes(q);
+                          })
                           .map((model) => (
                           <button
                             key={model.id}
