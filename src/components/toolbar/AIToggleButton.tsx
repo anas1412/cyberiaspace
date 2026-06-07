@@ -35,7 +35,7 @@ export const AIToggleButton: React.FC = () => {
         <div className="absolute left-full ml-4 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-all duration-300 translate-x-2 group-hover:translate-x-0 pointer-events-none whitespace-nowrap z-[10001]">
           <div className="glass px-3 py-1.5 rounded-xl border border-[var(--glass-border)] flex items-center gap-2 shadow-2xl bg-[var(--bg-main)]/90 backdrop-blur-xl">
             <span className="text-[10px] font-semibold tracking-wide text-[var(--text-primary)]/90">
-              Open Oracle AI
+              Open Cyberia AI
             </span>
           </div>
         </div>

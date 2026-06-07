@@ -18,7 +18,7 @@ const STEP_LABELS: Record<number, { title: string; subtitle: string }> = {
   0: { title: 'Create Your Space', subtitle: 'Organize your ideas into separate workspaces for different projects' },
   1: { title: 'Add Your Thoughts', subtitle: 'Capture ideas, notes, documents, files and more in one place' },
   2: { title: 'Switch Views', subtitle: 'Spatial, Directory, Kanban, or Calendar — see your data your way' },
-  3: { title: 'Oracle AI', subtitle: 'Let AI organize your thoughts and generate summaries and tasks' },
+   3: { title: 'Cyberia AI', subtitle: 'Let AI organize your thoughts and generate summaries and tasks' },
 };
 
 const CANVAS_THOUGHTS = [
@@ -119,11 +119,11 @@ const HowItWorksVisual: React.FC<HowItWorksVisualProps> = ({
   const [showDirSidebar, setShowDirSidebar] = useState(false);
   const [showKanbanLabels, setShowKanbanLabels] = useState(false);
   const [showCalGrid, setShowCalGrid]       = useState(false);
-  const [showOracle, setShowOracle]         = useState(false);
+  const [showAi, setShowAi]               = useState(false);
   const [userText, setUserText]           = useState('');
   const [showUserMsg, setShowUserMsg]     = useState(false);
-  const [oracleText, setOracleText]       = useState('');
-  const [showOracleResponse, setShowOracleResponse] = useState(false);
+  const [aiText, setAiText]               = useState('');
+  const [showAiResponse, setShowAiResponse] = useState(false);
   const [showCursor, setShowCursor]         = useState(false);
   const [showLinks, setShowLinks]           = useState(false);
   const [showSpawnedLinks, setShowSpawnedLinks] = useState(false);
@@ -150,11 +150,11 @@ const HowItWorksVisual: React.FC<HowItWorksVisualProps> = ({
     setShowDirSidebar(false);
     setShowKanbanLabels(false);
     setShowCalGrid(false);
-    setShowOracle(false);
+    setShowAi(false);
     setUserText('');
     setShowUserMsg(false);
-    setOracleText('');
-    setShowOracleResponse(false);
+    setAiText('');
+    setShowAiResponse(false);
     setShowCursor(false);
     setShowLinks(false);
     setShowSpawnedLinks(false);
@@ -278,13 +278,13 @@ const HowItWorksVisual: React.FC<HowItWorksVisualProps> = ({
       setShowViewSwitcher(false);
     }
 
-    // ── Step 3: Oracle AI ────────────────────────────────────────────────────
+    // ── Step 3: Cyberia AI ──
     if (step === 3) {
       setVisibleThoughts(CANVAS_THOUGHTS.map(t => t.id));
       
       await sleep(500);
       if (cancelled()) return;
-      setShowOracle(true);
+      setShowAi(true);
 
       await sleep(600);
       if (cancelled()) return;
@@ -320,22 +320,22 @@ const HowItWorksVisual: React.FC<HowItWorksVisualProps> = ({
       if (cancelled()) return;
       setShowClustering(true);
 
-      // Show Oracle response (both messages visible now)
+      // Show AI response (both messages visible now)
       await sleep(600);
       if (cancelled()) return;
-      setShowOracleResponse(true);
+      setShowAiResponse(true);
 
       const responseText = "I've organized your research materials and created a summary with actionable tasks. You now have a clear overview and next steps.";
       for (let i = 0; i <= responseText.length; i++) {
         if (cancelled()) return;
-        setOracleText(responseText.slice(0, i));
+        setAiText(responseText.slice(0, i));
         await sleep(30);
       }
 
       await sleep(2000);
       if (cancelled()) return;
       setShowUserMsg(false);
-      setShowOracleResponse(false);
+      setShowAiResponse(false);
       setShowLinks(false);
       setShowSpawnedLinks(false);
       setShowClustering(false);
@@ -548,9 +548,9 @@ const HowItWorksVisual: React.FC<HowItWorksVisualProps> = ({
         )}
       </AnimatePresence>
 
-      {/* ── STEP 3: Oracle Chat ── */}
+      {/* ── STEP 3: AI Chat ── */}
       <AnimatePresence>
-        {(showOracle || showOracleResponse) && (
+        {(showAi || showAiResponse) && (
           <motion.div
             initial={{ opacity: 0, x: -36 }}
             animate={{ opacity: 1, x: 0 }}
@@ -565,7 +565,7 @@ const HowItWorksVisual: React.FC<HowItWorksVisualProps> = ({
                 <Cpu className="w-3 h-3" style={{ color: 'var(--accent)' }} />
               </div>
               <span className="text-[9px] font-black tracking-[0.2em] uppercase" style={{ color: 'var(--accent)' }}>
-                Oracle AI
+                Cyberia AI
               </span>
             </div>
             <div className="px-4 py-3 space-y-3">
@@ -602,16 +602,16 @@ const HowItWorksVisual: React.FC<HowItWorksVisualProps> = ({
                 )}
               </AnimatePresence>
 
-              {/* Oracle response bubble */}
+              {/* AI response bubble */}
               <AnimatePresence>
-                {showOracleResponse && (
+                {showAiResponse && (
                   <motion.div
                     initial={{ opacity: 0, y: 8 }}
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, y: -8 }}
                     className="space-y-1"
                   >
-                    <span className="text-[8px] font-semibold text-[var(--accent)] uppercase tracking-wider">Oracle AI</span>
+                    <span className="text-[8px] font-semibold text-[var(--accent)] uppercase tracking-wider">Cyberia AI</span>
                     <div
                       className="rounded-xl rounded-tl-sm px-3 py-2"
                       style={{
@@ -620,7 +620,7 @@ const HowItWorksVisual: React.FC<HowItWorksVisualProps> = ({
                       }}
                     >
                       <p className="text-[11px] text-[var(--text-primary)] font-medium leading-relaxed">
-                        {oracleText}
+                        {aiText}
                       </p>
                     </div>
                   </motion.div>

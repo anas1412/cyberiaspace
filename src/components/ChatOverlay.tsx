@@ -79,7 +79,7 @@ const ChatOverlay: React.FC = () => {
   const [availableModels, setAvailableModels] = useState<ModelOption[]>(FALLBACK_MODELS);
   const [modelsLoaded, setModelsLoaded] = useState(false);
   const [selectedModel, setSelectedModel] = useState(
-    () => localStorage.getItem('cyberia-oracle-model') || ''
+    () => localStorage.getItem('cyberia-ai-model') || ''
   );
   const [showModelDropdown, setShowModelDropdown] = useState(false);
   const [modelSearch, setModelSearch] = useState('');
@@ -99,7 +99,7 @@ const ChatOverlay: React.FC = () => {
           setAvailableModels(data);
         }
       })
-      .catch(err => console.error('[Oracle] Failed to load models:', err))
+      .catch(err => console.error('[AI] Failed to load models:', err))
       .finally(() => setModelsLoaded(true));
   }, []);
 
@@ -121,7 +121,7 @@ const ChatOverlay: React.FC = () => {
       setCopiedMessageId(msg.id);
       setTimeout(() => setCopiedMessageId(null), 2000);
     } catch (err) {
-      console.error('[Oracle] Failed to copy message:', err);
+      console.error('[AI] Failed to copy message:', err);
     }
   };
 
@@ -160,7 +160,7 @@ const ChatOverlay: React.FC = () => {
         .then(history => {
           setMessages(history as Message[]);
         })
-        .catch(err => console.error("[Oracle] Failed to load chat history:", err));
+        .catch(err => console.error("[AI] Failed to load chat history:", err));
     } else {
       setMessages([]);
     }
@@ -173,7 +173,7 @@ const ChatOverlay: React.FC = () => {
 
   // Save selected model
   useEffect(() => {
-    localStorage.setItem('cyberia-oracle-model', selectedModel);
+    localStorage.setItem('cyberia-ai-model', selectedModel);
   }, [selectedModel]);
 
   const saveMessage = async (msg: Message) => {
@@ -181,7 +181,7 @@ const ChatOverlay: React.FC = () => {
     try {
       await db.chatHistory.put(msg);
     } catch (err) {
-      console.error("[Oracle] Failed to save message:", err);
+      console.error("[AI] Failed to save message:", err);
     }
   };
 
@@ -424,7 +424,7 @@ const ChatOverlay: React.FC = () => {
     try {
       await db.chatHistory.where('id').equals(id).delete();
     } catch (err) {
-      console.error("[Oracle] Failed to delete message:", err);
+      console.error("[AI] Failed to delete message:", err);
     }
   };
 
@@ -457,7 +457,7 @@ const ChatOverlay: React.FC = () => {
         await db.chatHistory.where('id').equals(m.id).delete();
       }
     } catch (err) {
-      console.error("[Oracle] Failed to update message:", err);
+      console.error("[AI] Failed to update message:", err);
     }
 
     setMessages([...truncatedMessages, updatedMsg]);
@@ -498,7 +498,7 @@ const ChatOverlay: React.FC = () => {
       }
     } catch (err: any) {
       if (err.name !== 'AbortError') {
-        console.error('[Oracle] Error:', err);
+        console.error('[AI] Error:', err);
         const errorMsg: Message = {
           id: ulid(),
           spaceId: store.activeSpaceId,
@@ -537,7 +537,7 @@ const ChatOverlay: React.FC = () => {
     try {
       resolvedReferences = await resolveAllReferences(input, store.thoughts, store.stacks);
     } catch (err) {
-      console.error("[Oracle] Failed to resolve references:", err);
+      console.error("[AI] Failed to resolve references:", err);
       resolvedReferences = { references: [], userMessage: input };
     }
     
@@ -588,10 +588,10 @@ const ChatOverlay: React.FC = () => {
       : null;
 
     // Build system prompt
-    const systemPrompt = store.oracleChatMode === 'action'
-      ? `You are Cyberia Oracle AI in ACTION mode. You have tools to create, read, update, and delete thoughts and stacks. The user can tag thoughts with @name and stacks with #name. Current time: ${new Date().toLocaleString()}. Workspace context: ${contextString || 'Provided via references'}. Use tools to fulfill the user's request.`
-      : `You are Cyberia Oracle AI in CHAT mode (read-only). The user can tag thoughts with @name and stacks with #name. Current time: ${new Date().toLocaleString()}. Workspace context: ${contextString || 'Provided via references'}. You can read thoughts but CANNOT modify them.`;
+    const systemPrompt = store.aiChatMode === 'action'
+      ? `You are Cyberia AI in ACTION mode. You have tools to create, read, update, and delete thoughts and stacks. The user can tag thoughts with @name and stacks with #name. Current time: ${new Date().toLocaleString()}. Workspace context: ${contextString || 'Provided via references'}. Use tools to fulfill the user's request.`
 
+      : `You are Cyberia AI in CHAT mode (read-only). The user can tag thoughts with @name and stacks with #name. Current time: ${new Date().toLocaleString()}. Workspace context: ${contextString || 'Provided via references'}. You can read thoughts but CANNOT modify them.`;
     const apiMessages = [
       { role: 'system', content: systemPrompt },
       ...toOpenRouterMessages(
@@ -626,7 +626,7 @@ const ChatOverlay: React.FC = () => {
       }
     } catch (err: any) {
       if (err.name !== 'AbortError') {
-        console.error('[Oracle] Error:', err);
+        console.error('[AI] Error:', err);
         const errorMsg: Message = {
           id: ulid(),
           spaceId: store.activeSpaceId,
@@ -670,7 +670,7 @@ const ChatOverlay: React.FC = () => {
                 <div className="flex items-center gap-2">
                   <div className="w-1.5 h-1.5 rounded-full bg-[var(--accent)] shadow-[0_0_8px_var(--accent-glow)]" />
                   <h3 className="text-[11px] font-extrabold uppercase tracking-[0.2em] text-[var(--text-primary)] leading-none">
-                    Oracle AI
+                    Cyberia AI
                   </h3>
                 </div>
               </div>
@@ -988,7 +988,7 @@ const ChatOverlay: React.FC = () => {
                       <div className="w-1.5 h-1.5 bg-[var(--accent)]/80 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
                     </div>
                     <span className="text-[10px] font-semibold tracking-wide text-[var(--text-muted)] ml-1">
-                      {status || 'Oracle is thinking...'}
+                      {status || 'AI is thinking...'}
                     </span>
                   </div>
                 )}
@@ -1017,7 +1017,7 @@ const ChatOverlay: React.FC = () => {
                     if (!isLoading) e.currentTarget.form?.requestSubmit();
                   }
                 }}
-                placeholder={store.oracleChatMode === 'chat' ? "Message Oracle..." : "Command Oracle..."}
+                placeholder={store.aiChatMode === 'chat' ? "Ask Cyberia AI..." : "Command Cyberia AI..."}
                 rows={1}
                 className="flex-1 bg-transparent border-none py-2.5 pl-3 pr-2 text-[13px] text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus:outline-none resize-none min-h-[36px] max-h-32 custom-scroll leading-relaxed"
               />
@@ -1056,28 +1056,28 @@ const ChatOverlay: React.FC = () => {
             <div className="flex items-center justify-center pb-2">
               <div className="flex items-center h-8 bg-[var(--glass-bg)] rounded-lg p-1 border border-[var(--glass-border)]">
                 <button
-                  onClick={() => store.setOracleChatMode('chat')}
+                  onClick={() => store.setAiChatMode('chat')}
                   className={cn(
                     "px-3 h-6 rounded-md transition-all duration-300 flex items-center gap-1.5",
-                    store.oracleChatMode === 'chat' 
+                    store.aiChatMode === 'chat' 
                       ? "bg-[var(--accent)]/10 text-[var(--accent)]" 
                       : "text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--glass-bg)]"
                   )}
                 >
-                  <div className={cn("w-1.5 h-1.5 rounded-full transition-all", store.oracleChatMode === 'chat' ? "bg-[var(--accent)]" : "bg-[var(--glass-border)]")} />
+                  <div className={cn("w-1.5 h-1.5 rounded-full transition-all", store.aiChatMode === 'chat' ? "bg-[var(--accent)]" : "bg-[var(--glass-border)]")} />
                   <span className="text-[9px] font-semibold tracking-wide mt-[1px]">Chat</span>
                 </button>
                 <div className="w-[1px] h-3 bg-[var(--glass-border)] mx-1"></div>
                 <button
-                  onClick={() => store.setOracleChatMode('action')}
+                  onClick={() => store.setAiChatMode('action')}
                   className={cn(
                     "px-3 h-6 rounded-md transition-all duration-300 flex items-center gap-1.5",
-                    store.oracleChatMode === 'action' 
+                    store.aiChatMode === 'action' 
                       ? "bg-[var(--status-doing)]/10 text-[var(--status-doing)]" 
                       : "text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--glass-bg)]"
                   )}
                 >
-                  <div className={cn("w-1.5 h-1.5 rounded-full transition-all", store.oracleChatMode === 'action' ? "bg-[var(--status-doing)]" : "bg-[var(--glass-border)]")} />
+                  <div className={cn("w-1.5 h-1.5 rounded-full transition-all", store.aiChatMode === 'action' ? "bg-[var(--status-doing)]" : "bg-[var(--glass-border)]")} />
                   <span className="text-[9px] font-semibold tracking-wide mt-[1px]">Action</span>
                 </button>
               </div>
@@ -1099,7 +1099,7 @@ const ChatOverlay: React.FC = () => {
             <ChevronLeft className="w-4 h-4 opacity-0 group-hover:opacity-100 transition-all duration-300 translate-x-1 group-hover:translate-x-0" />
             <div className="absolute left-full ml-4 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-all duration-300 translate-x-2 group-hover:translate-x-0 pointer-events-none whitespace-nowrap z-[10001]">
               <div className="glass px-3 py-1.5 rounded-xl border border-[var(--glass-border)] flex items-center gap-2 shadow-2xl bg-[var(--bg-main)]/90 backdrop-blur-xl">
-                <span className="text-[10px] font-semibold tracking-wide text-[var(--text-primary)]/90">Close Oracle AI</span>
+                <span className="text-[10px] font-semibold tracking-wide text-[var(--text-primary)]/90">Close Cyberia AI</span>
               </div>
             </div>
           </button>

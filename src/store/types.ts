@@ -62,7 +62,7 @@ export interface CyberiaState {
   createInitialWorkspace: () => Promise<void>;
 
   isChatOpen: boolean;
-  oracleChatMode: 'chat' | 'action';
+  aiChatMode: 'chat' | 'action';
 
   init: () => Promise<void>;
   refreshTotalThoughtCount: () => Promise<void>;
@@ -86,7 +86,7 @@ export interface CyberiaState {
   setDeferredPrompt: (prompt: any) => void;
 
   setChatOpen: (isOpen: boolean) => void;
-  setOracleChatMode: (mode: 'chat' | 'action') => void;
+  setAiChatMode: (mode: 'chat' | 'action') => void;
 
   setActiveSpace: (id: string) => Promise<void>;
   setCalendarViewDate: (date: Date) => void;

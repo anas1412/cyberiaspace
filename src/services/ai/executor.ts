@@ -1,7 +1,7 @@
 /**
- * Oracle Tool Executor
+ * AI Tool Executor
  * 
- * Handles the execution of client-side tool calls from the Oracle AI.
+ * Handles the execution of client-side tool calls from Cyberia AI.
  */
 
 import { db } from '../../db';
@@ -70,9 +70,9 @@ const readFileHelper = async (id: string, store: any) => {
   return { id, success: true, type: 'text', content, name: t.text };
 };
 
-export const executeOracleTool = async (toolCall: any, store: any) => {
+export const executeAiTool = async (toolCall: any, store: any) => {
   const { toolName, args } = toolCall;
-  console.log(`[Oracle] Executing Tool: ${toolName}`, args);
+  console.log(`[AI] Executing Tool: ${toolName}`, args);
 
   // Security check: restrict write actions in chat mode
   const writeActions = [
@@ -81,7 +81,7 @@ export const executeOracleTool = async (toolCall: any, store: any) => {
     'delete_stack', 'delete_stacks'
   ];
 
-  if (store.oracleChatMode === 'chat' && writeActions.includes(toolName)) {
+  if (store.aiChatMode === 'chat' && writeActions.includes(toolName)) {
     return {
       success: false,
       error: 'Write actions are disabled in Chat mode. Switch to Action mode to modify the space.'
@@ -405,9 +405,9 @@ export const executeOracleTool = async (toolCall: any, store: any) => {
         return { success: false, error: `Unknown tool: ${toolName}` };
     }
   } catch (error: any) {
-    console.error(`[Oracle] Tool Execution Failed: ${toolName}`, error);
+    console.error(`[AI] Tool Execution Failed: ${toolName}`, error);
     return { success: false, error: error.message || 'Unknown error occurred' };
   }
 };
 
-export default executeOracleTool;
+export default executeAiTool;

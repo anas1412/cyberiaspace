@@ -11,7 +11,7 @@ const LOADING_TIPS = [
   "Drag files directly onto the canvas to import",
   "Switch between Spatial, Kanban, and Calendar views",
   "Group thoughts into Stacks by dragging them together",
-  "Ask Oracle to find, create, or connect anything",
+  "Ask Cyberia AI to find, create, or connect anything",
   "Share your space with your team",
   "Your data syncs automatically across devices",
 ];

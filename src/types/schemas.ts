@@ -8,7 +8,7 @@ export const TaskItemSchema = z.object({
   done: z.boolean().default(false),
 });
 
-export const OracleThoughtSchema = z.object({
+export const AiThoughtSchema = z.object({
   text: z.string().optional().default(''),
   type: z.enum(['label', 'text', 'tasks', 'paint', 'table', 'image', 'embed', 'file']),
   content: z.string().optional(),
@@ -43,7 +43,7 @@ export const OracleThoughtSchema = z.object({
 });
 
 export const CreateThoughtsSchema = z.object({
-  items: z.array(OracleThoughtSchema).min(1),
+  items: z.array(AiThoughtSchema).min(1),
 });
 
 export const UpdateThoughtsSchema = z.object({

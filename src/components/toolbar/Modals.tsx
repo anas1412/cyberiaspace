@@ -410,7 +410,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                   <textarea
                     value={localPersonality}
                     onChange={(e) => setLocalPersonality(e.target.value)}
-                    placeholder="Describe how Oracle should behave..."
+                    placeholder="Describe how Cyberia AI should behave..."
                     className="w-full h-24 bg-[var(--glass-bg)] border border-[var(--glass-border)] rounded-xl p-4 text-xs text-[var(--text-primary)] outline-none focus:border-[var(--accent)]/50 transition-all resize-none"
                   />
                 </section>
