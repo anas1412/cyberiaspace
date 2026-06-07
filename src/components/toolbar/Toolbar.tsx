@@ -1,16 +1,21 @@
 import React, { useState, useEffect } from 'react';
+import { clsx, type ClassValue } from 'clsx';
+import { twMerge } from 'tailwind-merge';
 import { useStore } from '../../store/useStore';
 import { useModalStore } from '../../store/useModalStore';
 
+function cn(...inputs: ClassValue[]) {
+  return twMerge(clsx(inputs));
+}
+
 // Modular Components
 import { SpaceSwitcher } from './SpaceSwitcher';
-import { FilterPanel } from './FilterPanel';
 import { ViewSwitcher } from './ViewSwitcher';
 import { ActionFAB } from './ActionFAB';
 import { SystemTray } from './SystemTray';
 import { StatusBar } from './StatusBar';
+import { SearchOverlay } from './SearchOverlay';
 import { ShortcutsModal, HelpModal, SettingsModal } from './Modals';
-import { AccountMenu } from './AccountMenu';
 
 const Toolbar: React.FC = () => {
   const activeSpaceId = useStore((state) => state.activeSpaceId);
@@ -54,6 +59,7 @@ const Toolbar: React.FC = () => {
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isShortcutsOpen, setIsShortcutsOpen] = useState(false);
   const [isHelpOpen, setIsHelpOpen] = useState(false);
+  const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [activeHelpTab, setActiveHelpTab] = useState<'about' | 'issue' | 'contact'>('about');
 
   // Expose modal triggers to window for cross-modal navigation
@@ -188,7 +194,7 @@ const Toolbar: React.FC = () => {
   return (
     <>
       <div className="fixed top-2 md:top-6 left-4 md:left-8 right-4 md:right-8 z-[9999] flex items-center justify-between gap-2 pointer-events-none">
-        {/* Left Side: Space Switcher & Filters */}
+        {/* Left: Space Identity */}
         <div className="flex-1 flex justify-start items-center gap-3 pointer-events-auto">
           <SpaceSwitcher 
             spaces={spaces}
@@ -205,20 +211,33 @@ const Toolbar: React.FC = () => {
             handleRenameSpace={handleRenameSpace}
             handleDeleteSpace={handleDeleteSpace}
           />
-          <FilterPanel />
         </div>
 
-        {/* Right Side: Account Menu */}
+        {/* Center: View Switcher */}
+        <div className="absolute left-1/2 -translate-x-1/2 pointer-events-auto">
+          <ViewSwitcher activeSpace={activeSpace} setViewMode={setViewMode} />
+        </div>
+
+        {/* Right: Search Trigger */}
         <div className="flex-1 flex justify-end items-center gap-3 pointer-events-auto">
-          <AccountMenu />
+          <button
+            onClick={() => setIsSearchOpen(!isSearchOpen)}
+            aria-label="Search"
+            className={cn(
+              "h-[44px] w-[44px] glass backdrop-blur-xl rounded-2xl border border-[var(--glass-border)] shadow-lg shadow-[var(--glass-border)] flex items-center justify-center transition-all",
+              isSearchOpen
+                ? "bg-[var(--glass-bg)] text-[var(--text-primary)]"
+                : "text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:border-[var(--accent)]/30"
+            )}
+          >
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <circle cx="11" cy="11" r="8" />
+              <path d="m21 21-4.35-4.35" />
+            </svg>
+          </button>
         </div>
       </div>
 
-      {/* Center: View Switcher */}
-      <div className="fixed top-4 left-1/2 -translate-x-1/2 z-[10000] pointer-events-auto">
-        <ViewSwitcher activeSpace={activeSpace} setViewMode={setViewMode} />
-      </div>
-      
       <ActionFAB 
         isReadOnly={isReadOnly} 
         handleAddThought={handleAddThought} 
@@ -284,6 +303,11 @@ const Toolbar: React.FC = () => {
         handleImport={handleImport}
         deferredPrompt={deferredPrompt}
         handleInstall={handleInstall}
+      />
+
+      <SearchOverlay
+        isOpen={isSearchOpen}
+        onClose={() => setIsSearchOpen(false)}
       />
     </>
   );

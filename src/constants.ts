@@ -53,6 +53,9 @@ export const VERIFICATION_MODEL = [
 export const HOMEPAGE_SCREENSHOT = '/Screenshot4.png';
 export const YOUTUBE_VIDEO_ID = 'hP92Obd9hFA';
 
+// GitHub
+export const GITHUB_URL = 'https://github.com/anas1412/cyberia';
+
 // Discord
 export const DISCORD_INVITE_URL = 'https://discord.gg/wjHTsaGpc4';
 
