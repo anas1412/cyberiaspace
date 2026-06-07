@@ -32,7 +32,7 @@ const ModalFooter: React.FC<{ onClose: () => void }> = ({ onClose }) => (
     <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-2">
       {[
         { label: 'Privacy Policy', path: '/privacy' },
-        { label: 'Terms of Sale (CGV)', path: '/terms' },
+        { label: 'Terms', path: '/terms' },
         { label: 'Legal Notice', path: '/legal' },
         { label: 'Contact', path: null, href: 'mailto:support@cyberiaspace.app' }
       ].map((link, idx) => (
@@ -890,11 +890,6 @@ export const HelpModal: React.FC<HelpModalProps> = ({
                   <div className="flex-grow border-t border-[var(--glass-border)]"></div>
                   <span className="flex-shrink mx-4 text-[8px] font-semibold tracking-wide text-[var(--text-muted)]">OR</span>
                   <div className="flex-grow border-t border-[var(--glass-border)]"></div>
-                </div>
-                <div className="pt-1">
-                  <button onClick={() => window.open('/feedback', '_blank')} className="w-full px-6 py-4 rounded-xl bg-[var(--glass-bg)] border border-[var(--glass-border)] text-[9px] font-semibold tracking-wide text-[var(--text-dimmed)] hover:bg-[var(--bg-page)] transition-all flex items-center justify-center gap-2 group">
-                    <MessageSquare className="w-3.5 h-3.5" /> Open Feedback Portal
-                  </button>
                 </div>
               </motion.div>
             )}
