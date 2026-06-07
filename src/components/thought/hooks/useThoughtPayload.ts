@@ -5,7 +5,6 @@ export interface UseThoughtPayloadResult {
   content: string;
   tasks: { id?: string; text: string; done: boolean }[];
   table: string[][];
-  image: string | null;
   drawing: string | null;
   meta: any;
   fileInfo: {
@@ -47,7 +46,6 @@ export function useThoughtPayload(thought: Thought | null | undefined): UseThoug
     const modTasks = data.type === 'tasks' ? data.tasks : [];
     const modTable = data.type === 'table' ? data.rows : [];
     
-    const modImage = data.type === 'file' ? data.url : null;
     const modDrawing = data.type === 'paint' ? data.drawing : null;
 
     // NORMALIZE FILE INFO
@@ -70,7 +68,6 @@ export function useThoughtPayload(thought: Thought | null | undefined): UseThoug
       content: modContent || legacyContent,
       tasks: (modTasks && modTasks.length > 0) ? modTasks : legacyTasks,
       table: (modTable && modTable.length > 0) ? modTable : legacyTable,
-      image: modImage || legacyImage,
       drawing: modDrawing || legacyDrawing,
       meta: metaSource,
       fileInfo: {

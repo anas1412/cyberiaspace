@@ -35,8 +35,7 @@ export const EmbedInspector: React.FC<InspectorPanelProps> = ({ thought, isReadO
                     updateThought(thought.id, {
                       text: metadata.title,
                       author: metadata.author_name || "",
-                      description: metadata.description || "",
-                      image: metadata.thumbnail_url || null
+                      description: metadata.description || ""
                     });
                   }
                 })

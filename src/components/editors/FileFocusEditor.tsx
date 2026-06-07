@@ -187,7 +187,6 @@ const StackItemThumbnail: React.FC<{
 const EditorContent: React.FC<{
   thought: any;
   fileInfo: any;
-  image: string | null;
   localPreviewUrl: string | null;
   isUploading: boolean;
   isFetching: boolean;
@@ -199,7 +198,7 @@ const EditorContent: React.FC<{
   isReadOnly: boolean;
   isDemo: boolean;
 }> = ({ 
-  thought, fileInfo, image, localPreviewUrl, isUploading, isFetching,
+  thought, fileInfo, localPreviewUrl, isUploading, isFetching,
   handleFileSelect, 
   stackItems, setActiveFocus,   scrollerRef, stack,
   isReadOnly, isDemo
@@ -245,8 +244,9 @@ const EditorContent: React.FC<{
   const mimeType = (cached.type || '').toLowerCase();
   const extension = fileName.split('.').pop() || '';
   
-  // Use local blob or image preview
-  const activeSource = isFetching ? localPreviewUrl : (localPreviewUrl || image);
+  // Use local blob or data URL
+  const fileUrl = thought?.data?.type === 'file' ? thought.data.url : undefined;
+  const activeSource = isFetching ? localPreviewUrl : (localPreviewUrl || fileUrl);
 
   // Use cached values if available, otherwise analyze
   const isPdf = fileInfo?.isPdf ?? false;
@@ -315,7 +315,7 @@ const EditorContent: React.FC<{
               <div className="relative w-full h-full flex items-center justify-center overflow-hidden rounded-2xl bg-[var(--glass-bg)] shadow-2xl border border-[var(--glass-border)]">
                 <video 
                   src={activeSource}
-                  poster={image || undefined}
+                  poster={thought?.data?.type === 'file' ? thought.data.url : undefined}
                   controls
                   playsInline
                   loop
@@ -526,7 +526,7 @@ const FileFocusEditor: React.FC = () => {
   const openModal = useModalStore(state => state.openModal);
 
   const thought = thoughts.find((t) => t.id === activeFocusId);
-  const { image, fileInfo } = useThoughtPayload(thought);
+  const { fileInfo } = useThoughtPayload(thought);
   const stack = stacks.find((s) => s.id === thought?.stackId);
   const isVisible = focusType === 'file' && !!thought;
 
@@ -756,7 +756,6 @@ const FileFocusEditor: React.FC = () => {
       <EditorContent 
         thought={thought}
         fileInfo={fileInfo}
-        image={image}
         localPreviewUrl={localPreviewUrl}
         isUploading={isUploading}
         isFetching={isFetching}

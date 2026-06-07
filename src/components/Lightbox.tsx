@@ -1,6 +1,5 @@
 import React, { useMemo, useEffect, useRef, useState } from 'react';
 import { useStore } from '../store/useStore';
-import { useThoughtPayload } from './thought/hooks/useThoughtPayload';
 import { ChevronLeft, ChevronRight, Download } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { FocusEditorShell } from './editors/FocusEditorShell';
@@ -23,7 +22,6 @@ const Lightbox: React.FC = () => {
   const isReadOnly = useStore((state) => state.isReadOnly);
 
   const thought = thoughts.find((t) => t.id === lightboxThoughtId);
-  const { image } = useThoughtPayload(thought);
   const stack = stacks.find((s) => s.id === thought?.stackId);
   const isVisible = isLightboxOpen && !!thought;
 
@@ -48,7 +46,8 @@ const Lightbox: React.FC = () => {
   }, [thought?.id]);
 
   // Resolve URL for display - local blob only
-  const displayUrl = localUrl || image;
+  const thoughtDataUrl = thought?.data?.type === 'file' ? thought.data.url : undefined;
+  const displayUrl = localUrl || thoughtDataUrl;
 
   const scrollerRef = useRef<HTMLDivElement>(null);
 
@@ -70,28 +69,29 @@ const Lightbox: React.FC = () => {
     [stackItems, thought]
   );
 
-  const getItemUrl = async (item: any): Promise<string> => {
+  const getItemUrl = async (item: any): Promise<string | undefined> => {
     // Try local blob first
     try {
       const entry = await db.blobs.where('thoughtId').equals(item.id).first();
       if (entry) return URL.createObjectURL(entry.blob);
     } catch (e) { /* ignore */ }
-    // Fallback to data.url or image
-    return item.data?.type === 'file' ? item.data.url : undefined;
+    // Fallback to data.url
+    if (item.data?.type === 'file' && item.data.url) return item.data.url;
+    return undefined;
   };
 
     // Preload thumbnail URLs
     const [thumbnailUrls] = useState(() => {
       const urls: Record<string, string> = {};
-      stackItems.forEach(async (item) => {
-        urls[item.id] = await getItemUrl(item);
+      stackItems.forEach((item) => {
+        getItemUrl(item).then(url => { if (url) urls[item.id] = url; });
       });
       return urls;
     });
 
     const handleThumbnailClick = async (item: any) => {
       const url = await getItemUrl(item);
-      openLightbox(url, item.id);
+      if (url) openLightbox(url, item.id);
     };
 
     // Navigate function uses currentIndex from closure
@@ -165,7 +165,7 @@ const Lightbox: React.FC = () => {
       }
       footerStatus={
         <p className="text-[8px] md:text-[10px] uppercase font-black tracking-widest text-[var(--text-muted)] italic">
-          Resolution: {image?.startsWith('data:image/') ? 'Buffered Asset' : 'External Link'}
+          Resolution: {localUrl ? 'Local Asset' : 'External Link'}
         </p>
       }
     >

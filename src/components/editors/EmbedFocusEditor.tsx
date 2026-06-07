@@ -312,7 +312,7 @@ const EmbedFocusEditor: React.FC = () => {
   const isReadOnly = useStore((state) => state.isReadOnly);
 
   const thought = thoughts.find((t) => t.id === activeFocusId);
-  const { content, image } = useThoughtPayload(thought);
+  const { content } = useThoughtPayload(thought);
   const stack = stacks.find((s) => s.id === thought?.stackId);
   const isVisible = focusType === 'embed' && !!thought;
 
@@ -440,11 +440,11 @@ const EmbedFocusEditor: React.FC = () => {
 
     return (
       <div className="absolute inset-0 flex flex-col items-center justify-center bg-[var(--bg-page)] overflow-hidden">
-        {image ? (
+        {thought?.meta?.thumbnail_url ? (
           <div className="w-full h-full flex items-center justify-center p-4 md:p-12">
             <div className="relative w-full h-full flex items-center justify-center">
               <div className="absolute inset-0 blur-3xl opacity-20 bg-[var(--accent)]/10 scale-75 -z-10" />
-              <img src={image} alt="Content" className="max-w-[90%] max-h-[85%] object-contain rounded-2xl shadow-2xl border border-[var(--glass-border)]" />
+              <img src={thought.meta.thumbnail_url} alt="Content" className="max-w-[90%] max-h-[85%] object-contain rounded-2xl shadow-2xl border border-[var(--glass-border)]" />
             </div>
           </div>
         ) : (

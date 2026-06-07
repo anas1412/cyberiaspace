@@ -12,7 +12,7 @@ interface EmbedRendererProps {
 
 export const EmbedRenderer: React.FC<EmbedRendererProps> = ({ thought }) => {
   // Use the dual-read hook for backward compatibility
-  const { content, image } = useThoughtPayload(thought);
+  const { content } = useThoughtPayload(thought);
   
   const { provider, id } = getEmbedInfo(content);
   const config = PROVIDER_CONFIG[provider as string] || PROVIDER_CONFIG.unknown;
@@ -23,7 +23,7 @@ export const EmbedRenderer: React.FC<EmbedRendererProps> = ({ thought }) => {
   // Automatic Metadata Sync
   useEffect(() => {
     // Trigger if we are missing key pieces of metadata but have content
-    const isMissingMetadata = !image || !thought.author || !thought.description;
+    const isMissingMetadata = !thought.meta?.thumbnail_url || !thought.author || !thought.description;
     const shouldFetch = isMissingMetadata && content && !content.includes('localhost') && content.startsWith('http');
     
     if (shouldFetch) {
@@ -33,8 +33,7 @@ export const EmbedRenderer: React.FC<EmbedRendererProps> = ({ thought }) => {
           const meta = await fetchEmbedMeta(content);
           if (meta) {
             const updates: any = {};
-            if (meta.thumbnail_url) updates.image = meta.thumbnail_url;
-            if (meta.author_name) updates.author = meta.author_name;
+              if (meta.author_name) updates.author = meta.author_name;
             if (meta.title && meta.title !== content) updates.text = meta.title;
             if (meta.description) updates.description = meta.description;
             
@@ -50,9 +49,9 @@ export const EmbedRenderer: React.FC<EmbedRendererProps> = ({ thought }) => {
       };
       syncMetadata();
     }
-  }, [thought.id, content, image, thought.author, updateThought, thought.text]);
+  }, [thought.id, content, thought.meta?.thumbnail_url, thought.author, updateThought, thought.text]);
 
-  const previewImage = image || (provider === 'youtube' && id ? `https://img.youtube.com/vi/${id}/mqdefault.jpg` : null);
+  const previewImage = thought.meta?.thumbnail_url || (provider === 'youtube' && id ? `https://img.youtube.com/vi/${id}/mqdefault.jpg` : null);
 
   return (
     <div data-trigger="embed" className="mt-2 relative group cursor-pointer overflow-hidden rounded-xl border border-[var(--glass-border)] bg-[var(--node-bg)]/40 aspect-video flex items-center justify-center">

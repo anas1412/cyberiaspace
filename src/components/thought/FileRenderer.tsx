@@ -9,7 +9,7 @@ interface FileRendererProps {
 }
 
 export const FileRenderer: React.FC<FileRendererProps> = ({ thought }) => {
-  const { image, fileInfo } = useThoughtPayload(thought);
+  const { fileInfo } = useThoughtPayload(thought);
   const [localUrl, setLocalUrl] = useState<string | null>(null);
 
   useEffect(() => {
@@ -55,7 +55,8 @@ export const FileRenderer: React.FC<FileRendererProps> = ({ thought }) => {
   };
 
   // Use local blob only
-  const activeSource = localUrl || image;
+  const fileUrl = thought.data?.type === 'file' ? thought.data.url : undefined;
+  const activeSource = localUrl || fileUrl;
   const hasContent = !!activeSource;
 
   // MEDIA PREVIEW BLOCK (Images & Videos)

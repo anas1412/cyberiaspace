@@ -280,7 +280,6 @@ function App() {
                     text: metadata.title || "Link",
                     author: metadata.author_name || "",
                     description: metadata.description || "",
-                    image: metadata.thumbnail_url || null,
                     data: {
                       type: 'embed',
                       url: cleanText,
