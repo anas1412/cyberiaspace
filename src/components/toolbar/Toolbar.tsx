@@ -21,7 +21,6 @@ const Toolbar: React.FC = () => {
   const activeSpaceId = useStore((state) => state.activeSpaceId);
 
   const spaces = useStore((state) => state.spaces);
-  const thoughts = useStore((state) => state.thoughts);
   const setActiveSpace = useStore((state) => state.setActiveSpace);
   const addThought = useStore((state) => state.addThought);
   const updateSpace = useStore((state) => state.updateSpace);
@@ -255,7 +254,6 @@ const Toolbar: React.FC = () => {
       />
 
       <StatusBar 
-        thoughtsCount={thoughts.length} 
         activeSpace={activeSpace} 
         undo={undo} 
         redo={redo} 

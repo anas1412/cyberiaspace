@@ -1,14 +1,7 @@
 import React from 'react';
 import { Undo2, Redo2, ZoomIn, ZoomOut, ScanEye } from 'lucide-react';
-import { clsx, type ClassValue } from 'clsx';
-import { twMerge } from 'tailwind-merge';
-
-function cn(...inputs: ClassValue[]) {
-  return twMerge(clsx(inputs));
-}
 
 interface StatusBarProps {
-  thoughtsCount: number;
   activeSpace: any;
   undo: () => void;
   redo: () => void;
@@ -21,49 +14,18 @@ interface StatusBarProps {
   setPhysicsIntensity: (intensity: number) => void;
 }
 
-const NO_LIMIT = 999999;
-
 export const StatusBar: React.FC<StatusBarProps> = ({ 
-  thoughtsCount, activeSpace, undo, redo, 
+  activeSpace, undo, redo, 
   historyIndex, historyLength, zoomIn, zoomOut, resetTransform,
   physicsIntensity, setPhysicsIntensity
 }) => {
-  const capacity = (thoughtsCount / NO_LIMIT) * 100;
-  
-  const capacityDotColor = capacity >= 100 
-    ? "bg-red-500 text-red-500" 
-    : capacity >= 80 
-      ? "bg-amber-500 text-amber-500" 
-      : "bg-green-500 text-green-500";
-      
-  const capacityTextColor = capacity >= 100 
-    ? "text-red-400" 
-    : capacity >= 80 
-      ? "text-amber-400" 
-      : "text-[var(--text-primary)]/90";
-
   const intensityLabel = physicsIntensity === 0 ? 'Frozen' : physicsIntensity <= 0.25 ? 'Calm' : physicsIntensity <= 0.75 ? 'Normal' : 'Energetic';
 
   return (
   <div className="fixed bottom-4 md:bottom-8 left-4 md:left-8 z-[9999] flex items-center gap-2 pointer-events-none mobile-bottom-bar-adjust">
     <div className="glass backdrop-blur-xl px-3 md:px-4 h-[44px] rounded-2xl flex items-center gap-2 md:gap-4 border border-[var(--glass-border)] shadow-lg shadow-[var(--glass-border)] pointer-events-auto">
 
-      {/* Capacity */}
-      <div className="group relative flex items-center justify-center gap-2 md:gap-3 cursor-default">
-        <div className="absolute bottom-full mb-4 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-all duration-300 translate-y-2 group-hover:translate-y-0 pointer-events-none whitespace-nowrap z-[10001]">
-          <div className="glass px-3 py-1.5 rounded-xl border border-[var(--glass-border)] flex items-center gap-2 shadow-2xl bg-[var(--bg-main)]/90 backdrop-blur-xl">
-            <span className="text-[10px] font-semibold tracking-wide text-[var(--text-primary)]/90">Thoughts</span>
-          </div>
-        </div>
-        <span className={cn("w-1.5 h-1.5 rounded-full flex-shrink-0 transition-all shadow-[0_0_10px_currentColor]", capacityDotColor)}></span>
-        <span className={cn("text-[9px] md:text-[10px] uppercase font-semibold tracking-wide transition-colors", capacityTextColor)}>
-          <span>{thoughtsCount}</span>
-          <span className="hidden sm:inline"> Total</span>
-        </span>
-      </div>
-
       {/* Undo/Redo */}
-      <div className="hidden sm:flex h-3 w-[1px] bg-[var(--glass-border)] mx-0.5"></div>
       <div className="hidden sm:flex items-center gap-1">
         <button onClick={undo} disabled={historyIndex <= 0} className="group relative p-1.5 md:p-2 hover:bg-[var(--glass-bg)] text-[var(--text-muted)] hover:text-[var(--text-primary)] disabled:opacity-20 disabled:cursor-not-allowed transition-all rounded-xl">
           <div className="absolute bottom-full mb-4 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-all duration-300 translate-y-2 group-hover:translate-y-0 pointer-events-none whitespace-nowrap z-[10001]">

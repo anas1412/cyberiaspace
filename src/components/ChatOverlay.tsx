@@ -8,7 +8,7 @@ import {
   type SuggestionItem 
 } from '../utils/referenceParser';
 import SuggestionDropdown from './SuggestionDropdown';
-import { X, SendHorizonal, MessageSquare, Loader2, History, Square, ChevronDown, ChevronLeft, Pencil, Trash2, Check, X as XIcon, Copy, Key, Eye, EyeOff } from 'lucide-react';
+import { X, SendHorizonal, MessageSquare, Loader2, Square, ChevronDown, ChevronLeft, Pencil, Trash2, Check, X as XIcon, Copy, Key, Eye, EyeOff } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
@@ -210,19 +210,6 @@ const ChatOverlay: React.FC = () => {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }
   }, [messages, isChatOpen, isLoading]);
-
-  const handleClear = async () => {
-    if (store.activeSpaceId) {
-      try {
-        await db.chatHistory.where('spaceId').equals(store.activeSpaceId).delete();
-        setMessages([]);
-      } catch (err) {
-        console.error("[Oracle] Failed to clear history:", err);
-      }
-    } else {
-      setMessages([]);
-    }
-  };
 
   const handleCancel = () => {
     if (abortControllerRef.current) {
@@ -641,103 +628,96 @@ const ChatOverlay: React.FC = () => {
           >
 
           {/* HEADER */}
-          <div className="px-4 py-3 md:px-5 border-b border-[var(--glass-border)] bg-[var(--bg-main)]/60 backdrop-blur-xl sticky top-0 z-30">
-            <div className="flex justify-between items-center relative min-h-[44px]">
-              
+          <div className="sticky top-0 z-30 bg-[var(--bg-main)]/60 backdrop-blur-xl border-b border-[var(--glass-border)] flex flex-col">
+            {/* Top Bar — matches Inspector */}
+            <div className="px-4 py-3 md:px-5 flex justify-between items-center relative min-h-[44px]">
               <div className="flex-1" />
-
-              {/* Absolute Center */}
-              <div className="absolute left-1/2 -translate-x-1/2 flex items-center justify-center pointer-events-none z-[60]">
+              <div className="absolute left-1/2 -translate-x-1/2 flex items-center justify-center pointer-events-none">
                 <div className="flex items-center gap-2">
-                  <div className="flex items-center gap-2 pointer-events-auto" ref={dropdownRef}>
-                    <div className="w-1.5 h-1.5 rounded-full bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.6)]" />
-                    <h3 className="text-[11px] font-extrabold uppercase tracking-[0.2em] text-[var(--text-primary)] leading-none">Oracle AI</h3>
-                    
-                    <button
-                      onClick={() => setShowModelDropdown(!showModelDropdown)}
-                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[var(--glass-bg)] hover:bg-[var(--bg-page)] border border-[var(--glass-border)] transition-all group"
-                    >
-                      <span className="text-[9px] font-bold text-[var(--text-primary)] uppercase tracking-widest leading-none">
-                        {AVAILABLE_MODELS.find(m => m.id === selectedModel)?.name || selectedModel.split('/').pop() || 'Model'}
-                      </span>
-                      <ChevronDown className={cn("w-3 h-3 text-[var(--text-muted)] transition-transform", showModelDropdown && "rotate-180")} />
-                    </button>
-
-                    {/* API Key button */}
-                    <button
-                      onClick={() => setEditingApiKey(true)}
-                      className={cn(
-                        "flex items-center gap-1.5 px-2 py-1.5 rounded-lg border transition-all",
-                        apiKey
-                          ? "bg-[var(--glass-bg)] border-[var(--glass-border)] text-green-500"
-                          : "bg-amber-500/10 border-amber-500/30 text-amber-400 animate-pulse"
-                      )}
-                      title={apiKey ? 'API Key configured' : 'API Key required'}
-                    >
-                      <Key className="w-3 h-3" />
-                    </button>
-
-                    <AnimatePresence>
-                      {showModelDropdown && (
-                        <motion.div
-                          initial={{ opacity: 0, y: -8, scale: 0.96 }}
-                          animate={{ opacity: 1, y: 0, scale: 1 }}
-                          exit={{ opacity: 0, y: -8, scale: 0.96 }}
-                          transition={{ duration: 0.2, ease: [0.23, 1, 0.32, 1] }}
-                          className="absolute top-full left-1/2 -translate-x-1/2 mt-3 w-64 bg-[var(--bg-main)] rounded-2xl border border-[var(--glass-border)] shadow-2xl overflow-hidden z-[100]"
-                        >
-                          <div className="px-4 py-2.5 border-b border-[var(--glass-border)] bg-[var(--bg-main)]/20">
-                            <span className="text-[9px] font-semibold tracking-widest uppercase text-[var(--text-muted)]">
-                              Select Model
-                            </span>
-                          </div>
-                          
-                          <div className="py-0.5 max-h-[300px] overflow-y-auto custom-scroll">
-                            {AVAILABLE_MODELS.map((model) => (
-                              <button
-                                key={model.id}
-                                onClick={() => { setSelectedModel(model.id); setShowModelDropdown(false); }}
-                                className={cn(
-                                  "w-full flex items-center justify-between px-4 py-2.5 transition-all text-left",
-                                  selectedModel === model.id
-                                    ? "bg-[var(--accent)]/10 text-[var(--accent)]"
-                                    : "hover:bg-[var(--bg-page)] text-[var(--text-primary)]"
-                                )}
-                              >
-                                <div className="flex flex-col gap-0.5">
-                                  <span className="text-[11px] font-medium">{model.name}</span>
-                                  <span className="text-[9px] text-[var(--text-muted)]">{model.desc}</span>
-                                </div>
-                                {selectedModel === model.id && (
-                                  <svg className="w-3.5 h-3.5 text-[var(--accent)] flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                                  </svg>
-                                )}
-                              </button>
-                            ))}
-                          </div>
-                        </motion.div>
-                      )}
-                    </AnimatePresence>
-                  </div>
+                  <div className="w-1.5 h-1.5 rounded-full bg-[var(--accent)] shadow-[0_0_8px_var(--accent-glow)]" />
+                  <h3 className="text-[11px] font-extrabold uppercase tracking-[0.2em] text-[var(--text-primary)] leading-none">
+                    Oracle AI
+                  </h3>
                 </div>
               </div>
-
-              {/* Right Actions */}
               <div className="flex-1 flex items-center justify-end gap-1 relative z-50">
                 <button
-                  onClick={handleClear}
-                  className="w-8 h-8 flex items-center justify-center rounded-lg text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors"
-                  title="Clear History"
-                >
-                  <History className="w-4 h-4" />
-                </button>
-                <button
                   onClick={() => setChatOpen(false)}
-                  className="w-8 h-8 flex items-center justify-center rounded-lg text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors"
+                  className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-[var(--glass-bg)] text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-all"
                 >
                   <X className="w-4 h-4" />
                 </button>
+              </div>
+            </div>
+
+            {/* Model & API Row — replaces Inspector's tab row */}
+            <div className="flex items-center justify-between px-4 md:px-5 py-2.5">
+              <div className="flex items-center gap-2 relative" ref={dropdownRef}>
+                <button
+                  onClick={() => setShowModelDropdown(!showModelDropdown)}
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[var(--glass-bg)] hover:bg-[var(--bg-page)] border border-[var(--glass-border)] transition-all group"
+                >
+                  <span className="text-[9px] font-bold text-[var(--text-primary)] uppercase tracking-widest leading-none">
+                    {AVAILABLE_MODELS.find(m => m.id === selectedModel)?.name || selectedModel.split('/').pop() || 'Model'}
+                  </span>
+                  <ChevronDown className={cn("w-3 h-3 text-[var(--text-muted)] transition-transform", showModelDropdown && "rotate-180")} />
+                </button>
+
+                <button
+                  onClick={() => setEditingApiKey(true)}
+                  className={cn(
+                    "flex items-center gap-1.5 px-2 py-1.5 rounded-lg border transition-all",
+                    apiKey
+                      ? "bg-[var(--glass-bg)] border-[var(--glass-border)] text-green-500"
+                      : "bg-amber-500/10 border-amber-500/30 text-amber-400 animate-pulse"
+                  )}
+                  title={apiKey ? 'API Key configured' : 'API Key required'}
+                >
+                  <Key className="w-3 h-3" />
+                </button>
+
+                <AnimatePresence>
+                  {showModelDropdown && (
+                    <motion.div
+                      initial={{ opacity: 0, y: -8, scale: 0.96 }}
+                      animate={{ opacity: 1, y: 0, scale: 1 }}
+                      exit={{ opacity: 0, y: -8, scale: 0.96 }}
+                      transition={{ duration: 0.2, ease: [0.23, 1, 0.32, 1] }}
+                      className="absolute top-full left-0 mt-2 w-64 bg-[var(--bg-main)] rounded-2xl border border-[var(--glass-border)] shadow-2xl overflow-hidden z-[100]"
+                    >
+                      <div className="px-4 py-2.5 border-b border-[var(--glass-border)] bg-[var(--bg-main)]/20">
+                        <span className="text-[9px] font-semibold tracking-widest uppercase text-[var(--text-muted)]">
+                          Select Model
+                        </span>
+                      </div>
+                      
+                      <div className="py-0.5 max-h-[300px] overflow-y-auto custom-scroll">
+                        {AVAILABLE_MODELS.map((model) => (
+                          <button
+                            key={model.id}
+                            onClick={() => { setSelectedModel(model.id); setShowModelDropdown(false); }}
+                            className={cn(
+                              "w-full flex items-center justify-between px-4 py-2.5 transition-all text-left",
+                              selectedModel === model.id
+                                ? "bg-[var(--accent)]/10 text-[var(--accent)]"
+                                : "hover:bg-[var(--bg-page)] text-[var(--text-primary)]"
+                            )}
+                          >
+                            <div className="flex flex-col gap-0.5">
+                              <span className="text-[11px] font-medium">{model.name}</span>
+                              <span className="text-[9px] text-[var(--text-muted)]">{model.desc}</span>
+                            </div>
+                            {selectedModel === model.id && (
+                              <svg className="w-3.5 h-3.5 text-[var(--accent)] flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                              </svg>
+                            )}
+                          </button>
+                        ))}
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
               </div>
             </div>
           </div>
