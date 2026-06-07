@@ -105,10 +105,9 @@ interface Thought {
   order: number;
   layer?: number;
   author: string;
-  image?: string | null;
+  image?: string | null; // Deprecated: use data.url for file thoughts
   meta?: any;
-  googleTaskListId?: string;
-  googleCalendarEventId?: string;
+
   updatedAt?: number | null;
 
   // Modular Payload (Discriminated Union)

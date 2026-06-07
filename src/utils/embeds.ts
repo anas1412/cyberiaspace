@@ -187,27 +187,6 @@ export const fetchEmbedMeta = async (url: string): Promise<EmbedMeta> => {
     return null;
   };
 
-  // 4. YouTube-specific Search/Data fallback (for Description)
-  const fetchYouTubeSearch = async (): Promise<Partial<EmbedMeta> | null> => {
-    if (provider !== 'youtube' || !videoId) return null;
-    try {
-      const res = await fetch(`/api/utils?action=youtube-search&q=${videoId}`);
-      if (res.ok) {
-        const data = await res.json();
-        const bestResult = data.results?.[0];
-        if (bestResult) {
-          return {
-            author_name: bestResult.author,
-            description: bestResult.description
-          };
-        }
-      }
-    } catch (err) {
-      console.warn(`[Embed Utils] YouTube Search fallback failed:`, err);
-    }
-    return null;
-  };
-
   // 4. Instagram-specific high-fidelity extraction (bypasses login wall)
   const fetchInstagramMeta = async (): Promise<Partial<EmbedMeta> | null> => {
     if (provider !== 'instagram') return null;
@@ -231,10 +210,9 @@ export const fetchEmbedMeta = async (url: string): Promise<EmbedMeta> => {
   };
 
   // Run in parallel for speed
-  const [oData, mlData, ytSearchData, twData, igData] = await Promise.all([
+  const [oData, mlData, twData, igData] = await Promise.all([
     fetchOEmbed(),
     fetchInternalMetadata(),
-    fetchYouTubeSearch(),
     fetchTwitterMeta(),
     fetchInstagramMeta()
   ]);
@@ -257,12 +235,11 @@ export const fetchEmbedMeta = async (url: string): Promise<EmbedMeta> => {
     authorName = getCleanAuthor(igData?.author_name) ||
       getCleanAuthor(twData?.author_name) ||
       getCleanAuthor(oData?.author_name) ||
-      getCleanAuthor(ytSearchData?.author_name) ||
       getCleanAuthor(mlData?.author_name) ||
       "";
   }
 
-  let description = igData?.description || twData?.description || oData?.description || ytSearchData?.description || mlData?.description || "";
+  let description = igData?.description || twData?.description || oData?.description || mlData?.description || "";
   let title = igData?.title || twData?.title || oData?.title || mlData?.title || "";
 
   // Twitter/X Specific: If title is missing, try to construct from handle
