@@ -52,7 +52,17 @@ const FALLBACK_MODELS: ModelOption[] = [
   { id: 'openai/gpt-5.5', name: 'GPT 5.5', desc: 'OpenAI flagship' },
 ];
 
-export type ModelOption = { id: string; name: string; desc: string };
+export type ModelOption = { id: string; name: string; desc: string; promptPrice?: number; completionPrice?: number };
+
+function formatPrice(price: number | undefined | null): string {
+  if (price == null) return '';
+  if (price === 0) return '$0';
+  if (price < 0.0001) return `$${price.toFixed(6)}`;
+  if (price < 0.01) return `$${price.toFixed(4)}`;
+  if (price < 1) return `$${price.toFixed(3)}`;
+  if (price < 10) return `$${price.toFixed(2)}`;
+  return `$${price.toFixed(1)}`;
+}
 
 function getTimeAgo(ts: number): string {
   const diff = Date.now() - ts;
@@ -145,7 +155,7 @@ const ChatOverlay: React.FC = () => {
         if (!r.ok) throw new Error(`OpenRouter API ${r.status}`);
         return r.json();
       })
-      .then((res: { data: { id: string; name: string; description?: string }[] }) => {
+      .then((res: { data: { id: string; name: string; description?: string; pricing?: { prompt?: number | string; completion?: number | string } }[] }) => {
         if (!res.data || !Array.isArray(res.data) || res.data.length === 0) {
           throw new Error('Empty model list');
         }
@@ -157,6 +167,8 @@ const ChatOverlay: React.FC = () => {
               ? m.description.slice(0, 77) + '...'
               : m.description
             : '',
+          promptPrice: m.pricing?.prompt != null ? Number(m.pricing.prompt) : undefined,
+          completionPrice: m.pricing?.completion != null ? Number(m.pricing.completion) : undefined,
         }));
         cachedModels = mapped;
         cachedModelsAt = Date.now();
@@ -1080,15 +1092,33 @@ const ChatOverlay: React.FC = () => {
                                 : "hover:bg-[var(--bg-page)] text-[var(--text-primary)]"
                             )}
                           >
-                            <div className="flex flex-col gap-0.5">
-                              <span className="text-[11px] font-medium">{model.name}</span>
-                              <span className="text-[9px] text-[var(--text-muted)]">{model.desc}</span>
+                            <div className="flex flex-col gap-0.5 min-w-0 flex-1">
+                              <span className="text-[11px] font-medium truncate">{model.name}</span>
+                              <span className="text-[9px] text-[var(--text-muted)] truncate">{model.desc}</span>
                             </div>
-                            {selectedModel === model.id && (
-                              <svg className="w-3.5 h-3.5 text-[var(--accent)] flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                              </svg>
-                            )}
+                            <div className="flex items-center gap-2 flex-shrink-0">
+                              {(model.promptPrice != null || model.completionPrice != null) && (
+                                <div className="flex flex-col items-end gap-[1px]">
+                                  {model.promptPrice === 0 && model.completionPrice === 0 ? (
+                                    <span className="text-[8px] font-mono leading-tight text-[var(--text-dimmed)]">Free</span>
+                                  ) : (
+                                    <>
+                                      <span className="text-[8px] font-mono leading-tight text-[var(--text-dimmed)]">
+                                        {formatPrice(model.promptPrice)}i
+                                      </span>
+                                      <span className="text-[8px] font-mono leading-tight text-[var(--text-dimmed)]">
+                                        {formatPrice(model.completionPrice)}o
+                                      </span>
+                                    </>
+                                  )}
+                                </div>
+                              )}
+                              {selectedModel === model.id && (
+                                <svg className="w-3.5 h-3.5 text-[var(--accent)] flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                                </svg>
+                              )}
+                            </div>
                           </button>
                         ))}
                         {availableModels.filter(m => !modelSearch || m.name.toLowerCase().includes(modelSearch.toLowerCase()) || m.id.toLowerCase().includes(modelSearch.toLowerCase())).length === 0 && (
