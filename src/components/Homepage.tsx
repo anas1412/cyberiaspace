@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
   ArrowRight, Cpu, Rocket, ChevronDown, MessageCircle, X,
   Quote, Plus, FileText, Layout, Shield, XCircle, CheckCircle2,
-  Github, Layers, Bot, Mail, Check
+  Github, Layers, Bot, Mail, Check, Monitor
 } from 'lucide-react';
 
 import { DISCORD_INVITE_URL } from '../constants';
@@ -54,6 +54,12 @@ const FEATURES = [
     title: 'Local-First Storage',
     description: 'Everything stays on your machine. No accounts, no cloud uploads — your workspace is yours, completely private.',
     iconBg: 'bg-[var(--accent)]/10 border-[var(--accent)]/20 text-[var(--accent)]'
+  },
+  {
+    icon: Monitor,
+    title: 'Install on Your Machine',
+    description: 'Use Cyberia like a native app. Install it on your desktop for offline access, a dedicated window, and quick launching from your taskbar.',
+    iconBg: 'bg-[var(--accent)]/10 border-[var(--accent)]/20 text-[var(--accent)]'
   }
 ];
 
@@ -102,8 +108,8 @@ const FAQ_ITEMS = [
     answer: 'Yes! Cyberia is completely free and open-source. There are no paid plans, no hidden features behind a paywall, and no account required. You only need an OpenRouter API key if you want to use AI features — and you control that directly.'
   },
   {
-    question: 'Where\'s the mobile app?',
-    answer: 'Currently, Cyberia is a desktop-only web application optimized for mouse and keyboard. A mobile version is on the roadmap but not yet available. We recommend using it on a laptop or desktop for the best experience.'
+    question: 'Can I install it on my machine?',
+    answer: 'Yes! Cyberia is a progressive web app, which means you can install it directly on your desktop or laptop through your browser. On Chrome or Edge, look for the install icon in the address bar when you visit Cyberia — this adds it to your taskbar or dock, gives it its own window, and even lets you use it offline. Mobile support is on the roadmap but not yet available.'
   },
   {
     question: 'Can I contribute to the project?',
@@ -303,7 +309,7 @@ const Homepage: React.FC = () => {
               <p className="text-[var(--text-muted)] text-lg">A workspace that adapts to how your mind naturally organizes information.</p>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
               {FEATURES.map((feature, i) => (
                 <motion.div
                   key={i}
