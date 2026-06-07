@@ -20,6 +20,8 @@ import { twMerge } from 'tailwind-merge';
 
 import { db, type ChatMessage, type ChatConversation } from '../db';
 import { ulid } from 'ulid';
+import { parseToolCalls } from '../services/ai/toolParser';
+import { executeAiTool } from '../services/ai/executor';
 
 function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -669,9 +671,44 @@ const ChatOverlay: React.FC = () => {
       });
 
       if (assistantContent.trim()) {
+        // Parse and execute tool calls (same as handleSend)
+        const toolCalls = parseToolCalls(assistantContent);
+        let resultsSummary = '';
+        if (toolCalls.length > 0) {
+          const storeState = useStore.getState();
+          const results: Array<{ toolName: string; success: boolean; label?: string; error?: string }> = [];
+          for (const tc of toolCalls) {
+            const result = await executeAiTool(tc, storeState);
+            results.push({
+              toolName: tc.toolName,
+              success: result.success,
+              label: (tc.args.name as string) || (tc.args.text as string) || '',
+              error: result.error,
+            });
+          }
+          const successCount = results.filter(r => r.success).length;
+          if (successCount > 0) {
+            const lines = results.filter(r => r.success).map(r => {
+              if (r.toolName === 'create_stack') return `• Created stack "${r.label || 'unnamed'}"`;
+              if (r.toolName === 'create_thought') return `• Created thought "${r.label || 'untitled'}"`;
+              if (r.toolName === 'create_thoughts') return `• Created ${r.label || 'multiple'} thoughts`;
+              if (r.toolName === 'link_thoughts') return `• Linked thoughts to "${r.label || 'stack'}"`;
+              if (r.toolName === 'unlink_thoughts') return `• Unlinked thoughts from their stack`;
+              if (r.toolName === 'delete_thoughts') return `• Deleted thoughts`;
+              if (r.toolName === 'update_thought') return `• Updated thought "${r.label || ''}"`;
+              return `• Executed ${r.toolName}`;
+            }).filter(Boolean).join('\n');
+            resultsSummary = `\n\n---\n\n✅ **Done:**\n${lines}`;
+          }
+          const failCount = results.filter(r => !r.success).length;
+          if (failCount > 0) {
+            resultsSummary += `\n\n⚠️ **Issues:**\n${results.filter(r => !r.success).map(r => `• ${r.toolName}: ${r.error}`).join('\n')}`;
+          }
+        }
         const sanitized = sanitizeAssistantContent(assistantContent);
-        assistantMsg.content = sanitized;
-        setMessages(prev => prev.map(m => m.id === assistantMsg.id ? { ...m, content: sanitized } : m));
+        const finalContent = sanitized + resultsSummary;
+        assistantMsg.content = finalContent;
+        setMessages(prev => prev.map(m => m.id === assistantMsg.id ? { ...m, content: finalContent } : m));
         saveMessage(assistantMsg);
       }
     } catch (err: any) {
@@ -911,9 +948,56 @@ IMPORTANT RULES:
       });
 
       if (assistantContent.trim()) {
+        // ---- Phase 1: Parse tool calls from the raw response ----
+        const toolCalls = parseToolCalls(assistantContent);
+
+        // ---- Phase 2: Execute tool calls if any ----
+        let resultsSummary = '';
+        if (toolCalls.length > 0) {
+          const storeState = useStore.getState();
+          const results: Array<{ toolName: string; success: boolean; label?: string; error?: string }> = [];
+
+          for (const tc of toolCalls) {
+            const result = await executeAiTool(tc, storeState);
+            results.push({
+              toolName: tc.toolName,
+              success: result.success,
+              label: (tc.args.name as string) || (tc.args.text as string) || '',
+              error: result.error,
+            });
+          }
+
+          // Build human-readable summary
+          const successCount = results.filter(r => r.success).length;
+          const failCount = results.filter(r => !r.success).length;
+          if (successCount > 0) {
+            const lines = results
+              .filter(r => r.success)
+              .map(r => {
+                if (r.toolName === 'create_stack') return `• Created stack "${r.label || 'unnamed'}"`;
+                if (r.toolName === 'create_thought') return `• Created thought "${r.label || 'untitled'}"`;
+                if (r.toolName === 'create_thoughts') return `• Created ${r.label || 'multiple'} thoughts`;
+                if (r.toolName === 'link_thoughts') return `• Linked thoughts to "${r.label || 'stack'}"`;
+                if (r.toolName === 'unlink_thoughts') return `• Unlinked thoughts from their stack`;
+                if (r.toolName === 'delete_thoughts') return `• Deleted thoughts`;
+                if (r.toolName === 'update_thought') return `• Updated thought "${r.label || ''}"`;
+                return `• Executed ${r.toolName}`;
+              })
+              .filter(Boolean)
+              .join('\n');
+            resultsSummary = `\n\n---\n\n✅ **Done:**\n${lines}`;
+          }
+          if (failCount > 0) {
+            const errors = results.filter(r => !r.success).map(r => `• ${r.toolName}: ${r.error}`).join('\n');
+            resultsSummary += `\n\n⚠️ **Issues:**\n${errors}`;
+          }
+        }
+
+        // ---- Phase 3: Sanitize and display ----
         const sanitized = sanitizeAssistantContent(assistantContent);
-        assistantMsg.content = sanitized;
-        setMessages(prev => prev.map(m => m.id === assistantMsg.id ? { ...m, content: sanitized } : m));
+        const finalContent = sanitized + resultsSummary;
+        assistantMsg.content = finalContent;
+        setMessages(prev => prev.map(m => m.id === assistantMsg.id ? { ...m, content: finalContent } : m));
         saveMessage(assistantMsg);
       }
     } catch (err: any) {
