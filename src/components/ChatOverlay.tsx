@@ -27,11 +27,15 @@ function cn(...inputs: ClassValue[]) {
 
 // Strips raw tool call syntax and internal IDs from AI responses
 const sanitizeAssistantContent = (content: string): string => {
-  // Remove lines that are standalone tool call invocations (e.g. `create_stack({...})`)
-  const toolCallPattern = /^(?:const\s+\w+\s*=\s*)?(?:create_thought|create_thoughts|create_stack|link_thoughts|unlink_thoughts|update_thought|update_thoughts|delete_thoughts|delete_stack|delete_stacks|get_thought_details|read_file_content|read_files_content|update_stack|update_stacks|map_stack_to_thought)\s*\([\s\S]*?\)\s*;?\s*$/gm;
-  let sanitized = content.replace(toolCallPattern, '').trim();
+  // Remove XML-style tool call blocks (e.g. <tool_call><function=create_stack>...)
+  const xmlToolCall = /<tool_call>[\s\S]*?<\/tool_call>\s*/g;
+  let sanitized = content.replace(xmlToolCall, '').trim();
 
-  // Remove any lines that are just JSON-like tool call objects in code blocks
+  // Remove lines that are standalone JS function call invocations (e.g. `create_stack({...})`)
+  const jsToolCall = /^(?:const\s+\w+\s*=\s*)?(?:create_thought|create_thoughts|create_stack|link_thoughts|unlink_thoughts|update_thought|update_thoughts|delete_thoughts|delete_stack|delete_stacks|get_thought_details|read_file_content|read_files_content|update_stack|update_stacks|map_stack_to_thought)\s*\([\s\S]*?\)\s*;?\s*$/gm;
+  sanitized = sanitized.replace(jsToolCall, '').trim();
+
+  // Remove any code blocks containing JSON tool call objects
   sanitized = sanitized.replace(/```(?:json|js)?\s*\n\s*\{[^}]*?"toolName"[^}]*?\}\s*\n```\s*/g, '');
 
   return sanitized;
