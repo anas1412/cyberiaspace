@@ -154,6 +154,7 @@ export interface CyberiaState {
   createStack: (name: string, thoughtId: string) => Promise<void>;
   updateStack: (id: string, updates: Partial<Stack>) => Promise<void>;
   deleteStack: (id: string) => Promise<void>;
+  deleteStackWithThoughts: (id: string) => Promise<void>;
   cleanupStacks: () => Promise<void>;
 
   isReadOnly: boolean;

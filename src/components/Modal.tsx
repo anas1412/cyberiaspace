@@ -2,14 +2,14 @@ import React, { useEffect, useState } from 'react';
 import { useModalStore, type DeletionMode, type DeletionCounts } from '../store/useModalStore';
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
-import { Cloud, HardDrive, X, Trash2 } from 'lucide-react';
+import { Cloud, HardDrive, X, Trash2, Layers, Unlink } from 'lucide-react';
 
 function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
 
 const Modal: React.FC = () => {
-  const { isOpen, title, description, type, inputValue: initialValue, confirmText, onConfirm, content, cancelText, onCancel, closeModal, deletionCounts, defaultDeletionMode } = useModalStore();
+  const { isOpen, title, description, type, inputValue: initialValue, confirmText, onConfirm, content, cancelText, onCancel, closeModal, deletionCounts, defaultDeletionMode, stackName, thoughtCount } = useModalStore();
   const [inputValue, setInputValue] = useState('');
 
   const handleConfirm = React.useCallback((value?: string) => {
@@ -42,7 +42,7 @@ const Modal: React.FC = () => {
 
   const showInput = ['rename', 'new_space'].includes(type);
   const showCancel = !['limit_space', 'limit_thought', 'terms', 'conflict_resolver', 'delete_data'].includes(type);
-  const showStandardButtons = !['terms', 'conflict_resolver', 'custom', 'delete_data'].includes(type);
+  const showStandardButtons = !['terms', 'conflict_resolver', 'custom', 'delete_data', 'delete_stack'].includes(type);
   const showXButton = !['terms', 'custom', 'delete_data'].includes(type);
 
   return (
@@ -129,6 +129,13 @@ const Modal: React.FC = () => {
               Cloud sync will update with your choice
             </p>
           </div>
+        ) : type === 'delete_stack' ? (
+          <DeleteStackModal
+            stackName={stackName || 'this group'}
+            thoughtCount={thoughtCount ?? 0}
+            onConfirm={(choice) => handleConfirm(choice)}
+            onCancel={handleCancel}
+          />
         ) : type === 'delete_data' ? (
           <DeleteDataModal 
             deletionCounts={deletionCounts}
@@ -370,6 +377,121 @@ const DeleteDataModal: React.FC<DeleteDataModalProps> = ({
           className="flex-1 py-3.5 text-[10px] font-semibold tracking-wide bg-red-500 rounded-xl text-white hover:bg-red-600 transition-colors shadow-lg shadow-red-500/20"
         >
           {confirmText || 'Continue'} →
+        </button>
+      </div>
+    </div>
+  );
+};
+
+interface DeleteStackModalProps {
+  stackName: string;
+  thoughtCount: number;
+  onConfirm: (choice: string) => void;
+  onCancel: () => void;
+}
+
+const DeleteStackModal: React.FC<DeleteStackModalProps> = ({
+  stackName,
+  thoughtCount,
+  onConfirm,
+  onCancel,
+}) => {
+  const options = [
+    {
+      value: 'unlink',
+      icon: <Unlink className="w-5 h-5" />,
+      title: 'Remove collection only',
+      description: 'Keeps all thoughts — they stay in your space.',
+      color: 'accent',
+      bgColor: 'bg-[var(--accent)]/10',
+      borderColor: 'border-[var(--glass-border)]',
+      selectedBorderColor: 'border-[var(--accent)]/30',
+      iconBg: 'bg-[var(--accent)]/20',
+      iconColor: 'text-[var(--accent)]',
+    },
+    {
+      value: 'delete_all',
+      icon: <Trash2 className="w-5 h-5" />,
+      title: 'Remove collection + all inside',
+      description: thoughtCount > 0
+        ? `Also removes ${thoughtCount} thought${thoughtCount === 1 ? '' : 's'} inside it.`
+        : 'No thoughts inside — nothing extra to remove.',
+      color: 'red',
+      bgColor: 'bg-red-500/10',
+      borderColor: 'border-[var(--glass-border)]',
+      selectedBorderColor: 'border-red-500/30',
+      iconBg: 'bg-red-500/20',
+      iconColor: 'text-red-400',
+    },
+  ];
+
+  const [selected, setSelected] = useState(options[0].value);
+
+  return (
+    <div className="mt-6">
+      <p className="text-[9px] text-[var(--text-muted)] uppercase font-bold tracking-widest text-center mb-6">
+        What do you want to do with "{stackName}"?
+      </p>
+
+      <div className="space-y-3">
+        {options.map(({ value, icon, title, description, bgColor, borderColor, selectedBorderColor, iconBg, iconColor }) => {
+          const isSelected = selected === value;
+          return (
+            <button
+              key={value}
+              onClick={() => setSelected(value)}
+              className={cn(
+                "w-full flex items-center gap-4 p-4 rounded-2xl border transition-all text-left",
+                isSelected ? bgColor : "bg-[var(--glass-bg)]",
+                isSelected ? selectedBorderColor : borderColor,
+                !isSelected && "hover:bg-[var(--bg-page)]"
+              )}
+            >
+              <div className={cn(
+                "w-10 h-10 rounded-xl flex items-center justify-center shrink-0",
+                isSelected ? iconBg : "bg-[var(--glass-border)]"
+              )}>
+                <span className={isSelected ? iconColor : 'text-[var(--text-dimmed)]'}>{icon}</span>
+              </div>
+              <div className="flex-1">
+                <span className={cn(
+                  "block text-[10px] font-semibold tracking-wide",
+                  isSelected && value === 'delete_all' ? 'text-red-300' : '',
+                  isSelected && value === 'unlink' ? 'text-[var(--accent)]' : '',
+                  !isSelected ? 'text-[var(--text-primary)]' : ''
+                )}>
+                  {title}
+                </span>
+                <span className="text-[9px] text-[var(--text-muted)]">{description}</span>
+              </div>
+              {isSelected && (
+                <div className={cn(
+                  "w-4 h-4 rounded-full shrink-0",
+                  value === 'delete_all' ? 'bg-red-500' : 'bg-[var(--accent)]'
+                )} />
+              )}
+            </button>
+          );
+        })}
+      </div>
+
+      <div className="flex gap-3 mt-6">
+        <button
+          onClick={onCancel}
+          className="flex-1 py-3.5 text-[10px] font-semibold tracking-wide bg-[var(--glass-bg)] rounded-xl text-[var(--text-primary)] hover:bg-[var(--bg-page)] transition-colors"
+        >
+          Cancel
+        </button>
+        <button
+          onClick={() => onConfirm(selected)}
+          className={cn(
+            "flex-1 py-3.5 text-[10px] font-semibold tracking-wide rounded-xl text-white transition-colors shadow-lg",
+            selected === 'delete_all'
+              ? 'bg-red-500 hover:bg-red-600 shadow-red-500/20'
+              : 'bg-[var(--accent)] hover:opacity-90 shadow-[var(--accent-glow)]'
+          )}
+        >
+          {selected === 'delete_all' ? 'Remove everything' : 'Remove collection'}
         </button>
       </div>
     </div>

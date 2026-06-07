@@ -571,12 +571,19 @@ className={cn(
                                         <button
                                           onClick={(e) => {
                                             e.stopPropagation();
+                                            const thoughtCount = useStore.getState().thoughts.filter(t => t.stackId === s.id && !t.deletedAt && !t.archivedAt).length;
                                             openModal({
-                                              title: 'Dissolve Group?',
-                                              description: `This will unlink all thoughts from "${s.name}".`,
+                                              title: 'Remove Collection?',
                                               type: 'delete_stack',
-                                              confirmText: 'Dissolve',
-                                              onConfirm: () => useStore.getState().deleteStack(s.id)
+                                              stackName: s.name,
+                                              thoughtCount,
+                                              onConfirm: (choice) => {
+                                                if (choice === 'delete_all') {
+                                                  useStore.getState().deleteStackWithThoughts(s.id);
+                                                } else {
+                                                  useStore.getState().deleteStack(s.id);
+                                                }
+                                              }
                                             });
                                         }}
                                         className="absolute right-3 top-1/2 -translate-y-1/2 p-1.5 rounded-md bg-red-500/10 text-red-400 hover:bg-red-500 hover:text-[var(--accent-contrast)] opacity-0 group-hover/s:opacity-100 transition-all shadow-lg"

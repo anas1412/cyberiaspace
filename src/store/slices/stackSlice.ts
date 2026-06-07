@@ -157,6 +157,36 @@ export const createStackSlice: StateCreator<CyberiaState, [], [], any> = (set, g
     get().pushHistory();
   },
 
+  deleteStackWithThoughts: async (id: string) => {
+    if (get().isReadOnly || get().isDemo) return;
+    const now = Date.now();
+    const freshThoughts = get().thoughts;
+    const freshStacks = get().stacks;
+
+    set({
+      thoughts: freshThoughts.map(t =>
+        t.stackId === id ? { ...t, deletedAt: now, updatedAt: now } : t
+      ),
+      stacks: freshStacks.map(s =>
+        s.id === id ? { ...s, deletedAt: now, updatedAt: now } : s
+      )
+    });
+
+    const currentUserId = 'guest';
+    await db.transaction('rw', db.thoughts, db.stacks, async () => {
+      await db.thoughts.where('stackId').equals(id).and(t => t.userId === currentUserId).modify({
+        deletedAt: now,
+        updatedAt: now,
+      });
+      await db.stacks.update(id, {
+        deletedAt: now,
+        updatedAt: now,
+      });
+    });
+
+    get().pushHistory();
+  },
+
   cleanupStacks: async () => {
     const { activeSpaceId } = get();
     if (!activeSpaceId) return;

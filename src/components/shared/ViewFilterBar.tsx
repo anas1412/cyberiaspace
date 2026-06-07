@@ -151,13 +151,18 @@ export const ViewFilterBar: React.FC<ViewFilterBarProps> = ({
                 <button
                   onClick={(e) => {
                     e.stopPropagation();
+                    const thoughtCount = useStore.getState().thoughts.filter(t => t.stackId === stack.id && !t.deletedAt && !t.archivedAt).length;
                     useModalStore.getState().openModal({
-                      title: 'Dissolve Stack?',
-                      description: `This will unlink all thoughts from "${stack.name}".`,
+                      title: 'Remove Collection?',
                       type: 'delete_stack',
-                      confirmText: 'Dissolve',
-                      onConfirm: () => {
-                        useStore.getState().deleteStack(stack.id);
+                      stackName: stack.name,
+                      thoughtCount,
+                      onConfirm: (choice) => {
+                        if (choice === 'delete_all') {
+                          useStore.getState().deleteStackWithThoughts(stack.id);
+                        } else {
+                          useStore.getState().deleteStack(stack.id);
+                        }
                         if (stackFilter?.includes(stack.id)) {
                           const next = stackFilter.filter(s => s !== stack.id);
                           setStackFilter(next.length ? next : null);

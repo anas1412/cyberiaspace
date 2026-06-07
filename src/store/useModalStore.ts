@@ -25,6 +25,8 @@ export interface ModalState {
   content?: React.ReactNode;
   deletionCounts?: DeletionCounts;
   defaultDeletionMode?: DeletionMode;
+  stackName?: string;
+  thoughtCount?: number;
   openModal: (params: Omit<ModalState, 'isOpen' | 'isPricingOpen' | 'openModal' | 'closeModal' | 'openPricing' | 'closePricing'>) => void;
   closeModal: () => void;
   openPricing: () => void;
@@ -44,6 +46,8 @@ export const useModalStore = create<ModalState>((set) => ({
     confirmText: undefined,
     onConfirm: undefined,
     content: undefined,
+    stackName: undefined,
+    thoughtCount: undefined,
     ...params,
     isOpen: true
   }),
