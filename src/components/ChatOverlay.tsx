@@ -8,7 +8,7 @@ import {
   type SuggestionItem 
 } from '../utils/referenceParser';
 import SuggestionDropdown from './SuggestionDropdown';
-import { X, SendHorizonal, MessageSquare, Loader2, Square, ChevronDown, ChevronLeft, Pencil, Trash2, Check, X as XIcon, Copy, Key, Eye, EyeOff, Search } from 'lucide-react';
+import { X, SendHorizonal, MessageSquare, Loader2, Square, ChevronDown, ChevronLeft, Pencil, Trash2, Check, X as XIcon, Copy, Key, Eye, EyeOff, Search, Plus, MessageSquarePlus } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
@@ -18,7 +18,7 @@ import { ORACLE_CONFIG } from '../constants';
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 
-import { db, type ChatMessage } from '../db';
+import { db, type ChatMessage, type ChatConversation } from '../db';
 import { ulid } from 'ulid';
 
 function cn(...inputs: ClassValue[]) {
@@ -49,6 +49,18 @@ const FALLBACK_MODELS: ModelOption[] = [
 ];
 
 export type ModelOption = { id: string; name: string; desc: string };
+
+function getTimeAgo(ts: number): string {
+  const diff = Date.now() - ts;
+  const mins = Math.floor(diff / 60000);
+  if (mins < 1) return 'just now';
+  if (mins < 60) return `${mins}m ago`;
+  const hrs = Math.floor(mins / 60);
+  if (hrs < 24) return `${hrs}h ago`;
+  const days = Math.floor(hrs / 24);
+  if (days < 7) return `${days}d ago`;
+  return `${Math.floor(days / 7)}w ago`;
+}
 
 /** Convert ChatOverlay messages to OpenRouter-compatible format */
 function toOpenRouterMessages(messages: Message[]) {
@@ -115,6 +127,13 @@ const ChatOverlay: React.FC = () => {
   const [editInput, setEditInput] = useState('');
   const [copiedMessageId, setCopiedMessageId] = useState<string | null>(null);
 
+  // Conversation management
+  const [conversations, setConversations] = useState<ChatConversation[]>([]);
+  const [currentConversationId, setCurrentConversationId] = useState<string | null>(null);
+  const [showConversationList, setShowConversationList] = useState(false);
+  const [renamingConversationId, setRenamingConversationId] = useState<string | null>(null);
+  const [renameInput, setRenameInput] = useState('');
+
   const handleCopyMessage = async (msg: Message) => {
     try {
       await navigator.clipboard.writeText(msg.content);
@@ -150,21 +169,84 @@ const ChatOverlay: React.FC = () => {
     }
   }, [showModelDropdown]);
 
-  // Load history from Dexie when spaceId changes
+  // Load conversations + messages for the active space
   useEffect(() => {
-    if (store.activeSpaceId) {
-      db.chatHistory
-        .where('spaceId')
-        .equals(store.activeSpaceId)
-        .sortBy('timestamp')
-        .then(history => {
-          setMessages(history as Message[]);
-        })
-        .catch(err => console.error("[AI] Failed to load chat history:", err));
-    } else {
+    if (!store.activeSpaceId) {
+      setConversations([]);
       setMessages([]);
+      setCurrentConversationId(null);
+      return;
     }
+
+    const spaceId = store.activeSpaceId;
+
+    (async () => {
+      // Load conversations
+      const convos = await db.chatConversations
+        .where('spaceId')
+        .equals(spaceId)
+        .sortBy('updatedAt');
+
+      setConversations(convos);
+
+      // Migration: if messages exist without a conversation, create one
+      const orphanCount = convos.length === 0
+        ? await db.chatHistory.where('spaceId').equals(spaceId).count()
+        : 0;
+
+      if (orphanCount > 0) {
+        const migrationConvo: ChatConversation = {
+          id: ulid(),
+          spaceId,
+          title: 'Chat History',
+          createdAt: Date.now(),
+          updatedAt: Date.now(),
+        };
+        await db.chatConversations.put(migrationConvo);
+        // Update all orphan messages with the conversationId
+        const orphans = await db.chatHistory
+          .where('spaceId')
+          .equals(spaceId)
+          .toArray();
+        for (const msg of orphans) {
+          await db.chatHistory.put({ ...msg, conversationId: migrationConvo.id } as ChatMessage);
+        }
+        setConversations([migrationConvo]);
+        setCurrentConversationId(migrationConvo.id);
+        // Load migrated messages
+        const msgs = orphans.sort((a, b) => a.timestamp - b.timestamp);
+        setMessages(msgs as Message[]);
+        return;
+      }
+
+      // Select the most recent conversation, or the first one
+      if (convos.length > 0) {
+        const targetId = currentConversationId && convos.some(c => c.id === currentConversationId)
+          ? currentConversationId
+          : convos[convos.length - 1].id;
+        setCurrentConversationId(targetId);
+        const msgs = await db.chatHistory
+          .where('[spaceId+conversationId]')
+          .equals([spaceId, targetId])
+          .sortBy('timestamp');
+        setMessages(msgs as Message[]);
+      } else {
+        setCurrentConversationId(null);
+        setMessages([]);
+      }
+    })();
   }, [store.activeSpaceId]);
+
+  // Reload messages when switching conversations
+  useEffect(() => {
+    if (!store.activeSpaceId || !currentConversationId) return;
+    db.chatHistory
+      .where('[spaceId+conversationId]')
+      .equals([store.activeSpaceId, currentConversationId])
+      .sortBy('timestamp')
+      .then(msgs => setMessages(msgs as Message[]))
+      .catch(err => console.error("[AI] Failed to load messages:", err));
+  }, [currentConversationId, store.activeSpaceId]);
 
   // Save API key on change
   useEffect(() => {
@@ -472,9 +554,11 @@ const ChatOverlay: React.FC = () => {
     abortControllerRef.current = controller;
 
     let assistantContent = '';
+    const cid = msg.conversationId || currentConversationId || '';
     const assistantMsg: Message = {
       id: ulid(),
       spaceId: store.activeSpaceId,
+      conversationId: cid,
       role: 'assistant',
       content: '',
       timestamp: Date.now(),
@@ -502,6 +586,7 @@ const ChatOverlay: React.FC = () => {
         const errorMsg: Message = {
           id: ulid(),
           spaceId: store.activeSpaceId,
+          conversationId: cid,
           role: 'assistant',
           content: `⚠️ **Error:** ${err.message || 'Unknown error occurred'}`,
           timestamp: Date.now(),
@@ -517,9 +602,91 @@ const ChatOverlay: React.FC = () => {
     }
   };
 
+  // ── Conversations CRUD ──────────────────────────────────────
+
+  const createConversation = async () => {
+    if (!store.activeSpaceId) return;
+    const convo: ChatConversation = {
+      id: ulid(),
+      spaceId: store.activeSpaceId,
+      title: 'New Chat',
+      createdAt: Date.now(),
+      updatedAt: Date.now(),
+    };
+    await db.chatConversations.put(convo);
+    setConversations(prev => [...prev, convo]);
+    setCurrentConversationId(convo.id);
+    setShowConversationList(false);
+    setMessages([]);
+  };
+
+  const renameConversation = async (id: string, title: string) => {
+    const trimmed = title.trim();
+    if (!trimmed) return;
+    await db.chatConversations.update(id, { title: trimmed, updatedAt: Date.now() });
+    setConversations(prev => prev.map(c => c.id === id ? { ...c, title: trimmed } : c));
+    setRenamingConversationId(null);
+    setRenameInput('');
+  };
+
+  const deleteConversation = async (id: string) => {
+    if (!store.activeSpaceId) return;
+    // Remove all messages in this conversation
+    await db.chatHistory.where('[spaceId+conversationId]').equals([store.activeSpaceId, id]).delete();
+    // Remove the conversation itself
+    await db.chatConversations.delete(id);
+    setConversations(prev => prev.filter(c => c.id !== id));
+
+    if (currentConversationId === id) {
+      // Switch to most recent remaining, or clear
+      const remaining = conversations.filter(c => c.id !== id);
+      if (remaining.length > 0) {
+        const next = remaining[remaining.length - 1];
+        setCurrentConversationId(next.id);
+      } else {
+        setCurrentConversationId(null);
+        setMessages([]);
+      }
+    }
+    // Keep list open so user can delete multiple
+  };
+
+  const switchConversation = (id: string) => {
+    setCurrentConversationId(id);
+    setShowConversationList(false);
+  };
+
+  const getConversationTitle = (): string => {
+    if (!currentConversationId) return '';
+    const convo = conversations.find(c => c.id === currentConversationId);
+    if (!convo) return '';
+    return convo.title;
+  };
+
+  const ensureConversation = async (): Promise<string> => {
+    if (currentConversationId && conversations.some(c => c.id === currentConversationId)) {
+      return currentConversationId;
+    }
+    // Auto-create a conversation
+    const convo: ChatConversation = {
+      id: ulid(),
+      spaceId: store.activeSpaceId!,
+      title: 'New Chat',
+      createdAt: Date.now(),
+      updatedAt: Date.now(),
+    };
+    await db.chatConversations.put(convo);
+    setConversations(prev => [...prev, convo]);
+    setCurrentConversationId(convo.id);
+    return convo.id;
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!input.trim() || isLoading || !store.activeSpaceId) return;
+
+    // Ensure there's an active conversation
+    const activeConvoId = await ensureConversation();
 
     // Check API key
     if (!apiKey) {
@@ -557,6 +724,7 @@ const ChatOverlay: React.FC = () => {
     const userMessage: Message = { 
       id: ulid(), 
       spaceId: store.activeSpaceId, 
+      conversationId: activeConvoId,
       role: 'user', 
       content: contentForUI,
       timestamp: Date.now(),
@@ -568,6 +736,13 @@ const ChatOverlay: React.FC = () => {
     setMessages(prev => [...prev, userMessage]);
     saveMessage(userMessage);
     
+    // Auto-name conversation after first user message if still "New Chat"
+    const currentConvo = conversations.find(c => c.id === activeConvoId);
+    if (currentConvo && currentConvo.title === 'New Chat') {
+      const newTitle = input.trim().slice(0, 60) || 'New Chat';
+      renameConversation(activeConvoId, newTitle);
+    }
+
     setInput('');
     setIsLoading(true);
     setStatus('thinking');
@@ -607,6 +782,7 @@ const ChatOverlay: React.FC = () => {
     const assistantMsg: Message = { 
       id: ulid(), 
       spaceId: store.activeSpaceId,
+      conversationId: activeConvoId,
       role: 'assistant', 
       content: '',
       timestamp: Date.now(),
@@ -630,6 +806,7 @@ const ChatOverlay: React.FC = () => {
         const errorMsg: Message = {
           id: ulid(),
           spaceId: store.activeSpaceId,
+          conversationId: activeConvoId,
           role: 'assistant',
           content: `⚠️ **Error:** ${err.message || 'Unknown error occurred'}`,
           timestamp: Date.now(),
@@ -663,26 +840,134 @@ const ChatOverlay: React.FC = () => {
 
           {/* HEADER */}
           <div className="sticky top-0 z-30 bg-[var(--bg-main)]/60 backdrop-blur-xl border-b border-[var(--glass-border)] flex flex-col">
-            {/* Top Bar — matches Inspector */}
-            <div className="px-4 py-3 md:px-5 flex justify-between items-center relative min-h-[44px]">
-              <div className="flex-1" />
-              <div className="absolute left-1/2 -translate-x-1/2 flex items-center justify-center pointer-events-none">
-                <div className="flex items-center gap-2">
-                  <div className="w-1.5 h-1.5 rounded-full bg-[var(--accent)] shadow-[0_0_8px_var(--accent-glow)]" />
-                  <h3 className="text-[11px] font-extrabold uppercase tracking-[0.2em] text-[var(--text-primary)] leading-none">
-                    Cyberia AI
-                  </h3>
-                </div>
-              </div>
-              <div className="flex-1 flex items-center justify-end gap-1 relative z-50">
+            {/* Top Bar — conversation title + controls */}
+            <div className="px-4 py-3 md:px-5 flex items-center justify-between gap-2 min-h-[44px]">
+              {/* Left: conversation list toggle */}
+              <button
+                onClick={() => setShowConversationList(!showConversationList)}
+                className="flex items-center gap-1.5 flex-1 min-w-0 text-left group"
+                title="Conversations"
+              >
+                <div className="w-1.5 h-1.5 rounded-full bg-[var(--accent)] shadow-[0_0_8px_var(--accent-glow)] flex-shrink-0" />
+                <span className="text-[11px] font-semibold text-[var(--text-primary)] truncate">
+                  {getConversationTitle() || 'Cyberia AI'}
+                </span>
+                <ChevronDown className={cn(
+                  "w-3 h-3 flex-shrink-0 text-[var(--text-muted)] transition-transform duration-200",
+                  showConversationList && "rotate-180"
+                )} />
+              </button>
+
+              {/* Right: new chat + close */}
+              <div className="flex items-center gap-1 flex-shrink-0">
+                <button
+                  onClick={createConversation}
+                  title="New Chat"
+                  className="w-7 h-7 flex items-center justify-center rounded-lg hover:bg-[var(--glass-bg)] text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-all"
+                >
+                  <Plus className="w-3.5 h-3.5" />
+                </button>
                 <button
                   onClick={() => setChatOpen(false)}
-                  className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-[var(--glass-bg)] text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-all"
+                  className="w-7 h-7 flex items-center justify-center rounded-lg hover:bg-[var(--glass-bg)] text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-all"
                 >
-                  <X className="w-4 h-4" />
+                  <X className="w-3.5 h-3.5" />
                 </button>
               </div>
             </div>
+
+            {/* Conversation List Overlay */}
+            <AnimatePresence>
+              {showConversationList && (
+                <motion.div
+                  initial={{ height: 0, opacity: 0 }}
+                  animate={{ height: 'auto', opacity: 1 }}
+                  exit={{ height: 0, opacity: 0 }}
+                  transition={{ duration: 0.25, ease: [0.23, 1, 0.32, 1] }}
+                  className="overflow-hidden border-b border-[var(--glass-border)]"
+                >
+                  <div className="px-3 pb-3 max-h-[240px] overflow-y-auto custom-scroll space-y-0.5">
+                    {conversations.length === 0 ? (
+                      <div className="py-6 text-center">
+                        <p className="text-[10px] text-[var(--text-muted)]">No conversations yet</p>
+                        <button
+                          onClick={createConversation}
+                          className="mt-2 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[var(--accent)]/10 text-[var(--accent)] text-[10px] font-semibold hover:bg-[var(--accent)]/20 transition-all"
+                        >
+                          <MessageSquarePlus className="w-3 h-3" />
+                          Start a Chat
+                        </button>
+                      </div>
+                    ) : (
+                      conversations.map((convo) => {
+                        const isActive = convo.id === currentConversationId;
+                        const isRenaming = renamingConversationId === convo.id;
+                        const timeAgo = getTimeAgo(convo.updatedAt);
+
+                        return (
+                          <div
+                            key={convo.id}
+                            className={cn(
+                              "group flex items-center gap-2 px-3 py-2 rounded-xl transition-all cursor-pointer",
+                              isActive
+                                ? "bg-[var(--accent)]/8 text-[var(--accent)]"
+                                : "hover:bg-[var(--glass-bg)] text-[var(--text-primary)]"
+                            )}
+                            onClick={() => !isRenaming && switchConversation(convo.id)}
+                          >
+                            {isRenaming ? (
+                              <input
+                                value={renameInput}
+                                onChange={e => setRenameInput(e.target.value)}
+                                onKeyDown={e => {
+                                  if (e.key === 'Enter') renameConversation(convo.id, renameInput);
+                                  if (e.key === 'Escape') { setRenamingConversationId(null); setRenameInput(''); }
+                                }}
+                                onBlur={() => renameConversation(convo.id, renameInput)}
+                                className="flex-1 bg-[var(--bg-page)]/40 border border-[var(--accent)]/50 rounded-md px-2 py-1 text-[11px] text-[var(--text-primary)] outline-none"
+                                autoFocus
+                                onClick={e => e.stopPropagation()}
+                              />
+                            ) : (
+                              <>
+                                <div className={cn(
+                                  "w-1 h-1 rounded-full flex-shrink-0 transition-all",
+                                  isActive ? "bg-[var(--accent)]" : "bg-[var(--glass-border)]"
+                                )} />
+                                <div className="flex-1 min-w-0">
+                                  <div className="text-[11px] font-medium truncate leading-tight">
+                                    {convo.title}
+                                  </div>
+                                  <div className="text-[8px] font-mono text-[var(--text-muted)] mt-0.5 tracking-wide">
+                                    {timeAgo}
+                                  </div>
+                                </div>
+                                <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0">
+                                  <button
+                                    onClick={e => { e.stopPropagation(); setRenamingConversationId(convo.id); setRenameInput(convo.title); }}
+                                    className="w-6 h-6 flex items-center justify-center rounded-md hover:bg-[var(--bg-page)] text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-all"
+                                    title="Rename"
+                                  >
+                                    <Pencil className="w-2.5 h-2.5" />
+                                  </button>
+                                  <button
+                                    onClick={e => { e.stopPropagation(); deleteConversation(convo.id); }}
+                                    className="w-6 h-6 flex items-center justify-center rounded-md hover:bg-red-500/10 text-[var(--text-muted)] hover:text-red-400 transition-all"
+                                    title="Delete"
+                                  >
+                                    <Trash2 className="w-2.5 h-2.5" />
+                                  </button>
+                                </div>
+                              </>
+                            )}
+                          </div>
+                        );
+                      })
+                    )}
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
 
             {/* Model & API Row — replaces Inspector's tab row */}
             <div className="flex items-center justify-between px-4 md:px-5 py-2.5 relative">

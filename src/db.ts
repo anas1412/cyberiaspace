@@ -125,9 +125,18 @@ interface LocalBlob {
   updatedAt: number;
 }
 
+interface ChatConversation {
+  id: string; // ULID
+  spaceId: string;
+  title: string;
+  createdAt: number;
+  updatedAt: number;
+}
+
 interface ChatMessage {
   id: string;
   spaceId: string;
+  conversationId: string;
   role: 'user' | 'assistant';
   content: string;
   timestamp: number;
@@ -155,6 +164,7 @@ const db = new Dexie('CyberiaDB') as Dexie & {
   blobs: EntityTable<LocalBlob, 'id'>;
   chatHistory: EntityTable<ChatMessage, 'id'>;
   spaceBackgrounds: EntityTable<SpaceBackground, 'id'>;
+  chatConversations: EntityTable<ChatConversation, 'id'>;
 };
 
 db.on('versionchange', () => {
@@ -185,5 +195,11 @@ db.version(20).stores({
   spaceBackgrounds: 'id, spaceId, userId'
 });
 
-export type { Space, Thought, Stack, ChatMessage };
+// Version 21: Added chatConversations + conversationId to chatHistory
+db.version(21).stores({
+  chatConversations: 'id, spaceId',
+  chatHistory: 'id, spaceId, [spaceId+conversationId], timestamp'
+});
+
+export type { Space, Thought, Stack, ChatMessage, ChatConversation };
 export { db };

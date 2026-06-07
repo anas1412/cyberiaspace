@@ -35,6 +35,8 @@ const Viewport: React.FC<{ isInteracting?: boolean }> = ({ isInteracting }) => {
   const deleteSelectedThoughts = useStore((state) => state.deleteSelectedThoughts);
   const deleteThought = useStore((state) => state.deleteThought);
   const addThought = useStore((state) => state.addThought);
+  const undo = useStore((state) => state.undo);
+  const redo = useStore((state) => state.redo);
   const setLinkingSourceId = useStore((state) => state.setLinkingSourceId);
   const linkingSourceId = useStore((state) => state.linkingSourceId);
 
@@ -266,6 +268,18 @@ const Viewport: React.FC<{ isInteracting?: boolean }> = ({ isInteracting }) => {
     const handleKeyDown = (e: KeyboardEvent) => {
       const target = e.target as HTMLElement;
       if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable) return;
+
+      // Undo/Redo
+      if ((e.ctrlKey || e.metaKey) && e.key === 'z') {
+        e.preventDefault();
+        undo();
+        return;
+      }
+      if ((e.ctrlKey || e.metaKey) && e.key === 'y') {
+        e.preventDefault();
+        redo();
+        return;
+      }
 
       if (e.key === 'Delete' || e.key === 'Backspace') {
         if (isReadOnly) return;

@@ -187,6 +187,12 @@ export const createThoughtSlice: StateCreator<CyberiaState, [], [], any> = (set,
     if (isReadOnly || get().isDemo) return;
     if (activeSpaceId) get().updateSpace(activeSpaceId, { updatedAt: Date.now() });
 
+    // Push undo history for non-position changes (ignore drag movement)
+    const POSITION_FIELDS = new Set(['x', 'y', 'vx', 'vy']);
+    if (Object.keys(updates).some(k => !POSITION_FIELDS.has(k))) {
+      get().pushHistory();
+    }
+
     const saveTimers = (window as any)._cyberia_save_timers || {};
     if (saveTimers[id]) clearTimeout(saveTimers[id]);
     saveTimers[id] = setTimeout(async () => {
