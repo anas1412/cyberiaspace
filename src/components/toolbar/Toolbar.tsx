@@ -59,7 +59,7 @@ const Toolbar: React.FC = () => {
   const [isShortcutsOpen, setIsShortcutsOpen] = useState(false);
   const [isHelpOpen, setIsHelpOpen] = useState(false);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
-  const [activeHelpTab, setActiveHelpTab] = useState<'about' | 'issue' | 'contact'>('about');
+  const [activeHelpTab, setActiveHelpTab] = useState<'about' | 'contact'>('about');
 
   // Expose modal triggers to window for cross-modal navigation
   useEffect(() => {
@@ -72,12 +72,6 @@ const Toolbar: React.FC = () => {
       delete (window as any)._openSettings;
     };
   }, []);
-
-  // Quick Feedback State
-  const [quickMessage, setQuickMessage] = useState('');
-  const [quickType, setQuickType] = useState<'issue' | 'feedback' | 'feature'>('issue');
-  const [isQuickSubmitting, setIsQuickSubmitting] = useState(false);
-  const [quickSubmitStatus, setQuickSubmitStatus] = useState<'idle' | 'success' | 'error'>('idle');
 
   // Contact Form State
   const [contactName, setContactName] = useState('');
@@ -103,25 +97,6 @@ const Toolbar: React.FC = () => {
         setTimeout(() => setContactSubmitStatus('idle'), 5000);
       } else setContactSubmitStatus('error');
     } catch { setContactSubmitStatus('error'); } finally { setIsContactSubmitting(false); }
-  };
-
-  const handleQuickSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!quickMessage.trim() || isQuickSubmitting) return;
-    setIsQuickSubmitting(true);
-    setQuickSubmitStatus('idle');
-    try {
-      const res = await fetch('/api/feedback', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ message: quickMessage, email: 'anonymous', type: quickType })
-      });
-      if (res.ok) {
-        setQuickSubmitStatus('success');
-        setQuickMessage('');
-        setTimeout(() => setQuickSubmitStatus('idle'), 3000);
-      } else setQuickSubmitStatus('error');
-    } catch { setQuickSubmitStatus('error'); } finally { setIsQuickSubmitting(false); }
   };
 
   const lastUpdated = useStore((state) => state.lastUpdated);
@@ -273,13 +248,6 @@ const Toolbar: React.FC = () => {
         onClose={() => setIsHelpOpen(false)} 
         activeTab={activeHelpTab} 
         setActiveTab={setActiveHelpTab} 
-        quickMessage={quickMessage} 
-        setQuickMessage={setQuickMessage} 
-        quickType={quickType} 
-        setQuickType={setQuickType} 
-        isQuickSubmitting={isQuickSubmitting} 
-        quickSubmitStatus={quickSubmitStatus} 
-        handleQuickSubmit={handleQuickSubmit} 
         contactName={contactName} 
         setContactName={setContactName} 
         contactEmail={contactEmail} 

@@ -741,13 +741,6 @@ interface HelpModalProps {
   onClose: () => void;
   activeTab: string;
   setActiveTab: (val: any) => void;
-  quickMessage: string;
-  setQuickMessage: (val: string) => void;
-  quickType: string;
-  setQuickType: (val: any) => void;
-  isQuickSubmitting: boolean;
-  quickSubmitStatus: string;
-  handleQuickSubmit: (e: any) => void;
   contactName: string;
   setContactName: (val: string) => void;
   contactEmail: string;
@@ -761,7 +754,6 @@ interface HelpModalProps {
 
 export const HelpModal: React.FC<HelpModalProps> = ({ 
   isOpen, onClose, activeTab, setActiveTab, 
-  quickMessage, setQuickMessage, quickType, setQuickType, isQuickSubmitting, quickSubmitStatus, handleQuickSubmit,
   contactName, setContactName, contactEmail, setContactEmail, contactMessage, setContactMessage, isContactSubmitting, contactSubmitStatus, handleContactSubmit
 }) => (
   isOpen && (
@@ -772,7 +764,7 @@ export const HelpModal: React.FC<HelpModalProps> = ({
 
         {/* Tabs */}
         <div className="px-8 pt-6 pb-2 flex gap-2 shrink-0 overflow-x-auto no-scrollbar">
-          {[{ id: 'about', label: 'About Us' }, { id: 'issue', label: 'Found an Issue?' }, { id: 'contact', label: 'Contact Us' }].map((tab) => (
+          {[{ id: 'about', label: 'About Us' }, { id: 'contact', label: 'Contact Us' }].map((tab) => (
             <button 
               key={tab.id} 
               onClick={() => setActiveTab(tab.id)} 
@@ -851,49 +843,6 @@ export const HelpModal: React.FC<HelpModalProps> = ({
               </motion.div>
             )}
             
-            {activeTab === 'issue' && (
-              <motion.div 
-                key="issue"
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -10 }}
-                transition={{ duration: 0.2 }}
-                className="space-y-5"
-              >
-                <h4 className="text-[11px] font-black text-[var(--text-primary)] uppercase tracking-wide">Report an Issue</h4>
-                {quickSubmitStatus === 'success' ? (
-                  <div className="py-6 text-center space-y-3 bg-green-500/5 border border-green-500/10 rounded-2xl animate-in zoom-in-95 duration-300">
-                    <CheckCircle className="w-8 h-8 text-green-400 mx-auto" />
-                    <p className="text-[10px] font-semibold tracking-wide text-green-400">Report Transmitted</p>
-                  </div>
-                ) : (
-                  <form onSubmit={handleQuickSubmit} className="space-y-3">
-                    <div className="flex gap-1.5 p-1 bg-[var(--bg-page)] border border-[var(--glass-border)] rounded-xl">
-                      {(['issue', 'feedback', 'feature'] as const).map((t) => (
-                        <button
-                          key={t}
-                          type="button"
-                          onClick={() => setQuickType(t)}
-                          className={cn("flex-1 py-1.5 rounded-lg text-[8px] font-semibold tracking-wide transition-all", quickType === t ? "bg-[var(--glass-bg)] text-[var(--text-primary)] shadow-md border border-[var(--glass-border)]" : "text-[var(--text-muted)] hover:text-[var(--text-dimmed)]")}
-                        >
-                          {t}
-                        </button>
-                      ))}
-                    </div>
-                    <textarea required value={quickMessage} onChange={(e) => setQuickMessage(e.target.value)} placeholder="Quick report... (System logs will be attached)" className="w-full h-24 bg-[var(--bg-page)] border border-[var(--glass-border)] rounded-xl p-3 text-xs text-[var(--text-primary)] outline-none focus:border-[var(--accent)]/50 transition-all resize-none" />
-                    <button type="submit" disabled={isQuickSubmitting || !quickMessage.trim()} className="w-full h-10 bg-[var(--accent)] hover:bg-[var(--accent)]/90 disabled:opacity-50 text-[var(--accent-contrast)] rounded-xl font-semibold text-[11px] tracking-wide transition-all flex items-center justify-center gap-2">
-                      {isQuickSubmitting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <><Send className="w-3 h-3" /> Send Quick Report</>}
-                    </button>
-                  </form>
-                )}
-                <div className="relative flex items-center py-2">
-                  <div className="flex-grow border-t border-[var(--glass-border)]"></div>
-                  <span className="flex-shrink mx-4 text-[8px] font-semibold tracking-wide text-[var(--text-muted)]">OR</span>
-                  <div className="flex-grow border-t border-[var(--glass-border)]"></div>
-                </div>
-              </motion.div>
-            )}
-
             {activeTab === 'contact' && (
               <motion.div 
                 key="contact"
