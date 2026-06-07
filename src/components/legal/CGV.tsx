@@ -36,7 +36,7 @@ const CGV: React.FC = () => {
           <ul className="list-disc list-inside space-y-3 mt-4 ml-2 text-[var(--text-muted)]">
             <li><strong className="text-[var(--text-primary)] font-bold">No Account Required</strong> — You can use Cyberia immediately without creating an account or providing any personal information.</li>
             <li><strong className="text-[var(--text-primary)] font-bold">No Subscription</strong> — The app is completely free. There are no paid tiers, subscriptions, or hidden fees.</li>
-            <li><strong className="text-[var(--text-primary)] font-bold">Local-First</strong> — All your data is stored locally in your browser. No cloud storage is used.</li>
+            <li><strong className="text-[var(--text-primary)] font-bold">No Cloud</strong> — All your data is stored locally in your browser. No cloud storage is used.</li>
           </ul>
         </>
       )

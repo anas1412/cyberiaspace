@@ -40,7 +40,7 @@ const PrivacyPolicy: React.FC = () => {
     },
     {
       id: 3,
-      title: 'Local-First Architecture',
+      title: 'Local-Only Architecture',
       icon: <Globe className="w-5 h-5 text-blue-400" />,
       highlight: true,
       content: (

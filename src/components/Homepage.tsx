@@ -51,7 +51,7 @@ const FEATURES = [
   },
   {
     icon: Shield,
-    title: 'Local-First Storage',
+    title: 'Private Storage',
     description: 'Everything stays on your machine. No accounts, no cloud uploads — your workspace is yours, completely private.',
     iconBg: 'bg-[var(--accent)]/10 border-[var(--accent)]/20 text-[var(--accent)]'
   },
