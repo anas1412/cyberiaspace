@@ -240,9 +240,6 @@ A trigger `tr_protect_user_columns` on the `users` table prevents users from upd
 - `subscription_status`
 - `expiry_date`
 - `is_admin`
-- `polar_customer_id`
-- `polar_subscription_id`
-- `payment_provider`
 - `created_at`
 - `email`
 - `id`

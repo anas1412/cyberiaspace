@@ -907,7 +907,7 @@ All overlay/modals should use the standardized backdrop pattern for consistency:
 
 A trigger `tr_protect_user_columns` on the `users` table prevents users from updating sensitive columns via the browser client.
 
-**Protected Columns:** `plan`, `subscription_status`, `expiry_date`, `is_admin`, `polar_customer_id`, `polar_subscription_id`, `payment_provider`, `created_at`, `email`, `id`.
+**Protected Columns:** `plan`, `subscription_status`, `expiry_date`, `is_admin`, `created_at`, `email`, `id`.
 
 **Enforcement:**
 - On `INSERT`: Forces defaults (`plan = 'free'`, `is_admin = FALSE`, etc.) unless using `service_role`.

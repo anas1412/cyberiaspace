@@ -81,11 +81,10 @@ const Modal: React.FC = () => {
             <div className="space-y-6">
               {[
                 { title: 'A. Data Ownership & Governance', desc: 'Everything you create in Cyberia is your property. We treat your thoughts as private, kinetic assets.' },
-                { title: 'B. Payments & Security', desc: 'We use Flouci for payment processing. Cyberia never touches your sensitive card details.' },
-                { title: 'C. AI Interaction', desc: 'When communicating with Cyberia AI, relevant snippets of your space are processed by high-speed Llama models via Groq.' },
-                { title: 'D. Cloud Sync Protocol', desc: 'Sync is a convenience service. Data sent to our cloud (Supabase) is encrypted in-transit and isolated to your account.' },
-                { title: 'E. Ephemeral Sharing', desc: 'Publicly shared snapshots are temporary. They naturally expire and are purged from our servers 30 days after their last update.' },
-                { title: 'F. Portability Commitment', desc: "Cyberia will always provide a free, unrestricted way to export your data into standard formats like Markdown or JSON." }
+                { title: 'B. AI Interaction', desc: 'When communicating with Cyberia AI, relevant snippets of your space are processed by high-speed Llama models via Groq.' },
+                { title: 'C. Cloud Sync Protocol', desc: 'Sync is a convenience service. Data sent to our cloud (Supabase) is encrypted in-transit and isolated to your account.' },
+                { title: 'D. Ephemeral Sharing', desc: 'Publicly shared snapshots are temporary. They naturally expire and are purged from our servers 30 days after their last update.' },
+                { title: 'E. Portability Commitment', desc: "Cyberia will always provide a free, unrestricted way to export your data into standard formats like Markdown or JSON." }
               ].map((protocol, i) => (
                 <div key={i} className="space-y-1.5 border-l-2 border-blue-500/20 pl-4 py-1">
                   <h4 className="text-[10px] font-semibold tracking-wide text-blue-400/80">{protocol.title}</h4>
