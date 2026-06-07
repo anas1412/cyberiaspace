@@ -58,7 +58,7 @@ const FEATURES = [
   {
     icon: Monitor,
     title: 'Install on Your Machine',
-    description: 'Use Cyberia like a native app. Install it on your desktop for offline access, a dedicated window, and quick launching from your taskbar.',
+    description: 'Use Cyberia Space like a native app. Install it on your desktop for offline access, a dedicated window, and quick launching from your taskbar.',
     iconBg: 'bg-[var(--accent)]/10 border-[var(--accent)]/20 text-[var(--accent)]'
   }
 ];
@@ -92,28 +92,28 @@ const HOW_IT_WORKS_STEPS = [
 
 const FAQ_ITEMS = [
   {
-    question: 'What is Cyberia?',
-    answer: 'Cyberia is a visual workspace where your thoughts become physical objects you can move, organize, and connect on an infinite canvas. Designed for researchers, writers, designers, and anyone who thinks visually — it\'s a new way to work with ideas.'
+    question: 'What is Cyberia Space?',
+    answer: 'Cyberia Space is a visual workspace where your thoughts become physical objects you can move, organize, and connect on an infinite canvas. Designed for researchers, writers, designers, and anyone who thinks visually — it\'s a new way to work with ideas.'
   },
   {
     question: 'How does the AI work?',
-    answer: 'Cyberia uses OpenRouter to give you access to 300+ AI models including ChatGPT, Claude, Gemini, and more. You bring your own API key — no subscriptions, no usage limits imposed by us. Your data is sent only to the model you choose for inference and is never used for training.'
+    answer: 'Cyberia Space uses OpenRouter to give you access to 300+ AI models including ChatGPT, Claude, Gemini, and more. You bring your own API key — no subscriptions, no usage limits imposed by us. Your data is sent only to the model you choose for inference and is never used for training.'
   },
   {
     question: 'Is my data private?',
-    answer: 'Absolutely. Cyberia is 100% local. Your workspace lives entirely on your device — nothing is uploaded anywhere without your explicit action. Your thoughts, files, and ideas remain under your control at all times.'
+    answer: 'Absolutely. Cyberia Space is 100% local. Your workspace lives entirely on your device — nothing is uploaded anywhere without your explicit action. Your thoughts, files, and ideas remain under your control at all times.'
   },
   {
     question: 'Is it really free?',
-    answer: 'Yes! Cyberia is completely free and open-source. There are no paid plans, no hidden features behind a paywall, and no account required. You only need an OpenRouter API key if you want to use AI features — and you control that directly.'
+    answer: 'Yes! Cyberia Space is completely free and open-source. There are no paid plans, no hidden features behind a paywall, and no account required. You only need an OpenRouter API key if you want to use AI features — and you control that directly.'
   },
   {
     question: 'Can I install it on my machine?',
-    answer: 'Yes! Cyberia is a progressive web app, which means you can install it directly on your desktop or laptop through your browser. On Chrome or Edge, look for the install icon in the address bar when you visit Cyberia — this adds it to your taskbar or dock, gives it its own window, and even lets you use it offline. Mobile support is on the roadmap but not yet available.'
+    answer: 'Yes! Cyberia Space is a progressive web app, which means you can install it directly on your desktop or laptop through your browser. On Chrome or Edge, look for the install icon in the address bar when you visit Cyberia Space — this adds it to your taskbar or dock, gives it its own window, and even lets you use it offline. Mobile support is on the roadmap but not yet available.'
   },
   {
     question: 'Can I contribute to the project?',
-    answer: 'Absolutely! Cyberia is open-source on GitHub. You can report bugs, request features, submit pull requests, or join our Discord community to help shape the future of visual thinking.'
+    answer: 'Absolutely! Cyberia Space is open-source on GitHub. You can report bugs, request features, submit pull requests, or join our Discord community to help shape the future of visual thinking.'
   }
 ];
 
@@ -235,16 +235,14 @@ const Homepage: React.FC = () => {
                   href="/home"
                   className="w-full sm:w-auto px-10 py-5 bg-[var(--accent)] hover:bg-[var(--accent-hover)] text-[var(--accent-contrast)] rounded-xl text-base font-semibold transition-all shadow-lg shadow-[var(--accent)]/25 active:scale-95 flex items-center justify-center gap-2 group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--bg-page)] focus-visible:ring-[var(--accent)]"
                 >
-                  Launch Cyberia
+                  Launch Cyberia Space
                   <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
                 </a>
                 <a
                   href={GITHUB_URL}
                   target="_blank"
-                  rel="noopener noreferrer"
-                  className="w-full sm:w-auto px-8 py-4 bg-[var(--glass-bg)] hover:bg-[var(--glass-border)] text-[var(--text-primary)] rounded-xl text-base font-semibold transition-all flex items-center justify-center gap-2 group border border-[var(--glass-border)] active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)]"
+                  className="inline-flex items-center justify-center gap-2 px-10 py-5 bg-[var(--glass-bg)] hover:bg-[var(--bg-page)] border border-[var(--glass-border)] rounded-xl text-base font-semibold text-[var(--text-primary)] transition-all active:scale-95 group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--bg-page)] focus-visible:ring-[var(--glass-border)]"
                 >
-                  <Github className="w-5 h-5" />
                   View on GitHub
                 </a>
               </div>
@@ -339,7 +337,7 @@ const Homepage: React.FC = () => {
           <div className="max-w-6xl mx-auto">
             <div className="text-center mb-16 md:mb-20">
               <h2 className="text-3xl md:text-5xl font-bold tracking-tight mb-4">
-                Why <span className="text-[var(--accent)]">Cyberia?</span>
+                Why <span className="text-[var(--accent)]">Cyberia Space?</span>
               </h2>
               <p className="text-[var(--text-muted)] text-lg">Traditional tools were built for folders and lists — not for visual thinking.</p>
             </div>
@@ -513,7 +511,7 @@ const Homepage: React.FC = () => {
               <h2 className="text-3xl md:text-5xl font-bold tracking-tight mb-4">
                 Frequently asked <span className="text-[var(--accent)]">questions</span>
               </h2>
-              <p className="text-[var(--text-muted)] text-lg">Everything you need to know about Cyberia.</p>
+              <p className="text-[var(--text-muted)] text-lg">Everything you need to know about Cyberia Space.</p>
             </div>
 
             <div className="glass rounded-2xl border border-[var(--border)] overflow-hidden shadow-xl">
