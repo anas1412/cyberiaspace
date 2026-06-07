@@ -35,6 +35,17 @@ const processDrawing = (args: any) => {
   return args;
 };
 
+/** Normalize IDs to always be a string array, handling single-string and array inputs */
+const normalizeIds = (ids: unknown): string[] | null => {
+  if (!ids) return null;
+  if (Array.isArray(ids)) return ids.map(String);
+  if (typeof ids === 'string') {
+    // Could be a comma-separated list or a single ID
+    return ids.split(',').map(s => s.trim()).filter(Boolean);
+  }
+  return null;
+};
+
 const readFileHelper = async (id: string, store: any) => {
   const t = store.thoughts.find((thought: any) => thought.id === id);
   if (!t) return { id, success: false, error: 'Not found' };
@@ -91,8 +102,8 @@ export const executeAiTool = async (toolCall: any, store: any) => {
   try {
     switch (toolName) {
       case 'get_thought_details': {
-        const { ids } = args;
-        if (!ids || !Array.isArray(ids)) return { success: false, error: 'Invalid IDs' };
+        const ids = normalizeIds(args.ids);
+        if (!ids || ids.length === 0) return { success: false, error: 'Invalid IDs' };
         
         const results = ids.map(id => {
           const t = store.thoughts.find((thought: any) => thought.id === id);
@@ -132,8 +143,8 @@ export const executeAiTool = async (toolCall: any, store: any) => {
       }
 
       case 'read_files_content': {
-        const { ids } = args;
-        if (!ids || !Array.isArray(ids)) return { success: false, error: 'Invalid IDs' };
+        const ids = normalizeIds(args.ids);
+        if (!ids || ids.length === 0) return { success: false, error: 'Invalid IDs' };
         const results = await Promise.all(ids.map(id => readFileHelper(String(id), store)));
         return { success: true, files: results };
       }
@@ -243,8 +254,9 @@ export const executeAiTool = async (toolCall: any, store: any) => {
       }
 
       case 'create_stack': {
-        const { ids, name } = args;
-        if (!ids?.length) {
+        const ids = normalizeIds(args.ids);
+        const { name } = args;
+        if (!ids || ids.length === 0) {
           return { success: false, error: 'No IDs provided' };
         } else {
           store.setSelectedThoughtIds(ids);
@@ -255,8 +267,9 @@ export const executeAiTool = async (toolCall: any, store: any) => {
       }
 
       case 'link_thoughts': {
-        const { ids, name } = args;
-        if (!ids?.length) {
+        const ids = normalizeIds(args.ids);
+        const { name } = args;
+        if (!ids || ids.length === 0) {
           return { success: false, error: 'No IDs provided' };
         } else {
           store.setSelectedThoughtIds(ids);
@@ -267,8 +280,8 @@ export const executeAiTool = async (toolCall: any, store: any) => {
       }
 
       case 'unlink_thoughts': {
-        const { ids } = args;
-        if (!ids?.length) {
+        const ids = normalizeIds(args.ids);
+        if (!ids || ids.length === 0) {
           return { success: false, error: 'No IDs provided' };
         } else {
           store.setSelectedThoughtIds(ids);
@@ -312,8 +325,9 @@ export const executeAiTool = async (toolCall: any, store: any) => {
 
       case 'update_thoughts': {
         const processedArgs = processDrawing({ ...args });
-        const { ids, stackName, ...updates } = processedArgs;
-        if (!ids?.length) {
+        const { stackName, ...updates } = processedArgs;
+        const ids = normalizeIds(processedArgs.ids);
+        if (!ids || ids.length === 0) {
           return { success: false, error: 'No IDs provided' };
         } else {
           const sanitizedUpdates: any = { ...updates };
@@ -345,8 +359,8 @@ export const executeAiTool = async (toolCall: any, store: any) => {
       }
 
       case 'delete_thoughts': {
-        const { ids } = args;
-        if (!ids?.length) {
+        const ids = normalizeIds(args.ids);
+        if (!ids || ids.length === 0) {
           return { success: false, error: 'No IDs provided' };
         } else {
           await store.deleteThoughts(ids);
@@ -390,8 +404,8 @@ export const executeAiTool = async (toolCall: any, store: any) => {
       }
 
       case 'delete_stacks': {
-        const { ids } = args;
-        if (!ids?.length) {
+        const ids = normalizeIds(args.ids);
+        if (!ids || ids.length === 0) {
           return { success: false, error: 'No IDs provided' };
         } else {
           for (const id of ids) {
