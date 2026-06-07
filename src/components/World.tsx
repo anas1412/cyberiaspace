@@ -61,7 +61,7 @@ const World: React.FC<WorldProps> = ({ canvasRef, physicsResults }) => {
         ref={registerWorld}
         className="absolute origin-top-left will-change-transform pointer-events-none w-full h-full z-10"
       >
-        {thoughts.map((thought) => {
+        {thoughts.filter(t => !t.deletedAt).map((thought) => {
           const isArchived = !!thought.archivedAt && !showArchived;
           return (
             <ThoughtNode
