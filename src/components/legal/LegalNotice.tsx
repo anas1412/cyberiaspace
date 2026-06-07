@@ -29,7 +29,7 @@ const LegalNotice: React.FC = () => {
             </div>
             <div className="flex justify-between items-start border-b border-[var(--glass-border)] pb-2">
               <span className="text-[var(--text-muted)]">Registered Address</span>
-              <span className="text-[var(--text-primary)] text-right">France</span>
+              <span className="text-[var(--text-primary)] text-right">Hammamet, Tunisia</span>
             </div>
             <div className="flex justify-between items-center">
               <span className="text-[var(--text-muted)]">Legal Representative</span>
