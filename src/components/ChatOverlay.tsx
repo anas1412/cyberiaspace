@@ -839,9 +839,17 @@ const ChatOverlay: React.FC = () => {
 
     // Build system prompt
     const systemPrompt = store.aiChatMode === 'action'
-      ? `You are Cyberia AI in ACTION mode. You have tools to create, read, update, and delete thoughts and stacks. The user can tag thoughts with @name and stacks with #name. Current time: ${new Date().toLocaleString()}. Workspace context: ${contextString || 'Provided via references'}. Use tools to fulfill the user's request.`
+      ? `You are Cyberia AI in ACTION mode. You have tools to create, read, update, and delete thoughts and stacks. The user can tag thoughts with @name and stacks with #name. Current time: ${new Date().toLocaleString()}. Workspace context: ${contextString || 'Provided via references'}. Use tools to fulfill the user's request.
 
-      : `You are Cyberia AI in CHAT mode (read-only). The user can tag thoughts with @name and stacks with #name. Current time: ${new Date().toLocaleString()}. Workspace context: ${contextString || 'Provided via references'}. You can read thoughts but CANNOT modify them.`;
+IMPORTANT RULES:
+- NEVER show internal IDs to the user. Always refer to thoughts by their text/name or use descriptive labels.
+- When listing or grouping thoughts, use their text content — not their internal ID.` 
+
+      : `You are Cyberia AI in CHAT mode (read-only). The user can tag thoughts with @name and stacks with #name. Current time: ${new Date().toLocaleString()}. Workspace context: ${contextString || 'Provided via references'}. You can read thoughts but CANNOT modify them.
+
+IMPORTANT RULES:
+- NEVER show internal IDs to the user. Always refer to thoughts by their text/name or use descriptive labels.
+- When listing or grouping thoughts, use their text content — not their internal ID.`;
     const apiMessages = [
       { role: 'system', content: systemPrompt },
       ...toOpenRouterMessages(
