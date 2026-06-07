@@ -264,7 +264,7 @@ const Homepage: React.FC = () => {
                   <div className="w-px h-3 bg-[var(--glass-border)]" />
                   <div className="flex items-center gap-1.5">
                     <Shield className="w-3 h-3 text-emerald-400" />
-                    <span className="text-[11px] font-medium text-[var(--text-muted)]">Local-first</span>
+                    <span className="text-[11px] font-medium text-[var(--text-muted)]">Local</span>
                   </div>
                   <div className="w-px h-3 bg-[var(--glass-border)]" />
                   <div className="flex items-center gap-1.5">
