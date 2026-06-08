@@ -522,17 +522,23 @@ export const createThoughtSlice: StateCreator<CyberiaState, [], [], any> = (set,
     }
 
     if (!targetStackId) {
-      targetStackId = ulid();
-      const trimmedName = name?.trim();
-      const finalName = trimmedName || 'New Collection';
-      newStack = {
-        id: targetStackId,
-        userId: 'guest',
-        name: finalName,
-        color: `hsla(${Math.floor(Math.random() * 360)}, 70%, 50%, 1)`,
-        spaceId: activeSpaceId,
-        updatedAt: now,
-      };
+      // If any of the linked thoughts already belongs to a stack, join it instead of creating a new one
+      const existingStackId = thoughts.find(t => idsToLink.includes(t.id) && t.stackId)?.stackId;
+      if (existingStackId) {
+        targetStackId = existingStackId;
+      } else {
+        targetStackId = ulid();
+        const trimmedName = name?.trim();
+        const finalName = trimmedName || 'New Collection';
+        newStack = {
+          id: targetStackId,
+          userId: 'guest',
+          name: finalName,
+          color: `hsla(${Math.floor(Math.random() * 360)}, 70%, 50%, 1)`,
+          spaceId: activeSpaceId,
+          updatedAt: now,
+        };
+      }
     }
 
     // Check stack limit
