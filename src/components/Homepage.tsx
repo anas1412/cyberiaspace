@@ -213,7 +213,6 @@ const Homepage: React.FC = () => {
         initial={{ opacity: 0, scale: 0.95, y: 20 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}
         transition={{ type: 'spring', damping: 25, stiffness: 100 }}
-        transition={{ type: 'spring', damping: 25, stiffness: 100 }}
             >
             <h1 className="text-4xl md:text-6xl font-bold tracking-tight leading-[1.1] mb-6">
             Wait, I can just...
