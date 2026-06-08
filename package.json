@@ -9,8 +9,8 @@
     "mock": "bunx llmock -p 5555 -f ./fixtures",
     "build": "tsc -b && vite build",
     "lint": "eslint .",
-    "test": "vitest",
-    "test:run": "vitest run",
+    "test": "bun test",
+    "test:watch": "bun test --watch",
     "preview": "vite preview"
   },
   "dependencies": {
@@ -52,6 +52,7 @@
     "@testing-library/jest-dom": "^6.9.1",
     "@testing-library/react": "^16.3.2",
     "@testing-library/user-event": "^14.6.1",
+    "@types/bun": "^1.3.14",
     "@types/canvas-confetti": "^1.9.0",
     "@types/node": "^25.2.3",
     "@types/react": "^19.2.13",
@@ -72,7 +73,6 @@
     "typescript-eslint": "^8.46.4",
     "vite": "^7.2.4",
     "vite-plugin-image-optimizer": "^2.0.3",
-    "vite-plugin-pwa": "^1.2.0",
-    "vitest": "^4.0.18"
+    "vite-plugin-pwa": "^1.2.0"
   }
 }

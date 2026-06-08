@@ -1,6 +1,6 @@
 # Cyberia
 
-A spatial-thinking workspace where ideas exist as physical objects — positioned, connected, and organized on an infinite canvas augmented by a custom physics engine.
+A visual thinking space with four view modes — Spatial, Kanban, Calendar, and Directory — that transform the same data into different organizational metaphors. Ideas exist as physical objects on an infinite canvas, drift through a custom physics engine, snap into column-based workflows, align on a time grid, or surface through search and filters.
 
 ![Cyberia Preview](public/preview.png)
 
@@ -121,7 +121,7 @@ bun run build    # TypeScript check + Vite production build
 
 ### Configuration
 
-Set your OpenRouter API key to enable Oracle AI:
+Set your OpenRouter API key to enable Cyberia AI:
 
 | Variable | Purpose |
 |----------|---------|

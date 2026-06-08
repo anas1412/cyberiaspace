@@ -43,7 +43,9 @@ export function parseToolCalls(text: string): ToolCall[] {
     const args: Record<string, unknown> = {};
 
     // Extract each <parameter=key> value
-    const paramRegex = /<parameter=(\w+)>\s*([\s\S]*?)\s*(?=<(?:parameter=|\/tool_call|function=))/g;
+    // Note: The outer regex already consumed </tool_call>, so the body never contains it.
+    // We use lookahead for next parameter/function or end-of-string for the last param.
+    const paramRegex = /<parameter=(\w+)>\s*([\s\S]*?)\s*(?=<(?:parameter=|function=)|$)/g;
     let paramMatch: RegExpExecArray | null;
     while ((paramMatch = paramRegex.exec(body)) !== null) {
       const key = paramMatch[1];
