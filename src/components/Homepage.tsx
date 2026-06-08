@@ -208,26 +208,28 @@ const Homepage: React.FC = () => {
       <main className="flex-1">
         {/* HERO SECTION */}
         <section className="pt-32 md:pt-48 pb-20 px-6 relative z-10">
-          <div className="max-w-4xl mx-auto text-center">
-            <motion.div
-              initial={{ opacity: 0, scale: 0.95, y: 20 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              transition={{ type: 'spring', damping: 25, stiffness: 100 }}
+        <div className="max-w-4xl mx-auto text-center">
+        <motion.div
+        initial={{ opacity: 0, scale: 0.95, y: 20 }}
+        animate={{ opacity: 1, scale: 1, y: 0 }}
+        transition={{ type: 'spring', damping: 25, stiffness: 100 }}
+        transition={{ type: 'spring', damping: 25, stiffness: 100 }}
             >
-              <h1 className="text-4xl md:text-6xl font-bold tracking-tight leading-[1.1] mb-6">
-                The Only Workspace<br />
-                <motion.span
-                  initial={{ opacity: 0, x: -20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ duration: 0.8, delay: 0.2, ease: "easeOut" }}
-                  className="text-[var(--accent)]"
-                >
-                  You Will Ever Need
-                </motion.span>
-              </h1>
+            <h1 className="text-4xl md:text-6xl font-bold tracking-tight leading-[1.1] mb-6">
+            Wait, I can just...
+            <br />
+            <motion.span
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.8, delay: 0.2, ease: "easeOut" }}
+            className="text-[var(--accent)]"
+            >
+             DROP IT ALL HERE?
+            </motion.span>
+            </h1>
 
               <p className="text-lg md:text-xl text-[var(--text-secondary)] max-w-2xl mx-auto mb-10 leading-relaxed font-medium">
-                Visual thinking. Task management. Calendar planning. AI that takes action. File storage. All connected. All in one place.
+              Drop anything — notes, tables, images, PDFs, links. Connect them. Let AI work across all of it. No cloud, no account — just open it and go.
               </p>
 
               <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
