@@ -228,7 +228,7 @@ const Homepage: React.FC = () => {
             </h1>
 
               <p className="text-lg md:text-xl text-[var(--text-secondary)] max-w-2xl mx-auto mb-10 leading-relaxed font-medium">
-              Drop anything — notes, tables, images, PDFs, links. Connect them. Let AI work across all of it. No cloud, no account — just open it and go.
+              Drop anything — notes, files, tasks, images, PDFs, links. View it as a canvas, kanban, or calendar. Let AI work across all of it. No cloud, no account — just open it and go.
               </p>
 
               <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
@@ -345,10 +345,10 @@ const Homepage: React.FC = () => {
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-8">
               {[
-                { pain: 'My notes are scattered across different apps and folders.', solution: 'One infinite canvas where everything lives together, connected naturally.' },
+                { pain: 'My notes are scattered across different apps and folders.', solution: 'One infinite canvas where everything lives together, connected naturally. View it as a canvas, kanban, or calendar.' },
                 { pain: 'I spend more time organizing my notes than actually thinking.', solution: 'Thoughts are physical objects. Move them, stack them, connect them — just like things on your desk.' },
                 { pain: 'I don\'t want my data uploaded to someone else\'s cloud.', solution: '100% local. Your data stays on your device, always under your control.' },
-                { pain: 'AI tools are locked behind subscriptions I don\'t need.', solution: 'Bring your own API key. Only pay for what you use, directly to the model provider.' }
+                { pain: 'AI tools are locked behind subscriptions I don\'t need.', solution: 'Bring your own API key. Only pay for what you use, directly to the model provider — with free models, you can even start using AI for free.' }
               ].map((item, i) => (
                 <motion.div
                   key={i}
