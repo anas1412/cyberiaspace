@@ -16,6 +16,7 @@ import { SystemTray } from './SystemTray';
 import { StatusBar } from './StatusBar';
 import { SearchOverlay } from './SearchOverlay';
 import { ShortcutsModal, HelpModal, SettingsModal } from './Modals';
+import { CustomizationModal } from './CustomizationModal';
 
 const Toolbar: React.FC = () => {
   const activeSpaceId = useStore((state) => state.activeSpaceId);
@@ -30,9 +31,7 @@ const Toolbar: React.FC = () => {
   const setInspectorOpen = useStore((state) => state.setInspectorOpen);
   const exportData = useStore((state) => state.exportData);
   const importData = useStore((state) => state.importData);
-  const customBg = useStore((state) => state.customBg);
-  const customBgLoading = useStore((state) => state.customBgLoading);
-  const setCustomBg = useStore((state) => state.setCustomBg);
+
   const physicsIntensity = useStore((state) => state.physicsIntensity);
   const setPhysicsIntensity = useStore((state) => state.setPhysicsIntensity);
   const deferredPrompt = useStore((state) => state.deferredPrompt);
@@ -45,6 +44,9 @@ const Toolbar: React.FC = () => {
   const redo = useStore((state) => state.redo);
   const history = useStore((state) => state.history);
   const historyIndex = useStore((state) => state.historyIndex);
+  const customBg = useStore((state) => state.customBg);
+  const customBgLoading = useStore((state) => state.customBgLoading);
+  const setCustomBg = useStore((state) => state.setCustomBg);
   const isReadOnly = useStore((state) => state.isReadOnly);
   const creatorName = useStore((state) => state.creatorName);
   const isSpaceLoading = useStore((state) => state.isSpaceLoading);
@@ -56,6 +58,7 @@ const Toolbar: React.FC = () => {
   const activeSpace = spaces.find((s) => s.id === activeSpaceId);
   const [isSpaceMenuOpen, setIsSpaceMenuOpen] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [isCustomizationOpen, setIsCustomizationOpen] = useState(false);
   const [isShortcutsOpen, setIsShortcutsOpen] = useState(false);
   const [isHelpOpen, setIsHelpOpen] = useState(false);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
@@ -226,6 +229,8 @@ const Toolbar: React.FC = () => {
         setIsHelpOpen={setIsHelpOpen} 
         isSettingsOpen={isSettingsOpen}
         setIsSettingsOpen={setIsSettingsOpen}
+        isCustomizationOpen={isCustomizationOpen}
+        setIsCustomizationOpen={setIsCustomizationOpen}
       />
 
       <StatusBar 
@@ -262,13 +267,18 @@ const Toolbar: React.FC = () => {
       <SettingsModal
         isOpen={isSettingsOpen}
         onClose={() => setIsSettingsOpen(false)}
-        customBg={customBg}
-        customBgLoading={customBgLoading}
-        setCustomBg={setCustomBg}
         handleExport={handleExport}
         handleImport={handleImport}
         deferredPrompt={deferredPrompt}
         handleInstall={handleInstall}
+      />
+
+      <CustomizationModal
+        isOpen={isCustomizationOpen}
+        onClose={() => setIsCustomizationOpen(false)}
+        customBg={customBg}
+        customBgLoading={customBgLoading}
+        setCustomBg={setCustomBg}
       />
 
       <SearchOverlay

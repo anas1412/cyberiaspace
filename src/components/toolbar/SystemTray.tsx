@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useStore } from '../../store/useStore';
 import { 
-  Keyboard, CircleHelp, Settings, Sun, Moon, Download
+  Keyboard, CircleHelp, Settings, Sun, Moon, Download, Palette
 } from 'lucide-react';
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
@@ -17,11 +17,13 @@ interface SystemTrayProps {
   setIsHelpOpen: (val: boolean) => void;
   isSettingsOpen: boolean;
   setIsSettingsOpen: (val: boolean) => void;
+  isCustomizationOpen: boolean;
+  setIsCustomizationOpen: (val: boolean) => void;
 }
 
 export const SystemTray: React.FC<SystemTrayProps> = ({ 
   isShortcutsOpen, setIsShortcutsOpen, isHelpOpen, setIsHelpOpen, 
-  isSettingsOpen, setIsSettingsOpen
+  isSettingsOpen, setIsSettingsOpen, isCustomizationOpen, setIsCustomizationOpen
 }) => {
   const theme = useStore((state) => state.theme);
   const setTheme = useStore((state) => state.setTheme);
@@ -82,6 +84,23 @@ export const SystemTray: React.FC<SystemTrayProps> = ({
             ) : (
               <Sun className="w-4 h-4" />
             )}
+          </button>
+
+          {/* Customization Palette */}
+          <button
+            onClick={() => setIsCustomizationOpen(!isCustomizationOpen)}
+            aria-label="Customize appearance"
+            className={cn(
+              "group relative w-9 h-9 md:w-10 md:h-10 flex items-center justify-center rounded-xl transition-all",
+              isCustomizationOpen ? "bg-[var(--glass-bg)] text-[var(--text-primary)]" : "text-[var(--text-muted)] hover:text-[var(--text-primary)]"
+            )}
+          >
+            <div className="absolute bottom-full mb-4 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-all duration-300 translate-y-2 group-hover:translate-y-0 pointer-events-none whitespace-nowrap z-[10001]">
+              <div className="glass px-3 py-1.5 rounded-xl border border-[var(--glass-border)] flex items-center gap-2 shadow-2xl bg-[var(--glass-bg)] backdrop-blur-xl">
+                <span className="text-[12px] font-semibold tracking-wide text-[var(--text-primary)]">Customize</span>
+              </div>
+            </div>
+            <Palette className="w-4 h-4" />
           </button>
 
           <button
