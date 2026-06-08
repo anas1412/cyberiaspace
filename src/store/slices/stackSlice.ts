@@ -13,9 +13,8 @@ export async function checkStackLimit(
   stackId: string,
   additionalCount = 1
 ): Promise<{ allowed: boolean; currentCount: number }> {
-  const currentUserId = 'guest';
   const count = await db.thoughts
-    .filter((t: any) => t.stackId === stackId && !t.deletedAt && !t.archivedAt && t.userId === currentUserId)
+    .filter((t: any) => t.stackId === stackId && !t.deletedAt && !t.archivedAt)
     .count();
 
   return {
@@ -45,8 +44,7 @@ export const createStackSlice: StateCreator<CyberiaState, [], [], any> = (set, g
     const targetId = spaceId || get().activeSpaceId;
     if (!targetId) return;
 
-    const currentUserId = 'guest';
-    const stacks = await db.stacks.filter((s: any) => s.spaceId === targetId && s.userId === currentUserId && !s.deletedAt).toArray();
+    const stacks = await db.stacks.filter((s: any) => s.spaceId === targetId && !s.deletedAt).toArray();
 
     if (!spaceId || targetId === get().activeSpaceId) {
       set({ stacks });
@@ -87,7 +85,6 @@ export const createStackSlice: StateCreator<CyberiaState, [], [], any> = (set, g
 
     const newStack: Stack = {
       id: newStackId,
-      userId: 'guest',
       name: finalName,
       color: `hsla(${Math.floor(Math.random() * 360)}, 70%, 50%, 1)`,
       spaceId: activeSpaceId,
@@ -142,9 +139,8 @@ export const createStackSlice: StateCreator<CyberiaState, [], [], any> = (set, g
       )
     });
 
-    const currentUserId = 'guest';
     await db.transaction('rw', db.thoughts, db.stacks, async () => {
-      await db.thoughts.where('stackId').equals(id).and(t => t.userId === currentUserId).modify({
+      await db.thoughts.where('stackId').equals(id).modify({
         stackId: null,
         updatedAt: now,
       });
@@ -172,9 +168,8 @@ export const createStackSlice: StateCreator<CyberiaState, [], [], any> = (set, g
       )
     });
 
-    const currentUserId = 'guest';
     await db.transaction('rw', db.thoughts, db.stacks, async () => {
-      await db.thoughts.where('stackId').equals(id).and(t => t.userId === currentUserId).modify({
+      await db.thoughts.where('stackId').equals(id).modify({
         deletedAt: now,
         updatedAt: now,
       });

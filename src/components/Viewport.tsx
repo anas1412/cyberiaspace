@@ -458,15 +458,13 @@ const Viewport: React.FC<{ isInteracting?: boolean }> = ({ isInteracting }) => {
           });
 
           if (id !== '') {
-            const userId = 'guest';
             await db.blobs.put({
               id: id,
               thoughtId: id,
               blob: file,
               name: file.name,
               type: file.type,
-              updatedAt: Date.now(),
-              userId
+              updatedAt: Date.now()
             });
             setSelectedThoughtId(id);
           }
@@ -501,15 +499,13 @@ const Viewport: React.FC<{ isInteracting?: boolean }> = ({ isInteracting }) => {
           });
 
           if (id !== '') {
-            const userId = 'guest';
             await db.blobs.put({
               id: id,
               thoughtId: id,
               blob: file,
               name: file.name,
               type: file.type,
-              updatedAt: Date.now(),
-              userId
+              updatedAt: Date.now()
             });
             setSelectedThoughtId(id);
             setInspectorOpen(true);
@@ -540,15 +536,13 @@ const Viewport: React.FC<{ isInteracting?: boolean }> = ({ isInteracting }) => {
           });
 
           if (id !== '') {
-            const userId = 'guest';
             await db.blobs.put({
               id: id,
               thoughtId: id,
               blob: file,
               name: file.name,
               type: file.type,
-              updatedAt: Date.now(),
-              userId
+              updatedAt: Date.now()
             });
             setSelectedThoughtId(id);
             setInspectorOpen(true);

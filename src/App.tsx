@@ -258,8 +258,7 @@ function App() {
               blob: bestFile,
               name: fileName,
               type: actualType,
-              updatedAt: Date.now(),
-              userId: 'guest'
+              updatedAt: Date.now()
             });
 
             setSelectedThoughtId(id);

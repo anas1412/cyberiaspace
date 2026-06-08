@@ -52,7 +52,6 @@ export type ThoughtPayload =
 interface Space {
   id: string; // ULID
   name: string;
-  userId: string;
   mode: 'spatial' | 'kanban' | 'calendar' | 'directory';
   physics: boolean;
   order: number;
@@ -68,7 +67,6 @@ interface Space {
 interface Stack {
   id: string; // ULID
   name: string;
-  userId: string;
   color: string;
   spaceId: string;
   deletedAt?: number | null;
@@ -78,7 +76,6 @@ interface Stack {
 interface Thought {
   id: string;
   spaceId: string;
-  userId: string;
   stackId: string | null;
   x: number;
   y: number;
@@ -116,7 +113,6 @@ interface LocalBlob {
   blob: Blob;
   name: string;
   type: string;
-  userId: string;
   updatedAt: number;
 }
 
@@ -141,7 +137,6 @@ interface ChatMessage {
 interface AppSetting {
   key: string;
   value: string;
-  userId: string;
 }
 
 interface SpaceBackground {
@@ -150,7 +145,6 @@ interface SpaceBackground {
   blob: Blob;
   name: string;
   type: string;
-  userId: string;
   updatedAt: number;
 }
 
@@ -217,6 +211,18 @@ db.version(22).stores({
 // Version 23: Added settings table for key-value app settings
 db.version(23).stores({
   settings: 'key, userId'
+});
+
+// Version 24: Remove userId from all schemas (local-only, single user)
+db.version(24).stores({
+  spaces: 'id, name, order, deletedAt, updatedAt',
+  thoughts: 'id, spaceId, stackId, text, type, status, startTime, endTime, priority, order, author, deletedAt, updatedAt',
+  stacks: 'id, spaceId, name, deletedAt, updatedAt',
+  blobs: 'id, thoughtId',
+  chatHistory: 'id, spaceId, [spaceId+conversationId], timestamp',
+  spaceBackgrounds: 'id, spaceId',
+  chatConversations: 'id, spaceId',
+  settings: 'key'
 });
 
 export type { Space, Thought, Stack, ChatMessage, ChatConversation };

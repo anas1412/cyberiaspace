@@ -83,8 +83,7 @@ export const FileInspector: React.FC<InspectorPanelProps> = ({ thought, isReadOn
                   blob: file,
                   name: file.name,
                   type: file.type,
-                  updatedAt: Date.now(),
-                  userId: 'guest'
+                  updatedAt: Date.now()
                 });
               }
             }}

@@ -31,12 +31,10 @@ export const createThoughtSlice: StateCreator<CyberiaState, [], [], any> = (set,
     const config = getThoughtConfig(thoughtType);
     const payload = config?.createPayload();
 
-    const userId = 'guest';
     const thoughtId = ulid();
     const thought = {
       id: thoughtId,
       spaceId: activeSpaceId,
-      userId: userId,
       stackId: null,
       // Place new thoughts at the center of the viewport in world coordinates
       x: (window.innerWidth / 2 - transform.x) / transform.scale + (Math.random() - 0.5) * 60,
@@ -80,7 +78,6 @@ export const createThoughtSlice: StateCreator<CyberiaState, [], [], any> = (set,
     const { activeSpaceId, isReadOnly, transform } = get();
     if (isReadOnly || !activeSpaceId || !partialThoughts.length) return [];
 
-    const userId = 'guest';
     const newThoughtIds: string[] = [];
     const thoughtsToAdd: Thought[] = [];
 
@@ -99,7 +96,6 @@ export const createThoughtSlice: StateCreator<CyberiaState, [], [], any> = (set,
       const thought = {
         id: thoughtId,
         spaceId: activeSpaceId,
-        userId,
         stackId: null,
         x: (window.innerWidth / 2 - transform.x) / transform.scale + jitterX,
         y: (window.innerHeight / 2 - transform.y) / transform.scale + jitterY,
@@ -428,9 +424,8 @@ export const createThoughtSlice: StateCreator<CyberiaState, [], [], any> = (set,
     if (get().isReadOnly || get().isDemo) return;
     const targetId = spaceId || get().activeSpaceId;
     if (!targetId) return;
-    const currentUserId = 'guest';
     const incomingThoughts = await db.thoughts
-      .filter((t: any) => t.spaceId === targetId && t.userId === currentUserId && !t.deletedAt)
+      .filter((t: any) => t.spaceId === targetId && !t.deletedAt)
       .toArray();
 
     if (!spaceId || targetId === get().activeSpaceId) {
@@ -439,8 +434,7 @@ export const createThoughtSlice: StateCreator<CyberiaState, [], [], any> = (set,
   },
 
   refreshTotalThoughtCount: async () => {
-    const currentUserId = 'guest';
-    const count = await db.thoughts.filter(t => !t.deletedAt && !t.archivedAt && t.userId === currentUserId).count();
+    const count = await db.thoughts.filter(t => !t.deletedAt && !t.archivedAt).count();
     set({ totalThoughtCount: count } as Partial<CyberiaState>);
   },
 
@@ -530,10 +524,9 @@ export const createThoughtSlice: StateCreator<CyberiaState, [], [], any> = (set,
         targetStackId = ulid();
         const trimmedName = name?.trim();
         const finalName = trimmedName || 'New Collection';
-        newStack = {
-          id: targetStackId,
-          userId: 'guest',
-          name: finalName,
+          newStack = {
+            id: targetStackId,
+            name: finalName,
           color: `hsla(${Math.floor(Math.random() * 360)}, 70%, 50%, 1)`,
           spaceId: activeSpaceId,
           updatedAt: now,

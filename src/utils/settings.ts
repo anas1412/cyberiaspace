@@ -32,7 +32,7 @@ export async function initSettings(): Promise<void> {
     try {
       const legacy = localStorage.getItem(legacyKey);
       if (legacy !== null) {
-        await db.settings.put({ key, value: legacy, userId: 'guest' });
+        await db.settings.put({ key, value: legacy });
         cache.set(key, legacy);
         localStorage.removeItem(legacyKey);
       }
@@ -48,7 +48,7 @@ export function getSetting(key: string): string | undefined {
 /** Async write to Dexie + sync cache. */
 export async function setSetting(key: string, value: string): Promise<void> {
   cache.set(key, value);
-  await db.settings.put({ key, value, userId: 'guest' });
+  await db.settings.put({ key, value });
 }
 
 /** Remove a setting from Dexie + cache. */

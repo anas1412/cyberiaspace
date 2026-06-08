@@ -62,7 +62,7 @@ const readFileHelper = async (id: string, store: any) => {
     // First check data.url (inline thumbnail/data)
     if (data?.type === 'file' && data.url) return data.url;
     // Fall back to local IndexedDB blob
-    const blobEntry = await db.blobs.filter(b => b.thoughtId === id && b.userId === 'guest').first();
+    const blobEntry = await db.blobs.filter(b => b.thoughtId === id).first();
     if (blobEntry) return URL.createObjectURL(blobEntry.blob);
     return null;
   };

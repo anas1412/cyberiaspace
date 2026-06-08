@@ -217,7 +217,7 @@ const ChatOverlay: React.FC = () => {
 
   // Load system prompt from Dexie on mount
   useEffect(() => {
-    db.settings.get({ key: 'system-prompt', userId: 'guest' }).then(stored => {
+    db.settings.get('system-prompt').then(stored => {
       if (stored) {
         setSystemPromptDraft(stored.value);
         setSavedPrompt(stored.value);
@@ -228,12 +228,12 @@ const ChatOverlay: React.FC = () => {
   const hasUnsavedChanges = systemPromptDraft !== savedPrompt;
 
   const saveSystemPrompt = async () => {
-    await db.settings.put({ key: 'system-prompt', value: systemPromptDraft, userId: 'guest' });
+    await db.settings.put({ key: 'system-prompt', value: systemPromptDraft });
     setSavedPrompt(systemPromptDraft);
   };
 
   const resetSystemPrompt = async () => {
-    await db.settings.put({ key: 'system-prompt', value: '', userId: 'guest' });
+    await db.settings.put({ key: 'system-prompt', value: '' });
     setSavedPrompt('');
     setSystemPromptDraft('');
   };

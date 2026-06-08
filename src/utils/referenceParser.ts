@@ -115,11 +115,9 @@ async function getThoughtMediaUrl(thought: Thought): Promise<string | null> {
 
   // Local IndexedDB Blob Fallback
   const { db } = await import('../db');
-  const userId = 'guest';
 
   const blobEntry = await db.blobs
     .where('thoughtId').equals(thought.id)
-    .filter(b => b.userId === userId)
     .first();
 
   return blobEntry ? URL.createObjectURL(blobEntry.blob) : null;

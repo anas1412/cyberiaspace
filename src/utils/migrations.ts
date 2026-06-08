@@ -4,12 +4,12 @@ const MIGRATION_KEY = 'thought_migration_v3';
 const MIGRATION_TIME_KEY = 'thought_time_migration_v1';
 
 async function hasMigrationRun(key: string): Promise<boolean> {
-  const stored = await db.settings.get({ key, userId: 'guest' });
+  const stored = await db.settings.get(key);
   return stored?.value === 'true';
 }
 
 async function markMigrationDone(key: string): Promise<void> {
-  await db.settings.put({ key, value: 'true', userId: 'guest' });
+  await db.settings.put({ key, value: 'true' });
 }
 
 export async function migrateThoughtsToModular(): Promise<void> {

@@ -39,8 +39,7 @@ export const createSpaceSlice: StateCreator<CyberiaState, [], [], any> = (set, g
 
         // Load background from local IndexedDB first (local pattern)
         if (space.customBg) {
-          const currentUserId = 'guest';
-          const localBg = await db.spaceBackgrounds.filter(b => b.spaceId === id && b.userId === currentUserId).first();
+          const localBg = await db.spaceBackgrounds.filter(b => b.spaceId === id).first();
           if (localBg) {
             const blobUrl = URL.createObjectURL(localBg.blob);
             set({ customBg: blobUrl });
@@ -58,15 +57,12 @@ export const createSpaceSlice: StateCreator<CyberiaState, [], [], any> = (set, g
               const response = await fetch(capturedBase64);
               const blob = await response.blob();
 
-              const userId = 'guest';
-
               await db.spaceBackgrounds.put({
                 id: spaceId,
                 spaceId: spaceId,
                 blob,
                 name: 'background',
                 type: blob.type || 'image/jpeg',
-                userId,
                 updatedAt: Date.now()
               });
 
@@ -106,9 +102,8 @@ export const createSpaceSlice: StateCreator<CyberiaState, [], [], any> = (set, g
   },
 
   refreshSpaces: async () => {
-    const currentUserId = 'guest';
     const activeSpaces = await db.spaces
-      .filter((s: any) => !s.deletedAt && s.userId === currentUserId)
+      .filter((s: any) => !s.deletedAt)
       .toArray();
     activeSpaces.sort((a: any, b: any) => (a.order ?? 0) - (b.order ?? 0));
 
@@ -117,13 +112,11 @@ export const createSpaceSlice: StateCreator<CyberiaState, [], [], any> = (set, g
 
   addSpace: async (name: string) => {
     if (get().isReadOnly) return;
-    const currentUserId = 'guest';
-    const userSpaces = await db.spaces.filter((s: any) => s.userId === currentUserId && !s.deletedAt).toArray();
+    const userSpaces = await db.spaces.filter((s: any) => !s.deletedAt).toArray();
 
     const id = ulid();
     await db.spaces.add({
       id,
-      userId: currentUserId,
       name,
       mode: 'spatial',
       physics: getSetting('physics-enabled') !== 'false',
@@ -171,7 +164,6 @@ export const createSpaceSlice: StateCreator<CyberiaState, [], [], any> = (set, g
     const space = spaces.find((s: Space) => s.id === id);
     if (!space) return;
 
-    const currentUserId = 'guest';
     const now = Date.now();
     try {
       await db.transaction('rw', [db.spaces, db.thoughts, db.stacks], async () => {
@@ -180,12 +172,12 @@ export const createSpaceSlice: StateCreator<CyberiaState, [], [], any> = (set, g
           updatedAt: now,
         });
 
-        await db.thoughts.where('spaceId').equals(id).and(t => t.userId === currentUserId).modify({
+        await db.thoughts.where('spaceId').equals(id).modify({
           deletedAt: now,
           updatedAt: now,
         });
 
-        await db.stacks.where('spaceId').equals(id).and(s => s.userId === currentUserId).modify({
+        await db.stacks.where('spaceId').equals(id).modify({
           deletedAt: now,
           updatedAt: now,
         });

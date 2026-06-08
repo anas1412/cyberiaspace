@@ -659,8 +659,7 @@ const FileFocusEditor: React.FC = () => {
         blob: file,
         name: file.name,
         type: file.type,
-        updatedAt: Date.now(),
-        userId: 'guest'
+        updatedAt: Date.now()
       });
 
       const url = URL.createObjectURL(file);

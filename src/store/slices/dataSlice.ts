@@ -92,9 +92,8 @@ export const createDataSlice: StateCreator<CyberiaState, [], [], any> = (set, ge
   createInitialWorkspace: async () => {
     try {
       console.log('[Store] Checking if initial space needed...');
-      const currentUserId = 'guest';
 
-      const userSpacesCount = await db.spaces.filter(s => s.userId === currentUserId && !s.deletedAt).count();
+      const userSpacesCount = await db.spaces.filter(s => !s.deletedAt).count();
 
       if (userSpacesCount > 0) {
         console.log('[Store] Initial space already exists, skipping creation.');
@@ -108,7 +107,6 @@ export const createDataSlice: StateCreator<CyberiaState, [], [], any> = (set, ge
 
       const initialSpace: Space = {
         id: workspaceId,
-        userId: currentUserId,
         name: 'Workspace',
         mode: 'spatial',
         physics: getSetting('physics-enabled') !== 'false',
@@ -126,10 +124,9 @@ export const createDataSlice: StateCreator<CyberiaState, [], [], any> = (set, ge
   },
 
   isLocalWorkspaceEmpty: async () => {
-    const currentUserId = 'guest';
 
-    const thoughtsCount = await db.thoughts.filter((t: any) => !t.deletedAt && !t.archivedAt && t.userId === currentUserId).count();
-    const spaces = await db.spaces.filter((s: any) => !s.deletedAt && s.userId === currentUserId).toArray();
+    const thoughtsCount = await db.thoughts.filter((t: any) => !t.deletedAt && !t.archivedAt).count();
+    const spaces = await db.spaces.filter((s: any) => !s.deletedAt).toArray();
 
     if (thoughtsCount > 0) return false;
     if (spaces.length > 1) return false;
@@ -145,11 +142,10 @@ export const createDataSlice: StateCreator<CyberiaState, [], [], any> = (set, ge
 
   exportData: async () => {
     try {
-      const currentUserId = 'guest';
       // Filter out soft-deleted entities
-      const allSpaces = await db.spaces.filter((s: any) => s.userId === currentUserId && !s.deletedAt).toArray();
-      const allThoughts = await db.thoughts.filter((t: any) => t.userId === currentUserId && !t.deletedAt).toArray();
-      const allStacks = await db.stacks.filter((s: any) => s.userId === currentUserId && !s.deletedAt).toArray();
+      const allSpaces = await db.spaces.filter((s: any) => !s.deletedAt).toArray();
+      const allThoughts = await db.thoughts.filter((t: any) => !t.deletedAt).toArray();
+      const allStacks = await db.stacks.filter((s: any) => !s.deletedAt).toArray();
       const exportedSpaceIds = new Set(allSpaces.map((s: any) => s.id));
 
       // Only export blobs/chats/backgrounds belonging to exported spaces/thoughts
@@ -166,7 +162,6 @@ export const createDataSlice: StateCreator<CyberiaState, [], [], any> = (set, ge
         thoughtId: b.thoughtId,
         name: b.name,
         type: b.type,
-        userId: b.userId,
         updatedAt: b.updatedAt,
       }));
 
@@ -238,11 +233,9 @@ export const createDataSlice: StateCreator<CyberiaState, [], [], any> = (set, ge
       if (!data || typeof data !== 'object' || !('spaces' in data) || !('thoughts' in data))
         { showError(); return; }
 
-      const currentUserId = 'guest';
-
       // Remap spaces with new ULIDs
       const remappedSpaces = (data.spaces || []).map((s: any) => ({
-        ...s, userId: currentUserId, id: ulid(), updatedAt: Date.now(),
+        ...s, id: ulid(), updatedAt: Date.now(),
       }));
 
       const spaceIdMap = new Map<string, string>();
@@ -252,7 +245,7 @@ export const createDataSlice: StateCreator<CyberiaState, [], [], any> = (set, ge
 
       // Remap thoughts with new ULIDs
       const remappedThoughts = (data.thoughts || []).map((t: any) => ({
-        ...t, userId: currentUserId, id: ulid(), spaceId: spaceIdMap.get(t.spaceId) || t.spaceId, updatedAt: Date.now(),
+        ...t, id: ulid(), spaceId: spaceIdMap.get(t.spaceId) || t.spaceId, updatedAt: Date.now(),
       }));
 
       const thoughtIdMap = new Map<string, string>();
@@ -262,7 +255,7 @@ export const createDataSlice: StateCreator<CyberiaState, [], [], any> = (set, ge
 
       // Remap stacks
       const remappedStacks = (data.stacks || []).map((s: any) => ({
-        ...s, userId: currentUserId, id: ulid(), spaceId: spaceIdMap.get(s.spaceId) || s.spaceId, updatedAt: Date.now(),
+        ...s, id: ulid(), spaceId: spaceIdMap.get(s.spaceId) || s.spaceId, updatedAt: Date.now(),
       }));
 
       // Extract blob files from blobs/ folder
@@ -292,7 +285,6 @@ export const createDataSlice: StateCreator<CyberiaState, [], [], any> = (set, ge
           blob: blobData,
           name: b.name,
           type: b.type,
-          userId: currentUserId,
           updatedAt: Date.now(),
         });
       }
@@ -317,7 +309,7 @@ export const createDataSlice: StateCreator<CyberiaState, [], [], any> = (set, ge
 
       // Settings as-is
       const remappedSettings = (data.settings || []).map((s: any) => ({
-        key: s.key, value: s.value, userId: s.userId || currentUserId,
+        key: s.key, value: s.value,
       }));
 
       // Clear ALL tables and import
@@ -376,33 +368,12 @@ export const createDataSlice: StateCreator<CyberiaState, [], [], any> = (set, ge
     }
   },
 
-  migrateLegacyData: async (userId: string) => {
-    const now = Date.now();
-    console.log('[Migration] Starting migration for user:', userId);
-    try {
-      await db.transaction('rw', [db.spaces, db.thoughts, db.stacks, db.blobs], async () => {
-        await db.spaces.filter((s: any) => !s.userId || s.userId === 'guest').modify((s: any) => {
-          s.userId = userId;
-          s.updatedAt = now;
-        });
-
-        await db.thoughts.filter((t: any) => !t.userId || t.userId === 'guest').modify({ userId, updatedAt: now });
-        await db.stacks.filter((s: any) => !s.userId || s.userId === 'guest').modify({ userId, updatedAt: now });
-        await db.blobs.filter((b: any) => !b.userId || b.userId === 'guest').modify({ userId, updatedAt: now });
-      });
-    } catch (err) {
-      console.error('[Migration] Failed to migrate legacy data:', err);
-      throw err;
-    }
-  },
-
   ensureWorkspaceForCurrentUser: async () => {
-    const currentUserId = 'guest';
-    const spaces = await db.spaces.filter((s: any) => s.userId === currentUserId && !s.deletedAt).toArray();
+    const spaces = await db.spaces.filter((s: any) => !s.deletedAt).toArray();
     if (spaces.length === 0) {
       const workspaceId = ulid();
       const now = Date.now();
-      await db.spaces.add({ id: workspaceId, userId: currentUserId, name: 'My Space', mode: 'spatial', physics: true, order: 0, updatedAt: now });
+      await db.spaces.add({ id: workspaceId, name: 'My Space', mode: 'spatial', physics: true, order: 0, updatedAt: now });
       await setSetting('active-space-id', workspaceId);
       await get().refreshSpaces();
       await get().setActiveSpace(workspaceId);

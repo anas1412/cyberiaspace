@@ -165,6 +165,5 @@ export interface CyberiaState {
   importData: (file: File) => Promise<void>;
   cleanupTrash: () => Promise<void>;
   isLocalWorkspaceEmpty: () => Promise<boolean>;
-  migrateLegacyData: (userId: string) => Promise<void>;
   ensureWorkspaceForCurrentUser: () => Promise<void>;
 }

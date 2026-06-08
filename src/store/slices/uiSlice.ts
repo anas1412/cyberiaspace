@@ -100,7 +100,6 @@ export const createUiSlice: StateCreator<CyberiaState, [], [], any> = (set, get,
       revokeCurrentBg(customBg);
 
       try {
-        const currentUserId = 'guest';
 
         if (bg instanceof File) {
           set({ customBgLoading: true });
@@ -114,7 +113,6 @@ export const createUiSlice: StateCreator<CyberiaState, [], [], any> = (set, get,
             blob: bg,
             name: bg.name,
             type: bg.type,
-            userId: currentUserId,
             updatedAt: now
           });
 
@@ -156,7 +154,6 @@ export const createUiSlice: StateCreator<CyberiaState, [], [], any> = (set, get,
               blob,
               name: 'background',
               type: blob.type,
-              userId: currentUserId,
               updatedAt: now
             });
 
