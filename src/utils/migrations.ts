@@ -1,10 +1,20 @@
 import { db, type Thought, type ThoughtPayload } from '../db';
 
-const MIGRATION_KEY = 'cyberia_thought_migration_v3'; 
+const MIGRATION_KEY = 'thought_migration_v3';
+const MIGRATION_TIME_KEY = 'thought_time_migration_v1';
+
+async function hasMigrationRun(key: string): Promise<boolean> {
+  const stored = await db.settings.get({ key, userId: 'guest' });
+  return stored?.value === 'true';
+}
+
+async function markMigrationDone(key: string): Promise<void> {
+  await db.settings.put({ key, value: 'true', userId: 'guest' });
+}
 
 export async function migrateThoughtsToModular(): Promise<void> {
   // Check if migration already ran
-  if (localStorage.getItem(MIGRATION_KEY)) {
+  if (await hasMigrationRun(MIGRATION_KEY)) {
     return;
   }
 
@@ -42,7 +52,7 @@ export async function migrateThoughtsToModular(): Promise<void> {
   if (hasImagePayload.length > 0) {
     await db.transaction('rw', db.thoughts, async () => {
       for (const t of hasImagePayload) {
-        if (t.data && (t.data as any).type === 'image') {
+        if (t.data && (t.data.type as any) === 'image') {
           const newData = { ...t.data, type: 'file' } as any;
           await db.thoughts.update(t.id, { data: newData });
         }
@@ -50,12 +60,11 @@ export async function migrateThoughtsToModular(): Promise<void> {
     });
   }
 
-  localStorage.setItem(MIGRATION_KEY, 'true');
+  await markMigrationDone(MIGRATION_KEY);
 }
 
 export async function migrateThoughtsToTimeFields(): Promise<void> {
-  const MIGRATION_TIME_KEY = 'cyberia_thought_time_migration_v1';
-  if (localStorage.getItem(MIGRATION_TIME_KEY)) return;
+  if (await hasMigrationRun(MIGRATION_TIME_KEY)) return;
 
   console.log('[Migration] Migrating thoughts to new time-based fields...');
   const thoughts = await db.thoughts.toArray();
@@ -85,7 +94,7 @@ export async function migrateThoughtsToTimeFields(): Promise<void> {
       }
     });
   }
-  localStorage.setItem(MIGRATION_TIME_KEY, 'true');
+  await markMigrationDone(MIGRATION_TIME_KEY);
 }
 
 function constructDataFromLegacy(t: Thought): ThoughtPayload {

@@ -138,6 +138,12 @@ interface ChatMessage {
   msgType?: 'chat' | 'system';
 }
 
+interface AppSetting {
+  key: string;
+  value: string;
+  userId: string;
+}
+
 interface SpaceBackground {
   id: string;
   spaceId: string;
@@ -160,6 +166,7 @@ const db = new Dexie('CyberiaDB') as Dexie & {
   chatHistory: EntityTable<ChatMessage, 'id'>;
   spaceBackgrounds: EntityTable<SpaceBackground, 'id'>;
   chatConversations: EntityTable<ChatConversation, 'id'>;
+  settings: EntityTable<AppSetting, 'key'>;
 };
 
 db.on('versionchange', () => {
@@ -205,6 +212,11 @@ db.version(22).stores({
   chatHistory: 'id, spaceId, [spaceId+conversationId], timestamp',
   spaceBackgrounds: 'id, spaceId, userId',
   chatConversations: 'id, spaceId'
+});
+
+// Version 23: Added settings table for key-value app settings
+db.version(23).stores({
+  settings: 'key, userId'
 });
 
 export type { Space, Thought, Stack, ChatMessage, ChatConversation };

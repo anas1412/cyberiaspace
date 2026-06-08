@@ -220,7 +220,7 @@ const Homepage: React.FC = () => {
                   initial={{ opacity: 0, x: -20 }}
                   animate={{ opacity: 1, x: 0 }}
                   transition={{ duration: 0.8, delay: 0.2, ease: "easeOut" }}
-                  className="bg-clip-text text-transparent bg-gradient-to-r from-[var(--accent)] to-[var(--accent-secondary)]"
+                  className="text-[var(--accent)]"
                 >
                   You Will Ever Need
                 </motion.span>

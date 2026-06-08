@@ -1,12 +1,7 @@
 export type Theme = 'dark' | 'light';
 
-export const DEFAULT_THEME: Theme = (() => {
-  try {
-    const stored = (globalThis as unknown as { localStorage: { getItem: (key: string) => string | null } }).localStorage.getItem('cyberia-theme');
-    if (stored === 'dark' || stored === 'light') return stored;
-  } catch {}
-  return 'light';
-})();
+// Default fallback — actual theme is read from Dexie settings cache in store init
+export const DEFAULT_THEME: Theme = 'light';
 
 export const DEFAULT_PHYSICS = true;
 

@@ -4,6 +4,7 @@ import { useModalStore } from '../useModalStore';
 import { DEFAULT_THEME } from '../../constants';
 import { type CyberiaState } from '../types';
 import { migrateThoughtsToModular, migrateThoughtsToTimeFields } from '../../utils/migrations';
+import { getSetting, setSetting } from '../../utils/settings';
 import { ulid } from 'ulid';
 
 export const createDataSlice: StateCreator<CyberiaState, [], [], any> = (set, get, _api) => ({
@@ -30,7 +31,7 @@ export const createDataSlice: StateCreator<CyberiaState, [], [], any> = (set, ge
       await migrateThoughtsToTimeFields();
 
       set({ isSpaceLoading: true });
-      const savedTheme = localStorage.getItem('cyberia-theme') || DEFAULT_THEME;
+      const savedTheme = getSetting('theme') || DEFAULT_THEME;
       document.body.setAttribute('data-theme', savedTheme);
 
       try {
@@ -49,7 +50,7 @@ export const createDataSlice: StateCreator<CyberiaState, [], [], any> = (set, ge
         }
 
         // Determine which space to show
-        const savedSpaceId = localStorage.getItem('cyberia-active-space-id');
+        const savedSpaceId = getSetting('active-space-id');
         const spaceExists = savedSpaceId ? currentSpaces.find((s: Space) => s.id === savedSpaceId) : null;
         const targetSpaceId = spaceExists?.id || (currentSpaces.length > 0 ? currentSpaces[0].id : null);
 
@@ -109,13 +110,13 @@ export const createDataSlice: StateCreator<CyberiaState, [], [], any> = (set, ge
         userId: currentUserId,
         name: 'Workspace',
         mode: 'spatial',
-        physics: localStorage.getItem('cyberia-physics-enabled') !== 'false',
+        physics: getSetting('physics-enabled') !== 'false',
         order: 0,
         updatedAt: now,
       };
 
       await db.spaces.add(initialSpace);
-      localStorage.setItem('cyberia-active-space-id', workspaceId);
+      await setSetting('active-space-id', workspaceId);
       await get().refreshSpaces();
       await get().setActiveSpace(workspaceId);
     } catch (err) {
@@ -202,8 +203,8 @@ export const createDataSlice: StateCreator<CyberiaState, [], [], any> = (set, ge
         if (remappedBlobs.length > 0) await db.blobs.bulkAdd(remappedBlobs);
       });
 
-      if (data.activeSpaceId) localStorage.setItem('cyberia-active-space-id', data.activeSpaceId);
-      if (data.settings?.theme) localStorage.setItem('cyberia-theme', data.settings.theme);
+      if (data.activeSpaceId) await setSetting('active-space-id', data.activeSpaceId);
+      if (data.settings?.theme) await setSetting('theme', data.settings.theme);
 
       window.location.reload();
     };
@@ -276,7 +277,7 @@ export const createDataSlice: StateCreator<CyberiaState, [], [], any> = (set, ge
       const workspaceId = ulid();
       const now = Date.now();
       await db.spaces.add({ id: workspaceId, userId: currentUserId, name: 'My Space', mode: 'spatial', physics: true, order: 0, updatedAt: now });
-      localStorage.setItem('cyberia-active-space-id', workspaceId);
+      await setSetting('active-space-id', workspaceId);
       await get().refreshSpaces();
       await get().setActiveSpace(workspaceId);
     }

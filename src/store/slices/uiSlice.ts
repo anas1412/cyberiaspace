@@ -1,5 +1,6 @@
 import { type StateCreator } from 'zustand';
 import { db } from '../../db';
+import { getSetting, setSetting } from '../../utils/settings';
 import { type CyberiaState } from '../types';
 
 let activeAbortController: AbortController | null = null;
@@ -12,7 +13,7 @@ const revokeCurrentBg = (bg: string | null) => {
 
 export const createUiSlice: StateCreator<CyberiaState, [], [], any> = (set, get, _api) => {
   const getInitialTheme = (): 'dark' | 'light' => {
-    const stored = localStorage.getItem('cyberia-theme');
+    const stored = getSetting('theme');
     if (stored === 'dark' || stored === 'light') return stored;
     if (typeof window !== 'undefined' && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
       return 'dark';
@@ -60,7 +61,7 @@ export const createUiSlice: StateCreator<CyberiaState, [], [], any> = (set, get,
       if (theme === currentTheme) return;
 
       set({ theme });
-      localStorage.setItem('cyberia-theme', theme);
+      await setSetting('theme', theme);
       document.documentElement.setAttribute('data-theme', theme);
       document.body.setAttribute('data-theme', theme);
       document.documentElement.style.removeProperty('--bg-page');
@@ -68,7 +69,7 @@ export const createUiSlice: StateCreator<CyberiaState, [], [], any> = (set, get,
       document.documentElement.style.removeProperty('--accent');
       document.documentElement.style.removeProperty('--glass-border');
 
-      const customNodeBg = localStorage.getItem('cyberia-node-bg');
+      const customNodeBg = getSetting('node-bg');
       if (customNodeBg) {
         document.documentElement.style.setProperty('--node-bg', customNodeBg, 'important');
       } else {
@@ -76,7 +77,7 @@ export const createUiSlice: StateCreator<CyberiaState, [], [], any> = (set, get,
         document.documentElement.style.setProperty('--node-bg', defaultNodeBg, 'important');
       }
 
-      const customAccent = localStorage.getItem('cyberia-accent');
+      const customAccent = getSetting('accent');
       if (customAccent) {
         document.documentElement.style.setProperty('--accent', customAccent, 'important');
       } else {

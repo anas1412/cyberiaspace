@@ -1,6 +1,7 @@
 import { type StateCreator } from 'zustand';
 import { db, type Space } from '../../db';
 import { type CyberiaState } from '../types';
+import { setSetting, getSetting } from '../../utils/settings';
 import { ulid } from 'ulid';
 
 export const createSpaceSlice: StateCreator<CyberiaState, [], [], any> = (set, get, _api) => ({
@@ -14,7 +15,7 @@ export const createSpaceSlice: StateCreator<CyberiaState, [], [], any> = (set, g
   setActiveSpace: async (id: string) => {
     const requestId = Date.now();
     try {
-      localStorage.setItem('cyberia-active-space-id', id);
+      await setSetting('active-space-id', id);
       const space = get().spaces.find((s: Space) => s.id === id);
 
       set({
@@ -125,7 +126,7 @@ export const createSpaceSlice: StateCreator<CyberiaState, [], [], any> = (set, g
       userId: currentUserId,
       name,
       mode: 'spatial',
-      physics: localStorage.getItem('cyberia-physics-enabled') !== 'false',
+      physics: getSetting('physics-enabled') !== 'false',
       order: userSpaces.length,
       updatedAt: Date.now(),
     });

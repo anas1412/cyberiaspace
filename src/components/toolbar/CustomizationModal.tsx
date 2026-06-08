@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { X, MessageSquare, Camera, Upload, Trash2, Loader2, CheckCircle, Palette } from 'lucide-react';
+import { X, Camera, Upload, Trash2, Palette } from 'lucide-react';
 import { useStore } from '../../store/useStore';
 import { MAX_UPLOAD_SIZE, MAX_UPLOAD_SIZE_MB } from '../../constants';
 import { useModalStore } from '../../store/useModalStore';
+import { getSetting, setSetting, removeSetting } from '../../utils/settings';
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 
@@ -68,28 +69,6 @@ export const CustomizationModal: React.FC<CustomizationModalProps> = ({
 }) => {
   const { openModal } = useModalStore();
 
-  // -- AI Personality --
-  const [localPersonality, setLocalPersonality] = useState('');
-  const [personalitySaving, setPersonalitySaving] = useState(false);
-
-  useEffect(() => {
-    if (isOpen) {
-      const stored = localStorage.getItem('cyberia-ai-personality') || '';
-      setLocalPersonality(stored);
-    }
-  }, [isOpen]);
-
-  const savePersonality = () => {
-    setPersonalitySaving(true);
-    try {
-      localStorage.setItem('cyberia-ai-personality', localPersonality);
-    } finally {
-      setPersonalitySaving(false);
-    }
-  };
-
-  const personalityChanged = localPersonality !== (localStorage.getItem('cyberia-ai-personality') || '');
-
   // -- Custom Background --
   const handleBgUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -129,26 +108,26 @@ export const CustomizationModal: React.FC<CustomizationModalProps> = ({
 
   const getNodeBgColor = (): string => {
     void nodeBgKey;
-    return localStorage.getItem('cyberia-node-bg') || '#12121af5';
+    return getSetting('node-bg') || '#12121af5';
   };
 
   const handleNodeBgChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const color = e.target.value;
     const alphaColor = color + 'f5';
-    localStorage.setItem('cyberia-node-bg', alphaColor);
+    setSetting('node-bg', alphaColor);
     document.documentElement.style.setProperty('--node-bg', alphaColor, 'important');
     setNodeBgKey(prev => prev + 1);
   };
 
   const handleNodeBgPreset = (color: string) => {
     const alphaColor = color + 'f5';
-    localStorage.setItem('cyberia-node-bg', alphaColor);
+    setSetting('node-bg', alphaColor);
     document.documentElement.style.setProperty('--node-bg', alphaColor, 'important');
     setNodeBgKey(prev => prev + 1);
   };
 
   const handleNodeBgReset = () => {
-    localStorage.removeItem('cyberia-node-bg');
+    removeSetting('node-bg');
     const isDark = document.documentElement.getAttribute('data-theme') !== 'light';
     const defaultColor = isDark ? '#12121af5' : '#f8fafc';
     document.documentElement.style.setProperty('--node-bg', defaultColor, 'important');
@@ -156,7 +135,7 @@ export const CustomizationModal: React.FC<CustomizationModalProps> = ({
   };
 
   useEffect(() => {
-    const stored = localStorage.getItem('cyberia-node-bg');
+    const stored = getSetting('node-bg');
     if (stored) {
       document.documentElement.style.setProperty('--node-bg', stored, 'important');
     }
@@ -167,33 +146,33 @@ export const CustomizationModal: React.FC<CustomizationModalProps> = ({
 
   const getPrimaryColor = (): string => {
     void primaryKey;
-    return localStorage.getItem('cyberia-accent') || '#6366f1';
+    return getSetting('accent') || '#6366f1';
   };
 
   const handlePrimaryChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const color = e.target.value;
-    localStorage.setItem('cyberia-accent', color);
+    setSetting('accent', color);
     document.documentElement.style.setProperty('--accent', color, 'important');
     document.documentElement.style.setProperty('--accent-secondary', color + '99', 'important');
     setPrimaryKey(prev => prev + 1);
   };
 
   const handlePrimaryPreset = (color: string) => {
-    localStorage.setItem('cyberia-accent', color);
+    setSetting('accent', color);
     document.documentElement.style.setProperty('--accent', color, 'important');
     document.documentElement.style.setProperty('--accent-secondary', color + '99', 'important');
     setPrimaryKey(prev => prev + 1);
   };
 
   const handlePrimaryReset = () => {
-    localStorage.removeItem('cyberia-accent');
+    removeSetting('accent');
     document.documentElement.style.removeProperty('--accent');
     document.documentElement.style.removeProperty('--accent-secondary');
     setPrimaryKey(prev => prev + 1);
   };
 
   useEffect(() => {
-    const stored = localStorage.getItem('cyberia-accent');
+    const stored = getSetting('accent');
     if (stored) {
       document.documentElement.style.setProperty('--accent', stored, 'important');
       document.documentElement.style.setProperty('--accent-secondary', stored + '99', 'important');
@@ -205,30 +184,30 @@ export const CustomizationModal: React.FC<CustomizationModalProps> = ({
 
   const getSecondaryColor = (): string => {
     void secondaryKey;
-    return localStorage.getItem('cyberia-secondary') || '#8b5cf6';
+    return getSetting('secondary') || '#8b5cf6';
   };
 
   const handleSecondaryChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const color = e.target.value;
-    localStorage.setItem('cyberia-secondary', color);
+    setSetting('secondary', color);
     document.documentElement.style.setProperty('--secondary', color, 'important');
     setSecondaryKey(prev => prev + 1);
   };
 
   const handleSecondaryPreset = (color: string) => {
-    localStorage.setItem('cyberia-secondary', color);
+    setSetting('secondary', color);
     document.documentElement.style.setProperty('--secondary', color, 'important');
     setSecondaryKey(prev => prev + 1);
   };
 
   const handleSecondaryReset = () => {
-    localStorage.removeItem('cyberia-secondary');
+    removeSetting('secondary');
     document.documentElement.style.removeProperty('--secondary');
     setSecondaryKey(prev => prev + 1);
   };
 
   useEffect(() => {
-    const stored = localStorage.getItem('cyberia-secondary');
+    const stored = getSetting('secondary');
     if (stored) {
       document.documentElement.style.setProperty('--secondary', stored, 'important');
     }
@@ -250,38 +229,6 @@ export const CustomizationModal: React.FC<CustomizationModalProps> = ({
 
         {/* Content */}
         <div className="flex-1 overflow-y-auto custom-scroll px-8 py-6 space-y-8" onWheel={(e) => e.stopPropagation()}>
-
-          {/* AI Personality */}
-          <section>
-            <div className="flex items-center justify-between mb-4">
-              <p className="text-[10px] font-semibold tracking-wide text-[var(--text-muted)] flex items-center gap-2">
-                <MessageSquare className="w-3.5 h-3.5" /> AI Personality
-              </p>
-              <button
-                onClick={savePersonality}
-                disabled={!personalityChanged || personalitySaving}
-                className={cn(
-                  "text-[9px] font-semibold tracking-wide px-3 py-1.5 rounded-lg transition-all flex items-center gap-1.5",
-                  personalityChanged && !personalitySaving
-                    ? "bg-[var(--accent)] text-white hover:bg-[var(--accent-secondary)]"
-                    : "bg-[var(--glass-bg)] text-[var(--text-muted)] cursor-not-allowed"
-                )}
-              >
-                {personalitySaving ? (
-                  <Loader2 className="w-3 h-3 animate-spin" />
-                ) : (
-                  <CheckCircle className="w-3 h-3" />
-                )}
-                {personalitySaving ? 'Saving...' : 'Save'}
-              </button>
-            </div>
-            <textarea
-              value={localPersonality}
-              onChange={(e) => setLocalPersonality(e.target.value)}
-              placeholder="Describe how Cyberia AI should behave..."
-              className="w-full h-24 bg-[var(--glass-bg)] border border-[var(--glass-border)] rounded-xl p-4 text-xs text-[var(--text-primary)] outline-none focus:border-[var(--accent)]/50 transition-all resize-none"
-            />
-          </section>
 
           {/* Custom Background */}
           <section>

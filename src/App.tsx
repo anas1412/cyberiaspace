@@ -3,6 +3,7 @@ import { isBrowser } from 'react-device-detect';
 import { Analytics } from '@vercel/analytics/react';
 import { SpeedInsights } from '@vercel/speed-insights/react';
 import { useStore } from './store/useStore';
+import { getSetting, setSetting } from './utils/settings';
 import { detectImageType, generateThumbnail } from './utils/image';
 import { stripFileExtension } from './utils/file';
 import Viewport from './components/Viewport';
@@ -67,11 +68,20 @@ function App() {
   const theme = useStore((state) => state.theme);
 
   useEffect(() => {
-    document.documentElement.setAttribute('data-theme', theme);
-    document.body.setAttribute('data-theme', theme);
-    localStorage.setItem('cyberia-theme', theme);
+    // Clean up preloader inline styles so CSS [data-theme] selectors work fully
+    const root = document.documentElement;
+    root.style.removeProperty('--bg-page');
+    root.style.removeProperty('--text-primary');
+    root.style.removeProperty('--accent');
+    root.style.removeProperty('--glass-border');
+    root.style.removeProperty('--bg-ambient');
+    root.style.removeProperty('--node-bg');
 
-    const customNodeBg = localStorage.getItem('cyberia-node-bg');
+    root.setAttribute('data-theme', theme);
+    document.body.setAttribute('data-theme', theme);
+    setSetting('theme', theme);
+
+    const customNodeBg = getSetting('node-bg');
     if (customNodeBg) {
       document.documentElement.style.setProperty('--node-bg', customNodeBg, 'important');
     } else {

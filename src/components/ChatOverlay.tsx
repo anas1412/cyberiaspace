@@ -17,6 +17,7 @@ import { ORACLE_CONFIG } from '../constants';
 
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
+import { getSetting, setSetting } from '../utils/settings';
 
 import { db, type ChatMessage, type ChatConversation } from '../db';
 import { ulid } from 'ulid';
@@ -46,18 +47,12 @@ const sanitizeAssistantContent = (content: string): string => {
 type Message = ChatMessage;
 
 // BYOK API key management
-const API_KEY_STORAGE_KEY = 'cyberia-openrouter-key';
-
 const getStoredApiKey = (): string => {
-  try {
-    return localStorage.getItem(API_KEY_STORAGE_KEY) || '';
-  } catch { return ''; }
+  return getSetting('openrouter-key') || '';
 };
 
 const setStoredApiKey = (key: string) => {
-  try {
-    localStorage.setItem(API_KEY_STORAGE_KEY, key);
-  } catch { /* noop */ }
+  setSetting('openrouter-key', key);
 };
 
 // Cache models across panel open/close (module-level)
@@ -123,7 +118,7 @@ const ChatOverlay: React.FC = () => {
   const [availableModels, setAvailableModels] = useState<ModelOption[]>(FALLBACK_MODELS);
   const [modelsLoaded, setModelsLoaded] = useState(false);
   const [selectedModel, setSelectedModel] = useState(
-    () => localStorage.getItem('cyberia-ai-model') || ''
+    () => getSetting('ai-model') || ''
   );
   const [showModelDropdown, setShowModelDropdown] = useState(false);
   const [modelSearch, setModelSearch] = useState('');
@@ -143,8 +138,8 @@ const ChatOverlay: React.FC = () => {
       return;
     }
 
-    // 2. Allow override URL via localStorage (for testing/power users)
-    const overrideUrl = localStorage.getItem('cyberia-models-url');
+    // 2. Allow override URL via Dexie setting (for testing/power users)
+    const overrideUrl = getSetting('models-url');
 
     if (overrideUrl) {
       fetch(overrideUrl)
@@ -214,6 +209,34 @@ const ChatOverlay: React.FC = () => {
       setSelectedModel(availableModels[0].id);
     }
   }, [modelsLoaded, availableModels, selectedModel]);
+
+  // System prompt
+  const [showSystemPrompt, setShowSystemPrompt] = useState(false);
+  const [systemPromptDraft, setSystemPromptDraft] = useState('');
+  const [savedPrompt, setSavedPrompt] = useState('');
+
+  // Load system prompt from Dexie on mount
+  useEffect(() => {
+    db.settings.get({ key: 'system-prompt', userId: 'guest' }).then(stored => {
+      if (stored) {
+        setSystemPromptDraft(stored.value);
+        setSavedPrompt(stored.value);
+      }
+    });
+  }, []);
+
+  const hasUnsavedChanges = systemPromptDraft !== savedPrompt;
+
+  const saveSystemPrompt = async () => {
+    await db.settings.put({ key: 'system-prompt', value: systemPromptDraft, userId: 'guest' });
+    setSavedPrompt(systemPromptDraft);
+  };
+
+  const resetSystemPrompt = async () => {
+    await db.settings.put({ key: 'system-prompt', value: '', userId: 'guest' });
+    setSavedPrompt('');
+    setSystemPromptDraft('');
+  };
 
   // Edit/delete state
   const [editingMessageId, setEditingMessageId] = useState<string | null>(null);
@@ -348,7 +371,7 @@ const ChatOverlay: React.FC = () => {
 
   // Save selected model
   useEffect(() => {
-    localStorage.setItem('cyberia-ai-model', selectedModel);
+    setSetting('ai-model', selectedModel);
   }, [selectedModel]);
 
   const saveMessage = async (msg: Message) => {
@@ -920,8 +943,11 @@ IMPORTANT RULES:
 IMPORTANT RULES:
 - NEVER show internal IDs to the user. Always refer to thoughts by their text/name or use descriptive labels.
 - When listing or grouping thoughts, use their text content — not their internal ID.`;
+    const fullSystemPrompt = savedPrompt
+      ? `${savedPrompt}\n\n${systemPrompt}`
+      : systemPrompt;
     const apiMessages = [
-      { role: 'system', content: systemPrompt },
+      { role: 'system', content: fullSystemPrompt },
       ...toOpenRouterMessages(
         messages.filter(m => m.msgType !== 'system').slice(-ORACLE_CONFIG.HISTORY_WINDOW_SIZE)
       ),
@@ -1570,7 +1596,8 @@ IMPORTANT RULES:
               )}
             </form>
 
-            <div className="flex items-center justify-center pb-2">
+            {/* Footer Row: Chat/Action on left, System Prompt on right */}
+            <div className="flex items-center justify-between pb-2">
               <div className="flex items-center h-8 bg-[var(--glass-bg)] rounded-lg p-1 border border-[var(--glass-border)]">
                 <button
                   onClick={() => store.setAiChatMode('chat')}
@@ -1598,7 +1625,53 @@ IMPORTANT RULES:
                   <span className="text-[9px] font-semibold tracking-wide mt-[1px]">Action</span>
                 </button>
               </div>
+
+              <button
+                onClick={() => setShowSystemPrompt(!showSystemPrompt)}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[9px] font-semibold tracking-wide text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--glass-bg)] border border-[var(--glass-border)] transition-all"
+              >
+                <MessageSquare className="w-3 h-3" />
+                System Prompt
+                <ChevronDown className={cn("w-3 h-3 transition-transform", showSystemPrompt && "rotate-180")} />
+              </button>
             </div>
+
+            <AnimatePresence>
+              {showSystemPrompt && (
+                <motion.div
+                  initial={{ height: 0, opacity: 0 }}
+                  animate={{ height: 'auto', opacity: 1 }}
+                  exit={{ height: 0, opacity: 0 }}
+                  transition={{ duration: 0.2 }}
+                  className="overflow-hidden"
+                >
+                  <textarea
+                    value={systemPromptDraft}
+                    onChange={(e) => setSystemPromptDraft(e.target.value)}
+                    placeholder="Custom instructions for Cyberia AI..."
+                    className="w-full h-20 bg-[var(--bg-page)]/20 border border-[var(--glass-border)] rounded-xl p-3 text-[11px] text-[var(--text-primary)] outline-none focus:border-[var(--accent)]/50 transition-all resize-none custom-scroll"
+                  />
+                  <div className="flex items-center justify-end gap-2 mt-2">
+                    <button
+                      onClick={resetSystemPrompt}
+                      disabled={!savedPrompt && !systemPromptDraft}
+                      className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-[9px] font-semibold tracking-wide text-red-400 hover:text-red-300 hover:bg-red-400/10 border border-transparent hover:border-red-400/20 transition-all disabled:opacity-30 disabled:pointer-events-none"
+                    >
+                      <Trash2 className="w-3 h-3" />
+                      Reset
+                    </button>
+                    <button
+                      onClick={saveSystemPrompt}
+                      disabled={!hasUnsavedChanges}
+                      className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-[9px] font-semibold tracking-wide text-[var(--accent)] hover:bg-[var(--accent)]/10 border border-transparent hover:border-[var(--accent)]/20 transition-all disabled:opacity-30 disabled:pointer-events-none"
+                    >
+                      <Check className="w-3 h-3" />
+                      Save
+                    </button>
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
           </div>
           </div>
 
