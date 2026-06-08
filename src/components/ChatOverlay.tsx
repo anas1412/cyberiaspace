@@ -107,6 +107,7 @@ const ChatOverlay: React.FC = () => {
   const [showApiKey, setShowApiKey] = useState(false);
   const [editingApiKey, setEditingApiKey] = useState(false);
   const [apiKeyInput, setApiKeyInput] = useState(apiKey);
+  const [showApiKeyHelp, setShowApiKeyHelp] = useState(false);
 
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
@@ -1342,9 +1343,59 @@ IMPORTANT RULES:
                     </div>
                     <div>
                       <h3 className="text-[13px] font-bold text-[var(--text-primary)]">OpenRouter API Key</h3>
-                      <p className="text-[10px] text-[var(--text-muted)]">Get yours at <span className="text-[var(--accent)]">openrouter.ai/keys</span></p>
+                      <p className="text-[10px] text-[var(--text-muted)]">
+                        Get yours at{' '}
+                        <a href="https://openrouter.ai/keys" target="_blank" rel="noopener noreferrer" className="text-[var(--accent)] hover:underline">openrouter.ai/keys</a>
+                      </p>
+                      <button
+                        onClick={() => setShowApiKeyHelp(!showApiKeyHelp)}
+                        className="text-[9px] font-semibold uppercase tracking-wider text-[var(--accent)] hover:text-[var(--accent-secondary)] mt-1 transition-colors"
+                      >
+                        {showApiKeyHelp ? 'Hide instructions' : "Don't have one? Show me how"}
+                      </button>
                     </div>
                   </div>
+
+                  {/* API Key Help Instructions */}
+                  <AnimatePresence>
+                    {showApiKeyHelp && (
+                      <motion.div
+                        initial={{ height: 0, opacity: 0 }}
+                        animate={{ height: 'auto', opacity: 1 }}
+                        exit={{ height: 0, opacity: 0 }}
+                        transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
+                        className="overflow-hidden"
+                      >
+                        <div className="bg-[var(--bg-page)]/30 border border-[var(--glass-border)] rounded-xl p-3.5 mb-4 space-y-2.5">
+                          <p className="text-[10px] font-semibold text-[var(--text-primary)]">Follow these steps:</p>
+                          <ol className="space-y-2 text-[10px] text-[var(--text-secondary)] leading-relaxed">
+                            <li>
+                              <span className="font-medium text-[var(--text-primary)]">1.</span>{' '}
+                              Create an account at{' '}
+                              <a href="https://openrouter.ai" target="_blank" rel="noopener noreferrer" className="text-[var(--accent)] hover:underline">openrouter.ai</a>
+                              {' '}(free, takes 30 seconds).
+                            </li>
+                            <li>
+                              <span className="font-medium text-[var(--text-primary)]">2.</span>{' '}
+                              Go to{' '}
+                              <a href="https://openrouter.ai/keys" target="_blank" rel="noopener noreferrer" className="text-[var(--accent)] hover:underline">openrouter.ai/keys</a>
+                              {' '}and click <strong className="text-[var(--text-primary)]">"Create Key"</strong>.
+                            </li>
+                            <li>
+                              <span className="font-medium text-[var(--text-primary)]">3.</span>{' '}
+                              Copy the key (starts with <code className="text-[var(--accent)] font-mono bg-[var(--bg-page)]/50 px-1 rounded">sk-or-v1-</code>) and paste it above.
+                            </li>
+                          </ol>
+                          <div className="pt-1.5 border-t border-[var(--glass-border)]">
+                            <p className="text-[9px] text-[var(--text-muted)]">
+                              💡 Many models have free tiers — you can start using AI right away without adding a payment method. Filter by <strong className="text-[var(--text-primary)]">"Free"</strong> in the model selector.
+                            </p>
+                          </div>
+                        </div>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+
                   <div className="relative mb-4">
                     <input
                       type={showApiKey ? 'text' : 'password'}
