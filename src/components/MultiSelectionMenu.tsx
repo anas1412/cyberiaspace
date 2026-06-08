@@ -319,11 +319,11 @@ const MultiSelectionMenu: React.FC = () => {
                   <span>{sharedStack ? 'Rename Group' : 'Create Group'}</span>
                 </button>
 
-                {stacks.length > 0 && !sharedStack && (
+                {stacks.filter(s => !s.deletedAt).length > 0 && !sharedStack && (
                   <div className="space-y-2 pt-2">
                     <label className="text-[9px] uppercase font-bold tracking-[0.2em] text-[var(--text-muted)] ml-1">Add to Existing</label>
                     <div className="flex flex-col gap-1.5 max-h-[160px] overflow-y-auto custom-scroll pr-1">
-                      {stacks.map(s => (
+                      {stacks.filter(s => !s.deletedAt).map(s => (
                         <button
                           key={s.id}
                           onClick={() => updateThoughts(selectedThoughtIds, { stackId: s.id })}
