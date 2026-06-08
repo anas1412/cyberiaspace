@@ -58,12 +58,37 @@ export function parseToolCalls(text: string): ToolCall[] {
     }
   }
 
-  // ── 2. JS function call format ─────────────────────────────
+  // ── 2. Simple XML tag format ────────────────────────────────
+  // Handles: <web_search>query text</web_search>
+  // Only matches tools that take a single string parameter.
+  const simpleTagNames = [
+    'web_search',
+  ].join('|');
+
+  const simpleTagRegex = new RegExp(
+    `<(${simpleTagNames})>([\\s\\S]*?)<\\/\\1>`,
+    'gi'
+  );
+
+  while ((match = simpleTagRegex.exec(text)) !== null) {
+    const toolName = match[1];
+    const value = match[2].trim();
+    if (!value) continue;
+
+    const args: Record<string, unknown> = { query: value };
+    const key = `${toolName}::${JSON.stringify(args)}`;
+    if (!seen.has(key)) {
+      seen.add(key);
+      calls.push({ toolName, args });
+    }
+  }
+
+  // ── 3. JS function call format ─────────────────────────────
   const toolNames = [
     'create_thought', 'create_thoughts', 'create_stack', 'link_thoughts',
     'unlink_thoughts', 'update_thought', 'update_thoughts', 'delete_thoughts',
     'delete_stack', 'delete_stacks', 'get_thought_details', 'read_file_content',
-    'read_files_content', 'update_stack', 'update_stacks',
+    'read_files_content', 'update_stack', 'update_stacks', 'web_search',
   ].join('|');
 
   const jsRegex = new RegExp(
