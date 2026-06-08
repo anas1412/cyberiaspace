@@ -216,11 +216,27 @@ export const createDataSlice: StateCreator<CyberiaState, [], [], any> = (set, ge
 
   importData: async (input: any) => {
     if (get().isReadOnly) return;
+    if (!(input instanceof File)) return;
 
-    /** Shared logic: remap IDs, write to Dexie, reload */
-    const processData = async (data: any, blobsByOldId?: Map<string, Blob>) => {
+    const showError = () => {
+      useModalStore.getState().openModal({
+        title: 'Import Failed',
+        description: 'The backup file is invalid or corrupted.',
+        type: 'alert',
+        confirmText: 'Okay',
+      });
+    };
+
+    try {
+      const arrayBuffer = await input.arrayBuffer();
+      const zip = await JSZip.loadAsync(arrayBuffer);
+
+      const dataFile = zip.file('data.json');
+      if (!dataFile) { showError(); return; }
+
+      const data = JSON.parse(await dataFile.async('string'));
       if (!data || typeof data !== 'object' || !('spaces' in data) || !('thoughts' in data))
-        throw new Error('Invalid backup');
+        { showError(); return; }
 
       const currentUserId = 'guest';
 
@@ -249,28 +265,30 @@ export const createDataSlice: StateCreator<CyberiaState, [], [], any> = (set, ge
         ...s, userId: currentUserId, id: ulid(), spaceId: spaceIdMap.get(s.spaceId) || s.spaceId, updatedAt: Date.now(),
       }));
 
-      // Build remapped blobs — reconstruct Blob from file data in zip, or carry over from .json import
+      // Extract blob files from blobs/ folder
+      const blobsFolder = zip.folder('blobs');
+      const blobsByOldId = new Map<string, Blob>();
+      if (blobsFolder) {
+        const blobEntries: any[] = [];
+        blobsFolder.forEach((_rp, file) => {
+          if (file.dir) return;
+          blobEntries.push(file);
+        });
+        for (const f of blobEntries) {
+          const name = f.name.split('/').pop() || '';
+          const id = name.includes('.') ? name.substring(0, name.lastIndexOf('.')) : name;
+          blobsByOldId.set(id, await f.async('blob'));
+        }
+      }
+
+      // Remap blobs — only keep entries with matching blob files in the zip
       const remappedBlobs: any[] = [];
       for (const b of (data.blobs || [])) {
-        const oldId = b.id;
-        const newThoughtId = thoughtIdMap.get(b.thoughtId) || b.thoughtId;
-        let blobData: Blob;
-
-        if (blobsByOldId && blobsByOldId.has(oldId)) {
-          // From .zip: use the actual blob file
-          blobData = blobsByOldId.get(oldId)!;
-        } else if (b.blob) {
-          // From old .json: blob data was serialized inline (base64 or Blob)
-          blobData = b.blob;
-        } else {
-          // No blob data available — skip
-          console.warn(`[Import] Skipping blob ${oldId}: no binary data`);
-          continue;
-        }
-
+        const blobData = blobsByOldId.get(b.id);
+        if (!blobData) continue;
         remappedBlobs.push({
           id: ulid(),
-          thoughtId: newThoughtId,
+          thoughtId: thoughtIdMap.get(b.thoughtId) || b.thoughtId,
           blob: blobData,
           name: b.name,
           type: b.type,
@@ -283,24 +301,17 @@ export const createDataSlice: StateCreator<CyberiaState, [], [], any> = (set, ge
       const remappedChatHistory = (data.chatHistory || []).map((m: any) => ({
         ...m, spaceId: spaceIdMap.get(m.spaceId) || m.spaceId,
       }));
-
       const remappedChatConversations = (data.chatConversations || []).map((c: any) => ({
         ...c, spaceId: spaceIdMap.get(c.spaceId) || c.spaceId, updatedAt: Date.now(),
       }));
 
-      // Remap space backgrounds — reconstruct Blob from file data if present
+      // Remap space backgrounds
       const remappedSpaceBackgrounds: any[] = [];
       for (const bg of (data.spaceBackgrounds || [])) {
-        let bgData: Blob | undefined;
-        if (blobsByOldId && blobsByOldId.has(bg.id)) {
-          bgData = blobsByOldId.get(bg.id)!;
-        } else if (bg.blob) {
-          bgData = bg.blob;
-        }
+        const bgData = blobsByOldId.get(bg.id);
+        if (!bgData) continue;
         remappedSpaceBackgrounds.push({
-          ...bg,
-          spaceId: spaceIdMap.get(bg.spaceId) || bg.spaceId,
-          blob: bgData,
+          ...bg, spaceId: spaceIdMap.get(bg.spaceId) || bg.spaceId, blob: bgData,
         });
       }
 
@@ -315,11 +326,8 @@ export const createDataSlice: StateCreator<CyberiaState, [], [], any> = (set, ge
         db.chatHistory, db.chatConversations, db.spaceBackgrounds,
         db.settings,
       ];
-
       await db.transaction('rw', allTables, async () => {
-        for (const table of allTables) {
-          await table.clear();
-        }
+        for (const table of allTables) await table.clear();
         await db.spaces.bulkAdd(remappedSpaces);
         await db.thoughts.bulkAdd(remappedThoughts);
         if (remappedStacks.length > 0) await db.stacks.bulkAdd(remappedStacks);
@@ -332,87 +340,11 @@ export const createDataSlice: StateCreator<CyberiaState, [], [], any> = (set, ge
 
       // Map activeSpaceId through space ID map
       const newActiveSpaceId = data.activeSpaceId ? spaceIdMap.get(data.activeSpaceId) : null;
-      if (newActiveSpaceId) {
-        await setSetting('active-space-id', newActiveSpaceId);
-      }
+      if (newActiveSpaceId) await setSetting('active-space-id', newActiveSpaceId);
 
       window.location.reload();
-    };
-
-    if (input instanceof File) {
-      const fileName = input.name.toLowerCase();
-
-      if (fileName.endsWith('.zip')) {
-        // ── .zip import ────────────────────────────────────────
-        const arrayBuffer = await input.arrayBuffer();
-        const zip = await JSZip.loadAsync(arrayBuffer);
-
-        const dataJson = zip.file('data.json');
-        if (!dataJson) {
-          useModalStore.getState().openModal({
-            title: 'Import Failed',
-            description: 'The backup file is invalid or corrupted.',
-            type: 'alert',
-            confirmText: 'Okay',
-          });
-          return;
-        }
-
-        const dataText = await dataJson.async('string');
-        const data = JSON.parse(dataText);
-
-        // Extract blob files from blobs/ folder
-        const blobsByOldId = new Map<string, Blob>();
-        const blobsFolder = zip.folder('blobs');
-        if (blobsFolder) {
-          const blobFiles: any[] = [];
-          blobsFolder.forEach((_relativePath, file) => {
-            if (file.dir) return;
-            blobFiles.push(file);
-          });
-
-          for (const file of blobFiles) {
-            // Filename is <blobId>.<ext> — extract the ID
-            const name = file.name.split('/').pop() || '';
-            const id = name.includes('.') ? name.substring(0, name.lastIndexOf('.')) : name;
-            const blobData = await file.async('blob');
-            blobsByOldId.set(id, blobData);
-          }
-        }
-
-        try {
-          await processData(data, blobsByOldId);
-        } catch (err) {
-          useModalStore.getState().openModal({
-            title: 'Import Failed',
-            description: 'The backup file is invalid or corrupted.',
-            type: 'alert',
-            confirmText: 'Okay',
-          });
-        }
-      } else {
-        // ── .json import (backward compatible) ─────────────────
-        const reader = new FileReader();
-        reader.onload = async (e) => {
-          try {
-            await processData(JSON.parse(e.target?.result as string));
-          } catch (err) {
-            useModalStore.getState().openModal({
-              title: 'Import Failed',
-              description: 'The backup file is invalid or corrupted.',
-              type: 'alert',
-              confirmText: 'Okay',
-            });
-          }
-        };
-        reader.readAsText(input);
-      }
-    } else {
-      try {
-        await processData(input);
-      } catch (err) {
-        console.error('Import failed', err);
-      }
+    } catch (err) {
+      showError();
     }
   },
 

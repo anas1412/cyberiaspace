@@ -211,9 +211,9 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                       <Upload className="w-4 h-4 text-[var(--text-muted)] group-hover:text-[var(--accent)]" />
                       <div>
                         <p className="text-[10px] font-semibold tracking-wide text-[var(--text-dimmed)] group-hover:text-[var(--text-primary)]">Import Backup</p>
-                        <p className="text-[8px] font-medium text-[var(--text-muted)] uppercase tracking-wide mt-0.5">Restore from .zip / .json</p>
+                        <p className="text-[8px] font-medium text-[var(--text-muted)] uppercase tracking-wide mt-0.5">Restore from .zip</p>
                       </div>
-                      <input type="file" className="hidden" accept=".zip,.json" onChange={handleImport} />
+                      <input type="file" className="hidden" accept=".zip" onChange={handleImport} />
                     </label>
                     {deferredPrompt && (
                       <button onClick={handleInstall} className="flex items-center gap-3 p-4 rounded-2xl bg-[var(--accent)]/5 border border-[var(--accent)]/10 hover:bg-[var(--accent)]/10 transition-all text-left group">
