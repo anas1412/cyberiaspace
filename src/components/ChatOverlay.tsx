@@ -453,6 +453,41 @@ const ChatOverlay: React.FC = () => {
     }
   };
 
+  /** Turn OpenRouter HTTP errors into user-friendly messages */
+  const friendlyApiError = (status: number, errBody: string): string => {
+    let apiMsg = '';
+    try {
+      const errJson = JSON.parse(errBody);
+      apiMsg = errJson.error?.message || errJson.error?.code || '';
+    } catch { /* ignore parse errors */ }
+
+    // Check if the raw message already hints at the problem
+    const lower = apiMsg.toLowerCase();
+
+    if (status === 401 || lower.includes('invalid') || lower.includes('unauthorized') || lower.includes('auth')) {
+      return `Your API key doesn't seem to be working. Check it at [openrouter.ai/keys](https://openrouter.ai/keys) and make sure you copied it correctly. Then update your key here.`;
+    }
+
+    if (status === 402 || lower.includes('credit') || lower.includes('insufficient') || lower.includes('balance') || lower.includes('payment')) {
+      return `Your OpenRouter account has run out of credits. Even free models need a non-negative balance. Add credits at [openrouter.ai/keys](https://openrouter.ai/keys) — many models cost just pennies.`;
+    }
+
+    if (status === 429 || lower.includes('rate') || lower.includes('limit')) {
+      return `You're moving a bit fast! OpenRouter is rate-limiting your requests. Wait a few seconds and try again.`;
+    }
+
+    if (status === 502 || status === 503 || lower.includes('unavailable') || lower.includes('down') || lower.includes('overloaded')) {
+      return `The AI model is temporarily unavailable. Try selecting a different model from the dropdown, or wait a moment and try again.`;
+    }
+
+    // Fallback with the raw message if we have one
+    if (apiMsg) {
+      return `OpenRouter returned an error: **${apiMsg}**. If this keeps happening, check [openrouter.ai/keys](https://openrouter.ai/keys) for your account status.`;
+    }
+
+    return `OpenRouter returned an error (status ${status}). If this keeps happening, check [openrouter.ai/keys](https://openrouter.ai/keys) for your account status.`;
+  };
+
   /** Call OpenRouter API directly from browser */
   const callOpenRouter = async (
     messages: any[],
@@ -481,12 +516,7 @@ const ChatOverlay: React.FC = () => {
 
     if (!response.ok) {
       const errBody = await response.text();
-      let errMsg = `OpenRouter API error (${response.status})`;
-      try {
-        const errJson = JSON.parse(errBody);
-        errMsg = errJson.error?.message || errMsg;
-      } catch { /* ignore parse errors */ }
-      throw new Error(errMsg);
+      throw new Error(friendlyApiError(response.status, errBody));
     }
 
     const reader = response.body?.getReader();
