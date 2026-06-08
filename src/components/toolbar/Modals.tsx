@@ -3,13 +3,15 @@ import {
   CheckCircle, MessageSquare, Loader2, Send, MousePointer2,
   Database, HelpCircle, Laptop, Download, Upload, 
   X, Info, ExternalLink,
-  FileText, Smartphone, Github
+  FileText, Smartphone, Github, Trash2
 } from 'lucide-react';
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 import { motion, AnimatePresence } from 'framer-motion';
 import { APP_VERSION, GITHUB_URL, DISCORD_INVITE_URL } from '../../constants';
+import { db } from '../../db';
 import { useStore } from '../../store/useStore';
+import { useModalStore } from '../../store/useModalStore';
 
 function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -242,7 +244,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                     <Database className="w-3.5 h-3.5" /> Local Storage
                   </p>
                   <div className="p-6 rounded-2xl bg-[var(--glass-bg)] border border-[var(--glass-border)]">
-                    <div className="mt-4 grid grid-cols-2 gap-4">
+                    <div className="grid grid-cols-2 gap-4">
                       <div className="p-3 rounded-xl bg-[var(--bg-page)] border border-[var(--glass-border)]">
                         <p className="text-[11px] font-black text-[var(--text-primary)]">{totalThoughtCount}</p>
                         <p className="text-[8px] font-bold text-[var(--text-muted)] uppercase tracking-wide mt-0.5">Total Thoughts</p>
@@ -253,6 +255,55 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                       </div>
                     </div>
                   </div>
+                </section>
+
+                {/* Danger Zone */}
+                <section>
+                  <p className="text-[10px] font-semibold tracking-wide text-red-400 mb-4 flex items-center gap-2">
+                    <Trash2 className="w-3.5 h-3.5" /> Danger Zone
+                  </p>
+                  <button
+                    onClick={() => {
+                      const store = useStore.getState();
+                      const thoughtCount = store.thoughts.length;
+                      const spaceCount = store.spaces.length;
+                      const stackCount = store.stacks.filter(s => !s.deletedAt).length;
+                      const fileCount = store.thoughts.filter(t => t.type === 'file').length;
+
+                      useModalStore.getState().openModal({
+                        title: 'Clear All Data',
+                        type: 'delete_data',
+                        deletionCounts: {
+                          spaces: spaceCount,
+                          thoughts: thoughtCount,
+                          stacks: stackCount,
+                          files: fileCount,
+                        },
+                        confirmText: 'Clear Everything',
+                        onConfirm: async () => {
+                          const tables = [
+                            db.spaces, db.thoughts, db.stacks, db.blobs,
+                            db.chatHistory, db.chatConversations, db.spaceBackgrounds,
+                            db.settings,
+                          ] as const;
+                          await db.transaction('rw', tables, async () => {
+                            for (const table of tables) {
+                              await table.clear();
+                            }
+                          });
+                          useStore.getState().resetStoreState();
+                          window.location.reload();
+                        },
+                      });
+                    }}
+                    className="w-full flex items-center gap-3 p-4 rounded-2xl bg-red-500/5 border border-red-500/20 hover:bg-red-500/10 hover:border-red-500/30 transition-all text-left group"
+                  >
+                    <Trash2 className="w-4 h-4 text-red-400 group-hover:text-red-300 flex-shrink-0" />
+                    <div>
+                      <p className="text-[10px] font-semibold tracking-wide text-red-400 group-hover:text-red-300">Clear All Data</p>
+                      <p className="text-[8px] font-medium text-red-400/60 uppercase tracking-wide mt-0.5">Wipes all thoughts, spaces, stacks &amp; files</p>
+                    </div>
+                  </button>
                 </section>
 
               </motion.div>
