@@ -35,7 +35,7 @@ const sanitizeAssistantContent = (content: string): string => {
   let sanitized = content.replace(xmlToolCall, '').trim();
 
   // Remove lines that are standalone JS function call invocations (e.g. `create_stack({...})`)
-  const jsToolCall = /^(?:const\s+\w+\s*=\s*)?(?:create_thought|create_thoughts|create_stack|link_thoughts|unlink_thoughts|update_thought|update_thoughts|delete_thoughts|delete_stack|delete_stacks|get_thought_details|read_file_content|read_files_content|update_stack|update_stacks|map_stack_to_thought)\s*\([\s\S]*?\)\s*;?\s*$/gm;
+  const jsToolCall = /^(?:const\s+\w+\s*=\s*)?(?:create_thought|create_thoughts|create_stack|link_thoughts|unlink_thoughts|update_thought|update_thoughts|delete_thoughts|delete_stack|delete_stacks|get_thought_details|read_file_content|read_files_content|update_stack|update_stacks|map_stack_to_thought|web_search)\s*\([\s\S]*?\)\s*;?\s*$/gm;
   sanitized = sanitized.replace(jsToolCall, '').trim();
 
   // Remove any code blocks containing JSON tool call objects
@@ -719,6 +719,7 @@ const ChatOverlay: React.FC = () => {
               if (r.toolName === 'unlink_thoughts') return `• Unlinked thoughts from their stack`;
               if (r.toolName === 'delete_thoughts') return `• Deleted thoughts`;
               if (r.toolName === 'update_thought') return `• Updated thought "${r.label || ''}"`;
+              if (r.toolName === 'web_search') return `• Searched the web for "${r.label || ''}"`;
               return `• Executed ${r.toolName}`;
             }).filter(Boolean).join('\n');
             resultsSummary = `\n\n---\n\n✅ **Done:**\n${lines}`;
@@ -927,6 +928,7 @@ AVAILABLE TOOLS (use the exact function name):
 - update_thought(id: string, text?: string, stackName?: string, ...) — Update a thought's properties
 - delete_thoughts(ids: string[]) — Delete thoughts by their IDs
 - get_thought_details(ids: string[]) — Get full details of specific thoughts
+- web_search(query: string) — Search the web for current information
 
 CRITICAL: Tool call parameters MUST include thought IDs from the workspace context. The 'ids' parameter in tools like 'create_stack' requires specific thought IDs — scan the context JSON and pick the right ones. Without IDs the tool will fail.
 
@@ -939,6 +941,9 @@ IMPORTANT RULES:
 - After completing tool actions, summarize what you did in plain language — do NOT show the raw tool call syntax` 
 
       : `You are Cyberia AI in CHAT mode (read-only). The user can tag thoughts with @name and stacks with #name. Current time: ${new Date().toLocaleString()}. Workspace context: ${contextString || 'Provided via references'}. You can read thoughts but CANNOT modify them.
+
+AVAILABLE TOOL:
+- web_search(query: string) — Search the web for current information. Use this when the user asks about current events, recent data, or anything that requires up-to-date information.
 
 IMPORTANT RULES:
 - NEVER show internal IDs to the user. Always refer to thoughts by their text/name or use descriptive labels.
@@ -1010,6 +1015,7 @@ IMPORTANT RULES:
                 if (r.toolName === 'unlink_thoughts') return `• Unlinked thoughts from their stack`;
                 if (r.toolName === 'delete_thoughts') return `• Deleted thoughts`;
                 if (r.toolName === 'update_thought') return `• Updated thought "${r.label || ''}"`;
+                if (r.toolName === 'web_search') return `• Searched the web for "${r.label || ''}"`;
                 return `• Executed ${r.toolName}`;
               })
               .filter(Boolean)

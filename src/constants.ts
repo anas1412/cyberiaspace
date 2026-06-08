@@ -51,14 +51,13 @@ export const YOUTUBE_VIDEO_ID = 'hP92Obd9hFA';
 // GitHub
 export const GITHUB_URL = 'https://github.com/anas1412/cyberia';
 
-// Discord
-export const DISCORD_INVITE_URL = 'https://discord.gg/wjHTsaGpc4';
-
-// Tavily Web Search Configuration
+// Tavily Web Search
 export const TAVILY_CONFIG = {
   API_URL: 'https://api.tavily.com/search',
-  SEARCH_DEPTH: 'fast' as const,
+  SEARCH_DEPTH: 'basic' as const,
   MAX_RESULTS: 5,
-  TIMEOUT_MS: 8000,
-  INCLUDE_ANSWER: true,
+  INCLUDE_ANSWER: false,
 };
+
+// Discord
+export const DISCORD_INVITE_URL = 'https://discord.gg/wjHTsaGpc4';

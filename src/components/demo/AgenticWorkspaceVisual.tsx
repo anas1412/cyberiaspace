@@ -165,7 +165,7 @@ const AgenticWorkspaceVisual: React.FC<AgenticWorkspaceVisualProps> = ({ showLin
           style={{ boxShadow: '0 0 40px color-mix(in srgb, var(--accent) 12%, transparent), inset 0 1px 0 var(--glass-border)' }}
         >
           <span className="text-[8px] font-black tracking-[0.4em] text-[var(--text-muted)] uppercase block mb-2">
-            ORACLE AI
+            CYBERIA AI
           </span>
 
           {/* Inline prompt with mention tag */}

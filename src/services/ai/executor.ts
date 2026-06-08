@@ -6,6 +6,7 @@
 
 import { db } from '../../db';
 import { sanitizeStatus, sanitizePriority } from '../../utils/thought';
+import { webSearch } from './webSearch';
 
 const svgToDataUrl = (svg: string): string => {
   if (svg.startsWith('data:image/svg+xml')) return svg;
@@ -413,6 +414,14 @@ export const executeAiTool = async (toolCall: any, store: any) => {
           }
           return { success: true };
         }
+      }
+
+      case 'web_search': {
+        const { query } = args;
+        if (!query || typeof query !== 'string') {
+          return { success: false, error: 'Missing or invalid query' };
+        }
+        return await webSearch(query);
       }
 
       default:

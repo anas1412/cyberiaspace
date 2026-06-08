@@ -8,7 +8,7 @@ A spatial-thinking workspace where ideas exist as physical objects — positione
 
 ## Overview
 
-Cyberia is a **local-first**, **open-source** productivity application designed for non-linear thinkers. It combines a real-time physics simulation with structured data management, allowing information to be arranged spatially, grouped into stacks, filtered by view mode, and augmented by an integrated AI assistant powered by **OpenRouter** (BYOK — Bring Your Own Key).
+Cyberia is a **local-only**, **open-source** productivity application designed for non-linear thinkers. It combines a real-time physics simulation with structured data management, allowing information to be arranged spatially, grouped into stacks, filtered by view mode, and augmented by an integrated AI assistant powered by **OpenRouter** (BYOK — Bring Your Own Key).
 
 No authentication required. No cloud dependencies. Everything stays in your browser's IndexedDB.
 
@@ -35,7 +35,7 @@ UI (React) ──reads──> Zustand Store ──persists──> IndexedDB
 
 ### Key Design Decisions
 
-- **Local-first**: All operations work offline. Zero network dependencies for basic functionality.
+- **Local-only**: All operations work offline. Zero network dependencies for basic functionality.
 - **Physics engine**: A custom 2D engine manages thought positions, velocities, repulsion, and stack cohesion. Mode-specific layout strategies (spatial, kanban, calendar) transform the same data into different visual arrangements.
 - **ULID identifiers**: All entities use ULIDs for collision-free operation and temporal sortability.
 - **Single-user**: No authentication, no multi-user conflicts, no sync complexity.
@@ -56,7 +56,7 @@ UI (React) ──reads──> Zustand Store ──persists──> IndexedDB
 
 ### Content Types
 
-Eight thought types, each with a dedicated renderer and focus editor:
+Seven thought types, each with a dedicated renderer and focus editor:
 
 - **Label** — Lightweight headers and structural markers
 - **Text** — Rich Markdown editing with live preview
@@ -66,14 +66,14 @@ Eight thought types, each with a dedicated renderer and focus editor:
 - **File** — Image, PDF, audio, and video uploads with thumbnail previews
 - **Embed** — YouTube, Spotify, and other oEmbed players
 
-### Oracle AI (BYOK)
+### Cyberia AI (BYOK)
 
-Oracle is an integrated AI agent with two modes, powered by your own OpenRouter API key:
+Cyberia AI is an integrated AI agent with two modes, powered by your own OpenRouter API key:
 
-- **Chat mode** — Read-only research assistant. Can search the web, read files, and analyze content.
+- **Chat mode** — Read-only research assistant. Can read files and analyze content.
 - **Action mode** — Full workspace access. Can create, modify, and organize thoughts and stacks autonomously.
 
-Supports 300+ models through OpenRouter and web search via Tavily. You bring your own API key — no subscription required.
+Supports 300+ models through OpenRouter. You bring your own API key — no subscription required.
 
 ### Customization
 
@@ -98,7 +98,7 @@ Supports 300+ models through OpenRouter and web search via Tavily. You bring you
 | Icons | Lucide React |
 | ID Generation | ULID |
 | PWA | vite-plugin-pwa |
-| i18n | i18next |
+
 
 ---
 
@@ -136,10 +136,10 @@ Oracle is fully optional — the workspace works without it.
 ```
 src/
 ├── components/       # React components (Viewport, ThoughtNode, Toolbar, editors, overlays)
-├── store/            # Zustand slices (thought, space, stack, canvas, auth, etc.)
-├── services/         # Oracle executor, supporting services
+├── store/            # Zustand slices (canvas, data, history, thought, space, stack, ui)
+├── services/         # AI executor, supporting services
 ├── hooks/            # Physics engine, camera, viewport gestures, layout strategies
-├── utils/            # File helpers, date utils, embeds, migrations
+├── utils/            # File helpers, date utils, embeds, migrations, settings
 ├── types/            # Zod schemas for validation
 └── db.ts             # Dexie schema definition
 ```

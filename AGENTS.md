@@ -1,6 +1,6 @@
 # Agent Guidelines: Cyberia Project
 
-Welcome to the **Cyberia** codebase! This is a modern, high-performance **visual thinking** tool built with React 19, TypeScript, and Vite. It is fully **local-first** (IndexedDB via Dexie), **open source** (MIT), and deploys as a static SPA on Vercel with a minimal serverless API layer.
+Welcome to the **Cyberia** codebase! This is a modern, high-performance **visual thinking** tool built with React 19, TypeScript, and Vite. It is fully **local-only** (IndexedDB via Dexie), **open source** (MIT), and deploys as a static SPA on Vercel with a minimal serverless API layer.
 
 ---
 
@@ -22,7 +22,7 @@ Welcome to the **Cyberia** codebase! This is a modern, high-performance **visual
 
 ### Storage Layer (No Cloud Sync)
 
-The app uses a **simplified local-first architecture**. There is no cloud sync, no authentication, and no remote database:
+The app uses a **simplified local-only architecture**. There is no cloud sync, no authentication, and no remote database:
 
 | Layer | Role |
 |-------|------|
@@ -162,7 +162,7 @@ The only API endpoint is `api/utils.ts` with these actions:
 | `proxy-video` | `?action=proxy-video&url=...` | Proxies video content | None |
 | `youtube-search` | `?action=youtube-search&q=...` | YouTube video search | `YOUTUBE_API_KEY` |
 
-No authentication, auth stores, or Supabase integration exists. The app is fully local-first.
+No authentication, auth stores, or Supabase integration exists. The app is fully local-only.
 
 ---
 
