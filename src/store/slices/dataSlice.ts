@@ -143,29 +143,61 @@ export const createDataSlice: StateCreator<CyberiaState, [], [], any> = (set, ge
   },
 
   exportData: async () => {
-    const currentUserId = 'guest';
-    const allSpaces = await db.spaces.filter((s: any) => s.userId === currentUserId).toArray();
-    const allThoughts = await db.thoughts.filter((t: any) => t.userId === currentUserId).toArray();
-    const allStacks = await db.stacks.filter((s: any) => s.userId === currentUserId).toArray();
-    const thoughtIds = new Set(allThoughts.map(t => t.id));
-    const allBlobs = await db.blobs.filter((b: any) => thoughtIds.has(b.thoughtId)).toArray();
-    const data = { spaces: allSpaces, thoughts: allThoughts, stacks: allStacks, blobs: allBlobs, activeSpaceId: get().activeSpaceId, version: 16, timestamp: Date.now() };
-    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `cyberia_space_backup_${new Date().toLocaleDateString('en-CA')}.json`;
-    a.click();
-    URL.revokeObjectURL(url);
+    try {
+      const currentUserId = 'guest';
+      // Filter out soft-deleted entities
+      const allSpaces = await db.spaces.filter((s: any) => s.userId === currentUserId && !s.deletedAt).toArray();
+      const allThoughts = await db.thoughts.filter((t: any) => t.userId === currentUserId && !t.deletedAt).toArray();
+      const allStacks = await db.stacks.filter((s: any) => s.userId === currentUserId && !s.deletedAt).toArray();
+      const exportedSpaceIds = new Set(allSpaces.map((s: any) => s.id));
+
+      // Only export blobs/chats/backgrounds belonging to exported spaces/thoughts
+      const exportedThoughtIds = new Set(allThoughts.map((t: any) => t.id));
+      const allBlobs = await db.blobs.filter((b: any) => exportedThoughtIds.has(b.thoughtId)).toArray();
+      const allChatHistory = await db.chatHistory.filter((m: any) => exportedSpaceIds.has(m.spaceId)).toArray();
+      const allChatConversations = await db.chatConversations.filter((c: any) => exportedSpaceIds.has(c.spaceId)).toArray();
+      const allSpaceBackgrounds = await db.spaceBackgrounds.filter((b: any) => exportedSpaceIds.has(b.spaceId)).toArray();
+      const allSettings = await db.settings.toArray();
+
+      const data = {
+        spaces: allSpaces,
+        thoughts: allThoughts,
+        stacks: allStacks,
+        blobs: allBlobs,
+        chatHistory: allChatHistory,
+        chatConversations: allChatConversations,
+        spaceBackgrounds: allSpaceBackgrounds,
+        settings: allSettings,
+        activeSpaceId: get().activeSpaceId,
+        version: 23,
+        timestamp: Date.now(),
+      };
+      const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `cyberia_backup_${new Date().toLocaleDateString('en-CA')}.json`;
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      useModalStore.getState().openModal({
+        title: 'Export Failed',
+        description: err instanceof Error ? err.message : 'Could not create backup',
+        type: 'alert',
+        confirmText: 'Okay',
+      });
+    }
   },
 
   importData: async (input: any) => {
     if (get().isReadOnly) return;
     const processData = async (data: any) => {
-      if (!data || typeof data !== 'object' || !('spaces' in data) || !('thoughts' in data)) throw new Error('Invalid backup');
+      if (!data || typeof data !== 'object' || !('spaces' in data) || !('thoughts' in data))
+        throw new Error('Invalid backup');
 
       const currentUserId = 'guest';
 
+      // Remap spaces with new ULIDs
       const remappedSpaces = (data.spaces || []).map((s: any) => ({
         ...s, userId: currentUserId, id: ulid(), updatedAt: Date.now(),
       }));
@@ -175,6 +207,7 @@ export const createDataSlice: StateCreator<CyberiaState, [], [], any> = (set, ge
       const newSpaceIds = remappedSpaces.map((s: any) => s.id);
       oldSpaceIds.forEach((oldId: string, i: number) => spaceIdMap.set(oldId, newSpaceIds[i]));
 
+      // Remap thoughts with new ULIDs, and their spaceId references
       const remappedThoughts = (data.thoughts || []).map((t: any) => ({
         ...t, userId: currentUserId, id: ulid(), spaceId: spaceIdMap.get(t.spaceId) || t.spaceId, updatedAt: Date.now(),
       }));
@@ -184,41 +217,86 @@ export const createDataSlice: StateCreator<CyberiaState, [], [], any> = (set, ge
       const newThoughtIds = remappedThoughts.map((t: any) => t.id);
       oldThoughtIds.forEach((oldId: string, i: number) => thoughtIdMap.set(oldId, newThoughtIds[i]));
 
+      // Remap stacks with new ULIDs and spaceId references
       const remappedStacks = (data.stacks || []).map((s: any) => ({
         ...s, userId: currentUserId, id: ulid(), spaceId: spaceIdMap.get(s.spaceId) || s.spaceId, updatedAt: Date.now(),
       }));
 
+      // Fix: blobs get a fresh ULID for each entry (not reused from thoughtId)
       const remappedBlobs = (data.blobs || []).map((b: any) => ({
-        ...b, id: thoughtIdMap.get(b.thoughtId) || b.thoughtId, thoughtId: thoughtIdMap.get(b.thoughtId) || b.thoughtId, updatedAt: Date.now(),
+        ...b, id: ulid(), thoughtId: thoughtIdMap.get(b.thoughtId) || b.thoughtId, updatedAt: Date.now(),
       }));
 
-      await db.transaction('rw', db.spaces, db.thoughts, db.stacks, db.blobs, async () => {
-        await db.spaces.clear();
-        await db.thoughts.clear();
-        await db.stacks.clear();
-        await db.blobs.clear();
+      // Remap chat entities: update spaceId references, keep original ULIDs
+      const remappedChatHistory = (data.chatHistory || []).map((m: any) => ({
+        ...m, spaceId: spaceIdMap.get(m.spaceId) || m.spaceId,
+      }));
+
+      const remappedChatConversations = (data.chatConversations || []).map((c: any) => ({
+        ...c, spaceId: spaceIdMap.get(c.spaceId) || c.spaceId, updatedAt: Date.now(),
+      }));
+
+      // Remap space backgrounds: update spaceId references
+      const remappedSpaceBackgrounds = (data.spaceBackgrounds || []).map((b: any) => ({
+        ...b, spaceId: spaceIdMap.get(b.spaceId) || b.spaceId,
+      }));
+
+      // Settings are key-value pairs, import as-is
+      const remappedSettings = (data.settings || []).map((s: any) => ({
+        key: s.key, value: s.value, userId: s.userId || currentUserId,
+      }));
+
+      // Clear ALL tables and import within a single transaction
+      const allTables = [
+        db.spaces, db.thoughts, db.stacks, db.blobs,
+        db.chatHistory, db.chatConversations, db.spaceBackgrounds,
+        db.settings,
+      ];
+
+      await db.transaction('rw', allTables, async () => {
+        for (const table of allTables) {
+          await table.clear();
+        }
         await db.spaces.bulkAdd(remappedSpaces);
         await db.thoughts.bulkAdd(remappedThoughts);
         if (remappedStacks.length > 0) await db.stacks.bulkAdd(remappedStacks);
         if (remappedBlobs.length > 0) await db.blobs.bulkAdd(remappedBlobs);
+        if (remappedChatHistory.length > 0) await db.chatHistory.bulkAdd(remappedChatHistory);
+        if (remappedChatConversations.length > 0) await db.chatConversations.bulkAdd(remappedChatConversations);
+        if (remappedSpaceBackgrounds.length > 0) await db.spaceBackgrounds.bulkAdd(remappedSpaceBackgrounds);
+        if (remappedSettings.length > 0) await db.settings.bulkAdd(remappedSettings);
       });
 
-      if (data.activeSpaceId) await setSetting('active-space-id', data.activeSpaceId);
-      if (data.settings?.theme) await setSetting('theme', data.settings.theme);
+      // Map activeSpaceId through the space ID map so it points to the correct new space
+      const newActiveSpaceId = data.activeSpaceId ? spaceIdMap.get(data.activeSpaceId) : null;
+      if (newActiveSpaceId) {
+        await setSetting('active-space-id', newActiveSpaceId);
+      }
 
       window.location.reload();
     };
+
     if (input instanceof File) {
       const reader = new FileReader();
       reader.onload = async (e) => {
-        try { await processData(JSON.parse(e.target?.result as string)); }
-        catch (err) {
-          useModalStore.getState().openModal({ title: 'Import Failed', description: 'The backup file is invalid or corrupted.', type: 'alert', confirmText: 'Okay' });
+        try {
+          await processData(JSON.parse(e.target?.result as string));
+        } catch (err) {
+          useModalStore.getState().openModal({
+            title: 'Import Failed',
+            description: 'The backup file is invalid or corrupted.',
+            type: 'alert',
+            confirmText: 'Okay',
+          });
         }
       };
       reader.readAsText(input);
     } else {
-      try { await processData(input); } catch (err) { console.error('Import failed', err); }
+      try {
+        await processData(input);
+      } catch (err) {
+        console.error('Import failed', err);
+      }
     }
   },
 
