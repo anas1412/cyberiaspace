@@ -113,7 +113,7 @@ const LoadingOverlay: React.FC<LoadingOverlayProps> = ({ force }) => {
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0, transition: { duration: 0.4 } }}
-          className="fixed inset-0 z-[20000] flex flex-col items-center justify-center overflow-hidden bg-[var(--bg-page)]"
+          className="fixed inset-0 z-[var(--z-loading)] flex flex-col items-center justify-center overflow-hidden bg-[var(--bg-page)]"
         >
           {/* Ambient Glow background */}
           <div className="absolute inset-0 bg-[var(--bg-ambient)] opacity-30 pointer-events-none" />

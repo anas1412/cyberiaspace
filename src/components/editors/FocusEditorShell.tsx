@@ -44,7 +44,7 @@ export const FocusEditorShell: React.FC<FocusEditorShellProps> = ({
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
           transition={{ duration: 0.3 }}
-          className="fixed inset-0 z-[10001] bg-[var(--bg-page)]/60 backdrop-blur-md flex items-center justify-center p-4 md:px-10 md:py-8 lg:px-20"
+          className="fixed inset-0 z-[var(--z-overlay)] bg-[var(--bg-page)]/60 backdrop-blur-md flex items-center justify-center p-4 md:px-10 md:py-8 lg:px-20"
           onClick={onClose}
         >
           <motion.div

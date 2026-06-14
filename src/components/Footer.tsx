@@ -2,7 +2,7 @@ import React from 'react';
 
 const Footer: React.FC = () => {
   return (
-    <footer className="py-20 px-6 border-t border-[var(--glass-border)] relative z-10">
+    <footer className="py-20 px-6 border-t border-[var(--glass-border)] relative z-[var(--z-content)]">
       <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-10">
         <div className="flex items-center gap-3">
           <img src="/logo.png" alt="Cyberia AI Studio" className="w-8 h-8 opacity-70" />

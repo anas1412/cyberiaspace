@@ -59,7 +59,7 @@ const EmptyState: React.FC = () => {
   // Read-only empty state (published space with no thoughts)
   if (isReadOnly) {
     return (
-      <div className="fixed inset-0 z-[5] pointer-events-none flex items-center justify-center">
+      <div className="fixed inset-0 z-[var(--z-canvas)] pointer-events-none flex items-center justify-center">
         <div className="text-center">
           <motion.div
             initial={{ opacity: 0, scale: 0.9 }}
@@ -101,7 +101,7 @@ const EmptyState: React.FC = () => {
   const dividerColor = "text-[var(--glass-border)]";
 
   return (
-    <div id="empty-guide" className="fixed inset-0 z-[10] pointer-events-none flex items-center justify-center">
+    <div id="empty-guide" className="fixed inset-0 z-[var(--z-content)] pointer-events-none flex items-center justify-center">
 
       {/* 1. Switch View (Top Center) - Points to View Switcher */}
       <div className="absolute top-[80px] md:top-[95px] left-1/2 -translate-x-1/2 rotate-[1deg] text-center flex flex-col items-center">

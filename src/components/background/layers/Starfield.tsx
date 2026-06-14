@@ -292,7 +292,7 @@ const Starfield: React.FC<StarfieldProps> = ({ theme }) => {
     return (
     <canvas
       ref={canvasRef}
-      className="fixed inset-0 z-0 pointer-events-none w-full h-full"
+      className="fixed inset-0 z-[var(--z-background)] pointer-events-none w-full h-full"
       style={{
         opacity: theme === "rain" ? 0.4 : theme === "sakura" ? 0.5 : theme === "light" ? 0.3 : 1,
         mixBlendMode: theme === "light" ? "normal" : "normal",

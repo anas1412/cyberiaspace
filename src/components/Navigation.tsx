@@ -42,7 +42,7 @@ const Navigation: React.FC<NavigationProps> = ({ isHomepage = false }) => {
   ];
 
   return (
-    <nav className={`fixed top-0 left-0 right-0 z-[100] transition-all duration-500 ${
+    <nav className={`fixed top-0 left-0 right-0 z-[var(--z-popover)] transition-all duration-500 ${
       isScrolled
         ? 'bg-[var(--bg-page)]/80 backdrop-blur-3xl shadow-sm shadow-[var(--glass-border)] py-3'
         : 'bg-transparent py-4'

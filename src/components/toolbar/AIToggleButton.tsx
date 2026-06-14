@@ -14,7 +14,7 @@ export const AIToggleButton: React.FC = () => {
   if (isChatOpen) return null;
 
   return (
-    <div className="fixed left-0 top-1/2 -translate-y-1/2 z-[9999] pointer-events-none">
+    <div className="fixed left-0 top-1/2 -translate-y-1/2 z-[var(--z-ui)] pointer-events-none">
       <button
         onClick={handleToggle}
         className="
@@ -32,7 +32,7 @@ export const AIToggleButton: React.FC = () => {
         <ChevronRight className="w-3.5 h-3.5 opacity-0 group-hover:opacity-100 transition-all duration-300 translate-x-1 group-hover:translate-x-0" />
 
         {/* Tooltip */}
-        <div className="absolute left-full ml-4 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-all duration-300 translate-x-2 group-hover:translate-x-0 pointer-events-none whitespace-nowrap z-[10001]">
+        <div className="absolute left-full ml-4 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-all duration-300 translate-x-2 group-hover:translate-x-0 pointer-events-none whitespace-nowrap z-[var(--z-overlay)]">
           <div className="glass px-3 py-1.5 rounded-xl border border-[var(--glass-border)] flex items-center gap-2 shadow-2xl bg-[var(--bg-main)]/90 backdrop-blur-xl">
             <span className="text-[10px] font-semibold tracking-wide text-[var(--text-primary)]/90">
               Open Cyberia AI

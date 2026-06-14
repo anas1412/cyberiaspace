@@ -4,7 +4,7 @@ import { ArrowLeft, Home } from 'lucide-react';
 const NotFound: React.FC = () => {
   return (
     <div className="min-h-screen bg-[var(--bg-page)] text-[var(--text-primary)] flex items-center justify-center p-6 overflow-y-auto">
-      <div className="fixed inset-0 z-0 pointer-events-none">
+      <div className="fixed inset-0 z-[var(--z-background)] pointer-events-none">
         <div className="stars-layer stars-1" />
         <div className="stars-layer stars-2" />
         <div className="stars-layer stars-twinkle" />
@@ -12,7 +12,7 @@ const NotFound: React.FC = () => {
         <div className="grain" />
       </div>
       
-      <div className="text-center max-w-lg relative z-10">
+      <div className="text-center max-w-lg relative z-[var(--z-content)]">
         <div className="text-[120px] font-black leading-none mb-4" style={{ color: 'var(--accent)', opacity: 0.2 }}>404</div>
         <h1 className="text-3xl font-semibold tracking-wider mb-4">Page Not Found</h1>
         <p className="text-[var(--text-muted)] mb-8">

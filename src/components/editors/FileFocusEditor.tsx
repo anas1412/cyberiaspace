@@ -61,7 +61,7 @@ const ColorPicker: React.FC<{ value: string; onChange: (val: string) => void; di
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 10, scale: 0.95 }}
             onClick={(e) => e.stopPropagation()}
-            className="absolute bottom-full mb-3 left-0 z-[100] glass border border-white/10 rounded-2xl p-3 shadow-2xl min-w-[180px]"
+            className="absolute bottom-full mb-3 left-0 z-[var(--z-popover)] glass border border-white/10 rounded-2xl p-3 shadow-2xl min-w-[180px]"
           >
           <div className="grid grid-cols-4 gap-2 mb-3">
             {STACK_COLORS.map(color => (

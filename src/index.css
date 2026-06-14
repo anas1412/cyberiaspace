@@ -140,6 +140,30 @@
   --bg-nebula: radial-gradient(circle at 30% 20%, rgba(99, 102, 241, 0.1) 0%, transparent 50%),
                radial-gradient(circle at 70% 80%, rgba(129, 140, 248, 0.1) 0%, transparent 50%),
                radial-gradient(circle at 50% 50%, rgba(139, 92, 246, 0.08) 0%, transparent 70%);
+
+  /* =============================================================================
+     LAYER SYSTEM — Single source of truth for z-index across the app.
+     Every hardcoded z-index in components references these variables.
+     Change a value here to re-layer globally.
+     ============================================================================= */
+  --z-background: 0;
+  --z-canvas: 5;
+  --z-content: 10;
+  --z-viewport: 20;
+  --z-sidebar: 30;
+  --z-sidebar-header: 40;
+  --z-element-overlay: 50;
+  --z-popover: 100;
+  --z-demo: 110;
+  --z-dragging: 1000;
+  --z-drag-indicator: 1001;
+  --z-ui: 9999;
+  --z-overlay: 10001;
+  --z-mobile-gate: 10003;
+  --z-drop-zone: 10006;
+  --z-modal: 11000;
+  --z-loading: 20000;
+  --z-toast: 20001;
 }
 
 [data-theme='dark'] {
@@ -224,7 +248,7 @@ body {
   inset: 0;
   width: 100%;
   height: 100%;
-  z-index: 5;
+  z-index: var(--z-canvas);
   background-size: cover;
   background-position: center;
   background-repeat: no-repeat;
@@ -478,7 +502,7 @@ body.low-perf .animate-breathe {
 
 #connection-canvas {
   will-change: transform;
-  z-index: 5;
+  z-index: var(--z-canvas);
 }
 
 /* Global Interactive Cursors */

@@ -46,7 +46,7 @@ const Modal: React.FC = () => {
   const showXButton = !['terms', 'custom', 'delete_data'].includes(type);
 
   return (
-    <div id="modal-overlay" className="fixed inset-0 bg-[var(--bg-page)]/90 backdrop-blur-[10px] z-[11000] flex items-center justify-center animate-in fade-in duration-200 p-4">
+    <div id="modal-overlay" className="fixed inset-0 bg-[var(--bg-page)]/90 backdrop-blur-[10px] z-[var(--z-modal)] flex items-center justify-center animate-in fade-in duration-200 p-4">
       <div className={cn(
         "modal-box glass w-full p-6 md:p-10 rounded-2xl border border-[var(--glass-border)] relative",
         type !== 'custom' && "text-center",

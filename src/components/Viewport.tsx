@@ -663,7 +663,7 @@ const Viewport: React.FC<{ isInteracting?: boolean }> = ({ isInteracting }) => {
       id="viewport"
       className={cn(
         isDemo ? "absolute" : "fixed",
-        "inset-0 z-[20] overflow-hidden",
+        "inset-0 z-[var(--z-viewport)] overflow-hidden",
         isGrabbing ? "pointer-events-auto cursor-grabbing" : "pointer-events-none"
       )}
     >
@@ -671,7 +671,7 @@ const Viewport: React.FC<{ isInteracting?: boolean }> = ({ isInteracting }) => {
       {/* Selection Marquee */}
       {selectionRect && (
         <div
-          className="fixed border-2 border-blue-500/50 bg-blue-500/10 z-[1001] pointer-events-none"
+          className="fixed border-2 border-blue-500/50 bg-blue-500/10 z-[var(--z-drag-indicator)] pointer-events-none"
           style={{
             left: selectionRect.x,
             top: selectionRect.y,
@@ -709,7 +709,7 @@ const Viewport: React.FC<{ isInteracting?: boolean }> = ({ isInteracting }) => {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[10006] bg-blue-500/10 backdrop-blur-md flex flex-col items-center justify-center pointer-events-none border-[4px] border-dashed border-blue-500/30 m-4 rounded-2xl"
+            className="fixed inset-0 z-[var(--z-drop-zone)] bg-blue-500/10 backdrop-blur-md flex flex-col items-center justify-center pointer-events-none border-[4px] border-dashed border-blue-500/30 m-4 rounded-2xl"
           >
             <motion.div
               initial={{ scale: 0.9, y: 20 }}

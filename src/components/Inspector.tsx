@@ -52,7 +52,7 @@ const ColorPicker: React.FC<{ value: string; onChange: (val: string) => void; di
             initial={{ opacity: 0, y: 10, scale: 0.95 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 10, scale: 0.95 }}
-            className="absolute bottom-full mb-3 left-0 z-[100] glass border border-[var(--glass-border)] rounded-2xl p-3 shadow-2xl min-w-[180px]"
+            className="absolute bottom-full mb-3 left-0 z-[var(--z-popover)] glass border border-[var(--glass-border)] rounded-2xl p-3 shadow-2xl min-w-[180px]"
           >
             <div className="grid grid-cols-4 gap-2 mb-3">
               {STACK_COLORS.map(color => (
@@ -204,10 +204,10 @@ const Inspector: React.FC = () => {
           animate={{ x: 0, opacity: 1 }}
           exit={{ x: '100%', opacity: 0 }}
           transition={{ type: 'spring', damping: 28, stiffness: 200 }}
-          className="ui-layer focus-box fixed top-4 md:top-24 bottom-4 md:bottom-24 right-4 md:right-8 w-[calc(100%-32px)] md:w-[400px] glass backdrop-blur-xl rounded-2xl shadow-2xl flex flex-col overflow-hidden z-[9999] border border-[var(--glass-border)]"
+          className="ui-layer focus-box fixed top-4 md:top-24 bottom-4 md:bottom-24 right-4 md:right-8 w-[calc(100%-32px)] md:w-[400px] glass backdrop-blur-xl rounded-2xl shadow-2xl flex flex-col overflow-hidden z-[var(--z-ui)] border border-[var(--glass-border)]"
         >
           {/* Header & Tabs Container - Single Sticky Wrapper! */}
-          <div className="sticky top-0 z-30 bg-[var(--bg-main)]/60 backdrop-blur-xl border-b border-[var(--glass-border)] flex flex-col">
+          <div className="sticky top-0 z-[var(--z-sidebar)] bg-[var(--bg-main)]/60 backdrop-blur-xl border-b border-[var(--glass-border)] flex flex-col">
             {/* Top Bar */}
             <div className="px-4 py-3 md:px-5 flex justify-between items-center relative min-h-[44px]">
               {/* Left Placeholder */}

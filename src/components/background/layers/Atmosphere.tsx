@@ -7,7 +7,7 @@ const Atmosphere: React.FC = () => {
   const isLight = theme === 'light';
 
   return (
-    <div className="fixed inset-0 z-0 pointer-events-none overflow-hidden">
+    <div className="fixed inset-0 z-[var(--z-background)] pointer-events-none overflow-hidden">
       {/* Dynamic Nebulae with Bleed Area to cover scaling gaps */}
       <div
         className="absolute w-[150%] h-[150%] left-[-25%] top-[-25%] rounded-full animate-float-slow"

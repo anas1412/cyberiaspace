@@ -172,7 +172,7 @@ export const SearchOverlay: React.FC<SearchOverlayProps> = ({ isOpen, onClose })
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
           transition={{ duration: 0.15 }}
-          className="fixed inset-0 z-[10001] pointer-events-auto"
+          className="fixed inset-0 z-[var(--z-overlay)] pointer-events-auto"
           onClick={onClose}
         >
           {/* Backdrop */}

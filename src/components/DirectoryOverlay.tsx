@@ -32,20 +32,20 @@ const DirectoryOverlay: React.FC = () => {
   return (
     <div
       className={cn(
-        'directory-overlay inset-0 flex flex-col md:flex-row pointer-events-none z-[25] opacity-100 transition-opacity duration-400 p-4 md:p-10 pb-[100px] md:pb-[120px] pt-[64px] md:pt-[96px] gap-4 md:gap-5',
+        'directory-overlay inset-0 flex flex-col md:flex-row pointer-events-none z-[var(--z-content)] opacity-100 transition-opacity duration-400 p-4 md:p-10 pb-[100px] md:pb-[120px] pt-[64px] md:pt-[96px] gap-4 md:gap-5',
         isDemo ? 'absolute' : 'fixed',
       )}
     >
       {/* Left: Directory Sidebar (grouped list) */}
       <div
-        className="directory-sidebar w-full md:w-[260px] h-full rounded-2xl flex flex-col overflow-hidden pointer-events-auto z-[30] relative border border-[var(--glass-border)] shadow-2xl"
+        className="directory-sidebar w-full md:w-[260px] h-full rounded-2xl flex flex-col overflow-hidden pointer-events-auto z-[var(--z-sidebar)] relative border border-[var(--glass-border)] shadow-2xl"
         style={{ background: 'var(--bg-page)' }}
       >
         <DirectorySidebar groups={groups} />
       </div>
 
       {/* Right: Inline Focus Editor */}
-      <div className="directory-main flex-1 min-h-[400px] md:min-h-0 glass backdrop-blur-xl rounded-2xl overflow-hidden pointer-events-auto z-[5] relative border border-[var(--glass-border)] shadow-xl">
+      <div className="directory-main flex-1 min-h-[400px] md:min-h-0 glass backdrop-blur-xl rounded-2xl overflow-hidden pointer-events-auto z-[var(--z-canvas)] relative border border-[var(--glass-border)] shadow-xl">
         <DirectoryInlineEditor />
       </div>
     </div>

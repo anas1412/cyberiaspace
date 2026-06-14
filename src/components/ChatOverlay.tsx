@@ -1098,7 +1098,7 @@ IMPORTANT RULES:
           animate={{ x: 0, opacity: 1 }}
           exit={{ x: '-100%', opacity: 0 }}
           transition={{ type: 'spring', damping: 28, stiffness: 200 }}
-          className="fixed top-4 md:top-24 bottom-4 md:bottom-24 left-4 md:left-8 z-[9999] w-fit"
+          className="fixed top-4 md:top-24 bottom-4 md:bottom-24 left-4 md:left-8 z-[var(--z-ui)] w-fit"
         >
           {/* Chat Panel */}
           <div
@@ -1797,7 +1797,7 @@ IMPORTANT RULES:
             "
           >
             <ChevronLeft className="w-4 h-4 opacity-0 group-hover:opacity-100 transition-all duration-300 translate-x-1 group-hover:translate-x-0" />
-            <div className="absolute left-full ml-4 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-all duration-300 translate-x-2 group-hover:translate-x-0 pointer-events-none whitespace-nowrap z-[10001]">
+            <div className="absolute left-full ml-4 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-all duration-300 translate-x-2 group-hover:translate-x-0 pointer-events-none whitespace-nowrap z-[var(--z-overlay)]">
               <div className="glass px-3 py-1.5 rounded-xl border border-[var(--glass-border)] flex items-center gap-2 shadow-2xl bg-[var(--bg-main)]/90 backdrop-blur-xl">
                 <span className="text-[10px] font-semibold tracking-wide text-[var(--text-primary)]/90">Close Cyberia AI</span>
               </div>

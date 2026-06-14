@@ -141,16 +141,16 @@ const KanbanOverlay: React.FC = () => {
   return (
     <div
       className={cn(
-        'kanban-overlay inset-0 flex flex-col md:flex-row pointer-events-none z-[10] opacity-100 transition-opacity duration-400 p-4 md:p-10 pb-[100px] md:pb-[120px] pt-[64px] md:pt-[96px] gap-4 md:gap-5',
+        'kanban-overlay inset-0 flex flex-col md:flex-row pointer-events-none z-[var(--z-content)] opacity-100 transition-opacity duration-400 p-4 md:p-10 pb-[100px] md:pb-[120px] pt-[64px] md:pt-[96px] gap-4 md:gap-5',
         isDemo ? 'absolute' : 'fixed',
       )}
     >
       {/* ─── Sidebar (column index 0) ─────────────── */}
       <div
-        className="kanban-sidebar w-full md:w-[260px] min-h-[200px] md:min-h-0 rounded-2xl flex flex-col overflow-hidden pointer-events-auto z-[30] relative border border-[var(--glass-border)] shadow-2xl"
+        className="kanban-sidebar w-full md:w-[260px] min-h-[200px] md:min-h-0 rounded-2xl flex flex-col overflow-hidden pointer-events-auto z-[var(--z-sidebar)] relative border border-[var(--glass-border)] shadow-2xl"
         style={{ background: 'var(--bg-page)' }}
       >
-        <div className="kanban-sidebar-header px-4 md:px-5 py-3 md:py-4 border-b border-[var(--glass-border)] text-[9px] md:text-[10px] font-black tracking-[0.2em] uppercase text-[var(--accent)] z-[40] sticky top-0 shadow-[var(--shadow-elevation-2)]">
+        <div className="kanban-sidebar-header px-4 md:px-5 py-3 md:py-4 border-b border-[var(--glass-border)] text-[9px] md:text-[10px] font-black tracking-[0.2em] uppercase text-[var(--accent)] z-[var(--z-sidebar-header)] sticky top-0 shadow-[var(--shadow-elevation-2)]">
           <span>{sidebarName}</span>
         </div>
         <div
@@ -167,7 +167,7 @@ const KanbanOverlay: React.FC = () => {
       </div>
 
       {/* ─── Main Columns ─────────────────────────── */}
-      <div className="kanban-main flex-1 flex flex-col min-h-[400px] md:min-h-0 glass backdrop-blur-xl rounded-2xl overflow-hidden pointer-events-auto z-[5] relative border border-[var(--glass-border)] shadow-xl">
+      <div className="kanban-main flex-1 flex flex-col min-h-[400px] md:min-h-0 glass backdrop-blur-xl rounded-2xl overflow-hidden pointer-events-auto z-[var(--z-canvas)] relative border border-[var(--glass-border)] shadow-xl">
         {/* Shared grid template — keeps headers & content aligned */}
         {(() => {
           const colTemplate = `repeat(${displayColumns.length}, minmax(0, 1fr)) ${!isReadOnly ? '44px' : ''}`;

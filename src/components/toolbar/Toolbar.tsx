@@ -170,7 +170,7 @@ const Toolbar: React.FC = () => {
 
   return (
     <>
-      <div className="fixed top-2 md:top-6 left-4 md:left-8 right-4 md:right-8 z-[9999] flex items-center justify-between gap-2 pointer-events-none">
+      <div className="fixed top-2 md:top-6 left-4 md:left-8 right-4 md:right-8 z-[var(--z-ui)] flex items-center justify-between gap-2 pointer-events-none">
         {/* Left: Space Identity */}
         <div className="flex-1 flex justify-start items-center gap-3 pointer-events-auto">
           <SpaceSwitcher 

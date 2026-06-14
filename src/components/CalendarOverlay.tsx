@@ -360,7 +360,7 @@ const CalendarOverlay: React.FC = () => {
   return (
     <div
       className={cn(
-        'calendar-overlay inset-0 flex flex-col md:flex-row pointer-events-auto p-4 md:p-10 pb-[100px] md:pb-[120px] pt-[64px] md:pt-[96px] gap-4 md:gap-5 opacity-100 transition-opacity duration-400 z-[10] overflow-y-auto md:overflow-hidden',
+        'calendar-overlay inset-0 flex flex-col md:flex-row pointer-events-auto p-4 md:p-10 pb-[100px] md:pb-[120px] pt-[64px] md:pt-[96px] gap-4 md:gap-5 opacity-100 transition-opacity duration-400 z-[var(--z-content)] overflow-y-auto md:overflow-hidden',
         isDemo ? 'absolute' : 'fixed'
       )}
       onClick={handleBackgroundClick}
@@ -369,12 +369,12 @@ const CalendarOverlay: React.FC = () => {
       {/* Sidebar — hidden in agenda view (no physics positioning needed) */}
       {calViewMode !== 'agenda' && (
         <div
-          className="cal-sidebar w-full md:w-[260px] min-h-[200px] md:min-h-0 rounded-2xl flex flex-col overflow-hidden pointer-events-auto z-[30] relative border border-[var(--glass-border)] shadow-2xl"
+          className="cal-sidebar w-full md:w-[260px] min-h-[200px] md:min-h-0 rounded-2xl flex flex-col overflow-hidden pointer-events-auto z-[var(--z-sidebar)] relative border border-[var(--glass-border)] shadow-2xl"
           style={{ background: 'var(--bg-page)' }}
           onMouseEnter={() => handleDateMouseEnter('')}
           onMouseLeave={handleDateMouseLeave}
         >
-          <div className="cal-sidebar-header p-4 md:p-5 border-b border-[var(--glass-border)] text-[9px] md:text-[10px] font-black tracking-[0.2em] uppercase text-[var(--accent)] z-[40] sticky top-0 shadow-[var(--shadow-elevation-2)]">
+          <div className="cal-sidebar-header p-4 md:p-5 border-b border-[var(--glass-border)] text-[9px] md:text-[10px] font-black tracking-[0.2em] uppercase text-[var(--accent)] z-[var(--z-sidebar-header)] sticky top-0 shadow-[var(--shadow-elevation-2)]">
             Unscheduled
           </div>
           <div
@@ -388,7 +388,7 @@ const CalendarOverlay: React.FC = () => {
 
       {/* Main panel */}
       <div
-        className="cal-main flex-1 flex flex-col min-h-[400px] md:min-h-0 glass backdrop-blur-xl rounded-2xl overflow-hidden pointer-events-auto z-[5] relative border border-[var(--glass-border)] shadow-xl"
+        className="cal-main flex-1 flex flex-col min-h-[400px] md:min-h-0 glass backdrop-blur-xl rounded-2xl overflow-hidden pointer-events-auto z-[var(--z-canvas)] relative border border-[var(--glass-border)] shadow-xl"
         onMouseEnter={handleDateMouseLeave}
       >
         {/* ─── Header bar ────────────────────────────── */}

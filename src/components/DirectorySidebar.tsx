@@ -82,7 +82,7 @@ export const DirectorySidebar: React.FC<DirectorySidebarProps> = ({ groups }) =>
   return (
     <div className="flex flex-col h-full overflow-hidden">
       {/* Header */}
-      <div className="directory-sidebar-header p-4 md:p-5 border-b border-[var(--glass-border)] text-[9px] md:text-[10px] font-black tracking-[0.2em] uppercase text-[var(--accent)] z-[40] flex-shrink-0 flex items-center justify-between">
+      <div className="directory-sidebar-header p-4 md:p-5 border-b border-[var(--glass-border)] text-[9px] md:text-[10px] font-black tracking-[0.2em] uppercase text-[var(--accent)] z-[var(--z-sidebar-header)] flex-shrink-0 flex items-center justify-between">
         <span>Directory</span>
         <span className="text-[8px] text-[var(--text-muted)] tracking-normal normal-case font-medium">Search in Filters</span>
       </div>
@@ -105,7 +105,7 @@ export const DirectorySidebar: React.FC<DirectorySidebarProps> = ({ groups }) =>
               <ChevronDown className={cn("w-3 h-3 text-[var(--text-muted)] flex-shrink-0 transition-transform", groupByOpen && "rotate-180")} />
               </button>
             {groupByOpen && (
-              <div className="absolute top-full left-0 right-0 mt-1 bg-[var(--bg-page)] border border-[var(--glass-border)] rounded-xl shadow-xl shadow-black/20 z-50 overflow-hidden">
+              <div className="absolute top-full left-0 right-0 mt-1 bg-[var(--bg-page)] border border-[var(--glass-border)] rounded-xl shadow-xl shadow-black/20 z-[var(--z-popover)] overflow-hidden">
                 {GROUP_BY_OPTIONS.map((opt) => {
                   const Icon = opt.icon;
                   return (
@@ -138,7 +138,7 @@ export const DirectorySidebar: React.FC<DirectorySidebarProps> = ({ groups }) =>
               <ChevronDown className={cn("w-3 h-3 text-[var(--text-muted)] flex-shrink-0 transition-transform", sortByOpen && "rotate-180")} />
             </button>
             {sortByOpen && (
-              <div className="absolute top-full left-0 right-0 mt-1 bg-[var(--bg-page)] border border-[var(--glass-border)] rounded-xl shadow-xl shadow-black/20 z-50 overflow-hidden">
+              <div className="absolute top-full left-0 right-0 mt-1 bg-[var(--bg-page)] border border-[var(--glass-border)] rounded-xl shadow-xl shadow-black/20 z-[var(--z-popover)] overflow-hidden">
                 {SORT_OPTIONS.map((opt) => (
                   <button
                     key={opt.id}

@@ -132,7 +132,7 @@ export const ActionFAB: React.FC<ActionFABProps> = ({
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={SPRING}
-        className="fixed bottom-4 md:bottom-8 left-1/2 -translate-x-1/2 z-[9999] pointer-events-none flex flex-col items-center"
+        className="fixed bottom-4 md:bottom-8 left-1/2 -translate-x-1/2 z-[var(--z-ui)] pointer-events-none flex flex-col items-center"
       >
         <button
           onClick={() => (window.location.href = '/')}
@@ -165,7 +165,7 @@ export const ActionFAB: React.FC<ActionFABProps> = ({
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={SPRING}
-      className="fixed bottom-4 md:bottom-8 z-[9999] left-1/2 -translate-x-1/2 flex items-center justify-center"
+      className="fixed bottom-4 md:bottom-8 z-[var(--z-ui)] left-1/2 -translate-x-1/2 flex items-center justify-center"
     >
       <input
         type="file"

@@ -230,7 +230,7 @@ const ThoughtNode: React.FC<ThoughtNodeProps> = React.memo(({ thought, registerE
         "thought-bulb absolute select-none touch-none will-change-transform origin-top-left",
         isArchived ? "pointer-events-none" : "pointer-events-auto",
         "w-[280px]",
-        isDragging ? "z-[1000] cursor-grabbing" : "z-20 cursor-grab",
+        isDragging ? "z-[var(--z-dragging)] cursor-grabbing" : "z-[var(--z-viewport)] cursor-grab",
         ((isReadOnly && !isSpatial && !isDemo) || isDeleting) && "cursor-default pointer-events-none",
         isDragging && isOverDeleteZone && "outline outline-2 outline-red-500/80 outline-offset-2"
       )}
@@ -251,7 +251,7 @@ const ThoughtNode: React.FC<ThoughtNodeProps> = React.memo(({ thought, registerE
         }
       })}
     >
-      {showPing && <div className="absolute inset-0 rounded-2xl border-2 border-[var(--accent)] animate-sonar pointer-events-none z-0" />}
+      {showPing && <div className="absolute inset-0 rounded-2xl border-2 border-[var(--accent)] animate-sonar pointer-events-none z-[var(--z-background)]" />}
       
           {isDeleting && (
         <div className="absolute inset-0 z-[50] rounded-2xl bg-[var(--bg-page)]/60 backdrop-blur-sm border border-red-500/30 flex flex-col items-center justify-center gap-3 animate-in fade-in duration-300">

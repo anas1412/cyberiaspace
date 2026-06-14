@@ -14,7 +14,7 @@ const UpdateToast: React.FC = () => {
         initial={{ opacity: 0, y: 50, scale: 0.9 }}
         animate={{ opacity: 1, y: 0, scale: 1 }}
         exit={{ opacity: 0, scale: 0.9 }}
-        className="fixed bottom-24 left-1/2 -translate-x-1/2 z-[20000] w-[90%] max-w-md"
+        className="fixed bottom-24 left-1/2 -translate-x-1/2 z-[var(--z-toast)] w-[90%] max-w-md"
       >
         <div className="glass p-1 rounded-3xl border border-blue-500/30 shadow-[0_0_50px_rgba(59,130,246,0.3)] bg-blue-500/10 backdrop-blur-3xl overflow-hidden">
           <div className="flex items-center gap-4 p-4">

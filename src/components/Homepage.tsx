@@ -211,7 +211,7 @@ const Homepage: React.FC = () => {
 
       <main className="flex-1">
         {/* HERO SECTION */}
-        <section className="pt-32 md:pt-48 pb-20 px-6 relative z-10">
+        <section className="pt-32 md:pt-48 pb-20 px-6 relative z-[var(--z-content)]">
         <div className="max-w-4xl mx-auto text-center">
         <motion.div
         initial={{ opacity: 0, scale: 0.95, y: 20 }}
@@ -303,12 +303,12 @@ const Homepage: React.FC = () => {
               />
             </div>
 
-            <div className="absolute inset-0 bg-[var(--accent)]/20 blur-[120px] rounded-full pointer-events-none -z-10" />
+            <div className="absolute inset-0 bg-[var(--accent)]/20 blur-[120px] rounded-full pointer-events-none -z-[var(--z-content)]" />
           </motion.div>
         </section>
 
         {/* FEATURES SECTION */}
-        <section id="features" className="py-24 px-6 relative z-10">
+        <section id="features" className="py-24 px-6 relative z-[var(--z-content)]">
           <div className="max-w-6xl mx-auto">
             <div className="text-center mb-16 md:mb-20">
               <h2 className="text-3xl md:text-5xl font-bold tracking-tight mb-4">
@@ -343,7 +343,7 @@ const Homepage: React.FC = () => {
         </section>
 
         {/* ABOUT SECTION */}
-        <section id="about" className="py-24 px-6 relative z-10 bg-[var(--accent)]/[0.02]">
+        <section id="about" className="py-24 px-6 relative z-[var(--z-content)] bg-[var(--accent)]/[0.02]">
           <div className="max-w-6xl mx-auto">
             <div className="text-center mb-16 md:mb-20">
               <h2 className="text-3xl md:text-5xl font-bold tracking-tight mb-4">
@@ -370,7 +370,7 @@ const Homepage: React.FC = () => {
                   {/* Subtle background glow on hover */}
                   <div className="absolute inset-0 bg-gradient-to-br from-[var(--accent)]/0 via-[var(--accent)]/0 to-[var(--accent)]/5 opacity-0 group-hover:opacity-100 transition-opacity duration-700 pointer-events-none" />
 
-                  <div className="relative z-10 flex flex-col h-full justify-between">
+                  <div className="relative z-[var(--z-content)] flex flex-col h-full justify-between">
                     {/* PAIN */}
                     <div className="mb-8">
                       <p className="text-[16px] md:text-[17px] text-[var(--text-muted)] italic leading-relaxed">
@@ -399,7 +399,7 @@ const Homepage: React.FC = () => {
         </section>
 
         {/* HOW IT WORKS SECTION */}
-        <section ref={howItWorksRef} id="how-it-works" className="py-24 md:py-32 px-6 relative z-10">
+        <section ref={howItWorksRef} id="how-it-works" className="py-24 md:py-32 px-6 relative z-[var(--z-content)]">
           <div className="max-w-7xl mx-auto">
             <div className="mb-16 md:mb-24 text-center">
               <h2 className="text-3xl md:text-5xl font-bold tracking-tight mb-4">
@@ -423,7 +423,7 @@ const Homepage: React.FC = () => {
                         : 'border border-transparent hover:bg-[var(--glass-bg)] hover:border-[var(--glass-border)]'
                     }`}
                   >
-                    <div className="relative z-10 flex items-start gap-5">
+                    <div className="relative z-[var(--z-content)] flex items-start gap-5">
                       <div className={`w-12 h-12 rounded-xl flex items-center justify-center shrink-0 border transition-all ${
                         activeHowItWorksStep === item.step
                           ? 'bg-[var(--accent)] border-[var(--accent)] text-[var(--accent-contrast)] shadow-lg shadow-[var(--accent)]/30'
@@ -472,7 +472,7 @@ const Homepage: React.FC = () => {
         </section>
 
         {/* TESTIMONIALS SECTION */}
-        <section className="py-24 px-6 relative z-10 bg-[var(--accent)]/[0.01]">
+        <section className="py-24 px-6 relative z-[var(--z-content)] bg-[var(--accent)]/[0.01]">
           <div className="max-w-7xl mx-auto">
             <div className="text-center mb-16">
               <h2 className="text-3xl md:text-5xl font-bold tracking-tight mb-4">
@@ -495,7 +495,7 @@ const Homepage: React.FC = () => {
                 >
                   <Quote className="w-10 h-10 text-[var(--accent)]/20 absolute top-6 right-8 group-hover:text-[var(--accent)]/40 transition-colors" />
 
-                  <p className="text-[15px] text-[var(--text-primary)] leading-relaxed mb-8 relative z-10 italic">
+                  <p className="text-[15px] text-[var(--text-primary)] leading-relaxed mb-8 relative z-[var(--z-content)] italic">
                     &ldquo;{testimonial.quote}&rdquo;
                   </p>
 
@@ -515,7 +515,7 @@ const Homepage: React.FC = () => {
         </section>
 
         {/* FAQ SECTION */}
-        <section id="faq" className="py-24 px-6 relative z-10">
+        <section id="faq" className="py-24 px-6 relative z-[var(--z-content)]">
           <div className="max-w-3xl mx-auto">
             <div className="text-center mb-16">
               <h2 className="text-3xl md:text-5xl font-bold tracking-tight mb-4">
@@ -539,7 +539,7 @@ const Homepage: React.FC = () => {
         </section>
 
         {/* COMMUNITY & CONTACT SECTION */}
-        <section id="contact" className="py-24 px-6 relative z-10">
+        <section id="contact" className="py-24 px-6 relative z-[var(--z-content)]">
           <div className="max-w-4xl mx-auto text-center">
             <div className="glass rounded-[2rem] p-10 md:p-16 border border-[var(--glass-border)] relative overflow-hidden">
               <div className="absolute top-0 right-0 w-64 h-64 bg-[var(--accent)]/10 blur-[80px] rounded-full pointer-events-none" />
@@ -594,8 +594,8 @@ const Homepage: React.FC = () => {
         </section>
 
         {/* CTA SECTION */}
-        <section className="py-32 px-6 relative z-10 text-center overflow-hidden">
-          <div className="max-w-2xl mx-auto relative z-10">
+        <section className="py-32 px-6 relative z-[var(--z-content)] text-center overflow-hidden">
+          <div className="max-w-2xl mx-auto relative z-[var(--z-content)]">
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
@@ -629,7 +629,7 @@ const Homepage: React.FC = () => {
               </div>
             </motion.div>
           </div>
-          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-2xl h-64 bg-[var(--accent)]/10 blur-[120px] rounded-full -z-10 pointer-events-none" />
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-2xl h-64 bg-[var(--accent)]/10 blur-[120px] rounded-full -z-[var(--z-content)] pointer-events-none" />
         </section>
       </main>
 
@@ -640,7 +640,7 @@ const Homepage: React.FC = () => {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[9999] bg-[var(--bg-page)]/90 backdrop-blur-sm flex items-center justify-center p-4"
+            className="fixed inset-0 z-[var(--z-ui)] bg-[var(--bg-page)]/90 backdrop-blur-sm flex items-center justify-center p-4"
             onClick={() => setIsImageZoomed(false)}
           >
             <button

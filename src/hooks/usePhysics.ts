@@ -1077,7 +1077,7 @@ export const usePhysics = (
       el.style.visibility = shouldHide ? 'hidden' : (res.visibility ?? 'visible');
       el.style.pointerEvents = shouldHide ? 'none' : (res.pointerEvents ?? 'auto');
       el.style.clipPath = res.clipPath ?? 'none';
-      el.style.zIndex = isSelected ? '10001' : (isDraggingThis ? '1000' : (res.zIndex || (20 + (t.layer || 0)).toString()));
+      el.style.zIndex = isDraggingThis ? '1000' : (isSelected ? '999' : (res.zIndex || (20 + (t.layer || 0)).toString()));
       
       // ===== BOUNDARY CLIPPING FOR CALENDAR & KANBAN =====
       // Prevent thoughts from visually overflowing outside their containers

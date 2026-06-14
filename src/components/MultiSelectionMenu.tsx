@@ -48,7 +48,7 @@ const ColorPicker: React.FC<{ value: string; onChange: (val: string) => void; di
             initial={{ opacity: 0, y: 10, scale: 0.95 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 10, scale: 0.95 }}
-            className="absolute bottom-full mb-3 left-0 z-[100] bg-[var(--glass-bg)] border border-[var(--glass-border)] rounded-2xl p-3 shadow-[0_10px_40px_rgba(0,0,0,0.3)] min-w-[180px]"
+            className="absolute bottom-full mb-3 left-0 z-[var(--z-popover)] bg-[var(--glass-bg)] border border-[var(--glass-border)] rounded-2xl p-3 shadow-[0_10px_40px_rgba(0,0,0,0.3)] min-w-[180px]"
           >
             <div className="grid grid-cols-4 gap-2 mb-3">
               {STACK_COLORS.map(color => (
@@ -197,10 +197,10 @@ const MultiSelectionMenu: React.FC = () => {
           animate={isMobile ? (isInspectorOpen || isChatOpen ? { y: '100%', opacity: 0 } : { y: 0, opacity: 1 }) : { x: 0, opacity: 1 }}
           exit={isMobile ? { y: '100%' } : { x: '100%', opacity: 0 }}
           transition={{ type: 'spring', damping: 28, stiffness: 200 }}
-          className="ui-layer focus-box fixed top-4 md:top-24 bottom-4 md:bottom-24 right-4 md:right-8 w-[calc(100%-32px)] md:w-[400px] glass backdrop-blur-xl rounded-2xl shadow-2xl pointer-events-auto z-[9999] border border-[var(--glass-border)] flex flex-col overflow-hidden"
+          className="ui-layer focus-box fixed top-4 md:top-24 bottom-4 md:bottom-24 right-4 md:right-8 w-[calc(100%-32px)] md:w-[400px] glass backdrop-blur-xl rounded-2xl shadow-2xl pointer-events-auto z-[var(--z-ui)] border border-[var(--glass-border)] flex flex-col overflow-hidden"
         >
           {/* HEADER */}
-          <div className="px-4 py-3 md:px-5 border-b border-[var(--glass-border)] bg-[var(--bg-main)]/60 backdrop-blur-xl sticky top-0 z-30">
+          <div className="px-4 py-3 md:px-5 border-b border-[var(--glass-border)] bg-[var(--bg-main)]/60 backdrop-blur-xl sticky top-0 z-[var(--z-sidebar)]">
             <div className="flex justify-between items-center relative min-h-[44px]">
               <div className="flex-1" />
               <div className="absolute left-1/2 -translate-x-1/2 flex flex-col items-center justify-center pointer-events-none mt-0.5">

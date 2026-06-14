@@ -48,7 +48,7 @@ const World: React.FC<WorldProps> = ({ canvasRef, physicsResults }) => {
       <canvas
         ref={canvasRef}
         id="connection-canvas"
-        className="absolute pointer-events-none z-0"
+        className="absolute pointer-events-none z-[var(--z-background)]"
         style={{
           left: '-10%',
           top: '-10%',
@@ -59,7 +59,7 @@ const World: React.FC<WorldProps> = ({ canvasRef, physicsResults }) => {
       <div
         id="world"
         ref={registerWorld}
-        className="absolute origin-top-left will-change-transform pointer-events-none w-full h-full z-10"
+        className="absolute origin-top-left will-change-transform pointer-events-none w-full h-full z-[var(--z-content)]"
       >
         {thoughts.filter(t => !t.deletedAt).map((thought) => {
           const isArchived = !!thought.archivedAt && !showArchived;

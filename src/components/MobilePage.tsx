@@ -12,9 +12,9 @@ const MobilePage: React.FC = () => {
   };
 
   return (
-    <div className="fixed inset-0 z-[10003] bg-[var(--bg-page)] flex items-center justify-center p-6 overflow-hidden select-none">
+    <div className="fixed inset-0 z-[var(--z-mobile-gate)] bg-[var(--bg-page)] flex items-center justify-center p-6 overflow-hidden select-none">
       {/* Background Layers matching Cyberia theme */}
-      <div className="fixed inset-0 z-0">
+      <div className="fixed inset-0 z-[var(--z-background)]">
         <div className="stars-layer stars-1" />
         <div className="stars-layer stars-2" />
         <div className="stars-layer stars-twinkle" />
@@ -25,7 +25,7 @@ const MobilePage: React.FC = () => {
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="relative z-10 w-full max-w-md md:max-w-lg"
+        className="relative z-[var(--z-content)] w-full max-w-md md:max-w-lg"
       >
         <button
           onClick={handleBack}
@@ -40,7 +40,7 @@ const MobilePage: React.FC = () => {
             <div className="flex justify-center mb-6">
               <div className="relative">
                 <div className="absolute inset-0 bg-[var(--accent)]/20 blur-2xl rounded-full scale-150 animate-pulse" />
-                <div className="flex items-center gap-4 relative z-10">
+                <div className="flex items-center gap-4 relative z-[var(--z-content)]">
                   <Smartphone className="w-8 h-8 text-[var(--text-muted)] opacity-40" />
                   <div className="w-8 h-[1px] bg-white/10" />
                   <Monitor className="w-10 h-10 text-[var(--accent)]" />
