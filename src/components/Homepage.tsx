@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
   ArrowRight, Cpu, Rocket, ChevronDown, MessageCircle, X,
   Quote, Plus, FileText, Layout, Shield, XCircle, CheckCircle2,
-  Github, Layers, Bot, Mail, Check, Monitor
+  Github, Layers, Bot, Mail, Check, Monitor, Brain
 } from 'lucide-react';
 
 import { DISCORD_INVITE_URL } from '../constants';
@@ -17,30 +17,30 @@ const GITHUB_URL = 'https://github.com/anas1412/cyberia';
 
 const TESTIMONIALS = [
   {
-    quote: 'Cyberia completely changed how I organize my research. It\'s like having a whiteboard that never runs out of space.',
-    author: 'Nadia G.',
-    role: 'Researcher',
+    quote: 'I have ADHD and I\'ve tried literally everything. The reason Cyberia Space sticks is that it doesn\'t force me to organize upfront. I dump random thoughts everywhere, and when my hyperfocus kicks in later, I actually enjoy sorting it all out.',
+    author: 'Nadia D.',
+    role: 'UI/UX Designer',
+    avatar: "ND"
+  },
+  {
+    quote: 'My brain jumps between five projects a day. Cyberia Space doesn\'t punish me for that — I can leave a thought halfway across the canvas and pick it up three weeks later without losing context. Try doing that in Notion.',
+    author: 'Nidhal G.',
+    role: 'Software Engineer',
     avatar: "NG"
   },
   {
-    quote: 'The spatial approach is a game-changer. I can finally see the big picture of my projects.',
-    author: 'Marcus C.',
-    role: 'Product Designer',
+    quote: 'I used to have 30 browser tabs, 4 Notes app drafts, and a pile of sticky notes just to study for one exam. Now I drop everything into a space and switch to calendar mode when the deadline panic kicks in. Actually passed my controls exam.',
+    author: 'Mohamed C.',
+    role: 'Engineering Student',
     avatar: "MC"
-  },
-  {
-    quote: 'Finally, a tool that works the way my brain works. The stack system is brilliant for grouping related ideas.',
-    author: 'Nina D.',
-    role: 'Writer',
-    avatar: "ND"
   }
 ];
 
 const FEATURES = [
   {
     icon: Layers,
-    title: 'Unified Workspace',
-    description: 'Combine notes, files, links, and AI in one spatial canvas. Drag, connect, and organize anything.',
+    title: 'Zero Friction',
+    description: 'No folders, no rigid structure. Drop thoughts anywhere, connect them later. Four views let you switch how you see your work depending on your focus.',
     iconBg: 'bg-[var(--accent)]/10 border-[var(--accent)]/20 text-[var(--accent)]'
   },
   {
@@ -110,6 +110,10 @@ const FAQ_ITEMS = [
   {
     question: 'Can I install it on my machine?',
     answer: 'Yes! Cyberia Space is a progressive web app, which means you can install it directly on your desktop or laptop through your browser. On Chrome or Edge, look for the install icon in the address bar when you visit Cyberia Space — this adds it to your taskbar or dock, gives it its own window, and even lets you use it offline. Mobile support is on the roadmap but not yet available.'
+  },
+  {
+    question: 'Is this ADHD-friendly?',
+    answer: 'Yes. Cyberia Space is designed to reduce friction between having an idea and capturing it — no folder setup, no tagging system to learn, just click and type. The spatial canvas lets you scatter thoughts everywhere and connect them later, which matches how non-linear thinking actually works. Four view modes (spatial, directory, kanban, calendar) let you switch how you see your work depending on what your focus needs that day.'
   },
   {
     question: 'Can I contribute to the project?',
@@ -270,6 +274,11 @@ const Homepage: React.FC = () => {
                     <Github className="w-3 h-3 text-[var(--text-muted)]" />
                     <span className="text-[11px] font-medium text-[var(--text-muted)]">Open-source</span>
                   </div>
+                  <div className="w-px h-3 bg-[var(--glass-border)]" />
+                  <div className="flex items-center gap-1.5">
+                    <Brain className="w-3 h-3 text-[var(--accent)]" />
+                    <span className="text-[11px] font-medium text-[var(--text-muted)]">ADHD friendly</span>
+                  </div>
                 </div>
               </motion.div>
             </motion.div>
@@ -345,8 +354,8 @@ const Homepage: React.FC = () => {
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-8">
               {[
-                { pain: 'My notes are scattered across different apps and folders.', solution: 'One infinite canvas where everything lives together, connected naturally. View it as a canvas, kanban, or calendar.' },
                 { pain: 'I spend more time organizing my notes than actually thinking.', solution: 'Thoughts are physical objects. Move them, stack them, connect them — just like things on your desk.' },
+                { pain: 'My brain jumps between ideas faster than my notes can keep up.', solution: 'No folder structure to set up, no tags to maintain. Drop ideas anywhere, connect them later, reorganize when your focus shifts. Works the way your attention actually works — free-form, non-linear, visual.' },
                 { pain: 'I don\'t want my data uploaded to someone else\'s cloud.', solution: '100% local. Your data stays on your device, always under your control.' },
                 { pain: 'AI tools are locked behind subscriptions I don\'t need.', solution: 'Bring your own API key. Only pay for what you use, directly to the model provider — with free models, you can even start using AI for free.' }
               ].map((item, i) => (
