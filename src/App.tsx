@@ -32,7 +32,7 @@ const TasksFocusEditor = lazy(() => import('./components/editors/TasksFocusEdito
 const EmbedFocusEditor = lazy(() => import('./components/editors/EmbedFocusEditor'));
 const FileFocusEditor = lazy(() => import('./components/editors/FileFocusEditor'));
 const PrivacyPolicy = lazy(() => import('./components/legal/PrivacyPolicy'));
-const CGV = lazy(() => import('./components/legal/CGV'));
+const Terms = lazy(() => import('./components/legal/Terms'));
 const LegalNotice = lazy(() => import('./components/legal/LegalNotice'));
 const Homepage = lazy(() => import('./components/Homepage'));
 const MobilePage = lazy(() => import('./components/MobilePage'));
@@ -359,7 +359,7 @@ function App() {
   if (path === '/terms') {
     return (
       <Suspense fallback={<LoadingOverlay force />}>
-        <CGV />
+        <Terms />
       </Suspense>
     );
   }

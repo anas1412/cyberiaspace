@@ -2,7 +2,7 @@ import React from 'react';
 import { motion } from 'framer-motion';
 import { FileText, ArrowLeft, ShieldCheck, Scale } from 'lucide-react';
 
-const CGV: React.FC = () => {
+const Terms: React.FC = () => {
   const handleBack = () => {
     if (window.history.length > 1) {
       window.history.back();
@@ -144,4 +144,4 @@ const CGV: React.FC = () => {
   );
 };
 
-export default CGV;
+export default Terms;

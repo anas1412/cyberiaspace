@@ -1,6 +1,6 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { Scale, ArrowLeft, Building2, Server, Shield, Lock } from 'lucide-react';
+import { Scale, ArrowLeft, Building2, Server, Shield } from 'lucide-react';
 
 const LegalNotice: React.FC = () => {
   const handleBack = () => {
@@ -64,17 +64,6 @@ const LegalNotice: React.FC = () => {
         </p>
       )
     },
-    {
-      id: 4,
-      title: 'Limitation of Liability',
-      icon: <Lock className="w-5 h-5 text-blue-400" />,
-      highlight: true,
-      content: (
-        <p className="leading-relaxed text-[var(--text-dimmed)]">
-          The application is provided on an &quot;as is&quot; and &quot;as available&quot; basis. The operator makes no representations or warranties of any kind, express or implied, regarding the operation or availability of the service. To the fullest extent permitted by law, the operator disclaims all liability for any damages arising from the use of the application.
-        </p>
-      )
-    }
   ];
 
   return (
@@ -106,11 +95,7 @@ const LegalNotice: React.FC = () => {
           {sections.map((section) => (
             <div 
               key={section.id} 
-              className={`border p-8 rounded-[2.5rem] space-y-4 transition-colors duration-500 ${
-                section.highlight 
-                  ? 'bg-blue-500/5 border-blue-500/10 hover:border-blue-500/20 shadow-[0_0_40px_rgba(59,130,246,0.03)]' 
-                  : 'bg-[var(--glass-bg)] border border-[var(--glass-border)] hover:border-[var(--accent)]/30'
-              }`}
+              className="border p-8 rounded-[2.5rem] space-y-4 transition-colors duration-500 bg-[var(--glass-bg)] border border-[var(--glass-border)] hover:border-[var(--accent)]/30"
             >
               <div className="flex items-center gap-3 mb-2">
                 {section.icon}
