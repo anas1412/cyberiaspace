@@ -16,14 +16,14 @@ export interface LayoutContext {
   hoveredCalDate: string | null;
   calendarSearchQuery: string;
   calendarStackFilter: string | null;
-  calendarStatusFilter: 'none' | 'todo' | 'doing' | 'done' | null;
+  calendarStatusFilter: string[] | null;
   kanbanSearchQuery: string;
   kanbanStackFilter: string | null;
-  kanbanStatusFilter: 'none' | 'todo' | 'doing' | 'done' | null;
+  kanbanStatusFilter: string[] | null;
   kanbanDateFilter: string | null;
   spatialSearchQuery: string;
   spatialStackFilter: string | null;
-  spatialStatusFilter: 'none' | 'todo' | 'doing' | 'done' | null;
+  spatialStatusFilter: string[] | null;
   spatialDateFilter: string | null;
   showArchived?: boolean;
   visibleIds?: Set<string>;
@@ -35,6 +35,7 @@ export interface LayoutContext {
   isDemo?: boolean;
   timeScale: number;
   transform: { x: number; y: number; scale: number };
+  calendarViewMode: 'month' | 'week' | 'agenda';
   calendarCellMap?: Map<string, { x: number; y: number; w: number; h: number }>;
   thoughtMap: Map<string, Thought>;
   columnMap?: Map<string, Thought[]>;
@@ -45,6 +46,10 @@ export interface LayoutContext {
   kanbanPadding?: number;
   kanbanColumnScrollTop?: number;
   kanbanColumnTop?: number;
+  kanbanColumnsCount?: number; // Number of main columns (excluding sidebar)
+  // Calendar week-specific (kanban-style vertical stacking)
+  calendarWeekScrollTop?: number;
+  calendarWeekColumnTop?: number;
   // Physics configuration (dynamic, from store)
   physicsConfig?: {
     intensity: number;       // 0 = frozen, 0.5 = default, 1.0 = high energy

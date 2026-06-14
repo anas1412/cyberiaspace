@@ -5,7 +5,7 @@
  */
 
 import { db } from '../../db';
-import { sanitizeStatus, sanitizePriority } from '../../utils/thought';
+import { sanitizeStatus, sanitizePriority, resolveKanbanCol } from '../../utils/thought';
 import { webSearch } from './webSearch';
 
 const svgToDataUrl = (svg: string): string => {
@@ -157,7 +157,13 @@ export const executeAiTool = async (toolCall: any, store: any) => {
         // Ensure type isn't 'image' (legacy safety)
         if (thoughtArgs.type === ('image' as any)) thoughtArgs.type = 'file';
 
-        if (thoughtArgs.status) thoughtArgs.status = sanitizeStatus(thoughtArgs.status);
+        if (thoughtArgs.kanbanCol !== undefined) {
+          const resolved = resolveKanbanCol(thoughtArgs.kanbanCol);
+          thoughtArgs.status = resolved.status;
+          thoughtArgs.kanbanCol = resolved.kanbanCol;
+        } else if (thoughtArgs.status) {
+          thoughtArgs.status = sanitizeStatus(thoughtArgs.status);
+        }
         if (thoughtArgs.priority) thoughtArgs.priority = sanitizePriority(thoughtArgs.priority);
 
         // Transform content to data.url for embed type
@@ -229,7 +235,13 @@ export const executeAiTool = async (toolCall: any, store: any) => {
           const x = typeof thoughtArgs.x !== 'undefined' ? Number(thoughtArgs.x) : window.innerWidth / 2;
           const y = typeof thoughtArgs.y !== 'undefined' ? Number(thoughtArgs.y) : window.innerHeight / 2;
           
-          if (thoughtArgs.status) thoughtArgs.status = sanitizeStatus(thoughtArgs.status);
+          if (thoughtArgs.kanbanCol !== undefined) {
+            const resolved = resolveKanbanCol(thoughtArgs.kanbanCol);
+            thoughtArgs.status = resolved.status;
+            thoughtArgs.kanbanCol = resolved.kanbanCol;
+          } else if (thoughtArgs.status) {
+            thoughtArgs.status = sanitizeStatus(thoughtArgs.status);
+          }
           if (thoughtArgs.priority) thoughtArgs.priority = sanitizePriority(thoughtArgs.priority);
 
           partialThoughts.push({ ...thoughtArgs, x, y });
@@ -303,7 +315,13 @@ export const executeAiTool = async (toolCall: any, store: any) => {
           if (typeof updates.y !== 'undefined') sanitizedUpdates.y = Number(updates.y);
           if (updates.type === ('image' as any)) sanitizedUpdates.type = 'file';
           
-          if (updates.status) sanitizedUpdates.status = sanitizeStatus(updates.status);
+          if (updates.kanbanCol !== undefined) {
+            const resolved = resolveKanbanCol(updates.kanbanCol);
+            sanitizedUpdates.status = resolved.status;
+            sanitizedUpdates.kanbanCol = resolved.kanbanCol;
+          } else if (updates.status) {
+            sanitizedUpdates.status = sanitizeStatus(updates.status);
+          }
           if (updates.priority) sanitizedUpdates.priority = sanitizePriority(updates.priority);
 
           // Transform table to data.rows for table type
@@ -336,7 +354,13 @@ export const executeAiTool = async (toolCall: any, store: any) => {
           if (typeof updates.y !== 'undefined') sanitizedUpdates.y = Number(updates.y);
           if (updates.type === ('image' as any)) sanitizedUpdates.type = 'file';
 
-          if (updates.status) sanitizedUpdates.status = sanitizeStatus(updates.status);
+          if (updates.kanbanCol !== undefined) {
+            const resolved = resolveKanbanCol(updates.kanbanCol);
+            sanitizedUpdates.status = resolved.status;
+            sanitizedUpdates.kanbanCol = resolved.kanbanCol;
+          } else if (updates.status) {
+            sanitizedUpdates.status = sanitizeStatus(updates.status);
+          }
           if (updates.priority) sanitizedUpdates.priority = sanitizePriority(updates.priority);
 
           // Transform table to data.rows for table type

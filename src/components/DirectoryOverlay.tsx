@@ -21,9 +21,10 @@ const DirectoryOverlay: React.FC = () => {
   const directorySortBy = useStore((state) => state.directorySortBy);
   const isDemo = useStore((state) => state.isDemo);
 
+  const kanbanColumns = activeSpace?.kanbanColumns;
   const groups = useMemo(
-    () => buildDirectoryGroups(thoughts, stacks, directoryGroupBy, directorySortBy, directorySearchQuery, activeSpaceId ?? undefined),
-    [thoughts, stacks, directoryGroupBy, directorySortBy, directorySearchQuery, activeSpaceId],
+    () => buildDirectoryGroups(thoughts, stacks, directoryGroupBy, directorySortBy, directorySearchQuery, activeSpaceId ?? undefined, kanbanColumns),
+    [thoughts, stacks, directoryGroupBy, directorySortBy, directorySearchQuery, activeSpaceId, kanbanColumns],
   );
 
   if (activeSpace?.mode !== 'directory') return null;

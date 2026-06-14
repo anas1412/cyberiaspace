@@ -18,7 +18,6 @@ const STATUS_LABELS: Record<string, string> = {
   doing: 'Doing',
   done: 'Done',
 };
-
 const PRIORITY_LABELS: Record<string, string> = {
   none: 'No Priority',
   low: 'Low',
@@ -76,6 +75,7 @@ export function buildDirectoryGroups(
   sortBy: DirectorySortBy,
   searchQuery?: string,
   spaceId?: string,
+  kanbanColumns?: string[],
 ): DirectoryGroup[] {
   // Filter thoughts: active, correct space, not deleted, not labels
   const filtered = thoughts.filter(
@@ -97,7 +97,7 @@ export function buildDirectoryGroups(
     case 'stack':
       return buildStackGroups(searched, stacksMap, thoughtsMap, sortBy);
     case 'status':
-      return buildStatusGroups(searched, thoughtsMap, sortBy);
+      return buildStatusGroups(searched, thoughtsMap, sortBy, kanbanColumns);
     case 'date':
       return buildDateGroups(searched, thoughtsMap, sortBy);
     case 'priority':
@@ -153,24 +153,54 @@ function buildStatusGroups(
   thoughts: Thought[],
   thoughtsMap: Map<string, Thought>,
   sortBy: DirectorySortBy,
+  kanbanColumns?: string[],
 ): DirectoryGroup[] {
   const statusOrder = ['todo', 'doing', 'done', 'none'] as const;
   const groups = new Map<string, string[]>();
+  const customGroups = new Map<number, string[]>(); // kanbanCol -> thoughtIds
 
   statusOrder.forEach((s) => groups.set(s, []));
+
   thoughts.forEach((t) => {
     const status = t.status ?? 'none';
-    if (!groups.has(status)) groups.set(status, []);
-    groups.get(status)!.push(t.id);
+    // Custom column thoughts (kanbanCol >= 4) get their own group
+    if (status === 'none' && t.kanbanCol !== undefined && t.kanbanCol >= 4) {
+      const col = t.kanbanCol;
+      if (!customGroups.has(col)) customGroups.set(col, []);
+      customGroups.get(col)!.push(t.id);
+    } else {
+      // Standard status groups
+      if (!groups.has(status)) groups.set(status, []);
+      groups.get(status)!.push(t.id);
+    }
   });
 
-  return statusOrder
-    .filter((s) => groups.get(s)?.length)
-    .map((status) => ({
+  const result: DirectoryGroup[] = [];
+
+  // Standard status groups first
+  for (const status of statusOrder) {
+    const ids = groups.get(status);
+    if (!ids || ids.length === 0) continue;
+    result.push({
       id: status,
       label: STATUS_LABELS[status] ?? status,
-      thoughtIds: sortThoughtIds(groups.get(status)!, thoughtsMap, sortBy),
-    }));
+      thoughtIds: sortThoughtIds(ids, thoughtsMap, sortBy),
+    });
+  }
+
+  // Custom column groups after standard ones, sorted by kanbanCol
+  const sortedCustomCols = [...customGroups.keys()].sort((a, b) => a - b);
+  for (const col of sortedCustomCols) {
+    const ids = customGroups.get(col)!;
+    const colName = (kanbanColumns && kanbanColumns[col]) ? kanbanColumns[col] : `Column ${col}`;
+    result.push({
+      id: `kanban-col-${col}`,
+      label: colName,
+      thoughtIds: sortThoughtIds(ids, thoughtsMap, sortBy),
+    });
+  }
+
+  return result;
 }
 
 function buildDateGroups(

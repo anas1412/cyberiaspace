@@ -1,5 +1,5 @@
 import { type StateCreator } from 'zustand';
-import { db, type Space } from '../../db';
+import { db, DEFAULT_KANBAN_COLUMNS, type Space } from '../../db';
 import { type CyberiaState } from '../types';
 import { setSetting, getSetting } from '../../utils/settings';
 import { ulid } from 'ulid';
@@ -132,6 +132,11 @@ export const createSpaceSlice: StateCreator<CyberiaState, [], [], any> = (set, g
     const { spaces } = get();
     const index = spaces.findIndex((s: Space) => s.id === id);
     if (index !== -1) {
+      const space = spaces[index];
+      // Auto-apply default kanban columns when switching to kanban mode
+      if (updates.mode === 'kanban' && !space.kanbanColumns?.length) {
+        updates = { ...updates, kanbanColumns: [...DEFAULT_KANBAN_COLUMNS] };
+      }
       const newSpaces = [...spaces];
       newSpaces[index] = { ...newSpaces[index], ...updates };
       set({ spaces: newSpaces });

@@ -4,6 +4,7 @@ import { type Thought } from '../db';
 import { getStrategist, getPhysicsConfig, type LayoutContext, type PhysicsPoint } from './physics';
 import { type Camera } from './useCamera';
 import { sanitizeDate } from '../utils/date';
+import { resolveKanbanCol } from '../utils/thought';
 
 const PRIORITY_WEIGHT = {
   urgent: 4,
@@ -30,6 +31,7 @@ export const usePhysics = (
   const calendarStackFilter = useStore((state) => state.calendarStackFilter);
   const calendarStatusFilter = useStore((state) => state.calendarStatusFilter);
   const calendarTypeFilter = useStore((state) => state.calendarTypeFilter);
+  const calendarViewMode = useStore((state) => state.calendarViewMode);
   const kanbanSearchQuery = useStore((state) => state.kanbanSearchQuery);
   const kanbanStackFilter = useStore((state) => state.kanbanStackFilter);
   const kanbanStatusFilter = useStore((state) => state.kanbanStatusFilter);
@@ -74,6 +76,8 @@ export const usePhysics = (
   const layoutCacheRef = useRef<Map<string, any>>(new Map()); // Cache for layout results
   const kanbanColumnScrollRef = useRef(0); // Manual scroll tracking for kanban columns
   const kanbanColumnMaxScrollRef = useRef(0); // Max scroll based on content height
+  const weekColumnScrollRef = useRef(0); // Manual scroll tracking for calendar week columns
+  const weekColumnMaxScrollRef = useRef(0); // Max scroll for calendar week columns
   const dragRef = useRef<{
     id: string;
     startX: number;
@@ -477,11 +481,31 @@ export const usePhysics = (
         }
 
         if (mode === 'kanban' && !isReadOnly) {
+          // Get fresh space state for kanbanColumns
+          const storeState = useStore.getState();
+          const space = storeState.spaces.find(s => s.id === storeState.activeSpaceId);
+          const columns = space?.kanbanColumns?.length ? space.kanbanColumns.length : 4;
+          const mainColumns = Math.max(1, columns - 1); // Exclude sidebar (index 0)
+          const SIDEBAR_W = 260;
+          const GAP = 20;
+          const PADDING = 40;
+          const sidebarEnd = PADDING + SIDEBAR_W + GAP;
+          // mainAreaWidth = viewport minus left padding, sidebar, gap, right padding
+          const mainAreaWidth = logicalWidth - sidebarEnd - PADDING;
+          // The CSS grid inside kanban-main has an extra 44px track for the "+" button
+          const availableWidth = mainAreaWidth - 44;
+          const colWidth = availableWidth / mainColumns;
 
-          const colWidth = logicalWidth / 4; let status: 'none' | 'todo' | 'doing' | 'done' = 'none';
-          if (lastMouseX > colWidth && lastMouseX < colWidth * 2) status = 'todo';
-          else if (lastMouseX >= colWidth * 2 && lastMouseX < colWidth * 3) status = 'doing';
-          else if (lastMouseX >= colWidth * 3) status = 'done';
+          // Determine column index from mouse X position
+          let colIndex = 0; // default: sidebar
+          if (lastMouseX > sidebarEnd) {
+            colIndex = Math.floor((lastMouseX - sidebarEnd) / colWidth) + 1;
+            colIndex = Math.min(colIndex, mainColumns); // Clamp to last column
+          }
+
+          const resolved = resolveKanbanCol(colIndex);
+          const status = resolved.status;
+
           const list = Array.from(thoughtMap.current.values()).filter(t => (t.id === id ? status : t.status) === status);
           const sorted = list.sort((a, b) => {
             const pA = physicsState.current.get(a.id); const pB = physicsState.current.get(b.id);
@@ -490,7 +514,11 @@ export const usePhysics = (
             return yA - yB;
           });
           sorted.forEach((t, index) => {
-            if (t.id === id) updateThought(t.id, { status, order: index }); else if (t.order !== index) updateThought(t.id, { order: index });
+            if (t.id === id) {
+              const updates: any = { status, order: index };
+              updates.kanbanCol = resolved.kanbanCol;
+              updateThought(t.id, updates);
+            } else if (t.order !== index) updateThought(t.id, { order: index });
           });
         } else if (mode === 'calendar' && !isReadOnly) {
           const sidebarWidth = 260; const gap = 20; const padding = 40; const mainLeft = padding + sidebarWidth + gap;
@@ -617,19 +645,37 @@ export const usePhysics = (
       const statuses: ('none' | 'todo' | 'doing' | 'done')[] = ['none', 'todo', 'doing', 'done'];
       statuses.forEach(status => {
         const list = allThoughts
-          .filter(t => t.status === status)
+          .filter(t => t.status === status && (t.kanbanCol === undefined || t.kanbanCol < 4))
           .filter(t => {
             const mS = !kanbanSearchQuery || 
               t.text.toLowerCase().includes(kanbanSearchQuery.toLowerCase()) || 
               (t.data?.type === 'text' ? t.data.content : ((t as any).content || '')).toLowerCase().includes(kanbanSearchQuery.toLowerCase());
             const mStack = !kanbanStackFilter || (t.stackId ? kanbanStackFilter.includes(t.stackId) : false);
-            const mStatus = !kanbanStatusFilter || kanbanStatusFilter.includes(t.status as 'todo' | 'doing' | 'done');
+            const mStatus = !kanbanStatusFilter || kanbanStatusFilter.some(f => f.startsWith('col-') ? t.kanbanCol === parseInt(f.slice(4), 10) : t.status === f);
             const mDate = !kanbanDateFilter || (t.startTime ? new Date(t.startTime).toISOString().split('T')[0] === kanbanDateFilter : false);
             const mType = !kanbanTypeFilter || kanbanTypeFilter.includes(t.type as import('../db').ThoughtType);
             return mS && mStack && mStatus && mDate && mType;
           })
           .sort((a, b) => a.order - b.order);
         columnMap.set(status, list);
+      });
+      // Group extra columns (4+) by kanbanCol — apply all filters
+      const kanbanCols = new Set(allThoughts.filter(t => t.kanbanCol !== undefined && t.kanbanCol >= 4).map(t => t.kanbanCol!));
+      kanbanCols.forEach(col => {
+        const list = allThoughts
+          .filter(t => t.kanbanCol === col)
+          .filter(t => {
+            const mS = !kanbanSearchQuery || 
+              t.text.toLowerCase().includes(kanbanSearchQuery.toLowerCase()) || 
+              (t.data?.type === 'text' ? t.data.content : ((t as any).content || '')).toLowerCase().includes(kanbanSearchQuery.toLowerCase());
+            const mStack = !kanbanStackFilter || (t.stackId ? kanbanStackFilter.includes(t.stackId) : false);
+            const mStatus = !kanbanStatusFilter || kanbanStatusFilter.some(f => f.startsWith('col-') ? t.kanbanCol === parseInt(f.slice(4), 10) : t.status === f);
+            const mDate = !kanbanDateFilter || (t.startTime ? new Date(t.startTime).toISOString().split('T')[0] === kanbanDateFilter : false);
+            const mType = !kanbanTypeFilter || kanbanTypeFilter.includes(t.type as import('../db').ThoughtType);
+            return mS && mStack && mStatus && mDate && mType;
+          })
+          .sort((a, b) => a.order - b.order);
+        columnMap.set(`kanban-${col}`, list);
       });
     } else if (mode === 'calendar') {
       allThoughts.forEach(t => {
@@ -640,7 +686,7 @@ export const usePhysics = (
           t.text.toLowerCase().includes(calendarSearchQuery.toLowerCase()) ||
           (t.data?.type === 'text' ? t.data.content : ((t as any).content || '')).toLowerCase().includes(calendarSearchQuery.toLowerCase());
         const matchesStack = !calendarStackFilter || (t.stackId ? calendarStackFilter.includes(t.stackId) : false);
-        const matchesStatus = !calendarStatusFilter || calendarStatusFilter.includes(t.status as 'todo' | 'doing' | 'done');
+        const matchesStatus = !calendarStatusFilter || calendarStatusFilter.some(f => f.startsWith('col-') ? t.kanbanCol === parseInt(f.slice(4), 10) : t.status === f);
         const matchesType = !calendarTypeFilter || calendarTypeFilter.includes(t.type as import('../db').ThoughtType);
         
         if (matchesSearch && matchesStack && matchesStatus && matchesType) {
@@ -655,12 +701,16 @@ export const usePhysics = (
 
     const elementHeights = elementHeightsRef.current;
 
-    const sbContent = document.getElementById('cal-sidebar-content');
+    const sbContent = document.getElementById(mode === 'kanban' ? 'kanban-sidebar-content' : 'cal-sidebar-content');
     const sbRect = sbContent?.getBoundingClientRect();
     
     // Kanban column content scroll/position
     const kanbanColContent = document.getElementById('kanban-column-content');
     const kanbanColRect = kanbanColContent?.getBoundingClientRect();
+
+    // Calendar week column scroll/position (kanban-style stacking)
+    const weekColContent = document.getElementById('cal-week-content');
+    const weekColRect = weekColContent?.getBoundingClientRect();
 
     const calendarCellMap = new Map<string, { x: number; y: number; w: number; h: number }>();
     if (mode === 'calendar') {
@@ -692,7 +742,7 @@ export const usePhysics = (
         t.text.toLowerCase().includes(spatialSearchQuery.toLowerCase()) ||
         (t.data?.type === 'text' ? t.data.content : ((t as any).content || '')).toLowerCase().includes(spatialSearchQuery.toLowerCase());
       const matchesStack = !spatialStackFilter || (t.stackId ? spatialStackFilter.includes(t.stackId) : false);
-      const matchesStatus = !spatialStatusFilter || spatialStatusFilter.includes(t.status as 'todo' | 'doing' | 'done');
+      const matchesStatus = !spatialStatusFilter || spatialStatusFilter.some(f => f.startsWith('col-') ? t.kanbanCol === parseInt(f.slice(4), 10) : t.status === f);
       const matchesDate = !spatialDateFilter || (t.startTime ? new Date(t.startTime).toISOString().split('T')[0] === spatialDateFilter : false);
       const matchesType = !spatialTypeFilter || spatialTypeFilter.includes(t.type as import('../db').ThoughtType);
       return matchesSearch && matchesStack && matchesStatus && matchesDate && matchesType;
@@ -722,11 +772,15 @@ export const usePhysics = (
       sidebarTop: sbRect ? (sbRect.top / globalScale) : 320,
       kanbanColumnScrollTop: kanbanColumnScrollRef.current,
       kanbanColumnTop: kanbanColRect ? (kanbanColRect.top / globalScale) : 320,
+      kanbanColumnsCount: activeSpace?.kanbanColumns?.length ? activeSpace.kanbanColumns.length - 1 : 3,
+      calendarWeekScrollTop: weekColumnScrollRef.current,
+      calendarWeekColumnTop: weekColRect ? (weekColRect.top / globalScale) : 320,
       isMobile,
       isReadOnly: useStore.getState().isReadOnly,
       isDemo: useStore.getState().isDemo,
       timeScale,
       transform: vT_visual,
+      calendarViewMode,
       calendarCellMap,
       thoughtMap: thoughtMap.current,
       columnMap,
@@ -826,6 +880,10 @@ export const usePhysics = (
         if (mode === 'kanban' && !result.isSidebar && result.columnHeight && result.columnHeight > maxKanbanColumnHeight) {
           maxKanbanColumnHeight = result.columnHeight;
         }
+        // Track week column height for scroll spacer
+        if (mode === 'calendar' && context.calendarViewMode === 'week' && !result.isSidebar && result.columnHeight && result.columnHeight > maxKanbanColumnHeight) {
+          maxKanbanColumnHeight = result.columnHeight;
+        }
         if (result.isSidebar && result.columnHeight && result.columnHeight > sidebarHeight) sidebarHeight = result.columnHeight;
       }
     });
@@ -834,18 +892,27 @@ export const usePhysics = (
 
     kMaxHeight.current = maxColHeight;
     sbHeight.current = sidebarHeight;
-    const spacer = document.getElementById('cal-sidebar-spacer');
+    const spacer = document.getElementById(mode === 'kanban' ? 'kanban-sidebar-spacer' : 'cal-sidebar-spacer');
     if (spacer) spacer.style.height = `${sidebarHeight + 40}px`;
     
-    // Kanban column spacer for scroll height
-    if (mode === 'kanban') {
-      const kanbanSpacer = document.getElementById('kanban-column-spacer');
-      if (kanbanSpacer) kanbanSpacer.style.height = `${maxKanbanColumnHeight + 40}px`;
+    // Kanban/Week column spacer for scroll height
+    if (mode === 'kanban' || context.calendarViewMode === 'week') {
+      const spacerId = mode === 'kanban' ? 'kanban-column-spacer' : 'cal-week-spacer';
+      const contentId = mode === 'kanban' ? 'kanban-column-content' : 'cal-week-content';
+      const spacer = document.getElementById(spacerId);
+      if (spacer) spacer.style.height = `${maxKanbanColumnHeight + 40}px`;
       
       // Calculate max scroll based on content height vs container height
-      const kanbanColContent = document.getElementById('kanban-column-content');
-      const containerHeight = kanbanColContent?.clientHeight || logicalHeight;
-      kanbanColumnMaxScrollRef.current = Math.max(0, maxKanbanColumnHeight - containerHeight + 100);
+      const content = document.getElementById(contentId);
+      const containerHeight = content?.clientHeight || logicalHeight;
+      const maxScroll = Math.max(0, maxKanbanColumnHeight - containerHeight + 100);
+      if (mode === 'kanban') {
+        kanbanColumnMaxScrollRef.current = maxScroll;
+      } else {
+        weekColumnMaxScrollRef.current = maxScroll;
+        // Clamp current scroll to valid range
+        weekColumnScrollRef.current = Math.min(weekColumnScrollRef.current, weekColumnMaxScrollRef.current);
+      }
     }
 
     // --- Connections & Styles ---
@@ -1014,8 +1081,8 @@ export const usePhysics = (
       
       // ===== BOUNDARY CLIPPING FOR CALENDAR & KANBAN =====
       // Prevent thoughts from visually overflowing outside their containers
-      const shouldClip = !isDraggingThis && !isSelected && (
-        (mode === 'calendar' && !t.startTime) || 
+      const shouldClip = !isDraggingThis && (
+        (mode === 'calendar' && (!t.startTime || context.calendarViewMode === 'week')) || 
         (mode === 'kanban')
       );
       
@@ -1023,14 +1090,14 @@ export const usePhysics = (
         let contentEl: HTMLElement | null = null;
         
         if (mode === 'kanban') {
-          // Kanban: sidebar thoughts use sidebar, column thoughts use column content
+          // Kanban: sidebar thoughts use kanban-sidebar-content, column thoughts use column content
           if (t.status === 'none') {
-            contentEl = document.getElementById('cal-sidebar-content');
+            contentEl = document.getElementById('kanban-sidebar-content');
           } else {
             contentEl = document.getElementById('kanban-column-content');
           }
-        } else {
-          // Calendar: unscheduled thoughts use sidebar
+        } else if (mode === 'calendar' && !t.startTime) {
+          // Calendar sidebar: unscheduled thoughts
           contentEl = document.getElementById('cal-sidebar-content');
         }
         
@@ -1045,10 +1112,32 @@ export const usePhysics = (
           el.style.visibility = (topClip > 95 || bottomClip > 95) ? 'hidden' : 'visible';
           el.style.pointerEvents = (topClip > 80 || bottomClip > 80) ? 'none' : 'auto';
         }
+        
+        // Week view: per-column clip using calendarCellMap
+        if (mode === 'calendar' && context.calendarViewMode === 'week' && t.startTime) {
+          const dateStr = new Date(t.startTime).toISOString().split('T')[0];
+          const cellRect = context.calendarCellMap?.get(dateStr);
+          if (cellRect) {
+            // Only clip to the content area BELOW the day header (62px)
+            // This prevents cards from overlapping the sticky day header when scrolled
+            const HEADER_HEIGHT = 62;
+            const cellContentTop = cellRect.y + HEADER_HEIGHT;
+            const cellContentBottom = cellRect.y + cellRect.h;
+            const cardTop = p.y;
+            const cardBottom = p.y + (h * p.scale);
+            
+            const topClip = Math.max(0, ((cellContentTop - cardTop) / (h * p.scale)) * 100);
+            const bottomClip = Math.max(0, ((cardBottom - cellContentBottom) / (h * p.scale)) * 100);
+            
+            el.style.clipPath = `inset(${topClip}% 0% ${bottomClip}% 0% round 16px)`;
+            el.style.visibility = (topClip > 95 || bottomClip > 95) ? 'hidden' : 'visible';
+            el.style.pointerEvents = (topClip > 80 || bottomClip > 80) ? 'none' : 'auto';
+          }
+        }
       }
     });
     if (ids.length > 0) snapNextFrame.current = false;
-  }, [activeSpace, activeSpaceId, calendarViewDate, hoveredCalDate, calendarSearchQuery, calendarStackFilter, calendarStatusFilter, calendarTypeFilter, kanbanSearchQuery, kanbanStackFilter, kanbanStatusFilter, kanbanDateFilter, kanbanTypeFilter, spatialSearchQuery, spatialStackFilter, spatialStatusFilter, spatialDateFilter, spatialTypeFilter, camera, linkingSourceId, getGlobalScale, applyHomeReturn, selectedThoughtId, physicsIntensity, stacks, canvasRef, isSpaceLoading]);
+  }, [activeSpace, activeSpaceId, calendarViewDate, calendarViewMode, hoveredCalDate, calendarSearchQuery, calendarStackFilter, calendarStatusFilter, calendarTypeFilter, kanbanSearchQuery, kanbanStackFilter, kanbanStatusFilter, kanbanDateFilter, kanbanTypeFilter, spatialSearchQuery, spatialStackFilter, spatialStatusFilter, spatialDateFilter, spatialTypeFilter, camera, linkingSourceId, getGlobalScale, applyHomeReturn, selectedThoughtId, physicsIntensity, stacks, canvasRef, isSpaceLoading]);
 
   useEffect(() => {
     const animate = () => { loop(); requestRef.current = requestAnimationFrame(animate); };
@@ -1123,6 +1212,8 @@ export const usePhysics = (
     elements,
     elementHeights: elementHeightsRef,
     kanbanColumnScrollRef,
-    kanbanColumnMaxScrollRef
+    kanbanColumnMaxScrollRef,
+    weekColumnScrollRef,
+    weekColumnMaxScrollRef
   };
 };

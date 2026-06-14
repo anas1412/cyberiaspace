@@ -13,6 +13,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Upload } from 'lucide-react';
 
 import { generateThumbnail, generateVideoThumbnail } from '../utils/image';
+import { resolveKanbanCol } from '../utils/thought';
 import { stripFileExtension } from '../utils/file';
 import { db } from '../db';
 
@@ -55,7 +56,7 @@ const Viewport: React.FC<{ isInteracting?: boolean }> = ({ isInteracting }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
   const camera = useCamera(activeSpace?.mode);
-  const { registerElement, registerWorld, registerGrid, handleMouseDown, handleTouchStart, isDragging, kanbanHeight, physicsState, elementHeights, kanbanColumnScrollRef, kanbanColumnMaxScrollRef } = usePhysics(canvasRef, camera);
+  const { registerElement, registerWorld, registerGrid, handleMouseDown, handleTouchStart, isDragging, kanbanHeight, physicsState, elementHeights, kanbanColumnScrollRef, kanbanColumnMaxScrollRef, weekColumnScrollRef, weekColumnMaxScrollRef } = usePhysics(canvasRef, camera);
 
   const getGlobalScale = useCallback(() => {
     const body = document.querySelector('.app-body') || document.body;
@@ -83,7 +84,9 @@ const Viewport: React.FC<{ isInteracting?: boolean }> = ({ isInteracting }) => {
     isDemo,
     isInteracting,
     kanbanColumnScrollRef,
-    kanbanColumnMaxScrollRef
+    kanbanColumnMaxScrollRef,
+    weekColumnScrollRef,
+    weekColumnMaxScrollRef
   });
 
   useEffect(() => {
@@ -319,11 +322,22 @@ const Viewport: React.FC<{ isInteracting?: boolean }> = ({ isInteracting }) => {
         if (activeSpace?.mode === 'kanban') {
           const s = getGlobalScale();
           const lx = lastMousePos.current.rawX / s;
-          const width = window.innerWidth / s;
-          if (lx < width * 0.25) newThoughtProps.status = 'none';
-          else if (lx < width * 0.50) newThoughtProps.status = 'todo';
-          else if (lx < width * 0.75) newThoughtProps.status = 'doing';
-          else newThoughtProps.status = 'done';
+          const cols = activeSpace.kanbanColumns ?? ['Unplanned', 'To Do', 'Doing', 'Done'];
+          const sidebarWidth = 260;
+          const addColWidth = 44;
+          const remainingWidth = window.innerWidth / s - sidebarWidth - addColWidth;
+          const colWidth = remainingWidth / Math.max(cols.length - 1, 1);
+          const mainStartX = sidebarWidth;
+
+          // Determine which column the mouse is over
+          let kanbanCol = 0; // default: sidebar (index 0)
+          if (lx > mainStartX) {
+            kanbanCol = Math.floor((lx - mainStartX) / colWidth) + 1;
+            kanbanCol = Math.min(kanbanCol, cols.length - 1);
+          }
+          const resolved = resolveKanbanCol(kanbanCol);
+          newThoughtProps.status = resolved.status;
+          newThoughtProps.kanbanCol = resolved.kanbanCol;
         } else if (activeSpace?.mode === 'calendar') {
           const elements = document.elementsFromPoint(lastMousePos.current.rawX, lastMousePos.current.rawY);
           const cell = elements.find(el => (el as HTMLElement).classList.contains('cal-cell'));

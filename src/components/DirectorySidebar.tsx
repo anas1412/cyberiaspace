@@ -2,6 +2,7 @@ import React, { useCallback, useState } from 'react';
 import { useStore } from '../store/useStore';
 import { type DirectoryGroup } from '../utils/treeTransformation';
 import { getThoughtConfig } from './thought/registry';
+import { getColumnColor } from './thought/constants';
 import {
   ChevronDown,
   ChevronRight,
@@ -224,14 +225,19 @@ export const DirectorySidebar: React.FC<DirectorySidebarProps> = ({ groups }) =>
                         {thought.text || 'Untitled'}
                       </span>
                       {/* Status dot */}
-                      {thought.status && thought.status !== 'none' && (
+                      {(thought.status && thought.status !== 'none') ? (
                         <span
                           className={cn(
                             'w-1.5 h-1.5 rounded-full flex-shrink-0',
                             STATUS_COLORS[thought.status] ?? 'text-[var(--text-muted)]',
                           )}
                         />
-                      )}
+                      ) : thought.kanbanCol !== undefined && thought.kanbanCol >= 4 ? (
+                        <span
+                          className="w-1.5 h-1.5 rounded-full flex-shrink-0"
+                          style={{ backgroundColor: getColumnColor(thought.kanbanCol) }}
+                        />
+                      ) : null}
                       {/* Priority indicator */}
                       {thought.priority && thought.priority !== 'none' && (
                         <span

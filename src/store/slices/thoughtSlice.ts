@@ -2,7 +2,7 @@ import { type StateCreator } from 'zustand';
 import { type CyberiaState } from '../types';
 import { db, type Thought, type Stack, TYPE_BASE_LAYERS } from '../../db';
 import { useModalStore } from '../useModalStore';
-import { sanitizeStatus, sanitizePriority } from '../../utils/thought';
+import { sanitizeStatus, sanitizePriority, resolveKanbanCol } from '../../utils/thought';
 import { ulid } from 'ulid';
 import { getThoughtConfig } from '../../components/thought/registry';
 import { checkStackLimit, showStackLimitModal, MAX_THOUGHTS_PER_STACK } from './stackSlice';
@@ -64,6 +64,12 @@ export const createThoughtSlice: StateCreator<CyberiaState, [], [], any> = (set,
     // Ensure nested values win if they were explicitly provided in partialThought
     thought.status = sanitizeStatus(thought.status);
     thought.priority = sanitizePriority(thought.priority);
+    // If kanbanCol is set, derive status from it (columns 1-3 → todo/doing/done, 4+ → none)
+    if (thought.kanbanCol !== undefined) {
+      const resolved = resolveKanbanCol(thought.kanbanCol);
+      thought.status = resolved.status;
+      thought.kanbanCol = resolved.kanbanCol;
+    }
 
     const result = await db.thoughts.add(thought);
     if (result) {
@@ -123,6 +129,11 @@ export const createThoughtSlice: StateCreator<CyberiaState, [], [], any> = (set,
 
       thought.status = sanitizeStatus(thought.status);
       thought.priority = sanitizePriority(thought.priority);
+      if (thought.kanbanCol !== undefined) {
+        const resolved = resolveKanbanCol(thought.kanbanCol);
+        thought.status = resolved.status;
+        thought.kanbanCol = resolved.kanbanCol;
+      }
 
       thoughtsToAdd.push(thought);
     }
@@ -146,6 +157,11 @@ export const createThoughtSlice: StateCreator<CyberiaState, [], [], any> = (set,
 
     if (updates.status) updates.status = sanitizeStatus(updates.status);
     if (updates.priority) updates.priority = sanitizePriority(updates.priority);
+    if (updates.kanbanCol !== undefined) {
+      const resolved = resolveKanbanCol(updates.kanbanCol);
+      updates.status = resolved.status;
+      updates.kanbanCol = resolved.kanbanCol;
+    }
 
     if (updates.type && updates.type !== thought.type) {
       updates.layer = TYPE_BASE_LAYERS[updates.type] ?? 0;
@@ -207,6 +223,11 @@ export const createThoughtSlice: StateCreator<CyberiaState, [], [], any> = (set,
 
     if (updates.status) updates.status = sanitizeStatus(updates.status);
     if (updates.priority) updates.priority = sanitizePriority(updates.priority);
+    if (updates.kanbanCol !== undefined) {
+      const resolved = resolveKanbanCol(updates.kanbanCol);
+      updates.status = resolved.status;
+      updates.kanbanCol = resolved.kanbanCol;
+    }
 
     if (updates.type) {
       updates.layer = TYPE_BASE_LAYERS[updates.type] ?? 0;

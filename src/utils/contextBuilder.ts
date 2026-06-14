@@ -39,6 +39,7 @@ export const serializeWorkspace = (
       description: t.description !== t.text ? t.description?.substring(0, 100) : undefined,
       type: t.type,
       status: t.status !== 'none' ? t.status : undefined,
+      kanbanCol: t.kanbanCol,
       priority: t.priority !== 'none' ? t.priority : undefined,
       startTime: sanitizeDate(t.startTime),
       endTime: sanitizeDate(t.endTime),
@@ -75,7 +76,8 @@ export const serializeWorkspace = (
       id: activeSpace.id,
       name: activeSpace.name,
       mode: activeSpace.mode,
-      physics: activeSpace.physics
+      physics: activeSpace.physics,
+      kanbanColumns: activeSpace.kanbanColumns,
     },
     stacks: stacks.map(s => ({ id: s.id, name: s.name, color: s.color })),
     thoughts: simplifiedThoughts

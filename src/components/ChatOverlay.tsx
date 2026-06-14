@@ -954,12 +954,14 @@ const ChatOverlay: React.FC = () => {
 
 AVAILABLE TOOLS (use the exact function name):
 - create_stack(ids: string[], name: string) — Link thoughts (by their IDs) into a new or existing stack. You MUST pick specific thought IDs from the workspace context.
-- create_thought(text: string, type?: string, stackName?: string, status?: string, priority?: string) — Create a single thought
-- create_thoughts(items: array of {text, type?, stackName?, ...}) — Create multiple thoughts at once
-- update_thought(id: string, text?: string, stackName?: string, ...) — Update a thought's properties
+- create_thought(text: string, type?: string, stackName?: string, status?: string, kanbanCol?: number, priority?: string) — Create a single thought
+- create_thoughts(items: array of {text, type?, stackName?, ...}) — Create multiple thoughts at once (each item accepts the same params as create_thought)
+- update_thought(id: string, text?: string, stackName?: string, kanbanCol?: number, ...) — Update a thought's properties
 - delete_thoughts(ids: string[]) — Delete thoughts by their IDs
 - get_thought_details(ids: string[]) — Get full details of specific thoughts
 - web_search(query: string) — Search the web for current information
+
+COLUMNS / PROGRESS: Workspace context includes kanbanColumns (named column list) and each thought's kanbanCol (numeric index). Column 0 = Unplanned/Sidebar, 1 = To Do, 2 = Doing, 3 = Done, 4+ = custom. Use kanbanCol to place thoughts in the correct column (e.g. kanbanCol=1 for "To Do"). When you set kanbanCol, the status is derived automatically.
 
 CRITICAL: Tool call parameters MUST include thought IDs from the workspace context. The 'ids' parameter in tools like 'create_stack' requires specific thought IDs — scan the context JSON and pick the right ones. Without IDs the tool will fail.
 

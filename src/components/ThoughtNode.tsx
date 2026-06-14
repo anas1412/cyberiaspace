@@ -53,8 +53,10 @@ const ThoughtNode: React.FC<ThoughtNodeProps> = React.memo(({ thought, registerE
 
   const isSpatial = activeSpace?.mode === 'spatial';
   const isCalendar = activeSpace?.mode === 'calendar';
-  const isDateHovered = isCalendar && hoveredCalDate !== null && sanitizeDate(thought.startTime) === hoveredCalDate;
-  const isExpanded = (isCalendar && !thought.startTime) || isDateHovered || (isCalendar && isSelected);
+  const calViewMode = useStore((state) => (state as any).calendarViewMode as string | undefined);
+  // Week view shows full cards (always expanded); month view only fans out on hover
+  const isCalMonthHover = isCalendar && calViewMode !== 'week' && hoveredCalDate !== null && sanitizeDate(thought.startTime) === hoveredCalDate;
+  const isExpanded = (isCalendar && !thought.startTime) || isCalMonthHover || (isCalendar && isSelected) || (isCalendar && calViewMode === 'week');
 
   const { content } = useThoughtPayload(thought);
 

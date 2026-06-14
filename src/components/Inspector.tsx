@@ -8,6 +8,7 @@ import {
   X, ArrowUp, ArrowDown, Save, Maximize2, Trash2, Palette, Archive, ArchiveRestore
 } from 'lucide-react';
 import { STACK_COLORS } from '../constants';
+import { getColumnColor } from './thought/constants';
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -99,43 +100,30 @@ const Inspector: React.FC = () => {
   const bringToFront = useStore((state) => state.bringToFront);
   const sendToBack = useStore((state) => state.sendToBack);
   const isReadOnly = useStore((state) => state.isReadOnly);
+  const activeSpaceId = useStore((state) => state.activeSpaceId);
+  const spaces = useStore((state) => state.spaces);
 
   const { openModal } = useModalStore();
 
   const thought = thoughts.find((t) => t.id === selectedThoughtId);
   const stack = stacks.find((s) => s.id === thought?.stackId);
+  const activeSpace = spaces.find((s) => s.id === activeSpaceId);
 
-  const [localText, setLocalText] = React.useState('');
-  const [localDesc, setLocalDesc] = React.useState('');
-  const [localStartTime, setLocalStartTime] = React.useState<number | null>(null);
-  const [localEndTime, setLocalEndTime] = React.useState<number | null>(null);
-  const [localIsAllDay, setLocalIsAllDay] = React.useState(false);
-  const [localReminders, setLocalReminders] = React.useState<any[]>([]);
-  const [localRecurrenceRule, setLocalRecurrenceRule] = React.useState<string | null>(null);
-  const [localLocation, setLocalLocation] = React.useState<string | null>(null);
-  const [localStackName, setLocalStackName] = React.useState('');
+  // Column name mapping — uses kanbanColumns from space (any mode), falls back to defaults
+  const kanbanStatusLabels: Record<string, string> = React.useMemo(() => {
+    const cols = activeSpace?.kanbanColumns ?? ['Unplanned', 'To Do', 'Doing', 'Done'];
+    return {
+      none: cols[0] ?? 'Unplanned',
+      todo: cols[1] ?? 'To Do',
+      doing: cols[2] ?? 'Doing',
+      done: cols[3] ?? 'Done',
+    };
+  }, [activeSpace?.kanbanColumns]);
+
   const [pendingType, setPendingType] = React.useState<ThoughtType | null>(null);
   const [activeTab, setActiveTab] = React.useState<'content' | 'status' | 'layout'>('content');
 
   const titleInputRef = React.useRef<HTMLInputElement>(null);
-
-  // Reset local state when selected thought changes
-  React.useEffect(() => {
-    if (thought) {
-      setLocalText(thought.text || '');
-      setLocalDesc(thought.description || '');
-      setLocalStartTime(thought.startTime || null);
-      setLocalEndTime(thought.endTime || null);
-      setLocalIsAllDay(thought.isAllDay ?? true);
-      setLocalReminders(thought.reminders || []);
-      setLocalRecurrenceRule(thought.recurrenceRule || null);
-      setLocalLocation(thought.location || null);
-      setPendingType(null);
-    }
-    if (stack) {
-      setLocalStackName(stack.name || '');
-    }
-  }, [selectedThoughtId, stack?.id]);
 
   React.useEffect(() => {
     const focusId = useStore.getState().inspectorTitleFocusId;
@@ -186,37 +174,21 @@ const Inspector: React.FC = () => {
 
   const handleDateTimeChange = (updates: { startTime?: number | null; endTime?: number | null; isAllDay?: boolean }) => {
     if (!thought) return;
-    const newUpdates: Partial<typeof thought> = {};
-    if (updates.startTime !== undefined) {
-      setLocalStartTime(updates.startTime);
-      newUpdates.startTime = updates.startTime;
-    }
-    if (updates.endTime !== undefined) {
-      setLocalEndTime(updates.endTime);
-      newUpdates.endTime = updates.endTime;
-    }
-    if (updates.isAllDay !== undefined) {
-      setLocalIsAllDay(updates.isAllDay);
-      newUpdates.isAllDay = updates.isAllDay;
-    }
-    updateThought(thought.id, newUpdates);
+    updateThought(thought.id, updates);
   };
 
   const handleReminderChange = (reminders: any[]) => {
     if (!thought) return;
-    setLocalReminders(reminders);
     updateThought(thought.id, { reminders });
   };
 
   const handleRecurrenceChange = (recurrenceRule: string | null) => {
     if (!thought) return;
-    setLocalRecurrenceRule(recurrenceRule);
     updateThought(thought.id, { recurrenceRule });
   };
 
   const handleLocationChange = (location: string) => {
     if (!thought) return;
-    setLocalLocation(location);
     updateThought(thought.id, { location });
   };
 
@@ -305,9 +277,8 @@ const Inspector: React.FC = () => {
                           ref={titleInputRef}
                           type="text"
                           readOnly={isReadOnly}
-                          value={localText}
+                          value={thought.text || ''}
                           onChange={(e) => {
-                            setLocalText(e.target.value);
                             if (!isReadOnly && thought) {
                               updateThought(thought.id, { text: e.target.value });
                             }
@@ -325,9 +296,8 @@ className={cn(
                         <label className="text-[10px] uppercase font-bold tracking-widest text-[var(--text-muted)] ml-1">Note</label>
                         <textarea
                           readOnly={isReadOnly}
-                          value={localDesc}
+                          value={thought.description || ''}
                           onChange={(e) => {
-                            setLocalDesc(e.target.value);
                             if (!isReadOnly && thought) {
                               updateThought(thought.id, { description: e.target.value });
                             }
@@ -405,17 +375,17 @@ className={cn(
                     <div className="space-y-3">
                       <label className="text-[10px] uppercase font-bold tracking-widest text-[var(--text-muted)] ml-1">Date & Time</label>
                       <DateTimePicker
-                        startTime={localStartTime}
-                        endTime={localEndTime}
-                        isAllDay={localIsAllDay}
+                        startTime={thought.startTime || null}
+                        endTime={thought.endTime || null}
+                        isAllDay={thought.isAllDay ?? true}
                         onChange={handleDateTimeChange}
                         disabled={isReadOnly}
                         showReminder={true}
                         showRepeat={true}
                         showLocation={true}
-                        reminder={localReminders}
-                        recurrenceRule={localRecurrenceRule}
-                        location={localLocation}
+                        reminder={thought.reminders || []}
+                        recurrenceRule={thought.recurrenceRule || null}
+                        location={thought.location || null}
                         onReminderChange={handleReminderChange}
                         onRecurrenceChange={handleRecurrenceChange}
                         onLocationChange={handleLocationChange}
@@ -424,29 +394,56 @@ className={cn(
 
                     <div className="space-y-3">
                       <label className="text-[10px] uppercase font-bold tracking-widest text-[var(--text-muted)] ml-1">Progress</label>
-                      <div className="grid grid-cols-4 gap-1.5">
-                        {(['none', 'todo', 'doing', 'done'] as const).map((s) => (
-                          <button
-                            key={s}
-                            disabled={isReadOnly}
-                            onClick={() => !isReadOnly && updateThought(thought.id, { status: s })}
-className={cn(
-                               "border rounded-xl py-2.5 text-[9px] font-medium tracking-wide transition-all",
-                               thought.status === s
-                                 ? {
-                                   'none': 'bg-[var(--glass-bg)] border-[var(--glass-border)] text-[var(--text-primary)] shadow-md',
-                                   'todo': 'bg-[var(--status-todo)]/10 border-[var(--status-todo)] text-[var(--status-todo)] shadow-[0_0_15px_rgba(99,102,241,0.15)]',
-                                   'doing': 'bg-[var(--status-doing)]/10 border-[var(--status-doing)] text-[var(--status-doing)] shadow-[0_0_15px_rgba(234,179,8,0.15)]',
-                                   'done': 'bg-[var(--status-done)]/10 border-[var(--status-done)] text-[var(--status-done)] shadow-[0_0_15px_rgba(34,197,94,0.15)]',
-                                 }[s]
-                                 : "bg-[var(--glass-bg)] border-[var(--border)] text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-page)] hover:border-[var(--glass-border)]",
-                               isReadOnly && thought.status !== s && "opacity-30 grayscale cursor-default"
-                             )}
-                          >
-                            {s}
-                          </button>
-                        ))}
-                      </div>
+                      {(() => {
+                        // Status buttons always use active space's kanbanColumns (any mode); fall back to defaults
+                        const columns = activeSpace?.kanbanColumns;
+                        const statusEntries: { key: string; status: 'none' | 'todo' | 'doing' | 'done'; label: string; colIdx: number }[] =
+                          columns
+                            ? columns.map((name, idx) => ({
+                                key: `col-${idx}`,
+                                status: idx === 0 ? 'none' as const : idx === 1 ? 'todo' as const : idx === 2 ? 'doing' as const : idx === 3 ? 'done' as const : 'none' as const,
+                                label: name,
+                                colIdx: idx,
+                              }))
+                            : (['none', 'todo', 'doing', 'done'] as const).map((s, idx) => ({
+                                key: s,
+                                status: s,
+                                label: kanbanStatusLabels[s],
+                                colIdx: idx,
+                              }));
+                        return (
+                          <div className="flex flex-wrap gap-1.5">
+                            {statusEntries.map(({ key, status, label, colIdx }) => {
+                              const isActive = thought.kanbanCol !== undefined
+                                ? thought.kanbanCol === colIdx
+                                : thought.status === status;
+                              const colColor = getColumnColor(colIdx);
+                              return (
+                                <button
+                                  key={key}
+                                  disabled={isReadOnly}
+                                  onClick={() => !isReadOnly && updateThought(thought.id, { status, kanbanCol: colIdx })}
+                                  className={cn(
+                                    "border rounded-xl py-2.5 px-3 text-[9px] font-medium tracking-wide transition-all flex-shrink-0 whitespace-nowrap",
+                                    isActive
+                                      ? "shadow-md"
+                                      : "bg-[var(--glass-bg)] border-[var(--border)] text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-page)] hover:border-[var(--glass-border)]",
+                                    isReadOnly && !isActive && "opacity-30 grayscale cursor-default"
+                                  )}
+                                  style={isActive ? {
+                                    backgroundColor: `${colColor}18`,
+                                    borderColor: colColor,
+                                    color: colColor,
+                                    boxShadow: `0 0 12px ${colColor}40`,
+                                  } : undefined}
+                                >
+                                  {label}
+                                </button>
+                              );
+                            })}
+                          </div>
+                        );
+                      })()}
                     </div>
 
                     <div className="space-y-3">
@@ -507,12 +504,9 @@ className={cn(
                             <input
                               type="text"
                               readOnly={isReadOnly}
-                              value={localStackName}
+                              value={stack.name || ''}
                               onChange={(e) => {
-                                setLocalStackName(e.target.value);
                                 if (!isReadOnly) {
-                                  // Instant store update
-                                  // Use updateStack which handles Zustand + DB properly
                                   updateStack(stack.id, { name: e.target.value });
                                 }
                               }}

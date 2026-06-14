@@ -1,9 +1,10 @@
 import React, { useMemo } from 'react';
-import { Link2, Link2Off, Calendar, Circle, Clock, CheckCircle2 } from 'lucide-react';
+import { Link2, Link2Off, Calendar, Circle, Clock, CheckCircle2, CircleDot } from 'lucide-react';
 import { type Thought } from '../../db';
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
-import { STATUS_COLORS } from './constants';
+import { STATUS_COLORS, getColumnColor } from './constants';
+import { useStore } from '../../store/useStore';
 import { formatRelativeDate } from '../../utils/date';
 
 function cn(...inputs: ClassValue[]) {
@@ -30,6 +31,38 @@ export const ThoughtFooter: React.FC<ThoughtFooterProps> = ({
   isArchived = false
 }) => {
   const formattedDate = useMemo(() => formatRelativeDate(thought.startTime), [thought.startTime]);
+  const kanbanColumns = useStore((state) => {
+    const space = state.spaces.find(s => s.id === state.activeSpaceId);
+    return space?.kanbanColumns;
+  });
+
+  // Show a status/progress badge when:
+  // - Standard column (status = todo/doing/done): show existing badge
+  // - Custom column (kanbanCol >= 4, status is none): show column-colored badge
+  const statusBadge = useMemo(() => {
+    if (thought.status !== 'none') {
+      // Standard status badge (cols 1-3)
+      const color = STATUS_COLORS[thought.status as keyof typeof STATUS_COLORS];
+      return {
+        color,
+        label: thought.status,
+        icon: thought.status === 'todo' ? <Circle className="w-2.5 h-2.5" />
+            : thought.status === 'doing' ? <Clock className="w-2.5 h-2.5" />
+            : <CheckCircle2 className="w-2.5 h-2.5" />,
+      };
+    }
+    if (thought.kanbanCol !== undefined && thought.kanbanCol >= 4) {
+      // Custom column badge (cols 4+)
+      const color = getColumnColor(thought.kanbanCol);
+      const colName = kanbanColumns?.[thought.kanbanCol] || `Col ${thought.kanbanCol}`;
+      return {
+        color,
+        label: colName,
+        icon: <CircleDot className="w-2.5 h-2.5" />,
+      };
+    }
+    return null;
+  }, [thought.status, thought.kanbanCol, kanbanColumns]);
 
   return (
     <div className={cn(
@@ -45,19 +78,17 @@ export const ThoughtFooter: React.FC<ThoughtFooterProps> = ({
         
         <div className="flex items-center justify-between min-h-[15px] pt-3 gap-2">
           <div className="flex items-center gap-1.5 flex-wrap">
-            {thought.status !== 'none' && (
+            {statusBadge && (
               <div 
                 className="flex items-center gap-1 text-[9px] font-bold px-2 py-0.5 rounded-lg border shadow-sm"
                 style={{
-                  color: STATUS_COLORS[thought.status as keyof typeof STATUS_COLORS],
-                  borderColor: `color-mix(in srgb, ${STATUS_COLORS[thought.status as keyof typeof STATUS_COLORS]} 20%, transparent)`,
-                  backgroundColor: `color-mix(in srgb, ${STATUS_COLORS[thought.status as keyof typeof STATUS_COLORS]} 10%, transparent)`,
+                  color: statusBadge.color,
+                  borderColor: `color-mix(in srgb, ${statusBadge.color} 20%, transparent)`,
+                  backgroundColor: `color-mix(in srgb, ${statusBadge.color} 10%, transparent)`,
                 }}
               >
-                {thought.status === 'todo' && <Circle className="w-2.5 h-2.5" />}
-                {thought.status === 'doing' && <Clock className="w-2.5 h-2.5" />}
-                {thought.status === 'done' && <CheckCircle2 className="w-2.5 h-2.5" />}
-                <span className="uppercase tracking-wider">{thought.status}</span>
+                {statusBadge.icon}
+                <span className="uppercase tracking-wider">{statusBadge.label}</span>
               </div>
             )}
             {thought.startTime && formattedDate && (

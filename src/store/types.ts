@@ -11,20 +11,21 @@ export interface CyberiaState {
   activeFocusId: string | null;
   focusType: 'text' | 'table' | 'paint' | 'tasks' | 'embed' | 'file' | null;
   calendarViewDate: Date;
+  calendarViewMode: 'month' | 'week' | 'agenda';
   hoveredCalDate: string | null;
   linkingSourceId: string | null;
   calendarSearchQuery: string;
   calendarStackFilter: string | null;
-  calendarStatusFilter: 'none' | 'todo' | 'doing' | 'done' | null;
+  calendarStatusFilter: string[] | null;
   calendarTypeFilter: ThoughtType[] | null;
   kanbanSearchQuery: string;
   kanbanStackFilter: string | null;
-  kanbanStatusFilter: 'none' | 'todo' | 'doing' | 'done' | null;
+  kanbanStatusFilter: string[] | null;
   kanbanDateFilter: string | null;
   kanbanTypeFilter: ThoughtType[] | null;
   spatialSearchQuery: string;
   spatialStackFilter: string | null;
-  spatialStatusFilter: 'none' | 'todo' | 'doing' | 'done' | null;
+  spatialStatusFilter: string[] | null;
   spatialDateFilter: string | null;
   spatialTypeFilter: ThoughtType[] | null;
   showArchived: boolean;
@@ -89,6 +90,7 @@ export interface CyberiaState {
 
   setActiveSpace: (id: string) => Promise<void>;
   setCalendarViewDate: (date: Date) => void;
+  setCalendarViewMode: (mode: 'month' | 'week' | 'agenda') => void;
   addSpace: (name: string) => Promise<void>;
   updateSpace: (id: string, updates: Partial<Space>) => Promise<void>;
   deleteSpace: (id: string) => Promise<void>;
@@ -122,16 +124,16 @@ export interface CyberiaState {
   setHoveredCalDate: (date: string | null) => void;
   setCalendarSearchQuery: (query: string) => void;
   setCalendarStackFilter: (stackIds: string[] | null) => void;
-  setCalendarStatusFilter: (statuses: Array<'todo' | 'doing' | 'done'> | null) => void;
+  setCalendarStatusFilter: (statuses: string[] | null) => void;
   setCalendarTypeFilter: (types: ThoughtType[] | null) => void;
   setKanbanSearchQuery: (query: string) => void;
   setKanbanStackFilter: (stackIds: string[] | null) => void;
-  setKanbanStatusFilter: (statuses: Array<'todo' | 'doing' | 'done'> | null) => void;
+  setKanbanStatusFilter: (statuses: string[] | null) => void;
   setKanbanDateFilter: (date: string | null) => void;
   setKanbanTypeFilter: (types: ThoughtType[] | null) => void;
   setSpatialSearchQuery: (query: string) => void;
   setSpatialStackFilter: (stackIds: string[] | null) => void;
-  setSpatialStatusFilter: (statuses: Array<'todo' | 'doing' | 'done'> | null) => void;
+  setSpatialStatusFilter: (statuses: string[] | null) => void;
   setSpatialDateFilter: (date: string | null) => void;
   setSpatialTypeFilter: (types: ThoughtType[] | null) => void;
 

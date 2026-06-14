@@ -1,7 +1,8 @@
 import React, { useEffect, useRef } from 'react';
 import { useStore } from '../../store/useStore';
 import { useModalStore } from '../../store/useModalStore';
-import { Search, X, Circle, Clock, CheckCircle2, Calendar, Tag, Archive, Eye, EyeOff, ChevronDown } from 'lucide-react';
+import { Search, X, Circle, Clock, CheckCircle2, Calendar, Tag, Archive, Eye, EyeOff, ChevronDown, CircleDot } from 'lucide-react';
+import { getColumnColor } from '../thought/constants';
 import { motion, AnimatePresence } from 'framer-motion';
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
@@ -13,11 +14,7 @@ function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
 
-const STATUS_OPTIONS = [
-  { value: 'todo', label: 'Todo', icon: Circle, color: 'var(--status-todo)' },
-  { value: 'doing', label: 'Doing', icon: Clock, color: 'var(--status-doing)' },
-  { value: 'done', label: 'Done', icon: CheckCircle2, color: 'var(--status-done)' },
-];
+const STATUS_ICONS = { none: Circle, todo: Circle, doing: Clock, done: CheckCircle2 } as const;
 
 interface SearchOverlayProps {
   isOpen: boolean;
@@ -115,7 +112,7 @@ export const SearchOverlay: React.FC<SearchOverlayProps> = ({ isOpen, onClose })
   const calendarStatusFilter = useStore((state) => state.calendarStatusFilter);
   const setCalendarStatusFilter = useStore((state) => state.setCalendarStatusFilter);
 
-  const statusFilter = (mode === 'spatial' ? spatialStatusFilter : mode === 'kanban' ? kanbanStatusFilter : calendarStatusFilter) as Array<'todo' | 'doing' | 'done'> | null;
+  const statusFilter: string[] | null = (mode === 'spatial' ? spatialStatusFilter : mode === 'kanban' ? kanbanStatusFilter : calendarStatusFilter);
   const setStatusFilter = mode === 'spatial' ? setSpatialStatusFilter : mode === 'kanban' ? setKanbanStatusFilter : setCalendarStatusFilter;
 
   // Mode-specific date filter
@@ -213,37 +210,46 @@ export const SearchOverlay: React.FC<SearchOverlayProps> = ({ isOpen, onClose })
 
             {/* Filter Chips */}
             <div className="p-5 space-y-5 max-h-[60vh] overflow-y-auto custom-scroll">
-              {/* Status */}
-              {!isDirectoryMode && mode !== 'kanban' && (
+              {/* Progress columns — dynamically built from active space's kanbanColumns */}
+              {!isDirectoryMode && (
                 <div>
                   <div className="flex items-center gap-2 mb-2.5">
                     <Circle className="w-3 h-3 text-[var(--text-muted)]" />
-                    <span className="text-[9px] font-black tracking-widest uppercase text-[var(--text-muted)]">Status</span>
+                    <span className="text-[9px] font-black tracking-widest uppercase text-[var(--text-muted)]">Progress</span>
                   </div>
                   <div className="flex flex-wrap gap-1.5">
-                    {STATUS_OPTIONS.map((status) => {
-                      const Icon = status.icon;
-                      const isActive = statusFilter?.includes(status.value as 'todo' | 'doing' | 'done') ?? false;
+                    {(activeSpace?.kanbanColumns ?? ['Unplanned', 'To Do', 'Doing', 'Done']).map((name, idx) => {
+                      const filterVal: string = idx <= 3
+                        ? (['none', 'todo', 'doing', 'done'] as const)[idx]
+                        : `col-${idx}`;
+                      const isActive = statusFilter?.includes(filterVal) ?? false;
+                      const colColor = getColumnColor(idx);
+                      const statusKey = ['none', 'todo', 'doing', 'done'] as const;
+                      const Icon = idx <= 3 ? STATUS_ICONS[statusKey[idx]] : CircleDot;
                       return (
                         <button
-                          key={status.value}
+                          key={idx}
                           onClick={() => {
-                            const val = status.value as 'todo' | 'doing' | 'done';
                             const current = statusFilter ?? [];
-                            const next = current.includes(val)
-                              ? current.filter(s => s !== val)
-                              : [...current, val];
+                            const next = current.includes(filterVal)
+                              ? current.filter(s => s !== filterVal)
+                              : [...current, filterVal];
                             setStatusFilter(next.length ? next : null);
                           }}
                           className={cn(
                             "h-7 px-2.5 rounded-lg text-[9px] font-medium tracking-wider border transition-all flex items-center gap-1.5",
                             isActive
-                              ? "bg-[var(--accent)]/20 border-[var(--accent)] text-[var(--text-primary)]"
+                              ? "shadow-sm"
                               : "bg-[var(--bg-page)] border-transparent text-[var(--text-muted)] hover:text-[var(--text-primary)]"
                           )}
+                          style={isActive ? {
+                            backgroundColor: `${colColor}18`,
+                            borderColor: colColor,
+                            color: colColor,
+                          } : {}}
                         >
-                          <Icon className="w-2.5 h-2.5" style={{ color: status.color }} />
-                          {status.label}
+                          <Icon className="w-2.5 h-2.5" style={{ color: colColor }} />
+                          {name}
                         </button>
                       );
                     })}

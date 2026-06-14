@@ -49,6 +49,8 @@ export type ThoughtPayload =
 // Entity Interfaces
 // ============================================
 
+export const DEFAULT_KANBAN_COLUMNS = ['Unplanned', 'To Do', 'Doing', 'Done'];
+
 interface Space {
   id: string; // ULID
   name: string;
@@ -62,6 +64,7 @@ interface Space {
   updatedAt?: number | null;
   theme?: 'dark' | 'light';
   customBg?: string | null;
+  kanbanColumns?: string[];
 }
 
 interface Stack {
@@ -89,6 +92,7 @@ interface Thought {
   deletedAt?: number | null;
   archivedAt?: number | null;
   status: 'none' | 'todo' | 'doing' | 'done';
+  kanbanCol?: number;
   startTime?: number | null;
   endTime?: number | null;
   isAllDay?: boolean;
