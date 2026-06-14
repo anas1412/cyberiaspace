@@ -20,13 +20,7 @@ export interface ImageContentBlock {
   image_url: { url: string };
 }
 
-export interface FileContentBlock {
-  type: 'file';
-  source: { url: string; media_type: string };
-  title?: string;
-}
-
-export type ContentBlock = TextContentBlock | ImageContentBlock | FileContentBlock;
+export type ContentBlock = TextContentBlock | ImageContentBlock;
 
 export interface ReferenceMatch {
   type: 'thought' | 'stack';
@@ -108,52 +102,13 @@ export function parseReferences(
 // ============================================
 
 /**
- * Resolves media URLs for thoughts (Blobs or Cloud)
- */
-async function getThoughtMediaUrl(thought: Thought): Promise<string | null> {
-  if (thought.data?.type === 'file' && thought.data.url) return thought.data.url;
-
-  // Local IndexedDB Blob Fallback
-  const { db } = await import('../db');
-
-  const blobEntry = await db.blobs
-    .where('thoughtId').equals(thought.id)
-    .first();
-
-  return blobEntry ? URL.createObjectURL(blobEntry.blob) : null;
-}
-
-/**
- * Converts a database Thought into OpenRouter-compatible multimodal blocks
+ * Converts a database Thought into OpenRouter-compatible multimodal blocks.
+ * Uses the shared fileResolver which handles images (base64 with resize),
+ * PDFs (text extraction), and text content.
  */
 export async function resolveThoughtToContent(thought: Thought): Promise<ContentBlock[]> {
-  const blocks: ContentBlock[] = [];
-  const mediaUrl = await getThoughtMediaUrl(thought);
-  const fileMeta = thought.meta?.file;
-
-  const isImage = fileMeta?.isImage || (thought.text?.toLowerCase().match(/\.(jpg|jpeg|png|gif|webp)$/) != null);
-  const isPdf = fileMeta?.isPdf || thought.text?.toLowerCase().endsWith('.pdf');
-
-  switch (thought.data?.type) {
-    case 'text':
-      blocks.push({ type: 'text', text: `Thought: "${thought.text}"\nContent: ${thought.data.content || ''}` });
-      break;
-    case 'tasks':
-      const tasks = (thought.data.tasks || []).map(t => `${t.done ? '[x]' : '[ ]'} ${t.text}`).join('\n');
-      blocks.push({ type: 'text', text: `Thought: "${thought.text}"\nTasks:\n${tasks}` });
-      break;
-    case 'file':
-      if (isImage && mediaUrl) {
-        blocks.push({ type: 'image_url', image_url: { url: mediaUrl } });
-      } else if (isPdf && mediaUrl) {
-        blocks.push({ type: 'file', source: { url: mediaUrl, media_type: 'application/pdf' }, title: thought.text });
-      }
-      blocks.push({ type: 'text', text: `Reference to File: ${thought.text}` });
-      break;
-    default:
-      blocks.push({ type: 'text', text: `Thought Title: ${thought.text}` });
-  }
-  return blocks;
+  const { resolveFileForAI } = await import('../services/ai/fileResolver');
+  return resolveFileForAI(thought);
 }
 
 /**

@@ -4,7 +4,6 @@
  * Handles the execution of client-side tool calls from Cyberia AI.
  */
 
-import { db } from '../../db';
 import { sanitizeStatus, sanitizePriority, resolveKanbanCol } from '../../utils/thought';
 import { webSearch } from './webSearch';
 
@@ -51,35 +50,30 @@ const readFileHelper = async (id: string, store: any) => {
   const t = store.thoughts.find((thought: any) => thought.id === id);
   if (!t) return { id, success: false, error: 'Not found' };
 
-  const data = t.data;
-  const isImage = t.meta?.file?.type?.startsWith('image/') || 
-                  t.text?.toLowerCase().match(/\.(jpg|jpeg|png|gif|webp|svg)$/);
-  const isPdf = t.meta?.file?.type?.includes('pdf') || 
-                t.text?.toLowerCase().endsWith('.pdf');
+  try {
+    const { resolveFileForAI } = await import('./fileResolver');
+    const blocks = await resolveFileForAI(t);
 
-  // Resolve file URL from local blob or data.url
-  const getLocalUrl = async (): Promise<string | null> => {
-    // First check data.url (inline thumbnail/data)
-    if (data?.type === 'file' && data.url) return data.url;
-    // Fall back to local IndexedDB blob
-    const blobEntry = await db.blobs.filter(b => b.thoughtId === id).first();
-    if (blobEntry) return URL.createObjectURL(blobEntry.blob);
-    return null;
-  };
+    // Flatten blocks into a single text response for the AI
+    const textParts: string[] = [];
+    const imageUrls: string[] = [];
+    for (const block of blocks) {
+      if (block.type === 'text') textParts.push(block.text);
+      if (block.type === 'image_url') imageUrls.push(block.image_url.url);
+    }
 
-  if (isImage) {
-    const url = await getLocalUrl();
-    return { id, success: true, type: 'image', url, name: t.text };
+    return {
+      id,
+      success: true,
+      type: imageUrls.length > 0 ? 'image' : 'text',
+      content: textParts.join('\n\n'),
+      imageUrls,
+      name: t.text,
+    };
+  } catch (err) {
+    console.error('[Executor] readFileHelper failed:', err);
+    return { id, success: true, type: 'text', content: t.text || 'Untitled', name: t.text };
   }
-
-  if (isPdf) {
-    const url = await getLocalUrl();
-    return { id, success: true, type: 'pdf', url, name: t.text };
-  }
-
-  // Default to text content
-  const content = data?.type === 'text' ? data.content : (t as any).content;
-  return { id, success: true, type: 'text', content, name: t.text };
 };
 
 export const executeAiTool = async (toolCall: any, store: any) => {

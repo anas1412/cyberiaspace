@@ -47,12 +47,12 @@ describe('STACK_COLORS', () => {
 });
 
 describe('Upload limits', () => {
-  it('MAX_UPLOAD_SIZE is 20 MB in bytes', () => {
-    expect(MAX_UPLOAD_SIZE).toBe(20 * 1024 * 1024);
+  it('MAX_UPLOAD_SIZE is 100 MB in bytes', () => {
+    expect(MAX_UPLOAD_SIZE).toBe(100 * 1024 * 1024);
   });
 
-  it('MAX_UPLOAD_SIZE_MB is 20', () => {
-    expect(MAX_UPLOAD_SIZE_MB).toBe(20);
+  it('MAX_UPLOAD_SIZE_MB is 100', () => {
+    expect(MAX_UPLOAD_SIZE_MB).toBe(100);
   });
 
   it('MAX_UPLOAD_SIZE and MAX_UPLOAD_SIZE_MB are consistent', () => {

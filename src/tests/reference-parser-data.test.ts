@@ -5,7 +5,6 @@ import { describe, it, expect } from 'bun:test';
 import {
   type TextContentBlock,
   type ImageContentBlock,
-  type FileContentBlock,
   type ReferenceMatch,
   type ResolvedReference,
   type ParseResult,
@@ -24,16 +23,6 @@ describe('ContentBlock discriminated union', () => {
     const block: ImageContentBlock = { type: 'image_url', image_url: { url: 'https://example.com/img.png' } };
     expect(block.type).toBe('image_url');
     expect(block.image_url.url).toStartWith('http');
-  });
-
-  it('FileContentBlock has correct shape', () => {
-    const block: FileContentBlock = {
-      type: 'file',
-      source: { url: 'blob:...', media_type: 'application/pdf' },
-      title: 'doc.pdf',
-    };
-    expect(block.type).toBe('file');
-    expect(block.source.media_type).toBe('application/pdf');
   });
 });
 
