@@ -119,6 +119,26 @@ The development server starts at `http://localhost:5173`.
 bun run build    # TypeScript check + Vite production build
 ```
 
+### Testing
+
+Tests use **Bun's built-in test runner** (no Vitest/Jest needed). Three test groups cover the AI integration:
+
+```bash
+# Run all tests
+bun test
+
+# Run specific test groups
+bun test src/tests/ai/toolParser.test.ts    # 23 tests — pure function, no deps
+bun test src/tests/ai/executor.test.ts      # 52 tests — store-mocked, all tools + security
+bun test src/tests/constants.test.ts        # 20 tests — configuration values
+
+# Run integration tests (requires .env with API keys)
+cp .env.example .env           # fill in your keys
+bun test --timeout 30000 src/tests/ai/api-integration.test.ts
+```
+
+Integration tests hit **real APIs** (OpenRouter + Tavily) and skip gracefully when keys or network are unavailable — no hard failures.
+
 ### Configuration
 
 Set your OpenRouter API key to enable Cyberia AI:
