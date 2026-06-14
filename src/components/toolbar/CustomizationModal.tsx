@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { X, Camera, Upload, Trash2, Palette } from 'lucide-react';
 import { useStore } from '../../store/useStore';
-import { MAX_UPLOAD_SIZE, MAX_UPLOAD_SIZE_MB } from '../../constants';
+import { MAX_BG_UPLOAD_SIZE, MAX_BG_UPLOAD_SIZE_MB } from '../../constants';
 import { useModalStore } from '../../store/useModalStore';
 import { getSetting, setSetting, removeSetting } from '../../utils/settings';
 import { clsx, type ClassValue } from 'clsx';
@@ -73,10 +73,10 @@ export const CustomizationModal: React.FC<CustomizationModalProps> = ({
   const handleBgUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    if (file.size > MAX_UPLOAD_SIZE) {
+    if (file.size > MAX_BG_UPLOAD_SIZE) {
       openModal({
         title: 'Background too large',
-        description: `Please use an image or GIF under ${MAX_UPLOAD_SIZE_MB}MB.`,
+          description: `Please use an image or GIF under ${MAX_BG_UPLOAD_SIZE_MB}MB.`,
         type: 'alert',
         confirmText: 'Okay'
       });
@@ -265,7 +265,7 @@ export const CustomizationModal: React.FC<CustomizationModalProps> = ({
                   <p className="text-[10px] font-semibold tracking-wide text-[var(--text-dimmed)] group-hover:text-[var(--text-primary)] transition-colors">
                     {customBg ? 'Update Background' : 'Upload Custom Background'}
                   </p>
-                  <p className="text-[8px] font-bold text-[var(--text-muted)] uppercase tracking-wide mt-1.5">Supports JPG, PNG, GIF &bull; Max {MAX_UPLOAD_SIZE_MB}MB</p>
+                    <p className="text-[8px] font-bold text-[var(--text-muted)] uppercase tracking-wide mt-1.5">Supports JPG, PNG, GIF &bull; Max {MAX_BG_UPLOAD_SIZE_MB}MB</p>
                 </div>
                 <input type="file" className="hidden" accept="image/*,.gif" onChange={handleBgUpload} />
               </label>

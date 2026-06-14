@@ -9,6 +9,8 @@ import {
   STACK_COLORS,
   MAX_UPLOAD_SIZE,
   MAX_UPLOAD_SIZE_MB,
+  MAX_BG_UPLOAD_SIZE,
+  MAX_BG_UPLOAD_SIZE_MB,
   MAX_THOUGHTS_PER_STACK,
   ORACLE_CONFIG,
   APP_VERSION,
@@ -57,6 +59,20 @@ describe('Upload limits', () => {
 
   it('MAX_UPLOAD_SIZE and MAX_UPLOAD_SIZE_MB are consistent', () => {
     expect(MAX_UPLOAD_SIZE).toBe(MAX_UPLOAD_SIZE_MB * 1024 * 1024);
+  });
+});
+
+describe('Background upload limits', () => {
+  it('MAX_BG_UPLOAD_SIZE is 5 MB in bytes', () => {
+    expect(MAX_BG_UPLOAD_SIZE).toBe(5 * 1024 * 1024);
+  });
+
+  it('MAX_BG_UPLOAD_SIZE_MB is 5', () => {
+    expect(MAX_BG_UPLOAD_SIZE_MB).toBe(5);
+  });
+
+  it('MAX_BG_UPLOAD_SIZE and MAX_BG_UPLOAD_SIZE_MB are consistent', () => {
+    expect(MAX_BG_UPLOAD_SIZE).toBe(MAX_BG_UPLOAD_SIZE_MB * 1024 * 1024);
   });
 });
 

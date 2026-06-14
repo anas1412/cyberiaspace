@@ -1,6 +1,7 @@
 import { type StateCreator } from 'zustand';
 import { db } from '../../db';
 import { getSetting, setSetting } from '../../utils/settings';
+import { compressImage } from '../../utils/imageProcessor';
 import { type CyberiaState } from '../types';
 
 let activeAbortController: AbortController | null = null;
@@ -102,33 +103,41 @@ export const createUiSlice: StateCreator<CyberiaState, [], [], any> = (set, get,
 
       try {
 
-        if (bg instanceof File) {
-          set({ customBgLoading: true });
-
-          const blobUrl = URL.createObjectURL(bg);
-          const now = Date.now();
-
-          await db.spaceBackgrounds.put({
-            id: activeSpaceId,
-            spaceId: activeSpaceId,
-            blob: bg,
-            name: bg.name,
-            type: bg.type,
-            updatedAt: now
-          });
-
-          set({ customBg: blobUrl, customBgLoading: false });
-
-          const updated = get().spaces.map((s: any) => s.id === activeSpaceId ? { ...s, customBg: blobUrl } : s);
-          set({ spaces: updated });
-
-          await db.spaces.update(activeSpaceId, {
-            customBg: blobUrl,
-            updatedAt: now,
-          });
-
-          return;
-        }
+if (bg instanceof File) {
+           set({ customBgLoading: true });
+ 
+           // Compress the image before storing
+           let compressedBlob: Blob = bg;
+           try {
+             compressedBlob = await compressImage(bg);
+           } catch (e) {
+             console.warn('[BG] Compression failed, using original file', e);
+           }
+ 
+           const blobUrl = URL.createObjectURL(compressedBlob);
+           const now = Date.now();
+ 
+           await db.spaceBackgrounds.put({
+             id: activeSpaceId,
+             spaceId: activeSpaceId,
+             blob: compressedBlob,
+             name: bg.name,
+             type: compressedBlob.type || 'image/jpeg',
+             updatedAt: now
+           });
+ 
+           set({ customBg: blobUrl, customBgLoading: false });
+ 
+           const updated = get().spaces.map((s: any) => s.id === activeSpaceId ? { ...s, customBg: blobUrl } : s);
+           set({ spaces: updated });
+ 
+           await db.spaces.update(activeSpaceId, {
+             customBg: blobUrl,
+             updatedAt: now,
+           });
+ 
+           return;
+         }
 
         if (bg === null) {
           await db.spaceBackgrounds.delete(activeSpaceId);
@@ -145,16 +154,23 @@ export const createUiSlice: StateCreator<CyberiaState, [], [], any> = (set, get,
 
           try {
             const res = await fetch(bg);
-            const blob = await res.blob();
-            const blobUrl = URL.createObjectURL(blob);
+            const rawBlob = await res.blob();
+            // Compress the fetched image before storing
+            let compressedBlob: Blob = rawBlob;
+            try {
+              compressedBlob = await compressImage(rawBlob);
+            } catch (e) {
+              console.warn('[BG] Compression of remote image failed, using original', e);
+            }
+            const blobUrl = URL.createObjectURL(compressedBlob);
             const now = Date.now();
 
             await db.spaceBackgrounds.put({
               id: activeSpaceId,
               spaceId: activeSpaceId,
-              blob,
+              blob: compressedBlob,
               name: 'background',
-              type: blob.type,
+              type: compressedBlob.type || 'image/jpeg',
               updatedAt: now
             });
 

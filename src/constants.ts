@@ -22,6 +22,9 @@ export const STACK_COLORS = [
 
 export const MAX_UPLOAD_SIZE = 100 * 1024 * 1024; // 100 MB
 export const MAX_UPLOAD_SIZE_MB = 100;
+
+export const MAX_BG_UPLOAD_SIZE = 5 * 1024 * 1024; // 5 MB
+export const MAX_BG_UPLOAD_SIZE_MB = 5;
 export const MAX_THOUGHTS_PER_STACK = 20;
 
 export const ORACLE_CONFIG = {
