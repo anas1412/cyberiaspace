@@ -578,6 +578,26 @@ const Homepage: React.FC = () => {
                 </a>
               </div>
 
+              {/* Product Hunt Badge */}
+              <div className="mt-8 flex justify-center">
+                <a
+                  href="https://www.producthunt.com/products/cyberia-space?embed=true&utm_source=badge-featured&utm_medium=badge&utm_campaign=badge-cyberia-space"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="transition-all duration-300 hover:scale-[1.02] hover:-translate-y-1 active:scale-95 hover:brightness-110 hover:drop-shadow-[0_8px_20px_rgba(99,102,241,0.2)]"
+                >
+                  <img
+                    alt="Cyberia Space - Visual thinking space with kanban, calendar & AI, local only | Product Hunt"
+                    width="250"
+                    height="54"
+                    src={theme === 'light' 
+                      ? "https://api.producthunt.com/widgets/embed-image/v1/featured.svg?post_id=1168813&theme=light&t=1781543578724"
+                      : "https://api.producthunt.com/widgets/embed-image/v1/featured.svg?post_id=1168813&theme=dark&t=1781543458577"
+                    }
+                  />
+                </a>
+              </div>
+
               <div className="mt-10 pt-10 border-t border-[var(--glass-border)]">
                 <p className="text-[var(--text-muted)] text-sm mb-4">
                   Or reach out directly via email
