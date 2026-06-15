@@ -77,6 +77,11 @@ export const createDataSlice: StateCreator<CyberiaState, [], [], any> = (set, ge
               set({ customBg: URL.createObjectURL(localBg.blob) });
             }
           }
+
+          const savedOpacity = getSetting('custom-bg-opacity');
+          if (savedOpacity) {
+            set({ customBgOpacity: parseInt(savedOpacity, 10) });
+          }
         }
 
         // 3. Show app now
@@ -399,6 +404,7 @@ export const createDataSlice: StateCreator<CyberiaState, [], [], any> = (set, ge
       selectedThoughtIds: [],
       creatorName: null,
       customBg: null,
+      customBgOpacity: 100,
       theme: theme || DEFAULT_THEME
     });
   },

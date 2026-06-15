@@ -6,13 +6,14 @@ import Atmosphere from "./layers/Atmosphere";
 const BackgroundEngine: React.FC = () => {
   const theme = useStore((state) => state.theme);
   const customBg = useStore((state) => state.customBg);
+  const customBgOpacity = useStore((state) => state.customBgOpacity);
 
   return (
     <div className="fixed inset-0 z-[var(--z-background)] pointer-events-none overflow-hidden select-none" style={{ backgroundColor: 'var(--bg-page)' }}>
       {customBg && (
         <div 
           className="absolute inset-0 z-[var(--z-background)] bg-cover bg-center bg-no-repeat"
-          style={{ backgroundImage: `url(${customBg})` }}
+          style={{ backgroundImage: `url(${customBg})`, opacity: customBgOpacity / 100 }}
         />
       )}
 

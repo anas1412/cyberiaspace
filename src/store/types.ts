@@ -33,6 +33,7 @@ export interface CyberiaState {
 
   customBg: string | null;
   customBgLoading: boolean;
+  customBgOpacity: number;
   isSpaceLoading: boolean;
   setSpaceLoading: (loading: boolean) => void;
   lastSpaceRequestId: number;
@@ -83,6 +84,7 @@ export interface CyberiaState {
   setTheme: (theme: 'dark' | 'light') => void;
   setCustomBg: (bg: File | string | null) => Promise<void>;
   setCustomBgValue: (bg: string | null) => void;
+  setCustomBgOpacity: (opacity: number) => void;
   setDeferredPrompt: (prompt: any) => void;
 
   setChatOpen: (isOpen: boolean) => void;

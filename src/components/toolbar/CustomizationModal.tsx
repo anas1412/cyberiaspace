@@ -61,11 +61,13 @@ interface CustomizationModalProps {
   onClose: () => void;
   customBg: string | null;
   customBgLoading: boolean;
+  customBgOpacity: number;
   setCustomBg: (bg: File | string | null) => Promise<void>;
+  setCustomBgOpacity: (opacity: number) => void;
 }
 
 export const CustomizationModal: React.FC<CustomizationModalProps> = ({
-  isOpen, onClose, customBg, customBgLoading, setCustomBg
+  isOpen, onClose, customBg, customBgLoading, customBgOpacity, setCustomBg, setCustomBgOpacity
 }) => {
   const { openModal } = useModalStore();
 
@@ -269,6 +271,35 @@ export const CustomizationModal: React.FC<CustomizationModalProps> = ({
                 </div>
                 <input type="file" className="hidden" accept="image/*,.gif" onChange={handleBgUpload} />
               </label>
+            )}
+
+            {customBg && !customBgLoading && (
+              <div className="mt-4 p-4 rounded-2xl bg-[var(--glass-bg)] border border-[var(--glass-border)]">
+                <div className="flex items-center justify-between mb-3">
+                  <p className="text-[10px] font-semibold tracking-wide text-[var(--text-muted)]">
+                    Opacity
+                  </p>
+                  <span className="text-[11px] font-mono text-[var(--text-secondary)] tabular-nums">
+                    {customBgOpacity}%
+                  </span>
+                </div>
+                <input
+                  type="range"
+                  min="10"
+                  max="100"
+                  value={customBgOpacity}
+                  onChange={(e) => setCustomBgOpacity(Number(e.target.value))}
+                  className="w-full h-1.5 rounded-full appearance-none cursor-pointer"
+                  style={{
+                    background: `linear-gradient(to right, var(--accent) ${customBgOpacity}%, var(--glass-border) ${customBgOpacity}%)`,
+                    accentColor: 'var(--accent)',
+                  }}
+                />
+                <div className="flex justify-between text-[8px] text-[var(--text-muted)] font-bold uppercase tracking-wide mt-1.5 px-0.5">
+                  <span>Dim</span>
+                  <span>Full</span>
+                </div>
+              </div>
             )}
           </section>
 

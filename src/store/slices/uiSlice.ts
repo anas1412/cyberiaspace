@@ -26,6 +26,7 @@ export const createUiSlice: StateCreator<CyberiaState, [], [], any> = (set, get,
     theme: getInitialTheme(),
     customBg: null,
     customBgLoading: false,
+    customBgOpacity: 100,
     aiChatMode: 'chat',
     isChatOpen: false,
     isInspectorOpen: false,
@@ -230,5 +231,10 @@ if (bg instanceof File) {
     setInspectorOpen: (open: boolean) => set({ isInspectorOpen: open }),
 
     setCustomBgValue: (bg: string | null) => set({ customBg: bg }),
+
+    setCustomBgOpacity: (opacity: number) => {
+      set({ customBgOpacity: opacity });
+      setSetting('custom-bg-opacity', String(opacity));
+    },
   };
 };

@@ -46,7 +46,9 @@ const Toolbar: React.FC = () => {
   const historyIndex = useStore((state) => state.historyIndex);
   const customBg = useStore((state) => state.customBg);
   const customBgLoading = useStore((state) => state.customBgLoading);
+  const customBgOpacity = useStore((state) => state.customBgOpacity);
   const setCustomBg = useStore((state) => state.setCustomBg);
+  const setCustomBgOpacity = useStore((state) => state.setCustomBgOpacity);
   const isReadOnly = useStore((state) => state.isReadOnly);
   const creatorName = useStore((state) => state.creatorName);
   const isSpaceLoading = useStore((state) => state.isSpaceLoading);
@@ -278,7 +280,9 @@ const Toolbar: React.FC = () => {
         onClose={() => setIsCustomizationOpen(false)}
         customBg={customBg}
         customBgLoading={customBgLoading}
+        customBgOpacity={customBgOpacity}
         setCustomBg={setCustomBg}
+        setCustomBgOpacity={setCustomBgOpacity}
       />
 
       <SearchOverlay
