@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { type Thought } from '../../db';
 import { useThoughtPayload } from './hooks/useThoughtPayload';
-import { FileText, FileAudio, FileVideo, FileCode, File as FileIcon, Maximize2 } from 'lucide-react';
+import { FileText, FileAudio, FileVideo, FileCode, File as FileIcon, Paperclip, Maximize2 } from 'lucide-react';
 import { db } from '../../db';
 
 interface FileRendererProps {
@@ -58,6 +58,18 @@ export const FileRenderer: React.FC<FileRendererProps> = ({ thought }) => {
   const fileUrl = thought.data?.type === 'file' ? thought.data.url : undefined;
   const activeSource = localUrl || fileUrl;
   const hasContent = !!activeSource;
+
+  // Synchronous empty state check (no async dependency on local blob loading)
+  const hasSyncedContent = !!(thought.data?.type === 'file' && thought.data.url) || !!fileInfo?.size;
+
+  if (!hasSyncedContent) {
+    return (
+      <div data-trigger="file" className="flex flex-col items-center justify-center py-5 gap-1.5 cursor-pointer">
+        <Paperclip className="w-5 h-5 text-[var(--text-muted)]/30" />
+        <span className="text-[9px] text-[var(--text-muted)]/40 font-medium tracking-widest">Attach File</span>
+      </div>
+    );
+  }
 
   // MEDIA PREVIEW BLOCK (Images & Videos)
   // Audio files use the list view below to ensure correct icon and prevent video overlay
@@ -123,21 +135,21 @@ export const FileRenderer: React.FC<FileRendererProps> = ({ thought }) => {
   return (
     <div 
       data-trigger="file"
-      className="mt-2 p-4 rounded-2xl bg-[var(--node-bg)]/20 border border-[var(--glass-border)] hover:bg-[var(--node-bg)]/40 transition-all cursor-pointer group flex items-center gap-4 relative overflow-hidden"
+      className="mt-2 py-3 flex items-center gap-3 cursor-pointer group relative overflow-hidden"
     >
-      <div className="w-14 h-14 rounded-xl bg-black/20 flex items-center justify-center border border-[var(--glass-border)] shadow-inner">
+      <div className="w-10 h-10 rounded-lg bg-[var(--node-bg)]/20 flex items-center justify-center flex-shrink-0">
         {getFileIcon()}
       </div>
       <div className="flex-1 overflow-hidden">
-        <h4 className="text-[11px] font-semibold tracking-widest text-[var(--text-primary)] truncate mb-1">
+        <h4 className="text-[11px] font-semibold tracking-widest text-[var(--text-primary)] truncate">
           {thought.text || 'Untitled File'}
         </h4>
-        <div className="flex items-center gap-2">
-          <span className="text-[9px] font-bold text-[var(--text-dimmed)] uppercase tracking-widest">
+        <div className="flex items-center gap-2 mt-0.5">
+          <span className="text-[8px] font-bold text-[var(--text-dimmed)] uppercase tracking-widest">
             {mimeType.split('/')[1]?.toUpperCase() || extension.toUpperCase() || 'FILE'}
           </span>
           {fileSizeStr && (
-            <span className="text-[9px] font-medium text-[var(--text-muted)]">
+            <span className="text-[8px] font-medium text-[var(--text-muted)]">
               • {fileSizeStr}
             </span>
           )}

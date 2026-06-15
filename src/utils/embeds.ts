@@ -82,6 +82,16 @@ export const getEmbedInfo = (url: string): EmbedInfo => {
   return { provider: 'unknown', id: null, url };
 };
 
+/** Resolve a potentially relative URL against a base URL */
+const resolveUrl = (imgUrl: string | null | undefined, baseUrl: string): string | undefined => {
+  if (!imgUrl) return undefined;
+  try {
+    return new URL(imgUrl, baseUrl).href;
+  } catch {
+    return imgUrl;
+  }
+};
+
 /**
  * Fetches metadata using a generic oEmbed approach with proxy support.
  */
@@ -106,13 +116,12 @@ export const fetchEmbedMeta = async (url: string): Promise<EmbedMeta> => {
     oEmbedUrl = `https://www.tiktok.com/oembed?url=${encodeURIComponent(url)}&theme=dark`;
   }
 
-  // 1. Fetch oEmbed data
+  // 1. Fetch oEmbed data (client-side first, Vercel fallback)
   const fetchOEmbed = async (): Promise<EmbedMeta | null> => {
     if (!oEmbedUrl) return null;
     const proxies = [
-      (u: string) => `/api/utils?action=oembed&url=${encodeURIComponent(u)}`,
-      (u: string) => `https://api.allorigins.win/get?url=${encodeURIComponent(u)}`,
       (u: string) => `https://corsproxy.io/?${encodeURIComponent(u)}`,
+      (u: string) => `https://api.allorigins.win/get?url=${encodeURIComponent(u)}`,
       (u: string) => u,
     ];
 
@@ -137,24 +146,39 @@ export const fetchEmbedMeta = async (url: string): Promise<EmbedMeta> => {
     return null;
   };
 
-  // 2. Fetch rich metadata using our internal scraper (no rate limits)
+  // 2. Fetch OG metadata via CORS proxy + client-side DOMParser
   const fetchInternalMetadata = async (): Promise<EmbedMeta | null> => {
     try {
-      const res = await fetch(`/api/utils?action=metadata&url=${encodeURIComponent(url)}`);
-      if (res.ok) {
-        const data = await res.json();
-        return {
-          title: data.title || "",
-          author_name: data.author || data.publisher || "",
-          thumbnail_url: data.image || null,
-          provider_name: data.publisher || "",
-          description: data.description || ""
-        };
-      }
+      const proxyUrl = `https://corsproxy.io/?${encodeURIComponent(url)}`;
+      const proxyRes = await fetch(proxyUrl);
+      if (!proxyRes.ok) return null;
+      const html = await proxyRes.text();
+      const doc = new DOMParser().parseFromString(html, 'text/html');
+      const getMeta = (names: string[]) => {
+        for (const name of names) {
+          const el = doc.querySelector(`meta[property="${name}"], meta[name="${name}"]`);
+          const content = el?.getAttribute('content');
+          if (content) return content;
+        }
+        return null;
+      };
+
+      const ogTitle = getMeta(['og:title', 'twitter:title']);
+      const authorName = getMeta(['article:author', 'og:author', 'twitter:creator']);
+      const publisher = getMeta(['og:site_name', 'twitter:site']);
+      const ogImage = resolveUrl(getMeta(['og:image', 'twitter:image:src', 'twitter:image']), url);
+
+      return {
+        title: ogTitle || doc.title || "",
+        author_name: authorName || publisher || "",
+        thumbnail_url: ogImage,
+        provider_name: publisher || "",
+        description: getMeta(['og:description', 'twitter:description', 'description']) || ""
+      };
     } catch (err) {
-      console.warn(`[Embed Utils] Internal metadata fetch failed:`, err);
+      console.warn(`[Embed Utils] Client-side OG parse failed:`, err);
+      return null;
     }
-    return null;
   };
 
   // 3. Twitter-specific high-fidelity extraction (bypasses bot protection)
@@ -208,20 +232,31 @@ export const fetchEmbedMeta = async (url: string): Promise<EmbedMeta> => {
     return null;
   };
 
-  // 4. Instagram-specific high-fidelity extraction (bypasses login wall)
+  // 5. Instagram-specific high-fidelity extraction (bypasses login wall)
   const fetchInstagramMeta = async (): Promise<Partial<EmbedMeta> | null> => {
     if (provider !== 'instagram') return null;
     try {
       // Use ddinstagram as a scraper source (it always serves public meta tags)
+      // Fetch directly client-side via CORS proxy (no Vercel dependency)
       const ddUrl = url.replace('instagram.com', 'ddinstagram.com');
-      const res = await fetch(`/api/utils?action=metadata&url=${encodeURIComponent(ddUrl)}`);
+      const proxyUrl = `https://corsproxy.io/?${encodeURIComponent(ddUrl)}`;
+      const res = await fetch(proxyUrl);
       if (res.ok) {
-        const data = await res.json();
+        const html = await res.text();
+        const doc = new DOMParser().parseFromString(html, 'text/html');
+        const getMeta = (names: string[]) => {
+          for (const name of names) {
+            const el = doc.querySelector(`meta[property="${name}"], meta[name="${name}"]`);
+            const content = el?.getAttribute('content');
+            if (content) return content;
+          }
+          return null;
+        };
         return {
-          title: data.title || "",
-          author_name: data.author || "",
-          thumbnail_url: data.image || null,
-          description: data.description || ""
+          title: getMeta(['og:title', 'twitter:title']) || "",
+          author_name: getMeta(['article:author', 'og:author', 'twitter:creator']) || "",
+          thumbnail_url: resolveUrl(getMeta(['og:image', 'twitter:image:src', 'twitter:image']), ddUrl),
+          description: getMeta(['og:description', 'twitter:description', 'description']) || ""
         };
       }
     } catch (err) {
@@ -231,11 +266,11 @@ export const fetchEmbedMeta = async (url: string): Promise<EmbedMeta> => {
   };
 
   // Run in parallel for speed
-  const [oData, mlData, ytSearchData, twData, igData] = await Promise.all([
+  const [oData, mlData, twData, ytSearchData, igData] = await Promise.all([
     fetchOEmbed(),
     fetchInternalMetadata(),
-    fetchYouTubeSearch(),
     fetchTwitterMeta(),
+    fetchYouTubeSearch(),
     fetchInstagramMeta()
   ]);
 

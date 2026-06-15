@@ -1,5 +1,5 @@
 import React from 'react';
-import { Maximize2, Type } from 'lucide-react';
+import { Type } from 'lucide-react';
 import { type Thought } from '../../db';
 import { useThoughtPayload } from './hooks/useThoughtPayload';
 import { clsx, type ClassValue } from 'clsx';
@@ -11,7 +11,6 @@ function cn(...inputs: ClassValue[]) {
 
 interface TextRendererProps {
   thought: Thought;
-  isReadOnly: boolean;
   isCalendar: boolean;
   isSpatial: boolean;
   isArchived?: boolean;
@@ -21,17 +20,14 @@ interface TextRendererProps {
 
 export const TextRenderer: React.FC<TextRendererProps> = ({ 
   thought, 
-  isReadOnly, 
   isCalendar, 
   isArchived = false,
   parsedContent, 
   setActiveFocus 
 }) => {
-  // Use the dual-read hook for backward compatibility
   const { content } = useThoughtPayload(thought);
   
   const hasContent = content && content.trim().length > 0;
-  const hasRemoteContent = false;
 
   if (!hasContent) {
     if (isCalendar) return null;
@@ -39,53 +35,28 @@ export const TextRenderer: React.FC<TextRendererProps> = ({
       <div 
         data-trigger="text" 
         className={cn(
-          "mt-1 flex flex-col items-center gap-2 py-4 bg-[var(--node-bg)]/20 rounded-xl border border-[var(--glass-border)] group/text relative cursor-pointer transition-colors",
-          !isArchived && "hover:bg-[var(--node-bg)]/40",
+          "flex flex-col items-center justify-center py-5 gap-1.5 group/text relative cursor-pointer",
           isArchived && "pointer-events-none"
         )}
+        onClick={(e) => { e.stopPropagation(); setActiveFocus(thought.id, 'text'); }}
       >
-        <Type className="w-6 h-6 text-[var(--text-muted)]" />
-        <span className="text-[10px] text-[var(--text-muted)] font-medium tracking-widest">
-          {hasRemoteContent ? 'Sync Pending' : 'Write Note'}
+        <Type className="w-5 h-5 text-[var(--text-muted)]/30" />
+        <span className="text-[9px] text-[var(--text-muted)]/40 font-medium tracking-widest">
+          Write Note
         </span>
-        {hasRemoteContent && (
-          <p className="text-[7px] text-[var(--accent)]/40 font-semibold tracking-[0.2em] text-center px-4">
-            Content on other device
-          </p>
-        )}
-        {!isReadOnly && !isArchived && (
-          <div className="absolute inset-0 bg-[var(--accent)]/10 opacity-0 group-hover/text:opacity-100 transition-opacity rounded-xl flex items-center justify-center pointer-events-none">
-            <button
-              onClick={(e) => { e.stopPropagation(); setActiveFocus(thought.id, 'text'); }}
-              className="pointer-events-auto prevent-drag bg-[var(--accent)] text-[var(--accent-contrast)] p-2 rounded-lg shadow-xl transform scale-90 group-hover/text:scale-100 transition-all hover:scale-110 active:scale-95"
-            >
-              <Maximize2 className="w-4 h-4" />
-            </button>
-          </div>
-        )}
       </div>
     );
   }
 
   return (
-    <div className={cn("overflow-hidden relative group/text", hasContent && "max-h-[140px]")}>
+    <div className={cn("overflow-hidden relative group/text cursor-pointer", hasContent && "max-h-[140px]")}>
       <div
-        className="markdown-body px-2 text-[11px] leading-relaxed text-[var(--text-dimmed)] select-none pointer-events-none break-words"
+        className="markdown-body text-[11px] leading-relaxed text-[var(--text-dimmed)] select-none pointer-events-none break-words"
         dangerouslySetInnerHTML={{ __html: parsedContent as string }}
         onDragStart={(e) => e.preventDefault()}
       />
       {content.length > 150 && (
         <div className="absolute bottom-0 left-0 right-0 h-16 bg-gradient-to-t from-[var(--node-bg)] via-[var(--node-bg)]/80 to-transparent pointer-events-none" />
-      )}
-      {!isReadOnly && !isArchived && (
-        <div className="absolute inset-0 bg-[var(--accent)]/10 opacity-0 group-hover/text:opacity-100 transition-opacity flex items-center justify-center pointer-events-none">
-          <button
-            onClick={(e) => { e.stopPropagation(); setActiveFocus(thought.id, 'text'); }}
-            className="pointer-events-auto prevent-drag bg-[var(--accent)] text-[var(--accent-contrast)] p-2 rounded-lg shadow-xl transform scale-90 group-hover/text:scale-100 transition-all hover:scale-110 active:scale-95"
-          >
-            <Maximize2 className="w-4 h-4" />
-          </button>
-        </div>
       )}
     </div>
   );

@@ -1,5 +1,5 @@
 import React from 'react';
-import { Table, Maximize2 } from 'lucide-react';
+import { Table } from 'lucide-react';
 import { type Thought } from '../../db';
 import { useThoughtPayload } from './hooks/useThoughtPayload';
 import { clsx, type ClassValue } from 'clsx';
@@ -11,49 +11,31 @@ function cn(...inputs: ClassValue[]) {
 
 interface TableRendererProps {
   thought: Thought;
-  isReadOnly: boolean;
   isArchived?: boolean;
   setActiveFocus: (id: string, type: 'text' | 'tasks' | 'paint' | 'table' | 'embed' | 'file' | 'image') => void;
 }
 
 export const TableRenderer: React.FC<TableRendererProps> = ({ 
   thought, 
-  isReadOnly,
   isArchived = false,
   setActiveFocus 
 }) => {
-  // Use the dual-read hook for backward compatibility
   const { table } = useThoughtPayload(thought);
   
   const isTableEmpty = !table || table.every(row => row.every(cell => !cell || !cell.trim()));
-  const hasRemoteContent = false;
 
   if (isTableEmpty) {
     return (
       <div data-trigger="table" className={cn(
-        "mt-1 flex flex-col items-center gap-2 py-4 bg-[var(--node-bg)]/20 rounded-xl border border-[var(--glass-border)] group/table relative cursor-pointer transition-colors",
-        !isArchived && "hover:bg-[var(--node-bg)]/40",
+        "flex flex-col items-center justify-center py-5 gap-1.5 group/table relative cursor-pointer",
         isArchived && "pointer-events-none"
-      )}>
-        <Table className="w-6 h-6 text-[var(--text-muted)]" />
-        <span className="text-[10px] text-[var(--text-muted)] font-medium tracking-widest">
-          {hasRemoteContent ? 'Sync Pending' : 'Build Table'}
+      )}
+        onClick={(e) => { e.stopPropagation(); setActiveFocus(thought.id, 'table'); }}
+      >
+        <Table className="w-5 h-5 text-[var(--text-muted)]/30" />
+        <span className="text-[9px] text-[var(--text-muted)]/40 font-medium tracking-widest">
+          Build Table
         </span>
-        {hasRemoteContent && (
-          <p className="text-[7px] text-[var(--accent)]/40 font-semibold tracking-[0.2em] text-center px-4">
-            Data on other device
-          </p>
-        )}
-        {!isReadOnly && !isArchived && (
-          <div className="absolute inset-0 bg-[var(--accent)]/10 opacity-0 group-hover/table:opacity-100 transition-opacity rounded-xl flex items-center justify-center pointer-events-none">
-            <button
-              onClick={(e) => { e.stopPropagation(); setActiveFocus(thought.id, 'table'); }}
-              className="pointer-events-auto prevent-drag bg-[var(--accent)] text-[var(--accent-contrast)] p-2 rounded-lg shadow-xl transform scale-90 group-hover/table:scale-100 transition-all hover:scale-110 active:scale-95"
-            >
-              <Maximize2 className="w-4 h-4" />
-            </button>
-          </div>
-        )}
       </div>
     );
   }
@@ -66,7 +48,7 @@ export const TableRenderer: React.FC<TableRendererProps> = ({
 
   return (
     <div data-trigger="table" className={cn(
-      "relative group/table overflow-hidden rounded-xl cursor-pointer min-h-[60px] flex flex-col justify-center",
+      "relative group/table overflow-hidden cursor-pointer min-h-[60px] flex flex-col justify-center",
       isArchived && "pointer-events-none"
     )}>
       <div className="overflow-x-auto custom-scroll pb-1">
@@ -92,16 +74,6 @@ export const TableRenderer: React.FC<TableRendererProps> = ({
           </tbody>
         </table>
       </div>
-      {!isReadOnly && !isArchived && (
-        <div className="absolute inset-0 bg-[var(--accent)]/10 opacity-0 group-hover/table:opacity-100 transition-opacity rounded-xl flex items-center justify-center pointer-events-none">
-          <button
-            onClick={(e) => { e.stopPropagation(); setActiveFocus(thought.id, 'table'); }}
-            className="pointer-events-auto prevent-drag bg-[var(--accent)] text-[var(--accent-contrast)] p-2 rounded-lg shadow-xl transform scale-90 group-hover/table:scale-100 transition-all hover:scale-110 active:scale-95"
-          >
-            <Maximize2 className="w-4 h-4" />
-          </button>
-        </div>
-      )}
     </div>
   );
 };

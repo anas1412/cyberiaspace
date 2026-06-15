@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Music, Loader2, ExternalLink, Play } from 'lucide-react';
+import { Music, Loader2, ExternalLink, Play, Link2 } from 'lucide-react';
 import { type Thought } from '../../db';
 import { useThoughtPayload } from './hooks/useThoughtPayload';
 import { getEmbedInfo, fetchEmbedMeta } from '../../utils/embeds';
@@ -33,9 +33,12 @@ export const EmbedRenderer: React.FC<EmbedRendererProps> = ({ thought }) => {
           const meta = await fetchEmbedMeta(content);
           if (meta) {
             const updates: any = {};
-              if (meta.author_name) updates.author = meta.author_name;
+            if (meta.author_name) updates.author = meta.author_name;
             if (meta.title && meta.title !== content) updates.text = meta.title;
             if (meta.description) updates.description = meta.description;
+            if (meta.thumbnail_url) {
+              updates.meta = { ...(thought.meta || {}), thumbnail_url: meta.thumbnail_url };
+            }
             
             if (Object.keys(updates).length > 0) {
               await updateThought(thought.id, updates);
@@ -53,6 +56,16 @@ export const EmbedRenderer: React.FC<EmbedRendererProps> = ({ thought }) => {
 
   const previewImage = thought.meta?.thumbnail_url || (provider === 'youtube' && id ? `https://img.youtube.com/vi/${id}/mqdefault.jpg` : null);
 
+  // Empty state — no URL/content
+  if (!content) {
+    return (
+      <div data-trigger="embed" className="flex flex-col items-center justify-center py-5 gap-1.5 cursor-pointer">
+        <Link2 className="w-5 h-5 text-[var(--text-muted)]/30" />
+        <span className="text-[9px] text-[var(--text-muted)]/40 font-medium tracking-widest">Paste URL</span>
+      </div>
+    );
+  }
+
   return (
     <div data-trigger="embed" className="mt-2 relative group cursor-pointer overflow-hidden rounded-xl border border-[var(--glass-border)] bg-[var(--node-bg)]/40 aspect-video flex items-center justify-center">
       {previewImage ? (
@@ -60,6 +73,7 @@ export const EmbedRenderer: React.FC<EmbedRendererProps> = ({ thought }) => {
           <img
             src={previewImage}
             draggable="false"
+            referrerPolicy="no-referrer"
             className="w-full h-full object-cover opacity-60 group-hover:opacity-100 transition-opacity"
             alt="Preview"
           />
@@ -78,18 +92,19 @@ export const EmbedRenderer: React.FC<EmbedRendererProps> = ({ thought }) => {
           </div>
           <span className="text-[10px] text-[#1db954] font-semibold tracking-widest">{thought.text || 'Spotify Track'}</span>
         </div>
+      ) : isLoading ? (
+        <div className="flex flex-col items-center gap-2 p-6 text-center">
+          <Loader2 className="w-8 h-8 text-[var(--text-muted)] animate-spin" />
+          <span className="text-[10px] text-[var(--text-muted)] font-semibold tracking-widest">Loading preview...</span>
+        </div>
       ) : (
         <div className="flex flex-col items-center gap-2 p-6 text-center">
-          {isLoading ? (
-            <Loader2 className="w-8 h-8 text-[var(--text-muted)] animate-spin" />
-          ) : (
-            <div
-              className="w-12 h-12 rounded-xl flex items-center justify-center border"
-              style={{ backgroundColor: `${config.color}15`, borderColor: `${config.color}30` }}
-            >
-              <Icon className="w-6 h-6" style={{ color: config.color }} />
-            </div>
-          )}
+          <div
+            className="w-12 h-12 rounded-xl flex items-center justify-center border"
+            style={{ backgroundColor: `${config.color}15`, borderColor: `${config.color}30` }}
+          >
+            <Icon className="w-6 h-6" style={{ color: config.color }} />
+          </div>
           <span className="text-[10px] font-semibold tracking-widest leading-tight" style={{ color: config.color }}>
             {thought.author || thought.text || `View on ${config.label}`}
           </span>
