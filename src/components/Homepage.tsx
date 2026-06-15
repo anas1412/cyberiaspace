@@ -17,7 +17,7 @@ const GITHUB_URL = 'https://github.com/anas1412/cyberia';
 
 const TESTIMONIALS = [
   {
-    quote: 'I have ADHD and I\'ve tried literally everything. The reason Cyberia Space sticks is that it doesn\'t force me to organize upfront. I dump random thoughts everywhere, and when my hyperfocus kicks in later, I actually enjoy sorting it all out.',
+    quote: 'I\'ve tried literally everything. The reason Cyberia Space sticks is that it doesn\'t force me to organize upfront. I dump random thoughts everywhere, and when my hyperfocus kicks in later, I actually enjoy sorting it all out.',
     author: 'Nadia D.',
     role: 'UI/UX Designer',
     avatar: "ND"
@@ -73,7 +73,7 @@ const HOW_IT_WORKS_STEPS = [
   {
     step: 1,
     title: 'Add Your Thoughts',
-    description: 'Click anywhere on the canvas to drop a thought. Each thought is a physical object you can move, resize, and customize.',
+    description: 'Paste text or drop files directly onto the canvas to spawn thoughts instantly. Each thought is a physical object you can move, resize, and customize.',
     icon: FileText
   },
   {
