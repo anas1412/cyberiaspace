@@ -101,7 +101,6 @@ interface ToolbarInnerProps {
   isNeon: boolean;
   setIsNeon: (v: boolean) => void;
   onClear: () => void;
-  onClose: () => void;
 }
 
 const ToolbarInner: React.FC<ToolbarInnerProps> = ({
@@ -114,23 +113,11 @@ const ToolbarInner: React.FC<ToolbarInnerProps> = ({
   isNeon,
   setIsNeon,
   onClear,
-  onClose,
 }) => {
   const percentage = ((brushSize - MIN_BRUSH_SIZE) / (MAX_BRUSH_SIZE - MIN_BRUSH_SIZE)) * 100;
 
   return (
     <div className="flex flex-col items-center">
-      {/* Close Button — always on top */}
-      <ToolButton
-        onClick={onClose}
-        label="Close"
-      >
-        <X className="w-5 h-5" />
-      </ToolButton>
-
-      {/* Divider */}
-      <div className="w-8 h-px bg-[var(--glass-border)] my-3 self-center" />
-
       {/* Main Tools */}
       <div className="flex flex-col gap-2 items-center">
         <ToolButton
@@ -279,6 +266,7 @@ const FloatingToolbar: React.FC<FloatingToolbarProps> = ({ isVisible, ...innerPr
 
 const PaintEditor: React.FC<PaintEditorProps> = ({ thought, onClose }) => {
   const updateThought = useStore((state) => state.updateThought);
+  const isReadOnly = useStore((state) => state.isReadOnly);
   const { drawing } = useThoughtPayload(thought);
 
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -456,6 +444,25 @@ const PaintEditor: React.FC<PaintEditorProps> = ({ thought, onClose }) => {
 
   return (
     <div className="flex flex-col h-full">
+      {/* Header: Title + Close */}
+      <div className="flex items-center justify-between px-4 py-2 border-b border-[var(--glass-border)] shrink-0">
+        <input
+          type="text"
+          value={thought.text}
+          onChange={(e) => updateThought(thought.id, { text: e.target.value })}
+          placeholder="Untitled"
+          readOnly={isReadOnly}
+          className="flex-1 bg-transparent border-none outline-none text-[13px] font-semibold text-[var(--text-primary)] placeholder:text-[var(--text-muted)]/30 min-w-0"
+        />
+        <button
+          onClick={onClose}
+          className="p-1.5 rounded-lg text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--glass-bg)] transition-all"
+          title="Close (Esc)"
+        >
+          <X className="w-3.5 h-3.5" />
+        </button>
+      </div>
+
       <div
         className="flex-1 relative overflow-hidden"
         onMouseMove={resetHideTimer}
@@ -486,7 +493,6 @@ const PaintEditor: React.FC<PaintEditorProps> = ({ thought, onClose }) => {
           isNeon={isNeon}
           setIsNeon={setIsNeon}
           onClear={clearCanvas}
-          onClose={onClose}
         />
       </div>
     </div>

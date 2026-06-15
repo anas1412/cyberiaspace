@@ -167,64 +167,61 @@ const TextEditor: React.FC<TextEditorProps> = ({ thought, onClose }) => {
 
   return (
     <div className="flex flex-col h-full">
-      {/* Mode toggle + close - top-right, subtle pill group */}
-      <div className="flex-shrink-0 flex items-center justify-end gap-2 px-6 pt-4">
-        <div className="flex bg-[var(--bg-main)]/40 p-0.5 rounded-lg border border-[var(--glass-border)] relative">
-          {[
-            { id: 'edit' as const, label: 'Write', icon: Edit3 },
-            { id: 'split' as const, label: 'Split', icon: Split },
-            { id: 'preview' as const, label: 'Review', icon: Eye }
-          ].map((mode) => (
-            <button
-              key={mode.id}
-              onClick={() => setEditMode(mode.id)}
-              disabled={isReadOnly && mode.id !== 'preview'}
-              className={cn(
-                "relative px-2.5 py-1.5 rounded-md text-[9px] font-semibold tracking-widest transition-all duration-300 z-10 flex items-center gap-1.5",
-                editMode === mode.id
-                  ? "text-[var(--accent-contrast)]"
-                  : "text-[var(--text-muted)] hover:text-[var(--text-primary)]",
-                isReadOnly && mode.id !== 'preview' && "opacity-30 cursor-not-allowed"
-              )}
-            >
-              {editMode === mode.id && (
-                <motion.div
-                  layoutId="activeTab"
-                  className="absolute inset-0 rounded-md bg-[var(--accent)] shadow-lg shadow-[var(--accent)]/20 z-[-1]"
-                  transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
-                />
-              )}
-              <mode.icon className="w-3 h-3" />
-              <span>{mode.label}</span>
-            </button>
-          ))}
+      {/* Header: Title + Mode Toggle + Close */}
+      <div className="flex items-center justify-between px-4 py-2 border-b border-[var(--glass-border)] shrink-0 gap-4">
+        <input
+          type="text"
+          value={localTitle}
+          onChange={(e) => handleTitleChange(e.target.value)}
+          placeholder="Untitled"
+          readOnly={isReadOnly}
+          className="flex-1 bg-transparent border-none outline-none text-[13px] font-semibold text-[var(--text-primary)] placeholder:text-[var(--text-muted)]/30 min-w-0"
+        />
+        <div className="flex items-center gap-1">
+          <div className="flex bg-[var(--bg-main)]/40 p-0.5 rounded-lg border border-[var(--glass-border)] relative">
+            {[
+              { id: 'edit' as const, label: 'Write', icon: Edit3 },
+              { id: 'split' as const, label: 'Split', icon: Split },
+              { id: 'preview' as const, label: 'Review', icon: Eye }
+            ].map((mode) => (
+              <button
+                key={mode.id}
+                onClick={() => setEditMode(mode.id)}
+                disabled={isReadOnly && mode.id !== 'preview'}
+                className={cn(
+                  "relative px-2.5 py-1.5 rounded-md text-[9px] font-semibold tracking-widest transition-all duration-300 z-10 flex items-center gap-1.5",
+                  editMode === mode.id
+                    ? "text-[var(--accent-contrast)]"
+                    : "text-[var(--text-muted)] hover:text-[var(--text-primary)]",
+                  isReadOnly && mode.id !== 'preview' && "opacity-30 cursor-not-allowed"
+                )}
+              >
+                {editMode === mode.id && (
+                  <motion.div
+                    layoutId="activeTab"
+                    className="absolute inset-0 rounded-md bg-[var(--accent)] shadow-lg shadow-[var(--accent)]/20 z-[-1]"
+                    transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
+                  />
+                )}
+                <mode.icon className="w-3 h-3" />
+                <span>{mode.label}</span>
+              </button>
+            ))}
+          </div>
+          <button
+            onClick={onClose}
+            className="p-1.5 rounded-lg text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--glass-bg)] transition-all"
+            title="Close (Esc)"
+          >
+            <X className="w-3.5 h-3.5" />
+          </button>
         </div>
-        <button
-          onClick={onClose}
-          className="p-1.5 rounded-lg text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-page)]/30 transition-all"
-          title="Close (Esc)"
-        >
-          <X className="w-3.5 h-3.5" />
-        </button>
       </div>
-
-      {/* Subtle divider */}
-      <div className="flex-shrink-0 mx-6 mt-3 border-b border-[var(--glass-border)]" />
 
       {/* Content area - scrolls independently */}
       <div className="flex-1 min-h-0 overflow-hidden">
-        <div className="h-full max-w-4xl mx-auto px-6 py-6 flex flex-col gap-5">
-          {/* H1 Title - editable input styled as text */}
-          <input
-            type="text"
-            value={localTitle}
-            onChange={(e) => handleTitleChange(e.target.value)}
-            placeholder="Untitled"
-            readOnly={isReadOnly}
-            className="flex-shrink-0 w-full bg-transparent border-none outline-none text-[var(--text-primary)] text-2xl md:text-3xl font-bold placeholder:text-[var(--text-muted)]/30 p-0"
-          />
-
-          {/* Floating toolbar (hidden in preview mode) */}
+        <div className="h-full max-w-4xl mx-auto px-6 py-6 flex flex-col gap-4">
+          {/* Floating toolbar */}
           {!isPreviewOnly && (
             <div className="flex-shrink-0">
               <EditorToolbar onAction={handleToolbarAction} isReadOnly={isReadOnly} />

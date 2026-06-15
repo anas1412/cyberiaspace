@@ -260,7 +260,7 @@ const FileEditor: React.FC<FileEditorProps> = ({ thought, onClose }) => {
 
   return (
     <div className="flex flex-col h-full relative">
-      {/* ── Header: Inline Title + Close ── */}
+      {/* ── Header: Inline Title + Actions + Close ── */}
       <div className="flex items-center gap-3 px-4 py-2 border-b border-[var(--glass-border)] min-h-[44px]">
         <input
           type="text"
@@ -270,9 +270,27 @@ const FileEditor: React.FC<FileEditorProps> = ({ thought, onClose }) => {
           readOnly={isReadOnly}
           className="flex-1 bg-transparent border-none outline-none text-[13px] font-semibold text-[var(--text-primary)] placeholder:text-[var(--text-muted)]/30"
         />
+        {activeSource && (isImage || isVideo || isAudio) && (
+          <div className="flex items-center gap-1">
+            <button
+              onClick={handleDownload}
+              className="p-1.5 rounded-lg text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--glass-bg)] transition-all"
+              title="Download"
+            >
+              <Download className="w-3.5 h-3.5" />
+            </button>
+            <button
+              onClick={handleOpenExternal}
+              className="p-1.5 rounded-lg text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--glass-bg)] transition-all"
+              title="Open in New Tab"
+            >
+              <ExternalLink className="w-3.5 h-3.5" />
+            </button>
+          </div>
+        )}
         <button
           onClick={onClose}
-          className="p-1.5 rounded-lg text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-page)]/30 transition-all"
+          className="p-1.5 rounded-lg text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--glass-bg)] transition-all"
           title="Close (Esc)"
         >
           <X className="w-3.5 h-3.5" />
@@ -398,25 +416,7 @@ const FileEditor: React.FC<FileEditorProps> = ({ thought, onClose }) => {
             </>
           )}
 
-          {/* ── Controls Overlay (on hover) ── */}
-          {activeSource && (isImage || isVideo || isAudio) && (
-            <div className="absolute top-4 right-4 flex items-center gap-2 opacity-0 group-hover/content:opacity-100 transition-opacity duration-300 z-20">
-              <button
-                onClick={handleDownload}
-                className="p-2.5 bg-[var(--glass-bg)] backdrop-blur-md hover:bg-white/10 rounded-xl text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-all border border-[var(--glass-border)] group/btn active:scale-95 shadow-lg"
-                title="Download"
-              >
-                <Download className="w-3.5 h-3.5 group-hover/btn:scale-110 transition-transform" />
-              </button>
-              <button
-                onClick={handleOpenExternal}
-                className="p-2.5 bg-[var(--glass-bg)] backdrop-blur-md hover:bg-white/10 rounded-xl text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-all border border-[var(--glass-border)] group/btn active:scale-95 shadow-lg"
-                title="Open in New Tab"
-              >
-                <ExternalLink className="w-3.5 h-3.5 group-hover/btn:scale-110 transition-transform" />
-              </button>
-            </div>
-          )}
+
         </div>
 
         {/* Shared StackFilmstrip — consistent across all editor types */}

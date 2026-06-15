@@ -149,7 +149,7 @@ const TasksEditor: React.FC<TasksEditorProps> = ({ thought, onClose }) => {
   return (
     <div className="flex flex-col h-full">
       {/* Title + Progress Ring + Close */}
-      <div className="flex items-start justify-between px-5 pt-5 pb-3 gap-4">
+      <div className="flex items-center justify-between px-4 py-2 border-b border-[var(--glass-border)] shrink-0 gap-3">
         <input
           type="text"
           value={localTitle}
@@ -161,13 +161,13 @@ const TasksEditor: React.FC<TasksEditorProps> = ({ thought, onClose }) => {
             }
           }}
           placeholder="Untitled"
-          className="flex-1 text-base font-semibold bg-transparent border-none outline-none text-[var(--text-primary)] placeholder:text-[var(--text-muted)] min-w-0"
+          className="flex-1 text-[13px] font-semibold bg-transparent border-none outline-none text-[var(--text-primary)] placeholder:text-[var(--text-muted)]/30 min-w-0"
         />
         <div className="flex items-center gap-2">
           <ProgressRing done={doneCount} total={totalCount} />
           <button
             onClick={onClose}
-            className="self-start p-1.5 rounded-lg text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-page)]/30 transition-all mt-1"
+            className="p-1.5 rounded-lg text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--glass-bg)] transition-all"
             title="Close (Esc)"
           >
             <X className="w-3.5 h-3.5" />

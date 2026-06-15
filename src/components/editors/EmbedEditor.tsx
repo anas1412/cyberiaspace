@@ -1,7 +1,7 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { useStore } from '../../store/useStore';
 import { useThoughtPayload } from '../thought/hooks/useThoughtPayload';
-import { Youtube, ExternalLink, Music, MessageCircle, Share2, Link as LinkIcon, ChevronLeft, ChevronRight, Pencil, X } from 'lucide-react';
+import { Youtube, ExternalLink, Music, MessageCircle, Share2, Link as LinkIcon, ChevronLeft, ChevronRight, X } from 'lucide-react';
 import { getEmbedInfo } from '../../utils/embeds';
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
@@ -42,9 +42,7 @@ const EmbedEditor: React.FC<EmbedEditorProps> = ({ thought, onClose }) => {
   const Icon = config.icon;
 
   const [isHydrated, setIsHydrated] = useState(false);
-  const [isEditingTitle, setIsEditingTitle] = useState(false);
-  const [titleDraft, setTitleDraft] = useState(thought.text);
-  const titleInputRef = useRef<HTMLInputElement>(null);
+  const [localTitle, setLocalTitle] = useState(thought.text);
 
   const stackItems = useMemo(() => {
     if (!thought.stackId) return [];
@@ -92,21 +90,6 @@ const EmbedEditor: React.FC<EmbedEditorProps> = ({ thought, onClose }) => {
     const t = setTimeout(trigger, 1500);
     return () => clearTimeout(t);
   }, [thought.id, thought.meta?.html, content]);
-
-  /* Focus title input when editing */
-  useEffect(() => {
-    if (isEditingTitle && titleInputRef.current) {
-      titleInputRef.current.focus();
-      titleInputRef.current.select();
-    }
-  }, [isEditingTitle]);
-
-  const handleTitleSubmit = () => {
-    if (!isReadOnly && titleDraft !== thought.text) {
-      updateThought(thought.id, { text: titleDraft });
-    }
-    setIsEditingTitle(false);
-  };
 
   const handlePrevious = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -215,7 +198,7 @@ const EmbedEditor: React.FC<EmbedEditorProps> = ({ thought, onClose }) => {
   return (
     <div className="flex flex-col h-full relative">
       {/* Top bar with title edit and metadata */}
-      <div className="flex items-center justify-between px-4 py-2 border-b border-[var(--glass-border)] bg-[var(--bg-main)]/40 backdrop-blur-sm flex-shrink-0 z-10">
+      <div className="flex items-center justify-between px-4 py-2 border-b border-[var(--glass-border)] flex-shrink-0 z-10">
         <div className="flex items-center gap-3 min-w-0 flex-1">
           <div className={cn("flex items-center gap-2 px-2 py-1 rounded-lg", config.themeColor)}>
             <Icon className={cn("w-3.5 h-3.5", config.color)} />
@@ -224,30 +207,17 @@ const EmbedEditor: React.FC<EmbedEditorProps> = ({ thought, onClose }) => {
             </span>
           </div>
 
-          {isEditingTitle ? (
-            <input
-              ref={titleInputRef}
-              type="text"
-              value={titleDraft}
-              onChange={(e) => setTitleDraft(e.target.value)}
-              onBlur={handleTitleSubmit}
-              onKeyDown={(e) => { if (e.key === 'Enter') handleTitleSubmit(); if (e.key === 'Escape') { setTitleDraft(thought.text); setIsEditingTitle(false); } }}
-              className="flex-1 bg-transparent border-none outline-none text-[13px] font-semibold text-[var(--text-primary)] placeholder:text-[var(--text-muted)]/30 min-w-0"
-              placeholder="Untitled"
-            />
-          ) : (
-            <button
-              onClick={() => { setTitleDraft(thought.text); setIsEditingTitle(true); }}
-              className="flex items-center gap-2 group max-w-[60%]"
-            >
-              <span className="text-[13px] font-semibold text-[var(--text-primary)] truncate">
-                {thought.text || 'Untitled'}
-              </span>
-              {!isReadOnly && (
-                <Pencil className="w-3 h-3 text-[var(--text-muted)] opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0" />
-              )}
-            </button>
-          )}
+          <input
+            type="text"
+            value={localTitle}
+            onChange={(e) => {
+              const val = e.target.value;
+              setLocalTitle(val);
+              if (!isReadOnly) updateThought(thought.id, { text: val });
+            }}
+            placeholder="Untitled"
+            className="flex-1 bg-transparent border-none outline-none text-[13px] font-semibold text-[var(--text-primary)] placeholder:text-[var(--text-muted)]/30 min-w-0"
+          />
         </div>
 
         <div className="flex items-center gap-2">
