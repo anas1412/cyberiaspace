@@ -10,6 +10,7 @@ import { twMerge } from 'tailwind-merge';
 import { ThoughtHeader } from './thought/ThoughtHeader';
 import { ThoughtFooter } from './thought/ThoughtFooter';
 import { getThoughtConfig, type ThoughtRendererProps } from './thought/registry';
+import { PRIO_COLORS } from './thought/constants';
 import { sanitizeDate } from '../utils/date';
 
 import { Loader2, Trash2 } from 'lucide-react';
@@ -83,7 +84,6 @@ const ThoughtNode: React.FC<ThoughtNodeProps> = React.memo(({ thought, registerE
     // Layer shadows only apply in spatial mode (3D stacking effect)
     // Kanban/Calendar use flat layouts - layer should not affect visual shadow
     const useLayerShadow = isSpatial && thought.layer && thought.layer > 0;
-    const shadowSize = isDragging ? 60 : Math.min(50, ((thought.layer || 0) % 100) + 10);
     const altitudeScale = 1 + (Math.min(10, ((thought.layer || 0) % 10)) / 200);
     
     if (isSelected) {
@@ -95,8 +95,14 @@ const ThoughtNode: React.FC<ThoughtNodeProps> = React.memo(({ thought, registerE
     
     if (!useLayerShadow) return { transform: `scale(${altitudeScale})` };
     
+    // Layer-based elevation: higher layers cast larger, softer shadows
+    const layer = Math.min(10, (thought.layer || 0) % 10);
+    const yOffset = 2 + layer * 1.5;
+    const blur = 8 + layer * 4;
+    const opacity = 0.04 + layer * 0.015;
+    
     return {
-      boxShadow: `0 ${shadowSize / 2}px ${shadowSize}px rgba(0,0,0,0.6)`,
+      boxShadow: `0 ${yOffset}px ${blur}px rgba(0,0,0,${opacity})`,
       transform: `scale(${altitudeScale})`,
     };
   }, [thought.layer, isDragging, isSelected, isSpatial]);
@@ -229,7 +235,7 @@ const ThoughtNode: React.FC<ThoughtNodeProps> = React.memo(({ thought, registerE
       className={cn(
         "thought-bulb absolute select-none touch-none will-change-transform origin-top-left",
         isArchived ? "pointer-events-none" : "pointer-events-auto",
-        "w-[280px]",
+        isSpatial ? "min-w-[180px] max-w-[400px] w-fit" : "w-[280px]",
         isDragging ? "z-[var(--z-dragging)] cursor-grabbing" : "z-[var(--z-viewport)] cursor-grab",
         ((isReadOnly && !isSpatial && !isDemo) || isDeleting) && "cursor-default pointer-events-none",
         isDragging && isOverDeleteZone && "outline outline-2 outline-red-500/80 outline-offset-2"
@@ -251,10 +257,10 @@ const ThoughtNode: React.FC<ThoughtNodeProps> = React.memo(({ thought, registerE
         }
       })}
     >
-      {showPing && <div className="absolute inset-0 rounded-2xl border-2 border-[var(--accent)] animate-sonar pointer-events-none z-[var(--z-background)]" />}
+      {showPing && <div className="absolute inset-0 rounded-xl border-2 border-[var(--accent)] animate-sonar pointer-events-none z-[var(--z-background)]" />}
       
           {isDeleting && (
-        <div className="absolute inset-0 z-[50] rounded-2xl bg-[var(--bg-page)]/60 backdrop-blur-sm border border-red-500/30 flex flex-col items-center justify-center gap-3 animate-in fade-in duration-300">
+        <div className="absolute inset-0 z-[50] rounded-xl bg-[var(--bg-page)]/60 backdrop-blur-sm border border-red-500/30 flex flex-col items-center justify-center gap-3 animate-in fade-in duration-300">
           <div className="relative">
             <Loader2 className="w-8 h-8 text-red-500 animate-spin" />
             <Trash2 className="w-4 h-4 text-red-500 absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2" />
@@ -265,15 +271,15 @@ const ThoughtNode: React.FC<ThoughtNodeProps> = React.memo(({ thought, registerE
 
       <div
         className={cn(
-          "thought-bulb-content group backdrop-blur-[20px] border rounded-2xl flex flex-col relative transition-[border-color,background-color,transform,padding,gap,opacity] duration-300 overflow-hidden",
+          "thought-bulb-content group backdrop-blur-[20px] flex flex-col relative transition-all duration-300 overflow-hidden",
           isArchived && "pointer-events-none",
           isCalendar && !isExpanded ? "p-3 gap-0" : "p-4.5 gap-2",
-          isSpatial && !isSelected && "gap-0",
           isSelected
-            ? "border-2 border-[var(--accent)] bg-[var(--node-bg)]/95"
-            : "border-[var(--glass-border)] shadow-[0_10px_40px_rgba(0,0,0,0.5)] bg-[var(--node-bg)]/60",
+            ? "border-2 border-[var(--accent)] bg-[var(--node-bg)]/95 shadow-[0_0_15px_rgba(99,102,241,0.15)] rounded-xl"
+            : "border border-transparent shadow-[0_1px_3px_rgba(0,0,0,0.06),0_6px_20px_rgba(0,0,0,0.04)] bg-[var(--node-bg)]/40 rounded-xl",
+          isSpatial && !isSelected && "hover:shadow-[0_2px_8px_rgba(0,0,0,0.08),0_12px_40px_rgba(0,0,0,0.06)] hover:-translate-y-[1px]",
           linkingSourceId === thought.id && "ring-2 ring-[var(--accent)] shadow-[0_0_20px_var(--accent-glow)]",
-          linkingSourceId && linkingSourceId !== thought.id && "hover:scale-105 hover:border-[var(--accent)]/50 cursor-pointer",
+          linkingSourceId && linkingSourceId !== thought.id && "hover:scale-105 cursor-pointer",
           isSelected && isInspectorOpen && "animate-breathe"
         )}
         style={{
@@ -284,6 +290,13 @@ const ThoughtNode: React.FC<ThoughtNodeProps> = React.memo(({ thought, registerE
           '--text-muted': 'var(--node-text-muted)',
         } as unknown as React.CSSProperties}
       >
+        {/* Priority edge indicator */}
+        {thought.priority !== 'none' && (
+          <div
+            className="absolute left-0 top-3 bottom-3 w-[2px] rounded-sm pointer-events-none transition-all duration-300"
+            style={{ backgroundColor: PRIO_COLORS[thought.priority as keyof typeof PRIO_COLORS] }}
+          />
+        )}
         <ThoughtHeader thought={thought} isCalendar={isCalendar} isExpanded={isExpanded} isArchived={isArchived} />
         <div
           data-trigger={thought.type === 'text' ? 'text' : undefined}
@@ -306,7 +319,6 @@ const ThoughtNode: React.FC<ThoughtNodeProps> = React.memo(({ thought, registerE
             thought={thought} 
             isReadOnly={isReadOnly} 
             isSpatial={isSpatial}
-            isSelected={isSelected}
             linkingSourceId={linkingSourceId} 
             handleLinkAction={isArchived ? noopMouseHandler : handleLinkAction}
             isArchived={isArchived}
