@@ -1,20 +1,18 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useStore } from '../../store/useStore';
 import { useThoughtPayload } from '../thought/hooks/useThoughtPayload';
-import { useModalStore } from '../../store/useModalStore';
 import {
-  File as FileIcon, Upload, Download, Loader2, FileAudio,
+  File as FileIcon, Download, Loader2, FileAudio,
   ExternalLink,
-  ChevronLeft, ChevronRight, X
+  ChevronLeft, ChevronRight, X, Upload
 } from 'lucide-react';
-import { MAX_UPLOAD_SIZE, MAX_UPLOAD_SIZE_MB } from '../../constants';
-import { generateThumbnail, generateVideoThumbnail } from '../../utils/image';
-import { clsx, type ClassValue } from 'clsx';
-import { twMerge } from 'tailwind-merge';
 import { db, type Thought } from '../../db';
 import { getEmbedInfo } from '../../utils/embeds';
-import { stripFileExtension } from '../../utils/file';
 import { StackFilmstrip } from './StackFilmstrip';
+import { clsx, type ClassValue } from 'clsx';
+import { twMerge } from 'tailwind-merge';
+import { detectImageType, generateThumbnail } from '../../utils/image';
+import { stripFileExtension } from '../../utils/file';
 
 function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -36,15 +34,14 @@ const FileEditor: React.FC<FileEditorProps> = ({ thought, onClose }) => {
   const thoughts = useStore((state) => state.thoughts);
   const isReadOnly = useStore((state) => state.isReadOnly);
   const isDemo = useStore((state) => state.isDemo);
-  const openModal = useModalStore(state => state.openModal);
 
   // Payload
   const { fileInfo } = useThoughtPayload(thought);
 
   // ── State ──
   const [localPreviewUrl, setLocalPreviewUrl] = useState<string | null>(null);
-  const [isUploading, setIsUploading] = useState(false);
   const [isFetching, setIsFetching] = useState(true);
+  const [isUploading, setIsUploading] = useState(false);
   const [localTitle, setLocalTitle] = useState(thought.text);
 
   // ── Derived ──
@@ -90,7 +87,6 @@ const FileEditor: React.FC<FileEditorProps> = ({ thought, onClose }) => {
     }
     setLocalPreviewUrl(null);
     setIsFetching(true);
-    setIsUploading(false);
 
     return () => {
       if (localPreviewUrl) {
@@ -159,58 +155,54 @@ const FileEditor: React.FC<FileEditorProps> = ({ thought, onClose }) => {
     const file = e.target.files?.[0];
     if (!file || !thought) return;
 
-    if (file.size > MAX_UPLOAD_SIZE) {
-      openModal({
-        title: 'Incompatible Mass',
-        description: `This asset exceeds the ${MAX_UPLOAD_SIZE_MB}MB transmission limit.`,
-        type: 'alert',
-        confirmText: 'Acknowledged'
-      });
-      return;
-    }
-
     setIsUploading(true);
     try {
-      const isImageFile = file.type.startsWith('image/') || /\.(jpg|jpeg|png|gif|webp|svg)$/i.test(file.name);
-      const isVideoFile = file.type.startsWith('video/') || /\.(mp4|webm|mov|m4v)$/i.test(file.name);
+      const actualType = await detectImageType(file);
+      const thumbnail = await generateThumbnail(file).catch(() => null);
+      
+      const fileName = file.name;
+      const fileSize = file.size;
 
-      const thumbnail = isImageFile
-        ? await generateThumbnail(file).catch(() => null)
-        : isVideoFile
-          ? await generateVideoThumbnail(file).catch(() => null)
-          : null;
-
-      const meta = { ...thought.meta, file: { name: file.name, size: file.size, type: file.type } };
+      const meta = {
+        file: {
+          name: fileName,
+          size: fileSize,
+          type: actualType,
+          isImage: actualType.startsWith('image/'),
+          isPdf: actualType === 'application/pdf',
+          isVideo: actualType.startsWith('video/'),
+          isAudio: actualType.startsWith('audio/')
+        }
+      };
 
       await updateThought(thought.id, {
-        text: stripFileExtension(file.name),
-        type: 'file',
+        text: stripFileExtension(fileName),
         data: {
           type: 'file',
           url: thumbnail || '',
-          name: file.name,
-          size: file.size,
-          meta: meta as any
-        }
+          name: fileName,
+          size: fileSize,
+          meta: meta.file
+        },
+        meta: meta,
+        updatedAt: Date.now()
       });
 
       await db.blobs.put({
         id: thought.id,
         thoughtId: thought.id,
         blob: file,
-        name: file.name,
-        type: file.type,
+        name: fileName,
+        type: actualType,
         updatedAt: Date.now()
       });
 
-      const url = URL.createObjectURL(file);
-      setLocalPreviewUrl(url);
-    } catch (error) {
-      console.error("[FileEditor] Upload failed", error);
+      // Reload
+      await loadLocalBlob();
+    } catch (err) {
+      console.error("[FileEditor] Upload failed", err);
     } finally {
       setIsUploading(false);
-      // Reset input so re-selecting the same file triggers change
-      e.target.value = '';
     }
   };
 
@@ -415,14 +407,10 @@ const FileEditor: React.FC<FileEditorProps> = ({ thought, onClose }) => {
               </div>
             </>
           )}
-
-
         </div>
 
         {/* Shared StackFilmstrip — consistent across all editor types */}
         <StackFilmstrip thought={thought} stackItems={stackItems} currentIndex={currentIndex} />
-
-
       </div>
     </div>
   );

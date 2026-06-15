@@ -1,12 +1,10 @@
 import React, { useRef, useState, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
 import {
   ChevronDown, ChevronUp, FileIcon, FileAudio,
-  Palette, Edit2, Check,
+  Edit2,
 } from 'lucide-react';
 import { useStore } from '../../store/useStore';
 import { type Thought } from '../../db';
-import { STACK_COLORS } from '../../constants';
 import { PROVIDER_CONFIG } from '../thought/constants';
 import { getEmbedInfo } from '../../utils/embeds';
 import { clsx, type ClassValue } from 'clsx';
@@ -15,70 +13,6 @@ import { twMerge } from 'tailwind-merge';
 function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
-
-// ──────────────────────────────────────────────
-// Color Picker
-// ──────────────────────────────────────────────
-
-const StackColorPicker: React.FC<{ value: string; onChange: (val: string) => void; disabled?: boolean }> = ({ value, onChange, disabled }) => {
-  const [isOpen, setIsOpen] = useState(false);
-  const containerRef = useRef<HTMLDivElement>(null);
-
-  React.useEffect(() => {
-    const handleClickOutside = (e: MouseEvent) => {
-      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
-        setIsOpen(false);
-      }
-    };
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
-
-  return (
-    <div className="relative" ref={containerRef}>
-      <button
-        onClick={(e) => { e.stopPropagation(); if (!disabled) setIsOpen(!isOpen); }}
-        className={cn(
-          "w-3 h-3 rounded-full border border-white/20 transition-all flex items-center justify-center group relative overflow-hidden",
-          disabled && "opacity-50 cursor-default"
-        )}
-        style={{ backgroundColor: value, boxShadow: `0 0 10px ${value}88` }}
-      >
-        <div className="absolute inset-0 bg-[var(--glass-bg)] opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-          <Palette className="w-1.5 h-1.5 text-[var(--text-primary)]" />
-        </div>
-      </button>
-
-      <AnimatePresence>
-        {isOpen && (
-          <motion.div
-            initial={{ opacity: 0, y: 10, scale: 0.95 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: 10, scale: 0.95 }}
-            onClick={(e) => e.stopPropagation()}
-            className="absolute bottom-full mb-3 left-0 z-[var(--z-popover)] glass border border-white/10 rounded-2xl p-3 shadow-2xl min-w-[180px]"
-          >
-            <div className="grid grid-cols-4 gap-2 mb-3">
-              {STACK_COLORS.map((color: string) => (
-                <button
-                  key={color}
-                  onClick={() => { onChange(color); setIsOpen(false); }}
-                  className={cn(
-                    "w-8 h-8 rounded-xl border transition-all",
-                    value === color
-                      ? "border-white/80 scale-110 shadow-lg"
-                      : "border-white/10 hover:scale-110"
-                  )}
-                  style={{ backgroundColor: color }}
-                />
-              ))}
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-    </div>
-  );
-};
 
 // ──────────────────────────────────────────────
 // StackItemThumbnail
@@ -289,53 +223,59 @@ const StackFilmstrip: React.FC<StackFilmstripProps> = ({ thought, stackItems, cu
         {/* Header row */}
         <div className="flex items-center justify-between px-6 py-4 select-none">
           <div className="flex items-center gap-4">
-            <StackColorPicker
-              value={stack?.color || '#6366f1'}
-              disabled={isReadOnly}
-              onChange={(color) => useStore.getState().updateStack(stack!.id, { color })}
+            <div
+              className="w-3 h-3 rounded-full border border-white/20"
+              style={{
+                backgroundColor: stack?.color || '#6366f1',
+                boxShadow: `0 0 10px ${stack?.color || '#6366f1'}88`
+              }}
             />
-            <div className="flex items-center gap-2 group/stackname">
-              {isRenamingStack ? (
-                <div className="flex items-center gap-1 bg-[var(--glass-bg)] rounded-lg px-2 py-1 border border-[var(--glass-border)]">
-                  <input
-                    ref={renameInputRef}
-                    autoFocus
-                    className="bg-transparent text-[10px] font-semibold tracking-[0.4em] text-[var(--text-secondary)] border-none outline-none w-24 pt-[1px]"
-                    value={tempStackName}
-                    onChange={(e) => setTempStackName(e.target.value)}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter') handleStackRename();
-                      if (e.key === 'Escape') {
-                        setIsRenamingStack(false);
-                        setTempStackName(stack?.name || '');
-                      }
-                    }}
-                    onClick={(e) => e.stopPropagation()}
-                  />
-                  <button
-                    onClick={(e) => { e.stopPropagation(); handleStackRename(); }}
-                    className="p-0.5 hover:bg-[var(--glass-bg)] rounded transition-colors"
-                  >
-                    <Check className="w-2 h-2 text-emerald-500" />
-                  </button>
-                </div>
-              ) : (
-                <>
-                  <span
-                    className="text-[10px] font-semibold tracking-[0.4em] text-[var(--text-secondary)] transition-colors pt-[1px]"
-                    onDoubleClick={() => { if (!isReadOnly) { setTempStackName(stack?.name || ''); setIsRenamingStack(true); } }}
-                  >
-                    {stack?.name || 'Collection'}
-                  </span>
-                  {!isReadOnly && (
-                    <button
-                      onClick={(e) => { e.stopPropagation(); setTempStackName(stack?.name || ''); setIsRenamingStack(true); }}
-                      className="p-1 opacity-0 group-hover/stackname:opacity-100 hover:bg-[var(--glass-bg)] rounded transition-all"
-                    >
-                      <Edit2 className="w-2 h-2 text-[var(--text-muted)] hover:text-[var(--text-primary)]" />
-                    </button>
+            <div className="flex items-center gap-2 group/stackname relative min-w-0 flex-1">
+              <div className="relative flex items-center min-w-0">
+                {/* Mirror span defines the width */}
+                <span 
+                  className={cn(
+                    "invisible whitespace-pre text-[10px] font-bold uppercase tracking-[0.4em] select-none",
+                    isRenamingStack ? "px-2" : ""
                   )}
-                </>
+                  aria-hidden="true"
+                >
+                  {isRenamingStack ? (tempStackName || ' ') : (stack?.name || 'Collection')}
+                </span>
+                
+                <input
+                  ref={renameInputRef}
+                  readOnly={isReadOnly || !isRenamingStack}
+                  className={cn(
+                    "absolute inset-0 bg-transparent text-[10px] font-bold uppercase tracking-[0.4em] text-[var(--text-secondary)] border-none outline-none pt-[1px] transition-all",
+                    isRenamingStack 
+                      ? "opacity-100 bg-white/[0.03] px-2 py-1 rounded-lg border border-white/10" 
+                      : "opacity-100 cursor-default pointer-events-none"
+                  )}
+                  value={isRenamingStack ? tempStackName : (stack?.name || 'Collection')}
+                  onChange={(e) => setTempStackName(e.target.value)}
+                  onBlur={handleStackRename}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') handleStackRename();
+                    if (e.key === 'Escape') {
+                      setIsRenamingStack(false);
+                      setTempStackName(stack?.name || '');
+                    }
+                  }}
+                  onClick={(e) => e.stopPropagation()}
+                />
+              </div>
+              {!isRenamingStack && !isReadOnly && (
+                <button
+                  onClick={(e) => { 
+                    e.stopPropagation(); 
+                    setTempStackName(stack?.name || 'Collection'); 
+                    setIsRenamingStack(true); 
+                  }}
+                  className="p-1 opacity-0 group-hover/stackname:opacity-100 hover:bg-[var(--glass-bg)] rounded transition-all flex-shrink-0"
+                >
+                  <Edit2 className="w-2.5 h-2.5 text-[var(--text-muted)]" />
+                </button>
               )}
             </div>
           </div>
