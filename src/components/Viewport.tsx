@@ -1,6 +1,7 @@
 import React, { useRef, useState, useEffect, useCallback } from 'react';
 import { useStore } from '../store/useStore';
 import { useModalStore } from '../store/useModalStore';
+import { useOverlayStore } from '../store/useOverlayStore';
 import { MAX_UPLOAD_SIZE, MAX_UPLOAD_SIZE_MB } from '../constants';
 import { clsx, type ClassValue } from 'clsx';
 
@@ -104,6 +105,9 @@ const Viewport: React.FC<{ isInteracting?: boolean }> = ({ isInteracting }) => {
 
       if (
         activeSpace?.mode === 'spatial' &&
+        !useStore.getState().activeFocusId &&
+        !useModalStore.getState().isOpen &&
+        !useOverlayStore.getState().isOverlayOpen &&
         !(e.target as HTMLElement).closest('button, input, textarea, .thought-bulb, #inspector, .ui-layer, .expand-img, #chat-overlay, .focus-box, #space-switcher-menu')
       ) {
         if ((isLeftClick && !isCtrlLeftClick) || isMiddleClick || isAltLeftClick) {

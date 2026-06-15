@@ -25,12 +25,7 @@ const CalendarOverlay = lazy(() => import('./components/CalendarOverlay'));
 const DirectoryOverlay = lazy(() => import('./components/DirectoryOverlay'));
 const ChatOverlay = lazy(() => import('./components/ChatOverlay'));
 const Inspector = lazy(() => import('./components/Inspector'));
-const TextFocusEditor = lazy(() => import('./components/editors/TextFocusEditor'));
-const TableFocusEditor = lazy(() => import('./components/editors/TableFocusEditor'));
-const PaintFocusEditor = lazy(() => import('./components/editors/PaintFocusEditor'));
-const TasksFocusEditor = lazy(() => import('./components/editors/TasksFocusEditor'));
-const EmbedFocusEditor = lazy(() => import('./components/editors/EmbedFocusEditor'));
-const FileFocusEditor = lazy(() => import('./components/editors/FileFocusEditor'));
+const FocusEditor = lazy(() => import('./components/editors/FocusEditor'));
 const PrivacyPolicy = lazy(() => import('./components/legal/PrivacyPolicy'));
 const Terms = lazy(() => import('./components/legal/Terms'));
 const LegalNotice = lazy(() => import('./components/legal/LegalNotice'));
@@ -404,12 +399,7 @@ function App() {
           <ChatOverlay />
           <Modal />
           <Lightbox />
-          <TextFocusEditor />
-          <TableFocusEditor />
-          <PaintFocusEditor />
-          <TasksFocusEditor />
-          <EmbedFocusEditor />
-          <FileFocusEditor />
+          <FocusEditor />
           <UpdateToast />
           <ExternalScripts />
         </Suspense>

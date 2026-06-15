@@ -1,5 +1,8 @@
 import { useRef, useCallback } from 'react';
 import { type Camera } from './useCamera';
+import { useStore } from '../store/useStore';
+import { useModalStore } from '../store/useModalStore';
+import { useOverlayStore } from '../store/useOverlayStore';
 
 interface GestureConfig {
   activeSpaceMode: string | undefined;
@@ -71,6 +74,9 @@ export const useViewportGestures = (config: GestureConfig) => {
 
     // Standard exclusions
     if (target.closest('#inspector, #text-focus-overlay, #table-focus-overlay, #chat-overlay, .focus-box, #space-switcher-menu, .filter-panel-container')) return;
+
+    // Block zoom/pan when any focus editor or overlay is open
+    if (useStore.getState().activeFocusId || useModalStore.getState().isOpen || useOverlayStore.getState().isOverlayOpen) return;
 
     const isSidebar = target.closest(activeSpaceMode === 'kanban' ? '#kanban-sidebar-content' : '#cal-sidebar-content');
 
@@ -238,6 +244,7 @@ export const useViewportGestures = (config: GestureConfig) => {
 
     if (isDemo && !target.closest('[data-demo-workspace="true"]')) return;
     if (target.closest('button, input, textarea, .thought-bulb, #inspector, .ui-layer, .expand-img, #chat-overlay, .focus-box, #space-switcher-menu')) return;
+    if (useStore.getState().activeFocusId || useModalStore.getState().isOpen || useOverlayStore.getState().isOverlayOpen) return;
 
 
     isTouchingRef.current = true;

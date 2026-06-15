@@ -3,6 +3,7 @@ import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 import { useStore } from '../../store/useStore';
 import { useModalStore } from '../../store/useModalStore';
+import { useOverlayStore } from '../../store/useOverlayStore';
 
 function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -77,6 +78,12 @@ const Toolbar: React.FC = () => {
       delete (window as any)._openSettings;
     };
   }, []);
+
+  // Sync overlay state for zoom/pan blocking
+  useEffect(() => {
+    const isAnyOpen = isSettingsOpen || isCustomizationOpen || isHelpOpen || isShortcutsOpen || isSearchOpen;
+    useOverlayStore.getState().setOverlayOpen(isAnyOpen);
+  }, [isSettingsOpen, isCustomizationOpen, isHelpOpen, isShortcutsOpen, isSearchOpen]);
 
   // Contact Form State
   const [contactName, setContactName] = useState('');

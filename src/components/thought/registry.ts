@@ -1,4 +1,4 @@
-import React, { lazy } from 'react';
+import React from 'react';
 import { 
   Tag, 
   Type, 
@@ -29,14 +29,6 @@ import { PaintInspector } from './inspectors/PaintInspector';
 import { EmbedInspector } from './inspectors/EmbedInspector';
 import { FileInspector } from './inspectors/FileInspector';
 
-// Lazy Focus Editors
-const TextFocusEditor = lazy(() => import('../editors/TextFocusEditor'));
-const TasksFocusEditor = lazy(() => import('../editors/TasksFocusEditor'));
-const TableFocusEditor = lazy(() => import('../editors/TableFocusEditor'));
-const PaintFocusEditor = lazy(() => import('../editors/PaintFocusEditor'));
-const EmbedFocusEditor = lazy(() => import('../editors/EmbedFocusEditor'));
-const FileFocusEditor = lazy(() => import('../editors/FileFocusEditor'));
-
 export interface ThoughtRendererProps {
   thought: Thought;
   isReadOnly: boolean;
@@ -47,11 +39,6 @@ export interface ThoughtRendererProps {
   setActiveFocus: (id: string, type: any) => void;
   setSelectedThoughtId?: (id: string | null) => void;
   setInspectorOpen?: (open: boolean) => void;
-}
-
-export interface FocusEditorProps {
-  thoughtId: string;
-  onClose: () => void;
 }
 
 export interface InspectorPanelProps {
@@ -68,7 +55,6 @@ export interface ThoughtTypeConfig {
   renderer: React.ComponentType<ThoughtRendererProps>;
   
   // Editors
-  focusEditor?: React.LazyExoticComponent<React.ComponentType<any>>;
   inspectorPanel?: React.ComponentType<InspectorPanelProps>;
   
   // Factory
@@ -97,7 +83,6 @@ export const ThoughtRegistry: Record<ThoughtType, ThoughtTypeConfig> = {
     label: 'Text',
     icon: Type,
     renderer: TextRenderer as any,
-    focusEditor: TextFocusEditor,
     inspectorPanel: TextInspector,
     createPayload: () => ({ type: 'text', content: '' }),
     hasFooter: true,
@@ -109,7 +94,6 @@ export const ThoughtRegistry: Record<ThoughtType, ThoughtTypeConfig> = {
     label: 'Tasks',
     icon: ListTodo,
     renderer: TasksRenderer as any,
-    focusEditor: TasksFocusEditor,
     inspectorPanel: TasksInspector,
     createPayload: () => ({ type: 'tasks', tasks: [] }),
     hasFooter: true,
@@ -121,7 +105,6 @@ export const ThoughtRegistry: Record<ThoughtType, ThoughtTypeConfig> = {
     label: 'Table',
     icon: Table,
     renderer: TableRenderer as any,
-    focusEditor: TableFocusEditor,
     inspectorPanel: TableInspector,
     createPayload: () => ({ type: 'table', rows: [['', ''], ['', '']] }),
     hasFooter: true,
@@ -133,7 +116,6 @@ export const ThoughtRegistry: Record<ThoughtType, ThoughtTypeConfig> = {
     label: 'Paint',
     icon: Palette,
     renderer: PaintRenderer as any,
-    focusEditor: PaintFocusEditor,
     inspectorPanel: PaintInspector,
     createPayload: () => ({ type: 'paint', drawing: '' }),
     hasFooter: true,
@@ -145,7 +127,6 @@ export const ThoughtRegistry: Record<ThoughtType, ThoughtTypeConfig> = {
     label: 'Embed',
     icon: Youtube,
     renderer: EmbedRenderer as any,
-    focusEditor: EmbedFocusEditor,
     inspectorPanel: EmbedInspector,
     createPayload: () => ({ type: 'embed', url: '' }),
     hasFooter: true,
@@ -157,7 +138,6 @@ export const ThoughtRegistry: Record<ThoughtType, ThoughtTypeConfig> = {
     label: 'File',
     icon: FileIcon,
     renderer: FileRenderer as any,
-    focusEditor: FileFocusEditor,
     inspectorPanel: FileInspector,
     createPayload: () => ({ type: 'file', url: '', name: '', size: 0 }),
     hasFooter: true,
