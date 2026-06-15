@@ -149,9 +149,12 @@ function App() {
   useEffect(() => {
     const getPlacementProps = () => {
       const activeSpace = spaces.find(s => s.id === activeSpaceId);
+      // Use Viewport's live camera-based world position (accurate on every frame)
+      // instead of App's stale transformX/Y/Space transform (500ms debounced)
+      const hoverContext = (window as any)._cyberia_hover_context;
       const props: any = {
-        x: mouseWorldPos.current.x,
-        y: mouseWorldPos.current.y
+        x: hoverContext?.x ?? mouseWorldPos.current.x,
+        y: hoverContext?.y ?? mouseWorldPos.current.y
       };
 
       if (activeSpace?.mode === 'kanban') {
