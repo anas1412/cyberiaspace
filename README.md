@@ -1,4 +1,4 @@
-# Cyberia
+# Cyberia Space
 
 A visual thinking space with four view modes — Spatial, Kanban, Calendar, and Directory — that transform the same data into different organizational metaphors. Ideas exist as physical objects on an infinite canvas, drift through a custom physics engine, snap into column-based workflows, align on a time grid, or surface through search and filters.
 
