@@ -68,6 +68,15 @@ export const createDataSlice: StateCreator<CyberiaState, [], [], any> = (set, ge
             customBg: activeSpace.customBg || null,
             isReadOnly: false
           });
+
+          if (activeSpace.customBg) {
+            const localBg = await db.spaceBackgrounds
+              .filter(b => b.spaceId === targetSpaceId)
+              .first();
+            if (localBg) {
+              set({ customBg: URL.createObjectURL(localBg.blob) });
+            }
+          }
         }
 
         // 3. Show app now
